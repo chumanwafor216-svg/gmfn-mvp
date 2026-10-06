@@ -553,6 +553,10 @@ function isCommunityWitnessOutcome(row: PublicDecisionPointer): boolean {
   return safeText(row.key).toLowerCase() === "community_witness_outcome";
 }
 
+function isIssueResolutionReview(row: PublicDecisionPointer): boolean {
+  return safeText(row.key).toLowerCase() === "issue_resolution_review";
+}
+
 function compactTradeSentences(...sentences: string[]): string {
   const seen = new Set<string>();
   return sentences
@@ -563,8 +567,12 @@ function compactTradeSentences(...sentences: string[]): string {
       seen.add(sentence);
       return true;
     })
-    .slice(0, 5)
     .join(" ");
+}
+
+function compactTradeSection(label: string, ...sentences: string[]): string {
+  const body = compactTradeSentences(...sentences);
+  return body ? `${label}: ${body}` : "";
 }
 
 function buildTradeEvidenceReading(params: {
@@ -594,6 +602,9 @@ function buildTradeEvidenceReading(params: {
   const supportCompletedWork = tradeSupportPointers(params.completedWorkPointers);
   const pendingConfirmations = tradeRowsByKind(params.confirmationPointers, ["pending"]);
   const supportConfirmations = tradeSupportPointers(params.confirmationPointers);
+  const availableReviewContext = tradeRowsByKind(params.issueResolutionPointers, ["support"]).filter((row) =>
+    isIssueResolutionReview(row)
+  );
   const resolvedIssues = tradeRowsByKind(params.issueResolutionPointers, ["resolved"]);
   const cautionCompletedWork = tradeRowsByKind(params.completedWorkPointers, ["caution"]);
   const cautionFulfillment = tradeRowsByKind(params.fulfillmentOutcomePointers, ["caution"]);
@@ -638,46 +649,43 @@ function buildTradeEvidenceReading(params: {
   if (!params.extractAvailable) return unavailable;
 
   const declarationNote = supportDeclaredClaims.length
-    ? `Declaration shown: ${pointerValueText(supportDeclaredClaims, "a declared Trade/service claim is visible")}. It remains a claim pointer, not completed-work proof.`
+    ? `Declaration shown: ${pointerValueText(supportDeclaredClaims, "a declared Trade/service claim is visible")}; claim pointer, not completed-work proof.`
     : "";
   const workNote = supportOutcomeRows.length
-    ? `Work record shown: ${pointerValueText(supportOutcomeRows, "a Trade outcome or completed-work aggregate is visible")}. It still needs recipient-specific confirmation.`
+    ? `Work record shown: ${pointerValueText(supportOutcomeRows, "a Trade outcome or completed-work aggregate is visible")}; recipient still confirms fit.`
     : "";
   const pendingNote = pendingConfirmations.length
-    ? `Confirmation request pending: ${pointerValueText(pendingConfirmations, "community confirmation request recorded; response or outcome is still pending")}. A request count is not a response count.`
+    ? `Confirmation request pending: ${pointerValueText(pendingConfirmations, "community confirmation request recorded; response or outcome is still pending")}; request count is not a response count.`
     : "";
   const aggregateNote = supportConfirmations.length
-    ? `Confirmation aggregate shown: ${pointerValueText(supportConfirmations, "community confirmation response/outcome aggregate is visible")}. The public view does not classify it as favourable or complete.`
+    ? `Confirmation aggregate shown: ${pointerValueText(supportConfirmations, "community confirmation response/outcome aggregate is visible")}; not classified as favourable or complete.`
+    : "";
+  const availableReviewNote = availableReviewContext.length
+    ? `Available review context shown: ${pointerValueText(availableReviewContext, "general issue-resolution review context is visible")}; outcome is not classified here.`
     : "";
   const customerCautionNote = cautionCompletedWork.length
-    ? `Customer-feedback caution shown: ${pointerValueText(cautionCompletedWork, "customer-feedback caution is visible")}. It is not automatic proof of wrongdoing or an open issue.`
+    ? `Customer-feedback caution shown: ${pointerValueText(cautionCompletedWork, "customer-feedback caution is visible")}; not automatic wrongdoing or an open issue.`
     : "";
   const reviewCautionNote = cautionRows.length
-    ? `Review/correction context shown: ${pointerValueText(cautionRows, "a review/correction pointer is visible")}. Inspect the structured status before relying.`
+    ? `Review/correction caution shown: ${pointerValueText(cautionRows, "a review/correction pointer is visible")}; inspect structured status before relying.`
     : "";
   const resolvedNote = resolvedIssues.length
-    ? `Resolved/corrected context shown: ${pointerValueText(resolvedIssues, "resolved or corrected review information is visible")}. It does not erase unrelated current cautions.`
+    ? `Resolved/corrected context shown: ${pointerValueText(resolvedIssues, "resolved or corrected review information is visible")}; does not erase unrelated current cautions.`
     : "";
   const limitedNote = limitedRows.length
-    ? `Limited or missing information also shown for ${pointerLabelList(limitedRows, "Trade evidence rows")}. Counts or prose there do not establish support.`
+    ? `Limited or missing information also shown for ${pointerLabelList(limitedRows, "Trade evidence rows")}; counts or prose there do not establish support.`
     : "";
   const unknownNote = unknownRows.length
-    ? `Unclassified row shown: ${pointerValueText(unknownRows, "a Trade row has an unrecognised structured status")}. Status ${safeText(unknownRows[0]?.status) || "unknown"} is not treated as support, wrongdoing, or absence.`
+    ? `Unclassified row shown: ${pointerValueText(unknownRows, "a Trade row has an unrecognised structured status")}; status ${safeText(unknownRows[0]?.status) || "unknown"} is not treated as support, wrongdoing, or absence.`
     : "";
   const categoryNote = supportTradeCategories.length
-    ? "Trade category shown: a public-safe Trade category is visible, but category visibility is only a follow-up prompt."
+    ? `Trade category shown: ${pointerValueText(supportTradeCategories, "a public-safe Trade category is visible")}; follow-up prompt only.`
     : "";
-  const composedNotes = [
-    declarationNote,
-    workNote,
-    pendingNote,
-    aggregateNote,
-    customerCautionNote,
-    reviewCautionNote,
-    resolvedNote,
-    limitedNote,
-    unknownNote,
-    categoryNote,
+  const sourceAreaNotes = [
+    compactTradeSection("Declarations/work", declarationNote, workNote, categoryNote),
+    compactTradeSection("Confirmation", pendingNote, aggregateNote),
+    compactTradeSection("Reviews/cautions/corrections", customerCautionNote, reviewCautionNote, availableReviewNote, resolvedNote),
+    compactTradeSection("Missing/unavailable/unclassified", limitedNote, unknownNote),
   ].filter(Boolean);
 
   function composeReading(options: {
@@ -695,8 +703,8 @@ function buildTradeEvidenceReading(params: {
   }): TradeEvidenceReading {
     return {
       headline: options.headline,
-      summary: compactTradeSentences(options.lead, ...composedNotes),
-      evidenceStatement: compactTradeSentences(options.evidenceStatement, declarationNote, workNote, pendingNote, aggregateNote, customerCautionNote, reviewCautionNote, resolvedNote, limitedNote, unknownNote, categoryNote),
+      summary: compactTradeSentences(options.lead, ...sourceAreaNotes),
+      evidenceStatement: compactTradeSentences(options.evidenceStatement, ...sourceAreaNotes),
       knownLimit: options.knownLimit,
       unestablished: options.unestablished,
       nextCheck: options.nextCheck,
@@ -704,7 +712,7 @@ function buildTradeEvidenceReading(params: {
       tone: options.tone,
       quickTitle: options.quickTitle,
       snapshotRows: [
-        ["Public Trade evidence", compactTradeSentences(options.snapshotEvidence, declarationNote, workNote, pendingNote, aggregateNote, customerCautionNote, reviewCautionNote, resolvedNote, limitedNote, unknownNote, categoryNote)],
+        ["Public Trade evidence", compactTradeSentences(options.snapshotEvidence, ...sourceAreaNotes)],
         ["Still unestablished", options.snapshotLimit],
       ],
       summaryRows: [],
@@ -801,6 +809,24 @@ function buildTradeEvidenceReading(params: {
     });
   }
 
+  if (availableReviewContext.length > 0) {
+    return composeReading({
+      headline: "Trade review context shown; outcome not classified",
+      lead:
+        "A public-safe issue-resolution review aggregate is visible. This is review context only; the public view does not classify the outcome as resolved, unresolved, favourable, adverse, or Trade-specific.",
+      evidenceStatement: "Shown: general review context is visible without an outcome classification.",
+      knownLimit: "The public page does not expose private notes, reviewers, allegation detail, licence, insurance, safety approval, or future work quality.",
+      unestablished: "Whether the review context affects this exact Trade decision remains unestablished here.",
+      nextCheck: "Inspect the visible review source text and ask live community or customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, available review context is not work-completion evidence and is not relabelled as resolved or unresolved without structured support.",
+      tone: "neutral",
+      quickTitle: "Review context",
+      snapshotEvidence: "Shown: general review context is visible.",
+      snapshotLimit: "The public view does not classify the review outcome or its Trade-specific meaning.",
+    });
+  }
+
   if (supportConfirmations.length > 0) {
     const hasWitnessAggregate = supportConfirmations.some((row) => isCommunityWitnessOutcome(row));
     return composeReading({
@@ -858,24 +884,6 @@ function buildTradeEvidenceReading(params: {
     });
   }
 
-  if (limitedRows.length > 0) {
-    return composeReading({
-      headline: "Trade evidence row is limited; confirmation still needed",
-      lead:
-        "This successful public extract includes only Trade-related rows whose structured status is a gap, unavailable, or restricted state. Counts or descriptive notes beside those rows are not evidence of completed work or confirmation.",
-      evidenceStatement: "Limited: Trade-related rows are present but do not establish support.",
-      knownLimit: `Source field: ${pointerSourceText(limitedRows, "public evidence extract")}. The public page keeps this separate from loaded qualifying evidence.`,
-      unestablished: "Completed work, customer confirmation, review/correction outcome, licence, insurance, safety, and future quality remain unestablished here.",
-      nextCheck: "Ask for a fresh public extract or direct community/customer confirmation before relying.",
-      activityLimit:
-        "For trade or skilled work, a positive count or explanatory note cannot override an explicit gap, unavailable, or restricted status.",
-      tone: "warning",
-      quickTitle: "Limited row only",
-      snapshotEvidence: "Limited: structured status says shown rows are gap, unavailable, or restricted.",
-      snapshotLimit: "Counts or prose in those rows do not prove completed work or confirmation.",
-    });
-  }
-
   if (unknownRows.length > 0) {
     return composeReading({
       headline: "Trade evidence row unclassified; confirmation needed",
@@ -909,6 +917,24 @@ function buildTradeEvidenceReading(params: {
       quickTitle: "Category only",
       snapshotEvidence: "Shown: a Trade-related public category exists.",
       snapshotLimit: "Specific work outcome and confirmation are not established here.",
+    });
+  }
+
+  if (limitedRows.length > 0) {
+    return composeReading({
+      headline: "Trade evidence row is limited; confirmation still needed",
+      lead:
+        "This successful public extract includes Trade-related rows whose structured status is gap, unavailable, or restricted. Counts or descriptive notes beside those rows are not evidence of completed work or confirmation.",
+      evidenceStatement: "Limited: Trade-related rows are present but do not establish support.",
+      knownLimit: `Source field: ${pointerSourceText(limitedRows, "public evidence extract")}. The public page keeps this separate from loaded qualifying evidence.`,
+      unestablished: "Completed work, customer confirmation, review/correction outcome, licence, insurance, safety, and future quality remain unestablished here.",
+      nextCheck: "Ask for a fresh public extract or direct community/customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, a positive count or explanatory note cannot override an explicit gap, unavailable, or restricted status.",
+      tone: "warning",
+      quickTitle: "Limited row only",
+      snapshotEvidence: "Limited: structured status says shown rows are gap, unavailable, or restricted.",
+      snapshotLimit: "Counts or prose in those rows do not prove completed work or confirmation.",
     });
   }
 

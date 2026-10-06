@@ -730,6 +730,14 @@ async function newSignedInPage(browser, options = {}) {
   return { context, page, requestLog, consoleErrors, pageErrors };
 }
 
+function clearExpectedConsoleErrors(state, expectedPatterns) {
+  const unexpected = state.consoleErrors.filter((message) =>
+    !expectedPatterns.some((pattern) => pattern.test(message))
+  );
+  state.consoleErrors.length = 0;
+  state.consoleErrors.push(...unexpected);
+}
+
 async function closeChecked(state, label) {
   await state.context.close();
   if (state.consoleErrors.length || state.pageErrors.length) {
@@ -738,7 +746,6 @@ async function closeChecked(state, label) {
     );
   }
 }
-
 async function openMoreLimits(page) {
   await page.locator("summary").filter({ hasText: "More limits" }).first().click();
 }
@@ -1504,7 +1511,7 @@ async function runTrustSlipGenerateWithFailedSecondaryRefreshScenario(browser, b
     throw new Error(`Generate with failed secondary refresh expected exactly one reissue, got ${trustSlipReissueWriteCount(state.requestLog)}`);
   }
   assertSignedInHolderReads(state.requestLog, "TrustSlip generate with failed secondary refresh");
-  state.consoleErrors.length = 0;
+  clearExpectedConsoleErrors(state, [/503/, /secondary TrustSlip refresh failed/i]);
   await closeChecked(state, "TrustSlip generate with failed secondary refresh scenario");
 }
 
@@ -1617,7 +1624,6 @@ async function runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, 
     trustSlipSummaryAfterReissueGate.release();
     released = true;
     await wait(150);
-    state.consoleErrors.length = 0;
     await closeChecked(state, "TrustSlip successful issuance with pending secondary refresh scenario");
   }
 
@@ -1737,7 +1743,9 @@ async function runTrustSlipSecondaryReconciliationScenario(browser, baseURL, sce
   for (const text of scenario.visibleText || []) {
     await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible();
   }
-  state.consoleErrors.length = 0;
+  if (scenario.failSecondarySummary) {
+    clearExpectedConsoleErrors(state, [/503/, /secondary TrustSlip refresh failed/i]);
+  }
   await closeChecked(state, `${scenario.label} scenario`);
 }
 
@@ -1857,7 +1865,7 @@ async function runTrustSlipFailedIssuanceScenario(browser, baseURL) {
   if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
     throw new Error(`Failed issuance expected exactly one reissue attempt, got ${trustSlipReissueWriteCount(state.requestLog)}`);
   }
-  state.consoleErrors.length = 0;
+  clearExpectedConsoleErrors(state, [/500/, /TrustSlip issuance failed in smoke/i]);
   await closeChecked(state, "TrustSlip failed issuance scenario");
 }
 
@@ -1925,6 +1933,9 @@ async function runPublicTradeEvidenceScenario(browser, baseURL, scenario) {
     for (const text of scenario.compactText || []) {
       await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 30000 });
     }
+    if (scenario.captureEnv && process.env[scenario.captureEnv]) {
+      await state.page.screenshot({ path: process.env[scenario.captureEnv], fullPage: false });
+    }
     if (scenario.openDetails) {
       await state.page.locator("summary").filter({ hasText: "Trade or Skilled Work Decision Pack" }).first().click();
       const evidenceDetails = state.page.locator("summary").filter({ hasText: "Decision evidence details" }).first();
@@ -1940,7 +1951,6 @@ async function runPublicTradeEvidenceScenario(browser, baseURL, scenario) {
       throw new Error(`${scenario.label} must not call TrustSlip reissue from public verify.`);
     }
   } finally {
-    state.consoleErrors.length = 0;
     await closeChecked(state, `public Trade evidence ${scenario.label} scenario`);
   }
 }
@@ -1985,6 +1995,153 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     absentText: ["Suitable for a low-risk trade check"],
   });
 
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "rich-mixed-trade-states",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        declared_claims: [
+          {
+            key: "shop_service_declaration",
+            label: "Declared work/service claim",
+            status: "available",
+            value: "Electrical repair service listed for local jobs.",
+            source: "marketplace_shop",
+            evidence_count: 1,
+            decision_use: "Claim pointer only; ask for confirmation.",
+          },
+        ],
+        completed_work_pointers: [
+          {
+            key: "completed_work_aggregate",
+            label: "Completed work/customer confirmation",
+            status: "available",
+            value: "Three protected repair jobs were completed.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 3,
+            decision_use: "Aggregate only; ask for direct confirmation.",
+          },
+          {
+            key: "completed_work_customer_feedback",
+            label: "Completed work/customer feedback",
+            status: "customer_feedback_caution",
+            value: "Customer feedback includes a timing caution.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 1,
+            decision_use: "Caution only; inspect context before relying.",
+          },
+        ],
+        confirmation_pointers: [
+          {
+            key: "community_witness_outcome",
+            label: "Community witness outcome",
+            status: "available",
+            value: "Community witness response/outcome aggregate is available.",
+            source: "community_confirmation_requests",
+            evidence_count: 2,
+            decision_use: "Aggregate only; not classified as favourable.",
+          },
+        ],
+        issue_resolution_pointers: [
+          {
+            key: "general_review_pointer",
+            label: "Issue resolution pointer",
+            status: "caution_open_review",
+            value: "A separate review caution remains visible.",
+            source: "community_confirmation_reviews",
+            evidence_count: 1,
+            decision_use: "Caution only; inspect context before relying.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade customer-feedback caution shown; review context first",
+    compactText: [
+      "Declaration shown",
+      "Electrical repair service listed",
+      "Work record shown",
+      "Three protected repair jobs were completed",
+      "Confirmation aggregate shown",
+      "Customer-feedback caution shown",
+      "Review/correction caution shown",
+      "Limited or missing information also shown",
+    ],
+    captureEnv: "GSN_TRADE_RICH_CAPTURE_PATH",
+    openDetails: true,
+    visibleText: ["A separate review caution remains visible", "Declared work/service claim"],
+    absentText: ["successful public extract includes only", "Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "available-review-context-plus-gaps",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        issue_resolution_pointers: [
+          {
+            key: "issue_resolution_review",
+            label: "Issue resolution review",
+            status: "available",
+            value: "General review context is available.",
+            source: "community_confirmation_reviews",
+            evidence_count: 1,
+            decision_use: "Review context only; outcome not classified.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade review context shown; outcome not classified",
+    compactText: ["Available review context shown", "General review context is available", "Limited or missing information also shown"],
+    openDetails: true,
+    visibleText: ["available review context is not work-completion evidence", "outcome is not classified"],
+    absentText: ["Resolved/corrected context shown", "Review/correction caution shown", "Trade outcome evidence shown"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "available-category-plus-gaps",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        categories: [
+          {
+            key: "service_trade",
+            label: "Service trade category",
+            status: "available",
+            value: "Public trade/service category is visible.",
+            source: "trust_events_redacted_extract",
+            evidence_count: 1,
+            decision_use: "Category prompt only; ask for confirmation.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade activity category shown; confirmation still needed",
+    compactText: ["Trade category shown", "Category prompt only", "Limited or missing information also shown"],
+    openDetails: true,
+    visibleText: ["category visibility is a prompt for follow-up"],
+    absentText: ["successful public extract includes only", "No qualifying public Trade records"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "unknown-row-plus-gaps",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        completed_work_pointers: [
+          {
+            key: "completed_work_future_review",
+            label: "Completed work/customer confirmation",
+            status: "pilot_reviewing",
+            value: "A pilot review row is present but not classified.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 1,
+            decision_use: "Unknown status only; do not classify as support or wrongdoing.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade evidence row unclassified; confirmation needed",
+    compactText: ["Unclassified row shown", "pilot_reviewing", "Limited or missing information also shown"],
+    openDetails: true,
+    visibleText: ["not treated as support, wrongdoing, or absence", "Completed work/customer confirmation"],
+    absentText: ["No qualifying public Trade records", "Trade outcome evidence shown", "wrongdoing exists"],
+  });
   await runPublicTradeEvidenceScenario(browser, baseURL, {
     label: "pending-confirmation-plus-work-and-gaps",
     payload: {
@@ -2132,7 +2289,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade review or correction pointer needs review",
-    compactText: ["Work record shown", "Protected trade fulfilment completed", "Review/correction context shown", "Limited or missing information also shown"],
+    compactText: ["Work record shown", "Protected trade fulfilment completed", "Review/correction caution shown", "Limited or missing information also shown"],
     openDetails: true,
     visibleText: ["general review pointer is not treated as a trade-specific dispute", "One correction review is still open"],
     absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
@@ -2168,7 +2325,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       evidenceExtract: tradeEvidenceExtractWithGaps(),
     },
     headline: "Trade evidence row is limited; confirmation still needed",
-    compactText: ["successful public extract includes only Trade-related rows", "Limited or missing information also shown", "Community witness outcome", "Completed work/customer confirmation"],
+    compactText: ["successful public extract includes Trade-related rows", "Limited or missing information also shown", "Community witness outcome", "Completed work/customer confirmation"],
     openDetails: true,
     visibleText: ["Completed work/customer confirmation", "Community witness outcome"],
     absentText: ["Trade evidence unavailable", "no qualifying public Trade records"],
