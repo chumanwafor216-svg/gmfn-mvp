@@ -1,6 +1,7 @@
 /* global console, process, setTimeout, URL, localStorage, document, window */
 
 import { chromium, expect } from "@playwright/test";
+import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,6 +54,55 @@ function apiPathFrom(urlText) {
   return url.pathname;
 }
 
+function extractUrls(text) {
+  return String(text || "").match(/https?:\/\/\S+/g) || [];
+}
+
+function decodeTrustSlipShareRefFromUrl(urlText) {
+  const url = new URL(String(urlText || ""), "https://gsn.local");
+  const match = url.pathname.match(/^\/share\/trustslip\/([^/]+)$/);
+  if (!match) {
+    throw new Error(`Expected short TrustSlip doorway URL, got ${urlText}`);
+  }
+  const ref = decodeURIComponent(match[1]);
+  const padded = ref.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (ref.length % 4)) % 4);
+  return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+}
+
+function assertShortTrustSlipShare(payload, expected = {}) {
+  const urlText = String(payload?.url || "");
+  if (!urlText.includes("/share/trustslip/")) {
+    throw new Error(`TrustSlip share did not use the short doorway URL: ${JSON.stringify(payload)}`);
+  }
+  if (urlText.includes("/t/") || urlText.includes("decision_pack=")) {
+    throw new Error(`TrustSlip share URL exposed the full recipient query instead of the doorway: ${JSON.stringify(payload)}`);
+  }
+  const decoded = decodeTrustSlipShareRefFromUrl(urlText);
+  if (expected.code && decoded.c !== expected.code) {
+    throw new Error(`Short TrustSlip share ref used the wrong code: expected ${expected.code}, got ${decoded.c}`);
+  }
+  if (expected.decisionPack && decoded.p !== expected.decisionPack) {
+    throw new Error(`Short TrustSlip share ref lost purpose: expected ${expected.decisionPack}, got ${decoded.p}`);
+  }
+  if (expected.purposeText && !String(payload?.text || "").includes(expected.purposeText)) {
+    throw new Error(`TrustSlip share text did not preserve purpose context: ${JSON.stringify(payload)}`);
+  }
+  if (expected.communityText && decoded.cl !== expected.communityText && decoded.vsl !== expected.communityText) {
+    throw new Error(`Short TrustSlip share ref lost community context: expected ${expected.communityText}, got ${JSON.stringify(decoded)}`);
+  }
+  if (extractUrls(payload?.text).length !== 0) {
+    throw new Error(`Native TrustSlip share text duplicated the URL instead of using the url field: ${JSON.stringify(payload)}`);
+  }
+  return decoded;
+}
+
+function assertClipboardHasOneShortTrustSlipUrl(text, expected = {}) {
+  const urls = extractUrls(text);
+  if (urls.length !== 1) {
+    throw new Error(`Clipboard fallback must include exactly one URL, got ${urls.length}: ${JSON.stringify(text)}`);
+  }
+  return assertShortTrustSlipShare({ text: String(text || "").replace(urls[0], ""), url: urls[0] }, expected);
+}
 function isApiRequest(urlText) {
   const url = new URL(urlText);
   return (
@@ -1331,29 +1381,28 @@ async function assertPrimaryShareCopyOpenDoNotReissue(page, requestLog) {
   await expect(share).toBeEnabled({ timeout: 30000 });
   await share.click();
   const sharePayloads = await page.evaluate(() => window.__gsnSharePayloads || []);
-  if (!sharePayloads.length || !String(sharePayloads[0]?.text || "").includes("Employment Decision Pack")) {
-    throw new Error(`TrustSlip share did not preserve selected purpose: ${JSON.stringify(sharePayloads)}`);
+  if (!sharePayloads.length || !String(sharePayloads[0]?.text || "").includes("GSN TrustSlip")) {
+    throw new Error(`Native share text did not use compact GSN TrustSlip preview: ${JSON.stringify(sharePayloads)}`);
   }
-  if (!String(sharePayloads[0]?.url || "").includes("decision_pack=employment_decision")) {
-    throw new Error(`TrustSlip share link did not preserve selected purpose: ${JSON.stringify(sharePayloads[0])}`);
-  }
-  if (String(sharePayloads[0]?.text || "").includes("/t/")) {
-    throw new Error(`Native share text duplicated the TrustSlip URL instead of using the url field: ${JSON.stringify(sharePayloads[0])}`);
-  }
-  if (!String(sharePayloads[0]?.text || "").includes("GSN TrustSlip")) {
-    throw new Error(`Native share text did not use compact GSN TrustSlip preview: ${JSON.stringify(sharePayloads[0])}`);
-  }
+  assertShortTrustSlipShare(sharePayloads[0], {
+    code: trustSlipCode,
+    decisionPack: "employment_decision",
+    purposeText: "Employment",
+    communityText: "Boundary Evidence Community",
+  });
 
   await copy.click();
   const clipboardTexts = await page.evaluate(() => window.__gsnClipboardTexts || []);
   const latestClipboard = String(clipboardTexts[clipboardTexts.length - 1] || "");
-  const clipboardUrlCount = (latestClipboard.match(/\/t\//g) || []).length;
-  if (!latestClipboard.includes("GSN TrustSlip") || !latestClipboard.includes("Employment Decision Pack")) {
+  if (!latestClipboard.includes("GSN TrustSlip") || !latestClipboard.includes("Employment")) {
     throw new Error(`Clipboard fallback did not keep compact purpose context: ${JSON.stringify(latestClipboard)}`);
   }
-  if (clipboardUrlCount !== 1) {
-    throw new Error(`Clipboard fallback must include exactly one TrustSlip URL, got ${clipboardUrlCount}: ${JSON.stringify(latestClipboard)}`);
-  }
+  assertClipboardHasOneShortTrustSlipUrl(latestClipboard, {
+    code: trustSlipCode,
+    decisionPack: "employment_decision",
+    purposeText: "Employment",
+    communityText: "Boundary Evidence Community",
+  });
   await openLink.evaluate((node) => {
     node.addEventListener("click", (event) => event.preventDefault(), { once: true });
   });
@@ -1606,15 +1655,12 @@ async function runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, 
     await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
     const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
     const latestShare = sharePayloads[sharePayloads.length - 1] || {};
-    if (!String(latestShare.url || "").includes(`/t/${encodeURIComponent(pendingCode)}`)) {
-      throw new Error(`Pending-refresh share URL did not use the new code: ${JSON.stringify(latestShare)}`);
-    }
-    if (!String(latestShare.url || "").includes("decision_pack=employment_decision")) {
-      throw new Error(`Pending-refresh share URL did not preserve purpose: ${JSON.stringify(latestShare)}`);
-    }
-    if (!String(latestShare.text || "").includes("Employment Decision Pack")) {
-      throw new Error(`Pending-refresh share text did not preserve purpose context: ${JSON.stringify(latestShare)}`);
-    }
+    assertShortTrustSlipShare(latestShare, {
+      code: pendingCode,
+      decisionPack: "employment_decision",
+      purposeText: "Employment",
+      communityText: "Boundary Evidence Community",
+    });
     if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
       throw new Error(
         `Pending-refresh scenario expected exactly one reissue, got ${trustSlipReissueWriteCount(state.requestLog)}`
@@ -1714,12 +1760,12 @@ async function runTrustSlipSecondaryReconciliationScenario(browser, baseURL, sce
     await share.click();
     const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
     const latestShare = sharePayloads[sharePayloads.length - 1] || {};
-    if (!String(latestShare.url || "").includes(`/t/${encodeURIComponent(code)}`)) {
-      throw new Error(`${scenario.label} share URL did not use the confirmed code: ${JSON.stringify(latestShare)}`);
-    }
-    if (!String(latestShare.text || "").includes("Employment Decision Pack")) {
-      throw new Error(`${scenario.label} share text did not preserve purpose: ${JSON.stringify(latestShare)}`);
-    }
+    assertShortTrustSlipShare(latestShare, {
+      code,
+      decisionPack: "employment_decision",
+      purposeText: "Employment",
+      communityText: "Boundary Evidence Community",
+    });
   }
 
   if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
@@ -1888,12 +1934,12 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
   await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
   let sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
   let latest = sharePayloads[sharePayloads.length - 1] || {};
-  if (!String(latest.url || "").includes("decision_pack=housing_decision")) {
-    throw new Error(`Purpose change share link did not preserve housing purpose: ${JSON.stringify(latest)}`);
-  }
-  if (!String(latest.text || "").includes("Housing Decision Pack")) {
-    throw new Error(`Purpose change share message did not preserve housing purpose: ${JSON.stringify(latest)}`);
-  }
+  assertShortTrustSlipShare(latest, {
+    code: trustSlipCode,
+    decisionPack: "housing_decision",
+    purposeText: "Housing",
+    communityText: "Boundary Evidence Community",
+  });
   if (String(latest.text || "").includes("Optional external follow-up contact")) {
     throw new Error(`Ordinary Housing share leaked external-contact wording: ${JSON.stringify(latest)}`);
   }
@@ -1904,15 +1950,12 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
   await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
   sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
   latest = sharePayloads[sharePayloads.length - 1] || {};
-  if (!String(latest.url || "").includes("decision_pack=trade_check")) {
-    throw new Error(`Trade share link did not preserve Trade purpose: ${JSON.stringify(latest)}`);
-  }
-  if (!String(latest.text || "").includes("Trade or Skilled Work Decision Pack")) {
-    throw new Error(`Trade share message did not preserve Trade purpose: ${JSON.stringify(latest)}`);
-  }
-  if ((String(latest.text || "").match(/\/t\//g) || []).length !== 0) {
-    throw new Error(`Native Trade share text duplicated the TrustSlip URL: ${JSON.stringify(latest)}`);
-  }
+  assertShortTrustSlipShare(latest, {
+    code: trustSlipCode,
+    decisionPack: "trade_check",
+    purposeText: "Trade",
+    communityText: "Boundary Evidence Community",
+  });
   const after = trustSlipReissueWriteCount(state.requestLog);
   if (after !== before) {
     throw new Error(`Purpose change share called TrustSlip reissue: before=${before}; after=${after}`);

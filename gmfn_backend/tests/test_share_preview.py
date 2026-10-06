@@ -1,6 +1,32 @@
+import base64
+import json
+from io import BytesIO
+
+from PIL import Image
 from sqlalchemy import text
 
 from app.db.database import engine
+
+
+def _trustslip_share_ref(**overrides):
+    payload = {
+        "v": 1,
+        "c": "GSN-TRUSTSLIP-EMPLOYMENT",
+        "p": "employment_decision",
+        "ap": "Employment Decision Pack",
+        "q": "Is there enough evidence to continue an employment conversation?",
+        "f": "Role, consistency, contribution, leadership or service signals, and the next verification step.",
+        "s": "community_specific",
+        "vs": "community_specific",
+        "vsl": "GNS Marketplace",
+        "vsb": "Live confirmation requests should be answered by GNS Marketplace.",
+        "cid": "8",
+        "cl": "GNS Marketplace",
+        "cr": "GMFN-C-GNS-MARKETPLACE",
+    }
+    payload.update(overrides)
+    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
 
 
 def _seed_public_shop():
@@ -156,3 +182,51 @@ def test_share_join_card_png_uses_invite_branding(client, monkeypatch):
     assert res.headers["content-type"].startswith("image/png")
     assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(res.content) > 10_000
+
+
+def test_trustslip_share_preview_exposes_route_specific_open_graph_card(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    share_ref = _trustslip_share_ref()
+
+    res = client.get(f"/share/trustslip/{share_ref}")
+
+    assert res.status_code == 200
+    assert "GSN TrustSlip" in res.text
+    assert 'property="og:title" content="GSN TrustSlip"' in res.text
+    assert "GSN Public Record" not in res.text
+    assert "Employment Decision Pack - GNS Marketplace" in res.text
+    assert "https://api.gsn.example/share/trustslip/" in res.text
+    assert "/card.png" in res.text
+    assert "https://pilot.gsn.example/t/GSN-TRUSTSLIP-EMPLOYMENT" in res.text
+    assert "decision_pack=employment_decision" in res.text
+    assert "access_purpose=Employment+Decision+Pack" in res.text
+    assert "verification_community_label=GNS+Marketplace" in res.text
+    assert "verification_community_id=8" in res.text
+    assert "approved" not in res.text.lower()
+    assert "low risk" not in res.text.lower()
+
+
+def test_trustslip_share_card_png_uses_institutional_trustslip_branding(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    share_ref = _trustslip_share_ref()
+
+    res = client.get(f"/share/trustslip/{share_ref}/card.png")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("image/png")
+    assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
+    with Image.open(BytesIO(res.content)) as image:
+        assert image.size == (1200, 630)
+    assert len(res.content) > 10_000
+
+
+def test_trustslip_share_preview_rejects_malformed_reference_without_leakage(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+
+    res = client.get("/share/trustslip/not-a-real-ref")
+
+    assert res.status_code == 404
+    assert "GSN-TRUSTSLIP-EMPLOYMENT" not in res.text
+    assert "GNS Marketplace" not in res.text

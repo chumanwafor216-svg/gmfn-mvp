@@ -43,7 +43,7 @@ import {
 } from "../lib/decisionPacks";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
-import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
+import { publicApiUrl, publicCommunityMemberCredentialPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
@@ -1085,6 +1085,23 @@ function withPublicDecisionPackQuery(
   } catch {
     return raw;
   }
+}
+
+function encodeTrustSlipShareRef(params: Record<string, string>): string {
+  const payload: Record<string, string> = {};
+  Object.entries(params).forEach(([key, value]) => {
+    const cleanValue = safeStr(value);
+    if (cleanValue) payload[key] = cleanValue;
+  });
+
+  const jsonText = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(jsonText);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 async function fetchFirstJson(
@@ -3509,7 +3526,26 @@ export default function TrustSlipPage() {
     return withPublicDecisionPackQuery(basePath, publicDecisionPackQuery);
   }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
-  const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl);
+  const trustSlipShareDoorwayUrl = useMemo(() => {
+    if (!trustSlipCode) return "";
+    const shareRef = encodeTrustSlipShareRef({
+      v: "1",
+      c: trustSlipCode,
+      p: publicDecisionPackQuery.decision_pack,
+      ap: publicDecisionPackQuery.access_purpose,
+      q: publicDecisionPackQuery.recipient_question,
+      f: publicDecisionPackQuery.decision_focus,
+      s: publicDecisionPackQuery.access_scope,
+      vs: publicDecisionPackQuery.verification_scope,
+      vsl: publicDecisionPackQuery.verification_scope_label,
+      vsb: publicDecisionPackQuery.verification_scope_boundary,
+      cid: publicDecisionPackQuery.verification_community_id,
+      cl: publicDecisionPackQuery.verification_community_label,
+      cr: publicDecisionPackQuery.verification_community_ref,
+    });
+    return shareRef ? publicApiUrl(`/share/trustslip/${encodeURIComponent(shareRef)}`) : "";
+  }, [publicDecisionPackQuery, trustSlipCode]);
+  const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl && trustSlipShareDoorwayUrl);
   const trustSlipShareStatus = safeStr(
     summary?.status || summary?.merchant_view?.status || ""
   ).toLowerCase();
@@ -4852,16 +4888,15 @@ export default function TrustSlipPage() {
   function buildPublicDecisionPackShareText(options: { includeUrl?: boolean } = {}) {
     if (!hasUsableCurrentTrustSlipShare) return "";
 
+    const purposeLabel = selectedPurposeOption.shortLabel || selectedPurposeOption.label;
+    const scopeLabel = firstTruthy(selectedVerificationCommunityName, verificationScopeLabel);
     const lines = [
       "GSN TrustSlip",
-      `Purpose: ${selectedPurposeOption.label}`,
-      `Community: ${verificationScopeLabel}`,
-      `Code: ${trustSlipCode}`,
+      [purposeLabel, scopeLabel].filter(Boolean).join(" - "),
       trustSlipDetailsPending
-        ? "Open to review shared evidence and current status. Some document details are still loading."
-        : "Open to review shared evidence and current status.",
-      "Evidence for judgement only; not approval, suitability, licence, insurance, payment instruction, or guarantee.",
-      options.includeUrl ? verifyUrl : "",
+        ? "Open to review the shared evidence and its current status. Some document details are still loading."
+        : "Open to review the shared evidence and its current status.",
+      options.includeUrl ? trustSlipShareDoorwayUrl : "",
     ];
 
     return lines
@@ -4890,7 +4925,7 @@ export default function TrustSlipPage() {
         await nativeShare.call(navigator, {
           title: "GSN TrustSlip",
           text,
-          url: verifyUrl,
+          url: trustSlipShareDoorwayUrl,
         });
         showNotice("success", "Share sheet opened.");
         return;

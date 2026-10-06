@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 import os
 from io import BytesIO
 from html import escape
@@ -7,7 +9,7 @@ from textwrap import wrap
 from typing import Any, Optional
 from urllib.parse import quote, urlencode
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from sqlalchemy.orm import Session
@@ -270,6 +272,96 @@ def _join_share_card_url(
     }
     query = urlencode({key: value for key, value in params.items() if _safe_str(value)})
     return f"{base}/share/join/{safe_code}/card.png{'?' + query if query else ''}"
+
+
+
+TRUSTSLIP_SHARE_QUERY_FIELDS = {
+    "p": "decision_pack",
+    "ap": "access_purpose",
+    "q": "recipient_question",
+    "f": "decision_focus",
+    "s": "access_scope",
+    "vs": "verification_scope",
+    "vsl": "verification_scope_label",
+    "vsb": "verification_scope_boundary",
+    "cid": "verification_community_id",
+    "cl": "verification_community_label",
+    "cr": "verification_community_ref",
+}
+
+
+def _decode_trustslip_share_ref(share_ref: str) -> dict[str, str]:
+    clean_ref = _safe_str(share_ref)
+    if not clean_ref or len(clean_ref) > 3000:
+        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+    if any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_" for char in clean_ref):
+        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+
+    try:
+        padded = clean_ref + "=" * (-len(clean_ref) % 4)
+        raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
+        payload = json.loads(raw)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found") from exc
+
+    if not isinstance(payload, dict) or _safe_str(payload.get("v")) not in {"1", "1.0"}:
+        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+
+    code = _safe_str(payload.get("c"))
+    if not code or any(char in code for char in "/?#\\"):
+        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+
+    context: dict[str, str] = {"c": code}
+    for key in ("p", "ap", "q", "f", "s", "vs", "vsl", "vsb", "cid", "cl", "cr"):
+        value = _safe_str(payload.get(key))
+        if value:
+            context[key] = value[:500]
+    return context
+
+
+def _trustslip_frontend_url(context: dict[str, str]) -> str:
+    base = _public_frontend_origin()
+    code = quote(context["c"], safe="")
+    query = urlencode(
+        {
+            param_name: context.get(short_key, "")
+            for short_key, param_name in TRUSTSLIP_SHARE_QUERY_FIELDS.items()
+            if _safe_str(context.get(short_key, ""))
+        }
+    )
+    return f"{base}/t/{code}{'?' + query if query else ''}"
+
+
+def _trustslip_share_page_url(request: Request, share_ref: str) -> str:
+    base = _public_api_origin(request)
+    return f"{base}/share/trustslip/{quote(_safe_str(share_ref), safe='')}"
+
+
+def _trustslip_share_card_url(request: Request, share_ref: str) -> str:
+    base = _public_api_origin(request)
+    return f"{base}/share/trustslip/{quote(_safe_str(share_ref), safe='')}/card.png"
+
+
+def _trustslip_preview_payload(share_ref: str) -> dict[str, Any]:
+    context = _decode_trustslip_share_ref(share_ref)
+    purpose = _safe_str(context.get("ap")) or _safe_str(context.get("p"), "TrustSlip")
+    community = (
+        _safe_str(context.get("cl"))
+        or _safe_str(context.get("vsl"))
+        or _safe_str(context.get("cr"))
+        or _safe_str(context.get("s"), "Shared evidence")
+    )
+    description_context = " - ".join(item for item in (purpose, community) if _safe_str(item))
+    description = f"{description_context}. Open to review the shared evidence and its current status." if description_context else "Open to review the shared evidence and its current status."
+    return {
+        "title": "GSN TrustSlip",
+        "description": description,
+        "purpose": purpose,
+        "community": community,
+        "code": context["c"],
+        "target_url": _trustslip_frontend_url(context),
+        "context": context,
+    }
 
 
 def _get_join_invite_context(
@@ -709,6 +801,130 @@ def _draw_share_card_png(
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
+
+
+
+def _draw_trustslip_card_png(payload: dict[str, str]) -> bytes:
+    image = _gradient_card((CARD_WIDTH, CARD_HEIGHT))
+    draw = ImageDraw.Draw(image)
+
+    font_kicker = _font(28, bold=True)
+    font_title = _font(72, bold=True)
+    font_purpose = _font(48, bold=True)
+    font_scope = _font(34, bold=True)
+    font_cta = _font(32, bold=True)
+    font_code = _font(24, bold=True)
+
+    draw.rounded_rectangle((86, 76, 284, 142), radius=33, fill="#F7FAFF")
+    draw.text((128, 96), "GSN", font=_font(30, bold=True), fill="#D6AA45")
+    draw.text((314, 98), "GLOBAL SUPPORT NETWORK", font=font_kicker, fill="#F7FAFF")
+
+    trustslip_lines = _png_text_lines("TRUSTSLIP", draw=draw, font=font_title, max_width=780, max_lines=1)
+    after_title = _draw_lines(draw, trustslip_lines, x=94, y=188, font=font_title, fill="#FFFFFF", gap=0)
+
+    purpose_lines = _png_text_lines(payload["purpose"], draw=draw, font=font_purpose, max_width=760, max_lines=2)
+    after_purpose = _draw_lines(draw, purpose_lines, x=98, y=after_title + 22, font=font_purpose, fill="#F2CF77", gap=4)
+
+    scope_lines = _png_text_lines(payload["community"], draw=draw, font=font_scope, max_width=720, max_lines=2)
+    _draw_lines(draw, scope_lines, x=100, y=after_purpose + 18, font=font_scope, fill="#D8E7F5", gap=4)
+
+    for x, y, scale in ((842, 126, 0.96), (904, 306, 1.2)):
+        w = int(118 * scale)
+        h = int(142 * scale)
+        points = [
+            (x, y),
+            (x + w, y + int(44 * scale)),
+            (x + w, y + int(90 * scale)),
+            (x + int(82 * scale), y + h),
+            (x + int(36 * scale), y + h),
+            (x, y + int(90 * scale)),
+        ]
+        draw.line([*points, points[0]], fill=(255, 255, 255, 18), width=max(2, int(4 * scale)))
+
+    draw.ellipse((874, 228, 1002, 356), fill="#D6AA45")
+    draw.line((918, 292, 958, 292), fill="#07172C", width=10)
+    draw.line((944, 274, 970, 292, 944, 310), fill="#07172C", width=10, joint="curve")
+    cta_text = "TAP TO VERIFY"
+    cta_width = _text_width(draw, cta_text, font_cta)
+    draw.text((938 - cta_width / 2, 398), cta_text, font=font_cta, fill="#FFFFFF")
+
+    code_text = f"CODE {payload['code']}"
+    code_width = int(_text_width(draw, code_text, font_code)) + 58
+    draw.rounded_rectangle((92, 520, min(92 + code_width, 1110), 574), radius=27, fill="#0B2D4A", outline="#D6AA45", width=2)
+    draw.text((122, 535), code_text, font=font_code, fill="#F2CF77")
+
+    out = BytesIO()
+    image.convert("RGB").save(out, format="PNG", optimize=True)
+    return out.getvalue()
+
+
+@router.get("/trustslip/{share_ref}", response_class=HTMLResponse)
+def public_trustslip_share_preview(
+    share_ref: str,
+    request: Request,
+) -> HTMLResponse:
+    payload = _trustslip_preview_payload(share_ref)
+    target_url = payload["target_url"]
+    share_url = _trustslip_share_page_url(request, share_ref)
+    image_url = _trustslip_share_card_url(request, share_ref)
+    title = escape(payload["title"])
+    description = escape(payload["description"])
+    target = escape(target_url, quote=True)
+
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{escape(share_url, quote=True)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Global Support Network" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{escape(share_url, quote=True)}" />
+    <meta property="og:image" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN TrustSlip verification poster" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
+    <meta http-equiv="refresh" content="1;url={target}" />
+    <style>
+      body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
+      main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
+      a {{ color: #0B4EA2; font-weight: 800; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Opening the GSN TrustSlip...</p>
+      <p><a href="{target}">Open TrustSlip now</a></p>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/trustslip/{share_ref}/card.png")
+def public_trustslip_share_card_png(
+    share_ref: str,
+) -> Response:
+    payload = _trustslip_preview_payload(share_ref)
+    png = _draw_trustslip_card_png(payload)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 @router.get("/join/{code}", response_class=HTMLResponse)
