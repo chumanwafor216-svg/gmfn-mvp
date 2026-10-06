@@ -332,6 +332,7 @@ type TrustSlipSummary = {
   verification_code?: string | null;
   token?: string | null;
   public_verify_url?: string | null;
+  trust_slip_details_pending?: boolean | null;
   community_id?: string | number | null;
   community_global_id?: string | null;
   community_code?: string | null;
@@ -2520,15 +2521,22 @@ function mergeFreshTrustSlipSummary(
 
   const issuedAt = firstTruthy(reissueResult.issued_at, reissueResult.created_at);
   const expiresAt = firstTruthy(reissueResult.expires_at);
-  const freshStatus = firstTruthy(reissueResult.status, "active");
+  const freshStatus = firstTruthy(reissueResult.status, baseSummary.status, "active");
   const freshVerifyUrl = trustSlipVerifyFrontendPath(
     freshCode,
     firstTruthy(reissueResult.public_verify_url, baseSummary.public_verify_url)
   );
+  const activeFlag = firstFlag(
+    reissueResult.active,
+    reissueResult?.merchant_view?.active,
+    baseSummary.active,
+    baseSummary.merchant_view?.active
+  );
+  const currentFlag = firstFlag(reissueResult.is_current, reissueResult?.merchant_view?.is_current);
 
   return {
     ...baseSummary,
-    active: true,
+    active: activeFlag ?? baseSummary.active,
     status: freshStatus,
     code: freshCode,
     verification_code: freshCode,
@@ -2538,10 +2546,10 @@ function mergeFreshTrustSlipSummary(
     created_at: issuedAt || baseSummary.created_at,
     issued_at: issuedAt || baseSummary.issued_at,
     expires_at: expiresAt || baseSummary.expires_at,
-    is_current: true,
+    is_current: currentFlag ?? true,
     merchant_view: {
       ...(baseSummary.merchant_view || {}),
-      active: true,
+      active: activeFlag ?? baseSummary.merchant_view?.active,
       status: freshStatus,
       code: freshCode,
       merchant_summary: {
@@ -2556,6 +2564,52 @@ function mergeFreshTrustSlipSummary(
       expires_at: expiresAt || baseSummary.merchant_summary?.expires_at,
     },
   };
+}
+
+function buildConfirmedTrustSlipIssueSummary(
+  baseSummary: TrustSlipSummary | null,
+  reissueResult: any,
+  issuingCommunityId: number
+): TrustSlipSummary | null {
+  const freshCode = trustSlipCodeFromResult(reissueResult);
+  if (!freshCode || !issuingCommunityId) return null;
+
+  const resultStatus = firstTruthy(reissueResult?.status, reissueResult?.merchant_view?.status, "active").toLowerCase();
+  if (["expired", "revoked", "frozen"].includes(resultStatus)) return null;
+
+  const resultActiveFlag = firstFlag(reissueResult?.active, reissueResult?.merchant_view?.active);
+  if (resultActiveFlag === false) return null;
+
+  const resultCurrentFlag = firstFlag(reissueResult?.is_current, reissueResult?.merchant_view?.is_current);
+  if (resultCurrentFlag === false) return null;
+
+  const resultExpiry = firstTruthy(reissueResult?.expires_at, reissueResult?.merchant_view?.expires_at);
+  if (isPastDate(resultExpiry)) return null;
+
+  const resultCommunityId = positiveNumberId(
+    firstTruthy(reissueResult?.community_id, reissueResult?.clan_id, reissueResult?.merchant_view?.community_id)
+  );
+  if (resultCommunityId && resultCommunityId !== issuingCommunityId) return null;
+
+  const normalizedResult = normalizeTrustSlipSummary({
+    ...reissueResult,
+    code: freshCode,
+    verification_code: freshCode,
+    verification_token: freshCode,
+    token: freshCode,
+    status: firstTruthy(reissueResult?.status, "active"),
+    community_id: firstTruthy(reissueResult?.community_id, issuingCommunityId),
+    clan_id: positiveNumberId(firstTruthy(reissueResult?.clan_id, issuingCommunityId)),
+  });
+  const mergedSummary = mergeFreshTrustSlipSummary(normalizedResult || baseSummary, reissueResult);
+  if (!mergedSummary) return null;
+
+  return {
+    ...mergedSummary,
+    community_id: firstTruthy(mergedSummary.community_id, issuingCommunityId),
+    clan_id: positiveNumberId(firstTruthy(mergedSummary.clan_id, issuingCommunityId)),
+    trust_slip_details_pending: true,
+  } as TrustSlipSummary;
 }
 
 export default function TrustSlipPage() {
@@ -2640,6 +2694,7 @@ export default function TrustSlipPage() {
     useState("");
   const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(true);
   const trustSlipSetupControlsTouchedRef = useRef(false);
+  const trustSlipPurposeQueryRef = useRef("");
   const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
     useState<TrustSlipPaperPackKey>("share");
   useEffect(() => {
@@ -2647,10 +2702,11 @@ export default function TrustSlipPage() {
     const matchedPack = GSN_DECISION_PACKS.find(
       (option) => option.key === requestedPack
     );
-    if (!matchedPack || matchedPack.key === selectedTrustSlipPurpose) return;
+    const queryKey = `${location.search}|${matchedPack?.key || ""}`;
+    if (!matchedPack || trustSlipPurposeQueryRef.current === queryKey) return;
+    trustSlipPurposeQueryRef.current = queryKey;
     setSelectedTrustSlipPurpose(matchedPack.key);
-  }, [location.search, selectedTrustSlipPurpose]);
-
+  }, [location.search]);
   const selectedPurposeOption = useMemo(
     () =>
       GSN_DECISION_PACKS.find(
@@ -2932,6 +2988,8 @@ export default function TrustSlipPage() {
   }, [applyTrustSlipPageData, loading, selectedClanId]);
 
   async function refreshTrustSlip() {
+    if (refreshing) return;
+
     if (
       !trustSlipCode &&
       safeStr(summary?.reason).toLowerCase() === "phone_unverified"
@@ -2964,29 +3022,56 @@ export default function TrustSlipPage() {
     setRefreshing(true);
     setConfirmationBusy(false);
     setMerchantRailBusy(false);
-
+    let confirmedIssueApplied = false;
     try {
       const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
         community_id: activeIssuingCommunityId,
       });
-      const optimisticSummary = normalizeTrustSlipSummary({
-        ...reissueResult,
-        active: true,
-        status: firstTruthy(reissueResult?.status, "active"),
-        community_id: firstTruthy(reissueResult?.community_id, activeIssuingCommunityId),
-        clan_id: firstTruthy(reissueResult?.clan_id, activeIssuingCommunityId),
-      });
-      const data = await fetchTrustSlipPageData(activeIssuingCommunityId, {
-        forceFresh: true,
-        networkFirst: true,
-      }).catch(() => ({
+      const confirmedSummary = buildConfirmedTrustSlipIssueSummary(
+        summary,
+        reissueResult,
+        activeIssuingCommunityId
+      );
+      const issuedCode = trustSlipCodeFromResult(confirmedSummary || reissueResult);
+
+      if (
+        loadSeq !== trustSlipLoadSeqRef.current ||
+        contextKey !== trustSlipContextRef.current
+      ) {
+        return;
+      }
+
+      if (!confirmedSummary || !issuedCode) {
+        setTrustSlipSetupSubmitted(false);
+        showNotice(
+          "error",
+          confirmedSummary?.reason
+            ? trustSlipIssueNoticeText({ detail: confirmedSummary })
+            : "TrustSlip is not ready yet. GSN did not return a current code for this community."
+        );
+        return;
+      }
+
+      applyTrustSlipPageData({
         me,
         clan: currentClan,
         clans: memberCommunityOptions,
-        summary: optimisticSummary,
-      }));
+        summary: confirmedSummary,
+      });
+      setConfirmationOutcome(null);
+      setMerchantRailLink(null);
+      setTrustSlipSetupSubmitted(true);
+      setActiveTrustSlipPaperPack("share");
+      confirmedIssueApplied = true;
+      setRefreshing(false);
+      showNotice("success", trustSlipReissueSuccessNotice(reissueResult));
+
+      const data = await fetchTrustSlipPageData(activeIssuingCommunityId, {
+        forceFresh: true,
+        networkFirst: true,
+      });
       if (
         loadSeq !== trustSlipLoadSeqRef.current ||
         contextKey !== trustSlipContextRef.current
@@ -2994,35 +3079,25 @@ export default function TrustSlipPage() {
         return;
       }
       const mergedSummary = mergeFreshTrustSlipSummary(data.summary, reissueResult);
-      const issuedCode = firstTruthy(
-        trustSlipCodeFromResult(reissueResult),
-        trustSlipCodeFromResult(mergedSummary)
-      );
       applyTrustSlipPageData({
         ...data,
-        summary: mergedSummary,
+        summary: mergedSummary
+          ? ({ ...mergedSummary, trust_slip_details_pending: false } as TrustSlipSummary)
+          : confirmedSummary,
       });
-      setConfirmationOutcome(null);
-      setMerchantRailLink(null);
-      if (!issuedCode) {
-        setTrustSlipSetupSubmitted(false);
-        showNotice(
-          "error",
-          mergedSummary?.reason
-            ? trustSlipIssueNoticeText({ detail: mergedSummary })
-            : "TrustSlip is not ready yet. GSN did not return a current code for this community."
-        );
-        return;
-      }
-      setTrustSlipSetupSubmitted(true);
-      setActiveTrustSlipPaperPack("share");
-      showNotice("success", trustSlipReissueSuccessNotice(reissueResult));
     } catch (error: any) {
       if (
         loadSeq === trustSlipLoadSeqRef.current &&
         contextKey === trustSlipContextRef.current
       ) {
-        showNotice("error", trustSlipIssueNoticeText(error));
+        if (confirmedIssueApplied) {
+          showNotice(
+            "success",
+            "Your TrustSlip was created. Some document details could not be loaded."
+          );
+        } else {
+          showNotice("error", trustSlipIssueNoticeText(error));
+        }
       }
     } finally {
       if (loadSeq === trustSlipLoadSeqRef.current) {
@@ -3265,6 +3340,7 @@ export default function TrustSlipPage() {
   trustSlipCodeRef.current = trustSlipCode;
   const trustSlipIssueReason = safeStr(summary?.reason).toLowerCase();
   const trustSlipSummaryLoading = trustSlipSummaryHydrating && !summary;
+  const trustSlipDetailsPending = Boolean((summary as any)?.trust_slip_details_pending);
   const trustSlipBlockedByPhone =
     !trustSlipCode &&
     (trustSlipIssueReason === "phone_unverified" ||
@@ -3309,11 +3385,21 @@ export default function TrustSlipPage() {
   }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
   const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl);
+  const trustSlipShareStatus = safeStr(
+    summary?.status || summary?.merchant_view?.status || ""
+  ).toLowerCase();
+  const trustSlipShareBlockedByCurrentness = Boolean(
+    summary?.is_current === false ||
+      summary?.merchant_view?.active === false ||
+      ["expired", "revoked", "frozen"].includes(trustSlipShareStatus) ||
+      isPastDate(summary?.merchant_view?.expires_at || summary?.expires_at)
+  );
   const hasUsableCurrentTrustSlipShare =
-    hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;
+    hasUsableTrustSlipShare &&
+    !trustSlipNeedsSelectedCommunityRefresh &&
+    !trustSlipShareBlockedByCurrentness;
   const trustSlipHolderDocumentVisible =
     hasUsableTrustSlipShare && trustSlipSetupSubmitted;
-
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
     [merchantRailLink?.path]
@@ -3411,6 +3497,8 @@ export default function TrustSlipPage() {
       ? "This TrustSlip exists, but the current public record window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
       : rawTrustSlipStatus === "revoked" || rawTrustSlipStatus === "frozen"
       ? "Do not rely on this TrustSlip until the status is cleared and a fresh verification record is available."
+      : trustSlipCode && trustSlipDetailsPending
+      ? "Your TrustSlip was created. Some document details are still loading."
       : trustSlipCode
       ? "This TrustSlip has a code and can be checked through the verify page."
       : "A public TrustSlip code is not ready yet. Refresh TrustSlip, and if it still stays here, complete the required phone or identity step first.";
@@ -4638,6 +4726,21 @@ export default function TrustSlipPage() {
 
   function buildPublicDecisionPackShareText() {
     if (!hasUsableCurrentTrustSlipShare) return "";
+
+    if (trustSlipDetailsPending) {
+      return [
+        "GSN public Decision Pack link",
+        `Decision Pack: ${selectedPurposeOption.label}`,
+        `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
+        `Verification scope: ${verificationScopeLabel}`,
+        `Public TrustSlip check: ${verifyUrl}`,
+        "Your TrustSlip was created. Some document details are still loading; use the verify page and live community confirmation for higher-risk decisions.",
+        "This is public decision support. It reduces uncertainty, does not eliminate risk, does not expose private Trust Passport contents, and does not make the decision for the recipient.",
+      ]
+        .map((line) => safeStr(line))
+        .filter(Boolean)
+        .join("\n");
+    }
 
     return [
       "GSN public Decision Pack link",
@@ -6184,6 +6287,372 @@ export default function TrustSlipPage() {
             ) : null}
           </section>
 
+          <section
+            data-gsn-trustslip-primary-journey="true"
+            style={{
+              ...trustSlipPaperPanel("#FFFFFF"),
+              ...trustSlipScrollClearance(isCompact),
+              gridColumn: "1 / -1",
+              display: "grid",
+              gap: isCompact ? 12 : 14,
+            }}
+          >
+            <TrustPaperWatermark name="qr" color="#0B63D1" size={210} opacity={0.032} />
+            <div style={trustSlipPanelContent()}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(250px, 0.42fr)",
+                  gap: 12,
+                  alignItems: "start",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    TrustSlip journey
+                  </div>
+                  <div style={trustSlipPaperTitle(isCompact)}>
+                    Purpose to community to share
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#526579",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    Generate from the selected community, then share the returned public code.
+                  </div>
+                </div>
+                <div
+                  data-gsn-trustslip-result-code="true"
+                  style={{
+                    ...documentMetaCard(hasUsableCurrentTrustSlipShare ? "#F0FBF4" : "#FFF8E6"),
+                    display: "grid",
+                    gap: 5,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), color: hasUsableCurrentTrustSlipShare ? "#166534" : "#7A4A00" }}>
+                    Current code
+                  </div>
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: isCompact ? 22 : 26,
+                      fontWeight: 1000,
+                      lineHeight: 1,
+                      letterSpacing: 0,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {trustSlipCodeLabel}
+                  </div>
+                  <div
+                    style={{
+                      color: trustSlipSecurityTone === "active" ? "#166534" : "#7A4A00",
+                      fontSize: 11,
+                      fontWeight: 1000,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {trustSlipSecurityLabel} - {trustSlipPublicStatus}
+                  </div>
+                  <div
+                    style={{
+                      color: "#526579",
+                      fontSize: 11,
+                      fontWeight: 850,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {hasUsableCurrentTrustSlipShare
+                      ? `Ready for ${selectedPurposeOption.label}.`
+                      : trustSlipSelectedCommunityRefreshText || trustSlipStatusNote}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                  gap: 10,
+                }}
+              >
+                <label
+                  data-gsn-trustslip-primary-purpose="true"
+                  style={{
+                    ...documentMetaCard("#FFFDF7"),
+                    display: "grid",
+                    gap: 7,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    1. Purpose
+                  </span>
+                  <select
+                    aria-label="Choose Decision Pack"
+                    value={selectedTrustSlipPurpose}
+                    onChange={(event) => {
+                      trustSlipSetupControlsTouchedRef.current = true;
+                      setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey);
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 48,
+                      borderRadius: 14,
+                      border: "1px solid rgba(37,78,119,0.2)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      padding: "0 40px 0 12px",
+                    }}
+                  >
+                    {GSN_DECISION_PACKS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    style={{
+                      color: "#254E77",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 900,
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {selectedPurposeOption.recipientQuestion}
+                  </span>
+                </label>
+
+                <label
+                  data-gsn-trustslip-primary-community="true"
+                  style={{
+                    ...documentMetaCard("#F8FBFF"),
+                    display: "grid",
+                    gap: 7,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    2. Community
+                  </span>
+                  <select
+                    aria-label="Choose TrustSlip community"
+                    value={verificationScopeSelectValue}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      trustSlipSetupControlsTouchedRef.current = true;
+                      if (value === "all_visible_communities") {
+                        setVisibilityScope("all_visible_communities");
+                        return;
+                      }
+
+                      setVisibilityScope("community_specific");
+                      setSelectedIssuingCommunityOptionId(value.replace(/^community:/, ""));
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 48,
+                      borderRadius: 14,
+                      border: "1px solid rgba(37,78,119,0.2)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      padding: "0 40px 0 12px",
+                    }}
+                  >
+                    {verificationCommunityOptions.map((option) => (
+                      <option key={option.id} value={`community:${option.id}`}>
+                        {option.label}
+                      </option>
+                    ))}
+                    <option value="all_visible_communities">All visible community context</option>
+                  </select>
+                  <span
+                    style={{
+                      color: "#526579",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 850,
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {verificationScopeBoundary}
+                  </span>
+                </label>
+              </div>
+
+              <CardActionRow style={{ marginTop: 12 }}>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    if (trustSlipBlockedByPhone) {
+                      navigateWithOrigin(navigate, routes.identityPhone, location);
+                      return;
+                    }
+                    if (trustSlipBlockedByCommunity) {
+                      navigateWithOrigin(navigate, routes.communityHome, location);
+                      return;
+                    }
+                    void refreshTrustSlip();
+                  }}
+                  busy={refreshing}
+                  busyLabel={trustSlipHasSetupBlocker ? "Opening..." : "Generating..."}
+                  fullWidth={isCompact}
+                  stableHeight={isCompact ? 54 : 52}
+                  minWidth={isCompact ? undefined : 190}
+                  debugId="trust-slip.primary.generate"
+                  style={trustSlipPrimaryActionStyle(isCompact)}
+                >
+                  {trustSlipIconBadge(
+                    trustSlipBlockedByPhone
+                      ? "phone"
+                      : trustSlipBlockedByCommunity
+                        ? "community"
+                        : "refresh",
+                    isCompact ? 26 : 28,
+                    "blue"
+                  )}
+                  {trustSlipBlockedByPhone
+                    ? "Verify phone"
+                    : trustSlipBlockedByCommunity
+                      ? "Open Community"
+                      : "Generate TrustSlip"}
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={() => void sharePublicDecisionPack()}
+                  disabled={!hasUsableCurrentTrustSlipShare}
+                  fullWidth={isCompact}
+                  stableHeight={isCompact ? 54 : 52}
+                  minWidth={isCompact ? undefined : 176}
+                  debugId="trust-slip.primary.share"
+                  style={trustSlipActionButtonStyle(isCompact)}
+                >
+                  {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
+                  Share TrustSlip
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={copyPublicDecisionPackShareNote}
+                  disabled={!hasUsableCurrentTrustSlipShare}
+                  fullWidth={isCompact}
+                  stableHeight={isCompact ? 54 : 52}
+                  minWidth={isCompact ? undefined : 176}
+                  debugId="trust-slip.primary.copy-message"
+                  style={trustSlipActionButtonStyle(isCompact)}
+                >
+                  {trustSlipIconBadge("copy", isCompact ? 26 : 28, "navy")}
+                  Copy message
+                </SecondaryButton>
+                {hasUsableCurrentTrustSlipShare ? (
+                  <StableCtaLink
+                    to={verifyPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    kind="soft"
+                    stableHeight={isCompact ? 54 : 52}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 158}
+                    debugId="trust-slip.primary.open-link"
+                    style={trustSlipActionButtonStyle(isCompact)}
+                  >
+                    {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
+                    Open link
+                  </StableCtaLink>
+                ) : null}
+              </CardActionRow>
+            </div>
+          </section>
+
+          <details
+            data-gsn-trustslip-full-disclosure="closed-by-default"
+            style={{
+              gridColumn: "1 / -1",
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <summary
+              data-cta-id="trust-slip.full-document.toggle"
+              style={{
+                ...trustSlipActionButtonStyle(isCompact),
+                minHeight: isCompact ? 52 : 50,
+                display: "grid",
+                gridTemplateColumns: "30px minmax(0, 1fr)",
+                gap: 9,
+                alignItems: "center",
+                padding: "10px 12px",
+                cursor: "pointer",
+                listStyle: "none",
+              }}
+            >
+              {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: "#07172C",
+                    fontSize: isCompact ? 14 : 15,
+                    fontWeight: 1000,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  View full TrustSlip
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 3,
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.28,
+                  }}
+                >
+                  Official holder document, evidence map, limits, QR and secondary controls.
+                </span>
+              </span>
+            </summary>
+
+            {trustSlipDetailsPending ? (
+              <div
+                data-gsn-trustslip-detail-loading="true"
+                style={{
+                  marginTop: 12,
+                  borderRadius: 16,
+                  border: "1px solid rgba(214,170,69,0.28)",
+                  background: "#FFF8E6",
+                  color: "#7A4A00",
+                  padding: isCompact ? "11px 12px" : "13px 14px",
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                Your TrustSlip was created. Some document details are still loading; use the public code and selected community now, and refresh the full document before relying on deeper evidence.
+              </div>
+            ) : null}
+            <div
+              data-gsn-trustslip-full-document="true"
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "minmax(0, 1fr)"
+                  : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 14,
+                alignItems: "start",
+              }}
+            >
           <header
             style={{
               ...trustSlipHeroCard(),
@@ -7758,6 +8227,8 @@ export default function TrustSlipPage() {
           <div style={{ order: 10, gridColumn: "1 / -1" }}>
             <TrustPaperSecurityFooter text="Human-first TrustSlip: clear identity, clear status, clear limits, clear verification." />
           </div>
+            </div>
+          </details>
         </section>
         )}
       </div>

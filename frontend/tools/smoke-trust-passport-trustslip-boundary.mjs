@@ -310,9 +310,11 @@ async function installApiMocks(page, requestLog, options = {}) {
   const clanRows = options.clanRows || [clanPayload()];
   const secondaryReadGate = options.secondaryReadGate || null;
   const trustSlipSummaryGate = options.trustSlipSummaryGate || null;
+  const trustSlipSummaryAfterReissueGate = options.trustSlipSummaryAfterReissueGate || null;
   const clanListGate = options.clanListGate || null;
   const gateClanListAfter = options.gateClanListAfter ?? 0;
   let clanListReadCount = 0;
+  let trustSlipReissueCount = 0;
 
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -354,7 +356,41 @@ async function installApiMocks(page, requestLog, options = {}) {
       ].includes(path)
     ) {
       if (trustSlipSummaryGate) await trustSlipSummaryGate.wait();
+      if (trustSlipSummaryAfterReissueGate && trustSlipReissueCount > 0) {
+        await trustSlipSummaryAfterReissueGate.wait();
+        if (options.trustSlipSummaryAfterReissueResult) {
+          await route.fulfill(json(options.trustSlipSummaryAfterReissueResult));
+          return;
+        }
+      }
+      if (options.failTrustSlipSummaryAfterReissue && trustSlipReissueCount > 0) {
+        await route.fulfill(json({ detail: "secondary TrustSlip refresh failed" }, 503));
+        return;
+      }
       await route.fulfill(json(trustSlipSummary));
+      return;
+    }
+
+    if (method === "POST" && path === "/trust-slips/me/reissue") {
+      trustSlipReissueCount += 1;
+      if (options.failTrustSlipReissue) {
+        await route.fulfill(json({ detail: "TrustSlip issuance failed in smoke" }, 500));
+        return;
+      }
+      await route.fulfill(
+        json(
+          options.trustSlipReissueResult ||
+            trustSlipSummaryPayload({
+              code: "GSN-TRUSTSLIP-REISSUED",
+              verification_code: "GSN-TRUSTSLIP-REISSUED",
+              verification_token: "GSN-TRUSTSLIP-REISSUED",
+              token: "GSN-TRUSTSLIP-REISSUED",
+              public_verify_url: "/t/GSN-TRUSTSLIP-REISSUED",
+              issued_at: "2026-10-06T10:00:00.000Z",
+              created_at: "2026-10-06T10:00:00.000Z",
+            })
+        )
+      );
       return;
     }
 
@@ -487,6 +523,13 @@ async function newSignedInPage(browser, options = {}) {
     localStorage.clear();
     localStorage.setItem("access_token", "SIGNED_IN_TRUST_BOUNDARY_TOKEN");
     localStorage.setItem("gmfn_selected_clan_id", String(selectedClanStorageId));
+    window.__gsnSharePayloads = [];
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (payload) => {
+        window.__gsnSharePayloads.push(payload);
+      },
+    });
   }, options.selectedClanStorageId ?? selectedClanId);
   const page = await context.newPage();
   const consoleErrors = [];
@@ -511,6 +554,64 @@ async function closeChecked(state, label) {
 async function openMoreLimits(page) {
   await page.locator("summary").filter({ hasText: "More limits" }).first().click();
 }
+async function assertPrimaryTrustSlipMobileJourneyVisible(page, expectedCode = trustSlipCode) {
+  const primaryJourney = page.locator('[data-gsn-trustslip-primary-journey="true"]');
+  const resultCode = page.locator('[data-gsn-trustslip-result-code="true"]');
+  const shareButton = page.locator('[data-cta-id="trust-slip.primary.share"]');
+
+  await expect(primaryJourney).toBeVisible({ timeout: 30000 });
+  await expect(resultCode.getByText(expectedCode, { exact: false })).toBeVisible({ timeout: 30000 });
+  await expect(shareButton).toBeVisible({ timeout: 30000 });
+
+  const metrics = await page.evaluate(() => {
+    const journey = document.querySelector('[data-gsn-trustslip-primary-journey="true"]');
+    const code = document.querySelector('[data-gsn-trustslip-result-code="true"]');
+    const share = document.querySelector('[data-cta-id="trust-slip.primary.share"]');
+    const box = (node) => {
+      const rect = node?.getBoundingClientRect();
+      return rect
+        ? { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height }
+        : null;
+    };
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      journey: box(journey),
+      code: box(code),
+      share: box(share),
+    };
+  });
+
+  if (!metrics.journey || !metrics.code || !metrics.share) {
+    throw new Error(`TrustSlip compact journey metrics missing: ${JSON.stringify(metrics)}`);
+  }
+  const overflowWidth = Math.max(metrics.documentScrollWidth, metrics.bodyScrollWidth);
+  if (overflowWidth > metrics.viewportWidth + 2) {
+    throw new Error(`TrustSlip compact journey overflowed mobile viewport: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.code.top < -2 || metrics.code.bottom > metrics.viewportHeight + 2) {
+    throw new Error(`TrustSlip code was not actually visible in mobile viewport: ${JSON.stringify(metrics)}`);
+  }
+  if (metrics.share.top < -2 || metrics.share.bottom > metrics.viewportHeight + 2) {
+    throw new Error(`TrustSlip share action was not actually visible in mobile viewport: ${JSON.stringify(metrics)}`);
+  }
+}
+
+async function openFullTrustSlipDocument(page) {
+  const disclosure = page.locator('[data-gsn-trustslip-full-disclosure="closed-by-default"]');
+  const holderCertificate = page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]');
+
+  await expect(disclosure).toBeVisible({ timeout: 30000 });
+  await expect(disclosure).not.toHaveAttribute("open", /./);
+  await expect(holderCertificate).toBeHidden();
+  await disclosure.locator('summary').first().click();
+  await expect(disclosure).toHaveAttribute("open", "");
+  await expect(holderCertificate).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText("TrustSlip holder", { exact: true })).toBeVisible({ timeout: 30000 });
+}
+
 async function openTrustSlipHolderFromSetup(page, options = {}) {
   const setupPanel = page.locator('[data-gsn-trustslip-setup-only="true"]');
   const holderCertificate = page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]');
@@ -533,13 +634,11 @@ async function openTrustSlipHolderFromSetup(page, options = {}) {
     }
   }
 
+  await assertPrimaryTrustSlipMobileJourneyVisible(page, options.expectedCode || trustSlipCode);
   await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
-  await expect(page.getByText("TrustSlip holder", { exact: true })).toBeVisible({
-    timeout: 30000,
-  });
+  await expect(holderCertificate).toBeHidden();
   return true;
 }
-
 async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
   const expectedPath = `/t/${encodeURIComponent(trustSlipCode)}`;
   const expectedParams = {
@@ -894,6 +993,8 @@ async function runTrustSlipScenario(browser, baseURL) {
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
   await expect(state.page.locator('[data-gsn-trustslip-purpose-desktop-buttons="true"]')).toHaveCount(0);
+  await assertPrimaryShareCopyOpenDoNotReissue(state.page, state.requestLog);
+  await openFullTrustSlipDocument(state.page);
   await assertTrustSlipQrCarriesSelectedDecisionPack(state.page, baseURL);
   await expect(state.page.locator('[data-gsn-trustslip-paper-pack-shell="true"]')).toBeVisible();
   const holderDocumentOrder = await state.page.evaluate(() => {
@@ -992,6 +1093,7 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
     await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
 
     if (scenario.paperPack) {
+      await openFullTrustSlipDocument(state.page);
       await state.page.locator(`[data-cta-id="trust-slip.paper-pack.${scenario.paperPack}"]`).click();
       const packPanel = state.page.locator(`[data-gsn-trustslip-paper-pack-panel="${scenario.paperPack}"]`);
       await expect(packPanel).toBeVisible();
@@ -1025,10 +1127,50 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
   await closeChecked(state, `${scenario.label} scenario`);
 }
 
+async function assertPrimaryShareCopyOpenDoNotReissue(page, requestLog) {
+  const before = trustSlipReissueWriteCount(requestLog);
+  const share = page.locator('[data-cta-id="trust-slip.primary.share"]');
+  const copy = page.locator('[data-cta-id="trust-slip.primary.copy-message"]');
+  const openLink = page.locator('[data-cta-id="trust-slip.primary.open-link"]');
+
+  await expect(share).toBeEnabled({ timeout: 30000 });
+  await share.click();
+  const sharePayloads = await page.evaluate(() => window.__gsnSharePayloads || []);
+  if (!sharePayloads.length || !String(sharePayloads[0]?.text || "").includes("Employment Decision Pack")) {
+    throw new Error(`TrustSlip share did not preserve selected purpose: ${JSON.stringify(sharePayloads)}`);
+  }
+  if (!String(sharePayloads[0]?.url || "").includes("decision_pack=employment_decision")) {
+    throw new Error(`TrustSlip share link did not preserve selected purpose: ${JSON.stringify(sharePayloads[0])}`);
+  }
+
+  await copy.click();
+  await openLink.evaluate((node) => {
+    node.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  });
+  await openLink.click();
+  await wait(150);
+
+  const after = trustSlipReissueWriteCount(requestLog);
+  if (after !== before) {
+    throw new Error(`Share/copy/open called TrustSlip reissue: before=${before}; after=${after}`);
+  }
+}
 function trustSlipReissueWriteCount(requestLog) {
   return requestLog.filter((entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue").length;
 }
 
+function trustSlipHolderReadCount(requestLog) {
+  return requestLog.filter(
+    (entry) =>
+      entry.method === "GET" &&
+      [
+        "/trust-slips/me/summary",
+        "/trust-slips/me",
+        "/trust-slips/me-summary",
+        "/trust-slips/summary/me",
+      ].includes(entry.path)
+  ).length;
+}
 function recoveredBlessedTrustSlipSummary(overrides = {}) {
   return trustSlipSummaryPayload({
     code: recoveredTrustSlipCode,
@@ -1061,38 +1203,31 @@ async function runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL) {
 
   const holderCertificate = state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]');
   const setupPanel = state.page.locator('[data-gsn-trustslip-setup-only="true"]');
-  const scopeSelect = state.page.getByLabel("Choose TrustSlip verification scope");
+  const scopeSelect = state.page.getByLabel("Choose TrustSlip community");
 
   await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
+  await expect(holderCertificate).toBeHidden();
   await expect(setupPanel).toHaveCount(0);
   await expect(scopeSelect).toHaveValue(`community:${selectedClanId}`);
   await expect(state.page.getByText(recoveredTrustSlipCode, { exact: false }).first()).toBeVisible();
-  await expect(state.page.getByRole("button", { name: /Community Blessed Satch family Marketplace/ })).toBeVisible();
-  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.share"]').first()).toBeEnabled();
-  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').first()).toHaveAttribute("href", new RegExp(recoveredTrustSlipCode));
-  await expect(state.page.locator('[data-cta-id="trust-slip.paper.open-verify"]').first()).toBeEnabled();
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]').first()).toBeEnabled();
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]').first()).toHaveAttribute("href", new RegExp(recoveredTrustSlipCode));
   if (trustSlipReissueWriteCount(state.requestLog) !== 0) {
     throw new Error("Recovered existing TrustSlip mismatch path must not POST /trust-slips/me/reissue.");
   }
 
-  await state.page.locator('[data-cta-id="trust-slip.paper.change-setup"]').click();
-  await expect(setupPanel).toBeVisible({ timeout: 30000 });
-  const setupScopeSelect = state.page.locator('[data-gsn-trustslip-verification-scope="setup"] select');
-  await setupScopeSelect.selectOption(`community:${homelandClanId}`);
-  await expect(setupScopeSelect).toHaveValue(`community:${homelandClanId}`);
+  await scopeSelect.selectOption(`community:${homelandClanId}`);
+  await expect(scopeSelect).toHaveValue(`community:${homelandClanId}`);
   await expect(state.page.getByText("Generate TrustSlip", { exact: true })).toBeVisible();
-  await expect(state.page.locator('[data-cta-id="trust-slip.setup.share-current"]')).toHaveCount(0);
-  await expect(state.page.locator('[data-cta-id="trust-slip.setup.open-current"]')).toHaveCount(0);
-  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.share"]').filter({ visible: true })).toHaveCount(0);
-  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').filter({ visible: true })).toHaveCount(0);
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]')).toBeDisabled();
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]').filter({ visible: true })).toHaveCount(0);
   if (trustSlipReissueWriteCount(state.requestLog) !== 0) {
     throw new Error("Deliberate selected-community change must not auto issue or reissue TrustSlip.");
   }
-assertSignedInHolderReads(state.requestLog, "recovered existing TrustSlip anchor mismatch");
+  assertSignedInHolderReads(state.requestLog, "recovered existing TrustSlip anchor mismatch");
   assertNoPublicVerifyRead(state.requestLog, "recovered existing TrustSlip anchor mismatch");
   await closeChecked(state, "recovered existing TrustSlip anchor mismatch scenario");
 }
-
 async function runTrustSlipSummaryAfterClanListScenario(browser, baseURL) {
   const trustSlipSummaryGate = createApiGate();
   const state = await newSignedInPage(browser, {
@@ -1111,7 +1246,7 @@ async function runTrustSlipSummaryAfterClanListScenario(browser, baseURL) {
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
     timeout: 30000,
   });
-  await expect(state.page.getByLabel("Choose TrustSlip verification scope")).toHaveValue(`community:${selectedClanId}`);
+  await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
   await closeChecked(state, "TrustSlip summary-after-clan-list scenario");
 }
 
@@ -1138,8 +1273,215 @@ async function runTrustSlipClanListAfterSummaryScenario(browser, baseURL) {
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
     timeout: 30000,
   });
-  await expect(state.page.getByLabel("Choose TrustSlip verification scope")).toHaveValue(`community:${selectedClanId}`);
+  await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
   await closeChecked(state, "TrustSlip clan-list-after-summary scenario");
+}
+async function runTrustSlipGenerateWithFailedSecondaryRefreshScenario(browser, baseURL) {
+  const state = await newSignedInPage(browser, {
+    trustSlipSummary: trustSlipSummaryPayload({
+      code: "",
+      verification_code: "",
+      verification_token: "",
+      token: "",
+      public_verify_url: "",
+      merchant_view: { code: "", verification_code: "", verification_token: "", token: "", public_verify_url: "" },
+    }),
+    failTrustSlipSummaryAfterReissue: true,
+  });
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
+  await state.page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+  await assertPrimaryTrustSlipMobileJourneyVisible(state.page, "GSN-TRUSTSLIP-REISSUED");
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]')).toBeEnabled();
+  if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
+    throw new Error(`Generate with failed secondary refresh expected exactly one reissue, got ${trustSlipReissueWriteCount(state.requestLog)}`);
+  }
+  assertSignedInHolderReads(state.requestLog, "TrustSlip generate with failed secondary refresh");
+  state.consoleErrors.length = 0;
+  await closeChecked(state, "TrustSlip generate with failed secondary refresh scenario");
+}
+
+async function runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, baseURL) {
+  const trustSlipSummaryAfterReissueGate = createApiGate();
+  const pendingCode = "GSN-TRUSTSLIP-PENDING-REFRESH";
+  const blankInitialSummary = trustSlipSummaryPayload({
+    code: "",
+    verification_code: "",
+    verification_token: "",
+    token: "",
+    public_verify_url: "",
+    merchant_view: { code: "", verification_code: "", verification_token: "", public_verify_url: "" },
+  });
+  const issuedSummary = trustSlipSummaryPayload({
+    code: pendingCode,
+    verification_code: pendingCode,
+    verification_token: pendingCode,
+    token: pendingCode,
+    public_verify_url: `/t/${encodeURIComponent(pendingCode)}`,
+    issued_at: "2026-10-06T10:30:00.000Z",
+    created_at: "2026-10-06T10:30:00.000Z",
+    community: "Boundary Evidence Community",
+    community_id: selectedClanId,
+    clan_id: selectedClanId,
+    community_global_id: "GMFN-C-TRUST-BOUNDARY",
+    community_code: "GMFN-C-TRUST-BOUNDARY",
+    merchant_summary: {
+      community: "Boundary Evidence Community",
+    },
+  });
+  const state = await newSignedInPage(browser, {
+    trustSlipSummary: blankInitialSummary,
+    trustSlipReissueResult: issuedSummary,
+    trustSlipSummaryAfterReissueGate,
+    trustSlipSummaryAfterReissueResult: issuedSummary,
+  });
+  let released = false;
+
+  try {
+    await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+
+    await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
+    const holderReadsBeforeGenerate = trustSlipHolderReadCount(state.requestLog);
+    await state.page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+    await waitForRequest(
+      state.requestLog,
+      (entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue",
+      "pending-secondary TrustSlip issuance request"
+    );
+    await expect
+      .poll(() => trustSlipHolderReadCount(state.requestLog), { timeout: 7000 })
+      .toBeGreaterThan(holderReadsBeforeGenerate);
+
+    await assertPrimaryTrustSlipMobileJourneyVisible(state.page, pendingCode);
+    await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue(
+      "employment_decision"
+    );
+    await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
+    await expect(state.page.locator('[data-gsn-trustslip-full-disclosure="closed-by-default"]')).not.toHaveAttribute(
+      "open",
+      /./
+    );
+    await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toBeHidden();
+
+    const compactMetrics = await state.page.evaluate(() => {
+      const box = (selector) => {
+        const node = document.querySelector(selector);
+        const rect = node?.getBoundingClientRect();
+        return rect
+          ? { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height }
+          : null;
+      };
+      return {
+        viewportHeight: window.innerHeight,
+        purpose: box('[data-gsn-trustslip-primary-purpose="true"]'),
+        community: box('[data-gsn-trustslip-primary-community="true"]'),
+        code: box('[data-gsn-trustslip-result-code="true"]'),
+        share: box('[data-cta-id="trust-slip.primary.share"]'),
+      };
+    });
+    for (const [name, rect] of Object.entries(compactMetrics)) {
+      if (name === "viewportHeight") continue;
+      if (!rect || rect.top < -2 || rect.bottom > compactMetrics.viewportHeight + 2) {
+        throw new Error(`Pending-refresh ${name} control was not visible in compact mobile viewport: ${JSON.stringify(compactMetrics)}`);
+      }
+    }
+
+    await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
+    const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
+    const latestShare = sharePayloads[sharePayloads.length - 1] || {};
+    if (!String(latestShare.url || "").includes(`/t/${encodeURIComponent(pendingCode)}`)) {
+      throw new Error(`Pending-refresh share URL did not use the new code: ${JSON.stringify(latestShare)}`);
+    }
+    if (!String(latestShare.url || "").includes("decision_pack=employment_decision")) {
+      throw new Error(`Pending-refresh share URL did not preserve purpose: ${JSON.stringify(latestShare)}`);
+    }
+    if (!String(latestShare.text || "").includes("Employment Decision Pack")) {
+      throw new Error(`Pending-refresh share text did not preserve purpose context: ${JSON.stringify(latestShare)}`);
+    }
+    if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
+      throw new Error(
+        `Pending-refresh scenario expected exactly one reissue, got ${trustSlipReissueWriteCount(state.requestLog)}`
+      );
+    }
+  } finally {
+    trustSlipSummaryAfterReissueGate.release();
+    released = true;
+    await wait(150);
+    state.consoleErrors.length = 0;
+    await closeChecked(state, "TrustSlip successful issuance with pending secondary refresh scenario");
+  }
+
+  if (!released) {
+    throw new Error("Pending-refresh secondary gate was not released during cleanup.");
+  }
+}
+async function runTrustSlipFailedIssuanceScenario(browser, baseURL) {
+  const state = await newSignedInPage(browser, {
+    trustSlipSummary: trustSlipSummaryPayload({
+      code: "",
+      verification_code: "",
+      verification_token: "",
+      token: "",
+      public_verify_url: "",
+      merchant_view: { code: "", verification_code: "", verification_token: "", public_verify_url: "" },
+    }),
+    failTrustSlipReissue: true,
+  });
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
+  await state.page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue",
+    "failed TrustSlip issuance request"
+  );
+  await expect(state.page.locator('[data-gsn-trustslip-primary-journey="true"]')).toHaveCount(0);
+  await expect(state.page.locator('[data-cta-id="trust-slip.setup.share-current"]')).toHaveCount(0);
+  if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
+    throw new Error(`Failed issuance expected exactly one reissue attempt, got ${trustSlipReissueWriteCount(state.requestLog)}`);
+  }
+  state.consoleErrors.length = 0;
+  await closeChecked(state, "TrustSlip failed issuance scenario");
+}
+
+async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
+  const state = await newSignedInPage(browser);
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await openTrustSlipHolderFromSetup(state.page);
+  const before = trustSlipReissueWriteCount(state.requestLog);
+  await state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select').selectOption("housing_decision");
+  await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue("housing_decision");
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /decision_pack=housing_decision/);
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]')).toBeEnabled();
+  await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
+  const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
+  const latest = sharePayloads[sharePayloads.length - 1] || {};
+  if (!String(latest.url || "").includes("decision_pack=housing_decision")) {
+    throw new Error(`Purpose change share link did not preserve housing purpose: ${JSON.stringify(latest)}`);
+  }
+  if (!String(latest.text || "").includes("Housing Decision Pack")) {
+    throw new Error(`Purpose change share message did not preserve housing purpose: ${JSON.stringify(latest)}`);
+  }
+  const after = trustSlipReissueWriteCount(state.requestLog);
+  if (after !== before) {
+    throw new Error(`Purpose change share called TrustSlip reissue: before=${before}; after=${after}`);
+  }
+  await closeChecked(state, "TrustSlip purpose change share scenario");
 }
 async function main() {
   let server;
@@ -1159,8 +1501,12 @@ async function main() {
     const baseURL = `http://127.0.0.1:${port}`;
 
     browser = await chromium.launch({ headless: true });
+    await runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, baseURL);
     await runTrustPassportScenario(browser, baseURL);
     await runTrustSlipScenario(browser, baseURL);
+    await runTrustSlipGenerateWithFailedSecondaryRefreshScenario(browser, baseURL);
+    await runTrustSlipFailedIssuanceScenario(browser, baseURL);
+    await runTrustSlipPurposeChangeShareScenario(browser, baseURL);
     await runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL);
     await runTrustSlipSummaryAfterClanListScenario(browser, baseURL);
     await runTrustSlipClanListAfterSummaryScenario(browser, baseURL);
@@ -1191,7 +1537,7 @@ async function main() {
       },
       visibleText: [
         "Revoked",
-        "Do not rely until cleared",
+        "Do not rely on this TrustSlip",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1203,7 +1549,7 @@ async function main() {
       },
       visibleText: [
         "Frozen",
-        "Do not rely until cleared",
+        "Do not rely on this TrustSlip",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1314,7 +1660,7 @@ async function main() {
         "Trust Passport / TrustSlip boundary smoke passed:",
         "/app/trust rendered the private Trust Passport certificate;",
         "/app/trust-slip rendered the holder TrustSlip certificate;",
-        "expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
+        "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, failed-issuance, reopened, purpose-change, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
         "signed-in holder reads carried auth;",
         "holder QR and public pack link carried the same selected Decision Pack context;",
         "public verify was not called on holder/private page load;",
