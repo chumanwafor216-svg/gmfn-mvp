@@ -359,8 +359,8 @@ const DECISION_PACK_DECISION_TEMPLATES: Record<DecisionPackKey, DecisionPackDeci
     caveat: "It does not prove affordability, right to rent, legal tenancy checks, guaranteed rent, or future conduct.",
   },
   trade_check: {
-    headline: "Low-risk trade check can continue; larger work needs confirmation",
-    conclusion: "use this for a low-risk trade or skilled-work conversation, then ask for completed-work or live community evidence before larger work.",
+    headline: "Trade evidence must come from shown records, not the selected purpose",
+    conclusion: "review the public trade evidence actually shown, then ask for completed-work, customer, or live community confirmation before relying.",
     caveat: "It does not prove trade licence, insurance, home safety, work quality, or future performance.",
   },
   supplier_decision: {
@@ -400,8 +400,13 @@ export function buildDecisionPackDecisionReading(
   const firstMissingLink = cleanDecisionPackText(pack.missingLinks[0]);
   const validNow = context.validNow !== false;
 
+  const purposeFocusReason =
+    pack.key === "trade_check"
+      ? `Because this pack is for ${pack.shortLabel.toLowerCase()}, ${pack.focus} is the question to check, not proof that the holder has that evidence.`
+      : `Because this pack is for ${pack.shortLabel.toLowerCase()}, GSN reads ${pack.focus}`;
+
   const because = [
-    `Because this pack is for ${pack.shortLabel.toLowerCase()}, GSN reads ${pack.focus}`,
+    purposeFocusReason,
     `Because the selected scope is ${scope}, the judgement must stay tied to ${community}.`,
     currentVisibleEvidence
       ? `Because the current visible evidence says: ${currentVisibleEvidence}.`

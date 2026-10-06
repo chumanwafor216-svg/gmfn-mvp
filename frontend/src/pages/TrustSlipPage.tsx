@@ -4849,40 +4849,26 @@ export default function TrustSlipPage() {
     housingExternalContactValue,
   ]);
 
-  function buildPublicDecisionPackShareText() {
+  function buildPublicDecisionPackShareText(options: { includeUrl?: boolean } = {}) {
     if (!hasUsableCurrentTrustSlipShare) return "";
 
-    if (trustSlipDetailsPending) {
-      return [
-        "GSN public Decision Pack link",
-        `Decision Pack: ${selectedPurposeOption.label}`,
-        `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
-        `Verification scope: ${verificationScopeLabel}`,
-        `Public TrustSlip check: ${verifyUrl}`,
-        "Your TrustSlip was created. Some document details are still loading; use the verify page and live community confirmation for higher-risk decisions.",
-        "This is public decision support. It reduces uncertainty, does not eliminate risk, does not expose private Trust Passport contents, and does not make the decision for the recipient.",
-      ]
-        .map((line) => safeStr(line))
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    return [
-      "GSN public Decision Pack link",
-      `Decision Pack: ${selectedPurposeOption.label}`,
-      `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
-      `Evidence focus: ${selectedPurposeOption.focus}`,
-      `Verification scope: ${verificationScopeLabel}`,
-      `Decision reading: ${decisionPackDecisionReading.headline}`,
-      decisionPackDecisionReading.conclusion,
-      ...decisionPackDecisionReading.because.slice(0, 3),
-      `Public TrustSlip check: ${verifyUrl}`,
+    const lines = [
+      "GSN TrustSlip",
+      `Purpose: ${selectedPurposeOption.label}`,
+      `Community: ${verificationScopeLabel}`,
+      `Code: ${trustSlipCode}`,
+      trustSlipDetailsPending
+        ? "Open to review shared evidence and current status. Some document details are still loading."
+        : "Open to review shared evidence and current status.",
+      "Evidence for judgement only; not approval, suitability, licence, insurance, payment instruction, or guarantee.",
       housingExternalContact
         ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
         : "",
       housingExternalContact ? housingExternalContact.boundary : "",
-      "This is public decision support. It reduces uncertainty, does not eliminate risk, does not expose private Trust Passport contents, and does not make the decision for the recipient.",
-    ]
+      options.includeUrl ? verifyUrl : "",
+    ];
+
+    return lines
       .map((line) => safeStr(line))
       .filter(Boolean)
       .join("\n");
@@ -4890,13 +4876,13 @@ export default function TrustSlipPage() {
 
   function copyPublicDecisionPackShareNote() {
     void handleCopy(
-      buildPublicDecisionPackShareText(),
+      buildPublicDecisionPackShareText({ includeUrl: true }),
       "Public Decision Pack note copied.",
       "This TrustSlip link is not ready yet."
     );
   }
   async function sharePublicDecisionPack() {
-    const text = buildPublicDecisionPackShareText();
+    const text = buildPublicDecisionPackShareText({ includeUrl: false });
     if (!hasUsableCurrentTrustSlipShare || !text) {
       showNotice("error", "This TrustSlip link is not ready yet.");
       return;
@@ -4917,7 +4903,7 @@ export default function TrustSlipPage() {
       }
     }
 
-    void handleCopy(text, "TrustSlip share message copied.", "This TrustSlip link is not ready yet.");
+    void handleCopy(buildPublicDecisionPackShareText({ includeUrl: true }), "TrustSlip share message copied.", "This TrustSlip link is not ready yet.");
   }
 
   function decisionPackEvidenceRowsForShare() {

@@ -158,6 +158,7 @@ type TrustSlipVerifyPublicPaperProps = {
     }>;
     recommendedChecks: string[];
     evidenceExtract: {
+      available?: boolean;
       source: string;
       sourceNote: string;
       evidenceScope: {
@@ -440,6 +441,224 @@ function hasVisibleDecisionEvidence(status: unknown, evidenceCount: unknown, val
   );
 }
 
+type PublicDecisionPointer = {
+  key?: string;
+  label?: string;
+  status?: string;
+  value?: string;
+  source?: string;
+  evidenceCount?: number | null;
+  decisionUse?: string;
+};
+
+type TradeEvidenceReading = {
+  headline: string;
+  summary: string;
+  evidenceStatement: string;
+  knownLimit: string;
+  unestablished: string;
+  nextCheck: string;
+  activityLimit: string;
+  tone: "trust" | "warning" | "neutral";
+  quickTitle: string;
+  snapshotRows: Array<[string, string]>;
+  summaryRows: Array<[string, string]>;
+};
+
+function structuredStatusIsCaution(value: unknown): boolean {
+  const status = safeText(value).toLowerCase();
+  return ["caution", "dispute", "open", "review", "unresolved", "blocked", "failed"].some((token) =>
+    status.includes(token)
+  );
+}
+
+function structuredKeyIsTradeCategory(value: unknown): boolean {
+  const key = safeText(value).toLowerCase();
+  return ["service_trade", "merchant_public_status", "relationship_evidence", "holder_role"].includes(key);
+}
+
+function visibleDecisionPointers<T extends PublicDecisionPointer>(rows: T[]): T[] {
+  return rows.filter((row) => hasVisibleDecisionEvidence(row.status, row.evidenceCount, row.value));
+}
+
+function buildTradeEvidenceReading(params: {
+  validNow: boolean;
+  extractAvailable?: boolean;
+  categories: PublicDecisionPointer[];
+  declaredClaims: PublicDecisionPointer[];
+  fulfillmentOutcomePointers: PublicDecisionPointer[];
+  completedWorkPointers: PublicDecisionPointer[];
+  confirmationPointers: PublicDecisionPointer[];
+  issueResolutionPointers: PublicDecisionPointer[];
+}): TradeEvidenceReading {
+  const visibleTradeCategories = visibleDecisionPointers(params.categories).filter((category) =>
+    structuredKeyIsTradeCategory(category.key)
+  );
+  const visibleDeclaredClaims = visibleDecisionPointers(params.declaredClaims);
+  const visibleFulfillment = visibleDecisionPointers(params.fulfillmentOutcomePointers);
+  const visibleCompletedWork = visibleDecisionPointers(params.completedWorkPointers);
+  const visibleConfirmations = visibleDecisionPointers(params.confirmationPointers);
+  const visibleIssues = visibleDecisionPointers(params.issueResolutionPointers);
+  const hasCaution = [...visibleFulfillment, ...visibleIssues].some((row) => structuredStatusIsCaution(row.status));
+  const hasDeclaredClaim = visibleDeclaredClaims.length > 0;
+  const hasTradeCategory = visibleTradeCategories.length > 0;
+
+  const unavailable: TradeEvidenceReading = {
+    headline: "Trade evidence unavailable on this public view",
+    summary:
+      "The public Trade evidence extract did not load in a usable form, so the reader should not treat missing details as a negative record or as confirmation.",
+    evidenceStatement: "Unavailable: Trade-specific public evidence was not included in this view.",
+    knownLimit: "Unavailable data is different from no qualifying records.",
+    unestablished: "Completed work, customer confirmation, dispute status, licence, insurance, safety outcome, and future quality remain unestablished here.",
+    nextCheck: "Ask the holder for a fresh public page, live community confirmation, or the fuller Trust Passport evidence before relying.",
+    activityLimit:
+      "For trade or skilled work, this page cannot currently show whether public Trade records were available. Do not infer suitability from community visibility alone.",
+    tone: "warning",
+    quickTitle: "Evidence unavailable",
+    snapshotRows: [
+      ["Public Trade evidence", "Unavailable: Trade-specific public evidence was not included in this view."],
+      ["Still unestablished", "Completed work, customer confirmation, and any dispute/correction outcome remain unchecked here."],
+    ],
+    summaryRows: [],
+  };
+
+  if (!params.validNow) {
+    return {
+      ...unavailable,
+      headline: "Fresh TrustSlip needed before trade evidence review",
+      summary: "The TrustSlip is not current, so any Trade evidence on this public page must wait for a fresh code before use.",
+      evidenceStatement: "Restricted: currentness failed before Trade evidence can be relied on.",
+      nextCheck: "Request a fresh TrustSlip before reviewing Trade evidence.",
+      quickTitle: "Fresh TrustSlip required",
+    };
+  }
+
+  if (!params.extractAvailable) return unavailable;
+
+  if (hasCaution) {
+    return {
+      headline: "Trade evidence needs review before relying",
+      summary:
+        "Trade-related public evidence is shown, but a dispute, correction, or review-status pointer must be checked before any recipient relies on it.",
+      evidenceStatement: "Caution: a Trade outcome or issue-resolution pointer is visible and needs review.",
+      knownLimit: "The public page does not expose private allegations, notes, identities, prices, addresses, licences, insurance, or quality guarantees.",
+      unestablished: "Whether the issue is resolved enough for this recipient's decision remains unestablished here.",
+      nextCheck: "Review the correction/dispute outcome and ask live community or customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, community visibility is only context. The caution pointer must be resolved before it supports a recipient decision.",
+      tone: "warning",
+      quickTitle: "Review caution first",
+      snapshotRows: [
+        ["Public Trade evidence", "Caution: visible Trade evidence includes a review, dispute, or correction pointer."],
+        ["Still unestablished", "The public view does not establish that the concern is resolved for this decision."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (visibleConfirmations.length > 0) {
+    return {
+      headline: "Trade confirmation evidence shown; recipient still verifies",
+      summary:
+        "A public-safe community witness outcome for this Trade purpose is shown. It supports a follow-up check, not automatic approval or suitability.",
+      evidenceStatement: "Shown: a Trade-purpose community witness outcome is visible in the public evidence extract.",
+      knownLimit: "The public page does not reveal responders, private notes, licences, insurance, customer identities, or future work quality.",
+      unestablished: "Recipient-specific risk, licence, insurance, safety, and direct customer checks remain outside this public page.",
+      nextCheck: "Open the evidence details, then request live confirmation from the community or customer before relying.",
+      activityLimit:
+        "For trade or skilled work, community activity is only context; the confirmation pointer is the relevant public-safe Trade evidence to inspect.",
+      tone: "trust",
+      quickTitle: "Confirmation pointer shown",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: community witness evidence exists for this Trade purpose."],
+        ["Still unestablished", "Licence, insurance, safety, and future quality are not established by this page."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (visibleCompletedWork.length > 0 || visibleFulfillment.length > 0) {
+    return {
+      headline: "Trade outcome evidence shown; confirm before relying",
+      summary:
+        "A public-safe Trade outcome or completed-work pointer is shown. It is evidence to inspect, not a claim that every job was independently customer-confirmed.",
+      evidenceStatement: "Shown: a Trade outcome or completed-work aggregate is visible in the public evidence extract.",
+      knownLimit: "The public page does not expose customers, reviewers, private notes, prices, addresses, licence, insurance, safety approval, or future quality.",
+      unestablished: "Whether this exact recipient's work need is covered remains unestablished here.",
+      nextCheck: "Inspect the visible pointer and ask for direct customer or live community confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, community visibility is context; the outcome pointer is the relevant evidence to inspect before any recipient decision.",
+      tone: "trust",
+      quickTitle: "Outcome pointer shown",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: Trade outcome or completed-work aggregate exists."],
+        ["Still unestablished", "Independent customer confirmation for this recipient's purpose is not proved by the aggregate alone."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (hasDeclaredClaim) {
+    return {
+      headline: "Trade claim shown; completed-work proof still separate",
+      summary:
+        "A public declaration or listing is shown for Trade or skilled work. A declaration is a claim pointer, not proof that work was completed or independently confirmed.",
+      evidenceStatement: "Shown: a declared Trade/service/shop/listing claim is visible.",
+      knownLimit: "Declarations do not prove completed work, customer confirmation, licence, insurance, safety, or future quality.",
+      unestablished: "Completed work and customer/community confirmation remain unestablished on this public page.",
+      nextCheck: "Ask for completed-work evidence or live community/customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, community visibility and declarations are context only. They do not become skill confirmation without Trade-specific evidence.",
+      tone: "neutral",
+      quickTitle: "Claim only",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: a declared Trade/service claim is visible."],
+        ["Still unestablished", "Completed work and customer confirmation are not established here."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (hasTradeCategory) {
+    return {
+      headline: "Trade activity category shown; confirmation still needed",
+      summary:
+        "A Trade-related public category is shown, but the public page does not include enough outcome or confirmation detail to rely on it alone.",
+      evidenceStatement: "Shown: a Trade-related public-safe category is visible.",
+      knownLimit: "A category count does not prove completed jobs, customer confirmation, licence, insurance, safety, or quality.",
+      unestablished: "Specific work outcome and confirmation remain unestablished here.",
+      nextCheck: "Ask for completed-work, customer, or live community confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, category visibility is a prompt for follow-up, not a suitability finding.",
+      tone: "neutral",
+      quickTitle: "Category only",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: a Trade-related public category exists."],
+        ["Still unestablished", "Specific work outcome and confirmation are not established here."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  return {
+    headline: "Trade evidence not shown; ask for confirmation",
+    summary:
+      "This public view loaded successfully but does not show qualifying Trade records for the selected purpose. That is not the same as a negative finding.",
+    evidenceStatement: "Not shown: no qualifying public Trade records are included in this view.",
+    knownLimit: "No qualifying records means the public view is thin for Trade; it does not expose private records or prove the holder cannot do the work.",
+    unestablished: "Trade skill, completed work, customer confirmation, dispute status, licence, insurance, safety, and future quality remain unestablished here.",
+    nextCheck: "Ask for completed-work evidence, live community confirmation, or the fuller Trust Passport before relying.",
+    activityLimit:
+      "For trade or skilled work, basic membership or community activity is not Trade-skill confirmation unless public Trade records are shown.",
+    tone: "neutral",
+    quickTitle: "Confirmation needed",
+    snapshotRows: [
+      ["Public Trade evidence", "Not shown: no qualifying Trade records are included in this public view."],
+      ["Still unestablished", "Trade skill, completed work, and customer confirmation remain unchecked here."],
+    ],
+    summaryRows: [],
+  };
+}
 function lockedActionFrame(compact: boolean): React.CSSProperties {
   return {
     display: "grid",
@@ -1345,9 +1564,9 @@ export default function TrustSlipVerifyPublicPaper({
     positiveNumber(memberWitnessCountLabel) > 0 &&
     !memberWitnessCurrentness.toLowerCase().includes("not");
   const supportPurpose = /guarantor|guarantee|support/i.test(decisionPackPurpose);
-  const employmentPurpose = /employment|work|job/i.test(decisionPackPurpose);
-  const housingPurpose = /housing|tenant|rent/i.test(decisionPackPurpose);
   const tradePurpose = /trade|supplier|skilled|market/i.test(decisionPackPurpose);
+  const employmentPurpose = !tradePurpose && /employment|work|job/i.test(decisionPackPurpose);
+  const housingPurpose = /housing|tenant|rent/i.test(decisionPackPurpose);
   const hasSupportOutcomeEvidence = decisionPackProfile.evidenceExtract.guaranteeOutcomePointers.length > 0;
   const decisionFirstAnswer = !validNow
     ? "Fresh TrustSlip needed before decision"
@@ -1364,9 +1583,7 @@ export default function TrustSlipVerifyPublicPaper({
             ? "Community recognition visible; housing still needs confirmation"
             : "Housing decision still needs confirmation"
           : tradePurpose
-            ? hasCommunityEvidence || hasWitnessEvidence
-              ? "Suitable for a low-risk trade check"
-              : "Trade decision still needs confirmation"
+            ? "Trade evidence must be checked from public records"
             : hasCommunityEvidence || hasWitnessEvidence
               ? "Community recognition supported"
               : "Evidence still needs confirmation";
@@ -1591,6 +1808,16 @@ export default function TrustSlipVerifyPublicPaper({
     (category): [string, string] => [category.label, category.decisionUse]
   );
   const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows;
+  const tradeEvidenceReading = buildTradeEvidenceReading({
+    validNow,
+    extractAvailable: decisionPackProfile.evidenceExtract.available !== false,
+    categories: decisionPackEvidenceCategories,
+    declaredClaims: decisionPackDeclaredClaims,
+    fulfillmentOutcomePointers: decisionPackFulfillmentOutcomePointers,
+    completedWorkPointers: decisionPackCompletedWorkPointers,
+    confirmationPointers: decisionPackConfirmationPointers,
+    issueResolutionPointers: decisionPackIssueResolutionPointers,
+  });
   const communityConnectionFinding =
     communityLabel && communityLabel !== "Not stated"
       ? `Supported: active community record in ${communityLabel}.`
@@ -1617,7 +1844,7 @@ export default function TrustSlipVerifyPublicPaper({
         : housingPurpose
           ? "For housing, this supports a cautious inference that the holder can participate in a shared community and keep visible relationships. It does not prove rent history, property care, or legal tenancy checks."
           : tradePurpose
-            ? "For trade or skilled work, this supports a low-risk check that the holder is visible in a community context. It does not prove licence, insurance, work quality, or home-safety outcomes."
+            ? tradeEvidenceReading.activityLimit
             : "For community standing, this supports recognition, participation, and community presence. It remains evidence for judgement, not a final character ruling.";
   const communityActivityMeaningRows: Array<[string, string]> = [
     ["Observed activity", activityCountNumber > 0 ? `${communityActivityCountLabel} recorded activity event${communityActivityCountLabel === "1" ? "" : "s"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}.` : "No recorded activity count is visible on this paper."],
@@ -1636,11 +1863,18 @@ export default function TrustSlipVerifyPublicPaper({
     decisionPackVisibleDemandRequestOutcomePointers.length +
     decisionPackVisibleConfirmationPointers.length +
     decisionPackVisibleIssueResolutionPointers.length;
-  const decisionPackEvidenceSummaryRows: Array<[string, string]> = [
-    ["Core public signal", activityCountNumber > 0 ? communityActivityMeaningLead : "The core activity signal is not visible yet."],
-    ["Detailed public records", visibleEvidenceAreaCount > 0 ? `${visibleEvidenceAreaCount} detailed public-safe evidence area${visibleEvidenceAreaCount === 1 ? "" : "s"} shown in this Decision Pack.` : "No detailed public-safe category records are shown here; do not confuse absence of public detail with a complete negative judgement."],
-    ["Fuller evidence", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full evidence pages belong in Trust Passport or live community confirmation, not this public slip."],
-  ];
+  const decisionPackEvidenceSummaryRows: Array<[string, string]> = tradePurpose
+    ? [
+        ["Public Trade evidence", tradeEvidenceReading.evidenceStatement],
+        ["Known limit", tradeEvidenceReading.knownLimit],
+        ["Still unestablished", tradeEvidenceReading.unestablished],
+        ["Next check", tradeEvidenceReading.nextCheck],
+      ]
+    : [
+        ["Core public signal", activityCountNumber > 0 ? communityActivityMeaningLead : "The core activity signal is not visible yet."],
+        ["Detailed public records", visibleEvidenceAreaCount > 0 ? `${visibleEvidenceAreaCount} detailed public-safe evidence area${visibleEvidenceAreaCount === 1 ? "" : "s"} shown in this Decision Pack.` : "No detailed public-safe category records are shown here; do not confuse absence of public detail with a complete negative judgement."],
+        ["Fuller evidence", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full evidence pages belong in Trust Passport or live community confirmation, not this public slip."],
+      ];
   const decisionPackDetailTables: Array<{ title: string; rows: Array<[string, string]> }> = [
     { title: "Evidence categories", rows: decisionPackEvidenceRows },
     { title: "Declared work/service claim", rows: decisionPackDeclaredClaimRows },
@@ -1660,13 +1894,15 @@ export default function TrustSlipVerifyPublicPaper({
     ? hasSupportOutcomeEvidence
       ? `Visible: ${decisionPackGuaranteeOutcomeRows[0]?.[1] || "support outcome pointer found"}.`
       : "Missing: repayment or support outcome evidence is not yet available here."
-    : visibleEvidenceAreaCount > 0
-      ? `Visible: ${visibleEvidenceAreaCount} detailed public-safe evidence area${
-          visibleEvidenceAreaCount === 1 ? "" : "s"
-        }.`
-      : activityCountNumber > 0
-        ? "Visible: community activity meaning is the main public evidence; detailed category records are not shown here."
-        : "Missing: purpose-specific evidence still needs confirmation.";
+    : tradePurpose
+      ? tradeEvidenceReading.evidenceStatement
+      : visibleEvidenceAreaCount > 0
+        ? `Visible: ${visibleEvidenceAreaCount} detailed public-safe evidence area${
+            visibleEvidenceAreaCount === 1 ? "" : "s"
+          }.`
+        : activityCountNumber > 0
+          ? "Visible: community activity meaning is the main public evidence; detailed category records are not shown here."
+          : "Missing: purpose-specific evidence still needs confirmation.";
   const witnessCurrentnessFinding = hasWitnessEvidence
     ? `Visible: ${memberWitnessCurrentness}.`
     : positiveNumber(memberWitnessCountLabel) > 0
@@ -1679,7 +1915,9 @@ export default function TrustSlipVerifyPublicPaper({
     ? "Request a fresh TrustSlip before deciding."
     : supportPurpose
       ? "Request live community confirmation before any guarantor or support decision."
-      : "Use for low-risk decisions; request live confirmation before important decisions.";
+      : tradePurpose
+        ? tradeEvidenceReading.nextCheck
+        : "Use for low-risk decisions; request live confirmation before important decisions.";
   const purposeSpecificPointerRows: Array<[string, string]> = (
     supportPurpose
       ? [
@@ -1707,6 +1945,7 @@ export default function TrustSlipVerifyPublicPaper({
                 ...decisionPackEvidenceRows,
                 ...decisionPackCompletedWorkRows,
                 ...decisionPackDeclaredClaimRows,
+                ...decisionPackConfirmationPointerRows,
                 ...decisionPackIssueResolutionRows,
               ]
             : [
@@ -1728,20 +1967,27 @@ export default function TrustSlipVerifyPublicPaper({
   const publicDecisionEvidenceSnapshotRows: Array<[string, string]> = [
     ["Question", firstTruthy(decisionPackProfile.recipientQuestion, decisionPackPurpose)],
   ];
-  visibleSnapshotEvidenceRows.forEach((row) => {
-    if (publicDecisionEvidenceSnapshotRows.length < 4) {
-      publicDecisionEvidenceSnapshotRows.push(row);
-    }
-  });
-  publicDecisionEvidenceSnapshotRows.push([
-    "Still missing",
-    firstTruthy(
-      decisionPackProfileGaps[0]?.nextStep,
-      witnessCurrentnessFinding,
-      "Ask for live confirmation or the fuller Trust Passport before relying."
-    ),
-  ]);
-  publicDecisionEvidenceSnapshotRows.push(["First safe next step", recommendedActionFinding]);
+  if (tradePurpose) {
+    tradeEvidenceReading.snapshotRows.forEach((row) => {
+      if (publicDecisionEvidenceSnapshotRows.length < 4) publicDecisionEvidenceSnapshotRows.push(row);
+    });
+    publicDecisionEvidenceSnapshotRows.push(["First safe next step", tradeEvidenceReading.nextCheck]);
+  } else {
+    visibleSnapshotEvidenceRows.forEach((row) => {
+      if (publicDecisionEvidenceSnapshotRows.length < 4) {
+        publicDecisionEvidenceSnapshotRows.push(row);
+      }
+    });
+    publicDecisionEvidenceSnapshotRows.push([
+      "Still missing",
+      firstTruthy(
+        decisionPackProfileGaps[0]?.nextStep,
+        witnessCurrentnessFinding,
+        "Ask for live confirmation or the fuller Trust Passport before relying."
+      ),
+    ]);
+    publicDecisionEvidenceSnapshotRows.push(["First safe next step", recommendedActionFinding]);
+  }
   const publicDecisionEvidenceSnapshotDisplayRows = compact
     ? publicDecisionEvidenceSnapshotRows.filter(([label], index) =>
         index === 0 ||
@@ -1759,8 +2005,8 @@ export default function TrustSlipVerifyPublicPaper({
     witnessEvidence: witnessCurrentnessFinding,
     validNow,
   });
-  const decisionDisplayAnswer = purposeDecisionReading.headline || decisionFirstAnswer;
-  const decisionReasonLine = purposeDecisionReading.conclusion;
+  const decisionDisplayAnswer = tradePurpose ? tradeEvidenceReading.headline : purposeDecisionReading.headline || decisionFirstAnswer;
+  const decisionReasonLine = tradePurpose ? tradeEvidenceReading.summary : purposeDecisionReading.conclusion;
   const decisionBecauseRows: Array<[string, string]> = purposeDecisionReading.because
     .slice(0, compact ? 3 : 5)
     .map((reason, index): [string, string] => [`Because ${index + 1}`, reason]);
@@ -1786,9 +2032,9 @@ export default function TrustSlipVerifyPublicPaper({
     {
       icon: "trust-shield" as Gsn3DIconKey,
       label: "Recommendation",
-      title: validNow ? (supportPurpose ? "Live confirmation required" : "Use with caution") : "Fresh TrustSlip required",
+      title: validNow ? (supportPurpose ? "Live confirmation required" : tradePurpose ? tradeEvidenceReading.quickTitle : "Use with caution") : "Fresh TrustSlip required",
       text: recommendedActionFinding,
-      tone: validNow && !supportPurpose ? "trust" as const : "warning" as const,
+      tone: tradePurpose ? tradeEvidenceReading.tone : validNow && !supportPurpose ? "trust" as const : "warning" as const,
     },
   ];
   const decisionMeaningGroups = [
@@ -1814,8 +2060,12 @@ export default function TrustSlipVerifyPublicPaper({
       title: "Therefore",
       tone: decisionFirstTone === "trust" ? "trust" as const : "warning" as const,
       items: [
-        supportPurpose ? "Suitable for community recognition" : "Suitable for low-risk decisions",
-        "Use live confirmation before high-risk decisions",
+        tradePurpose
+          ? "Evidence for judgement only"
+          : supportPurpose
+            ? "Suitable for community recognition"
+            : "Suitable for low-risk decisions",
+        tradePurpose ? "Use Trade-specific confirmation before relying" : "Use live confirmation before high-risk decisions",
         "Final decision remains yours",
       ],
     },

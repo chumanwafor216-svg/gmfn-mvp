@@ -121,6 +121,7 @@ type DecisionPackIssueResolutionPointer = {
 };
 
 export type DecisionPackEvidenceExtractView = {
+  available: boolean;
   source: string;
   sourceNote: string;
   evidenceScope: {
@@ -351,7 +352,31 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
+  const hasExtractPayload = Boolean(
+    raw &&
+      typeof raw === "object" &&
+      (source.source ||
+        source.source_note ||
+        Object.keys(evidenceScope).length > 0 ||
+        categories.length ||
+        declaredClaims.length ||
+        recordPointers.length ||
+        housingReferencePointers.length ||
+        guaranteeOutcomePointers.length ||
+        fulfillmentOutcomePointers.length ||
+        completedWorkPointers.length ||
+        demandRequestOutcomePointers.length ||
+        confirmationPointers.length ||
+        issueResolutionPointers.length ||
+        privateReviewRequired.length)
+  );
+  const extractAvailabilityStatus = firstTruthy(source.availability_status, source.availability, source.status).toLowerCase();
+  const extractMarkedUnavailable = Boolean(
+    extractAvailabilityStatus &&
+      ["unavailable", "incomplete", "failed", "error"].some((token) => extractAvailabilityStatus.includes(token))
+  );
   return {
+    available: hasExtractPayload && !extractMarkedUnavailable,
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
     sourceNote: firstTruthy(
       source.source_note,

@@ -257,6 +257,86 @@ function trustSlipSummaryPayload(overrides = {}) {
   return mergeTrustSlipSummary(base, overrides);
 }
 
+function tradeEvidenceExtract(overrides = {}) {
+  const base = {
+    source: "trust_events_redacted_extract",
+    source_note: "Public-safe Trade evidence extract for smoke.",
+    evidence_scope: {
+      reading_scope: "community_specific",
+      included_active_community_count: 1,
+      includes_holder_level_records: true,
+      public_summary: "Trade evidence is scoped to Boundary Evidence Community plus holder-level public-safe records.",
+      boundary: "Public-safe extract only; private TrustEvents and notes are not exposed.",
+    },
+    categories: [],
+    declared_claims: [],
+    record_pointers: [],
+    housing_reference_pointers: [],
+    guarantee_outcome_pointers: [],
+    fulfillment_outcome_pointers: [],
+    completed_work_pointers: [],
+    demand_request_outcome_pointers: [],
+    confirmation_pointers: [],
+    issue_resolution_pointers: [],
+    private_review_required: [],
+    boundary_note: "Public-safe category counts only.",
+    ...overrides,
+  };
+  return base;
+}
+
+function tradePublicVerifyPayload(overrides = {}) {
+  const { evidenceExtract, decisionPackProfile, ...summaryOverrides } = overrides;
+  return trustSlipSummaryPayload({
+    code: trustSlipCode,
+    verification_code: trustSlipCode,
+    verification_token: trustSlipCode,
+    public_verify_url: `/t/${encodeURIComponent(trustSlipCode)}`,
+    access_purpose: "Trade or Skilled Work Decision Pack",
+    access_scope: "community_specific",
+    recipient_access_record: {
+      purpose: "Trade or Skilled Work Decision Pack",
+      scope: "community_specific",
+      recipient_label: "Trade recipient",
+      status: "public",
+    },
+    decision_pack_profile: {
+      access_purpose: "Trade or Skilled Work Decision Pack",
+      recipient_question: "Who has seen this person trade, serve, or complete work?",
+      community_confirmation_prompt: {
+        reason_type: "trade_skill_check",
+        question: "Can current community witnesses confirm this person is known for this trade or service?",
+        responders: "Current community witnesses allowed by policy.",
+        counts_as: "Aggregate community witness evidence only.",
+        escalation: "Concerns go to review, not approval.",
+        boundary: "Not a licence, guarantee, suitability decision, or final approval.",
+      },
+      relevant_signals: [
+        {
+          key: "community_activity",
+          label: "Community activity",
+          status: "available",
+          value: "Community activity is visible.",
+          decision_use: "Use as context, not Trade-skill confirmation.",
+        },
+      ],
+      gaps_to_check: [
+        {
+          key: "customer_confirmation",
+          label: "Customer or community confirmation",
+          reason: "Public Trade details may be thin.",
+          next_step: "Ask for completed-work or live confirmation before relying.",
+        },
+      ],
+      recommended_checks: ["Open the public evidence details.", "Ask live community confirmation before relying."],
+      evidence_extract: evidenceExtract === undefined ? tradeEvidenceExtract() : evidenceExtract,
+      basis_note: "Generated from public-safe Trade evidence only.",
+      boundary_note: "Does not score, approve, licence, insure, or guarantee future work.",
+      ...(decisionPackProfile || {}),
+    },
+    ...summaryOverrides,
+  });
+}
 function explainabilityPayload() {
   return {
     user_id: 216,
@@ -368,6 +448,11 @@ async function installApiMocks(page, requestLog, options = {}) {
         }
       }
       await route.fulfill(json(trustSlipSummary));
+      return;
+    }
+
+    if (method === "GET" && path.startsWith("/trust-slips/verify/")) {
+      await route.fulfill(json(options.publicVerifyResult || tradePublicVerifyPayload()));
       return;
     }
 
@@ -524,6 +609,15 @@ async function newSignedInPage(browser, options = {}) {
     localStorage.setItem("access_token", "SIGNED_IN_TRUST_BOUNDARY_TOKEN");
     localStorage.setItem("gmfn_selected_clan_id", String(selectedClanStorageId));
     window.__gsnSharePayloads = [];
+    window.__gsnClipboardTexts = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value) => {
+          window.__gsnClipboardTexts.push(String(value || ""));
+        },
+      },
+    });
     Object.defineProperty(navigator, "share", {
       configurable: true,
       value: async (payload) => {
@@ -1142,8 +1236,23 @@ async function assertPrimaryShareCopyOpenDoNotReissue(page, requestLog) {
   if (!String(sharePayloads[0]?.url || "").includes("decision_pack=employment_decision")) {
     throw new Error(`TrustSlip share link did not preserve selected purpose: ${JSON.stringify(sharePayloads[0])}`);
   }
+  if (String(sharePayloads[0]?.text || "").includes("/t/")) {
+    throw new Error(`Native share text duplicated the TrustSlip URL instead of using the url field: ${JSON.stringify(sharePayloads[0])}`);
+  }
+  if (!String(sharePayloads[0]?.text || "").includes("GSN TrustSlip")) {
+    throw new Error(`Native share text did not use compact GSN TrustSlip preview: ${JSON.stringify(sharePayloads[0])}`);
+  }
 
   await copy.click();
+  const clipboardTexts = await page.evaluate(() => window.__gsnClipboardTexts || []);
+  const latestClipboard = String(clipboardTexts[clipboardTexts.length - 1] || "");
+  const clipboardUrlCount = (latestClipboard.match(/\/t\//g) || []).length;
+  if (!latestClipboard.includes("GSN TrustSlip") || !latestClipboard.includes("Employment Decision Pack")) {
+    throw new Error(`Clipboard fallback did not keep compact purpose context: ${JSON.stringify(latestClipboard)}`);
+  }
+  if (clipboardUrlCount !== 1) {
+    throw new Error(`Clipboard fallback must include exactly one TrustSlip URL, got ${clipboardUrlCount}: ${JSON.stringify(latestClipboard)}`);
+  }
   await openLink.evaluate((node) => {
     node.addEventListener("click", (event) => event.preventDefault(), { once: true });
   });
@@ -1686,6 +1795,204 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
   }
   await closeChecked(state, "TrustSlip purpose change share scenario");
 }
+async function runPublicTradeEvidenceScenario(browser, baseURL, scenario) {
+  const state = await newSignedInPage(browser, {
+    publicVerifyResult: tradePublicVerifyPayload(scenario.payload || {}),
+  });
+  try {
+    await state.page.goto(
+      `${baseURL}/t/${encodeURIComponent(trustSlipCode)}?decision_pack=trade_check&access_purpose=${encodeURIComponent("Trade or Skilled Work Decision Pack")}&access_scope=community_specific`,
+      { waitUntil: "domcontentloaded", timeout: 60000 }
+    );
+
+    await expect(state.page.getByText(scenario.headline, { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 30000 });
+    if (scenario.openDetails) {
+      await state.page.locator("summary").filter({ hasText: "Trade or Skilled Work Decision Pack" }).first().click();
+      const evidenceDetails = state.page.locator("summary").filter({ hasText: "Decision evidence details" }).first();
+      if (await evidenceDetails.count()) await evidenceDetails.click();
+    }
+    for (const text of scenario.visibleText || []) {
+      await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 30000 });
+    }
+    for (const text of scenario.absentText || []) {
+      await expect(state.page.getByText(text, { exact: false }).filter({ visible: true })).toHaveCount(0);
+    }
+    if (state.requestLog.some((entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue")) {
+      throw new Error(`${scenario.label} must not call TrustSlip reissue from public verify.`);
+    }
+  } finally {
+    state.consoleErrors.length = 0;
+    await closeChecked(state, `public Trade evidence ${scenario.label} scenario`);
+  }
+}
+
+async function runPublicTradeEvidenceScenarios(browser, baseURL) {
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "identity-membership-only",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        categories: [],
+        declared_claims: [],
+        private_system_note: "do not surface private note",
+      }),
+    },
+    headline: "Trade evidence not shown; ask for confirmation",
+    visibleText: ["Not shown: no qualifying Trade records"],
+    absentText: ["Suitable for a low-risk trade check", "Use for low-risk decisions", "do not surface private note"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "declaration-only",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        declared_claims: [
+          {
+            key: "shop_service_declaration",
+            label: "Declared work/service claim",
+            status: "available",
+            value: "Repair service listing shown",
+            source: "marketplace_shop",
+            evidence_count: 1,
+            decision_use: "Claim pointer only; ask for confirmation.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade claim shown; completed-work proof still separate",
+    openDetails: true,
+    visibleText: ["declaration is a claim pointer", "Repair service listing shown"],
+    absentText: ["Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "completion-related-without-explicit-confirmation",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        completed_work_pointers: [
+          {
+            key: "completed_work_aggregate",
+            label: "Completed work/customer confirmation",
+            status: "available",
+            value: "2 completed-work outcome pointers shown",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 2,
+            decision_use: "Aggregate only; ask for direct confirmation.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade outcome evidence shown; confirm before relying",
+    openDetails: true,
+    visibleText: ["not a claim that every job was independently customer-confirmed", "2 completed-work outcome pointers shown"],
+    absentText: ["Trade confirmation evidence shown"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "explicit-confirmation-evidence",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        confirmation_pointers: [
+          {
+            key: "trade_skill_check",
+            label: "Community witness outcome",
+            status: "available",
+            value: "Trade-skill witness outcome shown",
+            source: "community_confirmation_requests",
+            evidence_count: 1,
+            decision_use: "Aggregate witness context only.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade confirmation evidence shown; recipient still verifies",
+    openDetails: true,
+    visibleText: ["Trade-purpose community witness outcome", "Trade-skill witness outcome shown"],
+    absentText: ["Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "unresolved-review",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        issue_resolution_pointers: [
+          {
+            key: "open_trade_review",
+            label: "Issue resolution pointer",
+            status: "caution_open_review",
+            value: "One Trade correction review is still open",
+            source: "community_confirmation_reviews",
+            evidence_count: 1,
+            decision_use: "Resolve before relying.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade evidence needs review before relying",
+    openDetails: true,
+    visibleText: ["dispute, correction, or review-status pointer", "One Trade correction review is still open"],
+    absentText: ["Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "unavailable-data",
+    payload: {
+      evidenceExtract: {
+        availability_status: "unavailable",
+        source: "trust_events_redacted_extract",
+        source_note: "Evidence extract unavailable in this synthetic response.",
+      },
+    },
+    headline: "Trade evidence unavailable on this public view",
+    visibleText: ["Unavailable: Trade-specific public evidence was not included"],
+    absentText: ["No qualifying public Trade records are included"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "expired-not-current-document",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        confirmation_pointers: [
+          {
+            key: "trade_skill_check",
+            label: "Community witness outcome",
+            status: "available",
+            value: "Trade-skill witness outcome shown",
+            source: "community_confirmation_requests",
+            evidence_count: 1,
+          },
+        ],
+      }),
+      is_current: false,
+      status: "replaced",
+    },
+    headline: "Fresh TrustSlip needed before trade evidence review",
+    visibleText: ["Request a fresh TrustSlip"],
+    absentText: ["Trade confirmation evidence shown; recipient still verifies"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "healthy-matching-evidence",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        fulfillment_outcome_pointers: [
+          {
+            key: "fulfilled_protected_trade",
+            label: "Fulfilment/correction outcome pointer",
+            status: "available",
+            value: "Protected trade fulfilment completed",
+            source: "protected_trade_records",
+            evidence_count: 1,
+            decision_use: "Outcome context only; ask for confirmation.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade outcome evidence shown; confirm before relying",
+    openDetails: true,
+    visibleText: ["Protected trade fulfilment completed", "direct customer or live community confirmation"],
+    absentText: ["Suitable for a low-risk trade check"],
+  });
+}
 async function main() {
   let server;
   let browser;
@@ -1711,6 +2018,7 @@ async function main() {
     await runTrustSlipGenerateWithFailedSecondaryRefreshScenario(browser, baseURL);
     await runTrustSlipFailedIssuanceScenario(browser, baseURL);
     await runTrustSlipPurposeChangeShareScenario(browser, baseURL);
+    await runPublicTradeEvidenceScenarios(browser, baseURL);
     await runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL);
     await runTrustSlipSummaryAfterClanListScenario(browser, baseURL);
     await runTrustSlipClanListAfterSummaryScenario(browser, baseURL);
@@ -1864,7 +2172,7 @@ async function main() {
         "Trust Passport / TrustSlip boundary smoke passed:",
         "/app/trust rendered the private Trust Passport certificate;",
         "/app/trust-slip rendered the holder TrustSlip certificate;",
-        "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, stale-secondary, restricted-secondary, not-current-secondary, null-secondary, healthy-secondary, failed-issuance, reopened, purpose-change, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
+        "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, stale-secondary, restricted-secondary, not-current-secondary, null-secondary, healthy-secondary, failed-issuance, reopened, purpose-change, public Trade evidence wording, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
         "signed-in holder reads carried auth;",
         "holder QR and public pack link carried the same selected Decision Pack context;",
         "public verify was not called on holder/private page load;",
