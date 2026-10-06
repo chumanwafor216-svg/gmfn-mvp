@@ -356,16 +356,16 @@ async function installApiMocks(page, requestLog, options = {}) {
       ].includes(path)
     ) {
       if (trustSlipSummaryGate) await trustSlipSummaryGate.wait();
-      if (trustSlipSummaryAfterReissueGate && trustSlipReissueCount > 0) {
-        await trustSlipSummaryAfterReissueGate.wait();
-        if (options.trustSlipSummaryAfterReissueResult) {
+      if (trustSlipReissueCount > 0) {
+        if (trustSlipSummaryAfterReissueGate) await trustSlipSummaryAfterReissueGate.wait();
+        if (Object.prototype.hasOwnProperty.call(options, "trustSlipSummaryAfterReissueResult")) {
           await route.fulfill(json(options.trustSlipSummaryAfterReissueResult));
           return;
         }
-      }
-      if (options.failTrustSlipSummaryAfterReissue && trustSlipReissueCount > 0) {
-        await route.fulfill(json({ detail: "secondary TrustSlip refresh failed" }, 503));
-        return;
+        if (options.failTrustSlipSummaryAfterReissue) {
+          await route.fulfill(json({ detail: "secondary TrustSlip refresh failed" }, 503));
+          return;
+        }
       }
       await route.fulfill(json(trustSlipSummary));
       return;
@@ -1422,6 +1422,209 @@ async function runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, 
     throw new Error("Pending-refresh secondary gate was not released during cleanup.");
   }
 }
+function trustSlipIssueSummaryForCode(code, overrides = {}) {
+  return trustSlipSummaryPayload({
+    code,
+    verification_code: code,
+    verification_token: code,
+    token: code,
+    public_verify_url: `/t/${encodeURIComponent(code)}`,
+    issued_at: "2026-10-06T10:30:00.000Z",
+    created_at: "2026-10-06T10:30:00.000Z",
+    expires_at: "2035-10-06T10:30:00.000Z",
+    community: "Boundary Evidence Community",
+    community_id: selectedClanId,
+    clan_id: selectedClanId,
+    community_global_id: "GMFN-C-TRUST-BOUNDARY",
+    community_code: "GMFN-C-TRUST-BOUNDARY",
+    merchant_summary: {
+      community: "Boundary Evidence Community",
+    },
+    merchant_view: {
+      code,
+      verification_code: code,
+      verification_token: code,
+      token: code,
+      public_verify_url: `/t/${encodeURIComponent(code)}`,
+      active: true,
+      is_current: true,
+    },
+    ...overrides,
+  });
+}
+
+function emptyTrustSlipIssueSummary() {
+  return trustSlipSummaryPayload({
+    code: "",
+    verification_code: "",
+    verification_token: "",
+    token: "",
+    public_verify_url: "",
+    merchant_view: { code: "", verification_code: "", verification_token: "", token: "", public_verify_url: "" },
+  });
+}
+
+async function runTrustSlipSecondaryReconciliationScenario(browser, baseURL, scenario) {
+  const code = scenario.code;
+  const issuedSummary = trustSlipIssueSummaryForCode(code, scenario.issuedOverrides || {});
+  const state = await newSignedInPage(browser, {
+    trustSlipSummary: emptyTrustSlipIssueSummary(),
+    trustSlipReissueResult: issuedSummary,
+    trustSlipSummaryAfterReissueResult: scenario.secondarySummary,
+    failTrustSlipSummaryAfterReissue: Boolean(scenario.failSecondarySummary),
+  });
+
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
+  const holderReadsBeforeGenerate = trustSlipHolderReadCount(state.requestLog);
+  await state.page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue",
+    `${scenario.label} TrustSlip issuance request`
+  );
+  await expect
+    .poll(() => trustSlipHolderReadCount(state.requestLog), { timeout: 7000 })
+    .toBeGreaterThan(holderReadsBeforeGenerate);
+
+  await assertPrimaryTrustSlipMobileJourneyVisible(state.page, code);
+  await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue(
+    "employment_decision"
+  );
+  await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
+
+  const share = state.page.locator('[data-cta-id="trust-slip.primary.share"]');
+  if (scenario.shareEnabled === false) {
+    await expect(share).toBeDisabled({ timeout: 30000 });
+  } else {
+    await expect(share).toBeEnabled({ timeout: 30000 });
+    await share.click();
+    const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
+    const latestShare = sharePayloads[sharePayloads.length - 1] || {};
+    if (!String(latestShare.url || "").includes(`/t/${encodeURIComponent(code)}`)) {
+      throw new Error(`${scenario.label} share URL did not use the confirmed code: ${JSON.stringify(latestShare)}`);
+    }
+    if (!String(latestShare.text || "").includes("Employment Decision Pack")) {
+      throw new Error(`${scenario.label} share text did not preserve purpose: ${JSON.stringify(latestShare)}`);
+    }
+  }
+
+  if (trustSlipReissueWriteCount(state.requestLog) !== 1) {
+    throw new Error(
+      `${scenario.label} expected exactly one reissue, got ${trustSlipReissueWriteCount(state.requestLog)}`
+    );
+  }
+
+  await openFullTrustSlipDocument(state.page);
+  if (scenario.detailsPending) {
+    await expect(state.page.locator('[data-gsn-trustslip-detail-loading="true"]')).toBeVisible({ timeout: 30000 });
+  } else {
+    await expect(state.page.locator('[data-gsn-trustslip-detail-loading="true"]')).toHaveCount(0);
+  }
+
+  if (scenario.absentText) {
+    for (const text of scenario.absentText) {
+      await expect(state.page.getByText(text, { exact: false })).toHaveCount(0);
+    }
+  }
+  for (const text of scenario.visibleText || []) {
+    await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible();
+  }
+  state.consoleErrors.length = 0;
+  await closeChecked(state, `${scenario.label} scenario`);
+}
+
+async function runTrustSlipSecondaryReconciliationScenarios(browser, baseURL) {
+  const staleCode = "GSN-TS-OLD";
+  const newCode = "GSN-TS-NEW";
+  await runTrustSlipSecondaryReconciliationScenario(browser, baseURL, {
+    label: "old secondary summary cannot relabel new TrustSlip",
+    code: newCode,
+    secondarySummary: trustSlipIssueSummaryForCode(staleCode, {
+      issued_at: "2026-10-05T08:00:00.000Z",
+      created_at: "2026-10-05T08:00:00.000Z",
+      community_activity_label: "STALE SECONDARY EVIDENCE MUST NOT LEAK",
+      merchant_summary: {
+        community: "Boundary Evidence Community",
+        community_activity_label: "STALE SECONDARY EVIDENCE MUST NOT LEAK",
+      },
+    }),
+    detailsPending: true,
+    absentText: [staleCode, "STALE SECONDARY EVIDENCE MUST NOT LEAK"],
+  });
+
+  const restrictedCode = "GSN-TS-REVOKED";
+  await runTrustSlipSecondaryReconciliationScenario(browser, baseURL, {
+    label: "same-code revoked secondary disables TrustSlip sharing",
+    code: restrictedCode,
+    secondarySummary: trustSlipIssueSummaryForCode(restrictedCode, {
+      status: "revoked",
+      active: false,
+      is_current: true,
+      merchant_view: {
+        code: restrictedCode,
+        verification_code: restrictedCode,
+        verification_token: restrictedCode,
+        token: restrictedCode,
+        public_verify_url: `/t/${encodeURIComponent(restrictedCode)}`,
+        active: false,
+        is_current: true,
+        status: "revoked",
+      },
+    }),
+    shareEnabled: false,
+    detailsPending: false,
+    visibleText: ["Revoked"],
+  });
+
+  const notCurrentCode = "GSN-TS-NOT-CURRENT";
+  await runTrustSlipSecondaryReconciliationScenario(browser, baseURL, {
+    label: "same-code not-current secondary stays not current",
+    code: notCurrentCode,
+    secondarySummary: trustSlipIssueSummaryForCode(notCurrentCode, {
+      is_current: false,
+      merchant_view: {
+        code: notCurrentCode,
+        verification_code: notCurrentCode,
+        verification_token: notCurrentCode,
+        public_verify_url: `/t/${encodeURIComponent(notCurrentCode)}`,
+        active: true,
+        is_current: false,
+      },
+    }),
+    shareEnabled: false,
+    detailsPending: false,
+    visibleText: ["Do not rely"],
+  });
+
+  const nullDetailCode = "GSN-TS-NULL";
+  await runTrustSlipSecondaryReconciliationScenario(browser, baseURL, {
+    label: "null secondary details preserve confirmed TrustSlip",
+    code: nullDetailCode,
+    secondarySummary: null,
+    detailsPending: true,
+    visibleText: ["Some document details"],
+  });
+
+  const healthyCode = "GSN-TS-HEALTHY";
+  await runTrustSlipSecondaryReconciliationScenario(browser, baseURL, {
+    label: "healthy matching secondary summary completes TrustSlip details",
+    code: healthyCode,
+    secondarySummary: trustSlipIssueSummaryForCode(healthyCode, {
+      community_activity_label: "Healthy secondary evidence loaded",
+      merchant_summary: {
+        community: "Boundary Evidence Community",
+        community_activity_label: "Healthy secondary evidence loaded",
+      },
+    }),
+    detailsPending: false,
+    visibleText: ["Healthy secondary evidence loaded"],
+  });
+}
 async function runTrustSlipFailedIssuanceScenario(browser, baseURL) {
   const state = await newSignedInPage(browser, {
     trustSlipSummary: trustSlipSummaryPayload({
@@ -1502,6 +1705,7 @@ async function main() {
 
     browser = await chromium.launch({ headless: true });
     await runTrustSlipGenerateWithPendingSecondaryRefreshScenario(browser, baseURL);
+    await runTrustSlipSecondaryReconciliationScenarios(browser, baseURL);
     await runTrustPassportScenario(browser, baseURL);
     await runTrustSlipScenario(browser, baseURL);
     await runTrustSlipGenerateWithFailedSecondaryRefreshScenario(browser, baseURL);
@@ -1660,7 +1864,7 @@ async function main() {
         "Trust Passport / TrustSlip boundary smoke passed:",
         "/app/trust rendered the private Trust Passport certificate;",
         "/app/trust-slip rendered the holder TrustSlip certificate;",
-        "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, failed-issuance, reopened, purpose-change, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
+        "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, stale-secondary, restricted-secondary, not-current-secondary, null-secondary, healthy-secondary, failed-issuance, reopened, purpose-change, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
         "signed-in holder reads carried auth;",
         "holder QR and public pack link carried the same selected Decision Pack context;",
         "public verify was not called on holder/private page load;",

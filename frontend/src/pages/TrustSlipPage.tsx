@@ -143,6 +143,7 @@ type MerchantView = {
   visibility_level?: string | null;
   verified?: boolean | null;
   active?: boolean | null;
+  is_current?: boolean | null;
   status?: string | null;
   code?: string | null;
   gmfn_id?: string | null;
@@ -681,6 +682,94 @@ function trustSlipCodeFromResult(value: any): string {
   );
 }
 
+function trustSlipArtifactIdFromResult(value: any): string {
+  if (!value || typeof value !== "object") return "";
+  return firstTruthy(
+    value.id,
+    value.trust_slip_id,
+    value.trustSlipId,
+    value?.item?.id,
+    value?.item?.trust_slip_id,
+    value?.trust_slip?.id,
+    value?.trust_slip?.trust_slip_id,
+    value?.summary?.id,
+    value?.summary?.trust_slip_id,
+    value?.data?.id,
+    value?.data?.trust_slip_id,
+    value?.merchant_view?.id,
+    value?.merchant_view?.trust_slip_id
+  );
+}
+
+function trustSlipCommunityIdFromResult(value: any): number {
+  if (!value || typeof value !== "object") return 0;
+  return positiveNumberId(
+    firstTruthy(
+      value.community_id,
+      value.clan_id,
+      value?.item?.community_id,
+      value?.item?.clan_id,
+      value?.trust_slip?.community_id,
+      value?.trust_slip?.clan_id,
+      value?.summary?.community_id,
+      value?.summary?.clan_id,
+      value?.data?.community_id,
+      value?.data?.clan_id,
+      value?.merchant_view?.community_id,
+      value?.merchant_view?.clan_id,
+      value?.merchant_summary?.community_id,
+      value?.merchant_summary?.clan_id
+    )
+  );
+}
+
+function trustSlipIssuedTime(value: any): number {
+  const raw = firstTruthy(value?.issued_at, value?.created_at, value?.merchant_view?.issued_at, value?.merchant_view?.created_at);
+  if (!raw) return 0;
+  const parsed = new Date(raw).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function trustSlipIsUsableCurrentArtifact(value: any): boolean {
+  if (!trustSlipCodeFromResult(value)) return false;
+  const status = firstTruthy(value?.status, value?.merchant_view?.status).toLowerCase();
+  if (["expired", "revoked", "frozen"].includes(status)) return false;
+  const activeFlag = firstFlag(value?.active, value?.merchant_view?.active);
+  if (activeFlag === false) return false;
+  const currentFlag = firstFlag(value?.is_current, value?.merchant_view?.is_current);
+  if (currentFlag === false) return false;
+  return !isPastDate(firstTruthy(value?.expires_at, value?.merchant_view?.expires_at));
+}
+
+function trustSlipRecordsMatch(left: any, right: any): boolean {
+  const leftId = trustSlipArtifactIdFromResult(left);
+  const rightId = trustSlipArtifactIdFromResult(right);
+  if (leftId && rightId && leftId !== rightId) return false;
+
+  const leftCode = trustSlipCodeFromResult(left);
+  const rightCode = trustSlipCodeFromResult(right);
+  if (leftCode && rightCode && leftCode !== rightCode) return false;
+
+  const leftCommunityId = trustSlipCommunityIdFromResult(left);
+  const rightCommunityId = trustSlipCommunityIdFromResult(right);
+  if (leftCommunityId && rightCommunityId && leftCommunityId !== rightCommunityId) return false;
+
+  return true;
+}
+
+function secondarySummaryCanReplaceConfirmedRecord(
+  secondary: TrustSlipSummary,
+  confirmedSummary: TrustSlipSummary
+): boolean {
+  if (!trustSlipIsUsableCurrentArtifact(secondary)) return false;
+  const secondaryCommunityId = trustSlipCommunityIdFromResult(secondary);
+  const confirmedCommunityId = trustSlipCommunityIdFromResult(confirmedSummary);
+  if (secondaryCommunityId && confirmedCommunityId && secondaryCommunityId !== confirmedCommunityId) return false;
+
+  const secondaryIssuedAt = trustSlipIssuedTime(secondary);
+  const confirmedIssuedAt = trustSlipIssuedTime(confirmedSummary);
+  return Boolean(secondaryIssuedAt && confirmedIssuedAt && secondaryIssuedAt > confirmedIssuedAt);
+}
 function trustSlipReissueSuccessNotice(value: any): string {
   if (value && typeof value === "object") {
     if (value.issued === true || value.reissued === true) {
@@ -2519,20 +2608,27 @@ function mergeFreshTrustSlipSummary(
     });
   if (!baseSummary) return summary;
 
-  const issuedAt = firstTruthy(reissueResult.issued_at, reissueResult.created_at);
-  const expiresAt = firstTruthy(reissueResult.expires_at);
-  const freshStatus = firstTruthy(reissueResult.status, baseSummary.status, "active");
+  if (!trustSlipRecordsMatch(baseSummary, reissueResult)) return null;
+
+  const issuedAt = firstTruthy(baseSummary.issued_at, baseSummary.created_at, reissueResult.issued_at, reissueResult.created_at);
+  const expiresAt = firstTruthy(baseSummary.expires_at, reissueResult.expires_at);
+  const freshStatus = firstTruthy(baseSummary.status, reissueResult.status, "active");
   const freshVerifyUrl = trustSlipVerifyFrontendPath(
     freshCode,
-    firstTruthy(reissueResult.public_verify_url, baseSummary.public_verify_url)
+    firstTruthy(baseSummary.public_verify_url, reissueResult.public_verify_url)
   );
   const activeFlag = firstFlag(
-    reissueResult.active,
-    reissueResult?.merchant_view?.active,
     baseSummary.active,
-    baseSummary.merchant_view?.active
+    baseSummary.merchant_view?.active,
+    reissueResult.active,
+    reissueResult?.merchant_view?.active
   );
-  const currentFlag = firstFlag(reissueResult.is_current, reissueResult?.merchant_view?.is_current);
+  const currentFlag = firstFlag(
+    baseSummary.is_current,
+    baseSummary.merchant_view?.is_current,
+    reissueResult.is_current,
+    reissueResult?.merchant_view?.is_current
+  );
 
   return {
     ...baseSummary,
@@ -2564,6 +2660,33 @@ function mergeFreshTrustSlipSummary(
       expires_at: expiresAt || baseSummary.merchant_summary?.expires_at,
     },
   };
+}
+
+function reconcileSecondaryTrustSlipSummary(
+  secondarySummary: TrustSlipSummary | null,
+  confirmedSummary: TrustSlipSummary,
+  reissueResult: any
+): TrustSlipSummary | null {
+  if (!secondarySummary) return null;
+
+  const confirmedCode = trustSlipCodeFromResult(confirmedSummary);
+  const secondaryCode = trustSlipCodeFromResult(secondarySummary);
+  if (!secondaryCode) return null;
+
+  if (!trustSlipRecordsMatch(secondarySummary, confirmedSummary)) {
+    if (secondaryCode !== confirmedCode && secondarySummaryCanReplaceConfirmedRecord(secondarySummary, confirmedSummary)) {
+      return {
+        ...secondarySummary,
+        trust_slip_details_pending: false,
+      } as TrustSlipSummary;
+    }
+    return null;
+  }
+
+  const mergedSummary = mergeFreshTrustSlipSummary(secondarySummary, reissueResult);
+  return mergedSummary
+    ? ({ ...mergedSummary, trust_slip_details_pending: false } as TrustSlipSummary)
+    : null;
 }
 
 function buildConfirmedTrustSlipIssueSummary(
@@ -3078,12 +3201,14 @@ export default function TrustSlipPage() {
       ) {
         return;
       }
-      const mergedSummary = mergeFreshTrustSlipSummary(data.summary, reissueResult);
+      const mergedSummary = reconcileSecondaryTrustSlipSummary(
+        data.summary,
+        confirmedSummary,
+        reissueResult
+      );
       applyTrustSlipPageData({
         ...data,
-        summary: mergedSummary
-          ? ({ ...mergedSummary, trust_slip_details_pending: false } as TrustSlipSummary)
-          : confirmedSummary,
+        summary: mergedSummary || confirmedSummary,
       });
     } catch (error: any) {
       if (
