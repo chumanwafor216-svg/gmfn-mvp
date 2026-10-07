@@ -55,6 +55,13 @@ function assertContains(key, pattern, message, text) {
   addFinding(key, -1, message, text || pattern.toString());
 }
 
+function assertNotContains(key, pattern, message) {
+  const source = sourceByKey[key];
+  const match = source.match(pattern);
+  if (!match || match.index === undefined) return;
+  addFinding(key, match.index, message, match[0]);
+}
+
 function assertOrder(key, orderedPatterns, message) {
   const source = sourceByKey[key];
   let cursor = -1;
@@ -104,7 +111,7 @@ assertContains(
 
 assertContains(
   "verify",
-  /const noPublicCodeSupplied = !isAppRoute && !requestedCode;/,
+  /const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;/,
   "Public no-code state must stay public-only and not fall through to signed-in lookup behavior."
 );
 assertContains(
@@ -304,13 +311,13 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for evidence sources, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/,
+  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Evidence details"[\s\S]*?summary="Open for source categories, aggregate pointers, gaps, and checks\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/,
   "Public TrustSlip Decision Pack details and heavier authority/evidence/security layers must stay behind disclosures after the recipient decision-first panels."
 );
 assertContains(
   "publicPaper",
-  /const supportPurpose = \/guarantor\|guarantee\|support\/i\.test\(decisionPackPurpose\)[\s\S]*?const employmentPurpose = \/employment\|work\|job\/i\.test\(decisionPackPurpose\)[\s\S]*?const housingPurpose = \/housing\|tenant\|rent\/i\.test\(decisionPackPurpose\)[\s\S]*?const tradePurpose = \/trade\|supplier\|skilled\|market\/i\.test\(decisionPackPurpose\)[\s\S]*?const decisionFirstAnswer = !validNow[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const decisionPackDefinition = findDecisionPack\(decisionPackPurpose\) \|\| DEFAULT_DECISION_PACK[\s\S]*?const purposeDecisionReading = buildDecisionPackDecisionReading\(decisionPackDefinition[\s\S]*?const decisionDisplayAnswer = purposeDecisionReading\.headline \|\| decisionFirstAnswer[\s\S]*?const decisionReasonLine = purposeDecisionReading\.conclusion[\s\S]*?const decisionBecauseRows: Array<\[string, string\]> = purposeDecisionReading\.because[\s\S]*?`Because \$\{index \+ 1\}`[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\.\.\.decisionBecauseRows[\s\S]*?\["Recommended action", recommendedActionFinding\][\s\S]*?const quickDecisionFacts = \[[\s\S]*?label: "Communities"[\s\S]*?label: "Recommendation"[\s\S]*?const decisionMeaningGroups = \[[\s\S]*?title: "Strong"[\s\S]*?title: "Missing"[\s\S]*?title: "Therefore"/,
-  "Public TrustSlip paper must compute one answer, immediate reason text, evidence translation rows, desktop quick facts, and compact boundary rows before rendering."
+  /const supportPurpose = \/guarantor\|guarantee\|support\/i\.test\(decisionPackPurpose\)[\s\S]*?const tradePurpose = \/trade\|supplier\|skilled\|market\/i\.test\(decisionPackPurpose\)[\s\S]*?const decisionFirstAnswer = !validNow[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const purposeEvidenceExists = visibleEvidenceAreaCount > 0[\s\S]*?const decisionDisplayAnswer = tradePurpose \? tradeEvidenceReading\.headline : purposeDecisionReading\.headline \|\| decisionFirstAnswer[\s\S]*?const decisionReasonLine = tradePurpose \? tradeEvidenceReading\.summary : purposeDecisionReading\.conclusion[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Next check", recommendedActionFinding\][\s\S]*?const quickDecisionFacts = \[[\s\S]*?label: "Next check"/,
+  "Public TrustSlip paper must compute one bounded answer, purpose-evidence existence, immediate reason text, quick facts, and next-check guidance before rendering."
 );
 assertContains(
   "backendTrustSlipService",
@@ -337,7 +344,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for evidence sources, gaps, checks, and evidence boundaries\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
+  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for purpose-specific public evidence, source, next check, and limits\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
   "Public TrustSlip Decision Pack detail must sit behind a phone drawer while staying open on desktop."
 );
 
@@ -348,8 +355,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this recommendation\?[\s\S]*?DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2"\) : decisionTranslationRows\} compact=\{compact\}[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?publicDecisionEvidenceSnapshotDisplayRows[\s\S]*?Quick Decision[\s\S]*?quickDecisionFacts\.map[\s\S]*?Full evidence and record details[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
-  "Public TrustSlip paper must lead with decision support, show collapsed full evidence before confirmation choices on phone, then keep source-map and heavier authority/security details behind disclosures."
+  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this reading\?[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?Full evidence and record details[\s\S]*?title="Purpose \/ Relevant evidence"[\s\S]*?title="What it suggests"[\s\S]*?title="Source \/ Recency"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?Decision Pack reading[\s\S]*?Purpose evidence and next check[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
+  "Public TrustSlip paper must lead with decision support, show collapsed purpose evidence before confirmation choices on phone, then keep source-map and heavier authority/security details behind disclosures."
 );
 assertContains(
   "publicPaper",
@@ -359,8 +366,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Code resolved[\s\S]*?Current window[\s\S]*?Status: \$\{publicValidityLabel\}[\s\S]*?Check path[\s\S]*?live link or QR[\s\S]*?Live confirmation[\s\S]*?decisionNextStep[\s\S]*?\];[\s\S]*?title="Full evidence and record details"[\s\S]*?title="Live record checks"[\s\S]*?rows=\{recordTrustReasonTiles\.map/,
-  "Public TrustSlip paper must group code, currentness, QR/link, and live-confirmation trust reasons without adding new claims, inside the full-evidence disclosure rather than as a repeated visible block."
+  /title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Purpose \/ Relevant evidence"[\s\S]*?rows=\{relevantEvidenceRows\}[\s\S]*?title="What it suggests"[\s\S]*?rows=\{suggestionRows\}[\s\S]*?title="Source \/ Recency"[\s\S]*?rows=\{sourceFamilyRows\}[\s\S]*?title="Next check"[\s\S]*?rows=\{nextCheckRows\}[\s\S]*?title="Limitations"[\s\S]*?rows=\{limitationRows\}/,
+  "Public TrustSlip paper must group purpose, relevant evidence, source/recency, next check, and limitations inside the full-evidence disclosure."
 );
 
 assertContains(
@@ -612,8 +619,14 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /communityActivityMeaningRows: Array<\[string, string\]> = \[[\s\S]*?"Observed activity"[\s\S]*?"Behavioural clue"[\s\S]*?"For this decision"[\s\S]*?"Reader limit"[\s\S]*?decisionPackEvidenceSummaryRows: Array<\[string, string\]> = \[[\s\S]*?"Core public signal"[\s\S]*?"Detailed public records"[\s\S]*?"Fuller evidence"/,
-  "Public TrustSlip paper must translate aggregate activity into a plain behavioural reading before showing technical evidence details."
+  /const visibleEvidenceAreaCount =[\s\S]*?const purposeEvidenceExists = visibleEvidenceAreaCount > 0[\s\S]*?const latestRelevantEvidenceDate = firstTruthy[\s\S]*?const purposeSignalText = purposeEvidenceExists[\s\S]*?purpose-specific public-safe evidence area[\s\S]*?No purpose-specific public-safe evidence is visible in this Decision Pack yet\.[\s\S]*?const relevantEvidenceRows: Array<\[string, string\]> = \[[\s\S]*?\["Purpose", decisionPackPurpose\][\s\S]*?\["Question", firstTruthy\(decisionPackProfile\.recipientQuestion, decisionPackPurpose\)\][\s\S]*?\["Relevant evidence", purposeSignalText\]/,
+  "Public TrustSlip paper must let purpose-specific public-safe Decision Pack evidence determine whether recipient evidence exists before falling back to generic activity."
+);
+
+assertNotContains(
+  "publicPaper",
+  /No recorded activity count is visible on this paper|The core activity signal is not visible yet|communityActivityMeaningRows|decisionPackEvidenceSummaryRows/,
+  "Public TrustSlip recipient IA must not let generic community activity empty states override visible purpose-specific evidence."
 );
 
 assertContains(
@@ -624,7 +637,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Evidence source map[\s\S]*?Where can GSN point for this decision\?[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?decisionPackDetailTables\.map[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionEvidenceBoundarySummary/,
+  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Source map[\s\S]*?Where can GSN point for this decision\?[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?decisionPackDetailTables\.map[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionEvidenceBoundarySummary/,
   "Public TrustSlip paper must render mapped meaningful evidence tables, gaps, checks, and the concise public boundary."
 );
 assertContains(
@@ -712,7 +725,7 @@ assertContains(
 
 assertContains(
   "verify",
-  /const appContextPromise = isAppRoute[\s\S]*?getMyTrustSlip[\s\S]*?if \(requestedCode\) \{[\s\S]*?void import\("\.\/trustSlipVerify\/TrustSlipVerifyPublicPaper"\)[\s\S]*?let codeToUse = requestedCode;[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?\} else if \(isAppRoute\) \{[\s\S]*?appContextPromise\.then[\s\S]*?const verifyResult = await callFirstAvailable/,
+  /const appContextPromise = isAppRoute[\s\S]*?getMyTrustSlip[\s\S]*?if \(requestedCode \|\| requestedShareToken\) \{[\s\S]*?void import\("\.\/trustSlipVerify\/TrustSlipVerifyPublicPaper"\)[\s\S]*?let codeToUse = requestedCode;[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?\} else if \(isAppRoute\) \{[\s\S]*?appContextPromise\.then[\s\S]*?verifyResult = await callFirstAvailable/,
   "TrustSlip Verify must start public verification from a supplied code without waiting for signed-in holder context; private app context may hydrate afterward."
 );
 assertContains(

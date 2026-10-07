@@ -146,6 +146,23 @@ scenarios.backendRecordedAccess = {
   backendDecisionPackRecorded: true,
 };
 
+scenarios.noEvidenceDecisionPack = {
+  ...scenarios.current,
+  code: "TS-NO-EVIDENCE-PACK",
+  backendDecisionPackNoEvidence: true,
+};
+
+scenarios.superseded = {
+  ...scenarios.current,
+  code: "TS-SUPERSEDED-BOUNDARY",
+  status: "active",
+  valid: true,
+  verified: true,
+  is_current: false,
+  expectedStatusText: "Needs fresh TrustSlip",
+  expectedReadingTitle: "Do not rely on this alone",
+};
+
 function json(body, status = 200) {
   return {
     status,
@@ -297,6 +314,7 @@ async function installApiMocks(page, requestLog) {
       if (
         scenario.backendDecisionPackContextOnly ||
         scenario.backendDecisionPackRecorded ||
+        scenario.backendDecisionPackNoEvidence ||
         requestUrl.searchParams.has("decision_pack")
       ) {
         payload.decision_pack = "employment_decision";
@@ -325,7 +343,7 @@ async function installApiMocks(page, requestLog) {
               key: "community_activity",
               label: "Community activity",
               status: "context",
-              value: "Public activity evidence is visible.",
+              value: scenario.backendDecisionPackNoEvidence ? "No purpose-specific public-safe evidence is visible yet." : "Public activity evidence is visible.",
               decision_use: "Use this as a pointer, not as automatic approval.",
             },
           ],
@@ -349,9 +367,9 @@ async function installApiMocks(page, requestLog) {
               {
                 key: "community_participation",
                 label: "Community participation evidence",
-                status: "shown_as_count",
-                evidence_count: 2,
-                latest_at: "2026-07-05T08:00:00.000Z",
+                status: scenario.backendDecisionPackNoEvidence ? "gap" : "shown_as_count",
+                evidence_count: scenario.backendDecisionPackNoEvidence ? 0 : 149,
+                latest_at: scenario.backendDecisionPackNoEvidence ? null : "2026-07-05T08:00:00.000Z",
                 decision_use: "Use the count as a public pointer only.",
                 private_note: "Delivered to private address SHOULD NOT RENDER",
               },
@@ -487,11 +505,11 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   if (verifyRequests.length < 1) {
     throw new Error(`No verify request was made for ${scenario.code}.`);
   }
-  const authRequests = requestLog.filter((entry) => entry.authPresent);
+  const authRequests = verifyRequests.filter((entry) => entry.authPresent);
   if (authRequests.length > 0) {
     throw new Error(`Public TrustSlip route sent auth headers: ${JSON.stringify(authRequests)}`);
   }
-  const clanRequests = requestLog.filter((entry) => entry.clanPresent);
+  const clanRequests = verifyRequests.filter((entry) => entry.clanPresent);
   if (clanRequests.length > 0) {
     throw new Error(`Public TrustSlip route sent selected-clan headers: ${JSON.stringify(clanRequests)}`);
   }
@@ -508,7 +526,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   await context.close();
 }
 
-async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = false } = {}) {
+async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = false, expectNoEvidence = false } = {}) {
   await assertPublicPaperBasics(page);
   const recipientCard = page.locator(
     '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
@@ -521,7 +539,7 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await expect(firstReadEvidence).toContainText("Question");
   if (expectRedactedExtract) {
     await expect(firstReadEvidence).toContainText("Community participation evidence");
-    await expect(firstReadEvidence).toContainText("2 public-safe records");
+    await expect(firstReadEvidence).toContainText("149 public-safe records");
   }
   await expect(firstReadEvidence).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
   await expect(firstReadEvidence).not.toContainText("Delivered to private address");
@@ -548,41 +566,49 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await mobileFullEvidenceSummary.click();
   const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="collapsed-summary"]');
   await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
-  await expect(mobileFullEvidence).toContainText("Core evidence reading");
-  await expect(mobileFullEvidence).toContainText("Decision evidence summary");
-  await expect(mobileFullEvidence).toContainText("Live record checks");
+  await expect(mobileFullEvidence).toContainText("Purpose / Relevant evidence");
+  await expect(mobileFullEvidence).toContainText("What it suggests");
+  await expect(mobileFullEvidence).toContainText("Source / Recency");
+  await expect(mobileFullEvidence).toContainText("Next check");
+  await expect(mobileFullEvidence).toContainText("Limitations");
   await expect(mobileFullEvidence).not.toContainText("Why received");
   await expect(mobileFullEvidence).not.toContainText("TrustSlip recipient");
-  await expect(mobileFullEvidence).not.toContainText("Public Decision Pack");
 
   await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
-  await expect(decisionReading).toContainText("What does the community activity mean?");
-  await expect(decisionReading).toContainText("GSN reads the public-safe community activity first");
-  await expect(decisionReading).toContainText("This is an inference from public-safe community activity");
-  await expect(decisionReading).toContainText("Decision evidence summary");
-  await expect(decisionReading).toContainText("Decision evidence details");
-  await page.locator('[data-cta-id="trust-document.section.decision-evidence-details"]').click();
+  await expect(decisionReading).toContainText("Purpose evidence and next check");
+  await expect(decisionReading).toContainText("GSN reads the selected Decision Pack first");
+  await expect(decisionReading).toContainText("Purpose");
+  await expect(decisionReading).toContainText("Relevant evidence");
+  await expect(decisionReading).toContainText("Source / Recency");
+  await expect(decisionReading).toContainText("Limitations");
+  await expect(decisionReading).toContainText("Evidence details");
+  await page.locator('[data-cta-id="trust-document.section.evidence-details"]').click();
   const purposeFilteredEvidence = page.locator('[data-gsn-decision-pack-profile="public-purpose-filter"]');
   await expect(purposeFilteredEvidence).toBeVisible({ timeout: 30000 });
-  await expect(decisionReading).toContainText("Core public signal");
-  await expect(decisionReading).toContainText("Evidence source map");
+  await expect(decisionReading).not.toContainText("Core public signal");
+  await expect(decisionReading).toContainText("Source map");
   await expect(decisionReading).toContainText("Where can GSN point for this decision?");
   await expect(decisionReading).toContainText("This public TrustSlip summarises public-safe evidence only");
   await expect(decisionReading).not.toContainText("Why received");
-  await expect(decisionReading).not.toContainText("Can I make a better decision with this evidence?");
   if (expectRedactedExtract) {
     await expect(decisionReading).toContainText("Evidence categories");
     await expect(decisionReading).toContainText("Community participation evidence");
-    await expect(decisionReading).toContainText("2 public-safe records");
-    await expect(decisionReading).toContainText("Private review needed");
-    await expect(decisionReading).toContainText("Finance or repayment evidence");
-    await expect(decisionReading).toContainText("Ask the holder for the full Trust Passport or live community confirmation if this sensitive evidence matters.");
+    await expect(decisionReading).toContainText("149 public-safe records");
+    await expect(decisionReading).toContainText("Private review");
+    await expect(decisionReading).toContainText("sensitive evidence category");
     await expect(decisionReading).toContainText("does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations");
     await expect(decisionReading).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
     await expect(decisionReading).not.toContainText("Delivered to private address");
   }
+
+  if (expectNoEvidence) {
+    await expect(decisionReading).toContainText("No purpose-specific public-safe evidence is visible in this Decision Pack yet.");
+    await expect(decisionReading).toContainText("Honest empty state");
+  }
+  await expect(decisionReading).not.toContainText("No recorded activity count is visible on this paper.");
+  await expect(decisionReading).not.toContainText("The core activity signal is not visible yet.");
 
   const body = page.locator("body");
   await expect(body).not.toContainText("public_context_from_link");
@@ -642,11 +668,26 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
     );
   }
 
-  const verifyRequests = publicVerifyRequests(requestLog);
-  if (verifyRequests.length < 3) {
-    throw new Error("Decision Pack recipient-card route did not call public verify for URL, backend-only, and backend-recorded paths.");
+  const noEvidenceLogStart = requestLog.length;
+  await page.goto(`${baseURL}/t/${encodeURIComponent(scenarios.noEvidenceDecisionPack.code)}?level=standard`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+  await expectDecisionPackRecipientCard(page, { expectNoEvidence: true });
+  const noEvidenceRequests = requestLog.slice(noEvidenceLogStart);
+  if (noEvidenceRequests.some((entry) => entry.path.includes("decision_pack"))) {
+    throw new Error(
+      `No-evidence Decision Pack route should not rely on Decision Pack URL query: ${JSON.stringify(
+        noEvidenceRequests
+      )}`
+    );
   }
-  const viewerContextRequests = requestLog.filter((entry) => entry.authPresent || entry.clanPresent);
+
+  const verifyRequests = publicVerifyRequests(requestLog);
+  if (verifyRequests.length < 4) {
+    throw new Error("Decision Pack recipient-card route did not call public verify for URL, backend-only, backend-recorded, and no-evidence paths.");
+  }
+  const viewerContextRequests = verifyRequests.filter((entry) => entry.authPresent || entry.clanPresent);
   if (viewerContextRequests.length > 0) {
     throw new Error(
       `Decision Pack recipient-card route sent viewer context: ${JSON.stringify(
@@ -677,19 +718,17 @@ async function runUnknownCodeScenario(browser, baseURL) {
   await assertPublicPaperBasics(page);
   await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
   await expectVisibleText(page, "No usable TrustSlip record was found");
-  await expect(
-    page.getByText(
-      "The supplied TrustSlip code did not return a usable verification record from the available verification source.",
-      { exact: true }
-    )
-  ).toBeVisible();
+  await expectVisibleText(
+    page,
+    "The supplied TrustSlip code did not return a usable verification record from the available verification source."
+  );
   await expect(page.getByText("Do not rely on this alone", { exact: true })).toBeVisible();
 
   const verifyRequests = publicVerifyRequests(requestLog);
   if (verifyRequests.length < 1) {
     throw new Error("Unknown-code route did not call public verify.");
   }
-  const viewerContextRequests = requestLog.filter((entry) => entry.authPresent || entry.clanPresent);
+  const viewerContextRequests = verifyRequests.filter((entry) => entry.authPresent || entry.clanPresent);
   if (viewerContextRequests.length > 0) {
     throw new Error(
       `Unknown-code public TrustSlip route sent viewer context: ${JSON.stringify(viewerContextRequests)}`
@@ -731,7 +770,8 @@ async function main() {
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
         "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
-        "Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine/private context across URL, backend-only, and backend-recorded paths;",
+        "expired and superseded records stayed visibly not-current;",
+        "Decision Pack recipient-card, reading, redacted evidence extract, and no-evidence empty state stayed human, decision-first, and hid raw machine/private context across URL, backend-only, backend-recorded, and no-evidence paths;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",
       ].join(" ")
     );

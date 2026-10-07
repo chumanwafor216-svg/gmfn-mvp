@@ -1955,40 +1955,6 @@ export default function TrustSlipVerifyPublicPaper({
     ["Credit approval", "No"],
     ["Final decision", "Yours"],
   ];
-  const recordTrustReasonTiles = [
-    {
-      icon: "qr-record" as Gsn3DIconKey,
-      label: "Public code",
-      title: resolvedCode ? "Code resolved" : "Code limited",
-      text: resolvedCode
-        ? `This paper is tied to TrustSlip code ${resolvedCode}.`
-        : "Ask the holder for a fresh TrustSlip code before relying on this paper.",
-      tone: resolvedCode ? "trust" : "warning",
-    },
-    {
-      icon: "certificate-seal" as Gsn3DIconKey,
-      label: "Current window",
-      title: validNow ? "Valid now" : "Request new TrustSlip",
-      text: `Status: ${publicValidityLabel}. Expires: ${expiresAtLabel || "not shown"}.`,
-      tone: validNow ? "trust" : "warning",
-    },
-    {
-      icon: "public-globe" as Gsn3DIconKey,
-      label: "Check path",
-      title: verifyUrl ? "Link and QR available" : "Link unavailable",
-      text: verifyUrl
-        ? "Use the live link or QR instead of relying on an old screenshot."
-        : "No public verification link is available for this paper yet.",
-      tone: verifyUrl ? "trust" : "warning",
-    },
-    {
-      icon: "community-building" as Gsn3DIconKey,
-      label: "Live confirmation",
-      title: validNow ? "Ask before important risk" : "Fresh paper needed",
-      text: decisionNextStep,
-      tone: validNow ? "neutral" : "warning",
-    },
-  ];
   const selectedConfirmationCommunityName = firstTruthy(
     selectedConfirmationCommunity?.community_name,
     communityLabel
@@ -2123,7 +2089,6 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackPrivateReviewRows: Array<[string, string]> = decisionPackPrivateReview.map(
     (category): [string, string] => [category.label, category.decisionUse]
   );
-  const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows;
   const tradeEvidenceReading = buildTradeEvidenceReading({
     validNow,
     extractAvailable: decisionPackProfile.evidenceExtract.available !== false,
@@ -2151,23 +2116,7 @@ export default function TrustSlipVerifyPublicPaper({
   const communityActivityMeaningLead = activityCountNumber > 0
     ? `${holderName} has repeated visible activity inside ${communityLabel || "the community"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}. This gives the reader a practical clue that the holder has been present, reachable, and active where people can know them.`
     : "This public TrustSlip does not yet show enough recorded activity for the reader to infer community participation.";
-  const purposeSpecificActivityMeaning = !validNow
-    ? "Because the paper is not current, the activity reading should not be used until the holder shares a fresh TrustSlip."
-    : supportPurpose
-      ? "For guarantor or support decisions, this supports community recognition and responsibility context only. It is not enough for financial guarantee without current witnesses and repayment or support outcome evidence."
-      : employmentPurpose
-        ? "For work or employment, this supports a basic conversation about consistency, participation, and reachability. It does not prove licence, right to work, or future performance."
-        : housingPurpose
-          ? "For housing, this supports a cautious inference that the holder can participate in a shared community and keep visible relationships. It does not prove rent history, property care, or legal tenancy checks."
-          : tradePurpose
-            ? tradeEvidenceReading.activityLimit
-            : "For community standing, this supports recognition, participation, and community presence. It remains evidence for judgement, not a final character ruling.";
-  const communityActivityMeaningRows: Array<[string, string]> = [
-    ["Observed activity", activityCountNumber > 0 ? `${communityActivityCountLabel} recorded activity event${communityActivityCountLabel === "1" ? "" : "s"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}.` : "No recorded activity count is visible on this paper."],
-    ["Behavioural clue", activityCountNumber > 0 ? "Repeated community activity can support an inference of participation, communication, reachability, and ability to operate around other people." : "No behavioural inference should be made from activity until fresh evidence is shown."],
-    ["For this decision", purposeSpecificActivityMeaning],
-    ["Reader limit", "This is an inference from public-safe community activity, not proof of private conduct, legal status, payment ability, or future behaviour."],
-  ];
+
   const visibleEvidenceAreaCount =
     decisionPackPositiveCategories.length +
     decisionPackVisibleDeclaredClaims.length +
@@ -2179,18 +2128,20 @@ export default function TrustSlipVerifyPublicPaper({
     decisionPackVisibleDemandRequestOutcomePointers.length +
     decisionPackVisibleConfirmationPointers.length +
     decisionPackVisibleIssueResolutionPointers.length;
-  const decisionPackEvidenceSummaryRows: Array<[string, string]> = tradePurpose
-    ? [
-        ["Public Trade evidence", tradeEvidenceReading.evidenceStatement],
-        ["Known limit", tradeEvidenceReading.knownLimit],
-        ["Still unestablished", tradeEvidenceReading.unestablished],
-        ["Next check", tradeEvidenceReading.nextCheck],
-      ]
-    : [
-        ["Core public signal", activityCountNumber > 0 ? communityActivityMeaningLead : "The core activity signal is not visible yet."],
-        ["Detailed public records", visibleEvidenceAreaCount > 0 ? `${visibleEvidenceAreaCount} detailed public-safe evidence area${visibleEvidenceAreaCount === 1 ? "" : "s"} shown in this Decision Pack.` : "No detailed public-safe category records are shown here; do not confuse absence of public detail with a complete negative judgement."],
-        ["Fuller evidence", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full evidence pages belong in Trust Passport or live community confirmation, not this public slip."],
-      ];
+  const purposeEvidenceExists = visibleEvidenceAreaCount > 0;
+  const latestRelevantEvidenceDate = firstTruthy(
+    ...decisionPackPositiveCategories.map((category) => category.latestAt),
+    communityActivityLatest
+  );
+  const purposeSignalText = purposeEvidenceExists
+    ? `${visibleEvidenceAreaCount} purpose-specific public-safe evidence area${
+        visibleEvidenceAreaCount === 1 ? "" : "s"
+      } visible in this Decision Pack.`
+    : activityCountNumber > 0
+      ? `${communityActivityCountLabel} recorded activity event${
+          communityActivityCountLabel === "1" ? "" : "s"
+        }${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}.`
+      : "No purpose-specific public-safe evidence is visible in this Decision Pack yet.";
   const decisionPackDetailTables: Array<{ title: string; rows: Array<[string, string]> }> = [
     { title: "Evidence categories", rows: decisionPackEvidenceRows },
     { title: "Declared work/service claim", rows: decisionPackDeclaredClaimRows },
@@ -2202,7 +2153,6 @@ export default function TrustSlipVerifyPublicPaper({
     { title: "DemandBox request outcomes", rows: decisionPackDemandRequestOutcomeRows },
     { title: "Community witness outcomes", rows: decisionPackConfirmationPointerRows },
     { title: "Issue resolution pointers", rows: decisionPackIssueResolutionRows },
-    { title: "Private review needed", rows: decisionPackPrivateReviewDisplayRows },
   ].filter((table) => table.rows.length > 0);
   const decisionEvidenceBoundarySummary =
     "This public TrustSlip summarises public-safe evidence only. It does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations, or the holder's full Trust Passport.";
@@ -2270,7 +2220,7 @@ export default function TrustSlipVerifyPublicPaper({
                 ...decisionPackRecordPointerRows,
               ]
   )
-    .filter(([, value]) => Boolean(safeText(value)))
+    .filter(([, value]) => hasMeaningfulDecisionValue(value))
     .slice(0, 3);
   const visibleSnapshotEvidenceRows: Array<[string, string]> = [];
   if (purposeSpecificPointerRows.length) {
@@ -2281,7 +2231,7 @@ export default function TrustSlipVerifyPublicPaper({
     visibleSnapshotEvidenceRows.push(["Visible public-safe evidence", relevantSupportFinding]);
   }
   const publicDecisionEvidenceSnapshotRows: Array<[string, string]> = [
-    ["Question", firstTruthy(decisionPackProfile.recipientQuestion, decisionPackPurpose)],
+    ["Question", firstTruthy(decisionPackProfile.recipientQuestion, decisionPackPurpose)] as [string, string],
   ];
   if (tradePurpose) {
     tradeEvidenceReading.snapshotRows.forEach((row) => {
@@ -2323,6 +2273,49 @@ export default function TrustSlipVerifyPublicPaper({
   });
   const decisionDisplayAnswer = tradePurpose ? tradeEvidenceReading.headline : purposeDecisionReading.headline || decisionFirstAnswer;
   const decisionReasonLine = tradePurpose ? tradeEvidenceReading.summary : purposeDecisionReading.conclusion;
+  const purposeEvidenceLeadRows: Array<[string, string]> = (
+    purposeSpecificPointerRows.length
+      ? purposeSpecificPointerRows
+      : decisionPackEvidenceRows
+  )
+    .filter(([, value]) => hasMeaningfulDecisionValue(value))
+    .slice(0, 3);
+  const relevantEvidenceRows: Array<[string, string]> = [
+    ["Purpose", decisionPackPurpose] as [string, string],
+    ["Question", firstTruthy(decisionPackProfile.recipientQuestion, decisionPackPurpose)] as [string, string],
+    ["Relevant evidence", purposeSignalText] as [string, string],
+    ...(purposeEvidenceExists
+      ? purposeEvidenceLeadRows.map(([label, value]): [string, string] => [label, value])
+      : []),
+    ...(purposeEvidenceExists
+      ? []
+      : [["Honest empty state", "Ask for live community confirmation or the fuller Trust Passport before relying on this point."] as [string, string]]),
+  ].slice(0, 6);
+  const primaryRelevantEvidenceRows: Array<[string, string]> = purposeEvidenceLeadRows.length
+    ? purposeEvidenceLeadRows
+    : [["Evidence state", purposeSignalText]];
+  const sourceFamilyRows: Array<[string, string]> = [
+    ["Primary source", purposeEvidenceExists ? "Purpose-filtered public-safe Decision Pack evidence." : "No purpose-filtered evidence shown yet."],
+    ["Evidence scope", firstTruthy(decisionPackEvidenceScope.publicSummary, evidenceScopeSummaryText)],
+    ["Latest relevant date", latestRelevantEvidenceDate || "No latest public evidence date is shown yet."],
+    ["Currentness", `${publicValidityLabel}. Expires: ${expiresAtLabel || "not shown"}.`],
+    ["Correction status", validNow ? "No stale, expired, or superseded state is shown for this paper." : firstTruthy(bannerDetail, publicValidityLabel)],
+  ];
+  const suggestionRows: Array<[string, string]> = [
+    ["Reading", decisionReasonLine],
+    ["What it supports", purposeEvidenceExists ? relevantSupportFinding : "This pack needs live confirmation or fuller evidence before the recipient relies."],
+    ["Boundary", firstTruthy(decisionPackProfile.boundaryNote, "Evidence for judgement only; the recipient still decides.")],
+  ];
+  const nextCheckRows: Array<[string, string]> = [
+    ["Next check", recommendedActionFinding],
+    ["Live confirmation", liveConfirmationFinding],
+    ["If evidence is thin", "Ask for the fuller Trust Passport or direct community confirmation before relying."],
+  ];
+  const limitationRows: Array<[string, string]> = [
+    ["Public-safe only", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full Trust Passport pages are not exposed."],
+    ["Private review", decisionPackPrivateReviewRows.length ? `${decisionPackPrivateReviewRows.length} sensitive evidence categor${decisionPackPrivateReviewRows.length === 1 ? "y" : "ies"} require Trust Passport or live confirmation.` : "No sensitive private-review category is listed for this public view."],
+    ["Does not prove", "No guarantee, government ID, credit approval, licence, right-to-work check, payment instruction, or final suitability decision."],
+  ];
   const decisionBecauseRows: Array<[string, string]> = purposeDecisionReading.because
     .slice(0, compact ? 3 : 5)
     .map((reason, index): [string, string] => [`Because ${index + 1}`, reason]);
@@ -2334,7 +2327,7 @@ export default function TrustSlipVerifyPublicPaper({
     [supportPurpose ? "Repayment/support evidence" : "Purpose evidence", relevantSupportFinding],
     ["Current witnesses", witnessCurrentnessFinding],
     ["Live confirmation", liveConfirmationFinding],
-    ["Recommended action", recommendedActionFinding],
+    ["Next check", recommendedActionFinding],
   ];
   const quickDecisionFacts = [
     ...decisionFirstFacts,
@@ -2347,7 +2340,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
     {
       icon: "trust-shield" as Gsn3DIconKey,
-      label: "Recommendation",
+      label: "Next check",
       title: validNow ? (supportPurpose ? "Live confirmation required" : tradePurpose ? tradeEvidenceReading.quickTitle : "Use with caution") : "Fresh TrustSlip required",
       text: recommendedActionFinding,
       tone: tradePurpose ? tradeEvidenceReading.tone : validNow && !supportPurpose ? "trust" as const : "warning" as const,
@@ -2360,7 +2353,7 @@ export default function TrustSlipVerifyPublicPaper({
       items: [
         communityLabel && communityLabel !== "Not stated" ? "Identity recognised" : "Identity still needs a clearer community anchor",
         communityLabel && communityLabel !== "Not stated" ? "Community recognised" : "Community not clearly shown",
-        activityCountNumber > 0 ? "Activity recorded consistently" : "Activity record not visible yet",
+        purposeEvidenceExists ? "Purpose evidence visible" : activityCountNumber > 0 ? "Activity recorded consistently" : "Evidence still needs confirmation",
       ],
     },
     {
@@ -2369,7 +2362,7 @@ export default function TrustSlipVerifyPublicPaper({
       items: [
         hasWitnessEvidence ? "Current witness evidence visible" : "Current witnesses",
         supportPurpose && !hasSupportOutcomeEvidence ? "Support or repayment follow-through" : "Purpose-specific confirmation",
-        "High-risk approval evidence",
+        "High-risk independent confirmation",
       ],
     },
     {
@@ -3088,7 +3081,7 @@ export default function TrustSlipVerifyPublicPaper({
               gap: compact ? 7 : 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this recommendation?</div>
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this reading?</div>
             <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2") : decisionTranslationRows} compact={compact} />
             <div
               data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"
@@ -3125,25 +3118,35 @@ export default function TrustSlipVerifyPublicPaper({
         {compact ? (
           <TrustDocumentDisclosureSection
             title="Full evidence and record details"
-            summary="Open for core reading, decision summary, live code checks, and the fuller evidence pack."
+            summary="Open for purpose, relevant evidence, source, next check, and limitations."
           >
             <div
               data-gsn-public-mobile-full-evidence="collapsed-summary"
               style={{ display: "grid", gap: 10 }}
             >
               <OfficialResultTable
-                title="Core evidence reading"
-                rows={communityActivityMeaningRows}
+                title="Purpose / Relevant evidence"
+                rows={relevantEvidenceRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="Decision evidence summary"
-                rows={decisionPackEvidenceSummaryRows}
+                title="What it suggests"
+                rows={suggestionRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="Live record checks"
-                rows={recordTrustReasonTiles.map((item): [string, string] => [item.label, `${item.title}. ${item.text}`])}
+                title="Source / Recency"
+                rows={sourceFamilyRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Next check"
+                rows={nextCheckRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Limitations"
+                rows={limitationRows}
                 compact={compact}
               />
             </div>
@@ -3348,7 +3351,7 @@ export default function TrustSlipVerifyPublicPaper({
         </div>
         <TrustDocumentDisclosureSection
           title={decisionPackPurpose}
-          summary="Open for evidence sources, gaps, checks, and evidence boundaries."
+          summary="Open for purpose-specific public evidence, source, next check, and limits."
           defaultOpen={!compact}
         >
         <div
@@ -3373,7 +3376,7 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 1000,
               }}
             >
-              What does the community activity mean?
+              Purpose evidence and next check
             </h2>
             <p
               style={{
@@ -3385,22 +3388,42 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 850,
               }}
             >
-              GSN reads the public-safe community activity first. Security checks prove the paper can be checked; this section explains what the holder's visible activity can and cannot support.
+              GSN reads the selected Decision Pack first. Purpose-specific public-safe evidence leads this view; generic community activity is supporting context only.
             </p>
           </div>
           <OfficialResultTable
-            title="Core evidence reading"
-            rows={communityActivityMeaningRows}
+            title="Purpose"
+            rows={relevantEvidenceRows}
             compact={compact}
           />
           <OfficialResultTable
-            title="Decision evidence summary"
-            rows={decisionPackEvidenceSummaryRows}
+            title="Relevant evidence"
+            rows={primaryRelevantEvidenceRows}
+            compact={compact}
+          />
+          <OfficialResultTable
+            title="What it suggests"
+            rows={suggestionRows}
+            compact={compact}
+          />
+          <OfficialResultTable
+            title="Source / Recency"
+            rows={sourceFamilyRows}
+            compact={compact}
+          />
+          <OfficialResultTable
+            title="Next check"
+            rows={nextCheckRows}
+            compact={compact}
+          />
+          <OfficialResultTable
+            title="Limitations"
+            rows={limitationRows}
             compact={compact}
           />
           <TrustDocumentDisclosureSection
-            title="Decision evidence details"
-            summary="Open for evidence sources, categories, gaps, checks, and evidence boundaries."
+            title="Evidence details"
+            summary="Open for source categories, aggregate pointers, gaps, and checks."
           >
             <div
               data-gsn-decision-pack-profile="public-purpose-filter"
@@ -3415,7 +3438,7 @@ export default function TrustSlipVerifyPublicPaper({
           >
             <div>
               <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
-                Evidence source map
+                Source map
               </div>
               <div
                 style={{
