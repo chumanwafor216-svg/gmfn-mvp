@@ -407,6 +407,13 @@ type TrustSlipDecisionPackEvidenceRef = {
   safeMeta: Record<string, string>;
 };
 
+type TrustSlipDecisionPackEvidenceSignal = {
+  key: string;
+  label: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackEvidenceCategory = {
   key: string;
   label: string;
@@ -415,6 +422,7 @@ type TrustSlipDecisionPackEvidenceCategory = {
   latestAt: string;
   source: string;
   decisionUse: string;
+  evidenceSignals: TrustSlipDecisionPackEvidenceSignal[];
   eventRefs: TrustSlipDecisionPackEvidenceRef[];
 };
 
@@ -953,6 +961,27 @@ function countText(value: any): string {
 function numericCount(value: any): number {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeDecisionPackEvidenceSignals(row: any): TrustSlipDecisionPackEvidenceSignal[] {
+  const signals = Array.isArray(row?.evidence_signals)
+    ? row.evidence_signals
+    : Array.isArray(row?.evidenceSignals)
+      ? row.evidenceSignals
+      : [];
+  return signals
+    .map((signal: any) => ({
+      key: firstTruthy(signal?.key, signal?.label),
+      label: firstTruthy(signal?.label, "Evidence signal"),
+      evidenceCount: numericCount(signal?.evidence_count ?? signal?.evidenceCount),
+      decisionUse: firstTruthy(
+        signal?.decision_use,
+        signal?.decisionUse,
+        "Use this as a holder-consented activity signal only; ask for live confirmation before relying."
+      ),
+    }))
+    .filter((signal: TrustSlipDecisionPackEvidenceSignal) => signal.key || signal.label)
+    .slice(0, 5);
 }
 
 function positiveNumberId(value: any): number {
@@ -2395,6 +2424,7 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
           latestAt: firstTruthy(row?.latest_at, row?.latestAt),
           source: firstTruthy(row?.source),
           decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+          evidenceSignals: normalizeDecisionPackEvidenceSignals(row),
           eventRefs: Array.isArray(row?.event_refs)
             ? row.event_refs
                 .map((eventRef: any) => ({
@@ -4945,7 +4975,13 @@ export default function TrustSlipPage() {
       ...rows.map((category) => {
         const latest = safeDateTime(category.latestAt) || "not recorded";
         const sample = category.eventRefs[0]?.label ? `; sample ${category.eventRefs[0].label}` : "";
-        return `- ${category.label}: ${category.evidenceCount} event${category.evidenceCount === 1 ? "" : "s"}; latest ${latest}${sample}`;
+        const signals = category.evidenceSignals.length
+          ? `; signals ${category.evidenceSignals
+              .slice(0, 3)
+              .map((signal) => `${signal.label}${signal.evidenceCount ? ` (${signal.evidenceCount})` : ""}`)
+              .join(", ")}`
+          : "";
+        return `- ${category.label}: ${category.evidenceCount} event${category.evidenceCount === 1 ? "" : "s"}; latest ${latest}${signals}${sample}`;
       }),
       shareInvitationUrl ? `Public TrustSlip check: ${shareInvitationUrl}` : "",
       housingExternalContact
@@ -5007,6 +5043,12 @@ export default function TrustSlipPage() {
           label: category.label,
           evidence_count: category.evidenceCount,
           latest_at: category.latestAt || null,
+          evidence_signals: category.evidenceSignals.map((signal) => ({
+            key: signal.key,
+            label: signal.label,
+            evidence_count: signal.evidenceCount,
+            decision_use: signal.decisionUse || null,
+          })),
           event_refs: category.eventRefs.map((eventRef) => ({
             id: eventRef.id,
             label: eventRef.label,

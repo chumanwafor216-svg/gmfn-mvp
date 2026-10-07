@@ -11,6 +11,13 @@ export type TrustSlipEvidencePatternItem = {
   tone?: TrustSlipEvidencePatternTone;
 };
 
+export type TrustSlipEvidencePatternSignal = {
+  key?: string | null;
+  label?: string | null;
+  evidenceCount?: number | string | null;
+  decisionUse?: string | null;
+};
+
 export type TrustSlipEvidencePatternCategory = {
   key?: string | null;
   label?: string | null;
@@ -18,6 +25,8 @@ export type TrustSlipEvidencePatternCategory = {
   evidenceCount?: number | string | null;
   decisionUse?: string | null;
   latestAt?: string | null;
+  evidenceSignals?: TrustSlipEvidencePatternSignal[] | null;
+  evidence_signals?: TrustSlipEvidencePatternSignal[] | null;
 };
 
 export type TrustSlipEvidencePatternStackView = {
@@ -95,6 +104,11 @@ function countDecisionCategory(categories: TrustSlipEvidencePatternCategory[], k
   }, 0);
 }
 
+function categorySignals(category: TrustSlipEvidencePatternCategory): TrustSlipEvidencePatternSignal[] {
+  const signals = category.evidenceSignals ?? category.evidence_signals;
+  return Array.isArray(signals) ? signals : [];
+}
+
 function labelDecisionCategories(categories: TrustSlipEvidencePatternCategory[], keys: string[]): string {
   const keySet = new Set(keys);
   return categories
@@ -108,6 +122,19 @@ function labelDecisionCategories(categories: TrustSlipEvidencePatternCategory[],
 function evidenceStatus(count: number, fallback: string): string {
   if (count <= 0) return fallback;
   return `${count} public-safe evidence ${count === 1 ? "record" : "records"}`;
+}
+
+function labelDecisionSignals(categories: TrustSlipEvidencePatternCategory[], keys: string[]): string {
+  const keySet = new Set(keys);
+  const labels: string[] = [];
+  for (const category of categories) {
+    if (!keySet.has(clean(category.key))) continue;
+    for (const signal of categorySignals(category)) {
+      const label = clean(signal.label, clean(signal.key));
+      if (label && !labels.includes(label)) labels.push(label);
+    }
+  }
+  return labels.slice(0, 4).join(", ");
 }
 
 export function buildTrustSlipEvidencePatternStack(
@@ -157,6 +184,24 @@ export function buildTrustSlipEvidencePatternStack(
     "guarantor_support",
     "bank_payment",
   ]);
+  const communityResponseSignals = labelDecisionSignals(decisionCategories, [
+    "community_responsiveness",
+    "leadership_governance",
+    "relationship_path",
+    "identity_membership",
+  ]);
+  const enterpriseSignals = labelDecisionSignals(decisionCategories, [
+    "business_visibility",
+    "demand_activity",
+    "business_analysis",
+    "service_trade",
+  ]);
+  const followThroughSignals = labelDecisionSignals(decisionCategories, [
+    "focus_commitment",
+    "finance_repayment",
+    "guarantor_support",
+    "bank_payment",
+  ]);
   const activityCategories = enterpriseLabels || communityResponseLabels || baseActivityCategories;
   const hasCommunityActivity = positiveCount(input.communityActivityCount) || decisionCategoryTotal > 0;
   const hasWitnessEvidence = positiveCount(input.memberWitnessCount) || /visible|current|witness|sponsor/i.test(clean(input.memberWitnessEvidence));
@@ -193,6 +238,41 @@ export function buildTrustSlipEvidencePatternStack(
         tone: hasCommunityActivity ? "strong" : "check",
       },
       {
+        key: "enterprise-effort",
+        icon: "marketplace",
+        label: "Enterprise effort",
+        status: enterpriseStatus,
+        meaning: enterpriseCount > 0
+          ? `Public-safe enterprise effort is visible${enterpriseLabels ? ` across ${enterpriseLabels}` : ""}${enterpriseSignals ? `, including ${enterpriseSignals}` : ""}. This is effort evidence, not proof of success.`
+          : clean(
+              input.enterpriseMeaning,
+              "Shop, market, DemandBox, Spotlight, Market Wisdom, or purpose-specific public-safe evidence should be read as effort evidence where recorded."
+            ),
+        tone: purposeEvidenceExists || hasCommunityActivity ? "building" : "check",
+      },
+      {
+        key: "follow-through",
+        icon: "repaymentSchedule",
+        label: "Follow-through",
+        status: hasOutcomeEvidence ? evidenceStatus(followThroughCount, "Outcome evidence visible") : followThroughLooksThin ? "Needs confirmation" : "Some follow-through visible",
+        meaning: followThroughCount > 0
+          ? `Follow-through evidence is visible${followThroughLabels ? ` across ${followThroughLabels}` : ""}${followThroughSignals ? `, including ${followThroughSignals}` : ""}. Ask for private/live confirmation before high-risk reliance.`
+          : followThroughAnswer || "Ask for repayment, fulfilled work, support, or commitment records before higher-risk decisions.",
+        tone: hasOutcomeEvidence || !followThroughLooksThin ? "strong" : "check",
+      },
+      {
+        key: "community-response",
+        icon: "community",
+        label: "Community response",
+        status: communityResponseCount > 0 ? evidenceStatus(communityResponseCount, "Community evidence visible") : hasWitnessEvidence ? clean(input.memberWitnessEvidence, "Witness evidence visible") : "Witness evidence thin",
+        meaning: communityResponseCount > 0
+          ? `Public-safe community response evidence is visible${communityResponseLabels ? ` across ${communityResponseLabels}` : ""}${communityResponseSignals ? `, including ${communityResponseSignals}` : ""}.`
+          : hasWitnessEvidence
+            ? "A visible witness or sponsor path exists without exposing private witness names."
+            : "Ask for member witnesses or live community confirmation if the decision depends on people knowing the holder.",
+        tone: communityResponseCount > 0 || hasWitnessEvidence ? "strong" : "check",
+      },
+      {
         key: "discipline",
         icon: "shield",
         label: "Discipline",
@@ -207,41 +287,6 @@ export function buildTrustSlipEvidencePatternStack(
         status: consistency,
         meaning: "Evidence posture is a pattern signal across available records, not a character score.",
         tone: /strong|good|valid|active/i.test(consistency) ? "strong" : "building",
-      },
-      {
-        key: "community-response",
-        icon: "community",
-        label: "Community response",
-        status: communityResponseCount > 0 ? evidenceStatus(communityResponseCount, "Community evidence visible") : hasWitnessEvidence ? clean(input.memberWitnessEvidence, "Witness evidence visible") : "Witness evidence thin",
-        meaning: communityResponseCount > 0
-          ? `Public-safe community response evidence is visible${communityResponseLabels ? ` across ${communityResponseLabels}` : ""}.`
-          : hasWitnessEvidence
-            ? "A visible witness or sponsor path exists without exposing private witness names."
-            : "Ask for member witnesses or live community confirmation if the decision depends on people knowing the holder.",
-        tone: communityResponseCount > 0 || hasWitnessEvidence ? "strong" : "check",
-      },
-      {
-        key: "enterprise-effort",
-        icon: "marketplace",
-        label: "Enterprise effort",
-        status: enterpriseStatus,
-        meaning: enterpriseCount > 0
-          ? `Public-safe enterprise effort is visible${enterpriseLabels ? ` across ${enterpriseLabels}` : ""}. This is effort evidence, not proof of success.`
-          : clean(
-              input.enterpriseMeaning,
-              "Shop, market, DemandBox, Spotlight, Market Wisdom, or purpose-specific public-safe evidence should be read as effort evidence where recorded."
-            ),
-        tone: purposeEvidenceExists || hasCommunityActivity ? "building" : "check",
-      },
-      {
-        key: "follow-through",
-        icon: "repaymentSchedule",
-        label: "Follow-through",
-        status: hasOutcomeEvidence ? evidenceStatus(followThroughCount, "Outcome evidence visible") : followThroughLooksThin ? "Needs confirmation" : "Some follow-through visible",
-        meaning: followThroughCount > 0
-          ? `Follow-through evidence is visible${followThroughLabels ? ` across ${followThroughLabels}` : ""}. Ask for private/live confirmation before high-risk reliance.`
-          : followThroughAnswer || "Ask for repayment, fulfilled work, support, or commitment records before higher-risk decisions.",
-        tone: hasOutcomeEvidence || !followThroughLooksThin ? "strong" : "check",
       },
     ],
     nextStep: clean(

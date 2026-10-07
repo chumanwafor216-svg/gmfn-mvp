@@ -11,9 +11,13 @@ from app.core.trust_evidence_families import (
     PACK_EVIDENCE_FAMILY_FILTERS,
     PUBLIC_EVIDENCE_FAMILY_LABELS,
     PUBLIC_EVIDENCE_FAMILY_USES,
+    PUBLIC_EVIDENCE_SIGNAL_LABELS,
+    PUBLIC_EVIDENCE_SIGNAL_USES,
     SENSITIVE_EVIDENCE_FAMILY_LABELS,
+    evidence_signal_matches_family,
     public_trust_event_evidence_family,
     public_trust_event_evidence_family_from_record,
+    public_trust_event_evidence_signal_from_record,
 )
 from app.services.evidence_lifecycle_service import resolve_evidence_lifecycle, resolve_trust_event_lifecycle
 from app.services.legacy_user_id_match import legacy_user_id_text_match
@@ -811,6 +815,8 @@ def _decision_signal(payload: Mapping[str, Any], key: str) -> dict[str, str]:
 
 PUBLIC_EVENT_CATEGORY_LABELS = PUBLIC_EVIDENCE_FAMILY_LABELS
 PUBLIC_EVENT_CATEGORY_USES = PUBLIC_EVIDENCE_FAMILY_USES
+PUBLIC_EVENT_SIGNAL_LABELS = PUBLIC_EVIDENCE_SIGNAL_LABELS
+PUBLIC_EVENT_SIGNAL_USES = PUBLIC_EVIDENCE_SIGNAL_USES
 SENSITIVE_EVENT_CATEGORY_LABELS = SENSITIVE_EVIDENCE_FAMILY_LABELS
 PACK_EVENT_CATEGORY_FILTERS = PACK_EVIDENCE_FAMILY_FILTERS
 
@@ -902,6 +908,27 @@ def _public_event_category(event_or_type: Any) -> Optional[str]:
         return public_trust_event_evidence_family_from_record(event_or_type)
     return public_trust_event_evidence_family(event_or_type)
 
+def _event_signal_rows(rows: list[TrustEvent], category: str) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        signal = public_trust_event_evidence_signal_from_record(row)
+        if not signal or not evidence_signal_matches_family(signal, category):
+            continue
+        counts[signal] = counts.get(signal, 0) + 1
+    return [
+        {
+            "key": key,
+            "label": PUBLIC_EVENT_SIGNAL_LABELS.get(key, "Evidence signal"),
+            "evidence_count": count,
+            "decision_use": PUBLIC_EVENT_SIGNAL_USES.get(
+                key,
+                "Use this as a public-safe evidence pointer only; ask for direct confirmation before relying on it.",
+            ),
+        }
+        for key, count in sorted(counts.items(), key=lambda item: (-item[1], PUBLIC_EVENT_SIGNAL_LABELS.get(item[0], item[0])))[:5]
+    ]
+
+
 def _event_category_row(category: str, rows: list[TrustEvent]) -> dict[str, Any]:
     latest = max((getattr(row, "created_at", None) for row in rows), default=None)
     return {
@@ -911,6 +938,7 @@ def _event_category_row(category: str, rows: list[TrustEvent]) -> dict[str, Any]
         "evidence_count": len(rows),
         "latest_at": latest.isoformat() if latest else None,
         "source": "redacted_trust_events",
+        "evidence_signals": _event_signal_rows(rows, category),
         "decision_use": PUBLIC_EVENT_CATEGORY_USES.get(
             category,
             "Use this as a public pointer only; ask for direct confirmation before relying on it.",

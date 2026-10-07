@@ -14,6 +14,7 @@ type DecisionPackEvidenceCategory = {
   label: string;
   evidenceCount: number;
   latestAt?: string;
+  evidenceSignals?: Array<{ label?: string; evidenceCount?: number }>;
   eventRefs: Array<{ label?: string }>;
 };
 
@@ -693,6 +694,12 @@ export default function TrustSlipDecisionPackPrivatePreview({
                         }}
                       >
                         Latest: {safeDateTime(category.latestAt) || "Not recorded"}
+                        {category.evidenceSignals?.length
+                          ? ` | Signals: ${category.evidenceSignals
+                              .slice(0, 2)
+                              .map((signal) => `${signal.label}${signal.evidenceCount ? ` (${signal.evidenceCount})` : ""}`)
+                              .join(", ")}`
+                          : ""}
                         {category.eventRefs[0]?.label ? ` | Sample: ${category.eventRefs[0].label}` : ""}
                       </div>
                     </div>

@@ -2139,6 +2139,12 @@ def test_public_verify_decision_pack_extracts_behaviour_pattern_categories(
     assert categories["community_responsiveness"]["evidence_count"] == 1
     assert categories["leadership_governance"]["evidence_count"] == 1
     assert "proof of success" in categories["business_analysis"]["decision_use"]
+    assert categories["business_visibility"]["evidence_signals"][0]["key"] == "spotlight_or_repost"
+    assert categories["demand_activity"]["evidence_signals"][0]["key"] == "demand_response"
+    assert categories["business_analysis"]["evidence_signals"][0]["key"] == "market_wisdom_review"
+    assert categories["focus_commitment"]["evidence_signals"][0]["key"] == "commitment_completion"
+    assert categories["community_responsiveness"]["evidence_signals"][0]["key"] == "notice_acknowledgement"
+    assert categories["leadership_governance"]["evidence_signals"][0]["key"] == "neutral_review"
 
 def test_public_verify_decision_pack_prefers_explicit_evidence_family_metadata(
     client,
@@ -2175,6 +2181,7 @@ def test_public_verify_decision_pack_prefers_explicit_evidence_family_metadata(
     extract = response.json()["decision_pack_profile"]["evidence_extract"]
     categories = {row["key"]: row for row in extract["categories"]}
     assert categories["community_responsiveness"]["evidence_count"] == 1
+    assert categories["community_responsiveness"]["evidence_signals"] == []
     assert categories["business_visibility"]["status"] == "gap"
     profile_text = str(response.json()["decision_pack_profile"])
     assert "spotlight.reposted" not in profile_text

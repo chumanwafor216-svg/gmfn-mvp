@@ -177,6 +177,12 @@ type TrustSlipVerifyPublicPaperProps = {
         evidenceCount: number | null;
         latestAt: string;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       declaredClaims: Array<{
         key: string;
@@ -186,6 +192,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       declarationBoundaryNote: string;
       recordPointers: Array<{
@@ -196,6 +208,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       recordPointerBoundaryNote: string;
       housingReferencePointers: Array<{
@@ -206,6 +224,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       housingReferenceBoundaryNote: string;
       guaranteeOutcomePointers: Array<{
@@ -216,6 +240,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       guaranteeOutcomeBoundaryNote: string;
       fulfillmentOutcomePointers: Array<{
@@ -226,6 +256,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       fulfillmentOutcomeBoundaryNote: string;
       completedWorkPointers: Array<{
@@ -236,6 +272,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       completedWorkBoundaryNote: string;
       demandRequestOutcomePointers: Array<{
@@ -246,6 +288,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       demandRequestOutcomeBoundaryNote: string;
       confirmationPointers: Array<{
@@ -256,6 +304,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       confirmationPointerBoundaryNote: string;
       issueResolutionPointers: Array<{
@@ -266,6 +320,12 @@ type TrustSlipVerifyPublicPaperProps = {
         source: string;
         evidenceCount: number | null;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       issueResolutionBoundaryNote: string;
       privateReviewRequired: Array<{
@@ -273,6 +333,12 @@ type TrustSlipVerifyPublicPaperProps = {
         label: string;
         status: string;
         decisionUse: string;
+        evidenceSignals?: Array<{
+          key: string;
+          label: string;
+          evidenceCount: number | null;
+          decisionUse: string;
+        }>;
       }>;
       boundaryNote: string;
     };
@@ -1951,11 +2017,11 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["What we checked", requestedVerificationScopeLabel],
-    ["Guarantee", "No"],
-    ["Government ID", "No"],
-    ["Credit approval", "No"],
-    ["Final decision", "Yours"],
+    ["Record", resolvedCode ? "Genuine GSN code" : "Code not shown"],
+    ["Current", publicValidityLabel],
+    ["Evidence", requestedVerificationScopeLabel],
+    ["Not proof of", "Guarantee, ID, or credit approval"],
+    ["Decision", "Receiver decides"],
   ];
   const selectedConfirmationCommunityName = firstTruthy(
     selectedConfirmationCommunity?.community_name,
@@ -2047,8 +2113,13 @@ export default function TrustSlipVerifyPublicPaper({
     ? decisionPackPositiveCategories.map((category): [string, string] => [
         category.label,
         `${category.evidenceCount ?? 0} public-safe record${category.evidenceCount === 1 ? "" : "s"}${
-          category.latestAt ? `; latest ${category.latestAt}` : ""
-        }`,
+          category.evidenceSignals?.length
+            ? `; signals: ${category.evidenceSignals
+                .slice(0, 3)
+                .map((signal) => `${signal.label}${signal.evidenceCount ? ` (${signal.evidenceCount})` : ""}`)
+                .join(", ")}`
+            : ""
+        }${category.latestAt ? `; latest ${category.latestAt}` : ""}`,
       ])
     : [["Detailed public categories", "No detailed category records are shown here. Read the community activity meaning first, then ask for live confirmation or the full Trust Passport if the decision is high-risk."] as [string, string]]
   ).slice(0, 4);
@@ -2157,7 +2228,7 @@ export default function TrustSlipVerifyPublicPaper({
     { title: "Issue resolution pointers", rows: decisionPackIssueResolutionRows },
   ].filter((table) => table.rows.length > 0);
   const decisionEvidenceBoundarySummary =
-    "This public TrustSlip summarises public-safe evidence only. It does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations, or the holder's full Trust Passport.";
+    "Public-safe evidence only: no raw TrustEvents, private notes, contacts, payment records, addresses, allegations, or full Trust Passport.";
   const relevantSupportFinding = supportPurpose
     ? hasSupportOutcomeEvidence
       ? `Visible: ${decisionPackGuaranteeOutcomeRows[0]?.[1] || "support outcome pointer found"}.`
@@ -2185,7 +2256,7 @@ export default function TrustSlipVerifyPublicPaper({
       ? "Request live community confirmation before any guarantor or support decision."
       : tradePurpose
         ? tradeEvidenceReading.nextCheck
-        : "Use for low-risk decisions; request live confirmation before important decisions.";
+        : "For low-risk decisions this may be enough; for important decisions, request live confirmation.";
   const purposeSpecificPointerRows: Array<[string, string]> = (
     supportPurpose
       ? [
@@ -2316,7 +2387,7 @@ export default function TrustSlipVerifyPublicPaper({
   const limitationRows: Array<[string, string]> = [
     ["Public-safe only", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full Trust Passport pages are not exposed."],
     ["Private review", decisionPackPrivateReviewRows.length ? `${decisionPackPrivateReviewRows.length} sensitive evidence categor${decisionPackPrivateReviewRows.length === 1 ? "y" : "ies"} require Trust Passport or live confirmation.` : "No sensitive private-review category is listed for this public view."],
-    ["Does not prove", "No guarantee, government ID, credit approval, licence, right-to-work check, payment instruction, or final suitability decision."],
+    ["Boundary", "Evidence, not approval. Not a guarantee, government ID, credit approval, licence, work check, or payment instruction."],
   ];
   const decisionBecauseRows: Array<[string, string]> = purposeDecisionReading.because
     .slice(0, compact ? 3 : 5)
@@ -3359,7 +3430,7 @@ export default function TrustSlipVerifyPublicPaper({
                   lineHeight: 1.32,
                 }}
               >
-                GSN checked {evidenceScopeIsWider ? "primary and wider community signals" : "the primary community signal"}; it is not a guarantee, government ID, credit approval, or final decision.
+                GSN checked {evidenceScopeIsWider ? "primary and wider community signals" : "the primary community signal"}; this is evidence for the receiver to decide with.
               </div>
             ) : (
               <div

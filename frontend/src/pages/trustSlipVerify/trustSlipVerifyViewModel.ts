@@ -21,6 +21,14 @@ type DecisionPackEvidenceCategory = {
   evidenceCount: number | null;
   latestAt: string;
   decisionUse: string;
+  evidenceSignals: DecisionPackEvidenceSignal[];
+};
+
+type DecisionPackEvidenceSignal = {
+  key: string;
+  label: string;
+  evidenceCount: number | null;
+  decisionUse: string;
 };
 
 type DecisionPackPrivateReviewCategory = {
@@ -336,6 +344,27 @@ function stringList(value: any): string[] {
   return Array.isArray(value) ? value.map((item) => safeStr(item)).filter(Boolean) : [];
 }
 
+function normalizeDecisionPackEvidenceSignals(raw: any): DecisionPackEvidenceSignal[] {
+  const rows = Array.isArray(raw?.evidence_signals)
+    ? raw.evidence_signals
+    : Array.isArray(raw?.evidenceSignals)
+      ? raw.evidenceSignals
+      : [];
+  return rows
+    .map((signal: any) => ({
+      key: firstTruthy(signal?.key, signal?.label),
+      label: firstTruthy(signal?.label, "Evidence signal"),
+      evidenceCount: firstNumberLike(signal?.evidence_count, signal?.evidenceCount),
+      decisionUse: firstTruthy(
+        signal?.decision_use,
+        signal?.decisionUse,
+        "Use this as a public activity signal only; ask for live confirmation before relying."
+      ),
+    }))
+    .filter((signal: DecisionPackEvidenceSignal) => signal.key || signal.label)
+    .slice(0, 5);
+}
+
 function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExtractView {
   const source = raw && typeof raw === "object" ? raw : {};
   const categories = Array.isArray(source.categories) ? source.categories : [];
@@ -400,12 +429,14 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
         key: firstTruthy(category?.key, category?.label),
         label: firstTruthy(category?.label, "Evidence category"),
         status: firstTruthy(category?.status, "not_shown"),
-        evidenceCount: firstNumberLike(category?.evidence_count),
-        latestAt: safeDateTime(category?.latest_at),
+        evidenceCount: firstNumberLike(category?.evidence_count, category?.evidenceCount),
+        latestAt: safeDateTime(category?.latest_at || category?.latestAt),
         decisionUse: firstTruthy(
           category?.decision_use,
+          category?.decisionUse,
           "Use this as a public pointer only; ask for direct confirmation before relying on it."
         ),
+        evidenceSignals: normalizeDecisionPackEvidenceSignals(category),
       }))
       .filter((category: DecisionPackEvidenceCategory) => category.key || category.label)
       .slice(0, 6),
