@@ -35,6 +35,7 @@ if db_path.exists():
 
 from app.main import app  # noqa: E402
 from app.core import clan_auth  # noqa: E402
+from app.core.rate_limit import rate_limiter  # noqa: E402
 from app.db.database import engine  # noqa: E402
 
 
@@ -99,6 +100,13 @@ def _clean_db_between_tests(_apply_migrations):
         tables = _list_user_tables(conn)
         _wipe_all_tables(conn, tables)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter_between_tests():
+    rate_limiter._hits.clear()
+    yield
+    rate_limiter._hits.clear()
 
 
 @pytest.fixture(scope="session")
