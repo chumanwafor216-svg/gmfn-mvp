@@ -510,3 +510,38 @@ def test_direct_trust_event_insert_is_annotated_by_model_listener():
         assert event.meta["reason"] == "shop owner reposted Spotlight"
     finally:
         db.close()
+
+def test_marketplace_trustslip_evidence_signals_keep_business_records_separate_from_success_claims():
+    cases = [
+        ("marketplace.listing.submitted", "service_trade", "marketplace_listing_submission"),
+        ("marketplace.listing.review_decided", "service_trade", "marketplace_listing_review_decision"),
+        ("marketplace.shop.created", "service_trade", "shop_profile_record"),
+        ("marketplace.shop.updated", "service_trade", "shop_profile_record"),
+        ("marketplace.product.created", "service_trade", "product_catalog_record"),
+        ("marketplace.product.updated", "service_trade", "product_lifecycle_record"),
+        ("marketplace.product.removed", "service_trade", "product_lifecycle_record"),
+        ("marketplace.product.restored", "service_trade", "product_lifecycle_record"),
+        ("marketplace.shop.followed", "business_visibility", "shop_follow_record"),
+        ("marketplace.shop.unfollowed", "business_visibility", "shop_follow_record"),
+        ("marketplace.broadcast.created", "business_visibility", "marketplace_broadcast_record"),
+        ("marketplace.broadcast.deleted", "business_visibility", "marketplace_broadcast_record"),
+        ("marketplace.product.reposted", "business_visibility", "network_repost_record"),
+        ("merchant.release_recorded", "service_trade", "merchant_release_record"),
+        ("vault_order_created", "business_visibility", "vault_order_record"),
+        ("vault_slots_activated", "business_visibility", "vault_activation_record"),
+        ("shop_visit", "business_visibility", "marketplace_attention_record"),
+        ("product_open", "business_visibility", "marketplace_attention_record"),
+        ("contact_tap", "business_visibility", "marketplace_attention_record"),
+        ("spotlight_impression", "business_visibility", "marketplace_attention_record"),
+        ("share_action", "business_visibility", "marketplace_attention_record"),
+        ("recommendation_actioned", "business_analysis", "market_wisdom_review"),
+    ]
+
+    for event_type, family, signal in cases:
+        assert public_trust_event_evidence_family(event_type) == family
+        assert public_trust_event_evidence_signal(event_type) == signal
+
+    assert "not proof of sales" in PUBLIC_EVIDENCE_SIGNAL_USES["shop_profile_record"]
+    assert "not proof of purchase" in PUBLIC_EVIDENCE_SIGNAL_USES["product_catalog_record"]
+    assert "not buyer proof" in PUBLIC_EVIDENCE_SIGNAL_USES["marketplace_attention_record"]
+    assert "not escrow" in PUBLIC_EVIDENCE_SIGNAL_USES["merchant_release_record"]

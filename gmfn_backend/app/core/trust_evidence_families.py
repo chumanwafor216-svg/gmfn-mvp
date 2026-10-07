@@ -80,8 +80,20 @@ PUBLIC_EVIDENCE_SIGNAL_LABELS: dict[str, str] = {
     "neutral_review": "Neutral governance response",
     "admin_or_leadership": "Admin or leadership action",
     "membership_vote_record": "Membership vote record",
+    "marketplace_listing_submission": "Marketplace listing review submission",
+    "marketplace_listing_review_decision": "Marketplace listing review decision",
     "shop_or_market_listing": "Shop or marketplace listing",
+    "shop_profile_record": "Shop profile record",
+    "product_catalog_record": "Product catalogue record",
+    "product_lifecycle_record": "Product lifecycle record",
+    "shop_follow_record": "Shop follow/unfollow record",
+    "marketplace_attention_record": "Marketplace attention record",
     "spotlight_or_repost": "Spotlight or repost activity",
+    "marketplace_broadcast_record": "Marketplace broadcast/Spotlight record",
+    "network_repost_record": "Network repost record",
+    "merchant_release_record": "Merchant release evidence record",
+    "vault_order_record": "Vault order record",
+    "vault_activation_record": "Vault activation record",
     "shop_attention": "Shop attention or product-view activity",
     "platform_feature_activation": "Business feature activation",
     "demand_request": "DemandBox request activity",
@@ -142,8 +154,20 @@ PUBLIC_EVIDENCE_SIGNAL_USES: dict[str, str] = {
     "neutral_review": "Use to see governance participation without forcing a positive or negative judgement.",
     "admin_or_leadership": "Use to see responsibility exposure; ask who observed the leadership if it matters.",
     "membership_vote_record": "Use to see membership governance participation; inspect vote meaning before relying.",
+    "marketplace_listing_submission": "Use to see a shop or product was submitted into marketplace review; not proof it was approved or successful.",
+    "marketplace_listing_review_decision": "Use to see a listing review decision happened; inspect decision context before relying.",
     "shop_or_market_listing": "Use as market presence evidence, not proof of sales success.",
+    "shop_profile_record": "Use to see a shop profile was created or maintained; not proof of sales, stock, or customer satisfaction.",
+    "product_catalog_record": "Use to see a product or offer was placed into the catalogue; not proof of purchase or demand.",
+    "product_lifecycle_record": "Use to see product updates, removals, or restorations; ask why changes happened before relying.",
+    "shop_follow_record": "Use as weak social attention around a shop; not endorsement, verification, payment, or purchase proof.",
+    "marketplace_attention_record": "Use as attention context such as visits, opens, taps, or share actions; not buyer proof or trust scoring.",
     "spotlight_or_repost": "Use as visibility and repeated promotion effort, not proof of demand or profit.",
+    "marketplace_broadcast_record": "Use to see a shop update or Spotlight was published or removed; not proof of sales or reach.",
+    "network_repost_record": "Use to see a product was reposted into another community or Spotlight lane; not proof the target market bought.",
+    "merchant_release_record": "Use as a structured trade-release evidence pointer; not escrow, payout approval, bank confirmation, or delivery guarantee.",
+    "vault_order_record": "Use to see controlled catalogue/Vault capacity was ordered; not proof payment cleared or buyer access was granted.",
+    "vault_activation_record": "Use to see controlled catalogue/Vault slots became active; not proof of sales or fulfilment.",
     "shop_attention": "Use as attention/engagement context, not proof of purchase or satisfaction.",
     "platform_feature_activation": "Use as platform/business effort evidence, not proof that the feature produced results.",
     "demand_request": "Use as demand/request activity; ask what happened after the request.",
@@ -203,8 +227,20 @@ PUBLIC_EVIDENCE_SIGNAL_FAMILIES: dict[str, str] = {
     "neutral_review": "leadership_governance",
     "admin_or_leadership": "leadership_governance",
     "membership_vote_record": "leadership_governance",
+    "marketplace_listing_submission": "service_trade",
+    "marketplace_listing_review_decision": "service_trade",
     "shop_or_market_listing": "service_trade",
+    "shop_profile_record": "service_trade",
+    "product_catalog_record": "service_trade",
+    "product_lifecycle_record": "service_trade",
+    "shop_follow_record": "business_visibility",
+    "marketplace_attention_record": "business_visibility",
     "spotlight_or_repost": "business_visibility",
+    "marketplace_broadcast_record": "business_visibility",
+    "network_repost_record": "business_visibility",
+    "merchant_release_record": "service_trade",
+    "vault_order_record": "business_visibility",
+    "vault_activation_record": "business_visibility",
     "shop_attention": "business_visibility",
     "platform_feature_activation": "business_visibility",
     "demand_request": "demand_activity",
@@ -553,6 +589,40 @@ def infer_trust_event_evidence_family(event_type: Any, meta: Any = None) -> Opti
         return "community_responsiveness"
     if "community_domain_beneficiary_outcome_recorded" in text:
         return "community_participation"
+    if "marketplace_listing_submitted" in text or "marketplace_listing_review_decided" in text:
+        return "service_trade"
+    if "merchant_release_recorded" in text:
+        return "service_trade"
+    if "vault_order_created" in text or "vault_slots_activated" in text:
+        return "business_visibility"
+    if "marketplace_product_reposted" in text:
+        return "business_visibility"
+    if "marketplace_broadcast" in text:
+        return "business_visibility"
+    if any(token in text for token in ("marketplace_shop_followed", "marketplace_shop_unfollowed")):
+        return "business_visibility"
+    if "recommendation_actioned" in text:
+        return "business_analysis"
+    if any(token in text for token in (
+        "shop_visit",
+        "product_open",
+        "spotlight_impression",
+        "spotlight_shop_click",
+        "contact_tap",
+        "share_action",
+    )):
+        return "business_visibility"
+    if any(token in text for token in (
+        "marketplace_shop_created",
+        "marketplace_shop_updated",
+        "marketplace_product_created",
+        "marketplace_product_updated",
+        "marketplace_product_removed",
+        "marketplace_product_restored",
+        "marketplace_shop_product_created",
+        "marketplace_shop_product_updated",
+    )):
+        return "service_trade"
     if any(token in text for token in ("default", "missed", "overdue", "declined", "rejected", "revoked", "frozen", "dispute", "complaint")):
         return "dispute_caution"
     if "expected_payment" in text or "payment_reminder" in text:
@@ -676,6 +746,39 @@ def infer_trust_event_evidence_signal(event_type: Any, meta: Any = None) -> Opti
         return "payment_followup_record"
     if "expected_payment" in text:
         return "expected_payment_record"
+    if "marketplace_listing_submitted" in text:
+        return "marketplace_listing_submission"
+    if "marketplace_listing_review_decided" in text:
+        return "marketplace_listing_review_decision"
+    if "merchant_release_recorded" in text:
+        return "merchant_release_record"
+    if "vault_order_created" in text:
+        return "vault_order_record"
+    if "vault_slots_activated" in text:
+        return "vault_activation_record"
+    if "marketplace_product_reposted" in text:
+        return "network_repost_record"
+    if "marketplace_broadcast" in text:
+        return "marketplace_broadcast_record"
+    if any(token in text for token in ("marketplace_shop_followed", "marketplace_shop_unfollowed")):
+        return "shop_follow_record"
+    if "recommendation_actioned" in text:
+        return "market_wisdom_review"
+    if any(token in text for token in (
+        "shop_visit",
+        "product_open",
+        "spotlight_impression",
+        "spotlight_shop_click",
+        "contact_tap",
+        "share_action",
+    )):
+        return "marketplace_attention_record"
+    if any(token in text for token in ("marketplace_product_created", "marketplace_shop_product_created")):
+        return "product_catalog_record"
+    if any(token in text for token in ("marketplace_product_updated", "marketplace_product_removed", "marketplace_product_restored", "marketplace_shop_product_updated")):
+        return "product_lifecycle_record"
+    if any(token in text for token in ("marketplace_shop_created", "marketplace_shop_updated")):
+        return "shop_profile_record"
     if "payment_proof" in text or "proof_logged" in text:
         return "payment_proof_review_record"
     if any(token in text for token in ("bank", "payment", "payout", "withdrawal", "deposit", "vault_payment")):
