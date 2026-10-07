@@ -75,12 +75,12 @@ assertNotContains(
 );
 assertContains(
   trustSlipPage,
-  /const issuedCode = firstTruthy\([\s\S]*trustSlipCodeFromResult\(reissueResult\)[\s\S]*trustSlipCodeFromResult\(mergedSummary\)[\s\S]*\);/,
+  /const confirmedSummary = buildConfirmedTrustSlipIssueSummary\([\s\S]*?const issuedCode = trustSlipCodeFromResult\(confirmedSummary \|\| reissueResult\);/,
   "Successful generation must establish an actual TrustSlip code from the response or fresh summary."
 );
 assertContains(
   trustSlipPage,
-  /if \(!issuedCode\)[\s\S]*setTrustSlipSetupSubmitted\(false\)[\s\S]*return;/,
+  /if \(!confirmedSummary \|\| !issuedCode\)[\s\S]*setTrustSlipSetupSubmitted\(false\)[\s\S]*return;/,
   "Failed issuance must remain in setup instead of opening the paper."
 );
 assertContains(
@@ -90,8 +90,18 @@ assertContains(
 );
 assertContains(
   trustSlipPage,
-  /const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);/,
-  "Share/Open actions must require a usable TrustSlip code and link."
+  /const hasUsableTrustSlipShare = Boolean\([\s\S]*?trustSlipCode && shortVerifyPath && shortVerifyUrl[\s\S]*?\);[\s\S]*?const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh[\s\S]*?!trustSlipShareBlockedByCurrentness[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);/,
+  "Share/Open actions must require a usable TrustSlip code and a persisted purpose-bound short share invitation."
+);
+assertContains(
+  trustSlipPage,
+  /createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_scope: visibilityScope[\s\S]*?verification_community_id:/,
+  "TrustSlip holder must create server-side purpose-bound share invitations instead of query-packed links."
+);
+assertContains(
+  apiClient,
+  /createTrustSlipShareInvitation[\s\S]*?\/trust-slips\/me\/share-invitations[\s\S]*?getTrustSlipShareInvitation[\s\S]*?\/trust-slips\/share-invitations\//,
+  "API client must expose create/resolve calls for TrustSlip share invitations."
 );
 assertContains(
   trustSlipPage,

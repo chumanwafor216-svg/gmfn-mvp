@@ -198,7 +198,7 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
 }
 
 export default function TrustSlipVerifyPage() {
-  const params = useParams<{ code?: string }>();
+  const params = useParams<{ code?: string; shareToken?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -399,11 +399,13 @@ export default function TrustSlipVerifyPage() {
     [publicDecisionPackContext]
   );
 
+  const requestedShareToken = safeStr(params.shareToken);
+  const isShareInvitationRoute = Boolean(requestedShareToken);
   const requestedCode = useMemo(() => {
-    return firstTruthy(params.code, queryCode);
-  }, [params.code, queryCode]);
+    return isShareInvitationRoute ? "" : firstTruthy(params.code, queryCode);
+  }, [isShareInvitationRoute, params.code, queryCode]);
   const verifyContextKey = `${isAppRoute ? "app" : "public"}:${selectedClanId || 0}:${
-    requestedCode || "auto"
+    requestedShareToken ? `share:${requestedShareToken}` : requestedCode || "auto"
   }:${publicDecisionPackContextKey}`;
   verifyContextRef.current = verifyContextKey;
   const isLiteRoute = useMemo(() => {
@@ -421,7 +423,7 @@ export default function TrustSlipVerifyPage() {
     );
   }, [location.pathname, location.search]);
 
-  const noPublicCodeSupplied = !isAppRoute && !requestedCode;
+  const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -486,7 +488,7 @@ export default function TrustSlipVerifyPage() {
       );
     };
 
-    if (requestedCode) {
+    if (requestedCode || requestedShareToken) {
       void import("./trustSlipVerify/TrustSlipVerifyPublicPaper");
     }
 
@@ -506,6 +508,17 @@ export default function TrustSlipVerifyPage() {
       try {
         let codeToUse = requestedCode;
         let appContext: [any, any, any] | null = null;
+        let verifyResult: any = null;
+
+        if (requestedShareToken) {
+          verifyResult = await (api as any).getTrustSlipShareInvitation(requestedShareToken, "minimal");
+          codeToUse = firstTruthy(
+            verifyResult?.code,
+            verifyResult?.verification_code,
+            verifyResult?.token,
+            verifyResult?.share_invitation?.code
+          );
+        }
 
         if (!codeToUse && isAppRoute) {
           appContext = await appContextPromise;
@@ -540,11 +553,12 @@ export default function TrustSlipVerifyPage() {
 
         if (!codeToUse) {
           setRecord(null);
-          setLoadError("No TrustSlip code was supplied.");
+          setLoadError(requestedShareToken ? "This TrustSlip share invitation did not resolve to a readable TrustSlip." : "No TrustSlip code was supplied.");
           return;
         }
 
-        const verifyResult = await callFirstAvailable(
+        if (!verifyResult) {
+          verifyResult = await callFirstAvailable(
           [
             "verifyTrustSlipCode",
             "verifyTrustSlip",
@@ -554,8 +568,9 @@ export default function TrustSlipVerifyPage() {
             "getTrustSlipPublic",
             "getTrustSlipPublicByCode",
           ],
-          [[codeToUse, "minimal"], [codeToUse]]
-        );
+            [[codeToUse, "minimal"], [codeToUse]]
+          );
+        }
 
         if (
           !alive ||
@@ -626,6 +641,7 @@ export default function TrustSlipVerifyPage() {
     };
   }, [
     requestedCode,
+    requestedShareToken,
     isAppRoute,
     selectedClanId,
     verifyContextKey,

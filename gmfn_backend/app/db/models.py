@@ -3149,6 +3149,85 @@ class TrustSlipDecisionPackConsentShare(Base):
     )
 
 
+class TrustSlipShareInvitation(Base):
+    __tablename__ = "trust_slip_share_invitations"
+
+    __table_args__ = (
+        UniqueConstraint("share_token_hash", name="uq_trust_slip_share_invitations_token_hash"),
+        Index("ix_trust_slip_share_invitations_slip_created", "trust_slip_id", "created_at"),
+        Index("ix_trust_slip_share_invitations_holder_created", "holder_user_id", "created_at"),
+        Index("ix_trust_slip_share_invitations_pack_created", "decision_pack_key", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    share_token_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    share_token_prefix: Mapped[Optional[str]] = mapped_column(String(16), nullable=True, index=True)
+
+    trust_slip_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("trust_slips.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    holder_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    verification_community_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    code_at_issue: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    decision_pack_key: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    access_purpose: Mapped[str] = mapped_column(String(160), nullable=False)
+    recipient_question: Mapped[str] = mapped_column(String(280), nullable=False)
+    decision_focus: Mapped[str] = mapped_column(String(360), nullable=False)
+    access_scope: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="public_decision_pack",
+        server_default="public_decision_pack",
+    )
+    verification_scope: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="public_decision_pack",
+        server_default="public_decision_pack",
+    )
+    verification_scope_label: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    verification_scope_boundary: Mapped[Optional[str]] = mapped_column(String(520), nullable=True)
+    verification_community_label: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    verification_community_ref: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    superseded_by_share_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+
 class MarketplaceShop(Base):
     __tablename__ = "marketplace_shops"
 

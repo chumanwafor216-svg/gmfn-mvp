@@ -3072,6 +3072,36 @@ export async function recordMyTrustSlipDecisionPackConsentShare(params?: {
     event_ref_count: params?.event_ref_count ?? 0,
   });
 }
+export async function createTrustSlipShareInvitation(params?: {
+  decision_pack?: string;
+  access_scope?: string;
+  verification_scope?: string;
+  verification_community_id?: number | string | null;
+  verification_community_ref?: string | null;
+}): Promise<any> {
+  return httpJson("/trust-slips/me/share-invitations", "POST", {
+    decision_pack: params?.decision_pack || "community_standing",
+    access_scope: params?.access_scope || "public_decision_pack",
+    verification_scope: params?.verification_scope || params?.access_scope || "public_decision_pack",
+    verification_community_id: params?.verification_community_id || undefined,
+    verification_community_ref: params?.verification_community_ref || undefined,
+  });
+}
+
+export async function getTrustSlipShareInvitation(
+  shareToken: string,
+  level?: "minimal" | "standard" | "detailed"
+): Promise<any> {
+  return httpJson(
+    `/trust-slips/share-invitations/${encodeURIComponent(String(shareToken))}${buildQuery({
+      level: level || undefined,
+    })}`,
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs: TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS }
+  );
+}
+
 export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"

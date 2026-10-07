@@ -32,6 +32,13 @@ from app.services.trust_slip_decision_packs import (
     record_decision_pack_access,
     record_decision_pack_consent_share,
 )
+from app.services.trust_slip_share_invitations import (
+    create_share_invitation,
+    decision_context_from_share,
+    resolve_share_invitation,
+    share_invitation_public_payload,
+    share_is_expired,
+)
 from app.services.trust_slips_services import (
     backfill_missing_trustslip_snapshots,
     build_trust_slip_visibility_view,
@@ -1014,6 +1021,30 @@ class TrustSlipDecisionPackConsentShareIn(BaseModel):
         return _reject_int_boundary_value(value, str(info.field_name))
 
 
+class TrustSlipShareInvitationCreateIn(BaseModel):
+    decision_pack: str = Field(default="community_standing", min_length=1, max_length=64)
+    access_scope: str = Field(default="public_decision_pack", min_length=1, max_length=64)
+    verification_scope: Optional[str] = Field(default=None, max_length=64)
+    verification_community_id: Optional[int] = None
+    verification_community_ref: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("decision_pack", "access_scope", "verification_scope", "verification_community_ref", mode="before")
+    @classmethod
+    def reject_non_text_values(cls, value: Any, info: Any) -> Any:
+        if value is None and str(info.field_name) == "verification_scope":
+            return None
+        if value is None and str(info.field_name) == "verification_community_ref":
+            return None
+        return _reject_non_text_value(value, str(info.field_name))
+
+    @field_validator("verification_community_id", mode="before")
+    @classmethod
+    def reject_malformed_verification_community_id(cls, value: Any, info: Any) -> Any:
+        if value is None or value == "":
+            return None
+        return _reject_int_boundary_value(value, str(info.field_name))
+
+
 @router.get("/ping")
 def ping() -> Dict[str, Any]:
     return {"ok": True, "service": "trust-slips"}
@@ -1348,6 +1379,129 @@ def admin_backfill_trustslip_snapshots(
         only_current=bool(only_current),
         limit=int(limit),
     )
+
+
+def _trust_slip_share_path(token: str) -> str:
+    return f"/t/s/{quote(str(token), safe='')}"
+
+
+@router.post("/me/share-invitations")
+def create_my_trust_slip_share_invitation(
+    payload: TrustSlipShareInvitationCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    if slip is None or not _safe_str(getattr(slip, "code", "")):
+        raise HTTPException(status_code=409, detail="No current TrustSlip found")
+    if int(getattr(slip, "holder_user_id", 0) or 0) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the TrustSlip holder can create this share invitation.")
+
+    effective = _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+        merchant_verify_active=True,
+    )
+    if effective != "active" or not bool(getattr(slip, "is_current", True)):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "trustslip_not_shareable",
+                "status": effective,
+                "is_current": bool(getattr(slip, "is_current", True)),
+                "message": "Refresh TrustSlip before creating a purpose-bound share invitation.",
+            },
+        )
+
+    try:
+        row, token = create_share_invitation(
+            db,
+            slip=slip,
+            context_params={
+                "decision_pack": payload.decision_pack,
+                "access_scope": payload.access_scope,
+                "verification_scope": payload.verification_scope or payload.access_scope,
+            },
+            verification_community_id=payload.verification_community_id,
+            verification_community_ref=payload.verification_community_ref,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc) or "invalid_share_invitation") from exc
+
+    share_path = _trust_slip_share_path(token)
+    return {
+        "ok": True,
+        "share_token": token,
+        "share_path": share_path,
+        "share_url": share_path,
+        "item": share_invitation_public_payload(row, token_path=share_path),
+        "privacy_note": "This share invitation stores purpose and scope only. It does not store recipient identity, private Trust Passport records, copied text, or TrustSlip evidence snapshots.",
+    }
+
+
+@router.get("/share-invitations/{share_token}")
+def resolve_trust_slip_share_invitation_public(
+    share_token: str,
+    request: Request,
+    level: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    _throttle_public(request, "trustslip_share_invitation")
+    try:
+        row = resolve_share_invitation(db, share_token)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc) or "trustslip_share_invitation_not_found") from exc
+
+    slip = db.get(TrustSlip, int(row.trust_slip_id))
+    if not slip:
+        raise HTTPException(status_code=404, detail="TrustSlip not found")
+
+    payload = verify_trust_slip_public(code=str(slip.code), request=request, level=level, db=db)
+    context = decision_context_from_share(row)
+    share_path = _trust_slip_share_path(share_token)
+    share_status = _safe_str(getattr(row, "status", "active")).lower() or "active"
+    if share_is_expired(row):
+        share_status = "expired"
+    if getattr(row, "revoked_at", None):
+        share_status = "revoked"
+
+    if share_status != "active":
+        payload.update(
+            {
+                "status": share_status,
+                "effective_status": share_status,
+                "verification_status": share_status,
+                "verified": False,
+                "valid": False,
+                "is_current": False,
+                "merchant_message": "This TrustSlip share invitation is not active.",
+            }
+        )
+
+    decision_pack_evidence_extract = build_decision_pack_evidence_extract(
+        db,
+        slip=slip,
+        context=context,
+    )
+    payload.update(
+        build_decision_pack_access_payload(
+            context,
+            recorded=False,
+        )
+    )
+    payload["decision_pack_profile"] = build_decision_pack_profile(
+        context,
+        public_payload=payload,
+        evidence_extract=decision_pack_evidence_extract,
+    )
+    payload["share_invitation"] = share_invitation_public_payload(row, token_path=share_path)
+    payload["share_invitation_status"] = share_status
+    payload["public_verify_url"] = share_path
+    payload["verify_page"] = share_path
+    return payload
 
 
 @router.get("/verify/{code}")

@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.api.routes import trust_slips as trust_slips_route
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, TrustSlipShareInvitation, User
 from app.services import trust_slips_services
 from app.services.trust_slips_services import get_trust_slip_payload
 
@@ -2595,3 +2595,131 @@ def test_holder_decision_pack_consent_share_rejects_malformed_payload_before_wri
         assert db.query(TrustEvent).count() == 0
     finally:
         db.close()
+
+
+
+def test_trustslip_share_invitation_preserves_purpose_without_query(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    _create_trust_slip(code="SHARE-EMPLOYMENT", clan_id=1)
+
+    created = client.post(
+        "/trust-slips/me/share-invitations",
+        json={
+            "decision_pack": "employment_decision",
+            "access_scope": "community_specific",
+            "verification_scope": "community_specific",
+            "verification_community_id": 1,
+        },
+    )
+
+    assert created.status_code == 200, created.text
+    created_body = created.json()
+    token = created_body["share_token"]
+    assert created_body["share_path"] == f"/t/s/{token}"
+    assert "decision_pack=" not in created_body["share_path"]
+    assert "/share/trustslip/" not in created_body["share_path"]
+
+    direct = client.get(f"/trust-slips/share-invitations/{token}")
+
+    assert direct.status_code == 200, direct.text
+    payload = direct.json()
+    assert payload["code"] == "SHARE-EMPLOYMENT"
+    assert payload["share_invitation"]["path"] == f"/t/s/{token}"
+    assert payload["decision_pack"] == "employment_decision"
+    assert payload["access_purpose"] == "Employment Decision Pack"
+    assert payload["decision_pack_profile"]["access_purpose"] == "Employment Decision Pack"
+    assert payload["decision_pack_profile"]["recipient_question"] == "Is there enough evidence to continue an employment conversation?"
+    assert "Right to work" in payload["decision_pack_profile"]["refuses_to_claim"]
+
+    canonical = client.get("/trust-slips/verify/SHARE-EMPLOYMENT")
+    assert canonical.status_code == 200, canonical.text
+    canonical_body = canonical.json()
+    assert "decision_pack_profile" not in canonical_body
+    assert canonical_body["public_verify_url"].startswith("/t/SHARE-EMPLOYMENT")
+
+    db = SessionLocal()
+    try:
+        row = db.query(TrustSlipShareInvitation).one()
+        assert row.share_token_hash != token
+        assert token not in row.share_token_hash
+        assert row.decision_pack_key == "employment_decision"
+        assert row.access_purpose == "Employment Decision Pack"
+        assert row.code_at_issue == "SHARE-EMPLOYMENT"
+    finally:
+        db.close()
+
+
+def test_trustslip_share_invitation_requires_real_current_trustslip(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    missing = client.post(
+        "/trust-slips/me/share-invitations",
+        json={"decision_pack": "employment_decision"},
+    )
+    assert missing.status_code == 409, missing.text
+
+    slip_id = _create_trust_slip(code="SHARE-EXPIRED", clan_id=1)
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        slip.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+        db.commit()
+    finally:
+        db.close()
+
+    expired = client.post(
+        "/trust-slips/me/share-invitations",
+        json={"decision_pack": "employment_decision"},
+    )
+    assert expired.status_code == 409, expired.text
+    assert "trustslip_not_shareable" in expired.text
+
+
+def test_trustslip_share_invitation_revoked_and_superseded_states_stay_truthful(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    slip_id = _create_trust_slip(code="SHARE-SUPERSEDED", clan_id=1)
+    created = client.post(
+        "/trust-slips/me/share-invitations",
+        json={"decision_pack": "employment_decision", "verification_community_id": 1},
+    )
+    assert created.status_code == 200, created.text
+    token = created.json()["share_token"]
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        slip.is_current = False
+        slip.superseded_by_trust_slip_id = 999
+        db.commit()
+    finally:
+        db.close()
+
+    superseded = client.get(f"/trust-slips/share-invitations/{token}")
+    assert superseded.status_code == 200, superseded.text
+    assert superseded.json()["is_current"] is False
+
+    db = SessionLocal()
+    try:
+        row = db.query(TrustSlipShareInvitation).one()
+        row.status = "revoked"
+        row.revoked_at = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+
+    revoked = client.get(f"/trust-slips/share-invitations/{token}")
+    assert revoked.status_code == 200, revoked.text
+    revoked_body = revoked.json()
+    assert revoked_body["share_invitation_status"] == "revoked"
+    assert revoked_body["verification_status"] == "revoked"
+    assert revoked_body["valid"] is False

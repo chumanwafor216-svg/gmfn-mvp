@@ -262,8 +262,8 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipSetupControlsTouchedRef = useRef\(false\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
-  "TrustSlip holder document visibility must require backend-confirmed code/link state while selected-context Share/Open keep the refresh freshness guard."
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipSetupControlsTouchedRef = useRef\(false\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\([\s\S]*?trustSlipCode && shortVerifyPath && shortVerifyUrl[\s\S]*?\);[\s\S]*?const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_community_id:[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
+  "TrustSlip holder document visibility must require backend-confirmed code/link state while Share/Open wait for a persisted purpose-bound invitation."
 );
 assertContains(
   "trustSlip",
@@ -294,13 +294,13 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?function buildPublicDecisionPackShareText\(\) \{\s*if \(!hasUsableCurrentTrustSlipShare\) return "";[\s\S]*?if \(!hasUsableCurrentTrustSlipShare \|\| !text\) \{[\s\S]*?disabled=\{!hasUsableCurrentTrustSlipShare\}[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.public-decision-pack\.open"/,
-  "TrustSlip Share/Open actions must require backend-originated code/link state that is current for the selected community context."
+  /const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?function buildPublicDecisionPackShareText\(options: \{ includeUrl\?: boolean \} = \{\}\) \{\s*if \(!hasUsableCurrentTrustSlipShare\) return "";[\s\S]*?if \(!hasUsableCurrentTrustSlipShare \|\| !text\) \{[\s\S]*?disabled=\{!hasUsableCurrentTrustSlipShare\}[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.public-decision-pack\.open"/,
+  "TrustSlip Share/Open actions must require a persisted purpose-bound invitation that is current for the selected community context."
 );
 assertContains(
   "trustSlip",
-  /const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
-  "TrustSlip setup Share/Open-current actions must remain blocked when the selected community context requires refresh."
+  /const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
+  "TrustSlip setup Share/Open-current actions must remain blocked until the selected context has a persisted short invitation."
 );
 assertNotContains(
   "trustSlip",
@@ -570,13 +570,13 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?decision_focus: selectedPurposeOption\.focus[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
-  "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
+  /const shareInvitationUrl = useMemo[\s\S]*?const verifyPath = shareInvitationPath;[\s\S]*?const verifyUrl = shareInvitationUrl;[\s\S]*?createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_scope: visibilityScope[\s\S]*?verification_community_id:/,
+  "TrustSlip holder verify links and QR must use the persisted purpose-bound share invitation, not query-packed Decision Pack context."
 );
 assertContains(
   "trustSlip",
-  /const qrValue = firstTruthy\(verifyUrl, verifyPath, trustSlipCode\);/,
-  "TrustSlip holder QR value must prefer the selected public verify URL before falling back to raw path or code."
+  /const qrValue = firstTruthy\(verifyUrl, verifyPath\);/,
+  "TrustSlip holder QR value must encode only the persisted purpose-bound invitation URL/path."
 );
 assertContains(
   "trustSlip",
@@ -585,12 +585,12 @@ assertContains(
 );
 assertContains(
   "smoke",
-  /assertTrustSlipQrCarriesSelectedDecisionPack[\s\S]*?decision_pack: "employment_decision"[\s\S]*?trust-slip\.public-decision-pack\.open[\s\S]*?data-gsn-trustslip-qr-value[\s\S]*?TrustSlip QR value and public Decision Pack link diverged/,
-  "TrustSlip holder browser smoke must prove the QR and public pack link carry the same selected Decision Pack URL."
+  /assertTrustSlipQrCarriesSelectedDecisionPack[\s\S]*?\/t\/s\/[\s\S]*?not\.toHaveAttribute\("href", \/decision_pack=\/[\s\S]*?data-gsn-trustslip-qr-value[\s\S]*?TrustSlip QR value and public Decision Pack link diverged/,
+  "TrustSlip holder browser smoke must prove the QR and public pack link carry the same short share invitation URL without Decision Pack query strings."
 );
 assertContains(
   "smoke",
-  /runTrustSlipRecoveredAnchorMismatchScenario[\s\S]*?selectedClanStorageId: homelandClanId[\s\S]*?trustSlipSummary: recoveredBlessedTrustSlipSummary\(\)[\s\S]*?toHaveValue\(`community:\$\{selectedClanId\}`\)[\s\S]*?trust-slip\.paper\.open-verify[\s\S]*?trust-slip\.paper\.change-setup[\s\S]*?setupScopeSelect\.selectOption\(`community:\$\{homelandClanId\}`\)[\s\S]*?trust-slip\.setup\.share-current[\s\S]*?toHaveCount\(0\)[\s\S]*?trustSlipReissueWriteCount\(state\.requestLog\) !== 0/,
+  /runTrustSlipRecoveredAnchorMismatchScenario[\s\S]*?selectedClanStorageId: homelandClanId[\s\S]*?trustSlipSummary: recoveredBlessedTrustSlipSummary\(\)[\s\S]*?toHaveValue\(`community:\$\{selectedClanId\}`\)[\s\S]*?trust-slip\.primary\.share[\s\S]*?trust-slip\.primary\.open-link[\s\S]*?scopeSelect\.selectOption\(`community:\$\{homelandClanId\}`\)[\s\S]*?trust-slip\.primary\.share[\s\S]*?toBeDisabled[\s\S]*?trust-slip\.primary\.open-link[\s\S]*?toHaveCount\(0\)[\s\S]*?trustSlipReissueWriteCount\(state\.requestLog\) !== 0/,
   "TrustSlip browser smoke must prove an incidental initial community mismatch aligns to the persisted TrustSlip anchor, and a later deliberate change blocks selected-context Share/Open without reissue."
 );
 assertContains(
@@ -600,13 +600,13 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /buildPublicDecisionPackShareText[\s\S]*?GSN public Decision Pack link[\s\S]*?selectedPurposeOption\.label[\s\S]*?selectedPurposeOption\.recipientQuestion[\s\S]*?selectedPurposeOption\.focus[\s\S]*?Public TrustSlip check: \$\{verifyUrl\}[\s\S]*?reduces uncertainty[\s\S]*?does not expose private Trust Passport contents[\s\S]*?does not make the decision/,
+  /buildPublicDecisionPackShareText[\s\S]*?GSN TrustSlip[\s\S]*?purposeLabel[\s\S]*?scopeLabel[\s\S]*?Purpose-specific evidence shared through GSN[\s\S]*?Open TrustSlip[\s\S]*?shareInvitationUrl/,
   "TrustSlip holder public Decision Pack share note must copy only public decision-support context."
 );
 
 assertContains(
   "trustSlip",
-  /data-gsn-trustslip-decision-boundary="compact"[\s\S]*?data-gsn-public-decision-pack-share="holder"[\s\S]*?TrustSlip share link[\s\S]*?Share this TrustSlip[\s\S]*?Copies a simple message and the public check link[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy message[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open link/,
+  /data-gsn-trustslip-decision-boundary="compact"[\s\S]*?data-gsn-public-decision-pack-share="holder"[\s\S]*?TrustSlip invitation[\s\S]*?Share this TrustSlip[\s\S]*?Copies a short invitation with one public check link[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy message[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open link/,
   "TrustSlip holder page must expose a selected public Decision Pack link after the compact Decision Boundary without repeating private Passport or approval caveats as a separate footnote."
 );
 

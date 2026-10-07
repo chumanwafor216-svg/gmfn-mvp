@@ -43,7 +43,7 @@ import {
 } from "../lib/decisionPacks";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
-import { publicApiUrl, publicCommunityMemberCredentialPath } from "../lib/publicLinks";
+import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
@@ -1065,43 +1065,6 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
   }
 
   return rawFallback.startsWith("/t/") ? rawFallback : "";
-}
-
-function withPublicDecisionPackQuery(
-  pathOrUrl: string,
-  params: Record<string, string>
-): string {
-  const raw = safeStr(pathOrUrl);
-  if (!raw) return "";
-
-  try {
-    const isAbsolute = /^https?:\/\//i.test(raw);
-    const url = new URL(raw, "https://gsn.local");
-    Object.entries(params).forEach(([key, value]) => {
-      const cleanValue = safeStr(value);
-      if (cleanValue) url.searchParams.set(key, cleanValue);
-    });
-    return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
-  } catch {
-    return raw;
-  }
-}
-
-function encodeTrustSlipShareRef(params: Record<string, string>): string {
-  const payload: Record<string, string> = {};
-  Object.entries(params).forEach(([key, value]) => {
-    const cleanValue = safeStr(value);
-    if (cleanValue) payload[key] = cleanValue;
-  });
-
-  const jsonText = JSON.stringify(payload);
-  const bytes = new TextEncoder().encode(jsonText);
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 async function fetchFirstJson(
@@ -2835,8 +2798,11 @@ export default function TrustSlipPage() {
   const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(true);
   const trustSlipSetupControlsTouchedRef = useRef(false);
   const trustSlipPurposeQueryRef = useRef("");
+  const shareInvitationSeqRef = useRef(0);
   const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
     useState<TrustSlipPaperPackKey>("share");
+  const [shareInvitationPath, setShareInvitationPath] = useState("");
+  const [shareInvitationBusy, setShareInvitationBusy] = useState(false);
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
     const matchedPack = GSN_DECISION_PACKS.find(
@@ -3442,33 +3408,6 @@ export default function TrustSlipPage() {
   const trustSlipSelectedCommunityRefreshText = trustSlipNeedsSelectedCommunityRefresh
     ? `Refresh TrustSlip before sharing so the public code is issued from ${selectedVerificationCommunityName}.`
     : "";
-  const publicDecisionPackQuery = useMemo(
-    () => ({
-      decision_pack: selectedPurposeOption.key,
-      access_purpose: selectedPurposeOption.label,
-      recipient_question: selectedPurposeOption.recipientQuestion,
-      decision_focus: selectedPurposeOption.focus,
-      access_scope: visibilityScope,
-      verification_scope: visibilityScope,
-      verification_scope_label: verificationScopeLabel,
-      verification_scope_boundary: verificationScopeBoundary,
-      verification_community_id:
-        visibilityScope === "community_specific"
-          ? selectedVerificationCommunityId
-          : "",
-      verification_community_label: selectedVerificationCommunityName,
-      verification_community_ref: selectedVerificationCommunityRef,
-    }),
-    [
-      selectedPurposeOption,
-      visibilityScope,
-      verificationScopeLabel,
-      verificationScopeBoundary,
-      selectedVerificationCommunityId,
-      selectedVerificationCommunityName,
-      selectedVerificationCommunityRef,
-    ]
-  );
   const trustSlipCode = useMemo(() => {
     return firstTruthy(
       summary?.merchant_view?.code,
@@ -3518,34 +3457,25 @@ export default function TrustSlipPage() {
       ? "Open Community Home and join or create the community that should anchor this TrustSlip."
       : "Check phone verification and active community membership first.";
 
-  const verifyPath = useMemo(() => {
-    const basePath = trustSlipVerifyFrontendPath(
+  const shortVerifyPath = useMemo(() => {
+    return trustSlipVerifyFrontendPath(
       trustSlipCode,
       summary?.public_verify_url || ""
     );
-    return withPublicDecisionPackQuery(basePath, publicDecisionPackQuery);
-  }, [publicDecisionPackQuery, summary, trustSlipCode]);
-  const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
-  const trustSlipShareDoorwayUrl = useMemo(() => {
-    if (!trustSlipCode) return "";
-    const shareRef = encodeTrustSlipShareRef({
-      v: "1",
-      c: trustSlipCode,
-      p: publicDecisionPackQuery.decision_pack,
-      ap: publicDecisionPackQuery.access_purpose,
-      q: publicDecisionPackQuery.recipient_question,
-      f: publicDecisionPackQuery.decision_focus,
-      s: publicDecisionPackQuery.access_scope,
-      vs: publicDecisionPackQuery.verification_scope,
-      vsl: publicDecisionPackQuery.verification_scope_label,
-      vsb: publicDecisionPackQuery.verification_scope_boundary,
-      cid: publicDecisionPackQuery.verification_community_id,
-      cl: publicDecisionPackQuery.verification_community_label,
-      cr: publicDecisionPackQuery.verification_community_ref,
-    });
-    return shareRef ? publicApiUrl(`/share/trustslip/${encodeURIComponent(shareRef)}`) : "";
-  }, [publicDecisionPackQuery, trustSlipCode]);
-  const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl && trustSlipShareDoorwayUrl);
+  }, [summary, trustSlipCode]);
+  const shortVerifyUrl = useMemo(
+    () => toFrontendAbsoluteUrl(shortVerifyPath),
+    [shortVerifyPath]
+  );
+  const shareInvitationUrl = useMemo(
+    () => toFrontendAbsoluteUrl(shareInvitationPath),
+    [shareInvitationPath]
+  );
+  const verifyPath = shareInvitationPath;
+  const verifyUrl = shareInvitationUrl;
+  const hasUsableTrustSlipShare = Boolean(
+    trustSlipCode && shortVerifyPath && shortVerifyUrl
+  );
   const trustSlipShareStatus = safeStr(
     summary?.status || summary?.merchant_view?.status || ""
   ).toLowerCase();
@@ -3555,10 +3485,61 @@ export default function TrustSlipPage() {
       ["expired", "revoked", "frozen"].includes(trustSlipShareStatus) ||
       isPastDate(summary?.merchant_view?.expires_at || summary?.expires_at)
   );
-  const hasUsableCurrentTrustSlipShare =
+  const canCreateShareInvitation =
     hasUsableTrustSlipShare &&
     !trustSlipNeedsSelectedCommunityRefresh &&
     !trustSlipShareBlockedByCurrentness;
+
+  useEffect(() => {
+    const seq = shareInvitationSeqRef.current + 1;
+    shareInvitationSeqRef.current = seq;
+    setShareInvitationPath("");
+    if (!canCreateShareInvitation) {
+      setShareInvitationBusy(false);
+      return undefined;
+    }
+
+    let alive = true;
+    setShareInvitationBusy(true);
+    (async () => {
+      try {
+        const result = await (api as any).createTrustSlipShareInvitation({
+          decision_pack: selectedPurposeOption.key,
+          access_scope: visibilityScope,
+          verification_scope: visibilityScope,
+          verification_community_id:
+            visibilityScope === "community_specific" ? selectedVerificationCommunityId : undefined,
+          verification_community_ref:
+            visibilityScope === "community_specific" ? selectedVerificationCommunityRef : undefined,
+        });
+        if (!alive || seq !== shareInvitationSeqRef.current) return;
+        const path = firstTruthy(result?.share_path, result?.share_url, result?.item?.path);
+        setShareInvitationPath(path.startsWith("/t/s/") ? path : "");
+      } catch {
+        if (alive && seq === shareInvitationSeqRef.current) {
+          setShareInvitationPath("");
+        }
+      } finally {
+        if (alive && seq === shareInvitationSeqRef.current) {
+          setShareInvitationBusy(false);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    canCreateShareInvitation,
+    selectedPurposeOption.key,
+    selectedVerificationCommunityId,
+    selectedVerificationCommunityRef,
+    visibilityScope,
+    trustSlipCode,
+  ]);
+
+  const hasUsableCurrentTrustSlipShare =
+    canCreateShareInvitation && Boolean(shareInvitationPath && shareInvitationUrl);
   const trustSlipHolderDocumentVisible =
     hasUsableTrustSlipShare && trustSlipSetupSubmitted;
   const merchantRailReleasePath = useMemo(
@@ -3570,7 +3551,7 @@ export default function TrustSlipPage() {
     [merchantRailReleasePath]
   );
 
-  const qrValue = firstTruthy(verifyUrl, verifyPath, trustSlipCode);
+  const qrValue = firstTruthy(verifyUrl, verifyPath);
 
   const merchantBand = firstTruthy(
     (summary as any)?.trust_band,
@@ -4888,34 +4869,39 @@ export default function TrustSlipPage() {
   function buildPublicDecisionPackShareText(options: { includeUrl?: boolean } = {}) {
     if (!hasUsableCurrentTrustSlipShare) return "";
 
-    const purposeLabel = selectedPurposeOption.shortLabel || selectedPurposeOption.label;
+    const purposeLabel = selectedPurposeOption.label;
     const scopeLabel = firstTruthy(selectedVerificationCommunityName, verificationScopeLabel);
     const lines = [
       "GSN TrustSlip",
-      [purposeLabel, scopeLabel].filter(Boolean).join(" - "),
+      purposeLabel,
+      scopeLabel,
+      "",
       trustSlipDetailsPending
-        ? "Open to review the shared evidence and its current status. Some document details are still loading."
-        : "Open to review the shared evidence and its current status.",
-      options.includeUrl ? trustSlipShareDoorwayUrl : "",
+        ? "Purpose-specific evidence shared through GSN. Some document details are still loading."
+        : "Purpose-specific evidence shared through GSN.",
+      "",
+      "Open TrustSlip",
+      options.includeUrl ? shareInvitationUrl : "",
     ];
 
     return lines
-      .map((line) => safeStr(line))
-      .filter(Boolean)
-      .join("\n");
+      .map((line) => (line === "" ? "" : safeStr(line)))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   }
 
   function copyPublicDecisionPackShareNote() {
     void handleCopy(
       buildPublicDecisionPackShareText({ includeUrl: true }),
       "Public Decision Pack note copied.",
-      "This TrustSlip link is not ready yet."
+      shareInvitationBusy ? "TrustSlip invitation is still being prepared." : "This TrustSlip link is not ready yet."
     );
   }
   async function sharePublicDecisionPack() {
     const text = buildPublicDecisionPackShareText({ includeUrl: false });
     if (!hasUsableCurrentTrustSlipShare || !text) {
-      showNotice("error", "This TrustSlip link is not ready yet.");
+      showNotice("error", shareInvitationBusy ? "TrustSlip invitation is still being prepared." : "This TrustSlip link is not ready yet.");
       return;
     }
 
@@ -4925,7 +4911,7 @@ export default function TrustSlipPage() {
         await nativeShare.call(navigator, {
           title: "GSN TrustSlip",
           text,
-          url: trustSlipShareDoorwayUrl,
+          url: shareInvitationUrl,
         });
         showNotice("success", "Share sheet opened.");
         return;
@@ -4934,7 +4920,7 @@ export default function TrustSlipPage() {
       }
     }
 
-    void handleCopy(buildPublicDecisionPackShareText({ includeUrl: true }), "TrustSlip share message copied.", "This TrustSlip link is not ready yet.");
+    void handleCopy(buildPublicDecisionPackShareText({ includeUrl: true }), "TrustSlip share message copied.", shareInvitationBusy ? "TrustSlip invitation is still being prepared." : "This TrustSlip link is not ready yet.");
   }
 
   function decisionPackEvidenceRowsForShare() {
@@ -4961,7 +4947,7 @@ export default function TrustSlipPage() {
         const sample = category.eventRefs[0]?.label ? `; sample ${category.eventRefs[0].label}` : "";
         return `- ${category.label}: ${category.evidenceCount} event${category.evidenceCount === 1 ? "" : "s"}; latest ${latest}${sample}`;
       }),
-      verifyUrl ? `Public TrustSlip check: ${verifyUrl}` : "",
+      shareInvitationUrl ? `Public TrustSlip check: ${shareInvitationUrl}` : "",
       housingExternalContact
         ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
         : "",
@@ -4989,7 +4975,7 @@ export default function TrustSlipPage() {
           community: communityName || null,
           community_reference: communityRefValue || null,
           trust_slip_code: trustSlipCode || null,
-          public_trust_slip_check: verifyUrl || null,
+          public_trust_slip_check: shareInvitationUrl || null,
         },
         decision_pack: {
           key: selectedPurposeOption.key,
@@ -5097,7 +5083,7 @@ export default function TrustSlipPage() {
     {
       key: "share",
       label: "Share",
-      detail: "Copy, open, or send the public TrustSlip link.",
+      detail: "Copy, open, or send the short public TrustSlip invitation.",
       icon: "public-globe",
       status: trustSlipNeedsSelectedCommunityRefresh ? "Refresh needed" : trustSlipCodeLabel,
     },
@@ -6251,7 +6237,7 @@ export default function TrustSlipPage() {
                 <GsnLegacyIcon name="public-globe" size={30} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
-                    TrustSlip share link
+                    TrustSlip invitation
                   </div>
                   <div
                     style={{
@@ -6275,7 +6261,7 @@ export default function TrustSlipPage() {
                   lineHeight: 1.35,
                 }}
               >
-                Copies a simple message and the public check link. Private details stay inside GSN unless you choose to share more.
+                Copies a short invitation with one public check link. Private details stay inside GSN unless you choose to share more.
               </div>
 
               <CardActionRow>

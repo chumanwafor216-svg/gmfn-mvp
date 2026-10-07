@@ -1,7 +1,6 @@
-/* global console, process, setTimeout, URL, localStorage, document, window */
+/* global console, process, setTimeout, URL, localStorage, document, window, navigator */
 
 import { chromium, expect } from "@playwright/test";
-import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,48 +57,44 @@ function extractUrls(text) {
   return String(text || "").match(/https?:\/\/\S+/g) || [];
 }
 
-function decodeTrustSlipShareRefFromUrl(urlText) {
-  const url = new URL(String(urlText || ""), "https://gsn.local");
-  const match = url.pathname.match(/^\/share\/trustslip\/([^/]+)$/);
-  if (!match) {
-    throw new Error(`Expected short TrustSlip doorway URL, got ${urlText}`);
-  }
-  const ref = decodeURIComponent(match[1]);
-  const padded = ref.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (ref.length % 4)) % 4);
-  return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+function shareTokenForCode(code) {
+  return `share-${String(code || "").replace(/[^A-Za-z0-9_-]/g, "-")}`;
 }
 
 function assertShortTrustSlipShare(payload, expected = {}) {
   const urlText = String(payload?.url || "");
-  if (!urlText.includes("/share/trustslip/")) {
-    throw new Error(`TrustSlip share did not use the short doorway URL: ${JSON.stringify(payload)}`);
+  const url = new URL(urlText, "https://gsn.local");
+  const match = url.pathname.match(/^\/t\/s\/([^/?#]+)$/);
+  if (!match) {
+    throw new Error(`TrustSlip share did not use the short /t/s/:shareToken invitation URL: ${JSON.stringify(payload)}`);
   }
-  if (urlText.includes("/t/") || urlText.includes("decision_pack=")) {
-    throw new Error(`TrustSlip share URL exposed the full recipient query instead of the doorway: ${JSON.stringify(payload)}`);
+  if (url.search || url.hash || urlText.includes("/share/trustslip/") || urlText.includes("decision_pack=")) {
+    throw new Error(`TrustSlip share URL exposed context instead of the short public invitation token: ${JSON.stringify(payload)}`);
   }
-  const decoded = decodeTrustSlipShareRefFromUrl(urlText);
-  if (expected.code && decoded.c !== expected.code) {
-    throw new Error(`Short TrustSlip share ref used the wrong code: expected ${expected.code}, got ${decoded.c}`);
+  const token = decodeURIComponent(match[1]);
+  if (expected.code && token !== shareTokenForCode(expected.code)) {
+    throw new Error(`Short TrustSlip share URL used the wrong invitation token: expected ${shareTokenForCode(expected.code)}, got ${token}`);
   }
-  if (expected.decisionPack && decoded.p !== expected.decisionPack) {
-    throw new Error(`Short TrustSlip share ref lost purpose: expected ${expected.decisionPack}, got ${decoded.p}`);
+  const shareText = String(payload?.text || "");
+  if (expected.decisionPack === "employment_decision" && !shareText.includes("Employment Decision Pack")) {
+    throw new Error(`TrustSlip share text used a shortened Decision Pack label: ${JSON.stringify(payload)}`);
   }
-  if (expected.purposeText && !String(payload?.text || "").includes(expected.purposeText)) {
+  if (expected.purposeText && !shareText.includes(expected.purposeText)) {
     throw new Error(`TrustSlip share text did not preserve purpose context: ${JSON.stringify(payload)}`);
   }
-  if (expected.communityText && decoded.cl !== expected.communityText && decoded.vsl !== expected.communityText) {
-    throw new Error(`Short TrustSlip share ref lost community context: expected ${expected.communityText}, got ${JSON.stringify(decoded)}`);
+  if (expected.communityText && !shareText.includes(expected.communityText)) {
+    throw new Error(`TrustSlip share text did not preserve community context: ${JSON.stringify(payload)}`);
   }
   if (extractUrls(payload?.text).length !== 0) {
     throw new Error(`Native TrustSlip share text duplicated the URL instead of using the url field: ${JSON.stringify(payload)}`);
   }
-  return decoded;
+  return { token };
 }
 
 function assertClipboardHasOneShortTrustSlipUrl(text, expected = {}) {
   const urls = extractUrls(text);
   if (urls.length !== 1) {
-    throw new Error(`Clipboard fallback must include exactly one URL, got ${urls.length}: ${JSON.stringify(text)}`);
+    throw new Error(`Clipboard fallback must include exactly one short /t/s/:shareToken URL, got ${urls.length}: ${JSON.stringify(text)}`);
   }
   return assertShortTrustSlipShare({ text: String(text || "").replace(urls[0], ""), url: urls[0] }, expected);
 }
@@ -595,6 +590,50 @@ async function installApiMocks(page, requestLog, options = {}) {
       return;
     }
 
+    if (method === "POST" && path === "/trust-slips/me/share-invitations") {
+      const current = trustSlipReissueCount > 0
+        ? options.trustSlipReissueResult || options.trustSlipSummaryAfterReissueResult || trustSlipSummary
+        : trustSlipSummary;
+      const code = current?.code || current?.verification_code || current?.verification_token || current?.token || trustSlipCode;
+      const token = shareTokenForCode(code);
+      await route.fulfill(json({
+        ok: true,
+        share_token: token,
+        share_path: `/t/s/${token}`,
+        share_url: `/t/s/${token}`,
+        item: {
+          path: `/t/s/${token}`,
+          code,
+          decision_pack: "employment_decision",
+          access_purpose: "Employment Decision Pack",
+          verification_community_label: current?.community || "Boundary Evidence Community",
+        },
+      }));
+      return;
+    }
+
+    if (method === "GET" && path.startsWith("/trust-slips/share-invitations/")) {
+      await route.fulfill(json({
+        ...tradePublicVerifyPayload(),
+        code: trustSlipCode,
+        verification_code: trustSlipCode,
+        token: trustSlipCode,
+        decision_pack: "employment_decision",
+        access_purpose: "Employment Decision Pack",
+        share_invitation: {
+          path: `/t/s/${shareTokenForCode(trustSlipCode)}`,
+          code: trustSlipCode,
+          decision_pack: "employment_decision",
+          access_purpose: "Employment Decision Pack",
+        },
+        decision_pack_profile: {
+          access_purpose: "Employment Decision Pack",
+          recipient_question: "Is there enough evidence to continue an employment conversation?",
+          refuses_to_claim: ["Professional licence", "Right to work", "Future performance", "Employer decision"],
+        },
+      }));
+      return;
+    }
     if (method === "GET" && path.startsWith("/trust-slips/verify/")) {
       await route.fulfill(json(options.publicVerifyResult || tradePublicVerifyPayload()));
       return;
@@ -885,14 +924,7 @@ async function openTrustSlipHolderFromSetup(page, options = {}) {
   return true;
 }
 async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
-  const expectedPath = `/t/${encodeURIComponent(trustSlipCode)}`;
-  const expectedParams = {
-    decision_pack: "employment_decision",
-    access_purpose: "Employment Decision Pack",
-    recipient_question: "Is there enough evidence to continue an employment conversation?",
-    access_scope: "community_specific",
-    verification_scope: "community_specific",
-  };
+  const expectedPath = `/t/s/${shareTokenForCode(trustSlipCode)}`;
 
   const publicPackLink = page.getByRole("link", { name: "Open link" }).first();
   await expect(publicPackLink).toBeVisible({ timeout: 30000 });
@@ -902,7 +934,8 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
   }
 
   const publicPackHook = page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]');
-  await expect(publicPackHook.first()).toHaveAttribute("href", /decision_pack=employment_decision/, { timeout: 30000 });
+  await expect(publicPackHook.first()).toHaveAttribute("href", /\/t\/s\//, { timeout: 30000 });
+  await expect(publicPackHook.first()).not.toHaveAttribute("href", /decision_pack=/, { timeout: 30000 });
   const hookedHrefs = await publicPackHook.evaluateAll((nodes) =>
     nodes.map((node) => node.getAttribute("href") || "")
   );
@@ -913,7 +946,8 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
   }
 
   const qrLocator = page.locator("[data-gsn-trustslip-qr-value]");
-  await expect(qrLocator.first()).toHaveAttribute("data-gsn-trustslip-qr-value", /decision_pack=employment_decision/, { timeout: 30000 });
+  await expect(qrLocator.first()).toHaveAttribute("data-gsn-trustslip-qr-value", /\/t\/s\//, { timeout: 30000 });
+  await expect(qrLocator.first()).not.toHaveAttribute("data-gsn-trustslip-qr-value", /decision_pack=/, { timeout: 30000 });
   await expect
     .poll(async () => {
       const values = await qrLocator.evaluateAll((nodes) =>
@@ -921,28 +955,16 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
       );
       return values.some((value) => {
         const url = new URL(value, baseURL);
-        return (
-          url.pathname === expectedPath &&
-          url.searchParams.get("decision_pack") === expectedParams.decision_pack &&
-          url.searchParams.get("access_scope") === expectedParams.access_scope
-        );
+        return url.pathname === expectedPath && !url.search;
       });
     }, { timeout: 7000 })
     .toBeTruthy();
 
   const linkUrl = new URL(publicPackHref, baseURL);
-  if (linkUrl.pathname !== expectedPath) {
+  if (linkUrl.pathname !== expectedPath || linkUrl.search) {
     throw new Error(
-      `Public Decision Pack link path does not match TrustSlip code: ${linkUrl.pathname}`
+      `Public Decision Pack link must be the short purpose-bound share token without query: ${publicPackHref}`
     );
-  }
-
-  for (const [key, value] of Object.entries(expectedParams)) {
-    if (linkUrl.searchParams.get(key) !== value) {
-      throw new Error(
-        `Public Decision Pack link lost ${key}: expected ${value}, got ${linkUrl.searchParams.get(key)}`
-      );
-    }
   }
 
   const qrValues = await qrLocator.evaluateAll((nodes) =>
@@ -957,7 +979,6 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
     }
   }
 }
-
 function assertSignedInHolderReads(requestLog, label) {
   const holderReads = requestLog.filter(
     (entry) => entry.method === "GET" && entry.path.startsWith("/trust-slips/me")
@@ -1926,7 +1947,7 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
   const before = trustSlipReissueWriteCount(state.requestLog);
   await state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select').selectOption("housing_decision");
   await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue("housing_decision");
-  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /decision_pack=housing_decision/);
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /\/t\/s\//);
   await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]')).toBeEnabled();
 
   assertPublicHousingShareContactBoundary();
@@ -1946,7 +1967,7 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
 
   await state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select').selectOption("trade_check");
   await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue("trade_check");
-  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /decision_pack=trade_check/);
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /\/t\/s\//);
   await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
   sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
   latest = sharePayloads[sharePayloads.length - 1] || {};
@@ -2642,7 +2663,7 @@ async function main() {
         "/app/trust-slip rendered the holder TrustSlip certificate;",
         "generated, failed-secondary-refresh, successful-issuance-secondary-refresh-still-pending, stale-secondary, restricted-secondary, not-current-secondary, null-secondary, healthy-secondary, failed-issuance, reopened, purpose-change, public Trade evidence wording, expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
         "signed-in holder reads carried auth;",
-        "holder QR and public pack link carried the same selected Decision Pack context;",
+        "holder Native Share, Copy, Open, and QR carried the same short share invitation URL;",
         "public verify was not called on holder/private page load;",
         "bank/payment/release/private Passport limits rendered.",
       ].join(" ")

@@ -951,6 +951,7 @@ export default function App() {
       />
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
+      <Route path="/t/s/:shareToken" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code/card" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code/lite" element={<TrustSlipVerifyPage />} />
