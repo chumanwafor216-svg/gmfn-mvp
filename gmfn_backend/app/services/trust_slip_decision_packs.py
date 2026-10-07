@@ -7,6 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 from app.core.evidence_lifecycle import SOURCE_REPAYMENT
+from app.core.trust_evidence_families import (
+    PACK_EVIDENCE_FAMILY_FILTERS,
+    PUBLIC_EVIDENCE_FAMILY_LABELS,
+    PUBLIC_EVIDENCE_FAMILY_USES,
+    SENSITIVE_EVIDENCE_FAMILY_LABELS,
+    public_trust_event_evidence_family,
+    public_trust_event_evidence_family_from_record,
+)
 from app.services.evidence_lifecycle_service import resolve_evidence_lifecycle, resolve_trust_event_lifecycle
 from app.services.legacy_user_id_match import legacy_user_id_text_match
 
@@ -801,103 +809,10 @@ def _decision_signal(payload: Mapping[str, Any], key: str) -> dict[str, str]:
 
 
 
-PUBLIC_EVENT_CATEGORY_LABELS: dict[str, str] = {
-    "identity_membership": "Identity and membership evidence",
-    "community_participation": "Community participation evidence",
-    "service_trade": "Service or trade evidence",
-    "trust_document_activity": "Trust document activity",
-    "relationship_path": "Relationship path evidence",
-}
-
-PUBLIC_EVENT_CATEGORY_USES: dict[str, str] = {
-    "identity_membership": "Use this to check whether the holder has a visible identity/community anchor.",
-    "community_participation": "Use this to check whether the holder has repeated community activity, not only a profile claim.",
-    "service_trade": "Use this to ask who observed the service, trade, fulfilment, or marketplace behaviour.",
-    "trust_document_activity": "Use this to confirm that the public trust-document trail exists and remains current.",
-    "relationship_path": "Use this to ask who brought the holder into the community and in what capacity.",
-}
-
-SENSITIVE_EVENT_CATEGORY_LABELS: dict[str, str] = {
-    "finance_repayment": "Financial or repayment evidence",
-    "guarantor_support": "Guarantor or support-risk evidence",
-    "bank_payment": "Bank, payment, payout, or withdrawal evidence",
-    "dispute_caution": "Dispute, rejection, default, or caution evidence",
-}
-
-PACK_EVENT_CATEGORY_FILTERS: dict[str, tuple[str, ...]] = {
-    "community_standing": (
-        "identity_membership",
-        "community_participation",
-        "relationship_path",
-        "trust_document_activity",
-    ),
-    "referral_decision": (
-        "relationship_path",
-        "identity_membership",
-        "community_participation",
-        "trust_document_activity",
-    ),
-    "guarantor_decision": (
-        "identity_membership",
-        "community_participation",
-        "relationship_path",
-        "finance_repayment",
-        "guarantor_support",
-        "bank_payment",
-        "dispute_caution",
-    ),
-    "employment_decision": (
-        "identity_membership",
-        "community_participation",
-        "service_trade",
-        "relationship_path",
-        "trust_document_activity",
-    ),
-    "housing_decision": (
-        "identity_membership",
-        "community_participation",
-        "relationship_path",
-        "finance_repayment",
-        "dispute_caution",
-    ),
-    "trade_check": (
-        "service_trade",
-        "community_participation",
-        "relationship_path",
-        "trust_document_activity",
-        "dispute_caution",
-    ),
-    "supplier_decision": (
-        "service_trade",
-        "community_participation",
-        "relationship_path",
-        "bank_payment",
-        "dispute_caution",
-    ),
-    "volunteer_decision": (
-        "identity_membership",
-        "community_participation",
-        "relationship_path",
-        "dispute_caution",
-    ),
-    "business_partnership": (
-        "service_trade",
-        "community_participation",
-        "relationship_path",
-        "finance_repayment",
-        "guarantor_support",
-        "bank_payment",
-        "dispute_caution",
-    ),
-    "community_membership": (
-        "identity_membership",
-        "community_participation",
-        "relationship_path",
-        "trust_document_activity",
-        "dispute_caution",
-    ),
-}
-
+PUBLIC_EVENT_CATEGORY_LABELS = PUBLIC_EVIDENCE_FAMILY_LABELS
+PUBLIC_EVENT_CATEGORY_USES = PUBLIC_EVIDENCE_FAMILY_USES
+SENSITIVE_EVENT_CATEGORY_LABELS = SENSITIVE_EVIDENCE_FAMILY_LABELS
+PACK_EVENT_CATEGORY_FILTERS = PACK_EVIDENCE_FAMILY_FILTERS
 
 def _event_text(value: Any) -> str:
     return _clean(value, limit=96).lower().replace("-", "_").replace(".", "_")
@@ -935,7 +850,7 @@ def _decision_pack_lifecycle_context_rows(
     allowed = set(categories)
     grouped: dict[str, list[tuple[TrustEvent, Any]]] = {category: [] for category in allowed}
     for row in rows:
-        category = _public_event_category(getattr(row, "event_type", None))
+        category = _public_event_category(row)
         if category not in allowed:
             continue
         decision = resolve_trust_event_lifecycle(db, row, consumer="decision_pack")
@@ -982,30 +897,10 @@ def _decision_pack_lifecycle_context_rows(
     return out
 
 
-def _public_event_category(event_type: Any) -> Optional[str]:
-    text = _event_text(event_type)
-    if not text:
-        return None
-    if any(token in text for token in ("default", "missed", "overdue", "declined", "rejected", "revoked", "frozen", "dispute", "complaint")):
-        return "dispute_caution"
-    if any(token in text for token in ("bank", "payment", "payout", "withdrawal", "deposit", "vault_payment")):
-        return "bank_payment"
-    if any(token in text for token in ("repayment", "repaid", "loan_", "loan")):
-        return "finance_repayment"
-    if "guarantor" in text:
-        return "guarantor_support"
-    if any(token in text for token in ("identity", "phone", "photo", "member_verified", "community_member_verified")):
-        return "identity_membership"
-    if any(token in text for token in ("invite", "clan_join", "joined", "membership")):
-        return "relationship_path" if "invite" in text else "identity_membership"
-    if any(token in text for token in ("marketplace", "merchant", "shop", "delivery", "service", "trade", "vault_order")):
-        return "service_trade"
-    if any(token in text for token in ("community", "contribution", "participation", "role", "leader", "committee")):
-        return "community_participation"
-    if "trust_slip" in text or "trustslip" in text:
-        return "trust_document_activity"
-    return None
-
+def _public_event_category(event_or_type: Any) -> Optional[str]:
+    if hasattr(event_or_type, "event_type"):
+        return public_trust_event_evidence_family_from_record(event_or_type)
+    return public_trust_event_evidence_family(event_or_type)
 
 def _event_category_row(category: str, rows: list[TrustEvent]) -> dict[str, Any]:
     latest = max((getattr(row, "created_at", None) for row in rows), default=None)
@@ -2406,7 +2301,7 @@ def build_decision_pack_private_evidence_extract(
 
     grouped: dict[str, list[TrustEvent]] = {category: [] for category in category_filter}
     for row in rows:
-        category = _public_event_category(getattr(row, "event_type", None))
+        category = _public_event_category(row)
         if category in grouped:
             grouped[category].append(row)
 
@@ -2554,7 +2449,7 @@ def build_decision_pack_evidence_extract(
 
     grouped: dict[str, list[TrustEvent]] = {category: [] for category in public_categories}
     for row in rows:
-        category = _public_event_category(getattr(row, "event_type", None))
+        category = _public_event_category(row)
         if category in grouped:
             grouped[category].append(row)
 

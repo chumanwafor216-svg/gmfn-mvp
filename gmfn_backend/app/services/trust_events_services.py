@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
+from app.core.trust_evidence_families import annotate_trust_event_meta_with_evidence_family
 from app.db.models import TrustEvent
 
 
@@ -103,10 +104,14 @@ def log_trust_event(
             return existing
 
     meta_json: Optional[str] = None
+    annotated_meta = annotate_trust_event_meta_with_evidence_family(
+        event_type=event_type,
+        meta=meta,
+    )
 
-    if meta is not None:
+    if annotated_meta is not None:
         try:
-            meta_json = json.dumps(meta, ensure_ascii=False)
+            meta_json = json.dumps(annotated_meta, ensure_ascii=False)
         except Exception:
             meta_json = json.dumps({"raw_meta_error": True})
 

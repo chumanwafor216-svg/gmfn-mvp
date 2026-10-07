@@ -22,6 +22,8 @@ import {
   buildDecisionPackDecisionReading,
   findDecisionPack,
 } from "../../lib/decisionPacks";
+import TrustSlipEvidencePatternStack from "../../components/TrustSlipEvidencePatternStack";
+import { buildTrustSlipEvidencePatternStack } from "../../lib/trustSlipEvidencePatterns";
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
@@ -2346,6 +2348,29 @@ export default function TrustSlipVerifyPublicPaper({
       tone: tradePurpose ? tradeEvidenceReading.tone : validNow && !supportPurpose ? "trust" as const : "warning" as const,
     },
   ];
+  const trustSlipPattern = buildTrustSlipEvidencePatternStack({
+    holderName,
+    validNow,
+    communityActivityCount: communityActivityCountLabel,
+    communityActivityCategories: communityActivityCategoriesLabel,
+    communityActivityLabel,
+    memberWitnessCount: memberWitnessCountLabel,
+    memberWitnessEvidence,
+    currentnessText: memberWitnessCurrentness,
+    consistencyStatus: visibleBandReading,
+    purposeEvidenceExists,
+    purposeSignalText,
+    enterpriseMeaning: tradePurpose
+      ? tradeEvidenceReading.evidenceStatement
+      : "Shop, market, DemandBox, Spotlight, Market Wisdom, or purpose-specific public-safe evidence should be read as effort evidence where recorded.",
+    decisionEvidenceCategories: decisionPackProfile.evidenceExtract.categories,
+    relevantSupportFinding,
+    hasSupportOutcomeEvidence,
+    hasFulfillmentOutcomeEvidence: Boolean(decisionPackVisibleFulfillmentOutcomePointers.length),
+    hasCompletedWorkEvidence: Boolean(decisionPackVisibleCompletedWorkPointers.length),
+    nextStep: recommendedActionFinding,
+  });
+
   const decisionMeaningGroups = [
     {
       title: "Strong",
@@ -3093,6 +3118,15 @@ export default function TrustSlipVerifyPublicPaper({
               <DecisionFactorTable rows={publicDecisionEvidenceSnapshotDisplayRows} compact={compact} />
             </div>
           </div>
+          <TrustSlipEvidencePatternStack
+            compact={compact}
+            title="Behaviour evidence pattern"
+            reading={trustSlipPattern.reading}
+            items={trustSlipPattern.items}
+            nextStep={trustSlipPattern.nextStep}
+            boundary={trustSlipPattern.boundary}
+          />
+
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"
             style={{

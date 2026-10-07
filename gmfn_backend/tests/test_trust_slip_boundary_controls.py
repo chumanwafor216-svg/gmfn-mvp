@@ -2065,6 +2065,153 @@ def test_public_verify_decision_pack_extracts_redacted_event_categories(
     assert "SECRET-REF" not in profile_text
     assert "private address" not in profile_text
 
+def test_public_verify_decision_pack_extracts_behaviour_pattern_categories(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-PATTERN-CATEGORIES")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="spotlight.reposted",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="demand_box.request_answered",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="market_wisdom.analysis_opened",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="commitment.completed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.notice.acknowledged",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.governance.neutral",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-PATTERN-CATEGORIES",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    extract = response.json()["decision_pack_profile"]["evidence_extract"]
+    categories = {row["key"]: row for row in extract["categories"]}
+    assert categories["business_visibility"]["evidence_count"] == 1
+    assert categories["demand_activity"]["evidence_count"] == 1
+    assert categories["business_analysis"]["evidence_count"] == 1
+    assert categories["focus_commitment"]["evidence_count"] == 1
+    assert categories["community_responsiveness"]["evidence_count"] == 1
+    assert categories["leadership_governance"]["evidence_count"] == 1
+    assert "proof of success" in categories["business_analysis"]["decision_use"]
+
+def test_public_verify_decision_pack_prefers_explicit_evidence_family_metadata(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-DECLARED-FAMILY")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            TrustEvent(
+                event_type="spotlight.reposted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                created_at=now,
+                meta={
+                    "evidence_family": "community_responsiveness",
+                    "reason": "member responded to a community call through a spotlight workflow",
+                },
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-DECLARED-FAMILY",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    extract = response.json()["decision_pack_profile"]["evidence_extract"]
+    categories = {row["key"]: row for row in extract["categories"]}
+    assert categories["community_responsiveness"]["evidence_count"] == 1
+    assert categories["business_visibility"]["status"] == "gap"
+    profile_text = str(response.json()["decision_pack_profile"])
+    assert "spotlight.reposted" not in profile_text
+    assert "member responded" not in profile_text
+
+def test_trust_slip_activity_summary_prefers_explicit_evidence_family_metadata(
+    seed_clan_admin_membership,
+):
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            TrustEvent(
+                event_type="spotlight.reposted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                created_at=now,
+                meta={
+                    "evidence_family": "community_responsiveness",
+                    "reason": "member used a Spotlight workflow to answer a community call",
+                },
+            )
+        )
+        db.commit()
+
+        payload = get_trust_slip_payload(db, user_id=1, preferred_clan_id=1)
+    finally:
+        db.close()
+
+    assert payload["community_activity_count"] == 1
+    assert payload["community_activity_categories"] == ["Community response"]
+    assert "Business visibility" not in payload["community_activity_categories"]
+    payload_text = json.dumps(payload, default=str)
+    assert "spotlight.reposted" not in payload_text
+    assert "member used a Spotlight" not in payload_text
+
 def test_public_verify_decision_pack_extract_uses_holder_active_community_footprint(
     client,
     seed_clan_admin_membership,

@@ -1,6 +1,8 @@
 import React from "react";
 import TrustBandMeaningGuide from "./TrustBandMeaningGuide";
 import { StableCtaLink } from "./StableButton";
+import TrustSlipEvidencePatternStack from "./TrustSlipEvidencePatternStack";
+import { buildTrustSlipEvidencePatternStack } from "../lib/trustSlipEvidencePatterns";
 import { getTrustBandShortLabel } from "../lib/trustBandLanguage";
 
 type TrustSlipQuestion = {
@@ -238,7 +240,22 @@ export default function TrustSlipReaderBlock({
     .filter(Boolean)
     .join(" ");
   const consistencyEvidenceStatus = publicEvidenceStatusLabel(cciScore, cciBand);
-
+  const followThroughQuestion = questions.find((item) =>
+    item.title.toLowerCase().includes("follow")
+  );
+  const pattern = buildTrustSlipEvidencePatternStack({
+    holderName,
+    communityActivityCount,
+    communityActivityCategories,
+    communityActivityLabel,
+    memberWitnessCount,
+    memberWitnessEvidence: memberWitnessText,
+    currentnessText,
+    consistencyStatus: consistencyEvidenceStatus,
+    followThroughAnswer: followThroughQuestion?.answer,
+    nextStep:
+      "Use this as a public evidence picture. For money, housing, referral, work, or guarantor risk, ask for live community confirmation or the fuller Trust Passport.",
+  });
   return (
     <section style={shell()}>
       <div style={label()}>TrustSlip reader block</div>
@@ -255,6 +272,15 @@ export default function TrustSlipReaderBlock({
           readerVerdict,
           "Use this TrustSlip as evidence. It should help your decision, but it should not make the decision for you."
         )}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <TrustSlipEvidencePatternStack
+          compact={compact}
+          reading={pattern.reading}
+          items={pattern.items}
+          nextStep={pattern.nextStep}
+        />
       </div>
 
       <div

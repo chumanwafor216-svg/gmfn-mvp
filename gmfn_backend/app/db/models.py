@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
@@ -2681,6 +2682,20 @@ class TrustEvent(Base):
         self.meta_json = json.dumps(value) if value is not None else None
 
     meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+@event.listens_for(TrustEvent, "before_insert")
+@event.listens_for(TrustEvent, "before_update")
+def _annotate_trust_event_evidence_family(_mapper: Any, _connection: Any, target: TrustEvent) -> None:
+    from app.core.trust_evidence_families import annotate_trust_event_meta_with_evidence_family
+
+    meta = target._get_meta() or {}
+    annotated = annotate_trust_event_meta_with_evidence_family(
+        event_type=getattr(target, "event_type", None),
+        meta=meta,
+    )
+    if annotated is not None and annotated != meta:
+        target._set_meta(annotated)
 
 
 class EvidenceLifecycleMarker(Base):

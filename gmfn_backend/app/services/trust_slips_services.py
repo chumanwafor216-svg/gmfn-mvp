@@ -18,6 +18,7 @@ from app.core.trust_event_types import (
     PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES,
     TrustEventType,
 )
+from app.core.trust_evidence_families import public_member_activity_label, public_member_activity_label_from_record
 from app.db.bank_models import ExpectedPayment
 from app.db.verification_models import IdentityVerificationCheck
 from app.db.models import (
@@ -942,29 +943,10 @@ def _cci_explainer(score: Any, band: Any) -> Dict[str, Any]:
     }
 
 
-def _public_activity_category(event_type: Any) -> str:
-    text = _safe_str(event_type).lower()
-    if not text:
-        return "Community activity"
-    if text in {"community.followed", "community.unfollowed"}:
-        return "Community attention"
-    if text in {"marketplace.shop.followed", "marketplace.shop.unfollowed"}:
-        return "Shop attention"
-    if "verification" in text or "verified" in text or "confirmation" in text or text in {
-        "clan_joined",
-        "community_member_joined",
-    }:
-        return "Community verification"
-    if "market" in text or "shop" in text or "spotlight" in text or "demand" in text:
-        return "Trade activity"
-    if "rosca" in text or "contribution" in text or "pool" in text or "payment" in text:
-        return "Contribution records"
-    if "loan" in text or "guarantor" in text or "support" in text:
-        return "Support and borrowing"
-    if "repay" in text or "settle" in text:
-        return "Repayment discipline"
-    return "Community activity"
-
+def _public_activity_category(event_or_type: Any) -> str:
+    if hasattr(event_or_type, "event_type"):
+        return public_member_activity_label_from_record(event_or_type)
+    return public_member_activity_label(event_or_type)
 
 def _community_activity_summary(db: Session, *, user_id: int, clan_id: int) -> Dict[str, Any]:
     if not user_id or not clan_id:
@@ -989,7 +971,7 @@ def _community_activity_summary(db: Session, *, user_id: int, clan_id: int) -> D
     )
     categories: list[str] = []
     for row in latest_rows:
-        category = _public_activity_category(getattr(row, "event_type", None))
+        category = _public_activity_category(row)
         if category not in categories:
             categories.append(category)
         if len(categories) >= 6:
