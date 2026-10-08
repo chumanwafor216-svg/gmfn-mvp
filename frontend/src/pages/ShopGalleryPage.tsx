@@ -5000,14 +5000,14 @@ export default function ShopGalleryPage() {
               padding: isCompact ? 10 : 22,
               height: isCompact ? "auto" : undefined,
               minHeight: isCompact ? 456 : undefined,
-              border: isCompact ? "1px solid rgba(214,170,69,0.70)" : "1px solid rgba(255,255,255,0.92)",
+              border: isCompact ? "1px solid rgba(184,137,45,0.92)" : "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
-                  ? "radial-gradient(circle at 88% 4%, rgba(214,170,69,0.34) 0%, transparent 34%), radial-gradient(circle at 4% 0%, rgba(255,255,255,0.92) 0%, transparent 42%), linear-gradient(135deg, #FFF8DF 0%, #F7FAFF 48%, #DDE6F0 100%)"
+                  ? "radial-gradient(circle at 88% 4%, rgba(255,246,210,0.96) 0%, transparent 30%), radial-gradient(circle at 7% 4%, rgba(255,255,255,0.68) 0%, transparent 34%), linear-gradient(145deg, #FFF1B8 0%, #E4B54B 22%, #FFF5D0 48%, #C58E22 76%, #F2C766 100%)"
                   : "radial-gradient(circle at 82% 18%, rgba(47,128,237,0.18) 0%, transparent 34%), radial-gradient(circle at 8% 0%, rgba(246,196,83,0.12) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%)",
               boxShadow:
                 isCompact
-                  ? "0 24px 52px rgba(8,38,67,0.12), 0 0 0 1px rgba(214,170,69,0.24), inset 0 1px 0 rgba(255,255,255,0.96)"
+                  ? "0 26px 54px rgba(96,65,10,0.24), 0 3px 0 rgba(121,82,14,0.26), 0 0 0 1px rgba(255,239,184,0.82), inset 0 2px 0 rgba(255,255,255,0.72), inset 0 -10px 18px rgba(137,92,18,0.18)"
                   : "0 24px 52px rgba(8,38,67,0.14), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
             }}
           >

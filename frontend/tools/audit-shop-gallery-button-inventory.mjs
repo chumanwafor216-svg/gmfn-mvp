@@ -415,8 +415,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(214,170,69,0\.70\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
-  "Public Shop Spotlight must keep polished silver/gold brand framing instead of the old dark phone slab."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(184,137,45,0\.92\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
+  "Public Shop Spotlight must keep polished 3D gold brand framing instead of the old silver/dark phone slab."
 );
 
 assertContains(
@@ -425,8 +425,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(214,170,69,0\.34\) 0%, transparent 34%\), radial-gradient\(circle at 4% 0%, rgba\(255,255,255,0\.92\) 0%, transparent 42%\), linear-gradient\(135deg, #FFF8DF 0%, #F7FAFF 48%, #DDE6F0 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
-  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the silver/gold frame."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(255,246,210,0\.96\) 0%, transparent 30%\), radial-gradient\(circle at 7% 4%, rgba\(255,255,255,0\.68\) 0%, transparent 34%\), linear-gradient\(145deg, #FFF1B8 0%, #E4B54B 22%, #FFF5D0 48%, #C58E22 76%, #F2C766 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
+  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the 3D gold frame."
 );
 
 assertContains(
