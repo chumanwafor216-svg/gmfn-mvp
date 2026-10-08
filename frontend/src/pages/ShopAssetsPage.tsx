@@ -1949,6 +1949,25 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setCollapsed((prev) => ({ ...prev, products: false }));
   }
 
+  function openQuickAddProduct() {
+    if (shopDiaryFeatureOff) {
+      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+      return;
+    }
+
+    const firstEmptySlotIndex = publicGallerySlots.findIndex((slot) => !slot);
+    if (firstEmptySlotIndex >= 0) {
+      openAddForPublicSlot(firstEmptySlotIndex + 1);
+      return;
+    }
+
+    showGalleryActionNotice(
+      "error",
+      "All public product blocks are full. Remove one product or open Marketplace Capacity for more blocks.",
+      selectedPublicSlot
+    );
+  }
+
   function closeProductEditor() {
     resetProductForm();
     setProductEditorOpen(false);
@@ -2925,16 +2944,36 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div>
               <div style={sectionLabel()}>Products & Services block control</div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                Choose one numbered block. Confirm the picture or video, then edit,
-                hide, copy, or add only that block.
+                Tap + Add product for the next open block. Choose a numbered block only when
+                you want a specific position.
               </div>
             </div>
 
-            {iconBadge(
-              "shop",
-              <>{occupiedPublicSlotCount} / {publicProductSlotsTotal} live blocks</>,
-              occupiedPublicSlotCount > 0
-            )}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+                justifyContent: isCompact ? "stretch" : "flex-end",
+                width: isCompact ? "100%" : undefined,
+              }}
+            >
+              {iconBadge(
+                "shop",
+                <>{occupiedPublicSlotCount} / {publicProductSlotsTotal} live blocks</>,
+                occupiedPublicSlotCount > 0
+              )}
+              <PrimaryButton
+                onClick={openQuickAddProduct}
+                fullWidth={isCompact}
+                stableHeight={isCompact ? 52 : 46}
+                minWidth={isCompact ? undefined : 152}
+                debugId="shop-assets.product.quick-add"
+              >
+                + Add product
+              </PrimaryButton>
+            </div>
           </div>
 
           {shopDiaryFeatureOff ? (
@@ -3061,7 +3100,25 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         }}
                       />
                     ) : (
-                      <span style={{ color: "#4E6680", fontWeight: 900 }}>Add</span>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 999,
+                          display: "inline-grid",
+                          placeItems: "center",
+                          color: "#8A5A00",
+                          fontSize: 26,
+                          fontWeight: 1000,
+                          lineHeight: 1,
+                          background: "linear-gradient(180deg, #FFFFFF 0%, #FFF7D6 100%)",
+                          border: "1px solid rgba(214,170,69,0.44)",
+                          boxShadow: "0 8px 18px rgba(7,20,36,0.10)",
+                        }}
+                      >
+                        +
+                      </span>
                     )}
                   </div>
 
@@ -3077,7 +3134,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       WebkitBoxOrient: "vertical",
                     }}
                   >
-                    {item ? itemName : "Ready for item"}
+                    {item ? itemName : "Tap + to add"}
                   </div>
                 </StableButton>
               );
@@ -3134,7 +3191,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 />
               ) : (
                 <div style={{ color: "#D7E3F1", fontWeight: 900 }}>
-                  Block #{selectedPublicSlot} is empty
+                  Tap + Add product
                 </div>
               )}
             </div>
@@ -3175,7 +3232,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       stripProductMetadata(firstTruthy(selectedPublicProduct.description)),
                       firstTruthy(selectedPublicProduct.name, "This block has no description yet.")
                     )
-                  : "Add a public item here. You can use a picture or a short video; if you choose video only, GSN creates the cover automatically."}
+                  : "Tap + Add product to post a picture or short video in this block."}
               </div>
 
               {selectedPublicProduct ? (
@@ -3197,7 +3254,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 style={{
                   marginTop: 14,
                   ...ownerActionGrid(isCompact),
-                  minHeight: isCompact ? 260 : 108,
+                  minHeight: selectedPublicProduct ? (isCompact ? 236 : 108) : isCompact ? 68 : 54,
                 }}
               >
                 {selectedPublicProduct ? (
@@ -3208,7 +3265,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       stableHeight={isCompact ? 56 : 48}
                       debugId={`shop-assets.public-slot.${selectedPublicSlot}.edit`}
                     >
-                      Edit block #{selectedPublicSlot}
+                      Edit product
                     </PrimaryButton>
 
                     <SecondaryButton
@@ -3218,12 +3275,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         deletingProductId === Number(selectedPublicProduct.id)
                       }
                       busy={deletingProductId === Number(selectedPublicProduct.id)}
-                      busyLabel="Hiding..."
+                      busyLabel="Removing..."
                       fullWidth
                       stableHeight={isCompact ? 56 : 48}
                       debugId={`shop-assets.public-slot.${selectedPublicSlot}.hide`}
                     >
-                      Hide block
+                      Remove from shop
                     </SecondaryButton>
 
                     <SubtleButton
@@ -3299,7 +3356,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId={`shop-assets.public-slot.${selectedPublicSlot}.add`}
                   >
-                    Add item to block #{selectedPublicSlot}
+                    + Add product
                   </PrimaryButton>
                 )}
               </div>
@@ -3321,11 +3378,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         >
           <div>
             <div style={sectionLabel()}>
-              {embedded ? "Shop gallery item" : "Products and Vault offers"}
+              {editingProductId ? "Edit product" : embedded ? "Add product" : "Products and Vault offers"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {embedded
-                ? "Add or update one public gallery block at a time."
+                ? "Add the photo/video, name and price. Save when ready."
                 : "Add one item at a time. Choose public gallery or private Vault before saving."}
             </div>
           </div>
@@ -3358,15 +3415,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div style={sectionLabel()}>
               {embedded
                 ? editingProductId
-                  ? `Edit block #${selectedPublicSlot}`
-                  : `Add block #${selectedPublicSlot}`
+                  ? `Edit product in block #${selectedPublicSlot}`
+                  : `+ Add product to block #${selectedPublicSlot}`
                 : editingProductId
                 ? `Edit item #${editingProductId}`
                 : "Add item"}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Add a picture or short video, name, price, and choose where the item belongs.
+              Choose a picture or video, add the name and price, then post.
             </div>
 
             {productFormNotice ? (
@@ -3527,7 +3584,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   stableHeight={isCompact ? 56 : 48}
                   debugId="shop-assets.product.submit"
                 >
-                  {editingProductId ? "Update item" : "Post item"}
+                  {editingProductId ? "Save product" : "Post product"}
                 </PrimaryButton>
 
                 <SecondaryButton

@@ -220,6 +220,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /debugId="shop-assets\.product\.quick-add"[\s\S]*?\+ Add product/,
+  "Shop Assets must expose a simple plus-style product add action above the public block grid."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /stableHeight=\{isCompact \? 126 : 118\}[\s\S]*?gridTemplateRows: "18px 48px minmax\(0, 1fr\)"[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{slotNumber\}\.select`\}/,
   "Shop Assets public block tiles must be fixed-height controls so slot labels and taps do not jump."
 );
@@ -238,7 +244,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /minHeight: isCompact \? 260 : 108/,
+  /minHeight: selectedPublicProduct \? \(isCompact \? 236 : 108\) : isCompact \? 68 : 54/,
   "Shop Assets selected block action panel must reserve stable height so Open/Add/Repost controls cannot jump the shelf."
 );
 
