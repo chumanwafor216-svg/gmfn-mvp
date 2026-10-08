@@ -5000,13 +5000,15 @@ export default function ShopGalleryPage() {
               padding: isCompact ? 10 : 22,
               height: isCompact ? "auto" : undefined,
               minHeight: isCompact ? 456 : undefined,
-              border: "1px solid rgba(255,255,255,0.92)",
+              border: isCompact ? "1px solid rgba(214,170,69,0.70)" : "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
-                  ? "linear-gradient(135deg, #061827 0%, #082A4C 100%)"
+                  ? "radial-gradient(circle at 88% 4%, rgba(214,170,69,0.34) 0%, transparent 34%), radial-gradient(circle at 4% 0%, rgba(255,255,255,0.92) 0%, transparent 42%), linear-gradient(135deg, #FFF8DF 0%, #F7FAFF 48%, #DDE6F0 100%)"
                   : "radial-gradient(circle at 82% 18%, rgba(47,128,237,0.18) 0%, transparent 34%), radial-gradient(circle at 8% 0%, rgba(246,196,83,0.12) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%)",
               boxShadow:
-                "0 24px 52px rgba(8,38,67,0.14), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+                isCompact
+                  ? "0 24px 52px rgba(8,38,67,0.12), 0 0 0 1px rgba(214,170,69,0.24), inset 0 1px 0 rgba(255,255,255,0.96)"
+                  : "0 24px 52px rgba(8,38,67,0.14), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
             }}
           >
             <div
@@ -5050,7 +5052,7 @@ export default function ShopGalleryPage() {
                     padding: 0,
                     borderRadius: 0,
                     background: "transparent",
-                    color: isCompact ? "#FFFFFF" : "#276E4A",
+                    color: isCompact ? "#07172C" : "#276E4A",
                     fontSize: isCompact ? 9.5 : 12,
                     fontWeight: 950,
                     textTransform: "uppercase",
@@ -5110,7 +5112,7 @@ export default function ShopGalleryPage() {
                 <div
                   style={{
                     marginTop: isCompact ? 0 : 10,
-                    color: isCompact ? "#FFFFFF" : "#07172C",
+                    color: "#07172C",
                     fontSize: isCompact ? 20 : 34,
                     fontWeight: 950,
                     lineHeight: isCompact ? 1.04 : 1.04,

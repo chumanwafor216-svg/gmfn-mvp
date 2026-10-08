@@ -277,8 +277,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
-  "Public Shop Spotlight must keep polished white brand framing instead of cream/brown framing."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(214,170,69,0\.70\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
+  "Public Shop Spotlight must keep polished silver/gold brand framing instead of the old dark phone slab."
 );
 
 assertContains(
