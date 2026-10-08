@@ -977,6 +977,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     null
   );
   const mountedRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
   const loadSeqRef = useRef(0);
   const productImagePrepJobRef = useRef(0);
   const productVideoPrepJobRef = useRef(0);
@@ -1236,7 +1237,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     loadSeqRef.current = loadSeq;
     const seedProducts = normalizeProductRecords(props.seedProducts || []);
     const seedShop = (props.seedShop || null) as ShopRecord | null;
-    setLoading(true);
+    if (!hasLoadedOnceRef.current) setLoading(true);
     setShop(seedShop);
     setProducts(seedProducts);
 
@@ -1386,7 +1387,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       );
       return seedProducts;
     } finally {
-      if (canApplyLoad(loadSeq)) setLoading(false);
+      if (canApplyLoad(loadSeq)) {
+        hasLoadedOnceRef.current = true;
+        setLoading(false);
+      }
     }
   }, [
     props.preferredGmfnId,
