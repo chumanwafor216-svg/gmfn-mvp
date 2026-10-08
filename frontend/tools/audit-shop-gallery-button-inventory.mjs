@@ -31,7 +31,7 @@ const expectedPageSourceActions = {
   total: 26,
 };
 const expectedNativeFieldCount = 0;
-const expectedSignedInShortcutCount = 7;
+const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 1;
 const expectedMediaFrameInvocations = 3;
 const expectedSharedMediaAudioActionTemplates = 1;
@@ -245,8 +245,8 @@ if (memberSurfaceLinkCount !== expectedSignedInShortcutCount) {
 }
 
 assertContains(
-  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loan Support"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
-  "Public Shop owner shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loan Support, and Trust in the audited order."
+  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Profile"[\s\S]*?debugId: "shop-gallery\.member-nav\.profile"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loan Support"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
+  "Public Shop owner shortcut strip must keep Dashboard, Community Home, Marketplace, Profile, Public Shop, Finance, Loan Support, and Trust in the audited order."
 );
 
 assertContains(
@@ -285,7 +285,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: isCompact \? "2" : undefined[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 50 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
+  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: isCompact \? "2" : undefined[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 44 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
   "Public Shop owner compact signboard must keep follower count and Analytics as equal-width phone pills."
 );
 assertContains(

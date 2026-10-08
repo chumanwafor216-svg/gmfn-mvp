@@ -1636,6 +1636,8 @@ export default function MyGMFNAndIPage() {
     EMPTY_MEMBER_OPPORTUNITY_MODEL
   );
   const [memberOpportunityLoading, setMemberOpportunityLoading] = useState(false);
+  const [communitiesOpen, setCommunitiesOpen] = useState(false);
+  const [officialLinksOpen, setOfficialLinksOpen] = useState(false);
 
   const requestedTab = useMemo(() => {
     if (!isAppRoute) return "guide";
@@ -2824,52 +2826,77 @@ export default function MyGMFNAndIPage() {
                     {communityStatus}
                   </h2>
                   <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    These are your GSN community memberships. Open Community Home for the selected community work.
+                    Your community list stays covered until you open it. Community Home owns the selected community work.
                   </div>
-                  <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
-                    {memberCommunityRows.length ? (
-                      memberCommunityRows.map((community) => (
-                        <div
-                          key={community.key}
-                          data-my-gsn-community-row="true"
-                          style={{
-                            borderRadius: 16,
-                            border: community.isSelected ? "1px solid rgba(214,170,69,0.42)" : "1px solid rgba(15,23,42,0.08)",
-                            background: community.isSelected ? "rgba(255,249,232,0.94)" : "#FFFFFF",
-                            padding: isCompact ? 10 : 12,
-                            display: "grid",
-                            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 150px",
-                            gap: 9,
-                            alignItems: "center",
-                          }}
-                        >
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ color: "#07172C", fontSize: isCompact ? 13.5 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
-                              {community.name}
-                            </div>
-                            <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
-                              {community.roleStatus}{community.stableId ? ` / ${community.stableId}` : ""}{community.isSelected ? " / Selected" : ""}
-                            </div>
-                          </div>
-                          <StableCtaLink
-                            to={communityRouteFor(community.id)}
-                            kind={community.isSelected ? "primary" : "secondary"}
-                            debugId={`my-gmfn.community-row.${community.actionKey}`}
-                            style={{ minHeight: 42, borderRadius: 999, justifyContent: "center", fontSize: 12.5 }}
-                          >
-                            Open
-                          </StableCtaLink>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ ...memberHomeCard(true), minHeight: 78 }}>
-                        <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>No active community shown yet</div>
-                        <div style={{ marginTop: 6, ...helperText(), color: "#526174" }}>
-                          Join or create a community to build your GSN footprint.
-                        </div>
+                  {selectedCommunityForShop ? (
+                    <div style={{ ...memberHomeCard(true), marginTop: 12, minHeight: isCompact ? 74 : 82 }}>
+                      <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                        Selected community
                       </div>
-                    )}
-                  </div>
+                      <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                        {selectedCommunityForShop.name}
+                      </div>
+                      <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+                        {selectedCommunityForShop.roleStatus}{selectedCommunityForShop.stableId ? ` / ${selectedCommunityForShop.stableId}` : ""}
+                      </div>
+                    </div>
+                  ) : null}
+                  <SecondaryButton
+                    type="button"
+                    stableHeight={44}
+                    debugId="my-gmfn.communities.toggle"
+                    onClick={() => setCommunitiesOpen((value) => !value)}
+                    style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
+                    aria-expanded={communitiesOpen}
+                  >
+                    {communitiesOpen ? "Hide communities" : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
+                  </SecondaryButton>
+                  {communitiesOpen ? (
+                    <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
+                      {memberCommunityRows.length ? (
+                        memberCommunityRows.map((community) => (
+                          <div
+                            key={community.key}
+                            data-my-gsn-community-row="true"
+                            style={{
+                              borderRadius: 16,
+                              border: community.isSelected ? "1px solid rgba(214,170,69,0.42)" : "1px solid rgba(15,23,42,0.08)",
+                              background: community.isSelected ? "rgba(255,249,232,0.94)" : "#FFFFFF",
+                              padding: isCompact ? 10 : 12,
+                              display: "grid",
+                              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 150px",
+                              gap: 9,
+                              alignItems: "center",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ color: "#07172C", fontSize: isCompact ? 13.5 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                                {community.name}
+                              </div>
+                              <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+                                {community.roleStatus}{community.stableId ? ` / ${community.stableId}` : ""}{community.isSelected ? " / Selected" : ""}
+                              </div>
+                            </div>
+                            <StableCtaLink
+                              to={communityRouteFor(community.id)}
+                              kind={community.isSelected ? "primary" : "secondary"}
+                              debugId={`my-gmfn.community-row.${community.actionKey}`}
+                              style={{ minHeight: 42, borderRadius: 999, justifyContent: "center", fontSize: 12.5 }}
+                            >
+                              Open
+                            </StableCtaLink>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ ...memberHomeCard(true), minHeight: 78 }}>
+                          <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>No active community shown yet</div>
+                          <div style={{ marginTop: 6, ...helperText(), color: "#526174" }}>
+                            Join or create a community to build your GSN footprint.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -2962,21 +2989,33 @@ export default function MyGMFNAndIPage() {
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     Confirmed channels
                   </h2>
-                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                    {OFFICIAL_GSN_LINKS.map((link) => (
-                      <SecondaryButton
-                        key={link.label}
-                        type="button"
-                        stableHeight={42}
-                        debugId={link.debugId}
-                        onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
-                        style={{ justifyContent: "center", fontSize: 12.5 }}
-                      >
-                        <GsnLegacyIcon name="navigation" size={18} decorative />
-                        {link.label}
-                      </SecondaryButton>
-                    ))}
-                  </div>
+                  <SecondaryButton
+                    type="button"
+                    stableHeight={44}
+                    debugId="my-gmfn.official-links.toggle"
+                    onClick={() => setOfficialLinksOpen((value) => !value)}
+                    style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
+                    aria-expanded={officialLinksOpen}
+                  >
+                    {officialLinksOpen ? "Hide official links" : "Show official links"}
+                  </SecondaryButton>
+                  {officialLinksOpen ? (
+                    <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                      {OFFICIAL_GSN_LINKS.map((link) => (
+                        <SecondaryButton
+                          key={link.label}
+                          type="button"
+                          stableHeight={42}
+                          debugId={link.debugId}
+                          onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
+                          style={{ justifyContent: "center", fontSize: 12.5 }}
+                        >
+                          <GsnLegacyIcon name="navigation" size={18} decorative />
+                          {link.label}
+                        </SecondaryButton>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

@@ -2780,6 +2780,11 @@ export default function ShopGalleryPage() {
         debugId: "shop-gallery.member-nav.marketplace",
       },
       {
+        label: "Profile",
+        to: routeWithCommunity(APP_ROUTES.PROFILE, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.member-nav.profile",
+      },
+      {
         label: "Public Shop",
         to: shopRootPath || publicShopReturnPath,
         debugId: "shop-gallery.member-nav.public-shop",
@@ -3797,7 +3802,7 @@ export default function ShopGalleryPage() {
                 <StableCtaLink
                   to={ownerShopAnalyticsPath}
                   fullWidth
-                  stableHeight={isCompact ? 50 : 46}
+                  stableHeight={isCompact ? 44 : 46}
                   debugId="shop-gallery.owner.shop-analytics"
                   aria-label="Open owner shop analytics"
                   style={{
@@ -3811,7 +3816,8 @@ export default function ShopGalleryPage() {
                     fontWeight: 900,
                     gap: isCompact ? 6 : 8,
                     minWidth: 0,
-                    padding: isCompact ? "6px 7px" : undefined,
+                    minHeight: isCompact ? 44 : 46,
+                    padding: isCompact ? "5px 8px" : undefined,
                     justifyContent: isCompact ? "center" : "flex-start",
                     whiteSpace: "normal",
                     textOverflow: "clip",
