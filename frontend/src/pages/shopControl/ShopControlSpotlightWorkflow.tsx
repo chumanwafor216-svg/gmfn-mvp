@@ -277,10 +277,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               <div
                 style={{
                   position: "relative",
-                  minHeight: isCompact ? 236 : 286,
+                  minHeight: isCompact ? 318 : 340,
                   borderRadius: isCompact ? 20 : 24,
                   overflow: "hidden",
-                  border: "1px solid rgba(184,137,45,0.34)",
+                  border: "1px solid rgba(184,137,45,0.48)",
                   background: "linear-gradient(180deg, #0B1F33 0%, #061827 100%)",
                   boxShadow:
                     "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -293,8 +293,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   alt={liveTitle}
                   frameStyle={{
                     width: "100%",
-                    height: isCompact ? 236 : 286,
-                    minHeight: isCompact ? 236 : 286,
+                    height: isCompact ? 318 : 340,
+                    minHeight: isCompact ? 318 : 340,
                     borderRadius: isCompact ? 20 : 24,
                     background: "transparent",
                   }}
@@ -330,7 +330,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                       style={{
                         width: "100%",
                         height: "100%",
-                        minHeight: isCompact ? 236 : 286,
+                        minHeight: isCompact ? 318 : 340,
                         display: "grid",
                         placeItems: "center",
                         padding: 22,
@@ -418,7 +418,14 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <StableButton
                     type="button"
-                    onClick={() => navigateWithOrigin(navigate, routes.shopGallery, location)}
+                    onClick={() => {
+                      if (!routes.publicShopSpotlightPreview) {
+                        showNotice("error", "Public shop link is not ready yet.");
+                        return;
+                      }
+                      navigateWithOrigin(navigate, routes.publicShopSpotlightPreview, location);
+                    }}
+                    disabled={!routes.publicShopSpotlightPreview}
                     debugId="shop-control.spotlight.live.preview-shop"
                   >
                     Preview public shop

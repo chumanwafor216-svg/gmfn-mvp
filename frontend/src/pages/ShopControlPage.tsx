@@ -55,7 +55,7 @@ import {
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
-import { publicFrontendUrl, publicShopPath } from "../lib/publicLinks";
+import { PUBLIC_SHOP_SPOTLIGHT_ANCHOR, publicFrontendUrl, publicShopPath } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
@@ -78,6 +78,7 @@ import {
 import {
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
+  SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY,
   ownerShopLayerForTarget,
 } from "../lib/ownerShopHandles";
 import type {
@@ -3686,6 +3687,7 @@ export default function ShopControlPage() {
   const controlRevealTargetRef = useRef("");
   const spotlightIdleTimerRef = useRef<number | null>(null);
   const spotlightSuccessTimerRef = useRef<number | null>(null);
+  const shopDiarySpotlightHandoffAppliedRef = useRef("");
   const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
     useState<any>(null);
 
@@ -4319,6 +4321,67 @@ export default function ShopControlPage() {
     revealControlTarget(targetId);
   }, [cancelPendingControlReveal, loading, location, location.hash, location.search, navigate, revealControlTarget, routes.subscriptionSpotlight, shop?.id]);
 
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+
+    const params = new URLSearchParams(location.search);
+    if (safeStr(params.get("spotlight_source")) !== "shop_diary") return;
+
+    const diaryEntryId = Number(params.get("diary_entry_id") || 0);
+    if (diaryEntryId <= 0) return;
+
+    const applyKey = `${location.pathname}:${location.search}:${diaryEntryId}`;
+    if (shopDiarySpotlightHandoffAppliedRef.current === applyKey) return;
+
+    let handoff: Record<string, any> | null = null;
+    try {
+      const raw = window.sessionStorage.getItem(SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY);
+      handoff = raw ? JSON.parse(raw) : null;
+    } catch {
+      handoff = null;
+    }
+
+    if (!handoff || handoff.source !== "shop_diary" || Number(handoff.diaryEntryId || 0) !== diaryEntryId) {
+      return;
+    }
+
+    shopDiarySpotlightHandoffAppliedRef.current = applyKey;
+    const handoffTitle = firstTruthy(
+      handoff.title,
+      handoff.productName,
+      "Shop Diary update"
+    );
+    const handoffMessage = firstTruthy(handoff.message);
+    const imageUrl = firstTruthy(handoff.imageUrl);
+    const videoUrl = firstTruthy(handoff.videoUrl);
+
+    setSpotlightProductName(handoffTitle);
+    setSpotlightPriceNote("");
+    setSpotlightMessage(handoffMessage);
+    setSpotlightImageFile(null);
+    setSpotlightVideoFile(null);
+    setSpotlightVideoDurationSeconds(null);
+    setSpotlightImageUrl(imageUrl);
+    setSpotlightVideoUrl(videoUrl);
+    setSpotlightImagePreviewUrl(imageUrl);
+    setSpotlightVideoPreviewUrl(videoUrl);
+    setSpotlightMediaChoice(videoUrl ? "video" : "image");
+    setSpotlightPriorityMode("free");
+    setSpotlightFlowStep("upload");
+    setSpotlightOpen(true);
+    setSpotlightPublishFeedback({
+      tone: "info",
+      text: "Diary update loaded. Review it before publishing Spotlight.",
+    });
+    showNotice("info", "Diary update loaded. Review it before publishing Spotlight.");
+
+    try {
+      window.sessionStorage.removeItem(SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }, [loading, location.pathname, location.search]);
+
   const publicProducts = useMemo(
     () =>
       products.filter(
@@ -4701,6 +4764,13 @@ export default function ShopControlPage() {
   }, [routes.freeSpotlight, routes.shopAssets, routes.shopDetails, routes.shopGallery, routes.tradeEvidence, shopAnalyticsWisdom.diagnosisCode, shopAnalyticsWisdom.primaryActionLabel]);
   const ownerShopGsnId = firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id);
   const ownerPublicShopPath = ownerShopGsnId ? publicShopPath(ownerShopGsnId) : "";
+  const ownerPublicShopSpotlightPreviewPath = ownerPublicShopPath
+    ? appendRouteQueryParam(
+        `${ownerPublicShopPath}#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
+        "owner_spotlight_preview",
+        "1"
+      )
+    : "";
   const shopRecordReady = Boolean(shop?.id);
   const publicShopReady = Boolean(shopRecordReady && ownerPublicShopPath);
   const spotlightStatusLabel = currentActiveSpotlight ? "Live" : "Inactive";
@@ -4748,10 +4818,10 @@ export default function ShopControlPage() {
     }
     if (ownerPublicShopPath) {
       return {
-        label: "Open public shop",
-        to: ownerPublicShopPath,
-        detail: "Review what visitors can see.",
-        debugId: "shop-control.orientation.primary.public-shop",
+        label: "Publish Spotlight",
+        to: routes.freeSpotlight,
+        detail: "Create the next live promotion for the public shop.",
+        debugId: "shop-control.orientation.primary.spotlight",
       };
     }
     return {
@@ -4789,7 +4859,7 @@ export default function ShopControlPage() {
       value: spotlightStatusLabel,
       detail: spotlightStatusDetail,
       to: routes.freeSpotlight,
-      action: "Manage",
+      action: currentActiveSpotlight ? "Manage" : "Publish",
       debugId: "shop-control.orientation.spotlight",
     },
     {
@@ -6789,7 +6859,10 @@ export default function ShopControlPage() {
     spotlightPriorityMode,
     setSpotlightPriorityMode,
     navigate,
-    routes,
+    routes: {
+      ...routes,
+      publicShopSpotlightPreview: ownerPublicShopSpotlightPreviewPath,
+    },
     location,
     spotlightMediaChoice,
     setSpotlightMediaChoice,
@@ -7112,10 +7185,10 @@ export default function ShopControlPage() {
           >
             <div style={sectionLabel()}>Shop Gallery Tools</div>
             <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Control the public shop billboard, 6 standard Shop Diaries, and paid extra capacity.
+              Control the public shop billboard, 6 standard product/service blocks, and paid extra capacity.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use this lane for pictures, products, diary blocks, and the public shop face.
+              Use this lane for pictures, products/services, diary updates, and the public shop face.
               When the marketplace needs extra public shop blocks, open Marketplace Capacity.
             </div>
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>

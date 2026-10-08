@@ -135,7 +135,7 @@ wholeFileFind(
 
 wholeFileFind(
   "src/layout/AppLayout.tsx",
-  /import \{ routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?import \{ communityIdFromSearch \} from "\.\.\/lib\/communityRouteContext";[\s\S]*?function contextualizeAppNavTarget\(to: string, communityId: number\): string \{[\s\S]*?routeWithCommunity\(to, communityId\)[\s\S]*?const activeCommunityId = useMemo\([\s\S]*?communityIdFromSearch\(location\.search\)[\s\S]*?to=\{contextualizeAppNavTarget\(/,
+  /import \{[^}]*routeWithCommunity[^}]*\} from "\.\.\/lib\/appRoutes";[\s\S]*?import \{ communityIdFromSearch \} from "\.\.\/lib\/communityRouteContext";[\s\S]*?function contextualizeAppNavTarget\(to: string, communityId: number\): string \{[\s\S]*?routeWithCommunity\(to, communityId\)[\s\S]*?const activeCommunityId = useMemo\([\s\S]*?communityIdFromSearch\(location\.search\)[\s\S]*?to=\{contextualizeAppNavTarget\(/,
   "App shell navigation must carry the active community query into community-scoped routes instead of rendering raw app links."
 );
 

@@ -45,8 +45,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
-  "Marketplace front door must keep grouped lane cards without restoring the non-action focus guide."
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.progressive\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front door must keep the frozen needs-first order, Shops & Services handoff, progressive secondary tools, and demoted wisdom lens."
 );
 
 assertContains(

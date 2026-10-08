@@ -13,7 +13,6 @@ function read(relativePath) {
 const findings = [];
 
 const memberEntryFiles = [
-  "src/pages/ProfilePage.tsx",
   "src/pages/CoverPage.tsx",
   "src/pages/LoginPage.tsx",
   "src/pages/CreateEntryPage.tsx",
@@ -129,11 +128,16 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/ProfilePage.tsx",
-  /updateMyProfile[\s\S]*?debugId="profile\.save-account"[\s\S]*?debugId="profile\.refresh"/,
-  "Profile actions must remain traceable."
+  "src/App.tsx",
+  /<Route path="profile" element=\{<PreserveRedirect to=\{APP_ROUTES\.PROFILE\} \/>\} \/>[\s\S]*?<Route path="my-gmfn-and-i" element=\{<MyGMFNAndIPage \/>\} \/>/,
+  "The deprecated ProfilePage must stay unmounted; /app/profile must redirect to canonical My GSN."
 );
 
+assertNotContains(
+  "src/App.tsx",
+  /ProfilePage/,
+  "Deprecated standalone ProfilePage must not be imported or mounted by the app router."
+);
 assertContains(
   "src/lib/api.ts",
   /export async function updateMyProfile[\s\S]*?\/auth\/me\/profile[\s\S]*?display_name/,
@@ -142,7 +146,7 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?debugId="my-gmfn\.hero\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"/,
+  /debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?debugId="my-gmfn\.secondary\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"/,
   "My GSN and I hero, guide, route, and settings actions must remain traceable."
 );
 
@@ -269,12 +273,6 @@ assertNotContains(
   "src/pages/MemberActivationPage.tsx",
   /session token/i,
   "Member Activation fallback copy must explain sign-in recovery without exposing token language."
-);
-
-assertNotContains(
-  "src/pages/ProfilePage.tsx",
-  /Backend profile storage/i,
-  "Profile save copy must not expose backend-storage language to users."
 );
 
 assertContains(

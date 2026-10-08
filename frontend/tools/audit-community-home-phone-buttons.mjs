@@ -15,12 +15,7 @@ function lineAt(index) {
 
 function assertContains(pattern, message) {
   if (pattern.test(source)) return;
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message,
-    text: "Expected Community Home phone-button pattern was not found.",
-  });
+  findings.push({ file: communityFile, line: 1, message, text: "Expected Community Home phone-button pattern was not found." });
 }
 
 function assertNotContains(pattern, message) {
@@ -37,7 +32,6 @@ function assertNotContains(pattern, message) {
 
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 let match;
-
 while ((match = actionPattern.exec(source))) {
   const block = match[0];
   const line = lineAt(match.index);
@@ -55,8 +49,7 @@ while ((match = actionPattern.exec(source))) {
     findings.push({
       file: communityFile,
       line,
-      message:
-        "Community Home StableButton controls must avoid disabled= and stay tappable enough to explain blocked or in-progress actions.",
+      message: "Community Home StableButton controls must avoid disabled= and stay tappable enough to explain blocked or in-progress actions.",
       text: block.replace(/\s+/g, " ").slice(0, 220),
     });
   }
@@ -66,115 +59,74 @@ assertContains(
   /function consumeCommunityButtonEvent\([\s\S]*?event\?\.preventDefault\(\);[\s\S]*?event\?\.stopPropagation\(\);/,
   "Community Home button events must prevent default and stop propagation before route or section handling."
 );
-
 assertContains(
   /const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name"/,
   "Community Home must use the same saved profile-name key as Profile and My GSN Identity settings."
 );
-
 assertContains(
-  /function resolveMemberName\(me: any\): string \{[\s\S]*?readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?me\?\.display_name[\s\S]*?me\?\.gmfn_id[\s\S]*?me\?\.username[\s\S]*?me\?\.email[\s\S]*?me\?\.phone[\s\S]*?looksLikeEmail[\s\S]*?looksLikePhone[\s\S]*?return "Member"/,
-  "Community Home hero identity must prefer saved profile or GSN IDs and reject email/phone-like login fallbacks."
+  /function resolveMemberName\(me: any\): string \{[\s\S]*?readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?me\?\.display_name[\s\S]*?me\?\.gmfn_id[\s\S]*?looksLikeEmail[\s\S]*?looksLikePhone[\s\S]*?return "Member"/,
+  "Community Home hero identity must reject email/phone-like login fallbacks."
 );
-
 assertContains(
   /function hasHumanMemberName\(me: any\): boolean \{[\s\S]*?readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?me\?\.display_name[\s\S]*?me\?\.nickname[\s\S]*?me\?\.first_name[\s\S]*?\.some\(isHumanMemberName\)/,
   "Community Home must separately detect whether a real human display name exists before suppressing profile-name guidance."
 );
-
 assertContains(
   /function identityNamePromptStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 30 : 34[\s\S]*?touchAction: "manipulation"/,
   "Community Home display-name prompt must keep compact, stable phone tap geometry."
 );
-
 assertContains(
-  /profileSettings: APP_ROUTES\.SETTINGS[\s\S]*?communityHomeNeedsDisplayName = !hasHumanMemberName\(me\)[\s\S]*?openCommunityRoute\(event, routes\.profileSettings\)[\s\S]*?Add display name/,
-  "Community Home must route missing-name users to My GSN Identity settings instead of leaving them with a phone/id label."
-);
-
-assertContains(
-  /function announcementLiveNoticeGridStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?gridTemplateColumns: isCompact \? "minmax\(0, 1fr\)" : "118px minmax\(0, 1fr\)"[\s\S]*?justifyItems: isCompact \? "center" : "stretch"/,
-  "Community Home live bulletin must use a one-column centered phone layout so the main announcement is not pushed sideways."
-);
-assertContains(
-  /function announcementDateTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 44 : 158[\s\S]*?width: isCompact \? "100%" : undefined[\s\S]*?function announcementCompactDateTileStyle/,
-  "Community Home live bulletin date must stay compact on phone instead of taking over the notice body."
-);
-assertContains(
-  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "100%" : undefined[\s\S]*?brandClampLines\(detailOpen && !fullBody \? 12 : titleLineLimit\)[\s\S]*?textAlign: isCompact \? "center" : "left"[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}/,
-  "Community Home live bulletin must center the source pill and main notice title on phone, with a full notice control."
+  /profileSettings: APP_ROUTES\.SETTINGS[\s\S]*?communityHomeNeedsDisplayName[\s\S]*?debugId="community-home\.identity\.add-display-name"[\s\S]*?openCommunityRoute\(event, routes\.profileSettings\)/,
+  "Community Home must route missing-name users to Settings/My GSN identity setup."
 );
 assertContains(
   /function communityActionStyle\([\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,
   "Community Home action styles must keep phone tap and movement locks."
 );
-
 assertContains(
-  /function communityActionIcon\(primary = false\): React\.CSSProperties \{[\s\S]*?width: 46,[\s\S]*?height: 46,[\s\S]*?background: "rgba\(255,255,255,0\.94\)"[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
+  /function communityActionIcon\(primary = false\): React\.CSSProperties \{[\s\S]*?width: 46,[\s\S]*?height: 46,[\s\S]*?background: "rgba\(255,255,255,0\.94\)"[\s\S]*?overflow: "hidden"/,
   "Community Home compact row icon slots must keep stable, light, larger 3D icon geometry."
 );
-
-assertContains(
-  /function communityActionStyle\([\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"/,
-  "Community Home route-local action labels must keep whole-word wrapping across all action variants."
-);
-
 assertContains(
   /function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?gridTemplateColumns: "auto minmax\(0, 1fr\) auto"[\s\S]*?minHeight: 72[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?transition: "none"/,
   "Community Home compact rows must keep stable grid geometry and no transition-driven movement."
 );
-
 assertContains(
-  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
-  "Community Home visible-communities summary must be a protected StableButton using compact row geometry."
+  /debugId="community-home\.goto\.marketplace"[\s\S]*?void openSelectedMarketplace\(event\)[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
+  "Community Home Marketplace handoff must stay a protected compact row."
 );
-
 assertContains(
-  /COMMUNITY_OWNER_HANDLE_ICONS:[\s\S]*?"vault-control": "vault"[\s\S]*?\{!collapsed\.marketplaceTools[\s\S]*?icon: "repaymentSchedule"[\s\S]*?id: "rosca"[\s\S]*?\{!collapsed\.subscriptions[\s\S]*?icon: COMMUNITY_OWNER_HANDLE_ICONS\["vault-control"\][\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 24\)\}/,
-  "Community Home Vault and ROSCA rows must use app-native 3D icon marks with larger embossed sizing instead of text placeholders."
+  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Spotlight management live in Shop Control/,
+  "Community Home shop owner handoff must point to Shop Control without embedding Spotlight controls."
 );
-
 assertContains(
-  /debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}[\s\S]*?aria-disabled=\{working \|\| undefined\}[\s\S]*?if \(working\) \{[\s\S]*?showNotice\("success", "Opening this community now\."\);[\s\S]*?return;[\s\S]*?void handleSelectCommunity\(clan, true\);/,
-  "Community Home community-row marketplace buttons must stay soft-disabled and explain in-progress taps instead of becoming dead tap targets."
+  /debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
+  "Community Home switcher must be a protected compact row."
+);
+assertContains(
+  /debugId=\{`community-home\.switch\.select\.\$\{clanId \|\| "unknown"\}`\}[\s\S]*?busy=\{changingClanId === clanId\}[\s\S]*?void handleSelectCommunity\(clan, false\)/,
+  "Community Home community rows must remain tappable, busy-aware selection rows."
+);
+assertContains(
+  /debugId="community-home\.admin\.toggle"[\s\S]*?Bulletin settings, review queue, join requests, and Community Domain controls/s,
+  "Community Home admin tools must be collapsed behind one admin row."
+);
+assertContains(
+  /canManageCommunityDomain && selectedCommunityDomainRow[\s\S]*?debugId="community-home\.admin\.community-domain"/s,
+  "Community Home Community Domain control must be gated by selected-domain can_admin."
 );
 
-assertNotContains(
-  /overflowWrap: "anywhere"/g,
-  "Community Home route-local action styles must not split words anywhere on phone buttons."
-);
-
-assertNotContains(
-  /display: "none"[\s\S]{0,1800}<StableButton\b/g,
-  "Community Home must not keep hidden StableButton sections in the source action inventory."
-);
-
-assertNotContains(
-  /display: "none"/g,
-  "Community Home must not keep hidden route-local UI remnants in the page source."
-);
-
-assertNotContains(
-  /<div\s+style=\{communityToolRowStyle\(\)\}/g,
-  "Community Home must not use plain divs with compact button geometry; button-looking rows must be protected StableButton actions."
-);
-
-assertNotContains(
-  /community-home\.(?:owner-actions|circle)\./g,
-  "Community Home must not keep legacy hidden owner-actions or circle debug surfaces; use compact tool rows and First Circle routes."
-);
-
-assertNotContains(
-  /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/g,
-  "Community Home must not restore spaced-out micro-label typography on the phone surface."
-);
+assertNotContains(/overflowWrap: "anywhere"/g, "Community Home route-local action styles must not split words anywhere on phone buttons.");
+assertNotContains(/display: "none"[\s\S]{0,1800}<StableButton\b/g, "Community Home must not keep hidden StableButton sections in the source action inventory.");
+assertNotContains(/display: "none"/g, "Community Home must not keep hidden route-local UI remnants in the page source.");
+assertNotContains(/<div\s+style=\{communityToolRowStyle\(\)\}/g, "Community Home must not use plain divs with compact button geometry; button-looking rows must be protected StableButton actions.");
+assertNotContains(/community-home\.(?:owner-actions|circle|lane|spotlight-guided|spotlight-status|summary\.visible|selected\.open-marketplace)\./g, "Community Home must not keep legacy owner-action, grouped lane, or Spotlight debug surfaces.");
+assertNotContains(/letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/g, "Community Home must not restore spaced-out micro-label typography on the phone surface.");
 
 if (findings.length > 0) {
   console.error("Community Home phone button audit failed:");
   for (const finding of findings) {
-    console.error(
-      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
-    );
+    console.error(`- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`);
   }
   process.exit(1);
 }

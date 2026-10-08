@@ -44,7 +44,7 @@ Bottom navigation is allowed here.
 3. OwnerShopControlPage
 4. MarketplacePage
 5. ShopPage
-6. ProfilePage
+6. MyGMFNAndIPage (CLOSED/FROZEN canonical My GSN / Profile; `/app/profile` redirects here; `ProfilePage.tsx` is deprecated/unmounted source retained for later deletion audit)
 7. TrustPassportPage
 8. TrustEventsPage
 9. NotificationsPage
@@ -70,6 +70,10 @@ Known current aliases:
 - SignInPage may currently be represented by `LoginPage`.
 - AuthGatewayPage / SignUpChoicePage may currently be represented by entry or welcome pages.
 - OwnerShopControlPage may currently be represented by `ShopControlPage`.
+- Shop Diary is not a standalone registered screen in the current app. Its owner lane lives inside OwnerShopControlPage / `ShopControlPage`, and its visitor presentation lives inside ShopPage / `ShopGalleryPage`; this Shop Diary split is CLOSED/FROZEN as of 2026-10-08.
 - TrustPassportPage may currently be represented by trust/identity pages.
 
 Alias notes are migration aids, not permission to invent new screens.
+Stale/unmounted source notes:
+- `frontend/src/components/CommunityMarketplaceSpotlight.tsx` and `frontend/src/components/CommunityShopControlPanel.tsx` are stale/unmounted after Community Home CLOSED/FROZEN Phase 2. Do not revive them for Community Home; Shop Control/Public Shop own Spotlight/shop presentation.
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx` is not a registered screen and is not mounted by the current app routes. The canonical authenticated Marketplace screen is `MarketplacePage` at `/app/marketplace`; keep the workspace component treated as deprecated/stale source unless the owner explicitly revives it.

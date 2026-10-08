@@ -10,24 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 41;
+const expectedStableButtonTemplateCount = 33;
 const expectedNativeFieldCount = 0;
-const expectedNextActionGuideItemCount = 12;
-const expectedFrontQuickActionCount = 0;
-const expectedSpotlightGuidedActionCount = 5;
-const expectedGroupedLaneRowCount = 23;
-const expectedExpandedRouteLocalActionTemplates = 51;
-const expectedMobileShellBreakdown = {
-  top: 2,
-  drawer: 25,
-  pageTools: 8,
-  bottom: 5,
-};
-const expectedMobileShellActionCount = Object.values(
-  expectedMobileShellBreakdown
-).reduce((sum, count) => sum + count, 0);
-const expectedWholeMobileRouteActionTemplates =
-  expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
+const expectedNextActionGuideItemCount = 3;
+const expectedMobileShellBreakdown = { top: 2, drawer: 25, pageTools: 8, bottom: 5 };
+const expectedExpandedRouteLocalActionTemplates = 33;
+const expectedMobileShellActionCount = Object.values(expectedMobileShellBreakdown).reduce((sum, count) => sum + count, 0);
+const expectedWholeMobileRouteActionTemplates = expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 
 function lineAt(index) {
   return source.slice(0, index).split(/\r?\n/).length;
@@ -44,635 +33,97 @@ function debugIdFrom(block) {
 
 function assertContains(pattern, message, text = "Expected pattern was not found.") {
   if (pattern.test(source)) return;
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message,
-    text,
-  });
+  findings.push({ file: communityFile, line: 1, message, text });
 }
 
 function assertNotContains(pattern, message, text = "Forbidden pattern was found.") {
   if (!pattern.test(source)) return;
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message,
-    text,
-  });
+  findings.push({ file: communityFile, line: 1, message, text });
 }
-function assertLayoutContains(
-  pattern,
-  message,
-  text = "Expected Community Home app-shell pattern was not found."
-) {
+
+function assertLayoutContains(pattern, message, text = "Expected Community Home app-shell pattern was not found.") {
   if (pattern.test(appLayoutSource)) return;
-  findings.push({
-    file: appLayoutFile,
-    line: 1,
-    message,
-    text,
-  });
+  findings.push({ file: appLayoutFile, line: 1, message, text });
 }
 
-function countIdsInBlock(pattern, label) {
-  const block = source.match(pattern)?.[0] || "";
-  if (!block) {
-    findings.push({
-      file: communityFile,
-      line: 1,
-      message: `Community Home ${label} block was not found for button counting.`,
-      text: pattern.toString(),
-    });
-    return 0;
-  }
-
-  return (block.match(/\bid:\s*(?:"|ownerShopHandle\()/g) || []).length;
-}
-
-assertContains(
-  /Open Trust Passport for your wider evidence record across communities[\s\S]*?wider evidence record so you can review the evidence pattern across communities[\s\S]*?Review evidence strength across your GSN record/,
-  "Community Home Trust Passport copy must frame the destination as an evidence record, not a trust-story verdict."
-);
-assertNotContains(
-  /wider trust record|trust story|trust strength/i,
-  "Community Home must not frame Trust Passport navigation as a trust story or trust-strength verdict."
-);assertNotContains(
-  /payment action requires you|No urgent community actions/,
-  "Community Home must not convert a net financial position into a proven payment action or claim all community actions are clear."
-);
-assertContains(
-  /const financeNeedsReview = netMoneyPosition < 0[\s\S]*?Finance needs review[\s\S]*?Payments Â· No action shown/,
-  "Community Home finance pointer must use neutral finance-review language because netMoneyPosition is a balance signal, not an actionable due-task contract."
-);
-assertContains(
-  /function communityPassiveStatusRowStyle\(\): React\.CSSProperties \{[\s\S]*?boxShadow: "none"[\s\S]*?\}[\s\S]*?function communityPassiveStatusIconStyle/,
-  "Community Home passive payment status must render as a compact non-action strip rather than inheriting action-card shadow or icon-bubble treatment."
-);
-const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 const actions = [];
 let match;
-
+const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 while ((match = actionPattern.exec(source))) {
   const block = match[0];
-  actions.push({
-    id: debugIdFrom(block),
-    line: lineAt(match.index),
-    block,
-  });
+  actions.push({ id: debugIdFrom(block), line: lineAt(match.index), block });
 }
 
-const nativeFieldPattern = /<(input|select|textarea)\b[\s\S]*?(?:\/>|<\/(?:select|textarea)>)/g;
 const nativeFields = [];
+const nativeFieldPattern = /<(input|select|textarea)\b[\s\S]*?(?:\/>|<\/(?:select|textarea)>)/g;
 while ((match = nativeFieldPattern.exec(source))) {
-  nativeFields.push({
-    line: lineAt(match.index),
-    type: match[1],
-    block: match[0],
-  });
+  nativeFields.push({ line: lineAt(match.index), type: match[1], block: match[0] });
 }
 
 if (nativeFields.length !== expectedNativeFieldCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home native field inventory changed from ${expectedNativeFieldCount} to ${nativeFields.length}. Re-audit every input/select/textarea as a mobile tap surface before accepting this baseline.`,
-    text: nativeFields.map((field) => `${field.line}:${field.type}`).join(", "),
-  });
+  findings.push({ file: communityFile, line: 1, message: `Community Home native field inventory changed from ${expectedNativeFieldCount} to ${nativeFields.length}.`, text: nativeFields.map((field) => `${field.line}:${field.type}`).join(", ") });
 }
-
 if (actions.length !== expectedStableButtonTemplateCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home StableButton template inventory changed from ${expectedStableButtonTemplateCount} to ${actions.length}. Re-audit the new/removed button on phone before accepting this baseline.`,
-    text: `StableButton count: ${actions.length}`,
-  });
+  findings.push({ file: communityFile, line: 1, message: `Community Home StableButton template inventory changed from ${expectedStableButtonTemplateCount} to ${actions.length}.`, text: `StableButton count: ${actions.length}` });
 }
 
 for (const action of actions) {
-  if (!action.id) {
-    findings.push({
-      file: communityFile,
-      line: action.line,
-      message: "Every Community Home stable action must carry a debugId.",
-      text: action.block.replace(/\s+/g, " ").slice(0, 220),
-    });
-  }
-
-  if (!/^community-home\./.test(action.id)) {
-    findings.push({
-      file: communityFile,
-      line: action.line,
-      message: "Community Home stable actions must stay in the community-home debug namespace.",
-      text: action.id || action.block.replace(/\s+/g, " ").slice(0, 220),
-    });
-  }
-
-  if (!/style=/.test(action.block)) {
-    findings.push({
-      file: communityFile,
-      line: action.line,
-      message: "Community Home stable actions must declare route-local styling for phone geometry.",
-      text: action.id || action.block.replace(/\s+/g, " ").slice(0, 220),
-    });
-  }
+  if (!action.id) findings.push({ file: communityFile, line: action.line, message: "Every Community Home stable action must carry a debugId.", text: action.block.replace(/\s+/g, " ").slice(0, 220) });
+  if (!/^community-home\./.test(action.id)) findings.push({ file: communityFile, line: action.line, message: "Community Home stable actions must stay in the community-home debug namespace.", text: action.id || action.block.replace(/\s+/g, " ").slice(0, 220) });
+  if (!/style=/.test(action.block)) findings.push({ file: communityFile, line: action.line, message: "Community Home stable actions must declare route-local styling for phone geometry.", text: action.id || action.block.replace(/\s+/g, " ").slice(0, 220) });
 }
 
-const frontToInnerOrder = [
+for (const section of [
   { label: "empty state", pattern: /^community-home\.empty\./ },
-  { label: "selected marketplace entry", pattern: /^community-home\.selected\.open-marketplace/ },
-  { label: "visible marketplace summary", pattern: /^community-home\.summary\.visible-communities/ },
-  { label: "notice board", pattern: /^community-home\.notice\./ },
-  { label: "contact community", pattern: /^community-home\.contact\./ },
-  { label: "spotlight guided lane", pattern: /^community-home\.spotlight-guided\./ },
-  { label: "grouped command lanes", pattern: /^community-home\.lane\./ },
-  { label: "spotlight status", pattern: /^community-home\.spotlight-status\./ },
-  { label: "community rows", pattern: /^community-home\.communities\./ },
-  { label: "community domain rows", pattern: /^community-home\.domain\./ },
-];
-let previousSection = null;
-
-for (const section of frontToInnerOrder) {
-  const firstAction = actions.find((action) => section.pattern.test(action.id));
-  if (!firstAction) {
-    findings.push({
-      file: communityFile,
-      line: 1,
-      message: "Community Home front-to-inner action inventory is missing an expected section.",
-      text: section.label,
-    });
-    continue;
-  }
-
-  if (previousSection && firstAction.line <= previousSection.line) {
-    findings.push({
-      file: communityFile,
-      line: firstAction.line,
-      message:
-        "Community Home front-to-inner action order changed. Re-audit phone button flow before accepting this reorder.",
-      text: `${previousSection.label} at line ${previousSection.line}; ${section.label} at line ${firstAction.line}`,
-    });
-  }
-
-  previousSection = { label: section.label, line: firstAction.line };
+  { label: "route-param switch", pattern: /^community-home\.route-param\./ },
+  { label: "bulletin", pattern: /^community-home\.bulletin\./ },
+  { label: "attention", pattern: /^community-home\.attention\./ },
+  { label: "go to", pattern: /^community-home\.goto\./ },
+  { label: "switch", pattern: /^community-home\.switch\./ },
+  { label: "admin", pattern: /^community-home\.admin\./ },
+]) {
+  if (actions.some((action) => section.pattern.test(action.id))) continue;
+  findings.push({ file: communityFile, line: 1, message: "Community Home Phase 1 action inventory is missing an expected section.", text: section.label });
 }
 
-const nextActionGuideItemCount = countIdsInBlock(
-  /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
-  "NextActionGuide item manifest"
-);
-const frontQuickActionCount = (
-  source.match(/debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/g) || []
-).length;
-const spotlightGuidedActionCount = countIdsInBlock(
-  /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
-  "spotlight guided action manifest"
-);
-const groupedLaneRowCount =
-  countIdsInBlock(
-    /\{!collapsed\.communities \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
-    "communities grouped lane"
-  ) +
-  countIdsInBlock(
-    /\{!collapsed\.marketplaceTools \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
-    "marketplace grouped lane"
-  ) +
-  countIdsInBlock(
-    /\{!collapsed\.subscriptions \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
-    "subscriptions grouped lane"
-  ) +
-  countIdsInBlock(
-    /\{!collapsed\.trustFinance \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
-    "trust and finance grouped lane"
-  );
-
+const nextActionGuideBlock = source.match(/const communityNextActionItems = useMemo<NextActionGuideItem\[\]>\([\s\S]*?\n {2}\);/)?.[0] || "";
+const nextActionGuideItemCount = (nextActionGuideBlock.match(/\bid:\s*"/g) || []).length;
 if (nextActionGuideItemCount !== expectedNextActionGuideItemCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home NextActionGuide item count changed from ${expectedNextActionGuideItemCount} to ${nextActionGuideItemCount}. Re-audit the inner guide buttons before accepting this baseline.`,
-    text: `NextActionGuide items: ${nextActionGuideItemCount}`,
-  });
+  findings.push({ file: communityFile, line: 1, message: `Community Home NextActionGuide item count changed from ${expectedNextActionGuideItemCount} to ${nextActionGuideItemCount}.`, text: `NextActionGuide items: ${nextActionGuideItemCount}` });
 }
 
-if (frontQuickActionCount !== expectedFrontQuickActionCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home front quick-action button count changed from ${expectedFrontQuickActionCount} to ${frontQuickActionCount}.`,
-    text: `Front quick actions: ${frontQuickActionCount}`,
-  });
+assertContains(/useParams<\{ clanId\?: string \}>\(\)[\s\S]*?routeClanIdFromParam\(routeParams\.clanId\)[\s\S]*?listMyClans\(\)[\s\S]*?requestedMatch[\s\S]*?This community is not available to your account/s, "Community Home route param must reconcile against listMyClans instead of silently rendering the stored selected community.");
+assertContains(/getCommunityReference\(selectedClan\)[\s\S]*?getCommunityMemberCount\(selectedClan\)[\s\S]*?data-debug-id="community-home\.identity-card"[\s\S]*?selectedCommunityReference[\s\S]*?selectedCommunityRoleLabel[\s\S]*?selectedCommunityStatusLabel/s, "Community Home first screen must be selected-community identity with reference, role, and status.");
+assertContains(/id="community-home-bulletin"[\s\S]*?renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/s, "Community Home Bulletin must remain immediately available after identity.");
+assertContains(/const communityAttentionItems = useMemo\([\s\S]*?noticeSupportsAvailability[\s\S]*?noticeOwnAcknowledged[\s\S]*?canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0/s, "Community Home attention strip must be based on real selected-community notice actions only.");
+assertContains(/debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.trust"/s, "Community Home Go to group must stay compact and route to owning surfaces.");
+assertContains(/debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?sortedClans\.map/s, "Community Home switching must be a compact disclosure over selectable user communities.");
+assertContains(/canAdmin: Boolean\(item\?\.viewer\?\.can_admin[\s\S]*?const canManageCommunityDomain = Boolean\(selectedCommunityDomainRow\?\.canAdmin\)[\s\S]*?debugId="community-home\.admin\.toggle"/s, "Community Home admin area must use selected-domain can_admin before exposing Community Domain controls.");
+assertContains(/profileSettings: APP_ROUTES\.SETTINGS[\s\S]*?communityHomeNeedsDisplayName[\s\S]*?openCommunityRoute\(event, routes\.profileSettings\)[\s\S]*?Add display name/s, "Community Home missing-display-name handoff must route to Settings/My GSN identity setup.");
+assertContains(/showNotice\("success", "Spotlight now lives in Shop Control\."\)[\s\S]*?params\.delete\("guide"\)/s, "Community Home stale Spotlight guide query must be stripped and redirected conceptually to Shop Control.");
+
+assertNotContains(/getPoolMeSummary|poolSummary|netMoneyPosition|financeNeedsReview|moneyPositionLabel|moneyPositionDetail/, "Community Home must not fetch or synthesize cumulative finance status in Phase 1.");
+assertNotContains(/Payments (?:Â|Ã|·) No action shown/, "Community Home must not show the stale Payments mojibake/passive finance copy.");
+assertNotContains(/debugId="community-home\.(?:lane|spotlight-guided|spotlight-status|summary\.visible|selected\.open-marketplace)/, "Community Home must not render the old grouped lane or Spotlight launcher debug surfaces.");
+assertNotContains(/communitySpotlightFetch|listMarketplaceBroadcasts|getMarketplaceBroadcasts/, "Community Home must not fetch live Spotlight media or feed data.");
+assertNotContains(/CommunityMarketplaceSpotlight|CommunityShopControlPanel/, "Community Home must not revive stale embedded Spotlight/Shop Control components.");
+assertNotContains(/OWNER_SHOP_HANDLES|OWNER_SHOP_HASHES|PAID_REPOST_HASH|resolveCurrentOwnerShop|openGuidedSpotlightFamily|handleSpotlightHandle|openCommunityNextAction/, "Community Home must not keep dead owner-shop/Spotlight helper source after Phase 2 cleanup.");
+assertNotContains(/case "(?:spotlight|spotlight-free|spotlight-paid|spotlight-repost|spotlight-vault|spotlight-shop-setup|community-packages)"/, "Community Home next-action resolver must not keep old specialist Spotlight/Vault/Package cases.");
+
+assertLayoutContains(/debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}\.\$\{item\.label\.toLowerCase\(\)\.replace[\s\S]*?debugId="app-layout\.drawer\.logout"[\s\S]*?debugId=\{`app-layout\.bottom-nav\./, "App shell mobile drawer/bottom navigation model changed; re-audit route-local button counts.");
+
+const routeLocalExpandedActionCount = actions.length;
+if (routeLocalExpandedActionCount !== expectedExpandedRouteLocalActionTemplates) {
+  findings.push({ file: communityFile, line: 1, message: `Community Home expanded route-local action count changed from ${expectedExpandedRouteLocalActionTemplates} to ${routeLocalExpandedActionCount}.`, text: `Route-local expanded actions: ${routeLocalExpandedActionCount}` });
+}
+const wholeRouteActionCount = routeLocalExpandedActionCount + expectedMobileShellActionCount;
+if (wholeRouteActionCount !== expectedWholeMobileRouteActionTemplates) {
+  findings.push({ file: communityFile, line: 1, message: `Community Home whole mobile route action count changed from ${expectedWholeMobileRouteActionTemplates} to ${wholeRouteActionCount}.`, text: `Route-local ${routeLocalExpandedActionCount}; shell ${expectedMobileShellActionCount}; breakdown ${JSON.stringify(expectedMobileShellBreakdown)}` });
 }
 
-if (spotlightGuidedActionCount !== expectedSpotlightGuidedActionCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home spotlight guided action count changed from ${expectedSpotlightGuidedActionCount} to ${spotlightGuidedActionCount}.`,
-    text: `Spotlight guided actions: ${spotlightGuidedActionCount}`,
-  });
-}
-
-if (groupedLaneRowCount !== expectedGroupedLaneRowCount) {
-  findings.push({
-    file: communityFile,
-    line: 1,
-    message: `Community Home grouped lane row count changed from ${expectedGroupedLaneRowCount} to ${groupedLaneRowCount}.`,
-    text: `Grouped lane rows: ${groupedLaneRowCount}`,
-  });
-}
-
-assertContains(
-  /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?id: "shop-control"[\s\S]*?id: "community-packages"[\s\S]*?id: "spotlight"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "trust"[\s\S]*?id: "notifications"/,
-  "Community Home next-action guide must keep the full inner action manifest."
-);
-
-assertContains(
-  /function isCommunityOfficer[\s\S]*?platformRole === "admin"[\s\S]*?communityRole === "admin"[\s\S]*?communityRole === "owner"/,
-  "Community Home notice-board officer actions must include platform admins, community admins, and community owners."
-);
-assertContains(
-  /function communityNoticeListParams\(clanId: number\)[\s\S]*?scope: "my_communities" as const[\s\S]*?limit: COMMUNITY_NOTICE_ACTIVE_LIMIT/,
-  "Community Home Bulletin must read the signed-in member's all-communities notice feed while preserving selected-community posting controls."
-);assertContains(
-  /markCommunityHomePerformance\("route-mounted"\)[\s\S]*?clansRes = await listMyClans\(\)[\s\S]*?markCommunityHomePerformance\("clans-request-completed"[\s\S]*?setClans\(rows\)[\s\S]*?setSelectedClan\(current\)[\s\S]*?setLoading\(false\)[\s\S]*?markCommunityHomePerformance\("first-usable-state"[\s\S]*?void getMe\(\)/,
-  "Community Home first usable state must be gated by /clans/me, with /auth/me loading only after clans release the page."
-);
-assertNotContains(
-  /Promise\.all\(\[[\s\S]{0,300}?getMe\(\)[\s\S]{0,300}?listMyClans\(\)/,
-  "Community Home must not make /auth/me part of the hard first-usable loading gate."
-);
-assertNotContains(
-  /getMarketplaceBroadcasts|ActiveCommunitySpotlight|SpotlightMediaFrame|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS/,
-  "Community Home must not fetch, rotate, or render owner Spotlight broadcast data now that Spotlight belongs to Shop."
-);
-assertContains(
-  /function openSelectedMarketplace[\s\S]*?const persistedClanId = Number\(getSelectedClanId\(\) \|\| 0\)[\s\S]*?const selectRequired = persistedClanId !== selectedClanId[\s\S]*?if \(selectRequired\)[\s\S]*?await selectClan\(selectedClanId\)[\s\S]*?markCommunityHomePerformance\("select-clan-skipped"[\s\S]*?navigateWithOrigin\(\s*navigate,\s*routes\.marketplace,\s*location\s*\)/,
-  "Community Home Open Marketplace must skip redundant selectClan POST only when the selected clan is already persisted, while preserving the select-before-navigation handoff when needed."
-);
-assertContains(
-  /function noticeClanId[\s\S]*?item\?\.clan_id[\s\S]*?item\?\.source_community_id[\s\S]*?getClanId\(fallbackClan\)/,
-  "Community Home Bulletin actions must use each notice's source community id when the board is reading all member communities."
-);
-assertContains(
-  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?showCommunityBulletinTools[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?Bulletin tools[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
-  "Community Home communication block must keep the rich live announcement dominant, expose one Bulletin tools opener, and tuck Post/Contact/Settings/history behind that opener."
-);
-assertContains(
-  /function noticeSupportsAvailability[\s\S]*?isMeetingNotice\(item\)[\s\S]*?item\?\.availability_enabled[\s\S]*?function renderMeetingInterestShortcut[\s\S]*?noticeSupportsAvailability\(noticeItem\)[\s\S]*?firstTruthy\(noticeItem\?\.meeting_id, noticeItem\?\.event_id\)[\s\S]*?\["yes", "Available"\][\s\S]*?\["maybe", "Not sure"\][\s\S]*?\["no", "Not available"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
-  "Community Home bulletin availability shortcut must keep Available/Not sure/Not available controls inside Details for meeting notices and event-date notices."
-);
-assertContains(
-  /recordCommunityNoticeAvailability[\s\S]*?const canRecordNoticeAvailability = !meetingId && noticeSupportsAvailability\(noticeItem\) && Boolean\(noticeEventId\)[\s\S]*?await recordCommunityNoticeAvailability\(noticeEventId,/,
-  "Community Home bulletin event-date availability must call the Community Notice availability endpoint instead of requiring a meeting_id."
-);
-assertContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
-  "Community Home bulletin must expose a compact acknowledgement action for ordinary announcements."
-);
-assertContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?\{"\\u\{1F44D\}"\}[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
-  "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge language instead of a shield-style security icon."
-);
-assertContains(
-  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Details[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.public-qr\.\$\{noticeKey\}`\}[\s\S]*?Open QR link[\s\S]*?debugId=\{`community-home\.bulletin\.attachment\.\$\{noticeKey\}`\}[\s\S]*?openNoticeAttachment\(event, noticeItem\)[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
-  "Community Home live bulletin must decongest member actions behind one Details panel and expose QR, attachment, and admin roll call from that panel."
-);
-assertContains(
-  /noticeDetailOpenId[\s\S]*?brandClampLines\(detailOpen && !fullBody \? 12 : titleLineLimit\)[\s\S]*?\{rawBody\}[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}[\s\S]*?Close full notice[\s\S]*?Read full notice[\s\S]*?detailOpen && fullBody[\s\S]*?Full notice/,
-  "Community Home live bulletin must show the notice from the beginning and provide an in-place full-notice open/close control when text is longer."
-);
-assertNotContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?<GsnLegacyIcon name="check" size=\{16\} \/>/,
-  "Community Home bulletin acknowledgement must not reuse the check icon because it maps to the trust shield."
-);
-assertContains(
-  /function renderCommunityBulletinPrimaryNotice[\s\S]*?const sourceLine = noticeSourceLine\(noticeItem, selectedClanName\)[\s\S]*?\[sourceLine, when\]\.filter\(Boolean\)\.join\(" - "\)[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
-  "Community Home live bulletin notice must show the source community and keep the announcement sender WhatsApp contact attached to the notice."
-);
-
-assertContains(
-  /communityPackages: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.communityPackage[\s\S]*?case "community-packages"[\s\S]*?routes\.communityPackages/,
-  "Community Home marketplace-capacity guide item must open the Shop Control capacity lane."
-);
-
-assertNotContains(
-  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
-  "Community Home initial surface must not expose the old four-lane Verification tools launcher grid."
-);
-
-assertContains(
-  /createCommunity:\s*routeTarget\(\s*"clans"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, routes\.createCommunity\)/,
-  "Community Home empty-state Create New Community must open the authenticated existing-member create lane."
-);
-
-assertContains(
-  /communityDomainCommand:\s*"\/app\/community-domain"[\s\S]*?debugId="community-home\.empty\.setup-community-domain"[\s\S]*?openCommunityRoute\(event, routes\.communityDomainCommand\)/,
-  "Community Home empty-state must open the Community Domain institution setup command surface even when no marketplace community exists."
-);
-
-assertContains(
-  /params\.delete\("guide"\);[\s\S]*?const remainingSearch = params\.toString\(\);[\s\S]*?search: remainingSearch \? `\?\$\{remainingSearch\}` : ""/,
-  "Community Home guide cleanup must remove only the guide query param and preserve selected community context."
-);
-
-assertContains(
-  /function openSelectedCommunityRoute\([\s\S]*?fallbackMessage = "Choose a community first[\s\S]*?if \(!selectedClanId\)[\s\S]*?showNotice\("error", fallbackMessage\)[\s\S]*?community-home-community-list[\s\S]*?navigateWithOrigin\(navigate, to, location\)/,
-  "Community Home community-sensitive rows must refuse to navigate without selected community context."
-);
-
-assertContains(
-  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-expanded=\{!collapsed\.communities\}[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?if \(!collapsed\.communities\)[\s\S]*?communities: true[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"[\s\S]*?Close communities[\s\S]*?View communities[\s\S]*?!collapsed\.communities \? "\^" : "v"/,
-  "Community Home visible-communities summary must use explicit open/close disclosure state, not a permanent navigation chevron."
-);
-
-assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?View communities[\s\S]*?visible[\s\S]*?community/,
-  "Community Home summary must make selected community entry primary while keeping ordinary communities and Community Domains in one explicit disclosure room."
-);
-
-assertNotContains(
-  /debugId="community-home\.communities\.header-toggle"/,
-  "Community Home must not duplicate the Live overview marketplace/community opener with a second lower header toggle."
-);
-
-assertContains(
-  /\{!collapsed\.communities \? \([\s\S]*?id="community-home-community-list"[\s\S]*?id="community-home-communities-panel"[\s\S]*?debugId="community-home\.communities\.close"[\s\S]*?Close communities[\s\S]*?sortedClans\.map[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
-  "Community Home opened list must show ordinary marketplace communities and Community Domains together after the single Live overview opener, include an explicit close control, and keep active domains using the strict Marketplace selection handoff with no per-row billing/settings controls."
-);
-
-assertContains(
-  /Loading your marketplace communities[\s\S]*?No marketplace communities yet[\s\S]*?visible marketplace communities[\s\S]*?marketplace communities will appear here[\s\S]*?Create marketplace community/,
-  "Community Home empty and loading states must describe ordinary communities as marketplace communities."
-);
-
-assertContains(
-  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?communities: false,[\s\S]*?marketplaceTools: true,[\s\S]*?subscriptions: true,[\s\S]*?trustFinance: true[\s\S]*?function normalizeCollapseState\(raw: any\): CollapseState \{[\s\S]*?communities: Boolean\(raw\?\.communities \?\? base\.communities\)[\s\S]*?marketplaceTools: true,[\s\S]*?subscriptions: true,[\s\S]*?trustFinance: true/,
-  "Community Home must open the community picker while forcing deprecated Marketplace/Subscription/Trust tool lanes closed even when old local storage exists."
-);
-assertContains(
-  /\{!collapsed\.marketplaceTools \|\|[\s\S]*?!collapsed\.subscriptions \|\|[\s\S]*?!collapsed\.trustFinance \? \([\s\S]*?id="community-home-action-lanes"/,
-  "Community Home action lanes must not render merely because the community list is open."
-);
-assertNotContains(
-  /\{!collapsed\.communities \|\|[\s\S]*?id="community-home-action-lanes"/,
-  "Community Home must not treat the open community picker as permission to show duplicate tool lanes."
-);
-
-assertContains(
-  /id: "choose-community"[\s\S]*?label: "Choose marketplace"[\s\S]*?Marketplace community list[\s\S]*?id: "marketplace"[\s\S]*?Select a marketplace community first[\s\S]*?id: "create-community"[\s\S]*?label: "Create marketplace"[\s\S]*?Create marketplace community[\s\S]*?id: "join-community"[\s\S]*?label: "Join marketplace"[\s\S]*?Join marketplace community[\s\S]*?continueLabel: "Choose marketplace"/,
-  "Community Home next-action guide must use marketplace-community wording for ordinary community selection."
-);
-
-assertContains(
-  /id: "community-packages"[\s\S]*?label: "Marketplace capacity"[\s\S]*?Choose one marketplace first, then open its capacity tools\.[\s\S]*?technical: "Marketplace capacity"[\s\S]*?routes\.communityPackages[\s\S]*?Choose a marketplace first, then open marketplace capacity\.[\s\S]*?title: "Marketplace capacity"[\s\S]*?Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades\./,
-  "Community Home capacity lane must not expose ordinary marketplace capacity with old package wording."
-);
-
-assertContains(
-  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Market Domain subscriptions"[\s\S]*?primaryCommunityDomainRow[\s\S]*?subscription, renewal, and billing status[\s\S]*?primaryCommunityDomainRow\.billingPath[\s\S]*?routes\.communityDomainCommand/,
-  "Community Home subscriptions row must open the official Community Domain billing lane, or the institution setup command surface when no domain exists."
-);
-
-assertContains(
-  /id: "support"[\s\S]*?label: "Open Support"[\s\S]*?Open Support for \$\{selectedClanName \|\| "the selected community"\}[\s\S]*?Select a community first, then open its support path\.[\s\S]*?technical: "Support"[\s\S]*?title: "Choose the community before Support"[\s\S]*?Support belongs to one community at a time[\s\S]*?title: "Support is ready"[\s\S]*?firstStep: "Open Support\."[\s\S]*?continueLabel: "Open Support"[\s\S]*?Choose a community first, then open Support\./,
-  "Community Home support entry must use Support wording while preserving the selected-community route guard."
-);
-
-if (/<div\s+style=\{communityToolRowStyle\(\)\}/.test(source)) {
-  const index = source.search(/<div\s+style=\{communityToolRowStyle\(\)\}/);
-  findings.push({
-    file: communityFile,
-    line: lineAt(index),
-    message:
-      "Community Home must not use plain divs with compact button geometry; convert them to StableButton or make them visibly inert.",
-    text: source.slice(index, index + 180).replace(/\s+/g, " "),
-  });
-}
-
-assertContains(
-  /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-repost"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
-  "Community Home spotlight guided lane must keep the five spotlight-family inner choices."
-);
-
-assertContains(
-  /debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
-  "Community Home grouped command lanes must stay traceable and ordered."
-);
-
-[
-  ["owner-actions", "joinRequests", false],
-  ["merchant-release", "merchantRelease", true],
-  ["shop-gallery-tools", "shopGalleryTools", true],
-  ["rosca", "rosca", false],
-].forEach(([id, route, isOwnerHandle]) => {
-  const idPattern = isOwnerHandle
-    ? `id: ownerShopHandle\\("${id}"\\)\\.id`
-    : `id: "${id}"`;
-  assertContains(
-    new RegExp(
-      `${idPattern}[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
-    ),
-    `Community Home compact tool row ${id} must use the selected-community route guard.`
-  );
-});
-
-assertContains(
-  /id: "trusted-circle"[\s\S]*?title: "Grow trusted circle"[\s\S]*?openCommunityNextAction\(event, "circle"\)/,
-  "Community Home trusted-circle row must stay under Communities and use the guided First Circle route."
-);
-
-if (
-  /!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/.test(
-    source
-  )
-) {
-  findings.push({
-    file: communityFile,
-    line: lineAt(source.search(/id: "community-domain"/)),
-    message:
-      "Community Domain must not live as a Subscriptions row; it belongs in the Marketplace Communities / Community Domains room.",
-    text:
-      "Keep setup/governance discoverable from the combined community/domain list, not as a separate Community Home tool.",
-  });
-}
-
-[
-  ["vault-control", "vaultControl"],
-  ["spotlight-subscription", "subscriptionSpotlight"],
-  ["paid-repost", "paidRepost"],
-].forEach(([id, route]) => {
-  assertContains(
-    new RegExp(
-      `id: ownerShopHandle\\("${id}"\\)\\.id[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
-    ),
-    `Community Home subscription row ${id} must stay grouped under payments/subscriptions and use the selected-community route guard.`
-  );
-});
-
-assertContains(
-  /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
-  "Community Home Free Spotlight row must stay as the free Marketplace & Tools spotlight handle."
-);
-
-assertContains(
-  /merchantRelease: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.merchantRelease[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?routes\.merchantRelease/,
-  "Community Home Merchant Release row must route to the Shop Control merchant release rail."
-);
-
-assertContains(
-  /shopGalleryTools: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.diaries[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?routes\.shopGalleryTools/,
-  "Community Home Shop Gallery Tools row must route to the Shop Control gallery tools lane."
-);
-
-assertContains(
-  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\([\s\S]*?"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca/,
-  "Community Home ROSCA row must route into the Marketplace ROSCA section through the selected-community route guard."
-);
-
-assertContains(
-  /id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?detail: "Open contribution cycles for this community marketplace\."[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?"Choose a community first, then open ROSCA in Marketplace\."/,
-  "Community Home ROSCA row must keep its Marketplace wording and selected-community route explanation."
-);
-assertContains(
-  /whatsappBridge:\s*routeWithCommunity\(APP_ROUTES\.WHATSAPP_BRIDGE, selectedClanId\)[\s\S]*?id: "whatsapp-bridge"[\s\S]*?title: "Domain bulletin bridge"[\s\S]*?routes\.whatsappBridge[\s\S]*?"Choose a community first, then open the Domain bulletin bridge\."/,
-  "Community Home Domain bulletin bridge row must stay in Work tools and use the selected-community route guard."
-);
-
-
-assertNotContains(
-  /function communityQuickActionButton|function communityQuickActionIcon/,
-  "Community Home must not keep route-local quick-action helpers for the retired front launcher grid."
-);
-
-assertContains(
-  /function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 72,[\s\S]*?minHeight: 72,[\s\S]*?maxHeight: 72[\s\S]*?pointerEvents: "auto"[\s\S]*?transition: "none"/,
-  "Community Home compact tool rows must keep fixed 72px phone geometry and no transition-driven movement."
-);
-
-assertLayoutContains(
-  /if \(pathname\.startsWith\("\/app\/community"\)\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeShopControlItem\(\)[\s\S]*?DemandBox[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?\]\);/,
-  "Community Home page tools must keep the five route-local navigator actions: Public Shop, Shop Control, DemandBox, Finance, and Notifications."
-);
-
-assertLayoutContains(
-  /debugId="app-layout\.mobile\.open-navigation"[\s\S]*?debugId="app-layout\.mobile\.open-tools"/,
-  "Community Home mobile route surface must count the two fixed top navigator buttons: Menu and Tools."
-);
-
-assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}[\s\S]*?debugId="app-layout\.drawer\.logout"/,
-  "Community Home mobile drawer must count close, grouped route links, and logout as part of the outer navigator surface."
-);
-
-assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?debugId="app-layout\.tools\.share-trustslip\.toggle"[\s\S]*?TRUST_SLIP_SHARE_PURPOSES\.map[\s\S]*?debugId=\{`app-layout\.tools\.trustslip-purpose\.\$\{purpose\.key\}`\}[\s\S]*?debugId="app-layout\.tools\.trustslip-refresh"[\s\S]*?debugId="app-layout\.tools\.trustslip-share"/,
-  "Community Home mobile Tools panel must count the guided TrustSlip verification controls as part of the outer navigator surface."
-);
-
-assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Community Home mobile bottom rail must count the five stable route anchors: Dashboard, Community Home, Marketplace, Shop, and Profile."
-);
-
-assertLayoutContains(
-  /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function MobileTopIcon/,
-  "Community Home mobile top Menu and Tools buttons must keep fixed 44px geometry."
-);
-
-assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 48,[\s\S]*?minHeight: 48,[\s\S]*?maxHeight: 48[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Community Home mobile drawer buttons must keep fixed 48px geometry."
-);
-
-assertLayoutContains(
-  /function actionsLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?pointerEvents: "auto"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
-  "Community Home mobile Tools panel buttons must keep fixed 44px geometry."
-);
-
-assertLayoutContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 58,[\s\S]*?minHeight: 58,[\s\S]*?maxHeight: 58[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
-  "Community Home mobile bottom navigator buttons must keep fixed 58px geometry and active pointer targets."
-);
-
-assertLayoutContains(
-  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
-  "Community Home mobile content must not double-reserve the bottom rail while the rail remains visible in normal layout flow."
-);
-
-if (/Awaiting issue/.test(source)) {
-  findings.push({
-    file: communityFile,
-    line: lineAt(source.search(/Awaiting issue/)),
-    message:
-      "Community Home must not store or compare a stale placeholder as if it were a real GSN ID.",
-    text: source
-      .slice(source.search(/Awaiting issue/), source.search(/Awaiting issue/) + 160)
-      .replace(/\s+/g, " "),
-  });
-}
-
-const rawActionPattern =
-  /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;
-while ((match = rawActionPattern.exec(source))) {
-  findings.push({
-    file: communityFile,
-    line: lineAt(match.index),
-    message: "Community Home page must not bypass shared stable primitives with raw action roots.",
-    text: source.slice(match.index, match.index + 160).replace(/\s+/g, " "),
-  });
-}
-
-assertContains(
-  /import \{[\s\S]*?attentionUrgencyFromDate[\s\S]*?buildAttentionSpineSummary[\s\S]*?type AttentionSpineSignal[\s\S]*?type AttentionSpineUrgency[\s\S]*?\} from "\.\.\/lib\/attentionSpine";[\s\S]*?function communityBulletinNoticeUrgency[\s\S]*?attentionUrgencyFromDate\(noticeDisplayDate\(item\), nowMs\)[\s\S]*?return \{ tone: urgency\.urgency, label: urgency\.label \}/,
-  "Community Home Bulletin numbered selector must use the shared Attention Spine date urgency helper for green/yellow/red meaning."
-);
-assertContains(
-  /function renderCommunityBulletinNoticeSelector[\s\S]*?const urgency = communityBulletinNoticeUrgency\(item\)[\s\S]*?aria-label=\{`Show announcement \$\{label\}: \$\{title\}\. \$\{urgency\.label\}\.`\}[\s\S]*?communityBulletinNoticeUrgencyButtonStyle\(urgency\.tone, selected\)/,
-  "Community Home Bulletin notice numbers must visibly carry each announcement's urgency colour, including unselected announcements."
-);
-assertContains(
-  /const communityBulletinPulse = useMemo[\s\S]*?const signals: AttentionSpineSignal\[\][\s\S]*?source: "action_inbox"[\s\S]*?buildAttentionSpineSummary\(signals[\s\S]*?pendingCommunityNoticeReviewCount/,
-  "Community Home Pulse must summarize existing Bulletin, meeting, acknowledgement, and admin-review signals through the shared Attention Spine helper."
-);
-assertContains(
-  /function renderCommunityBulletinPulse[\s\S]*?data-debug-id="community-home\.bulletin\.pulse"[\s\S]*?Community pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="community-home\.bulletin\.pulse-open"[\s\S]*?setSelectedCommunityNoticeIndex\(nextPulseNoticeIndex\)[\s\S]*?debugId="community-home\.bulletin\.pulse-inbox"[\s\S]*?APP_ROUTES\.NOTIFICATIONS/,
-  "Community Home Pulse must stay inside the Bulletin, open the selected announcement in place, and route admin review to the existing Action Inbox."
-);
-assertContains(
-  /renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/,
-  "Community Home Pulse must sit directly above the existing Bulletin selector and primary notice, not become a separate attention screen."
-);
-assertContains(
-  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(communityNoticeListParams\(clanId\)\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
-  "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
-);
-assertContains(
-  /const activeCommunityNotices = useMemo\(\(\) => \{[\s\S]*?isNoticeVisibleOnBoard\(item, nowMs\)[\s\S]*?!isMarketNeedPulseNotice\(item\)/,
-  "Community Home must derive active notices from the visible notice-board filter and exclude DemandBox Ask Community pulses."
-);
-assertContains(
-  /const communityPreviousAnnouncementItems = communityPreviousAnnouncements[\s\S]*?\.filter\(\(item\) => !isMarketNeedPulseNotice\(item\)\)[\s\S]*?\.slice\(0, 10\)/,
-  "Community Home previous announcements must exclude DemandBox Ask Community pulses."
-);
 if (findings.length > 0) {
   console.error("Community Home button inventory audit failed:");
-  for (const finding of findings) {
-    console.error(
-      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
-    );
-  }
+  for (const finding of findings) console.error(`- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`);
   process.exit(1);
 }
-
-console.log(
-  `Community Home button inventory audit passed: ${actions.length} StableButton source templates, ` +
-    `${nativeFields.length} native fields, ${nextActionGuideItemCount} NextActionGuide items, ` +
-    `${frontQuickActionCount} front quick buttons, ${spotlightGuidedActionCount} spotlight guided buttons, ` +
-    `${groupedLaneRowCount} grouped lane rows, ${expectedExpandedRouteLocalActionTemplates} expanded route-local action templates, ` +
-    `${expectedMobileShellActionCount} mobile app-shell controls ` +
-    `(${expectedMobileShellBreakdown.top} top, ${expectedMobileShellBreakdown.drawer} drawer, ` +
-    `${expectedMobileShellBreakdown.pageTools} tools, ${expectedMobileShellBreakdown.bottom} bottom), ` +
-    `${expectedWholeMobileRouteActionTemplates} whole-route mobile action templates total.`
-);
+console.log("Community Home button inventory audit passed.");

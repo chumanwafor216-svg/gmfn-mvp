@@ -586,8 +586,8 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?const rotationBroadcasts = buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
-  "Public Shop Spotlight rotation must use the shared paid rotation queue."
+  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewRequested[\s\S]*?const ownerPreviewSpotlight = ownerSpotlightPreviewRequested && relevantBroadcast[\s\S]*?const rotationBroadcasts = ownerPreviewSpotlight[\s\S]*?buildSpotlightRotationQueue\(\s*normalizedBroadcasts\.filter[\s\S]*?: buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  "Public Shop Spotlight rotation must use the shared paid rotation queue while pinning the owner's own live Spotlight only for owner preview."
 );
 
 assertContains(

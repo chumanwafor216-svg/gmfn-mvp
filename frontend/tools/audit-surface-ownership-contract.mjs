@@ -72,7 +72,7 @@ assertContains(
 assertContains(
   "docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md",
   contract,
-  /Dashboard[\s\S]*?Compact orientation and the highest-priority pointer[\s\S]*?Marketplace[\s\S]*?One-community operating nucleus[\s\S]*?TrustSlip[\s\S]*?purpose-limited portable evidence[\s\S]*?Public Verify[\s\S]*?Recipient verification result/,
+  /Dashboard[\s\S]*?Compact orientation and the highest-priority pointer[\s\S]*?My GSN \/ Profile[\s\S]*?Durable identity orientation[\s\S]*?Marketplace[\s\S]*?One-community needs, Shops & Services discovery[\s\S]*?TrustSlip[\s\S]*?purpose-limited portable evidence[\s\S]*?Public Verify[\s\S]*?Recipient verification result/,
   "Contract must record the approved canonical ownership map."
 );
 
@@ -135,8 +135,8 @@ assertScript(packageText, "audit:community-domain-product-contracts", "audit-com
 assertContains(
   "frontend/src/lib/appRoutes.ts",
   appRoutes,
-  /PROFILE:\s*"\/app\/my-gmfn-and-i\?tab=guide"[\s\S]*?SETTINGS:\s*"\/app\/my-gmfn-and-i\?tab=settings"/,
-  "Profile canonical destination must remain My GSN Identity guide."
+  /PROFILE:\s*"\/app\/my-gmfn-and-i"[\s\S]*?SETTINGS:\s*"\/app\/my-gmfn-and-i\?tab=settings"/,
+  "Profile canonical destination must remain the My GSN member home."
 );
 
 assertContains(
@@ -153,7 +153,7 @@ assertContains(
   "My GSN must keep member-home and identity guide as explicit route-state branches."
 );
 
-const memberHomeStart = myGsn.indexOf('const memberHomePointers');
+const memberHomeStart = myGsn.indexOf('data-my-gsn-member-home="true"');
 const identityGridStart = myGsn.indexOf('data-my-gsn-identity-status-grid="true"', memberHomeStart);
 const memberHomeBranch =
   memberHomeStart >= 0 && identityGridStart > memberHomeStart
@@ -164,36 +164,43 @@ if (!memberHomeBranch) {
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     myGsn,
     memberHomeStart,
-    "Default My GSN member-home pointer contract must remain discoverable before the shared identity grid."
+    "Default My GSN member-home contract must remain discoverable before the shared identity grid."
   );
 }
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  memberHomeBranch,
-  /data-my-gsn-member-home-mode="personal-orientation"[\s\S]*?data-my-gsn-personal-orientation="true"[\s\S]*?data-my-gsn-canonical-pointers="true"/,
-  "Default My GSN must be personal orientation plus canonical pointers, not a personal super-dashboard."
+  myGsn,
+  /const shouldShowAttentionSummary =[\s\S]*?memberOpportunityStillLoading \|\| attentionSourceUnavailable \|\| attentionSignalCount > 0/,
+  "My GSN attention summary must stay conditional on loading, source failure, or real attention signals."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.member-home\.pointer\.demand-box[\s\S]*?my-gmfn\.member-home\.pointer\.community[\s\S]*?my-gmfn\.member-home\.pointer\.marketplace[\s\S]*?my-gmfn\.member-home\.pointer\.shop-control[\s\S]*?my-gmfn\.member-home\.pointer\.trust-passport[\s\S]*?my-gmfn\.member-home\.pointer\.settings/,
-  "Default My GSN pointers must keep Notifications, DemandBox, Community, Marketplace, Shop Control, Trust Passport, and Settings reachable."
+  /data-my-gsn-member-home-mode="personal-orientation"[\s\S]*?data-my-gsn-personal-orientation="true"[\s\S]*?data-my-gsn-community-portfolio="true"[\s\S]*?data-my-gsn-canonical-pointers="true"[\s\S]*?data-my-gsn-phase1-order="attention-shop-trust-settings"[\s\S]*?data-my-gsn-phase2-attention="conditional"/,
+  "Default My GSN must be personal orientation plus Phase 2 compact sections with actionable-only attention, not a personal super-dashboard."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /(?=[\s\S]*APP_ROUTES\.NOTIFICATIONS)(?=[\s\S]*my-gmfn\.attention\.demand-box)(?=[\s\S]*data-my-gsn-community-row="true")(?=[\s\S]*my-gmfn\.shop\.manage)(?=[\s\S]*my-gmfn\.evidence\.trust-passport)(?=[\s\S]*APP_ROUTES\.TRUST_SLIP)(?=[\s\S]*my-gmfn\.settings\.open)/,
+  "Default My GSN compact sections must keep Notifications, DemandBox, Community Home, Shop Control, Trust Passport, TrustSlip, and Settings reachable."
 );
 
 assertNotContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /What Needs My Attention|Tagged requests and your open needs come first|data-my-gmfn\.member-home\.attention\.|<div style=\{sectionLabel\(\)\}>Discover<\/div>|Ask through DemandBox|<div style=\{sectionLabel\(\)\}>Offer<\/div>|<div style=\{sectionLabel\(\)\}>Act<\/div>/,
+  /data-my-gmfn\.member-home\.attention\.|<div style=\{sectionLabel\(\)\}>Discover<\/div>|Ask through DemandBox|<div style=\{sectionLabel\(\)\}>Offer<\/div>|<div style=\{sectionLabel\(\)\}>Act<\/div>/,
   "Default My GSN must not reintroduce detailed attention, Discover, Ask, Offer, or Act mini-engines."
 );
 
 assertContains(
   "frontend/src/layout/AppLayout.tsx",
   appLayout,
-  /function makeGuideItem\(\)[\s\S]*?label: "My GSN Identity"[\s\S]*?to: APP_ROUTES\.PROFILE[\s\S]*?function makeProfileItem\(\)[\s\S]*?label: "Profile"[\s\S]*?to: APP_ROUTES\.PROFILE/,
-  "App layout Profile/Identity navigation must keep pointing to My GSN Identity."
+  /function makeGuideItem\(\)[\s\S]*?label: "Guide \/ Help"[\s\S]*?to: "\/app\/my-gmfn-and-i\?tab=guide"[\s\S]*?function makeProfileItem\(\)[\s\S]*?label: "Profile"[\s\S]*?to: APP_ROUTES\.PROFILE[\s\S]*?tab !== "guide" && tab !== "settings"/,
+  "App layout Profile navigation must open My GSN member home while Guide / Help stays explicit."
 );
 
 assertContains(

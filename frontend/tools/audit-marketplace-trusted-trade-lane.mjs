@@ -80,8 +80,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection[\s\S]*?"members"[\s\S]*?"marketplace-members-shops"[\s\S]*?Find people & services[\s\S]*?Members/,
-  "Community Members & Shops must open from the human Find people & services job and stay separate from Trade Evidence."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?aria-label="Open Shops and Services in this marketplace"[\s\S]*?openMarketplaceSection[\s\S]*?"members"[\s\S]*?"marketplace-members-shops"[\s\S]*?Shops & Services/,
+  "Shops & Services must open from the human discovery job and stay separate from Trade Evidence."
 );
 
 assertContains(
@@ -95,8 +95,8 @@ assertContains(
 );
 
 assertContains(
-  /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 3 : 5\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
-  "Trade Evidence must cap the first visible member list and tuck the rest behind a compact disclosure."
+  /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 6 : 8\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
+  "Trade Evidence/member options must cap the first visible member list and keep overflow separate."
 );
 
 assertContains(
@@ -270,33 +270,37 @@ const memberShopSection = {
 };
 
 if (!/id="marketplace-members-shops"/.test(memberShopSection.text)) {
-  addFinding(-1, "Members & Shops detail section must exist.");
+  addFinding(-1, "Shops & Services detail section must exist.");
 } else {
   [
-    /Community Members & Shops/,
-    /See Community Domains, known members, and visible shops inside[\s\S]*?this selected/,
-    /Open a shop record for current[\s\S]*?evidence before you[\s\S]*?act/,
-    /\{memberRows\.length\} visible member/,
+    /Shops & Services Directory/,
+    /Browse public shops in this selected marketplace\. Open shop is the[\s\S]*?handoff to the canonical Public Shop; management stays elsewhere\./,
     /\{visibleTradeShopCount\} public shop/,
+    /\{directoryRows\.length\} searchable entr/,
     /\{marketplaceCommunityDomainRows\.length\} domain/,
-    /Community-bound directory/,
-    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Domain dashboard\./,
+    /\{weakDataCount \? `\$\{weakDataCount\} light profile/,
+    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in the[\s\S]*?Community Domain dashboard\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
-    /Visible members/,
     /marketplace\.members\.visible-members-module/,
     /marketplaceDepartmentShellStyle\("members", isCompact\)/,
-    /Full visible list shown/,
-    /more tucked away/,
-    /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
-    /Shop visible/,
+    /Find a shop or service/,
+    /Search uses loaded shop names, descriptions, product\/service text,[\s\S]*?owner labels, and DemandBox match titles\./,
+    /Neutral A-Z order/,
+    /marketplaceFieldTouchProps\("marketplace\.members\.search"\)/,
+    /No public shops are visible in this marketplace yet\. This is the[\s\S]*?current community scope only\./,
+    /No shop in this marketplace matches that search yet\. Try a business[\s\S]*?name, service, product, or owner label\./,
+    /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More directory results/,
+    /Public shop/,
     /No shop yet/,
+    /Contact ready/,
+    /Relevant to current need/,
     /debugId="marketplace\.members\.toggle"/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
   ].forEach((pattern) => {
     if (!pattern.test(memberShopSection.text)) {
       addFinding(
         memberShopSection.start,
-        "Members & Shops detail section is missing an expected guided directory element.",
+        "Shops & Services detail section is missing an expected guided directory element.",
         pattern.toString()
       );
     }
@@ -305,8 +309,8 @@ if (!/id="marketplace-members-shops"/.test(memberShopSection.text)) {
   if (/(choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|Loan Readiness|Loan Suggestions|Loan Workbench|Money Pool|ROSCA|Trust Passport|TrustSlip|CCI|Owner Shop|Trade Evidence Record)/.test(memberShopSection.text)) {
     addFinding(
       memberShopSection.start,
-      "Members & Shops detail section must not expose other major lane responsibilities.",
-      "Members & Shops should stay directory focused; Support owns guarantor selection and Trade Evidence owns records."
+      "Shops & Services detail section must not expose other major lane responsibilities.",
+      "Shops & Services should stay directory focused; Support owns guarantor selection and Trade Evidence owns records."
     );
   }
 }

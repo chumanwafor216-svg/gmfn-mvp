@@ -198,7 +198,7 @@ if (!recordsLinksSection.text) {
     addFinding(
       recordsLinksSection.start,
       "Public Links must not contain Community Domain entries.",
-      "Community Domains belong under Community Members & Shops, not Marketplace Tools."
+      "Community Domains belong under Shops & Services, not Marketplace Tools."
     );
   }
 }

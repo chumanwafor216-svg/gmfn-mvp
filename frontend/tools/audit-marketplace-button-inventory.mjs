@@ -41,11 +41,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 91;
-const expectedNativeFieldCount = 37;
+const expectedStableActionCount = 93;
+const expectedNativeFieldCount = 38;
 const expectedSourceBreakdown = {
   front: 5,
-  body: 86,
+  body: 88,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -374,8 +374,8 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?aria-label="Find people, services, and shops in this marketplace"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Find people & services[\s\S]*?Shops & services/,
-  "Marketplace Find people & services job must open the community-bound members and shops lane."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?aria-label="Open Shops and Services in this marketplace"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Shops & Services/,
+  "Marketplace Shops & Services job must open the community-bound members and shops lane."
 );
 
 assertContains(
@@ -384,17 +384,17 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.community-board"[\s\S]*?aria-label="Open the community board"[\s\S]*?openMarketplaceSection\(event, "board", "marketplace-official-board"\)[\s\S]*?Community board/,
-  "Marketplace Community board job must open the marketplace-local board lane."
+  /debugId="marketplace\.progressive\.community-board"[\s\S]*?aria-label="Open market-relevant community board signals"[\s\S]*?openMarketplaceSection\(event, "board", "marketplace-board"\)[\s\S]*?Community board/,
+  "Marketplace Community board must stay demoted under secondary marketplace tools."
 );
 
 assertContains(
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
-  "Marketplace front door must keep the human-job cards and move directly into compact follow-on context."
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front door must show live needs, shops, matches, and compact follow-on context."
 );
 
 assertContains(
-  /data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
+  /data-marketplace-wisdom-lens="true"[\s\S]*?Suggested next step[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
   "Marketplace Wisdom Lens must stay compact, visible in the front package, and open exactly one audited Marketplace lane."
 );
 
@@ -419,8 +419,8 @@ assertContains(
 );
 
 assertContains(
-  /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 3 : 5\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
-  "Marketplace Trade Evidence must cap the first visible member list and tuck the rest behind a compact disclosure."
+  /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 6 : 8\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
+  "Marketplace directory must show a fuller phone-first member/shop preview and tuck the rest behind a compact disclosure."
 );
 assertContains(
   /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
@@ -638,34 +638,35 @@ if (!/id="marketplace-members-shops"/.test(memberShopSection)) {
   findings.push({
     file: marketplaceMembersFile,
     line: 1,
-    message: "Marketplace Community Members & Shops section was not found for scoped button auditing.",
+    message: "Marketplace Shops & Services section was not found for scoped button auditing.",
     text: "Expected id=\"marketplace-members-shops\" in MarketplaceMembersSection.",
   });
 } else {
   [
-    /Community Members & Shops/,
-    /See Community Domains, known members, and visible shops inside[\s\S]*?this selected/,
-    /\{memberRows\.length\} visible member/,
+    /Shops & Services Directory/,
+    /Browse public shops in this selected marketplace[\s\S]*?Open shop is the[\s\S]*?canonical Public Shop/,
     /\{visibleTradeShopCount\} public shop/,
+    /searchable entr\{directoryRows\.length === 1 \? "y" : "ies"\}/,
     /\{marketplaceCommunityDomainRows\.length\} domain/,
-    /Community-bound directory/,
-    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?the[\s\S]*?Community Domain dashboard\./,
-    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
-    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?onOpenCommunityDomain\(event, row\)/,
-    /Visible members/,
-    /more tucked away/,
-    /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
-    /Shop visible/,
-    /No shop yet/,
+    /Find a shop or service/,
+    /Search uses loaded shop names, descriptions, product\/service text,[\s\S]*?DemandBox match titles/,
+    /marketplaceFieldTouchProps\("marketplace\.members\.search"\)/,
+    /searchedDirectoryRows\.slice\(0, isCompact \? 6 : 10\)/,
+    /memberRows\.filter\(\(row\) => Boolean\(row\.shopTo\)\)/,
+    /productTitles/,
+    /demandMatchTitles/,
+    /Relevant to current need/,
+    /No public shops are visible in this marketplace yet[\s\S]*?current community scope only/,
+    /No shop in this marketplace matches that search yet/,
+    /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More directory results/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
-    /visibleTradeMemberRows\.map\([\s\S]*?<MemberRowCard[\s\S]*?row=\{row\}[\s\S]*?isCompact=\{isCompact\}/,
-    /hiddenTradeMemberRows\.map\([\s\S]*?<MemberRowCard[\s\S]*?row=\{row\}[\s\S]*?isCompact=\{isCompact\}/,
+    /Open shop/,
   ].forEach((pattern) => {
     if (!pattern.test(memberShopSection)) {
       findings.push({
         file: marketplaceFile,
         line: lineAt(source.indexOf(memberShopSection)),
-        message: "Marketplace Community Members & Shops lane must keep the guided domain/member/shop directory structure.",
+        message: "Marketplace Shops & Services Directory lane must keep the guided shop/service discovery structure.",
         text: pattern.toString(),
       });
     }
@@ -675,8 +676,8 @@ if (!/id="marketplace-members-shops"/.test(memberShopSection)) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(memberShopSection)),
-      message: "Marketplace Community Members & Shops lane must not expose support or guarantor actions.",
-      text: "Community Members & Shops should stay directory focused; Support owns guarantor selection.",
+      message: "Marketplace Shops & Services Directory lane must not expose support or guarantor actions.",
+      text: "Shops & Services Directory should stay directory focused; Support owns guarantor selection.",
     });
   }
 }
@@ -838,16 +839,25 @@ assertFileContains(
 );
 
 const expectedOrder = [
+  dynamicDebugId(
+    "marketplace.front.need-provider.${requestId || \"unknown\"}.${productId || index}.open-shop",
+    /debugId=\{`marketplace\.front\.need-provider\.\$\{requestId \|\| "unknown"\}\.\$\{productId \|\| index\}\.open-shop`\}/
+  ),
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
-  exactDebugId("marketplace.job.find-people-services"),
   exactDebugId("marketplace.job.ask-for-something"),
-  exactDebugId("marketplace.job.community-board"),
+  exactDebugId("marketplace.job.find-people-services"),
+  dynamicDebugId(
+    "marketplace.front.shop.${row.gmfnId || row.userId || \"unknown\"}.open",
+    /debugId=\{`marketplace\.front\.shop\.\$\{row\.gmfnId \|\| row\.userId \|\| "unknown"\}\.open`\}/
+  ),
+
   exactDebugId("marketplace.context.money"),
   exactDebugId("marketplace.context.support"),
   exactDebugId("marketplace.context.rosca"),
   exactDebugId("marketplace.progressive-tools.toggle"),
   exactDebugId("marketplace.progressive.money-support"),
+  exactDebugId("marketplace.progressive.community-board"),
   exactDebugId("marketplace.progressive.tools"),
   exactDebugId("marketplace.progressive.marketing"),
   exactDebugId("marketplace.progressive.trade-evidence"),

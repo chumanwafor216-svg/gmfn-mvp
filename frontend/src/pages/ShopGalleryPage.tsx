@@ -19,6 +19,8 @@ import {
   listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
+  getPublicShopDiaryEntries,
+  type ShopDiaryEntryRecord,
   getSelectedClanId,
   getStoredGmfnId,
   recordMarketplaceAttentionEvent,
@@ -27,6 +29,7 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
+  PUBLIC_SHOP_SPOTLIGHT_ANCHOR,
   PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
   publicShopPath,
@@ -275,7 +278,7 @@ function publicShopReconnectAttemptKey(gmfnId: string): string {
 
 function publicShopReconnectErrorMessage(message: string): string {
   if (/no active clan selected/i.test(message)) {
-    return "GSN found your owner sign-in, but it could not find an active community for this shop yet. Open Marketplace or Community Home once while signed in, then this public shop page can reconnect Shop Diaries.";
+    return "GSN found your owner sign-in, but it could not find an active community for this shop yet. Open Marketplace or Community Home once while signed in, then this public shop page can reconnect Products & Services.";
   }
 
   if (/not an active member/i.test(message)) {
@@ -283,7 +286,7 @@ function publicShopReconnectErrorMessage(message: string): string {
   }
 
   if (isDisconnectedPublicShopError(message)) {
-    return "This public shop link is not connected to an active shop yet. If you are signed in as the owner, this page will reconnect to your current GSN shop and load Shop Diaries automatically.";
+    return "This public shop link is not connected to an active shop yet. If you are signed in as the owner, this page will reconnect to your current GSN shop and load Products & Services automatically.";
   }
 
   return message || "Shop gallery could not be loaded right now.";
@@ -1558,6 +1561,10 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("block") || query.get("slot"));
   }, [location.search]);
+  const ownerSpotlightPreviewRequested = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return query.get("owner_spotlight_preview") === "1";
+  }, [location.search]);
   const explicitRouteClanId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(
@@ -1593,6 +1600,7 @@ export default function ShopGalleryPage() {
   const galleryRevealTargetRef = useRef("");
   const autoRevealDiariesKeyRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
+  const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
     Record<string, boolean>
@@ -1821,13 +1829,29 @@ export default function ShopGalleryPage() {
           if (timeDelta !== 0) return timeDelta;
           return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
         }) as ShopBroadcast[];
-      const rotationBroadcasts = buildSpotlightRotationQueue(normalizedBroadcasts);
+      const ownerPreviewSpotlight = ownerSpotlightPreviewRequested && relevantBroadcast
+        ? normalizedBroadcasts.find(
+            (item) => spotlightBroadcastKey(item) === spotlightBroadcastKey(relevantBroadcast)
+          ) || relevantBroadcast
+        : null;
+      const rotationBroadcasts = ownerPreviewSpotlight
+        ? [
+            ownerPreviewSpotlight,
+            ...buildSpotlightRotationQueue(
+              normalizedBroadcasts.filter(
+                (item) => spotlightBroadcastKey(item) !== spotlightBroadcastKey(ownerPreviewSpotlight)
+              )
+            ),
+          ]
+        : buildSpotlightRotationQueue(normalizedBroadcasts);
       const currentSpotlight =
         communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
         communitySpotlightsRef.current[0] ||
         null;
       const currentKey = spotlightBroadcastKey(currentSpotlight);
-      const matchedSpotlightIndex = currentKey
+      const matchedSpotlightIndex = ownerPreviewSpotlight
+        ? 0
+        : currentKey
         ? normalizedBroadcasts.findIndex(
             (item) => spotlightBroadcastKey(item) === currentKey
           )
@@ -1837,6 +1861,7 @@ export default function ShopGalleryPage() {
       setShop(normalizedShop);
       setPublicShopVerification(publicShopRes?.verification || null);
       setProducts(arrangedProducts);
+      setShopDiaryEntries(Array.isArray(publicShopRes?.shop_diary_entries) ? publicShopRes.shop_diary_entries : []);
       setBroadcast(relevantBroadcast);
       setCommunitySpotlights(rotationBroadcasts);
       setMiniSpotlightIndex(
@@ -2019,7 +2044,7 @@ export default function ShopGalleryPage() {
             setNotice({
               tone: "success",
               text: ownerSurfaceIdentityMatches(refreshedGmfnId, cleanedGmfnId)
-                ? "Public shop reconnected. Shop Diaries is ready."
+                ? "Public shop reconnected. Products & Services is ready."
                 : "Stale shop link refreshed to your current GSN shop.",
             });
           }
@@ -2075,7 +2100,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [explicitRouteClanId, gmfnId, routeClanId, routeProductId, shopReconnectRetryKey]);
+  }, [explicitRouteClanId, gmfnId, ownerSpotlightPreviewRequested, routeClanId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -2102,6 +2127,11 @@ export default function ShopGalleryPage() {
       if (typeof document === "undefined" || typeof window === "undefined") return;
       const target = document.getElementById(targetId);
       if (!target) return;
+
+      if (targetId === PUBLIC_SHOP_SPOTLIGHT_ANCHOR) {
+        target.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
+        return;
+      }
 
       revealElementWithoutJump(target, {
         surface: "public-shop",
@@ -2539,6 +2569,9 @@ export default function ShopGalleryPage() {
     ? 0
     : Math.max(0, products.length - gallerySlotsTotal);
 
+  const featuredDiaryEntry = shopDiaryEntries[0] || null;
+  const recentDiaryEntries = featuredDiaryEntry ? shopDiaryEntries.slice(1, 5) : [];
+
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
   }, [effectiveShop]);
@@ -2776,7 +2809,7 @@ export default function ShopGalleryPage() {
   const shopCategoryText = publicShopCategory();
   const shopDescriptionText = safeStr(
     autoRefreshingShop
-      ? "This public shop link is reconnecting to the owner's active shop so Shop Diaries can load."
+      ? "This public shop link is reconnecting to the owner's active shop so Products & Services can load."
       : shopLoadFailed
       ? "This public shop link opened, but GSN has not connected it to an active owner shop yet."
       : effectiveShop?.description ||
@@ -4951,14 +4984,16 @@ export default function ShopGalleryPage() {
           }}
         >
           <section
+            id={PUBLIC_SHOP_SPOTLIGHT_ANCHOR}
             className="public-shop-section public-shop-spotlight"
             style={{
               position: "relative",
               overflow: "hidden",
-              borderRadius: isCompact ? 18 : 26,
-              padding: isCompact ? 8 : 22,
+              scrollMarginTop: isCompact ? 96 : 88,
+              borderRadius: isCompact ? 20 : 26,
+              padding: isCompact ? 10 : 22,
               height: isCompact ? "auto" : undefined,
-              minHeight: isCompact ? 340 : undefined,
+              minHeight: isCompact ? 456 : undefined,
               border: "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
@@ -4974,11 +5009,11 @@ export default function ShopGalleryPage() {
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr"
-                  : "minmax(0, 1fr) 310px",
+                  : "minmax(0, 0.95fr) minmax(340px, 0.9fr)",
                 gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
                 height: isCompact ? "auto" : undefined,
-                minHeight: isCompact ? 324 : undefined,
+                minHeight: isCompact ? 436 : undefined,
                 padding: 0,
               }}
             >
@@ -5111,8 +5146,8 @@ export default function ShopGalleryPage() {
               </div>
               <div
                 style={{
-                  minHeight: isCompact ? 196 : 178,
-                  height: isCompact ? 196 : "auto",
+                  minHeight: isCompact ? 318 : 340,
+                  height: isCompact ? 318 : 340,
                   borderRadius: isCompact ? 18 : 20,
                   overflow: "hidden",
                   position: "relative",
@@ -5121,7 +5156,7 @@ export default function ShopGalleryPage() {
                   zIndex: 1,
                   background:
                     "radial-gradient(circle at 38% 18%, rgba(255,255,255,0.96) 0%, rgba(234,243,255,0.72) 46%, rgba(11,99,209,0.15) 100%)",
-                  border: isCompact ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.94)",
+                  border: isCompact ? "1px solid rgba(184,137,45,0.48)" : "1px solid rgba(255,255,255,0.94)",
                   boxShadow:
                     isCompact
                       ? "inset 0 1px 0 rgba(255,255,255,0.10)"
@@ -5144,12 +5179,12 @@ export default function ShopGalleryPage() {
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"
                     audioUnlockStyle={{
-                      top: isCompact ? 9 : "auto",
-                      right: isCompact ? 9 : 10,
+                      top: isCompact ? 12 : "auto",
+                      right: isCompact ? 12 : 10,
                       bottom: isCompact ? "auto" : 10,
-                      minWidth: isCompact ? 34 : 38,
-                      width: isCompact ? 34 : 38,
-                      minHeight: isCompact ? 34 : 38,
+                      minWidth: isCompact ? 44 : 38,
+                      width: isCompact ? 44 : 38,
+                      minHeight: isCompact ? 44 : 38,
                       padding: 0,
                       fontSize: isCompact ? 14 : 18,
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
@@ -5157,8 +5192,8 @@ export default function ShopGalleryPage() {
                     maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     frameStyle={{
                       width: "100%",
-                      height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 196 : 178,
+                      height: isCompact ? 318 : 340,
+                      minHeight: isCompact ? 318 : 340,
                       borderRadius: isCompact ? 18 : 20,
                     }}
                     mediaStyle={{
@@ -5174,8 +5209,8 @@ export default function ShopGalleryPage() {
                     alt={shopNameText}
                     style={{
                       width: "100%",
-                      height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 196 : undefined,
+                      height: isCompact ? 318 : 340,
+                      minHeight: isCompact ? 318 : undefined,
                       objectFit: "cover",
                       objectPosition: "center",
                       display: "block",
@@ -5184,8 +5219,8 @@ export default function ShopGalleryPage() {
                 ) : (
                   <div
                     style={{
-                      height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 196 : undefined,
+                      height: isCompact ? 318 : 340,
+                      minHeight: isCompact ? 318 : undefined,
                       display: "grid",
                       placeItems: "center",
                       color: "#D7E3F1",
@@ -5310,6 +5345,83 @@ export default function ShopGalleryPage() {
 
         <section
           id={PUBLIC_SHOP_DIARIES_ANCHOR}
+          className="public-shop-section public-shop-diary"
+          style={{
+            display: focusedBlockLinkActive ? "none" : "block",
+            borderRadius: isCompact ? 24 : 28,
+            padding: isCompact ? 10 : 18,
+            border: "1px solid rgba(255,255,255,0.92)",
+            background: "linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 58%, #EEF6FF 100%)",
+            boxShadow: "0 24px 52px rgba(8,38,67,0.12), 0 0 0 1px rgba(13,95,168,0.07), inset 0 1px 0 rgba(255,255,255,0.96)",
+            scrollMarginTop: 12,
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: isCompact ? 8 : 12, marginBottom: isCompact ? 10 : 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Diary</div>
+              <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>Recent activity recorded by this business.</div>
+            </div>
+            <span style={badge(shopDiaryEntries.length > 0)}>{shopDiaryEntries.length > 0 ? `${shopDiaryEntries.length} updates` : "No updates yet"}</span>
+          </div>
+
+          {featuredDiaryEntry ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <article className="public-shop-diary-featured" style={{ borderRadius: isCompact ? 20 : 24, overflow: "hidden", border: "1px solid rgba(184,137,45,0.42)", background: "linear-gradient(180deg, #0B1F33 0%, #061827 100%)", boxShadow: "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)" }}>
+                <SpotlightMediaFrame
+                  imageUrl={featuredDiaryEntry.image_url || ""}
+                  videoUrl={featuredDiaryEntry.video_url || ""}
+                  videoPoster={featuredDiaryEntry.image_url || ""}
+                  alt={featuredDiaryEntry.activity_label || "Shop diary update"}
+                  frameStyle={{ width: "100%", height: isCompact ? 318 : 340, minHeight: isCompact ? 318 : 340, borderRadius: isCompact ? 20 : 24, background: "transparent" }}
+                  mediaStyle={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+                  contentPadding={0}
+                  showVideoControls={Boolean(featuredDiaryEntry.video_url)}
+                  autoPlayVideo={Boolean(featuredDiaryEntry.video_url)}
+                  mutedVideo={true}
+                  loopVideo={Boolean(featuredDiaryEntry.video_url)}
+                  showAudioUnlock={Boolean(featuredDiaryEntry.video_url)}
+                  audioUnlockLabel="Sound on"
+                  audioUnlockOffLabel="Muted"
+                  audioUnlockErrorLabel="Play"
+                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                />
+                <div style={{ padding: isCompact ? "12px 12px 14px" : "15px 16px 17px", background: "#FFFFFF" }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={badge(true)}>{featuredDiaryEntry.activity_label || "Other update"}</span>
+                    <span style={badge(featuredDiaryEntry.evidence_class === "counterparty_confirmed")}>{featuredDiaryEntry.evidence_label || "Owner update"}</span>
+                  </div>
+                  <div style={{ marginTop: 8, color: "#07172C", fontSize: isCompact ? 19 : 22, fontWeight: 950, lineHeight: 1.12 }}>{featuredDiaryEntry.note}</div>
+                  <div style={{ marginTop: 8, color: "#526C84", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 700, lineHeight: 1.35 }}>
+                    {new Date(featuredDiaryEntry.occurred_at || featuredDiaryEntry.created_at || Date.now()).toLocaleDateString()}
+                    {featuredDiaryEntry.product_name ? ` · Related to ${featuredDiaryEntry.product_name}` : ""}
+                    {featuredDiaryEntry.protected_trade_code ? ` · Trade Evidence ${featuredDiaryEntry.protected_trade_code}` : ""}
+                  </div>
+                  <div style={{ marginTop: 8, color: "#617085", fontSize: 12, lineHeight: 1.35, fontWeight: 650 }}>{featuredDiaryEntry.evidence_boundary || "The shop owner says this happened. It is not formal Trade Evidence by itself."}</div>
+                </div>
+              </article>
+              {recentDiaryEntries.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                  {recentDiaryEntries.map((entry) => (
+                    <article key={`public-shop-diary-recent-${entry.id}`} style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                        <strong style={{ color: "#07172C", fontSize: 13.5 }}>{entry.activity_label || "Other update"}</strong>
+                        <span style={badge(entry.evidence_class === "counterparty_confirmed")}>{entry.evidence_label || "Owner update"}</span>
+                      </div>
+                      <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, fontWeight: 700 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` · ${entry.product_name}` : ""}</div>
+                      <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 760, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }}>{entry.note}</div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div style={{ ...innerCard("#F8FBFF") }}>
+              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No diary updates yet.</div>
+              <div style={{ marginTop: 8, ...helperText() }}>This shop has not shared a recent business activity update. Products and services may still be available below.</div>
+            </div>
+          )}
+        </section>
+        <section
           className="public-shop-section"
           style={{
             borderRadius: isCompact ? 24 : 28,
@@ -5344,7 +5456,7 @@ export default function ShopGalleryPage() {
                     "0 1px 0 rgba(255,255,255,0.94), 0 10px 18px rgba(8,38,67,0.10)",
                 }}
               >
-                Shop Diaries
+                Products & Services
               </div>
               <div
                 style={{
@@ -5356,8 +5468,8 @@ export default function ShopGalleryPage() {
                 }}
               >
                 {focusedBlockLinkActive
-                  ? "This shared link opens only this public shop block."
-                  : "These are the public Shop Diary blocks anyone can browse or share."}
+                  ? "This shared link opens only this public product/service block."
+                  : "These are the public products and services anyone can browse or share."}
               </div>
             </div>
             <span style={badge(true)}>
@@ -5372,7 +5484,7 @@ export default function ShopGalleryPage() {
           {loading ? (
             <div style={{ ...helperText(), padding: 16 }}>
               {autoRefreshingShop
-                ? "Reconnecting public shop and loading Shop Diaries..."
+                ? "Reconnecting public shop and loading Products & Services..."
                 : "Loading shop gallery..."}
             </div>
           ) : error ? (
@@ -5966,7 +6078,7 @@ export default function ShopGalleryPage() {
                 marginTop: 14,
               }}
             >
-              {showAllProducts ? "Show first 12 blocks" : `Show ${overflowProductCount} more`}
+              {showAllProducts ? "Show first products" : `Show ${overflowProductCount} more`}
             </SecondaryButton>
           ) : null}
         </section>

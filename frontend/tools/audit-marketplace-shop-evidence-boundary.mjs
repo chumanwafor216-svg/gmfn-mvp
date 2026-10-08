@@ -213,7 +213,7 @@ assertContains(
 
 assertContains(
   "shopGallery",
-  /This shared link opens only this public shop block[\s\S]*?These are the public Shop Diary blocks anyone can browse or share/,
+  /This shared link opens only this public product\/service block[\s\S]*?These are the public products and services anyone can browse or share/,
   "Shop Gallery block links must remain scoped public block links, not broad private shop evidence."
 );
 

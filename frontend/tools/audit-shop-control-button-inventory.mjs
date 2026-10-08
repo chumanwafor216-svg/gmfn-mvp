@@ -378,7 +378,7 @@ assertShopContains(
 );
 
 assertShopContains(
-  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.public-shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
+  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?label: "Manage Spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?label: "Publish Spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
   "Shop Control owner overview must derive one truthful primary next action from shop/product/Spotlight/public-shop state."
 );
 
@@ -679,8 +679,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard Shop Diaries, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
-  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the 6 standard Shop Diaries lane."
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard product\/service blocks, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
+  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the product/service block lane."
 );
 
 if (

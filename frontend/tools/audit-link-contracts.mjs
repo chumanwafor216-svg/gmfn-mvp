@@ -327,8 +327,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?break;[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
-  "Community Home Free Spotlight actions must route directly to the canonical Shop Control spotlight publisher instead of falling through to the local overview or public fallback."
+  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Spotlight management live in Shop Control/s,
+  "Community Home must hand shop and Spotlight management to Shop Control through the compact Manage shop row."
+);
+
+assertNotContains(
+  "src/pages/CommunityHomePage.tsx",
+  /debugId="community-home\.(?:spotlight-guided|spotlight-status|lane\.(?:marketplace-tools|subscriptions)\.(?:free-spotlight|spotlight-subscription|paid-repost|vault-control))/,
+  "Community Home must not render the old Spotlight/Vault launcher controls after Phase 1."
 );
 
 assertNotContains(
@@ -349,10 +355,10 @@ assertNotContains(
   "Community Home must not own active Spotlight state, authorship filtering, refresh, or rotation after Spotlight ownership moved to Shop Control."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/CommunityHomePage.tsx",
-  /shopSpotlight:\s*routeTarget\(\s*"shop"[\s\S]*?OWNER_SHOP_HASHES\.freeSpotlight[\s\S]*?freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?subscriptionSpotlight:\s*routeTarget\(\s*"subscriptionSpotlight"/,
-  "Community Home Spotlight-family pointers must route to canonical Shop and Shop Control ownership."
+  /shopSpotlight:|freeSpotlight:|subscriptionSpotlight:|paidRepost:|vaultControl:|OWNER_SHOP_HASHES|PAID_REPOST_HASH|ownerShopHandle/,
+  "Community Home must not keep stale specialist Spotlight/Vault/Paid Repost route pointers; Manage shop is the only Shop Control handoff."
 );
 
 assertContains(
@@ -622,7 +628,7 @@ assertContains(
 assertContains(
   "src/lib/publicLinks.ts",
   /export function publicShopBlockPath[\s\S]*?const query = new URLSearchParams\(\);[\s\S]*?query\.set\("clan_id", clanId\);[\s\S]*?query\.set\("product_id", productId\);[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\);[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
-  "Product/block shares must preserve explicit clan_id, product_id, block query context, and block anchors so shared item links open inside the right Shop Diaries community context."
+  "Product/block shares must preserve explicit clan_id, product_id, block query context, and block anchors so shared item links open inside the right Products & Services community context."
 );
 
 assertContains(
@@ -874,14 +880,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopMessage\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item package copied\. It opens this item inside the Shop Diaries\./,
-  "Shop Assets copy actions must copy frontend-domain preview-ready compact GSN messages for Shop Diaries and exact block/item links with honest feedback."
+  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopMessage\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this product\/service block on the Public Shop\.[\s\S]*?Public shop item package copied\. It opens this product\/service item on the Public Shop\./,
+  "Shop Assets copy actions must copy frontend-domain preview-ready compact GSN messages for Products & Services and exact block/item links with honest feedback."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /function replacePublicShopAddress\(gmfnId: string\): void \{[\s\S]*?const currentSearch = window\.location\.search \|\| "";[\s\S]*?const currentHash = window\.location\.hash \|\| "";[\s\S]*?`\$\{path\}\$\{currentSearch\}\$\{currentHash\}`/,
-  "Public shop auto-reconnect must preserve product_id and Shop Diaries/block anchors instead of stripping visitors back to the upper shop face."
+  "Public shop auto-reconnect must preserve product_id and Products & Services/block anchors instead of stripping visitors back to the upper shop face."
 );
 
 assertContains(
@@ -893,13 +899,13 @@ assertContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?scrollGalleryTargetIntoView[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "public-shop"[\s\S]*?reason: "hash-landing"[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
-  "Public shop hash landing must perform repeated no-jump reveal passes so late layout shifts cannot pull visitors back above Shop Diaries or the selected block."
+  "Public shop hash landing must perform repeated no-jump reveal passes so late layout shifts cannot pull visitors back above Shop Diary or the selected block or the selected block."
 );
 
 assertNotContains(
   "src/pages/ShopAssetsPage.tsx",
   /Full public shop link copied\./,
-  "Shop Assets public copy feedback must not claim a root shop link when the copied URL intentionally targets Shop Diaries or a block."
+  "Shop Assets public copy feedback must not claim a root shop link when the copied URL intentionally targets a product\/service block."
 );
 
 assertNotContains(
@@ -989,7 +995,7 @@ assertWholeFileNotContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, shopOwnerGmfnId\)[\s\S]*?const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;[\s\S]*?function blockPlacementPath\(product: ShopProduct\): string[\s\S]*?params\.set\("repost_product_id", String\(productId\)\)[\s\S]*?params\.set\("block", String\(blockNumber\)\)[\s\S]*?params\.set\("source", "shop-diaries"\)[\s\S]*?APP_ROUTES\.MARKETPLACE[\s\S]*?#marketplace-paid-network-placement[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}/,
-  "Shop Diaries owner-only paid placement action must pass exact product/block identity into the internal Marketplace composer."
+  "Products & Services owner-only paid placement action must pass exact product/block identity into the internal Marketplace composer."
 );
 
 assertContains(
@@ -1001,7 +1007,7 @@ assertContains(
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /const routeRepostProductId = useMemo[\s\S]*?query\.get\("repost_product_id"\)[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?query\.get\("block"\)[\s\S]*?const routeRepostSource = useMemo[\s\S]*?query\.get\("source"\)[\s\S]*?readPaidRepostHandoff[\s\S]*?visibleRepostProducts[\s\S]*?hash === "marketplace-paid-network-placement"[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?visibleRepostProducts\.find\(\(product\) => product\.id === routeRepostProductId\)[\s\S]*?product\.blockNumber === routeRepostBlockNumber[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)[\s\S]*?scrollToMarketplaceSection\("marketplace-paid-network-placement"\)/,
-  "Marketplace must consume Shop Diaries product/block handoff, preserve an exact fallback preview, and open the paid Network Spotlight composer with the exact block selected."
+  "Marketplace must consume Products & Services product/block handoff, preserve an exact fallback preview, and open the paid Network Spotlight composer with the exact block selected."
 );
 
 assertNotContains(
@@ -1054,7 +1060,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /import \{[\s\S]*?publicShopPath,[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?const memberRows = useMemo\(\(\) => \{[\s\S]*?shopTo:[\s\S]*?shop && gmfn[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: gmfn,[\s\S]*?clanId: activeCommunityId \|\| undefined,[\s\S]*?\}\)[\s\S]*?\}, \[activeCommunityId, members, shops\]\);/,
+  /import \{[\s\S]*?publicShopPath,[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?const memberRows = useMemo\(\(\) => \{[\s\S]*?shopTo:[\s\S]*?shop && gmfn[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: gmfn,[\s\S]*?clanId: activeCommunityId \|\| undefined,[\s\S]*?\}\)[\s\S]*?\}, \[[\s\S]*?activeCommunityId,[\s\S]*?marketplaceDirectoryProducts,[\s\S]*?marketplaceMatchRows,[\s\S]*?members,[\s\S]*?shops,[\s\S]*?\]\);/,
   "Marketplace member Open shop handoffs must carry the active marketplace/community context so Public Shop reflects that community's live Spotlight."
 );
 
@@ -1103,18 +1109,18 @@ assertContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /function isPublicShopBlockHash\(value: string\): boolean \{[\s\S]*?\^shop-block-\\d\{1,2\}\$[\s\S]*?\^product-\\d\+\$[\s\S]*?const focusedBlockProduct = useMemo\([\s\S]*?publicShopBlockAnchorId\(product\)[\s\S]*?legacyProductAnchorId\(product\)[\s\S]*?if \(focusedBlockLinkActive\) return focusedBlockProduct \? \[focusedBlockProduct\] : \[\];[\s\S]*?products\.slice\(0, gallerySlotsTotal\)[\s\S]*?const overflowProductCount = focusedBlockLinkActive[\s\S]*?: Math\.max\(0, products\.length - gallerySlotsTotal\);/,
-  "Public Shop Gallery must focus exact product/block links to one block while whole-shop links keep the approved Shop Diaries shelf."
+  "Public Shop Gallery must focus exact product/block links to one block while whole-shop links keep the approved Shop Diary and Products & Services."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /className="public-shop-signboard"[\s\S]*?className="public-shop-status-strip"[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-vault-ad"[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}/,
-  "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public Shop Diaries shelf."
+  "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public Shop Diary and Products & Services."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /product_id: routeProductId > 0 \? routeProductId : undefined,[\s\S]*?display: focusedBlockLinkActive \? "none" : "grid"[\s\S]*?This shared link opens only this public shop block\./,
+  /product_id: routeProductId > 0 \? routeProductId : undefined,[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?display: focusedBlockLinkActive \? "none" : "block"[\s\S]*?This shared link opens only this public product\/service block\./,
   "Public Shop Gallery exact block links must request the exact product and hide secondary public-shop sections while focused."
 );
 
@@ -1133,7 +1139,7 @@ assertContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /if \(loading \|\| error\) return;[\s\S]*?if \(location\.hash\) return;[\s\S]*?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
-  "Public shop root links must automatically bring visitors to Shop Diaries after the full shop loads."
+  "Public shop root links must automatically bring visitors to Shop Diary after the full shop loads."
 );
 
 assertContains(

@@ -30,11 +30,16 @@ _runtime_logs/
 pytest-tmp*/
 frontend/pytest-tmp*/
 .pytest-basetemp*/
+.pytest*/
 .pytest-tmp/
+.pytest_tmp/
 .pytest_tmp_current/
 gmfn_backend/.pytest_tmp_*/
+gmfn_backend/.pytest*/
+gmfn_backend/pytest-tmp*/
 frontend/tsconfig.tsbuildinfo
 frontend/dist/
+frontend/.vite/
 frontend/uploads/
 uploads/
 
@@ -43,7 +48,15 @@ uploads/
 # intentional new screenshot artifact.
 screenshots/
 frontend/screenshots/
+outputs/
+frontend/outputs/
+video_review_frames/
+site_*_public/
+gsn-site.tar.gz
+_staged_candidate_*/
+campaign_renderer/renders/
 
 # Local upload artifacts
 gmfn_backend/uploads/
 test_uploads/
+gmfn_backend/test_uploads/

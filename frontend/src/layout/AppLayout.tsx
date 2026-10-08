@@ -358,8 +358,8 @@ function routeSearchTab(search: string): string {
 
 function makeGuideItem(): NavLinkItem {
   return {
-    label: "My GSN Identity",
-    to: APP_ROUTES.PROFILE,
+    label: "Guide / Help",
+    to: "/app/my-gmfn-and-i?tab=guide",
     match: (pathname, search) =>
       pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "guide",
   };
@@ -369,9 +369,13 @@ function makeProfileItem(): NavLinkItem {
   return {
     label: "Profile",
     to: APP_ROUTES.PROFILE,
-    match: (pathname, search) =>
-      (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "guide") ||
-      pathname === "/app/profile",
+    match: (pathname, search) => {
+      const tab = routeSearchTab(search);
+      return (
+        (pathname === "/app/my-gmfn-and-i" && tab !== "guide" && tab !== "settings") ||
+        pathname === "/app/profile"
+      );
+    },
   };
 }
 

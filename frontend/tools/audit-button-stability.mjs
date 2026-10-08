@@ -647,17 +647,16 @@ assertNotContains(
 );
 
 assertContains(
-  "src/pages/ProfilePage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function profileIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="profile\.save-account"[\s\S]*?profileIconText\("check", "Save"\)[\s\S]*?debugId="profile\.refresh"[\s\S]*?profileIconText\("refresh", "Refresh"\)/,
-  "Profile page must use shared stable button primitives and shared 3D GSN icon helpers for save and refresh actions."
+  "src/pages/MyGMFNAndIPage.tsx",
+  /debugId="my-gmfn\.settings\.save"[\s\S]*?debugId="my-gmfn\.settings\.reset"/,
+  "Canonical My GSN settings actions must remain traceable now that standalone ProfilePage is deprecated."
 );
 
 assertNotContains(
-  "src/pages/ProfilePage.tsx",
-  /(function btn\(|<button|<a\s|OriginLink)/,
-  "Profile page must not keep local button/link primitives after migration."
+  "src/App.tsx",
+  /ProfilePage/,
+  "Deprecated standalone ProfilePage must not be mounted as the active profile route."
 );
-
 assertContains(
   "src/pages/TrustPage.tsx",
   /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust\.refresh"[\s\S]*?debugId="trust\.export-csv"[\s\S]*?debugId="trust\.toggle-explainability"[\s\S]*?debugId="trust\.copy-explainability-share-summary"[\s\S]*?debugId="trust\.apply-filters"[\s\S]*?debugId="trust\.clear-filters"/,

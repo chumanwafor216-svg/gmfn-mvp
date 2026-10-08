@@ -159,14 +159,13 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /const memberHomePointers: MemberHomePointer\[\][\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.member-home\.pointer\.demand-box[\s\S]*?my-gmfn\.member-home\.pointer\.community[\s\S]*?my-gmfn\.member-home\.pointer\.marketplace[\s\S]*?my-gmfn\.member-home\.pointer\.shop-control[\s\S]*?my-gmfn\.member-home\.pointer\.trust-passport[\s\S]*?my-gmfn\.member-home\.pointer\.settings/,
-  "Default My GSN must keep canonical pointers to Notifications, DemandBox, Community, Marketplace, Shop Control, Trust Passport, and Settings."
+  /const memberCommunityRows = useMemo\([\s\S]*?const shouldShowAttentionSummary[\s\S]*?Your shop in \$\{selectedCommunityName\}[\s\S]*?data-my-gsn-identity-first="true"[\s\S]*?data-my-gsn-community-portfolio="true"[\s\S]*?data-my-gsn-phase2-attention="conditional"[\s\S]*?data-my-gsn-attention-summary="true"[\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.attention\.demand-box[\s\S]*?data-my-gsn-shop-business="true"[\s\S]*?Shop Control owns products, Spotlight, Vault, diary and analytics[\s\S]*?data-my-gsn-trust-evidence="true"[\s\S]*?APP_ROUTES\.TRUST_SLIP[\s\S]*?data-my-gsn-settings-account="true"/,
+  "Default My GSN must keep the Phase 2 member-home order: identity, communities, conditional attention summary, selected-community shop/business handoff, trust/evidence handoff, and settings/account."
 );
-
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /display: showMemberHomeSummary \|\| showIdentityGuideSurface \? "grid" : "none",[\s\S]*?\{showMemberHomeSummary \? \([\s\S]*?data-my-gsn-member-home="true"[\s\S]*?data-my-gsn-member-home-mode="personal-orientation"[\s\S]*?data-my-gsn-personal-orientation="true"[\s\S]*?data-my-gsn-canonical-pointers="true"[\s\S]*?\) : null\}[\s\S]*?Identity snapshot/,
-  "Authenticated My GSN default home must render personal orientation and canonical pointers before the shared identity surface."
+  /display: showMemberHomeSummary \|\| showIdentityGuideSurface \? "grid" : "none",[\s\S]*?\{showMemberHomeSummary \? \([\s\S]*?data-my-gsn-member-home="true"[\s\S]*?data-my-gsn-member-home-mode="personal-orientation"[\s\S]*?data-my-gsn-personal-orientation="true"[\s\S]*?data-my-gsn-phase1-order="attention-shop-trust-settings"[\s\S]*?data-my-gsn-phase2-attention="conditional"[\s\S]*?\{showIdentityGuideSurface \? \([\s\S]*?Identity snapshot/,
+  "Authenticated My GSN default home must keep the member-home summary separate from the lower guide identity surface."
 );
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
@@ -176,20 +175,20 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/appRoutes.ts",
-  /PROFILE:\s*"\/app\/my-gmfn-and-i\?tab=guide"[\s\S]*?SETTINGS:\s*"\/app\/my-gmfn-and-i\?tab=settings"[\s\S]*?GUIDE:\s*"\/app\/my-gmfn-and-i"/,
-  "Profile must target explicit historical guide mode while Settings and the My GSN member-home route remain distinct."
+  /PROFILE:\s*"\/app\/my-gmfn-and-i"[\s\S]*?SETTINGS:\s*"\/app\/my-gmfn-and-i\?tab=settings"[\s\S]*?GUIDE:\s*"\/app\/my-gmfn-and-i"/,
+  "Profile must target the canonical My GSN member home while Settings and explicit guide mode remain distinct."
 );
 
 assertContains(
   "frontend/src/App.tsx",
   /<Route path="profile" element=\{<PreserveRedirect to=\{APP_ROUTES\.PROFILE\} \/>\} \/>[\s\S]*?<Route path="my-gmfn-and-i" element=\{<MyGMFNAndIPage \/>\} \/>/,
-  "The authenticated /app/profile compatibility route must redirect to the historical My GSN Identity guide surface."
+  "The authenticated /app/profile compatibility route must redirect to the canonical My GSN member home."
 );
 
 assertContains(
   "frontend/src/layout/AppLayout.tsx",
-  /function makeProfileItem\(\): NavLinkItem \{[\s\S]*?label: "Profile",[\s\S]*?to: APP_ROUTES\.PROFILE,[\s\S]*?pathname === "\/app\/my-gmfn-and-i" && routeSearchTab\(search\) === "guide"[\s\S]*?pathname === "\/app\/profile"/,
-  "The shared Profile navigation item must open explicit historical guide mode, not the My GSN member-home or standalone ProfilePage."
+  /function makeGuideItem\(\): NavLinkItem \{[\s\S]*?label: "Guide \/ Help",[\s\S]*?to: "\/app\/my-gmfn-and-i\?tab=guide"[\s\S]*?function makeProfileItem\(\): NavLinkItem \{[\s\S]*?label: "Profile",[\s\S]*?to: APP_ROUTES\.PROFILE,[\s\S]*?tab !== "guide" && tab !== "settings"[\s\S]*?pathname === "\/app\/profile"/,
+  "The shared Profile navigation item must open the canonical My GSN member home while Guide / Help remains explicit guide mode."
 );
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",

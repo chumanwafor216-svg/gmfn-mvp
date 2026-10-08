@@ -85,6 +85,8 @@
     "audit:shop-control-button-inventory": "node tools/audit-shop-control-button-inventory.mjs",
     "audit:vault-control-button-inventory": "node tools/audit-vault-control-button-inventory.mjs",
     "audit:shop-gallery-button-inventory": "node tools/audit-shop-gallery-button-inventory.mjs",
+    "audit:shop-diary-phase1": "node tools/audit-shop-diary-phase1.mjs",
+    "audit:shop-diary-phase2": "node tools/audit-shop-diary-phase2.mjs",
     "audit:shop-assets-slots": "node tools/audit-shop-assets-slots.mjs",
     "audit:community-home-button-inventory": "node tools/audit-community-home-button-inventory.mjs",
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",

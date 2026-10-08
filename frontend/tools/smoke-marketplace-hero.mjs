@@ -264,12 +264,8 @@ async function run() {
       const text = document.body.textContent || "";
       const required = [
         "Builders corporation Marketplace",
-        "Finance Summary",
-        "Finance details",
         "Trust",
-        "Wider",
-        "Insufficient",
-        "Find people & services",
+        "Shops & Services",
         "Ask for something",
         "Community board",
         "More marketplace tools",
@@ -328,7 +324,7 @@ async function run() {
     await page.waitForFunction(
       () =>
         (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
-          "Visible members"
+          "Find a shop or service"
         ),
       null,
       { timeout: 30000 }
@@ -340,8 +336,8 @@ async function run() {
       const toolsSection =
         document.getElementById("marketplace-owned-links")?.textContent || "";
       const required = [
-        "Community Members & Shops",
-        "Visible members",
+        "Shops & Services Directory",
+        "Find a shop or service",
         "Ardent Ebony Uplift LTD",
       ];
       const missing = required.filter((item) => !membersSection.includes(item));
@@ -370,19 +366,6 @@ async function run() {
     });
     await page.waitForSelector('[data-cta-id="marketplace.job.find-people-services"]', {
       timeout: 30000,
-    });
-    await page.locator('[data-cta-id="marketplace.job.community-board"]').click();
-    await page.waitForFunction(
-      () =>
-        (document.getElementById("marketplace-official-board")?.textContent || "").includes(
-          "Official Board"
-        ),
-      null,
-      { timeout: 30000 }
-    );
-    await page.screenshot({
-      path: join(screenshotDir, "marketplace-board-390x844.png"),
-      fullPage: false,
     });
 
     await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click();

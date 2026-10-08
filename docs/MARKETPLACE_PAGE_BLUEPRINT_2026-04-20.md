@@ -4,8 +4,7 @@
 2026-04-20
 
 ## Status
-Canonical Marketplace page-composition clarification derived from product-owner
-explanation and checked against current frontend/backend truth.
+CLOSED/FROZEN as of 2026-10-08 after Marketplace Rebuild Phases 1-3 and final verification gate.
 
 This document does not replace the broader canonical system skeleton.
 It explains how the Marketplace page itself should be arranged and how its
@@ -15,6 +14,48 @@ If this document conflicts with the broader product skeleton, the broader
 canonical system skeleton still wins unless both are intentionally revised
 together.
 
+
+## Marketplace CLOSED/FROZEN contract - 2026-10-08
+The canonical `/app/marketplace` surface is frozen around this contract:
+
+- real needs first;
+- contextual relevant provider relationships directly under the applicable need;
+- Shops & Services as the neutral directory/discovery mode;
+- DemandBox owns request lifecycle, detailed matching, closure, and request management;
+- Public Shop owns shop/provider detail, contact, and visitor/provider action;
+- Shop Control owns owner-side shop management;
+- Trade Evidence owns formal evidence preservation;
+- no hidden trust/quality ranking, endorsement, score, token, paid-placement, best-provider, verified-provider, or guarantee language in Marketplace need-provider presentation;
+- Marketplace connects action but must not absorb every workflow.
+
+Final phone-first order is:
+
+1. compact Marketplace/community context;
+2. `Ask for something`;
+3. active `Community need` rows;
+4. contextual `Relevant provider` rows under the applicable need;
+5. `Shops & Services` preview and directory handoff;
+6. unique overflow provider connections only when they are not already shown under visible need cards;
+7. active/contextual money, support, ROSCA, or Trade Evidence areas when state exists;
+8. secondary tools;
+9. demoted `Suggested next step` / Marketplace Wisdom.
+
+Older block-order prose below is retained as historical capability guidance only where it does not conflict with this frozen phone-first order. It must not be used to restore a profile/shortcut-first Marketplace front.
+## Phase 1 live-market implementation note - 2026-10-08
+The canonical `/app/marketplace` surface now starts from the human flow `NEED -> DISCOVER -> CONNECT -> ACT` rather than a console-first tool dump. The first phone viewport should prioritize current DemandBox needs, Shops & Services, and relevant DemandBox matches. Money/support/ROSCA, board/notices, marketing, Trade Evidence, and access-link tools remain reachable as contextual or secondary controls.
+
+`frontend/src/pages/MarketplaceWorkspacePage.tsx` is source-stale/unmounted as of this pass; do not treat it as a canonical route without a fresh owner decision.
+
+## Phase 2 Shops & Services discovery note - 2026-10-08
+The canonical `/app/marketplace` Shops & Services lane is a lightweight community business directory, not a member roster and not a mini Public Shop. It uses only existing visible shop/product/match data: shop/business name, owner label, description, public contact availability, image/logo aliases, active/public status, community/domain labels, loaded product/service names/descriptions, and existing DemandBox match titles.
+
+Search is local/client-side across those loaded text fields. No category filters are exposed in this phase because current shop/product responses do not provide a trustworthy structured category taxonomy. Ordering is neutral alphabetical by displayed business/shop name; it must not imply quality, TrustSlip/CCI rank, paid placement, or recommendation. DemandBox relevance may appear only as a light `Relevant to current need` signal from existing match rows, without exposing scores or absorbing the DemandBox lifecycle. The primary card action remains `Open shop` to the canonical Public Shop.
+## Phase 3 Needs to Relevant Providers note - 2026-10-08
+The canonical `/app/marketplace` live front now translates the human flow `Need -> Relevant provider -> Open shop -> act`. A visible request is labelled as a `Community need`; an associated DemandBox supply match is labelled as a `Relevant provider`; an unassociated directory listing remains a normal `Shops & Services` shop.
+
+`Relevant provider` is neutral: it means the existing DemandBox supply-match response found a plausible shop/product connection for that need. It must not be treated as GSN endorsement, trustworthiness, best-provider ranking, guaranteed suitability, or guaranteed availability. Marketplace preserves the existing backend response order from `getDemandSupplyMatches`; it does not add scores, tokens, or frontend ranking language.
+
+The direct need remains visually primary. Matching providers render compactly beneath the need with `Open shop` as the handoff to canonical Public Shop/contact behavior. DemandBox still owns create/edit/lifecycle/detailed matching/trade handoff/closure. The previous generic `Needs with possible supply` block should not return as a duplicate list; any separate provider block is only overflow for matches tied to needs not shown above. No-match wording stays community-scoped and must not imply a global supplier search.
 ## Route in focus
 - `/app/marketplace`
 

@@ -6547,6 +6547,91 @@ export async function getPublicMarketplaceShopByGmfnId(
   );
 }
 
+
+export type ShopDiaryEvidenceClass =
+  | "owner_update"
+  | "system_recorded"
+  | "counterparty_confirmed"
+  | "gsn_insight";
+
+export type ShopDiaryActivityType =
+  | "work_completed"
+  | "sale_order"
+  | "product_update"
+  | "business_milestone"
+  | "event_activity"
+  | "customer_delivery"
+  | "other_update";
+
+export type ShopDiaryEntryRecord = {
+  id: number;
+  clan_id?: number | null;
+  shop_id: number;
+  owner_user_id: number;
+  activity_type: ShopDiaryActivityType | string;
+  activity_label?: string | null;
+  evidence_class: ShopDiaryEvidenceClass | string;
+  evidence_label?: string | null;
+  evidence_boundary?: string | null;
+  note: string;
+  image_url?: string | null;
+  video_url?: string | null;
+  occurred_at?: string | null;
+  product_id?: number | null;
+  product_name?: string | null;
+  protected_trade_id?: number | null;
+  protected_trade_code?: string | null;
+  protected_trade_outcome?: Record<string, any> | null;
+  is_public?: boolean;
+  is_active?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export async function getMyShopDiaryEntries(params: {
+  shop_id: number;
+  include_inactive?: boolean;
+  limit?: number;
+}): Promise<{ items: ShopDiaryEntryRecord[] }> {
+  return httpJson(
+    `/shop-diaries/me${buildQuery({
+      shop_id: params.shop_id,
+      include_inactive: params.include_inactive ?? false,
+      limit: params.limit ?? 30,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getPublicShopDiaryEntries(
+  gmfnId: string,
+  params?: { clan_id?: number | null; limit?: number }
+): Promise<{ items: ShopDiaryEntryRecord[] }> {
+  return httpJson(
+    `/shop-diaries/public/${encodeURIComponent(String(gmfnId))}${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      limit: params?.limit ?? 12,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createShopDiaryEntry(payload: {
+  clan_id?: number | null;
+  shop_id: number;
+  activity_type: ShopDiaryActivityType | string;
+  note: string;
+  occurred_at?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  product_id?: number | null;
+  protected_trade_id?: number | null;
+  evidence_class?: ShopDiaryEvidenceClass | string;
+  is_public?: boolean;
+}): Promise<ShopDiaryEntryRecord> {
+  return httpJson("/shop-diaries", "POST", payload);
+}
+
 export async function followMarketplaceShop(shopId: number): Promise<any> {
   return httpJson(
     `/marketplace/shops/${encodeURIComponent(String(shopId))}/follow`,

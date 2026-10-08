@@ -20,14 +20,23 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   buildGsnPublicShopLinkMessage,
 } from "../lib/gsnSnapshotPaper";
-import { PAID_REPOST_HASH } from "../lib/ownerShopHandles";
+import {
+  OWNER_SHOP_HASHES,
+  PAID_REPOST_HASH,
+  SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY,
+} from "../lib/ownerShopHandles";
 import {
   getMe,
   getMyMarketplaceShop,
   getPublicMarketplaceShopByGmfnId,
+  getMyShopDiaryEntries,
+  createShopDiaryEntry,
+  listProtectedTrades,
   getSelectedClanId,
   listMyCommunityDomains,
   safeCopy,
+  type ProtectedTradeRecord,
+  type ShopDiaryEntryRecord,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
@@ -385,6 +394,86 @@ function defaultCollapseState(): CollapseState {
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+const SHOP_DIARY_CONFIRMED_TRADE_STATES = new Set([
+  "MUTUALLY_CONFIRMED",
+  "PROVIDER_REPORTED_COMPLETED",
+  "REQUESTER_REPORTED_RECEIVED",
+]);
+
+type ShopDiarySpotlightHandoffPayload = {
+  source: "shop_diary";
+  diaryEntryId: number;
+  title: string;
+  message: string;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  productId?: number | null;
+  productName?: string | null;
+  evidenceClass?: string | null;
+  evidenceLabel?: string | null;
+  occurredAt?: string | null;
+  shopName?: string | null;
+  createdAt: string;
+};
+
+function isConfirmedShopTradeForDiary(
+  trade: ProtectedTradeRecord,
+  shopId: number | null | undefined
+): boolean {
+  const tradeShopId = Number(trade?.shop_id || 0);
+  const targetShopId = Number(shopId || 0);
+  if (!tradeShopId || !targetShopId || tradeShopId !== targetShopId) return false;
+  return SHOP_DIARY_CONFIRMED_TRADE_STATES.has(safeStr(trade?.derived_outcome_state));
+}
+
+function protectedTradeOptionLabel(trade: ProtectedTradeRecord): string {
+  const code = firstTruthy(trade?.trade_code, trade?.id ? `Trade #${trade.id}` : "Trade Evidence");
+  const item = firstTruthy(trade?.item_title, trade?.terms_summary);
+  const outcome = firstTruthy(trade?.derived_outcome_label, trade?.derived_outcome_state);
+  return [code, item, outcome].filter(Boolean).join(" - ");
+}
+
+function appendShopDiarySpotlightHandoff(to: string, entryId: number): string {
+  const [baseAndQuery] = to.split("#");
+  const params = new URLSearchParams();
+  params.set("spotlight_source", "shop_diary");
+  params.set("diary_entry_id", String(entryId));
+  const separator = baseAndQuery.includes("?") ? "&" : "?";
+  return `${baseAndQuery}${separator}${params.toString()}#${OWNER_SHOP_HASHES.freeSpotlight}`;
+}
+
+function buildShopDiarySpotlightHandoffPayload(
+  entry: ShopDiaryEntryRecord,
+  shopName: string
+): ShopDiarySpotlightHandoffPayload {
+  return {
+    source: "shop_diary",
+    diaryEntryId: Number(entry.id),
+    title: firstTruthy(entry.product_name, entry.activity_label, "Shop Diary update"),
+    message: safeStr(entry.note),
+    imageUrl: safeStr(entry.image_url) || null,
+    videoUrl: safeStr(entry.video_url) || null,
+    productId: Number(entry.product_id || 0) || null,
+    productName: firstTruthy(entry.product_name) || null,
+    evidenceClass: firstTruthy(entry.evidence_class) || null,
+    evidenceLabel: firstTruthy(entry.evidence_label) || null,
+    occurredAt: firstTruthy(entry.occurred_at, entry.created_at) || null,
+    shopName: firstTruthy(shopName) || null,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function writeShopDiarySpotlightHandoff(entry: ShopDiaryEntryRecord, shopName: string) {
+  try {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem(
+      SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY,
+      JSON.stringify(buildShopDiarySpotlightHandoffPayload(entry, shopName))
+    );
+  } catch {
+    // The Spotlight publisher still opens; it just will not receive diary prefill.
+  }
 }
 
 function normalizeCollapseState(raw: unknown): CollapseState {
@@ -759,6 +848,15 @@ function isNewerProductCandidate(
   return candidateRank.id > currentRank.id;
 }
 
+const SHOP_DIARY_ACTIVITY_OPTIONS = [
+  { value: "work_completed", label: "Work completed" },
+  { value: "sale_order", label: "Sale/order" },
+  { value: "product_update", label: "New stock/product update" },
+  { value: "business_milestone", label: "Business milestone" },
+  { value: "event_activity", label: "Event/activity" },
+  { value: "customer_delivery", label: "Customer delivery" },
+  { value: "other_update", label: "Other update" },
+] as const;
 function arrangePublicProductsIntoSlots(
   items: ProductRecord[],
   slotCount = PUBLIC_SHOP_STANDARD_SLOT_COUNT
@@ -938,6 +1036,26 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
   const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
     useState<any>(null);
+  const [diaryEntries, setDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
+  const [diaryActivityType, setDiaryActivityType] = useState("other_update");
+  const [diaryOccurredAt, setDiaryOccurredAt] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [diaryNote, setDiaryNote] = useState("");
+  const [diaryImageUrlInput, setDiaryImageUrlInput] = useState("");
+  const [diaryVideoUrlInput, setDiaryVideoUrlInput] = useState("");
+  const [diarySelectedImageFile, setDiarySelectedImageFile] =
+    useState<File | null>(null);
+  const [diarySelectedVideoFile, setDiarySelectedVideoFile] =
+    useState<File | null>(null);
+  const [diaryLinkedProductId, setDiaryLinkedProductId] = useState("");
+  const [diaryLinkedTradeId, setDiaryLinkedTradeId] = useState("");
+  const [diaryTradeOptions, setDiaryTradeOptions] = useState<ProtectedTradeRecord[]>([]);
+  const [savingDiaryEntry, setSavingDiaryEntry] = useState(false);
+  const [diaryNotice, setDiaryNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
 
   const selectedClanId = Number(props.preferredClanId || getSelectedClanId() || 0);
   const routes = useMemo(
@@ -1211,10 +1329,27 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ).catch(() => ({ items: nextProducts }));
 
         if (!canApplyLoad(loadSeq)) return seedProducts;
+        const [diaryRes, tradeRes] = await Promise.all([
+          getMyShopDiaryEntries({
+            shop_id: Number(shopItem.id),
+            limit: 30,
+          }).catch(() => ({ items: [] })),
+          listProtectedTrades({ limit: 100 }).catch(() => []),
+        ]);
+        if (!canApplyLoad(loadSeq)) return seedProducts;
+        setDiaryEntries(Array.isArray(diaryRes?.items) ? diaryRes.items : []);
+        setDiaryTradeOptions(
+          Array.isArray(tradeRes)
+            ? tradeRes.filter((trade) => isConfirmedShopTradeForDiary(trade, Number(shopItem?.id || 0)))
+            : []
+        );
         const managedProducts = Array.isArray(productsRes?.items)
           ? normalizeProductRecords(productsRes.items)
           : [];
         nextProducts = mergeProductsById(nextProducts, managedProducts);
+      } else {
+        setDiaryEntries([]);
+        setDiaryTradeOptions([]);
       }
 
       nextProducts = mergeProductsById(nextProducts, publicShopProducts);
@@ -1327,6 +1462,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     [products]
   );
 
+  const selectedDiaryTrade = useMemo(
+    () =>
+      diaryTradeOptions.find(
+        (trade) => Number(trade?.id || 0) === Number(diaryLinkedTradeId || 0)
+      ) || null,
+    [diaryLinkedTradeId, diaryTradeOptions]
+  );
+
   const vaultProducts = useMemo(
     () =>
       products.filter(
@@ -1371,6 +1514,70 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
 
+  function resetDiaryForm() {
+    setDiaryActivityType("other_update");
+    setDiaryOccurredAt(new Date().toISOString().slice(0, 10));
+    setDiaryNote("");
+    setDiaryImageUrlInput("");
+    setDiaryVideoUrlInput("");
+    setDiarySelectedImageFile(null);
+    setDiarySelectedVideoFile(null);
+    setDiaryLinkedProductId("");
+    setDiaryLinkedTradeId("");
+  }
+
+  async function submitDiaryEntry() {
+    if (shopDiaryFeatureOff) {
+      setDiaryNotice({ tone: "error", text: shopDiaryFeatureOffText });
+      return;
+    }
+    if (!shop?.id) {
+      setDiaryNotice({ tone: "error", text: "Save the public shop details before adding a diary update." });
+      return;
+    }
+    if (!safeStr(diaryNote)) {
+      setDiaryNotice({ tone: "error", text: "Add a short update first." });
+      return;
+    }
+
+    setSavingDiaryEntry(true);
+    setDiaryNotice(null);
+    try {
+      let nextImageUrl = safeStr(diaryImageUrlInput) || null;
+      let nextVideoUrl = safeStr(diaryVideoUrlInput) || null;
+      if (diarySelectedImageFile) {
+        nextImageUrl = await uploadMarketplaceImageFile(diarySelectedImageFile);
+      }
+      if (diarySelectedVideoFile) {
+        nextVideoUrl = await uploadMarketplaceVideoFile(diarySelectedVideoFile, null);
+        if (!nextImageUrl) nextImageUrl = nextVideoUrl;
+      }
+      const occurred = safeStr(diaryOccurredAt)
+        ? new Date(`${diaryOccurredAt}T12:00:00`).toISOString()
+        : new Date().toISOString();
+      await createShopDiaryEntry({
+        clan_id: Number(shop?.clan_id || selectedClanId || 0) || null,
+        shop_id: Number(shop.id),
+        activity_type: diaryActivityType,
+        note: safeStr(diaryNote),
+        occurred_at: occurred,
+        image_url: nextImageUrl,
+        video_url: nextVideoUrl,
+        product_id: Number(diaryLinkedProductId || 0) || null,
+        protected_trade_id: selectedDiaryTrade ? Number(selectedDiaryTrade.id || 0) : null,
+        evidence_class: selectedDiaryTrade ? "counterparty_confirmed" : "owner_update",
+        is_public: true,
+      });
+      const diaryRes = await getMyShopDiaryEntries({ shop_id: Number(shop.id), limit: 30 }).catch(() => ({ items: [] }));
+      setDiaryEntries(Array.isArray(diaryRes?.items) ? diaryRes.items : []);
+      resetDiaryForm();
+      setDiaryNotice({ tone: "success", text: "Diary update added. Public Shop can now show it as business activity." });
+    } catch (err: any) {
+      setDiaryNotice({ tone: "error", text: shopAssetsRequestErrorMessage(err) });
+    } finally {
+      setSavingDiaryEntry(false);
+    }
+  }
   async function copyText(
     text: string,
     successMessage: string,
@@ -2570,6 +2777,136 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ) : null}
       </section>
 
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>{labelWithIcon("document", "Shop Diary")}</div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Record what the business has been doing. Products stay below as offers; diary updates are activity history.
+            </div>
+          </div>
+          {iconBadge("document", <>{diaryEntries.length} updates</>, diaryEntries.length > 0)}
+        </div>
+
+        {diaryNotice ? (
+          <div style={{ marginTop: 12, ...noticeCard(diaryNotice.tone) }}>
+            {diaryNotice.text}
+          </div>
+        ) : shopDiaryFeatureOff ? (
+          <div style={{ marginTop: 12, ...noticeCard("error") }}>
+            {shopDiaryFeatureOffText}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
+            gap: 14,
+            alignItems: "start",
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Add update</div>
+            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={sectionLabel()}>Activity type</div>
+                  <select value={diaryActivityType} onChange={(event) => setDiaryActivityType(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                    {SHOP_DIARY_ACTIVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={sectionLabel()}>When?</div>
+                  <input type="date" value={diaryOccurredAt} onChange={(event) => setDiaryOccurredAt(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }} />
+                </div>
+              </div>
+              <div>
+                <div style={sectionLabel()}>What happened?</div>
+                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Short update, for example: Delivered three orders for the weekend event." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96 }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <input type="file" data-gmfn-action-root="true" data-cta-id="shop-assets.diary.image-file" accept="image/*" onChange={(event) => setDiarySelectedImageFile(event.target.files?.[0] || null)} style={inputStyle()} />
+                <input type="file" data-gmfn-action-root="true" data-cta-id="shop-assets.diary.video-file" accept="video/*,.mp4,.webm,.mov" onChange={(event) => setDiarySelectedVideoFile(event.target.files?.[0] || null)} style={inputStyle()} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <input value={diaryImageUrlInput} onChange={(event) => setDiaryImageUrlInput(event.target.value)} placeholder="Or paste photo URL" style={inputStyle()} />
+                <input value={diaryVideoUrlInput} onChange={(event) => setDiaryVideoUrlInput(event.target.value)} placeholder="Or paste video URL" style={inputStyle()} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={sectionLabel()}>Related product/service</div>
+                  <select value={diaryLinkedProductId} onChange={(event) => setDiaryLinkedProductId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                    <option value="">No product link</option>
+                    {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Block ${publicBlockNumberForProduct(item)}`)}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={sectionLabel()}>Stronger evidence link</div>
+                  <select value={diaryLinkedTradeId} onChange={(event) => setDiaryLinkedTradeId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                    <option value="">No Trade Evidence link</option>
+                    {diaryTradeOptions.map((trade) => <option key={`diary-trade-${trade.id}`} value={String(trade.id || "")}>{protectedTradeOptionLabel(trade)}</option>)}
+                  </select>
+                  <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                    {diaryTradeOptions.length > 0 ? "Only confirmed Trade Evidence records for this shop can strengthen a diary update." : "No confirmed Trade Evidence linked to this shop yet."}
+                  </div>
+                </div>
+              </div>
+              <div style={ownerActionGrid(isCompact)}>
+                <PrimaryButton onClick={() => void submitDiaryEntry()} disabled={savingDiaryEntry || shopDiaryFeatureOff} busy={savingDiaryEntry} busyLabel="Adding..." fullWidth stableHeight={isCompact ? 56 : 48} debugId="shop-assets.diary.submit">Add update</PrimaryButton>
+                <SecondaryButton onClick={resetDiaryForm} fullWidth stableHeight={isCompact ? 56 : 48} debugId="shop-assets.diary.reset">Clear</SecondaryButton>
+              </div>
+            </div>
+          </div>
+          <div style={innerCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Latest activity</div>
+            <div style={{ marginTop: 8, ...helperText() }}>Owner updates are shown as claims unless linked Trade Evidence genuinely supports confirmation.</div>
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              {diaryEntries.length > 0 ? diaryEntries.slice(0, 4).map((entry) => (
+                <div key={`owner-diary-${entry.id}`} style={{ ...innerCard("#F8FBFF"), padding: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                    <strong style={{ color: "#0B1F33", fontSize: 13 }}>{entry.activity_label || "Other update"}</strong>
+                    <span style={badge(entry.evidence_class === "counterparty_confirmed")}>{entry.evidence_label || "Owner update"}</span>
+                  </div>
+                  <div style={{ marginTop: 6, color: "#526C84", fontSize: 12.5, lineHeight: 1.35 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` - ${entry.product_name}` : ""}{entry.protected_trade_code ? ` - Trade Evidence ${entry.protected_trade_code}` : ""}</div>
+                  <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{entry.note}</div>
+                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <StableCtaLink
+                      to={appendShopDiarySpotlightHandoff(routes.shop, Number(entry.id))}
+                      onClick={() => writeShopDiarySpotlightHandoff(entry, firstTruthy(shopName, shop?.name))}
+                      fullWidth
+                      stableHeight={isCompact ? 46 : 42}
+                      debugId={`shop-assets.diary.${entry.id}.promote`}
+                    >
+                      Promote this update
+                    </StableCtaLink>
+                    {entry.protected_trade_id ? (
+                      <StableCtaLink
+                        to={marketplaceBasePath.includes("#") ? marketplaceBasePath : `${marketplaceBasePath}#marketplace-trade-evidence`}
+                        kind="soft"
+                        fullWidth
+                        stableHeight={isCompact ? 46 : 42}
+                        debugId={`shop-assets.diary.${entry.id}.supporting-record`}
+                      >
+                        Open Trade Evidence
+                      </StableCtaLink>
+                    ) : null}
+                  </div>
+                </div>
+              )) : <div style={{ ...helperText(), padding: 12 }}>No business activity updates yet. Add the first update when something real happens.</div>}
+            </div>
+          </div>
+        </div>
+      </section>
       {embedded ? (
         <section style={pageCard("#FFFFFF")}>
           <div
@@ -2582,7 +2919,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Public gallery block control</div>
+              <div style={sectionLabel()}>Products & Services block control</div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
                 Choose one numbered block. Confirm the picture or video, then edit,
                 hide, copy, or add only that block.
@@ -2818,7 +3155,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   selectedPublicProduct ? "Live public item" : "Empty block",
                   Boolean(selectedPublicProduct)
                 )}
-                {iconBadge("shop", "Public gallery")}
+                {iconBadge("shop", "Products & Services")}
                 {selectedPublicProduct?.video_url ? iconBadge("video", "Video") : null}
               </div>
 
@@ -2897,7 +3234,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             selectedPublicProduct,
                             selectedPublicSlot
                           ),
-                          "Public shop block package copied. It opens this block inside the Shop Diaries."
+                          "Public shop block package copied. It opens this product/service block on the Public Shop."
                         )
                       }
                       fullWidth
@@ -3143,7 +3480,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     onChange={(e) => setProductVisibility(e.target.value)}
                     style={{ ...inputStyle(), marginTop: 8 }}
                   >
-                    <option value="community_visible">Public gallery</option>
+                    <option value="community_visible">Products & Services</option>
                     <option value="vault_private">Private Vault</option>
                   </select>
                 </div>
@@ -3318,7 +3655,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       : "shop",
                     firstTruthy(productVisibility, "community_visible") === "vault_private"
                       ? "Private Vault"
-                      : "Public gallery"
+                      : "Products & Services"
                   )}
 
                   {safeStr(productVideoPreviewUrl || productVideoUrlInput) ? (
@@ -3513,7 +3850,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         : "shop",
                       firstTruthy(item?.visibility_mode, "community_visible") === "vault_private"
                         ? "Private Vault"
-                        : "Public gallery"
+                        : "Products & Services"
                     )}
                   </div>
 
@@ -3616,7 +3953,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             item,
                             publicSlotNumber > 0 ? publicSlotNumber : undefined
                           ),
-                          "Public shop item package copied. It opens this item inside the Shop Diaries.",
+                          "Public shop item package copied. It opens this product/service item on the Public Shop.",
                           "This item link is not ready yet. Refresh the shop identity, then try again."
                         );
                       }}

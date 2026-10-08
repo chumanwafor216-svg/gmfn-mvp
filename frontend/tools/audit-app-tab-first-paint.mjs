@@ -262,7 +262,7 @@ async function measureProfileBottomNavSettled(browser, baseURL) {
   });
   await page.click('[data-cta-id="app-layout.bottom-nav.profile"]');
   await delay(10000);
-  await page.waitForSelector('[data-my-gsn-identity-status-grid="true"]', {
+  await page.waitForSelector('[data-my-gsn-member-home="true"]', {
     timeout: MAX_FIRST_SURFACE_MS,
   });
 
@@ -274,9 +274,10 @@ async function measureProfileBottomNavSettled(browser, baseURL) {
       search: window.location.search,
       hasIdentityGrid: Boolean(document.querySelector('[data-my-gsn-identity-status-grid="true"]')),
       hasMemberHome: Boolean(memberHome),
-      hasIdentityTitle: text.includes("My GSN Identity"),
-      hasReturnPath: text.includes("Return path") && text.includes("Back to Dashboard"),
-      hasAttention: text.includes("What Needs My Attention"),
+      hasIdentityTitle: text.includes("My GSN"),
+      hasIdentityFirst: Boolean(document.querySelector('[data-my-gsn-identity-first="true"]')),
+      hasAttentionSummary: Boolean(document.querySelector('[data-my-gsn-attention-summary="true"]')),
+      hasNoEmptyAttentionCopy: !text.includes("Nothing urgent here"),
       hasMemberHomeHeadline: text.includes("Your communities. Your opportunities. Your activity. Your evidence."),
       hasStandaloneProfileTitle: text.includes("My Profile"),
     };
@@ -285,15 +286,15 @@ async function measureProfileBottomNavSettled(browser, baseURL) {
   await context.close();
 
   return {
-    name: "Profile bottom-nav settled guide identity",
+    name: "Profile bottom-nav settled My GSN member home",
     passed:
       result.pathname === "/app/my-gmfn-and-i" &&
-      new URLSearchParams(result.search).get("tab") === "guide" &&
-      result.hasIdentityGrid &&
-      result.hasIdentityTitle &&
-      result.hasReturnPath &&
-      !result.hasMemberHome &&
-      !result.hasAttention &&
+      new URLSearchParams(result.search).get("tab") !== "guide" &&
+      result.hasMemberHome &&
+      result.hasIdentityFirst &&
+      !result.hasAttentionSummary &&
+      result.hasNoEmptyAttentionCopy &&
+      !result.hasIdentityGrid &&
       !result.hasMemberHomeHeadline &&
       !result.hasStandaloneProfileTitle,
     result,
@@ -331,11 +332,15 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       hasMemberHome: Boolean(document.querySelector('[data-my-gsn-member-home="true"]')),
       hasPersonalOrientation: Boolean(document.querySelector('[data-my-gsn-personal-orientation="true"]')),
       hasCanonicalPointers: Boolean(document.querySelector('[data-my-gsn-canonical-pointers="true"]')),
-      hasAttention: text.includes("What Needs My Attention"),
+      hasAttentionSummary: Boolean(document.querySelector('[data-my-gsn-attention-summary="true"]')),
+      hasNoEmptyAttentionCopy: !text.includes("Nothing urgent here"),
       hasMemberHomeHeadline: text.includes("Your communities. Your opportunities. Your activity. Your evidence."),
-      hasNotificationsPointer: text.includes("What Matters Now"),
-      hasDemandBoxPointer: text.includes("Need something?"),
-      hasIdentityPointer: text.includes("Open My GSN Identity"),
+      hasNotificationsPointer: text.includes("Open Notifications"),
+      hasDemandBoxPointer: text.includes("Open DemandBox"),
+      hasCommunityPortfolio: Boolean(document.querySelector('[data-my-gsn-community-portfolio="true"]')),
+      hasShopBusiness: Boolean(document.querySelector('[data-my-gsn-shop-business="true"]')),
+      hasTrustEvidence: Boolean(document.querySelector('[data-my-gsn-trust-evidence="true"]')),
+      hasSettingsAccount: Boolean(document.querySelector('[data-my-gsn-settings-account="true"]')),
     };
   });
 
@@ -349,10 +354,12 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.hasMemberHome &&
       result.hasPersonalOrientation &&
       result.hasCanonicalPointers &&
-      result.hasNotificationsPointer &&
-      result.hasDemandBoxPointer &&
-      result.hasIdentityPointer &&
-      !result.hasAttention &&
+      !result.hasAttentionSummary &&
+      result.hasNoEmptyAttentionCopy &&
+      result.hasCommunityPortfolio &&
+      result.hasShopBusiness &&
+      result.hasTrustEvidence &&
+      result.hasSettingsAccount &&
       !result.hasMemberHomeHeadline,
     result,
   };
@@ -367,7 +374,7 @@ async function run() {
       name: "Community Home",
       mode: "community",
       path: "/app/community?community=8",
-      selector: '[data-cta-id="community-home.summary.visible-communities"]',
+      selector: '[data-debug-id="community-home.identity-card"]',
       text: "Community Home",
       loadingText: "Loading your marketplace communities",
     },
@@ -376,16 +383,16 @@ async function run() {
       mode: "marketplace",
       path: "/app/marketplace?community=8",
       selector: '[data-cta-id="marketplace.job.find-people-services"]',
-      text: "Find people & services",
+      text: "Shops & Services",
       loadingText: "Loading your current community",
     },
     {
       name: "Profile",
       mode: "profile",
       path: "/app/profile?community=8",
-      selector: '[data-my-gsn-identity-status-grid="true"]',
-      text: "My GSN Identity",
-      loadingText: "Loading workspace settings",
+      selector: '[data-my-gsn-member-home="true"]',
+      text: "My communities",
+      loadingText: "Loading device preferences",
       expectDelayed: false,
     },
     {
@@ -393,8 +400,8 @@ async function run() {
       mode: "my-gsn",
       path: "/app/my-gmfn-and-i?community=8",
       selector: '[data-my-gsn-member-home="true"]',
-      text: "Your personal orientation and pointers to the right GSN surface.",
-      loadingText: "Loading workspace settings",
+      text: "My communities",
+      loadingText: "Loading device preferences",
       expectDelayed: false,
     },
     {

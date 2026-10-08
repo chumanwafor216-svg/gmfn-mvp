@@ -3383,6 +3383,93 @@ class MarketplaceProduct(Base):
     )
 
 
+class ShopDiaryEntry(Base):
+    __tablename__ = "shop_diary_entries"
+
+    __table_args__ = (
+        Index("ix_shop_diary_entries_shop_occurred", "shop_id", "occurred_at"),
+        Index("ix_shop_diary_entries_owner_occurred", "owner_user_id", "occurred_at"),
+        Index("ix_shop_diary_entries_shop_public", "shop_id", "is_public", "is_active"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    protected_trade_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("protected_trade_records.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    activity_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    evidence_class: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="owner_update",
+        server_default="owner_update",
+        index=True,
+    )
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    video_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+        index=True,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=utcnow,
+        index=True,
+    )
+
+
 class MarketplaceBroadcast(Base):
     __tablename__ = "marketplace_broadcasts"
 

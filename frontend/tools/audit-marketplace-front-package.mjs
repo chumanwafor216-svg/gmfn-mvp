@@ -141,66 +141,66 @@ assertNotContains(
   "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, DemandBox tile, or Trust preparing fallback."
 );
 
-[
-  {
-    id: "marketplace.job.find-people-services",
-    glyph: "members",
-    label: "Find people & services",
-    tags: ["Members", "Shops & services"],
-  },
-  {
-    id: "marketplace.job.ask-for-something",
-    glyph: "demand",
-    label: "Ask for something",
-    tags: ["DemandBox", "Request lifecycle"],
-  },
-  {
-    id: "marketplace.job.community-board",
-    glyph: "notice",
-    label: "Community board",
-    tags: ["Notices", "Board"],
-  },
-].forEach((card) => {
-  const pattern = new RegExp(
-    `debugId="${card.id.replace(/\./g, "\\.")}"[\\s\\S]*?` +
-      `<MarketplaceGlyph name="${card.glyph}"[\\s\\S]*?` +
-      `${card.label}[\\s\\S]*?` +
-      card.tags.map((tag) => `${tag}[\\s\\S]*?`).join("")
-  );
-  assertContains(
-    marketplaceFile,
-    marketplaceSource,
-    pattern,
-    `Marketplace human-job front card must keep ${card.label} with audited pictogram and tags.`
-  );
-});
-
-assertNotContains(
+assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.(?:tile\.support-money-group|tile\.board-members-group|row\.records-links|tile\.marketing-tools)"|Support & Money Trust|Official Board & Members\/Shops/g,
-  "Marketplace neutral front door must not restore the old technical engine-group cards."
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?What people here need[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  "Marketplace front must lead with live DemandBox needs and route Ask for something to canonical DemandBox."
 );
-const compactHiddenFrontTagRows = (
-  marketplaceSource.match(
-    /!\s*isCompact\s*\?\s*\(\s*<span style=\{marketplaceFrontTagRowStyle\(isCompact\)\}>/g
-  ) || []
-).length;
-if (compactHiddenFrontTagRows < 3) {
-  addFinding(
-    marketplaceFile,
-    marketplaceSource,
-    -1,
-    "Marketplace human-job front card tag rows must stay hidden on compact screens so mobile cards do not show truncated pill text.",
-    `Expected at least 3 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
-  );
-}
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection[\s\S]*?"members"[\s\S]*?"marketplace-members-shops"[\s\S]*?Find people & services[\s\S]*?Members[\s\S]*?Shops & services/,
-  "Find people & services must open the community-bound directory lane from the human-job front door."
+  /listMarketplaceRequests\(\{[\s\S]*?clan_id: activeCommunityId[\s\S]*?status: "open"[\s\S]*?getDemandSupplyMatches\(requestId, \{ limit: 3 \}\)[\s\S]*?setMarketplaceMatchRows\(matchSets\.flat\(\)\.slice\(0, 12\)\)/,
+  "Marketplace front must read existing DemandBox requests and matches without owning the DemandBox lifecycle."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /Who can provide something[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?visibleShopDirectoryRows\.map[\s\S]*?debugId=\{`marketplace\.front\.shop\.\$\{row\.gmfnId \|\| row\.userId \|\| "unknown"\}\.open`\}[\s\S]*?to=\{row\.shopTo \|\| routeWithCommunity\(APP_ROUTES\.MARKETPLACE, activeCommunityId\)\}/,
+  "Marketplace front must expose visible public shops while Public Shop owns the detail route."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /marketplaceMatchesByNeedId\.get\(needId\)[\s\S]*?Community need[\s\S]*?visibleProviders\.map\(\(item, matchIndex\) =>[\s\S]*?renderNeedProviderMatch\(item, matchIndex, "need"\)[\s\S]*?No relevant provider found in this community yet\.[\s\S]*?Browse Shops & Services or open DemandBox/,
+  "Marketplace needs must show contextual relevant providers, hand off to Public Shop, and keep no-match wording community-scoped."
+);
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /Relevant provider[\s\S]*?debugId=\{`marketplace\.front\.need-provider\.\$\{requestId \|\| "unknown"\}\.\$\{productId \|\| index\}\.open-shop`\}[\s\S]*?openMarketplaceRoute\(event, publicShopPath\)[\s\S]*?>\s*Open shop\s*<\/StableButton>/,
+  "Marketplace relevant provider rows must use neutral wording and open the canonical Public Shop path."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /hiddenNeedProviderMatches[\s\S]*?More provider connections[\s\S]*?Providers for other needs[\s\S]*?renderNeedProviderMatch\(item, index, "overflow"\)/,
+  "Marketplace must avoid duplicating visible need-provider rows and keep any separate provider block for overflow needs only."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /visibleMarketplaceMatches|debugId="marketplace\.front\.match\.open-supply"|Open supply|Needs with possible supply/g,
+  "Marketplace must not restore the obsolete generic relevant-matches block after contextual need-provider rows replace it."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.progressive\.community-board"[\s\S]*?openMarketplaceSection\(event, "board", "marketplace-board"\)[\s\S]*?Community board/,
+  "Marketplace board must be demoted to secondary marketplace tools."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.job\.community-board"/g,
+  "Community board must not return as a primary Marketplace front card."
 );
 
 assertNotContains(
@@ -227,8 +227,8 @@ assertContains(
 assertContains(
   marketplaceMembersFile,
   marketplaceMembersSource,
-  /id="marketplace-members-shops"[\s\S]*?Community Members & Shops[\s\S]*?visible member[\s\S]*?public shop[\s\S]*?Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Visible members/,
-  "Community Members & Shops must render as a separate domain, visible member, and shop directory lane."
+  /id="marketplace-members-shops"[\s\S]*?Shops & Services Directory[\s\S]*?public shop[\s\S]*?searchable entr[\s\S]*?Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Find a shop or service[\s\S]*?marketplaceFieldTouchProps\("marketplace\.members\.search"\)[\s\S]*?Relevant to current need[\s\S]*?Open shop/,
+  "Shops & Services Directory must render as the community-bound shop/service discovery lane."
 );
 
 assertNotContains(
@@ -276,14 +276,14 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
-  "Marketplace front package must keep the human-job cards without the removed non-action focus guide."
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front package must keep the live needs, shop directory, match preview, and compact next-step order."
 );
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /getDailyInsight[\s\S]*?marketWisdomPairFromDailyInsight[\s\S]*?isMarketplaceRelevantWisdom[\s\S]*?getMarketWisdomRecommendation\(\{[\s\S]*?context: "marketplace"[\s\S]*?signals: \[[\s\S]*?"marketplace"[\s\S]*?"shop"[\s\S]*?"trade"[\s\S]*?"support"[\s\S]*?"demand"[\s\S]*?"rosca"[\s\S]*?MARKETPLACE_WISDOM_FALLBACK[\s\S]*?recordMarketWisdomExposure[\s\S]*?data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
+  /getDailyInsight[\s\S]*?marketWisdomPairFromDailyInsight[\s\S]*?isMarketplaceRelevantWisdom[\s\S]*?getMarketWisdomRecommendation\(\{[\s\S]*?context: "marketplace"[\s\S]*?signals: \[[\s\S]*?"marketplace"[\s\S]*?"shop"[\s\S]*?"trade"[\s\S]*?"support"[\s\S]*?"demand"[\s\S]*?"rosca"[\s\S]*?MARKETPLACE_WISDOM_FALLBACK[\s\S]*?recordMarketWisdomExposure[\s\S]*?data-marketplace-wisdom-lens="true"[\s\S]*?Suggested next step[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
   "Marketplace Wisdom Lens must reuse governed Market Wisdom, request a governed marketplace recommendation before static fallback, record exposure, and keep one compact front-package action."
 );
 

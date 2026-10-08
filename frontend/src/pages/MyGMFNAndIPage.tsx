@@ -155,20 +155,31 @@ type MemberOpportunityModel = {
   unavailableSources: MemberOpportunitySource[];
 };
 
-type MemberHomePointer = {
-  id: string;
-  title: string;
-  detail: string;
-  meta?: string;
-  to: string;
-  debugId: string;
-  cta: string;
-  primary?: boolean;
-};
-
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 const SLOW_WORKSPACE_SETTINGS_LOAD_MS = 8000;
 const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
+const OFFICIAL_GSN_LINKS = [
+  {
+    label: "Website",
+    url: GSN_PUBLIC_WEBSITE_URL,
+    debugId: "my-gmfn.official.website",
+  },
+  {
+    label: "LinkedIn",
+    url: "https://www.linkedin.com/company/global-support-network",
+    debugId: "my-gmfn.official.linkedin",
+  },
+  {
+    label: "Facebook",
+    url: "https://www.facebook.com/people/GSN-Global-Support-Network/61594363752798/",
+    debugId: "my-gmfn.official.facebook",
+  },
+  {
+    label: "Instagram",
+    url: "https://www.instagram.com/globalsupportnetwork/",
+    debugId: "my-gmfn.official.instagram",
+  },
+] as const;
 
 const EMPTY_MEMBER_OPPORTUNITY_MODEL: MemberOpportunityModel = {
   communities: [],
@@ -433,6 +444,12 @@ function memberHomePointerLink(compact = false, primary = false): React.CSSPrope
   };
 }
 
+function memberHomeSectionShell(accent = false): React.CSSProperties {
+  return {
+    ...innerCard("rgba(255,255,255,0.98)"),
+    border: accent ? "1px solid rgba(214,170,69,0.30)" : "1px solid rgba(15,23,42,0.08)",
+  };
+}
 function appGuidePanel(compact = false): React.CSSProperties {
   return {
     borderRadius: compact ? 20 : 24,
@@ -2163,6 +2180,21 @@ export default function MyGMFNAndIPage() {
   const profilePhotoStatus = profilePhotoRecorded
     ? "Photo/selfie recorded"
     : "Photo/selfie needed";
+  const accountPhoneRecorded = truthyEvidence(
+    me?.phone_recorded,
+    me?.phone_verified,
+    me?.phone,
+    me?.phone_number,
+    me?.phone_e164,
+    me?.mobile_phone,
+    me?.mobile_number
+  );
+  const accountPhoneVerified = truthyEvidence(me?.phone_verified);
+  const accountPhoneStatus = accountPhoneVerified
+    ? "Phone verified"
+    : accountPhoneRecorded
+      ? "Phone recorded"
+      : "Phone not recorded";
 
   const filteredCapabilities = useMemo(() => {
     const query = safeStr(capabilitySearch).toLowerCase();
@@ -2218,10 +2250,72 @@ export default function MyGMFNAndIPage() {
   }
 
   const memberCommunities = memberOpportunity.communities;
+  const memberCommunityRows = useMemo(() => {
+    const rows = memberCommunities.length ? memberCommunities : currentClan ? [currentClan] : [];
+    const seenKeys = new Set<string>();
+
+    return rows.map((community, index) => {
+      const id = firstPositiveNumber(
+        community?.id,
+        community?.clan_id,
+        community?.community_id,
+        community?.marketplace_id
+      );
+      const routeId = id || selectedClanId || undefined;
+      const name =
+        firstTruthy(
+          community?.marketplace_name,
+          community?.name,
+          community?.display_name,
+          community?.title,
+          community?.clan_name,
+          community?.community_name
+        ) || `Community ${index + 1}`;
+      const stableId = firstTruthy(
+        community?.community_code,
+        community?.global_id,
+        community?.global_community_id,
+        community?.gmfn_id,
+        community?.gsn_id,
+        community?.public_id,
+        routeId ? `#${routeId}` : ""
+      );
+      const roleStatus =
+        [
+          firstTruthy(community?.membership_role, community?.role, community?.member_role),
+          firstTruthy(community?.membership_status, community?.status, community?.verification_status),
+        ]
+          .filter(Boolean)
+          .join(" / ") || "Member";
+      const isSelected = Boolean(
+        selectedClanId && routeId && String(selectedClanId) === String(routeId)
+      );
+      const baseKey = String(routeId || stableId || name || `community-${index + 1}`);
+      const key = seenKeys.has(baseKey) ? `${baseKey}-${index + 1}` : baseKey;
+      seenKeys.add(baseKey);
+      const actionKey =
+        key
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "") || `community-${index + 1}`;
+
+      return { id: routeId, name, stableId, roleStatus, isSelected, key, actionKey };
+    });
+  }, [currentClan, memberCommunities, selectedClanId]);
   const memberCommunityCount = memberCommunities.length || activeCommunityCount;
   const selectedOrFirstCommunityId =
     selectedClanId ||
     firstPositiveNumber(currentClan?.id, currentClan?.clan_id, memberCommunities[0]?.id, memberCommunities[0]?.clan_id);
+  const selectedCommunityForShop =
+    memberCommunityRows.find((community) => community.isSelected) || memberCommunityRows[0];
+  const selectedCommunityName =
+    firstTruthy(
+      selectedCommunityForShop?.name,
+      currentClan?.marketplace_name,
+      currentClan?.name,
+      currentClan?.clan_name,
+      currentClan?.community_name
+    ) || "this community";
   const ownShopRecord =
     memberOpportunity.myShop?.shop || memberOpportunity.myShop?.item || memberOpportunity.myShop;
   const hasOwnShop = Boolean(
@@ -2243,6 +2337,14 @@ export default function MyGMFNAndIPage() {
     return sources.some((source) => memberOpportunity.unavailableSources.includes(source));
   }
 
+  const attentionSignalCount = taggedRequestCount + myOpenRequestCount;
+  const attentionSourceUnavailable = memberOpportunitySourceUnavailable(
+    "visibleRequests",
+    "myOpenRequests"
+  );
+  const shouldShowAttentionSummary =
+    memberOpportunityStillLoading || attentionSourceUnavailable || attentionSignalCount > 0;
+
   function demandBoxRouteFor(communityId = selectedOrFirstCommunityId, mode?: string): string {
     return appendRouteQuery(
       routeTarget("demandBox", communityId || selectedClanId, "my-gmfn.member-home.demand-box"),
@@ -2263,10 +2365,10 @@ export default function MyGMFNAndIPage() {
 
   const attentionStatus = memberOpportunityStillLoading
     ? "Checking"
-    : memberOpportunitySourceUnavailable("visibleRequests", "myOpenRequests")
+    : attentionSourceUnavailable
       ? "Source unavailable"
-      : taggedRequestCount + myOpenRequestCount > 0
-        ? `${taggedRequestCount + myOpenRequestCount} waiting`
+      : attentionSignalCount > 0
+        ? `${attentionSignalCount} waiting`
         : "Nothing urgent here";
   const demandStatus = memberOpportunityStillLoading
     ? "Checking"
@@ -2295,111 +2397,17 @@ export default function MyGMFNAndIPage() {
       ? "Unavailable"
       : `${myClosedRequestCount} closed request${myClosedRequestCount === 1 ? "" : "s"}`;
 
-  const memberHomePointers: MemberHomePointer[] = [
-    {
-      id: "identity",
-      title: "Open My GSN Identity",
-      detail: "See your GSN ID, identity evidence, main context, and guide without turning Profile into a dashboard.",
-      meta: identityStatus,
-      to: routes.guide,
-      debugId: "my-gmfn.member-home.pointer.identity",
-      cta: "Open Identity",
-      primary: true,
-    },
-    {
-      id: "attention",
-      title: "What Matters Now",
-      detail: "Review the full action queue in Notifications. My GSN shows the pointer, not another inbox.",
-      meta: attentionStatus,
-      to: APP_ROUTES.NOTIFICATIONS,
-      debugId: "my-gmfn.member-home.pointer.notifications",
-      cta: "Open Notifications",
-      primary: true,
-    },
-    {
-      id: "demand",
-      title: "Need something?",
-      detail: "DemandBox owns requests, possible matches, privacy, and request status.",
-      meta: demandStatus,
-      to: demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community"),
-      debugId: "my-gmfn.member-home.pointer.demand-box",
-      cta: "Open DemandBox",
-    },
-    {
-      id: "community",
-      title: "Explore your communities",
-      detail: "Community Home is the place to enter communities and continue member work.",
-      meta: communityStatus,
-      to: routes.community,
-      debugId: "my-gmfn.member-home.pointer.community",
-      cta: "Open Community Home",
-    },
-    {
-      id: "marketplace",
-      title: "Find marketplace activity",
-      detail: "Marketplace keeps community opportunities and supply in their operating context.",
-      meta: opportunityStatus,
-      to: marketplaceRouteFor(selectedOrFirstCommunityId),
-      debugId: "my-gmfn.member-home.pointer.marketplace",
-      cta: "Open Marketplace",
-    },
-    {
-      id: "offer",
-      title: "Manage what you offer",
-      detail: "Shop Control owns your shop, products, public offer setup, and Spotlight tools.",
-      meta: hasOwnShop ? ownShopName : "Shop tools",
-      to: shopRouteFor(selectedOrFirstCommunityId),
-      debugId: "my-gmfn.member-home.pointer.shop-control",
-      cta: "Open Shop Control",
-    },
-    {
-      id: "evidence",
-      title: "Evidence posture",
-      detail: "Trust Passport is the fuller private evidence record. My GSN keeps only the pointer.",
-      meta: trustPassportStatus,
-      to: routes.trust,
-      debugId: "my-gmfn.member-home.pointer.trust-passport",
-      cta: "Open Trust Passport",
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      detail: "Adjust your display name and calm workspace preferences from the account settings branch.",
-      meta: settings.openActionsDirectly ? "Open directly" : "Review first",
-      to: routes.settings,
-      debugId: "my-gmfn.member-home.pointer.settings",
-      cta: "Open Settings",
-    },
-  ];
+  const shopScopeLabel = selectedOrFirstCommunityId
+    ? `Your shop in ${selectedCommunityName}`
+    : "Shop scope not selected";
+  const trustSlipStatus = firstTruthy(passportVm.outputs.trustSlipStatus, "Not issued yet");
+  const trustEvidenceStatus = `${trustPassportStatus} / TrustSlip ${trustSlipStatus}`;
+  const settingsScopeStatus = "Device preferences stay on this device; display name saves to account";
 
-  function renderMemberHomePointer(pointer: MemberHomePointer) {
-    return (
-      <StableCtaLink
-        key={pointer.id}
-        to={pointer.to}
-        kind={pointer.primary ? "primary" : "secondary"}
-        debugId={pointer.debugId}
-        style={memberHomePointerLink(isCompact, Boolean(pointer.primary))}
-      >
-        <span style={{ display: "grid", gap: 7, minWidth: 0, width: "100%" }}>
-          {pointer.meta ? (
-            <span style={{ color: pointer.primary ? "#6B4F09" : "#64748B", fontSize: 11, fontWeight: 1000, textTransform: "uppercase", overflowWrap: "anywhere" }}>
-              {pointer.meta}
-            </span>
-          ) : null}
-          <strong style={{ color: "#07172C", fontSize: isCompact ? 14.5 : 16, lineHeight: 1.18, overflowWrap: "anywhere" }}>
-            {pointer.title}
-          </strong>
-          <span style={{ color: "#526174", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 750, lineHeight: 1.34, overflowWrap: "anywhere" }}>
-            {pointer.detail}
-          </span>
-          <span style={{ marginTop: "auto", color: "#8A6A16", fontSize: 12, fontWeight: 1000 }}>
-            {pointer.cta} {">"}
-          </span>
-        </span>
-      </StableCtaLink>
-    );
+  function communityRouteFor(communityId = selectedOrFirstCommunityId): string {
+    return routeTarget("communityHome", communityId || selectedClanId, "my-gmfn.member-home.community-row");
   }
+
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
   const topNavTitle = isAppRoute
@@ -2410,7 +2418,7 @@ export default function MyGMFNAndIPage() {
   const topNavSubtitle = isAppRoute
     ? showIdentityGuideSurface
       ? "Your identity, trust records, communities, shops, and opportunity guide."
-      : "Communities, opportunities, activity, and evidence."
+      : "Identity, memberships, business, evidence and account orientation."
     : `Understand what GSN can do before you sign in, enter a community, or move into protected pages.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -2540,11 +2548,11 @@ export default function MyGMFNAndIPage() {
       writeLocalJSON(SETTINGS_STORAGE_KEY, settings);
 
       if (saved) {
-        showNotice("success", "Settings saved.");
+        showNotice("success", "Device preferences saved.");
       } else {
         showNotice(
           "success",
-          "Settings saved on this device."
+          "Device preferences saved on this device."
         );
       }
     } catch (err: any) {
@@ -2590,7 +2598,7 @@ export default function MyGMFNAndIPage() {
 
   function resetSettings() {
     setSettings(DEFAULT_SETTINGS);
-    showNotice("success", "Settings reset to the calmer defaults.");
+    showNotice("success", "Device preferences reset to the calmer defaults.");
   }
 
   function closePublicGuide() {
@@ -2621,7 +2629,7 @@ export default function MyGMFNAndIPage() {
         <PageTopNav
           sectionLabel={topNavTitle}
           title={topNavTitle}
-          subtitle={isAppRoute ? "Loading your workspace settings..." : "Loading the public guide..."}
+          subtitle={isAppRoute ? "Loading your device preferences..." : "Loading the public guide..."}
           homeTo={topNavHomeTo}
           homeLabel={topNavHomeLabel}
           backTo={topNavHomeTo}
@@ -2631,7 +2639,7 @@ export default function MyGMFNAndIPage() {
           <div style={{ color: "#64748B", lineHeight: 1.8, fontWeight: 800 }}>
             {slowLoad
               ? "This is taking longer than expected."
-              : "Loading workspace settings..."}
+              : "Loading device preferences..."}
           </div>
           {slowLoad ? (
             <p
@@ -2735,7 +2743,7 @@ export default function MyGMFNAndIPage() {
               >
                 {showIdentityGuideSurface
                   ? "Your identity, trust records, communities, shops, and opportunities in one place."
-                  : "Your personal orientation and pointers to the right GSN surface."}
+                  : "Your identity, communities, attention, shop, evidence and account handoffs across GSN."}
               </div>
             </div>
           </div>
@@ -2754,17 +2762,17 @@ export default function MyGMFNAndIPage() {
                 data-my-gsn-personal-orientation="true"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.95fr) minmax(0, 1.05fr)",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.82fr) minmax(0, 1.18fr)",
                   gap: 12,
                 }}
               >
-                <div style={innerCard("rgba(255,255,255,0.98)")}>
-                  <div style={sectionLabel()}>Personal orientation</div>
+                <div style={memberHomeSectionShell(true)} data-my-gsn-identity-first="true">
+                  <div style={sectionLabel()}>My identity</div>
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Your identity context, then the right GSN surface.
+                    {displayName}
                   </h2>
-                  <div style={{ marginTop: 10, ...helperText(), color: "#526174" }}>
-                    My GSN keeps a compact personal overview. Detailed work stays in its canonical home.
+                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    {hasGsnId ? "Your stable GSN identity follows you across communities." : "Your GSN ID is still being prepared."}
                   </div>
                   <div
                     style={{
@@ -2776,40 +2784,198 @@ export default function MyGMFNAndIPage() {
                   >
                     {[
                       ["GSN ID", gmfnId || "Not issued yet"],
-                      ["Communities", communityStatus],
-                      ["Main context", communityLabel],
-                      ["Evidence", trustPassportStatus],
+                      ["Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
+                      ["Phone", accountPhoneStatus],
+
                     ].map(([label, value]) => (
-                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 74 : 82 }}>
+                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 70 : 78 }}>
                         <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
                           {label}
                         </div>
-                        <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 13 : 15, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                        <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 12.5 : 14, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
                           {value}
                         </div>
                       </div>
                     ))}
                   </div>
+                  <SecondaryButton
+                    type="button"
+                    stableHeight={44}
+                    disabled={!gsnHandle}
+                    debugId="my-gmfn.identity.copy-handle"
+                    onClick={() => {
+                      if (!gsnHandle) {
+                        setNotice({ tone: "error", text: "Your GSN ID is not issued yet." });
+                        return;
+                      }
+                      void navigator.clipboard?.writeText(`@${gsnHandle}`);
+                      setNotice({ tone: "success", text: "GSN handle copied." });
+                    }}
+                    style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
+                  >
+                    <GsnLegacyIcon name="copy" size={20} decorative />
+                    Copy handle
+                  </SecondaryButton>
                 </div>
 
-                <div style={innerCard("rgba(255,255,255,0.98)")}>
-                  <div style={sectionLabel()}>Canonical pointers</div>
+                <div style={memberHomeSectionShell()} data-my-gsn-community-portfolio="true">
+                  <div style={sectionLabel()}>My communities</div>
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Go to the owner surface for real work.
+                    {communityStatus}
                   </h2>
-                  <div style={{ marginTop: 10, ...helperText(), color: "#526174" }}>
-                    Attention, needs, communities, offers, and evidence stay available without turning My GSN into another dashboard.
+                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    These are your GSN community memberships. Open Community Home for the selected community work.
                   </div>
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "grid",
-                      gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                      gap: 10,
-                    }}
-                    data-my-gsn-canonical-pointers="true"
-                  >
-                    {memberHomePointers.map(renderMemberHomePointer)}
+                  <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
+                    {memberCommunityRows.length ? (
+                      memberCommunityRows.map((community) => (
+                        <div
+                          key={community.key}
+                          data-my-gsn-community-row="true"
+                          style={{
+                            borderRadius: 16,
+                            border: community.isSelected ? "1px solid rgba(214,170,69,0.42)" : "1px solid rgba(15,23,42,0.08)",
+                            background: community.isSelected ? "rgba(255,249,232,0.94)" : "#FFFFFF",
+                            padding: isCompact ? 10 : 12,
+                            display: "grid",
+                            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 150px",
+                            gap: 9,
+                            alignItems: "center",
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ color: "#07172C", fontSize: isCompact ? 13.5 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                              {community.name}
+                            </div>
+                            <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+                              {community.roleStatus}{community.stableId ? ` / ${community.stableId}` : ""}{community.isSelected ? " / Selected" : ""}
+                            </div>
+                          </div>
+                          <StableCtaLink
+                            to={communityRouteFor(community.id)}
+                            kind={community.isSelected ? "primary" : "secondary"}
+                            debugId={`my-gmfn.community-row.${community.actionKey}`}
+                            style={{ minHeight: 42, borderRadius: 999, justifyContent: "center", fontSize: 12.5 }}
+                          >
+                            Open
+                          </StableCtaLink>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ ...memberHomeCard(true), minHeight: 78 }}>
+                        <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>No active community shown yet</div>
+                        <div style={{ marginTop: 6, ...helperText(), color: "#526174" }}>
+                          Join or create a community to build your GSN footprint.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                data-my-gsn-canonical-pointers="true"
+                data-my-gsn-phase1-order="attention-shop-trust-settings"
+                data-my-gsn-phase2-attention="conditional"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {shouldShowAttentionSummary ? (
+                  <div style={memberHomeSectionShell()} data-my-gsn-attention-summary="true">
+                    <div style={sectionLabel()}>What needs my attention</div>
+                    <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                      {attentionStatus}
+                    </h2>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      My GSN shows the signal only. Notifications owns the full queue.
+                    </div>
+                    <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                      {[
+                        ["DemandBox", demandStatus],
+                        ["Signals", opportunityStatus],
+                      ].map(([label, value]) => (
+                        <div key={label} style={{ ...memberHomeCard(true), minHeight: 70 }}>
+                          <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>{label}</div>
+                          <div style={{ marginTop: 6, color: "#07172C", fontSize: 13, fontWeight: 1000, lineHeight: 1.18 }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                      <StableCtaLink to={APP_ROUTES.NOTIFICATIONS} kind="primary" debugId="my-gmfn.attention.notifications" style={memberHomePointerLink(isCompact, true)}>
+                        Open Notifications
+                      </StableCtaLink>
+                      <StableCtaLink to={demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community")} kind="secondary" debugId="my-gmfn.attention.demand-box" style={memberHomePointerLink(isCompact, false)}>
+                        Open DemandBox
+                      </StableCtaLink>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
+                  <div style={sectionLabel()}>My shop / business</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    {hasOwnShop ? ownShopName : "No shop shown yet"}
+                  </h2>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    {hasOwnShop ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.` : "Open Shop Control when you are ready to set up or manage your shop."}
+                  </div>
+                  <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={{ ...memberHomePointerLink(isCompact, false), marginTop: 12 }}>
+                    Manage shop
+                  </StableCtaLink>
+                </div>
+
+                <div style={memberHomeSectionShell()} data-my-gsn-trust-evidence="true">
+                  <div style={sectionLabel()}>My trust / evidence</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    {trustEvidenceStatus}
+                  </h2>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    Trust Passport owns the private evidence review. TrustSlip owns portable public checks.
+                  </div>
+                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <StableCtaLink to={routes.trust} kind="primary" debugId="my-gmfn.evidence.trust-passport" style={memberHomePointerLink(isCompact, true)}>
+                      Trust Passport
+                    </StableCtaLink>
+                    <StableCtaLink to={APP_ROUTES.TRUST_SLIP} kind="secondary" debugId="my-gmfn.evidence.trustslip" style={memberHomePointerLink(isCompact, false)}>
+                      TrustSlip
+                    </StableCtaLink>
+                  </div>
+                </div>
+
+                <div style={memberHomeSectionShell()} data-my-gsn-settings-account="true">
+                  <div style={sectionLabel()}>Settings / account</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    Account and this device
+                  </h2>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    {settingsScopeStatus}
+                  </div>
+                  <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={{ ...memberHomePointerLink(isCompact, false), marginTop: 12 }}>
+                    Open settings
+                  </StableCtaLink>
+                </div>
+                <div style={memberHomeSectionShell()} data-my-gsn-official-links="true">
+                  <div style={sectionLabel()}>Official GSN</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    Confirmed channels
+                  </h2>
+                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    {OFFICIAL_GSN_LINKS.map((link) => (
+                      <SecondaryButton
+                        key={link.label}
+                        type="button"
+                        stableHeight={42}
+                        debugId={link.debugId}
+                        onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
+                        style={{ justifyContent: "center", fontSize: 12.5 }}
+                      >
+                        <GsnLegacyIcon name="navigation" size={18} decorative />
+                        {link.label}
+                      </SecondaryButton>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -2832,8 +2998,8 @@ export default function MyGMFNAndIPage() {
                 </div>
               ) : null}
 
-              <div style={innerCard("rgba(255,255,255,0.98)")} data-my-gsn-activity-note="quiet">
-                <div style={sectionLabel()}>Activity note</div>
+              <div style={memberHomeSectionShell()} data-my-gsn-activity-note="quiet">
+                <div style={sectionLabel()}>My activity</div>
                 <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                   {closedActivityStatus}
                 </h2>
@@ -2843,6 +3009,8 @@ export default function MyGMFNAndIPage() {
               </div>
             </div>
           ) : null}
+          {showIdentityGuideSurface ? (
+            <>
           <div
             style={{ marginTop: isCompact ? 14 : 18, color: "#9FB5CA", fontSize: 11, fontWeight: 1000, letterSpacing: 1.2, textTransform: "uppercase" }}
           >
@@ -2914,8 +3082,8 @@ export default function MyGMFNAndIPage() {
 
           <StableCtaLink
             to={routes.dashboard}
-            kind="primary"
-            debugId="my-gmfn.hero.dashboard"
+            kind="secondary"
+            debugId="my-gmfn.secondary.dashboard"
             style={{
               marginTop: isCompact ? 14 : 18,
               minHeight: isCompact ? 54 : 58,
@@ -2924,7 +3092,7 @@ export default function MyGMFNAndIPage() {
               fontSize: isCompact ? 14 : 15,
             }}
           >
-            Open dashboard
+            Open dashboard overview
             <span aria-hidden="true">{">"}</span>
           </StableCtaLink>
 
@@ -3005,6 +3173,8 @@ export default function MyGMFNAndIPage() {
               </SecondaryButton>
             </div>
           </div>
+            </>
+          ) : null}
         </div>
 
         <div
@@ -3029,7 +3199,7 @@ export default function MyGMFNAndIPage() {
             }}
           >
             <GsnLegacyIcon name="spark" size={24} decorative />
-            Decision Guide
+            Guide / Help
           </StableCtaLink>
 
           <StableCtaLink
@@ -3043,7 +3213,7 @@ export default function MyGMFNAndIPage() {
               fontSize: isCompact ? 14 : undefined,
             }}
           >
-            Member Guide
+            Settings
           </StableCtaLink>
 
           <StableCtaLink
@@ -3065,7 +3235,7 @@ export default function MyGMFNAndIPage() {
               <GsnLegacyIcon name="spark" size={24} decorative />
             </span>
             <span>
-              <strong>Quick Guide</strong>
+              <strong>Evidence handoff</strong>
               <br />
               {profilePhotoRecorded
                 ? "Review your Trust Passport and TrustSlip evidence before sharing a public record."
@@ -3892,10 +4062,10 @@ export default function MyGMFNAndIPage() {
       ) : (
         <>
           <section style={pageCard()}>
-            <div style={sectionLabel()}>Workspace settings</div>
+            <div style={sectionLabel()}>Device preferences and account name</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-              Keep the app calmer and easier to read without changing the GSN Core Capabilities guide.
+              These reading preferences are saved on this device and may not follow you to another phone. Your display name saves to your GSN account.
             </div>
 
             <div
@@ -4034,14 +4204,14 @@ export default function MyGMFNAndIPage() {
                       busyLabel="Saving..."
                       debugId="my-gmfn.settings.save"
                     >
-                      Save Settings
+                      Save Preferences
                     </PrimaryButton>
 
                     <SecondaryButton
                       onClick={resetSettings}
                       debugId="my-gmfn.settings.reset"
                     >
-                      Reset Defaults
+                      Reset Preferences
                     </SecondaryButton>
                   </div>
                 </div>

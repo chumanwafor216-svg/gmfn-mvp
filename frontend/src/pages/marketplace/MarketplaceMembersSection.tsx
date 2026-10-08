@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { StableDisclosureSummary } from "../../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
@@ -9,6 +9,20 @@ type MarketplaceMemberRow = {
   gmfnId?: string;
   userId?: number | string;
   shopTo?: string;
+  shopName?: string;
+  ownerName?: string;
+  description?: string;
+  communityName?: string;
+  imageUrl?: string;
+  contactAvailable?: boolean;
+  activeState?: string;
+  createdAt?: string;
+  productCount?: number;
+  productTitles?: string[];
+  productDescriptions?: string[];
+  serviceSummary?: string;
+  searchText?: string;
+  demandMatchTitles?: string[];
   listingReviewRequired?: boolean | null;
   listingReviewDueAt?: string | null;
   listingReviewStatus?: string | null;
@@ -37,6 +51,7 @@ type Props = {
   visibleTradeShopCount: number;
   marketplaceCommunityDomainRows: MarketplaceCommunityDomainRow[];
   marketplaceSurfaceTouchProps: (debugId: string) => Record<string, unknown>;
+  marketplaceFieldTouchProps: (debugId: string) => Record<string, unknown>;
   safeDateTime: (value: unknown) => string;
   onToggleMembers: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenCommunityDomain: (
@@ -567,12 +582,87 @@ function displayGsnLabel(value: unknown): string {
   return text.toUpperCase().startsWith("GSN-") ? text : `GSN-${text}`;
 }
 
+function directorySearchLabelStyle(): React.CSSProperties {
+  return {
+    color: "#173750",
+    fontSize: 12,
+    fontWeight: 950,
+    lineHeight: 1.2,
+  };
+}
+
+function directorySearchInputStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    height: isCompact ? 46 : 50,
+    borderRadius: 14,
+    border: "1px solid rgba(16,37,59,0.16)",
+    background: "rgba(255,255,255,0.96)",
+    color: "#0B1F33",
+    fontSize: 16,
+    fontWeight: 760,
+    lineHeight: 1.2,
+    padding: "0 13px",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 16px rgba(10,24,49,0.05)",
+    boxSizing: "border-box",
+    pointerEvents: "auto",
+    touchAction: "auto",
+    position: "relative",
+    zIndex: 2,
+  };
+}
+
+function directorySummaryStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#3E566F",
+    fontSize: isCompact ? 12.5 : 13.5,
+    lineHeight: 1.35,
+    fontWeight: 760,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    overflowWrap: "break-word",
+  };
+}
+
+function directoryMediaStyle(row: MarketplaceMemberRow, isCompact: boolean): React.CSSProperties {
+  return {
+    width: isCompact ? 52 : 58,
+    height: isCompact ? 52 : 58,
+    borderRadius: isCompact ? 14 : 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: "0 0 auto",
+    color: "#FFFFFF",
+    background: row.imageUrl
+      ? "#EAF1F7"
+      : row.shopTo
+        ? "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+        : "linear-gradient(180deg, #244969 0%, #061827 100%)",
+    boxShadow:
+      "0 10px 18px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.22)",
+    overflow: "hidden",
+  };
+}
+
+function directoryChipRowStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    minWidth: 0,
+  };
+}
+
 function memberCardStyle(
   row: MarketplaceMemberRow,
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    borderRadius: isCompact ? 14 : 16,
+    borderRadius: isCompact ? 15 : 17,
     border: "1px solid rgba(16,37,59,0.08)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,252,255,0.98) 100%)",
@@ -581,37 +671,15 @@ function memberCardStyle(
     display: "grid",
     gridTemplateColumns: row.shopTo
       ? isCompact
-        ? "38px minmax(0, 1fr)"
-        : "42px minmax(0, 1fr) 130px"
+        ? "52px minmax(0, 1fr)"
+        : "58px minmax(0, 1fr) 132px"
       : isCompact
-        ? "38px minmax(0, 1fr)"
-        : "42px minmax(0, 1fr)",
-    gap: isCompact ? 8 : 10,
+        ? "52px minmax(0, 1fr)"
+        : "58px minmax(0, 1fr)",
+    gap: isCompact ? 9 : 11,
     alignItems: "center",
   };
 }
-
-function memberIconStyle(
-  row: MarketplaceMemberRow,
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    width: isCompact ? 38 : 42,
-    height: isCompact ? 38 : 42,
-    borderRadius: isCompact ? 13 : 14,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: "0 0 auto",
-    color: "#FFFFFF",
-    background: row.shopTo
-      ? "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
-      : "linear-gradient(180deg, #244969 0%, #061827 100%)",
-    boxShadow:
-      "0 10px 18px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.22)",
-  };
-}
-
 
 function listingReviewText(
   row: MarketplaceMemberRow,
@@ -629,15 +697,49 @@ function listingReviewText(
 export default function MarketplaceMembersSection({
   isCompact,
   memberRows,
-  visibleTradeMemberRows,
-  hiddenTradeMemberRows,
   visibleTradeShopCount,
   marketplaceCommunityDomainRows,
   marketplaceSurfaceTouchProps,
+  marketplaceFieldTouchProps,
   safeDateTime,
   onToggleMembers,
   onOpenCommunityDomain,
 }: Props) {
+  const [shopSearch, setShopSearch] = React.useState("");
+  const directoryRows = React.useMemo(() => {
+    const shopRows = memberRows.filter((row) => Boolean(row.shopTo));
+    return shopRows.length ? shopRows : memberRows;
+  }, [memberRows]);
+  const normalizedSearch = shopSearch.trim().toLowerCase();
+  const searchedDirectoryRows = React.useMemo(() => {
+    if (!normalizedSearch) return directoryRows;
+    return directoryRows.filter((row) => {
+      const haystack = [
+        row.searchText,
+        row.name,
+        row.shopName,
+        row.ownerName,
+        row.description,
+        row.communityName,
+        ...(row.productTitles || []),
+        ...(row.productDescriptions || []),
+        ...(row.demandMatchTitles || []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedSearch);
+    });
+  }, [directoryRows, normalizedSearch]);
+  const visibleDirectoryRows = searchedDirectoryRows.slice(0, isCompact ? 6 : 10);
+  const hiddenDirectoryCount = Math.max(
+    0,
+    searchedDirectoryRows.length - visibleDirectoryRows.length
+  );
+  const weakDataCount = directoryRows.filter(
+    (row) => row.shopTo && !row.description && !(row.productTitles || []).length
+  ).length;
+
   return (
     <section
       id="marketplace-members-shops"
@@ -670,11 +772,10 @@ export default function MarketplaceMembersSection({
             <MarketplaceGlyph name="members" size={26} />
           </span>
           <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>Community Members & Shops</div>
+            <div style={sectionLabel()}>Shops & Services Directory</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              See Community Domains, known members, and visible shops inside
-              this selected marketplace. Open a shop record for current
-              evidence before you act.
+              Browse public shops in this selected marketplace. Open shop is the
+              handoff to the canonical Public Shop; management stays elsewhere.
             </div>
           </div>
         </div>
@@ -697,17 +798,19 @@ export default function MarketplaceMembersSection({
           gap: 8,
         }}
       >
-        <span style={stableStatusPillStyle(memberRows.length > 0)}>
-          {memberRows.length} visible member{memberRows.length === 1 ? "" : "s"}
-        </span>
         <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
           {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
+        </span>
+        <span style={stableStatusPillStyle(directoryRows.length > 0)}>
+          {directoryRows.length} searchable entr{directoryRows.length === 1 ? "y" : "ies"}
         </span>
         <span style={stableStatusPillStyle(marketplaceCommunityDomainRows.length > 0)}>
           {marketplaceCommunityDomainRows.length} domain
           {marketplaceCommunityDomainRows.length === 1 ? "" : "s"}
         </span>
-        <span style={stableStatusPillStyle(true)}>Community-bound directory</span>
+        <span style={stableStatusPillStyle(weakDataCount === 0)}>
+          {weakDataCount ? `${weakDataCount} light profile${weakDataCount === 1 ? "" : "s"}` : "Profiles readable"}
+        </span>
       </div>
 
       {marketplaceCommunityDomainRows.length ? (
@@ -797,20 +900,48 @@ export default function MarketplaceMembersSection({
         style={marketplaceDepartmentShellStyle("members", isCompact)}
       >
         <div style={marketplaceDepartmentHeaderStyle(isCompact)}>
-          <div style={sectionLabel()}>Visible members</div>
-          <span style={stableStatusPillStyle(hiddenTradeMemberRows.length === 0)}>
-            {hiddenTradeMemberRows.length > 0
-              ? `${hiddenTradeMemberRows.length} more tucked away`
-              : "Full visible list shown"}
+          <div style={{ minWidth: 0 }}>
+            <div style={sectionLabel()}>Find a shop or service</div>
+            <div style={{ marginTop: 4, ...helperText(), fontSize: isCompact ? 12.5 : 13.5 }}>
+              Search uses loaded shop names, descriptions, product/service text,
+              owner labels, and DemandBox match titles.
+            </div>
+          </div>
+          <span style={stableStatusPillStyle(searchedDirectoryRows.length > 0)}>
+            {normalizedSearch
+              ? `${searchedDirectoryRows.length} result${searchedDirectoryRows.length === 1 ? "" : "s"}`
+              : "Neutral A-Z order"}
           </span>
         </div>
 
-        {memberRows.length === 0 ? (
+        <label htmlFor="marketplace-members-shop-search" style={directorySearchLabelStyle()}>
+          Search shops and services
+        </label>
+        <input
+          {...marketplaceFieldTouchProps("marketplace.members.search")}
+          id="marketplace-members-shop-search"
+          type="search"
+          value={shopSearch}
+          onChange={(event) => setShopSearch(event.target.value)}
+          placeholder="Search shop, service, product, owner..."
+          aria-label="Search shops and services"
+          enterKeyHint="search"
+          autoComplete="off"
+          style={directorySearchInputStyle(isCompact)}
+        />
+
+        {directoryRows.length === 0 ? (
           <div style={{ ...innerCard("#FCFEFF"), color: "#64748B", lineHeight: 1.6 }}>
-            No members are visible in this marketplace yet.
+            No public shops are visible in this marketplace yet. This is the
+            current community scope only.
+          </div>
+        ) : visibleDirectoryRows.length === 0 ? (
+          <div style={{ ...innerCard("#FCFEFF"), color: "#64748B", lineHeight: 1.6 }}>
+            No shop in this marketplace matches that search yet. Try a business
+            name, service, product, or owner label.
           </div>
         ) : (
-          visibleTradeMemberRows.map((row, index) => (
+          visibleDirectoryRows.map((row, index) => (
             <MemberRowCard
               key={`${row.gmfnId || row.userId || index}`}
               row={row}
@@ -820,7 +951,7 @@ export default function MarketplaceMembersSection({
           ))
         )}
 
-        {hiddenTradeMemberRows.length > 0 ? (
+        {hiddenDirectoryCount > 0 ? (
           <details
             style={{
               ...innerCard("#FFFFFF"),
@@ -844,8 +975,8 @@ export default function MarketplaceMembersSection({
                   "linear-gradient(180deg, rgba(236,243,250,0.96) 0%, rgba(222,233,244,0.92) 100%)",
               }}
             >
-              <span>More visible members</span>
-              <span>{hiddenTradeMemberRows.length}</span>
+              <span>More directory results</span>
+              <span>{hiddenDirectoryCount}</span>
             </StableDisclosureSummary>
             <div
               style={{
@@ -854,10 +985,10 @@ export default function MarketplaceMembersSection({
                 gap: 8,
               }}
             >
-              {hiddenTradeMemberRows.map((row, index) => (
+              {searchedDirectoryRows.slice(visibleDirectoryRows.length).map((row, index) => (
                 <MemberRowCard
                   key={`${
-                    row.gmfnId || row.userId || visibleTradeMemberRows.length + index
+                    row.gmfnId || row.userId || visibleDirectoryRows.length + index
                   }`}
                   row={row}
                   isCompact={isCompact}
@@ -882,20 +1013,42 @@ function MemberRowCard({
   safeDateTime: (value: unknown) => string;
 }) {
   const reviewText = listingReviewText(row, safeDateTime);
+  const productTitles = row.productTitles || [];
+  const demandMatches = row.demandMatchTitles || [];
+  const productCount = Number(row.productCount || 0);
+  const title = row.shopName && row.shopName !== "Shop not visible yet" ? row.shopName : row.name;
+  const summary =
+    row.serviceSummary ||
+    (productTitles.length
+      ? productTitles.slice(0, 2).join(" | ")
+      : "Shop details are light; open the Public Shop to see current offers.");
 
   return (
     <div style={memberCardStyle(row, isCompact)}>
-      <span aria-hidden="true" style={memberIconStyle(row, isCompact)}>
-        <MarketplaceGlyph name={row.shopTo ? "trade" : "members"} size={20} />
+      <span aria-hidden="true" style={directoryMediaStyle(row, isCompact)}>
+        {row.imageUrl ? (
+          <img
+            src={row.imageUrl}
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        ) : (
+          <MarketplaceGlyph name={row.shopTo ? "trade" : "members"} size={22} />
+        )}
       </span>
 
-      <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
+      <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
         <div
           style={{
             color: "#0B1F33",
-            fontSize: isCompact ? 14 : 16,
-            fontWeight: 950,
-            lineHeight: 1.18,
+            fontSize: isCompact ? 15 : 17,
+            fontWeight: 1000,
+            lineHeight: 1.12,
             overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -904,47 +1057,81 @@ function MemberRowCard({
             wordBreak: "normal",
           }}
         >
-          {row.name}
+          {title}
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 6,
-            minWidth: 0,
-          }}
-        >
-          <span
-            style={{
-              ...stableStatusPillStyle(Boolean(row.gmfnId)),
-              height: "auto",
-              maxHeight: "none",
-              minHeight: 30,
-              whiteSpace: "normal",
-              overflowWrap: "anywhere",
-            }}
-          >
-            {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Not issued yet"}
-          </span>
+
+        <div style={directorySummaryStyle(isCompact)}>{summary}</div>
+
+        {productTitles.length ? (
+          <div style={{ ...directorySummaryStyle(isCompact), color: "#516579" }}>
+            {productTitles.slice(0, 3).join(" | ")}
+          </div>
+        ) : null}
+
+        <div style={directoryChipRowStyle()}>
           <span
             style={{
               ...stableStatusPillStyle(Boolean(row.shopTo)),
               height: "auto",
               maxHeight: "none",
-              minHeight: 30,
+              minHeight: 28,
               whiteSpace: "normal",
             }}
           >
-            {row.shopTo ? "Shop visible" : "No shop yet"}
+            {row.activeState || (row.shopTo ? "Public shop" : "No shop yet")}
           </span>
+          <span
+            style={{
+              ...stableStatusPillStyle(productCount > 0),
+              height: "auto",
+              maxHeight: "none",
+              minHeight: 28,
+              whiteSpace: "normal",
+            }}
+          >
+            {productCount > 0
+              ? `${productCount} item${productCount === 1 ? "" : "s"}`
+              : "Offers not listed"}
+          </span>
+          <span
+            style={{
+              ...stableStatusPillStyle(Boolean(row.contactAvailable)),
+              height: "auto",
+              maxHeight: "none",
+              minHeight: 28,
+              whiteSpace: "normal",
+            }}
+          >
+            {row.contactAvailable ? "Contact ready" : "Contact not set"}
+          </span>
+          {demandMatches.length ? (
+            <span
+              style={{
+                ...stableStatusPillStyle(true),
+                height: "auto",
+                maxHeight: "none",
+                minHeight: 28,
+                whiteSpace: "normal",
+              }}
+            >
+              Relevant to current need
+            </span>
+          ) : null}
         </div>
+
+        <div style={{ ...directorySummaryStyle(isCompact), WebkitLineClamp: 1 }}>
+          {[row.ownerName ? `Owner: ${row.ownerName}` : "", row.communityName, row.gmfnId ? displayGsnLabel(row.gmfnId) : ""]
+            .filter(Boolean)
+            .join(" | ")}
+        </div>
+
         {reviewText ? (
           <span
             style={{
               ...stableStatusPillStyle(true),
               height: "auto",
               maxHeight: "none",
-              minHeight: 30,
+              minHeight: 28,
               whiteSpace: "normal",
               overflowWrap: "anywhere",
             }}

@@ -33,7 +33,7 @@ import {
   publicShopUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableCtaLink } from "../components/StableButton";
 import { StableDisclosureSummary } from "../components/StableButton";
 import {
   addLoanGuarantorRequest,
@@ -49,6 +49,7 @@ import {
   createProtectedTrade,
   addProtectedTradeEvent,
   getDailyInsight,
+  getDemandSupplyMatches,
   getDemandSupplyTradeHandoff,
   getMarketWisdomRecommendation,
   getCommunityPackageStatus,
@@ -77,6 +78,7 @@ import {
   setSelectedClanId,
   listClanMembers,
   listCommunityNotices,
+  listMarketplaceRequests,
   listMyClans,
   listMyCommunityDomains,
   listMyLoans,
@@ -85,7 +87,9 @@ import {
   recordMarketWisdomExposure,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
+  type DemandSupplyMatchItem,
   type DemandSupplyTradeHandoffResponse,
+  type MarketplaceRequestItem,
   type ProtectedTradeEventRecord,
   type ProtectedTradeRecord,
 } from "../lib/api";
@@ -233,10 +237,21 @@ export type MarketplaceShop = {
   owner_user_id?: number;
   gmfn_id?: string | null;
   owner_gmfn_id?: string | null;
+  owner_name?: string | null;
+  owner_display_name?: string | null;
   name?: string | null;
   description?: string | null;
   whatsapp_number?: string | null;
   telegram_handle?: string | null;
+  image_url?: string | null;
+  photo_url?: string | null;
+  cover_image_url?: string | null;
+  banner_url?: string | null;
+  logo_url?: string | null;
+  shop_logo_url?: string | null;
+  marketplace_name?: string | null;
+  clan_name?: string | null;
+  community_name?: string | null;
   visibility_mode?: string | null;
   shop_visibility_mode?: string | null;
   mode?: string | null;
@@ -244,13 +259,33 @@ export type MarketplaceShop = {
   shop_type?: string | null;
   visibility?: string | null;
   type?: string | null;
+  is_active?: boolean | null;
   is_vault?: boolean | null;
   vault_private?: boolean | null;
   is_private?: boolean | null;
+  created_at?: string | null;
   listing_review_required?: boolean | null;
   listing_review_due_at?: string | null;
   listing_review_status?: string | null;
   listing_expiry_enforced?: boolean | null;
+  shop_product_slots_total?: number | string | null;
+  follower_count?: number | string | null;
+  followers_count?: number | string | null;
+  shop_follower_count?: number | string | null;
+};
+
+type MarketplaceDirectoryProduct = {
+  id: number;
+  shopId: number;
+  sellerGmfnId: string;
+  title: string;
+  description: string;
+  price: string;
+  currency: string;
+  imageUrl: string;
+  videoUrl: string;
+  visibilityMode: string;
+  createdAt: string;
 };
 
 export type RepostProductOption = {
@@ -631,6 +666,11 @@ type MarketplaceDemandSignal = {
   requester_gmfn_id?: string | null;
   requester_trust_score?: number | null;
   requester_trust_band?: string | null;
+};
+
+type MarketplaceMatchPreview = {
+  request: MarketplaceRequestItem;
+  match: DemandSupplyMatchItem;
 };
 
 type MarketplaceCommunityDomainRow = {
@@ -1514,9 +1554,19 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
   if (!raw) return null;
 
   const src = raw?.item || raw?.shop || raw;
+  const imageUrl = firstTruthy(
+    src?.image_url,
+    src?.imageUrl,
+    src?.photo_url,
+    src?.cover_image_url,
+    src?.banner_url,
+    src?.logo_url,
+    src?.shop_logo_url
+  );
 
   return {
     id: positiveNumber(firstDefined(src?.id, src?.shop_id)) || undefined,
+    clan_id: positiveNumber(firstDefined(src?.clan_id, src?.community_id)) || null,
     user_id: positiveNumber(firstDefined(src?.user_id)),
     owner_user_id: positiveNumber(
       firstDefined(src?.owner_user_id, src?.owner_id)
@@ -1526,6 +1576,16 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
       src?.owner_gmfn_id,
       src?.owner_gmfn,
       src?.ownerGmfnId
+    ),
+    owner_name: firstPublicIdentity(
+      src?.owner_name,
+      src?.owner_display_name,
+      src?.owner_nickname
+    ),
+    owner_display_name: firstPublicIdentity(
+      src?.owner_display_name,
+      src?.owner_name,
+      src?.owner_nickname
     ),
     name: firstPublicIdentity(src?.name, src?.shop_name, src?.title),
     description: firstTruthy(
@@ -1544,6 +1604,15 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
       src?.telegram,
       src?.telegram_username
     ),
+    image_url: imageUrl,
+    photo_url: imageUrl,
+    cover_image_url: imageUrl,
+    banner_url: imageUrl,
+    logo_url: imageUrl,
+    shop_logo_url: imageUrl,
+    marketplace_name: firstTruthy(src?.marketplace_name),
+    clan_name: firstTruthy(src?.clan_name),
+    community_name: firstTruthy(src?.community_name),
     visibility_mode: firstTruthy(src?.visibility_mode),
     shop_visibility_mode: firstTruthy(src?.shop_visibility_mode),
     mode: firstTruthy(src?.mode),
@@ -1551,9 +1620,11 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
     shop_type: firstTruthy(src?.shop_type),
     visibility: firstTruthy(src?.visibility),
     type: firstTruthy(src?.type),
+    is_active: src?.is_active ?? null,
     is_vault: src?.is_vault ?? null,
     vault_private: src?.vault_private ?? null,
     is_private: src?.is_private ?? null,
+    created_at: firstTruthy(src?.created_at, src?.createdAt),
     listing_review_required: Boolean(src?.listing_review_required),
     listing_review_due_at: firstTruthy(
       src?.listing_review_due_at,
@@ -1564,6 +1635,14 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
       src?.listingReviewStatus
     ),
     listing_expiry_enforced: Boolean(src?.listing_expiry_enforced),
+    shop_product_slots_total: firstDefined(
+      src?.shop_product_slots_total,
+      src?.product_slots_total,
+      src?.public_slots_total
+    ),
+    follower_count: firstDefined(src?.follower_count, src?.followers_count),
+    followers_count: firstDefined(src?.followers_count, src?.follower_count),
+    shop_follower_count: firstDefined(src?.shop_follower_count, src?.follower_count),
   };
 }
 
@@ -1575,6 +1654,32 @@ function stripPublicBlockMetadata(description: any): string {
     .trim();
 }
 
+function normalizeMarketplaceDirectoryProduct(
+  raw: any
+): MarketplaceDirectoryProduct | null {
+  const src = raw?.item || raw?.product || raw;
+  const id = positiveNumber(firstDefined(src?.id, src?.product_id));
+  if (!id) return null;
+
+  const visibilityMode = firstTruthy(src?.visibility_mode, src?.visibilityMode);
+  if (visibilityMode === "vault_private") return null;
+
+  return {
+    id,
+    shopId: positiveNumber(
+      firstDefined(src?.shop_id, src?.shopId, src?.origin_shop_id, src?.shop?.id)
+    ),
+    sellerGmfnId: firstTruthy(src?.seller_gmfn_id, src?.sellerGmfnId),
+    title: firstTruthy(src?.name, src?.title, `Public item ${id}`),
+    description: stripPublicBlockMetadata(src?.description),
+    price: firstTruthy(src?.price, src?.price_text, src?.amount),
+    currency: firstTruthy(src?.currency),
+    imageUrl: firstTruthy(src?.image_url, src?.imageUrl),
+    videoUrl: firstTruthy(src?.video_url, src?.videoUrl),
+    visibilityMode: visibilityMode || "community_visible",
+    createdAt: firstTruthy(src?.created_at, src?.createdAt),
+  };
+}
 function normalizeRepostProductOption(raw: any): RepostProductOption | null {
   const src = raw?.item || raw?.product || raw;
   const id = positiveNumber(src?.id || src?.product_id);
@@ -3572,6 +3677,73 @@ function marketplaceFrontTagStyle(
   };
 }
 
+function marketplaceLiveMarketGridStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.05fr) minmax(0, 0.95fr)",
+    gap: isCompact ? 10 : 12,
+    alignItems: "stretch",
+  };
+}
+
+function marketplaceLiveMarketCardStyle(tone: "needs" | "shops" | "matches", isCompact: boolean): React.CSSProperties {
+  const accent =
+    tone === "needs"
+      ? "rgba(11,99,209,0.20)"
+      : tone === "shops"
+      ? "rgba(214,170,69,0.22)"
+      : "rgba(37,166,90,0.18)";
+  return {
+    borderRadius: isCompact ? 18 : 20,
+    border: `1px solid ${accent}`,
+    background:
+      tone === "needs"
+        ? "linear-gradient(180deg, rgba(247,251,255,0.99) 0%, rgba(234,243,255,0.96) 100%)"
+        : tone === "shops"
+        ? "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(247,251,255,0.96) 100%)"
+        : "linear-gradient(180deg, rgba(248,255,250,0.99) 0%, rgba(240,247,255,0.96) 100%)",
+    padding: isCompact ? 12 : 14,
+    boxShadow: "0 14px 28px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    minWidth: 0,
+  };
+}
+
+function marketplaceLiveRowStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    borderRadius: 14,
+    border: "1px solid rgba(16,37,59,0.08)",
+    background: "rgba(255,255,255,0.86)",
+    padding: isCompact ? 10 : 11,
+    display: "grid",
+    gap: 6,
+    minWidth: 0,
+    overflow: "hidden",
+  };
+}
+
+function marketplaceLiveCardTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#07172C",
+    fontSize: isCompact ? 17 : 19,
+    fontWeight: 1000,
+    lineHeight: 1.12,
+    overflowWrap: "break-word",
+  };
+}
+
+function marketplaceLiveMetaStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#52677C",
+    fontSize: isCompact ? 12.3 : 13,
+    fontWeight: 800,
+    lineHeight: 1.35,
+    overflowWrap: "break-word",
+  };
+}
+
 function marketplaceHeroShellStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "relative",
@@ -4158,6 +4330,9 @@ export default function MarketplacePage() {
   );
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
+  const [marketplaceDirectoryProducts, setMarketplaceDirectoryProducts] = useState<
+    MarketplaceDirectoryProduct[]
+  >([]);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [marketplaceWisdom, setMarketplaceWisdom] = useState<{
@@ -4171,6 +4346,15 @@ export default function MarketplacePage() {
   >([]);
   const [marketplaceDemandSignalCount, setMarketplaceDemandSignalCount] =
     useState(0);
+  const [marketplaceNeedRows, setMarketplaceNeedRows] = useState<
+    MarketplaceRequestItem[]
+  >([]);
+  const [marketplaceNeedsLoading, setMarketplaceNeedsLoading] = useState(false);
+  const [marketplaceNeedsError, setMarketplaceNeedsError] = useState("");
+  const [marketplaceMatchRows, setMarketplaceMatchRows] = useState<
+    MarketplaceMatchPreview[]
+  >([]);
+  const [marketplaceMatchesLoading, setMarketplaceMatchesLoading] = useState(false);
   const [marketplaceNoticesLoading, setMarketplaceNoticesLoading] = useState(false);
   const [marketplaceNoticePostingPolicy, setMarketplaceNoticePostingPolicy] =
     useState<"members" | "admins">("members");
@@ -5006,6 +5190,63 @@ export default function MarketplacePage() {
     void loadMarketplaceNotices();
   }, [loadMarketplaceNotices]);
 
+  const loadMarketplaceNeeds = useCallback(async () => {
+    if (!activeCommunityId) {
+      setMarketplaceNeedRows([]);
+      setMarketplaceMatchRows([]);
+      setMarketplaceNeedsError("");
+      setMarketplaceNeedsLoading(false);
+      setMarketplaceMatchesLoading(false);
+      return;
+    }
+
+    setMarketplaceNeedsLoading(true);
+    setMarketplaceMatchesLoading(true);
+    setMarketplaceNeedsError("");
+
+    try {
+      const rows = await listMarketplaceRequests({
+        clan_id: activeCommunityId,
+        status: "open",
+        limit: 6,
+      });
+      const needRows = rowsOf<MarketplaceRequestItem>(rows).filter((row) =>
+        Boolean(positiveNumber(row?.id))
+      );
+      setMarketplaceNeedRows(needRows);
+
+      const matchSets = await Promise.all(
+        needRows.slice(0, 3).map(async (request) => {
+          const requestId = positiveNumber(request.id);
+          if (!requestId) return [] as MarketplaceMatchPreview[];
+          const res = await getDemandSupplyMatches(requestId, { limit: 3 }).catch(
+            () => null
+          );
+          return rowsOf<DemandSupplyMatchItem>((res as any)?.matches)
+            .filter((match) => positiveNumber(match?.product_id) > 0)
+            .map((match) => ({ request, match }));
+        })
+      );
+      setMarketplaceMatchRows(matchSets.flat().slice(0, 12));
+    } catch (err: any) {
+      setMarketplaceNeedRows([]);
+      setMarketplaceMatchRows([]);
+      setMarketplaceNeedsError(
+        marketplaceErrorMessage(
+          err,
+          "Marketplace needs could not be loaded right now."
+        )
+      );
+    } finally {
+      setMarketplaceNeedsLoading(false);
+      setMarketplaceMatchesLoading(false);
+    }
+  }, [activeCommunityId]);
+
+  useEffect(() => {
+    void loadMarketplaceNeeds();
+  }, [loadMarketplaceNeeds]);
+
   function toggleSection(key: keyof SectionState) {
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
     setSectionsOpen((prev) =>
@@ -5601,6 +5842,7 @@ export default function MarketplacePage() {
       const [
         membersRes,
         shopsRes,
+        productsRes,
         ownerShopRes,
         inviteRes,
         loansRes,
@@ -5618,6 +5860,14 @@ export default function MarketplacePage() {
             ? getMarketplaceShops({
                 clan_id: currentCommunityId,
                 only_active: true,
+                limit: 200,
+              }).catch(() => ({ items: [] }))
+            : Promise.resolve({ items: [] }),
+          currentCommunityId
+            ? getMarketplaceProducts({
+                clan_id: currentCommunityId,
+                only_active: true,
+                include_reposted: false,
                 limit: 200,
               }).catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] }),
@@ -5679,6 +5929,10 @@ export default function MarketplacePage() {
           (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
         ) as MarketplaceShop[];
 
+      const directoryProductRows = rowsOf<any>(productsRes)
+        .map((row) => normalizeMarketplaceDirectoryProduct(row))
+        .filter(Boolean) as MarketplaceDirectoryProduct[];
+
       const normalizedLoans = rowsOf<any>(loansRes)
         .map((row) => normalizeLoan(row))
         .filter(Boolean) as LoanSupportItem[];
@@ -5705,6 +5959,7 @@ export default function MarketplacePage() {
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
       setShops(shopRows);
+      setMarketplaceDirectoryProducts(directoryProductRows);
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setMarketplaceTrust(trustRes || null);
       setTrustSlip(trustSlipRes || null);
@@ -6624,9 +6879,71 @@ export default function MarketplacePage() {
       const gmfn = getMemberGmfnId(member);
       const userId = positiveNumber(member?.user_id || member?.id);
       const visibleShopName = firstPublicIdentity(shop?.name);
+      const ownerName = firstPublicIdentity(
+        shop?.owner_display_name,
+        shop?.owner_name,
+        getMemberName(member)
+      );
       const memberDisplayName = visibleShopName || getMemberName(member);
       const supportKey =
         userId > 0 ? `u-${userId}` : gmfn ? `g-${gmfn.toUpperCase()}` : "";
+      const shopId = positiveNumber(shop?.id);
+      const shopGmfn = safeStr(shop?.gmfn_id || shop?.owner_gmfn_id || gmfn).toUpperCase();
+      const shopProducts = marketplaceDirectoryProducts
+        .filter((product) => {
+          const productShopId = positiveNumber(product.shopId);
+          const productSellerGmfn = safeStr(product.sellerGmfnId).toUpperCase();
+          return (
+            (shopId > 0 && productShopId === shopId) ||
+            (shopGmfn && productSellerGmfn && productSellerGmfn === shopGmfn)
+          );
+        })
+        .slice(0, 6);
+      const productTitles = shopProducts
+        .map((product) => firstTruthy(product.title))
+        .filter(Boolean)
+        .slice(0, 4);
+      const productDescriptions = shopProducts
+        .map((product) => firstTruthy(product.description))
+        .filter(Boolean)
+        .slice(0, 3);
+      const demandMatchTitles = marketplaceMatchRows
+        .filter((item) => {
+          const matchShopId = positiveNumber(item.match?.shop_id);
+          const matchShopName = firstTruthy(item.match?.shop_name).toLowerCase();
+          return (
+            (shopId > 0 && matchShopId === shopId) ||
+            (visibleShopName && matchShopName === visibleShopName.toLowerCase())
+          );
+        })
+        .map((item) => firstTruthy(item.request?.title, item.match?.product_title))
+        .filter(Boolean)
+        .slice(0, 3);
+      const description = firstTruthy(shop?.description);
+      const serviceSummary = firstTruthy(
+        description,
+        productTitles.length ? productTitles.slice(0, 2).join(" | ") : "",
+        shop ? "Shop details are light; open the Public Shop to see current offers." : ""
+      );
+      const communityNameText = firstTruthy(
+        shop?.marketplace_name,
+        shop?.clan_name,
+        shop?.community_name,
+        activeCommunityName
+      );
+      const searchText = [
+        memberDisplayName,
+        visibleShopName,
+        ownerName,
+        gmfn,
+        description,
+        communityNameText,
+        ...productTitles,
+        ...productDescriptions,
+        ...demandMatchTitles,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
       return {
         member,
@@ -6634,6 +6951,28 @@ export default function MarketplacePage() {
         gmfnId: gmfn,
         userId,
         supportKey,
+        ownerName,
+        description,
+        communityName: communityNameText,
+        imageUrl: firstTruthy(
+          shop?.image_url,
+          shop?.photo_url,
+          shop?.cover_image_url,
+          shop?.banner_url,
+          shop?.logo_url,
+          shop?.shop_logo_url
+        ),
+        contactAvailable: Boolean(
+          firstTruthy(shop?.whatsapp_number, shop?.telegram_handle)
+        ),
+        activeState: shop?.is_active === false ? "Inactive" : shop ? "Public shop" : "No shop yet",
+        createdAt: firstTruthy(shop?.created_at),
+        productCount: shopProducts.length,
+        productTitles,
+        productDescriptions,
+        serviceSummary,
+        searchText,
+        demandMatchTitles,
         shopName: shop
           ? firstTruthy(visibleShopName, "Public shop active")
           : "Shop not visible yet",
@@ -6653,7 +6992,14 @@ export default function MarketplacePage() {
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [activeCommunityId, members, shops]);
+  }, [
+    activeCommunityId,
+    activeCommunityName,
+    marketplaceDirectoryProducts,
+    marketplaceMatchRows,
+    members,
+    shops,
+  ]);
 
   const currentUserId = positiveNumber(
     firstDefined(me?.id, me?.user_id, me?.account_id)
@@ -8243,9 +8589,32 @@ export default function MarketplacePage() {
     !supportDraftStillOpen ||
     loanStatusLower === "approved";
 
-  const visibleTradeMemberRows = memberRows.slice(0, isCompact ? 3 : 5);
+  const visibleTradeMemberRows = memberRows.slice(0, isCompact ? 6 : 8);
   const hiddenTradeMemberRows = memberRows.slice(visibleTradeMemberRows.length);
   const visibleTradeShopCount = memberRows.filter((row) => row.shopTo).length;
+  const visibleMarketNeeds = marketplaceNeedRows.slice(0, isCompact ? 3 : 4);
+  const visibleNeedIds = new Set(
+    visibleMarketNeeds
+      .map((need) => positiveNumber(need?.id))
+      .filter((id) => id > 0)
+  );
+  const marketplaceMatchesByNeedId = useMemo(() => {
+    const grouped = new Map<number, MarketplaceMatchPreview[]>();
+    marketplaceMatchRows.forEach((item) => {
+      const requestId = positiveNumber(item.request?.id || item.match?.demand_id);
+      if (!requestId) return;
+      const list = grouped.get(requestId) || [];
+      list.push(item);
+      grouped.set(requestId, list);
+    });
+    return grouped;
+  }, [marketplaceMatchRows]);
+  const hiddenNeedProviderMatches = marketplaceMatchRows
+    .filter((item) => !visibleNeedIds.has(positiveNumber(item.request?.id || item.match?.demand_id)))
+    .slice(0, isCompact ? 1 : 3);
+  const shopDirectoryRows = memberRows.filter((row) => Boolean(row.shopTo));
+  const visibleShopDirectoryRows = shopDirectoryRows.slice(0, isCompact ? 2 : 6);
+  const hiddenShopDirectoryCount = Math.max(0, shopDirectoryRows.length - visibleShopDirectoryRows.length);
   const marketplaceStats = [
     {
       label: "Members",
@@ -8276,6 +8645,69 @@ export default function MarketplacePage() {
       tone: "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
     },
   ];
+  const renderNeedProviderMatch = (
+    item: MarketplaceMatchPreview,
+    index: number,
+    context: "need" | "overflow" = "need"
+  ) => {
+    const requestId = positiveNumber(item.request?.id || item.match?.demand_id);
+    const productId = positiveNumber(item.match?.product_id);
+    const publicShopPath = firstTruthy(item.match?.public_shop_path, APP_ROUTES.MARKETPLACE);
+
+    return (
+      <div
+        key={`${context}:${requestId || "need"}:${productId || index}`}
+        style={{
+          borderRadius: 13,
+          border: "1px solid rgba(37,166,90,0.16)",
+          background:
+            "linear-gradient(180deg, rgba(248,255,250,0.98) 0%, rgba(241,249,245,0.96) 100%)",
+          padding: isCompact ? 9 : 10,
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+          gap: 8,
+          alignItems: "center",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+          <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
+            Relevant provider
+          </div>
+          <div
+            style={{
+              color: "#07172C",
+              fontSize: isCompact ? 13.5 : 14.5,
+              fontWeight: 950,
+              lineHeight: 1.18,
+              overflowWrap: "break-word",
+            }}
+          >
+            {firstTruthy(item.match?.shop_name, "Marketplace shop")}
+          </div>
+          <div style={marketplaceLiveMetaStyle(isCompact)}>
+            {firstTruthy(item.match?.product_title, "Possible provider")}
+          </div>
+          {context === "overflow" ? (
+            <div style={marketplaceLiveMetaStyle(isCompact)}>
+              For: {firstTruthy(item.request?.title, "community need")}
+            </div>
+          ) : null}
+        </div>
+        <StableButton
+          type="button"
+          debugId={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.open-shop`}
+          onClick={(event) => openMarketplaceRoute(event, publicShopPath)}
+          style={{
+            ...marketplaceInlineActionStyle("secondary", false, isCompact),
+            minWidth: isCompact ? "100%" : 118,
+          }}
+        >
+          Open shop
+        </StableButton>
+      </div>
+    );
+  };
   const marketplaceWisdomPair =
     marketplaceWisdom?.pair || MARKETPLACE_WISDOM_FALLBACK;
   const marketplaceWisdomPublicId = marketplaceWisdom?.fallback
@@ -8582,7 +9014,8 @@ export default function MarketplacePage() {
             ) : null}
           </div>
 
-          <div style={marketplaceHeroStatsStyle(isCompact)}>
+          {!isCompact ? (
+            <div style={marketplaceHeroStatsStyle(isCompact)}>
             {marketplaceStats.map((item) => (
               <div key={item.label} style={marketplaceHeroStatCellStyle(isCompact)}>
                 <span
@@ -8631,133 +9064,385 @@ export default function MarketplacePage() {
                 </span>
               </div>
             ))}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         <div
-          data-gmfn-debug-id="marketplace.human-job-front-door"
-          style={marketplaceFrontLaneGridStyle(isCompact)}
+          data-gmfn-debug-id="marketplace.live-market-front"
+          style={marketplaceLiveMarketGridStyle(isCompact)}
         >
-          <StableButton
-            type="button"
-            debugId="marketplace.job.find-people-services"
-            aria-label="Find people, services, and shops in this marketplace"
-            onClick={(event) =>
-              openMarketplaceSection(event, "members", "marketplace-members-shops")
-            }
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #D7A22D 0%, #061827 100%)",
-                isCompact
-              )}
+          <div style={marketplaceLiveMarketCardStyle("needs", isCompact)}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                gap: 10,
+                alignItems: "start",
+              }}
             >
-              <MarketplaceGlyph name="members" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Find people & services
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Visible members, shops, and services in this community.
-              </span>
-              {!isCompact ? (
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                    Members
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                    Shops & services
-                  </span>
-                </span>
-              ) : null}
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
-
-          <StableButton
-            type="button"
-            debugId="marketplace.job.ask-for-something"
-            aria-label="Ask for something through DemandBox"
-            onClick={(event) => openMarketplaceCta(event, "demandBox")}
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #0B63D1 0%, #075064 100%)",
-                isCompact
-              )}
-            >
-              <MarketplaceGlyph name="demand" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>Needs</div>
+                <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                  What people here need
+                </div>
+                <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                  Live DemandBox requests from this marketplace. The request lifecycle stays in DemandBox.
+                </div>
+              </div>
+              <StableButton
+                type="button"
+                debugId="marketplace.job.ask-for-something"
+                aria-label="Ask for something through DemandBox"
+                onClick={(event) => openMarketplaceCta(event, "demandBox")}
+                style={{
+                  ...marketplaceActionStyle("primary"),
+                  width: isCompact ? "100%" : 168,
+                }}
+              >
                 Ask for something
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Create or manage a request.
-              </span>
-              {!isCompact ? (
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    DemandBox
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
-                    Request lifecycle
-                  </span>
-                </span>
-              ) : null}
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
+              </StableButton>
+            </div>
 
-          <StableButton
-            type="button"
-            debugId="marketplace.job.community-board"
-            aria-label="Open the community board"
-            onClick={(event) =>
-              openMarketplaceSection(event, "board", "marketplace-official-board")
-            }
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #158BA0 0%, #061827 100%)",
-                isCompact
-              )}
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 7,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
             >
-              <MarketplaceGlyph name="notice" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Community board
+              <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
+                DemandBox
               </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Notices, history, and member-facing board actions.
+              <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
+                Request lifecycle
               </span>
-              {!isCompact ? (
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    Notices
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                    Board
-                  </span>
+              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                {marketplaceNeedsLoading ? "Loading" : `${marketplaceNeedRows.length} open`}
+              </span>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {marketplaceNeedsLoading ? (
+                <div style={marketplaceLiveRowStyle(isCompact)}>
+                  <div style={marketplaceLiveMetaStyle(isCompact)}>
+                    Loading visible needs for this marketplace.
+                  </div>
+                </div>
+              ) : marketplaceNeedsError ? (
+                <div style={marketplaceLiveRowStyle(isCompact)}>
+                  <div style={marketplaceLiveMetaStyle(isCompact)}>
+                    {marketplaceNeedsError}
+                  </div>
+                </div>
+              ) : visibleMarketNeeds.length ? (
+                visibleMarketNeeds.map((need, index) => {
+                  const needId = positiveNumber(need?.id);
+                  const providerMatches = marketplaceMatchesByNeedId.get(needId) || [];
+                  const visibleProviders = providerMatches.slice(0, isCompact ? 1 : 2);
+                  const extraProviderCount = Math.max(0, providerMatches.length - visibleProviders.length);
+                  const needStatus = firstTruthy(need.status, "open");
+                  const requesterLabel = firstPublicIdentity(
+                    need.requester_display_name,
+                    need.requester_name,
+                    need.requester_nickname
+                  );
+                  const needCommunity = firstTruthy(
+                    need.marketplace_name,
+                    need.clan_name,
+                    activeCommunityName
+                  );
+                  const needDescription = firstTruthy(need.description);
+                  const needMeta =
+                    [
+                      firstTruthy(need.category, need.need_type),
+                      firstTruthy(need.area),
+                      firstTruthy(need.urgency),
+                    ]
+                      .filter(Boolean)
+                      .join(" - ") || "Open request";
+                  const needCreated = safeDateTime(need.created_at);
+                  const visibilityText = firstTruthy(need.visibility_scope);
+
+                  return (
+                    <div key={need.id || index} style={marketplaceLiveRowStyle(isCompact)}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                          gap: 8,
+                          alignItems: "start",
+                        }}
+                      >
+                        <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
+                          <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
+                            Community need
+                          </div>
+                          <div
+                            style={{
+                              color: "#07172C",
+                              fontSize: isCompact ? 14.5 : 15.5,
+                              fontWeight: 950,
+                              lineHeight: 1.18,
+                              overflowWrap: "break-word",
+                            }}
+                          >
+                            {firstTruthy(need.title, "Community need")}
+                          </div>
+                          <div style={marketplaceLiveMetaStyle(isCompact)}>
+                            {needMeta}
+                          </div>
+                        </div>
+                        <span style={stableStatusPillStyle(needStatus.toLowerCase() === "open")}>
+                          {needStatus}
+                        </span>
+                      </div>
+
+                      {needDescription ? (
+                        <div
+                          style={{
+                            ...marketplaceLiveMetaStyle(isCompact),
+                            display: "-webkit-box",
+                            WebkitLineClamp: isCompact ? 2 : 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {needDescription}
+                        </div>
+                      ) : null}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        {requesterLabel ? (
+                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                            {requesterLabel}
+                          </span>
+                        ) : null}
+                        {needCommunity ? (
+                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                            {needCommunity}
+                          </span>
+                        ) : null}
+                        {needCreated ? (
+                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                            {needCreated}
+                          </span>
+                        ) : null}
+                        {visibilityText ? (
+                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                            {visibilityText}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div style={{ display: "grid", gap: 7 }}>
+                        {marketplaceMatchesLoading ? (
+                          <div style={marketplaceLiveMetaStyle(isCompact)}>
+                            Checking relevant providers.
+                          </div>
+                        ) : visibleProviders.length ? (
+                          <>
+                            {visibleProviders.map((item, matchIndex) =>
+                              renderNeedProviderMatch(item, matchIndex, "need")
+                            )}
+                            {extraProviderCount ? (
+                              <div style={marketplaceLiveMetaStyle(isCompact)}>
+                                +{extraProviderCount} more provider{extraProviderCount === 1 ? "" : "s"} in DemandBox order.
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <div style={marketplaceLiveMetaStyle(isCompact)}>
+                            No relevant provider found in this community yet. Browse Shops & Services or open DemandBox to review the need.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={marketplaceLiveRowStyle(isCompact)}>
+                  <div style={marketplaceLiveMetaStyle(isCompact)}>
+                    No open DemandBox needs are visible in this marketplace yet.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={marketplaceLiveMarketCardStyle("shops", isCompact)}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                gap: 10,
+                alignItems: "start",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#805A0F" }}>Shops & Services</div>
+                <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                  Who can provide something
+                </div>
+                <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                  Visible shop faces in this community. Public Shop owns the details.
+                </div>
+              </div>
+              <StableButton
+                type="button"
+                debugId="marketplace.job.find-people-services"
+                aria-label="Open Shops and Services in this marketplace"
+                onClick={(event) =>
+                  openMarketplaceSection(event, "members", "marketplace-members-shops")
+                }
+                style={{
+                  ...marketplaceActionStyle("secondary"),
+                  width: isCompact ? "100%" : 176,
+                }}
+              >
+                Shops & Services
+              </StableButton>
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 7,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
+                Public shops
+              </span>
+              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                {shopDirectoryRows.length} visible
+              </span>
+              {hiddenShopDirectoryCount ? (
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  {hiddenShopDirectoryCount} more in directory
                 </span>
               ) : null}
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {visibleShopDirectoryRows.length ? (
+                visibleShopDirectoryRows.map((row, index) => (
+                  <div key={`${row.gmfnId || row.userId || index}:front-shop`} style={marketplaceLiveRowStyle(isCompact)}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 14 : 15,
+                            fontWeight: 950,
+                            lineHeight: 1.2,
+                            overflowWrap: "break-word",
+                          }}
+                        >
+                          {row.shopName || row.name}
+                        </div>
+                        <div style={marketplaceLiveMetaStyle(isCompact)}>
+                          {row.gmfnId ? displayGsnLabel(row.gmfnId) : "GSN shop"}
+                        </div>
+                        {row.serviceSummary ? (
+                          <div
+                            style={{
+                              ...marketplaceLiveMetaStyle(isCompact),
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {row.serviceSummary}
+                          </div>
+                        ) : null}
+                        {(row.productTitles || []).length ? (
+                          <div style={marketplaceLiveMetaStyle(isCompact)}>
+                            {(row.productTitles || []).slice(0, 2).join(" | ")}
+                          </div>
+                        ) : null}
+                      </div>
+                      <StableCtaLink
+                        debugId={`marketplace.front.shop.${row.gmfnId || row.userId || "unknown"}.open`}
+                        to={row.shopTo || routeWithCommunity(APP_ROUTES.MARKETPLACE, activeCommunityId)}
+                        stableHeight={isCompact ? 42 : 46}
+                        style={{
+                          ...marketplaceInlineActionStyle("secondary", !row.shopTo, isCompact),
+                          minWidth: isCompact ? 92 : 104,
+                        }}
+                      >
+                        Open shop
+                      </StableCtaLink>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={marketplaceLiveRowStyle(isCompact)}>
+                  <div style={marketplaceLiveMetaStyle(isCompact)}>
+                    No visible public shops are connected to this marketplace yet.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {hiddenNeedProviderMatches.length ? (
+            <div
+              style={{
+                ...marketplaceLiveMarketCardStyle("matches", isCompact),
+                gridColumn: isCompact ? undefined : "1 / -1",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
+                    More provider connections
+                  </div>
+                  <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                    Providers for other needs
+                  </div>
+                  <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                    These are relevant providers for needs not shown above.
+                  </div>
+                </div>
+                <span style={stableStatusPillStyle(true)}>
+                  {hiddenNeedProviderMatches.length} more
+                </span>
+              </div>
+
+              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                {hiddenNeedProviderMatches.map((item, index) =>
+                  renderNeedProviderMatch(item, index, "overflow")
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {hasMarketplaceMoneySupportContext ? (
@@ -8831,7 +9516,7 @@ export default function MarketplacePage() {
                 ROSCA
               </StableButton>
             </div>
-          </div>
+            </div>
         ) : null}
 
         <details
@@ -8879,6 +9564,18 @@ export default function MarketplacePage() {
             </StableButton>
             <StableButton
               type="button"
+              debugId="marketplace.progressive.community-board"
+              aria-label="Open market-relevant community board signals"
+              onClick={(event) =>
+                openMarketplaceSection(event, "board", "marketplace-board")
+              }
+              stableHeight={isCompact ? 54 : 58}
+              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+            >
+              Community board
+            </StableButton>
+            <StableButton
+              type="button"
               debugId="marketplace.progressive.tools"
               aria-label="Open marketplace access and public links"
               onClick={(event) =>
@@ -8919,19 +9616,20 @@ export default function MarketplacePage() {
 
         <div
           data-marketplace-wisdom-lens="true"
+          data-gmfn-debug-id="marketplace.front.suggested-next-step"
           style={{
-            marginTop: 14,
-            borderRadius: isCompact ? 18 : 20,
+            marginTop: 10,
+            borderRadius: isCompact ? 16 : 18,
             border: "1px solid rgba(214,170,69,0.22)",
             background:
               "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(247,251,255,0.98) 100%)",
-            padding: isCompact ? 12 : 14,
+            padding: isCompact ? 10 : 12,
             display: "grid",
-            gridTemplateColumns: isCompact ? "40px minmax(0, 1fr)" : "46px minmax(0, 1fr) auto",
+            gridTemplateColumns: isCompact ? "34px minmax(0, 1fr)" : "42px minmax(0, 1fr) auto",
             gap: isCompact ? 10 : 12,
             alignItems: "center",
             boxShadow:
-              "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+              "0 8px 18px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
             overflow: "hidden",
             overflowAnchor: "none",
           }}
@@ -8943,17 +9641,17 @@ export default function MarketplacePage() {
                 "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
                 isCompact
               ),
-              width: isCompact ? 38 : 44,
-              height: isCompact ? 38 : 44,
-              borderRadius: isCompact ? 13 : 15,
+              width: isCompact ? 34 : 40,
+              height: isCompact ? 34 : 40,
+              borderRadius: isCompact ? 12 : 14,
             }}
           >
-            <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
+            <MarketplaceGlyph name="spark" size={isCompact ? 18 : 22} />
           </span>
 
           <div style={{ minWidth: 0 }}>
             <div style={{ ...sectionLabel(), color: "#8A5A08" }}>
-              Marketplace Wisdom
+              Suggested next step
             </div>
             <div
               style={{
@@ -9014,7 +9712,7 @@ export default function MarketplacePage() {
           <StableButton
             type="button"
             debugId="marketplace.row.wisdom-action"
-            aria-label={`${marketplaceWisdomAction.label} from Marketplace Wisdom`}
+            aria-label={`${marketplaceWisdomAction.label} from marketplace suggested next step`}
             onClick={openMarketplaceWisdomLens}
             style={{
               ...marketplaceActionStyle("primary"),
@@ -9037,7 +9735,8 @@ export default function MarketplacePage() {
           </StableButton>
         </div>
 
-        <div style={marketplaceFrontSummaryGridStyle(isCompact)}>
+        {hasMarketplaceMoneySupportContext ? (
+          <div style={marketplaceFrontSummaryGridStyle(isCompact)}>
           <div style={marketplaceFrontSummaryCardStyle(isCompact)}>
             <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
               Finance Summary
@@ -9129,7 +9828,8 @@ export default function MarketplacePage() {
               </div>
             </details>
           </div>
-        </div>
+          </div>
+        ) : null}
 
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>
@@ -9214,7 +9914,7 @@ export default function MarketplacePage() {
                     </StableButton>
                   ))}
               </div>
-            </div>
+              </div>
           ) : null}
       </section>
       {sectionsOpen.board || sectionsTouched.board ? (
@@ -9588,6 +10288,7 @@ export default function MarketplacePage() {
             visibleTradeShopCount={visibleTradeShopCount}
             marketplaceCommunityDomainRows={marketplaceCommunityDomainRows}
             marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
+            marketplaceFieldTouchProps={marketplaceFieldTouchProps}
             safeDateTime={safeDateTime}
             onToggleMembers={(event) => toggleSectionFromButton(event, "members")}
             onOpenCommunityDomain={openMarketplaceCommunityDomain}

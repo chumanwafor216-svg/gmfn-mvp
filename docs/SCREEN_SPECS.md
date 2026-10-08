@@ -178,6 +178,35 @@ Rules:
 - Market Wisdom may use Focus Commitment pressure as a `Now` reading so the user sees execution risk before acting, but the actual commitment work must remain inside Focus Commitments and the Action Inbox; do not create a second task manager from Market Wisdom.
 - Dashboard may show a compact `My Pulse` strip inside `What needs your attention`. My Pulse reads server-owned Attention Spine signals from `/attention-spine/me` first, then local Focus Commitments and Market Wisdom context where those engines are not yet server-persisted. It must reveal the current signal list in place when tapped, while any deeper action routes back to the existing owner screen. It must not become a separate dashboard card, inbox, posting area, approval queue, or commitment manager.
 
+
+## MyGMFNAndIPage / Profile
+
+Status: CLOSED/FROZEN as of 2026-10-08.
+
+Purpose:
+Member home for `me across the whole GSN network`.
+
+Route contract:
+- `/app/my-gmfn-and-i` is the canonical My GSN member home.
+- `/app/profile` redirects to the same member home for compatibility.
+- `/app/my-gmfn-and-i?tab=guide` is the explicit Guide / Help branch.
+- `/app/my-gmfn-and-i?tab=settings` is the Settings branch.
+
+First-screen order:
+- identity first;
+- community portfolio from `listMyClans`, including community name, stable/global id, role/status, selected indicator, and Community Home handoff;
+- compact attention summary only when there is a real attention signal, source failure, or loading state, with Notifications/DemandBox handoffs for full queues;
+- compact selected-community shop/business handoff only, with Shop Control owning products, diary, Spotlight, Vault, and analytics;
+- compact trust/evidence handoff only, with Trust Passport and TrustSlip owning detail;
+- settings/account entry, with current frontend settings labelled as device preferences unless they are intentionally connected to backend `/settings/me`;
+- guide/help and setup capability material lower on the page or behind explicit guide mode.
+
+Rules:
+- My GSN must not become Dashboard, Community Home, Marketplace, Shop Control, Trust Passport, or TrustSlip.
+- Dashboard owns immediate operational overview. My GSN owns durable identity, memberships, footprint, and orientation.
+- Community Home owns one selected community. My GSN owns the cross-community personal portfolio.
+- Profile tab must open the canonical member home, not the historical guide-first branch.
+- Do not revive the old standalone `ProfilePage.tsx`; treat it as deprecated/unmounted source until a later deletion audit.
 ## Mobile Task Page Rule
 
 All authenticated mobile task pages must follow
@@ -374,108 +403,78 @@ After submission:
 ## CommunityHomePage
 
 Purpose:
-Overview of selected community.
+Member view inside one selected community.
 
-Must show:
-- Community identity hero
-- Holder count
-- GSN ID status
-- Marketplace communities count
-- Money across communities
-- What do you want to do next?
-- Choose marketplace community
-- Enter marketplace
-- Create marketplace community
-- Join marketplace community
-- Grow circle
-- Marketplace Communities / Community Domains compact row
-  - row title
-  - marketplace-community and Community Domain counts
-  - opens to one simple list for ordinary marketplace communities and institutional Community Domains
-  - each opened ordinary community item shows community name, marketplace workspace context, and Open Marketplace
-  - each opened Community Domain item shows domain name, setup/marketplace readiness, and opens Marketplace when active or setup/dashboard when not active
-- Community Bulletin:
-  - uses the richer phone bulletin arrangement: navy/gold header, compact date strip on phone, source row, strong centered notice text, in-place `Read full notice` / `Close full notice` control for longer messages, one compact `Details` control for notice actions/status, and one `Bulletin tools` control for Post/Contact/Settings/history
-  - when more than one live announcement exists, the board shows a compact position chip such as `1/4` with numbered controls; choosing a number makes that announcement the single bold card with its own Details panel, availability response, full notice, and admin roll call
-  - numbered announcement controls use simple traffic-light meaning: green means no set date or more than three days away, yellow means within 72 hours, and red means due tomorrow, due today, or overdue
-  - Community Pulse may sit inside the Bulletin as a summary lens showing urgent/due-soon/clear counts plus response, acknowledgement, or admin-review signals; it must route the user back to the existing Bulletin item instead of becoming another inbox or screen
-  - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; QR-enabled notices expose `Open QR link` inside Details, public URL and GSN-uploaded video/poster attachments expose one `Open attachment` action, and the public route must hide private sender/contact/roll-call data
-  - Bulletin attachments support public `http/https` links plus GSN-uploaded poster images and short videos through the existing governed media upload path. Direct document-file upload is still not enabled; document attachments must use a public document link until a governed public-document storage route exists.
-  - shows one central live announcement feed across all ordinary Communities where the signed-in member has active membership, plus eligible linked official Community Domain notices for those communities
-  - Ask Community / market-need-pulse records must not render as Community Bulletin announcements by default; they belong in Demand Box unless a later governed community setting explicitly converts the bulletin into a one-way communication arena.
-  - posting, settings, review, and roll-call management stay local to the selected/source community; central reading must not turn a local notice into a cross-community broadcast
-  - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
-  - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
-  - if no live announcement exists, show `No new announcement.`
-  - acknowledgement, contact announcer, availability responses, status chips, QR, attachment, and roll-call actions live inside the Details panel instead of competing as separate first-surface buttons; meeting notices use the meeting response record, while date/event announcements use the notice-level availability record
-  - officers/admins authorized by community governance can open a Details roll call for a notice to see who acknowledged and who has not; ordinary members must never see that member-by-member roll call
-  - member records that require admin approval use Submit, not Post
-  - submitted member records stay hidden from the active board until an officer approves them
-  - officers receive Action Inbox/Web Push review prompts for member-submitted records when notification delivery is configured
-  - review prompts link back to `/app/community` with the selected `clan_id`, submitted record id, and Bulletin settings panel hash
-  - officers see pending record count and approve/reject controls inside the existing Bulletin settings drawer
-  - approval publishes a new official notice; rejection records the decision without publishing
-  - submitters receive an Action Inbox/Web Push result notification after approval or rejection when notification delivery is configured
-- compact rows:
-  - Owner Actions
-  - Owner Shop Control
-  - Marketplace Capacity
-  - Vault Control
-  - Free Spotlight
-  - Spotlight Subscription
-  - Grow Trusted Circle
-  - Owner Spotlight Status
+Status: CLOSED/FROZEN as of 2026-10-08 after Community Home Rebuild Phase 2.
+
+Canonical rule:
+- Community Home answers `which community am I inside right now?`
+- My GSN / Profile answers `who am I across GSN?`
+- Marketplace answers `what can I do/find inside this selected community marketplace?`
+- Shop Control answers `how do I manage my shop and Spotlight?`
+- Community Domain answers `how do authorised operators administer the domain?`
+
+Must show, in phone-first order:
+- selected community identity hero
+  - community name
+  - stable community reference / global ID where available
+  - member role/status
+  - compact member count only when known
+- Community Bulletin immediately after identity
+  - one live announcement presentation
+  - Details for acknowledgement/contact/availability/attachment/QR actions
+  - no Ask Community / market-need records in the Bulletin by default
+- Needs your attention only when a real selected-community action exists
+  - notice response required
+  - notice acknowledgement required
+  - officer bulletin review waiting
+- compact `Go to` handoff group
+  - Marketplace
+  - Manage shop -> Shop Control
+  - Finance
+  - Support
+  - Trust
+- compact community switcher
+  - collapsed by default
+  - ordinary member communities only dominate the opened switcher
+  - route changes/select changes must reconcile against `listMyClans`
+- one collapsed Admin area only for verified authority
+  - Bulletin posting/settings/review
+  - join requests
+  - Community Domain controls only when `/community-domains/my` reports `viewer.can_admin` or equivalent for the selected community/domain
 
 Rules:
-- Community Home is an overview page, not a full content dump.
-- Do not expose all owner tools on this page.
-- Create marketplace community must appear here as one compact action only.
-- Set up Community Domain must open the CommunityDomainDashboardPage selector/command surface first, not the purchase/provisioning page as the first Community Home handoff.
-- The full create-community process belongs in the StartCommunityPage 3-step wizard.
-- Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
-- Owner Spotlight Status on Community Home must be current-member scoped. It may show the signed-in member's own live spotlight status/preview for the selected community, but it must not render another member's spotlight media on the member's personal Community Home.
-- Community/public spotlight reflection belongs on public/reflection surfaces such as Dashboard, Public Shop, and Marketplace-facing spotlight areas, not inside another member's Owner Spotlight Status panel.
-- If the signed-in member has no active spotlight, show a compact owner status/shortcut.
-- Secondary sections must be collapsed, grouped, or represented as compact rows.
-- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. Move those readings to a deeper community readings surface.
+- `/app/community/:clanId` must not silently render a different stored selected community. It must verify the route param against `listMyClans`, select/reconcile when accessible, and show a truthful inaccessible-community state otherwise.
+- Community Home must not fetch, rotate, synthesize, or render live Spotlight media/feed.
+- Community Home must not expose Free Spotlight, Subscription Spotlight, Paid Repost, Vault controls, Merchant Release, Shop Gallery Tools, guided Spotlight chooser, or shop-readiness routing as first-screen controls. Use `Manage shop` as the Shop Control handoff.
+- Community Home must not fetch `getPoolMeSummary` or present cumulative finance in the identity/status area. Finance is a simple handoff.
+- Community Home must not expose a full cross-community portfolio; My GSN owns cross-GSN/community identity orientation later.
+- Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
+- Secondary details stay collapsed, grouped, or represented as compact rows.
+- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
 Role states to support:
-- Holder / Owner
 - Member
-- Visitor
-- Pending identity user
-- Verified identity user
-- Community admin
 - Shop owner
-- Marketplace participant
-
-Owner-only rows:
-- Owner Actions
-- Owner Shop Control
-- Vault Control
-- Free Spotlight
-- Spotlight Subscription
-- Grow Trusted Circle
-- Owner Spotlight Status
+- Officer/admin
+- Community Domain admin
+- Pending/verified identity user
 
 Empty states to support:
 - no community yet
+- inaccessible route-param community
 - one community selected
-- multiple communities
-- GSN ID pending
-- GSN ID verified
-- shop not created
-- shop active
-- spotlight inactive
-- spotlight live
-- paid spotlight expired
-- no trusted circle yet
+- multiple selectable communities
+- missing display name
+- no live Bulletin item
+- Bulletin attention / no attention
 
 Deferred deeper surfaces:
-- Owner Command Centre / Community Regiment page for deeper owner-side structure.
-- Trust Calendar / Event Timeline placement under Trust Events, What Matters Now, Notifications, or Focus Commitments.
-
+- My GSN / Profile for cross-GSN identity and full community portfolio.
+- Community Domain / Command Center for deeper authorised operator workload.
+- Shop Control for shop, Spotlight, Vault, merchant release, and shop readiness.
+- Marketplace for one-community needs, directory, provider connections, and action handoff.
 ## CommunityDomainDashboardPage
 
 Purpose:
@@ -498,9 +497,9 @@ Must show:
 - inside Members focus, Member readiness must be recommended first before Roster control
 - inside Roster control, Summary must be recommended before individual member status changes
 - inside Setup access, Summary must be recommended before changing setup editor authority
-- inside Billing jobs, Code & proof must be recommended before account setup, steps, or readiness diagnostics
+- inside Billing jobs, Code & evidence must be recommended before account setup, steps, or readiness diagnostics
 - inside Billing pay-in account, Summary must be recommended before account setup
-- inside Billing Code & proof, Reference must be recommended before code generation, settlement checks, or proof upload
+- inside Billing Code & evidence, Reference must be recommended before code generation, settlement checks, or evidence upload
 - inside Operating summary, Do next must be recommended before status, allowance, or permissions
 - inside Activity recording, Record must be recommended before catalogue or recent activity views
 - inside Beneficiary outcomes, Record must be recommended before recent outcome views
@@ -612,7 +611,7 @@ Rules:
 - Governance jobs must remain step-first: use the numbered governance work path
   for normal work, and keep deeper stage/job selectors secondary.
 - Real-life record capture must remain staged: activity uses Person, Activity,
-  Evidence; beneficiary outcome uses Person, Change, Proof. The visible path is
+  Evidence; beneficiary outcome uses Person, Change, Evidence. The visible path is
   primary, while Change step is a correction tool.
 - School governance packet details must not appear as a full dashboard dump.
   Use the selected school work area first, then reveal only the matching details.
@@ -1135,6 +1134,18 @@ Rules:
 
 Purpose:
 Owner-side shop tools.
+
+Shop Diary status:
+CLOSED/FROZEN as of 2026-10-08 after final Shop Diary verification gate.
+
+Shop Diary contract:
+- Shop Control owns owner-side Shop Diary creation, latest activity, safe same-shop confirmed Trade Evidence selection, and the optional `Promote this update` handoff to the canonical Spotlight publisher.
+- Public Shop owns visitor-facing Shop Diary presentation: one Shop Diary section, latest visible diary entry featured, compact recent entries, then distinct Products & Services.
+- Diary entries are chronological shop activity history, not products/services, paid placement, Spotlight ranking, TrustSlip proof, analytics inference, or formal transaction workflow.
+- Ordinary owner-created entries default to `Owner update`; owner-requested `system_recorded` must not self-assert system truth; stronger confirmation requires a same-shop confirmed Protected Trade.
+- Unscoped, cross-shop, unauthorized, unconfirmed, malformed, and missing evidence links must fail server-side, not only in the frontend.
+- Promotion from a diary entry may prefill the Spotlight publisher for owner review, but must not auto-publish, bypass quota/payment rules, change evidence class, change chronology, or alter Spotlight ranking.
+- Entries are create-only in the frozen contract. Edit, hide/archive, delete, and downstream Spotlight mutation after a diary entry changes remain explicit future lifecycle debt.
 
 Must show:
 - GSN ID status

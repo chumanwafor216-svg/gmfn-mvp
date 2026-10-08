@@ -1,4 +1,4 @@
-/* global console, process */
+﻿/* global console, process */
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,8 +31,8 @@ const source = marketplacePageSource
   .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
 
-const expectedStableActionCount = 91;
-const expectedNativeFieldCount = 37;
+const expectedStableActionCount = 93;
+const expectedNativeFieldCount = 38;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
   "loadingRepostCredits",

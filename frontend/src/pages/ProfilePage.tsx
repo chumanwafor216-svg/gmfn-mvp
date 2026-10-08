@@ -1,3 +1,4 @@
+// Deprecated/unmounted: /app/profile redirects to MyGMFNAndIPage; do not revive without a freeze review.
 import React, { useEffect, useState } from "react";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";

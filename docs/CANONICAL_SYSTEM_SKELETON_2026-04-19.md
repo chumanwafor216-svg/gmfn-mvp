@@ -9,6 +9,8 @@ Canonical architecture clarification from product-owner explanation.
 This document is now the required reference for route-purpose work,
 information-architecture work, and major navigation decisions.
 
+2026-10-08 Community Home CLOSED/FROZEN supersession: Community Home is no longer treated as the dominant all-communities portfolio. Current runtime ownership is `Community Home = me inside one selected community`; `My GSN = me across GSN`. Community Home must lead with selected community identity/reference/role/status, then Bulletin, real selected-community attention, compact handoffs, compact switching, and collapsed authorised admin entry. It must not fetch cumulative finance, fetch/render live Spotlight, or expose shop/Spotlight/Vault/merchant specialist controls that belong in Shop Control.
+
 If this document conflicts with earlier provisional architecture docs, this
 document wins until those docs are revised.
 
@@ -533,8 +535,9 @@ Important consequences:
 
 - not every member in a marketplace will have spotlight exposure at the same
   time
-- spotlight may appear as a smaller screen or reflection elsewhere, including on
-  Dashboard or Shop-related surfaces
+- spotlight may appear as a smaller screen or reflection on Shop-related
+  surfaces such as Public Shop and Shop Control; Dashboard should not fetch,
+  rotate, or render live Spotlight
 - the actual ownership of the spotlight feed belongs above one marketplace
 - normal spotlight visibility is bounded by the communities and marketplaces
   inside the member's Community Home circle

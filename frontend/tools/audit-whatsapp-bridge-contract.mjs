@@ -61,10 +61,9 @@ mustNotInclude("WhatsAppBridgePage.tsx", page, "whatsapp-bridge.source.");
 mustNotInclude("WhatsAppBridgePage.tsx", page, "Fallback signpost link");
 mustNotInclude("WhatsAppBridgePage.tsx", page, "Copy Signpost Message");
 
-mustInclude("CommunityHomePage.tsx", communityHome, "Domain bulletin bridge");
-mustInclude("CommunityHomePage.tsx", communityHome, "Share public bulletin output to WhatsApp, social, or email without exposing internal tools.");
-mustInclude("CommunityHomePage.tsx", communityHome, "routes.whatsappBridge");
-mustInclude("CommunityHomePage.tsx", communityHome, "community-home.lane.marketplace-tools");
+mustInclude("CommunityHomePage.tsx", communityHome, "Community Bulletin");
+mustNotInclude("CommunityHomePage.tsx", communityHome, "routes.whatsappBridge");
+mustNotInclude("CommunityHomePage.tsx", communityHome, "community-home.lane.marketplace-tools");
 
 mustInclude("SCREEN_REGISTRY.md", registry, "WhatsAppBridgePage");
 mustInclude("SCREEN_SPECS.md", specs, "## WhatsAppBridgePage");

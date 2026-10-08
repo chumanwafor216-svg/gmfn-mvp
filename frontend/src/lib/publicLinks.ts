@@ -1,6 +1,7 @@
 const DEFAULT_PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
 const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
 export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
+export const PUBLIC_SHOP_SPOTLIGHT_ANCHOR = "public-shop-spotlight";
 export const PUBLIC_SHOP_VAULT_ANCHOR = "private-vault";
 const SUSPENDED_PUBLIC_FRONTEND_HOSTS = new Set(["frontend.onrender.com"]);
 const UNREADY_PUBLIC_CREDENTIAL_KEYS = new Set([

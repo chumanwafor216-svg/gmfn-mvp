@@ -162,6 +162,21 @@ export type VerifyBanner = {
   detail: string;
 };
 
+export type TrustSlipVerifyErrorCategory =
+  | "not_found"
+  | "viewer_restricted"
+  | "conflict"
+  | "client_error"
+  | "server_error"
+  | "network";
+
+export type TrustSlipVerifyEndpointError = {
+  status: number | null;
+  detail: string;
+  category: TrustSlipVerifyErrorCategory;
+  source?: string;
+};
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -633,6 +648,8 @@ export async function callFirstAvailable<T = any>(
   names: string[],
   argsSets: any[][]
 ): Promise<T | null> {
+  const errors: TrustSlipVerifyEndpointError[] = [];
+
   for (const name of names) {
     const fn = (api as any)[name];
     if (typeof fn !== "function") continue;
@@ -641,13 +658,75 @@ export async function callFirstAvailable<T = any>(
       try {
         const result = await fn(...args);
         if (result) return result as T;
-      } catch {
-        // try next signature
+      } catch (error) {
+        errors.push(normalizeTrustSlipVerifyEndpointError(error, name));
+        // Keep compatibility fallback attempts, but remember the real failure.
       }
     }
   }
 
+  const strongestError = strongestTrustSlipVerifyEndpointError(errors);
+  if (strongestError) throw strongestError;
+
   return null;
+}
+
+function normalizeTrustSlipVerifyEndpointError(
+  error: any,
+  source?: string
+): TrustSlipVerifyEndpointError {
+  const status = Number.isFinite(Number(error?.status))
+    ? Number(error.status)
+    : Number.isFinite(Number(error?.response?.status))
+      ? Number(error.response.status)
+      : null;
+  const detail = firstTruthy(
+    error?.detail,
+    error?.message,
+    error?.response?.data?.detail,
+    error?.response?.data?.message,
+    status ? `HTTP ${status}` : "TrustSlip verification request failed."
+  );
+  const detailLower = detail.toLowerCase();
+  const category: TrustSlipVerifyErrorCategory =
+    status === 404
+      ? "not_found"
+      : status === 401 || status === 403
+        ? "viewer_restricted"
+        : status === 409 ||
+            detailLower.includes("revoked") ||
+            detailLower.includes("expired") ||
+            detailLower.includes("frozen")
+          ? "conflict"
+          : status && status >= 500
+            ? "server_error"
+            : status && status >= 400
+              ? "client_error"
+              : "network";
+
+  return { status, detail, category, source };
+}
+
+function strongestTrustSlipVerifyEndpointError(
+  errors: TrustSlipVerifyEndpointError[]
+): TrustSlipVerifyEndpointError | null {
+  if (!errors.length) return null;
+
+  const priority: Record<TrustSlipVerifyErrorCategory, number> = {
+    not_found: 100,
+    viewer_restricted: 90,
+    conflict: 85,
+    client_error: 70,
+    server_error: 50,
+    network: 40,
+  };
+
+  return [...errors].sort((left, right) => {
+    const rightPriority = priority[right.category] || 0;
+    const leftPriority = priority[left.category] || 0;
+    if (rightPriority !== leftPriority) return rightPriority - leftPriority;
+    return (right.status || 0) - (left.status || 0);
+  })[0];
 }
 
 export function deriveBanner(record: TrustSlipVerifyRecord | null): VerifyBanner {

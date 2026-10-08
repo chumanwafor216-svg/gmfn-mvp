@@ -19,12 +19,14 @@ import { navigateWithOrigin } from "../lib/nav";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
+import TrustSlipVerifyResultCard from "./trustSlipVerify/TrustSlipVerifyResultCard";
 import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import {
   callFirstAvailable,
   deriveBanner,
   normalizeTrustSlipVerification,
   type CommunityConfirmationOutcome,
+  type TrustSlipVerifyEndpointError,
   type TrustSlipVerifyRecord,
   type VerifyBannerTone,
 } from "./trustSlipVerify/trustSlipVerifyData";
@@ -197,6 +199,94 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
+function normalizeVerifyEndpointError(error: any): TrustSlipVerifyEndpointError {
+  const status = Number.isFinite(Number(error?.status))
+    ? Number(error.status)
+    : null;
+  const detail = firstTruthy(
+    error?.detail,
+    error?.message,
+    status ? `HTTP ${status}` : "TrustSlip verification request failed."
+  );
+  const detailLower = detail.toLowerCase();
+  const category: TrustSlipVerifyEndpointError["category"] =
+    status === 404
+      ? "not_found"
+      : status === 401 || status === 403
+        ? "viewer_restricted"
+        : status === 409 ||
+            detailLower.includes("revoked") ||
+            detailLower.includes("expired") ||
+            detailLower.includes("frozen")
+          ? "conflict"
+          : status && status >= 500
+            ? "server_error"
+            : status && status >= 400
+              ? "client_error"
+              : "network";
+
+  return { status, detail, category, source: safeStr(error?.source) || undefined };
+}
+
+function verifyEndpointErrorCopy(error: TrustSlipVerifyEndpointError): {
+  title: string;
+  detail: string;
+  statusLabel: string;
+} {
+  const backendDetail = firstTruthy(error.detail);
+
+  if (error.category === "not_found" || error.status === 404) {
+    return {
+      title: "This TrustSlip code was not found.",
+      detail: "Ask the holder for a fresh TrustSlip link or code.",
+      statusLabel: "Not found",
+    };
+  }
+
+  if (error.category === "viewer_restricted" || error.status === 401 || error.status === 403) {
+    return {
+      title: "This TrustSlip check is not available to this viewer.",
+      detail: firstTruthy(
+        backendDetail,
+        "Ask the holder for a fresh public TrustSlip link or use the signed-in route if you are the holder."
+      ),
+      statusLabel: error.status === 401 ? "Sign-in required" : "Restricted",
+    };
+  }
+
+  if (error.category === "conflict" || error.status === 409) {
+    return {
+      title: firstTruthy(backendDetail, "This TrustSlip cannot be used in its current state."),
+      detail: firstTruthy(
+        backendDetail,
+        "Ask the holder to refresh the TrustSlip before relying on this public check."
+      ),
+      statusLabel: "Needs attention",
+    };
+  }
+
+  if (error.category === "server_error" || (error.status || 0) >= 500) {
+    return {
+      title: "TrustSlip information is temporarily unavailable.",
+      detail: "The TrustSlip service did not return a usable response. Try again in a moment.",
+      statusLabel: "Temporarily unavailable",
+    };
+  }
+
+  if (error.category === "network") {
+    return {
+      title: "TrustSlip could not reach the verification server.",
+      detail: "Check the connection, then try the TrustSlip link or code again.",
+      statusLabel: "Connection issue",
+    };
+  }
+
+  return {
+    title: "This TrustSlip check could not be completed.",
+    detail: firstTruthy(backendDetail, "Ask the holder for a fresh TrustSlip link or code."),
+    statusLabel: error.status ? `HTTP ${error.status}` : "Unavailable",
+  };
+}
 export default function TrustSlipVerifyPage() {
   const params = useParams<{ code?: string; shareToken?: string }>();
   const location = useLocation();
@@ -221,6 +311,8 @@ export default function TrustSlipVerifyPage() {
   const [resolvedCode, setResolvedCode] = useState("");
   const [codeEntry, setCodeEntry] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [verifyEndpointError, setVerifyEndpointError] =
+    useState<TrustSlipVerifyEndpointError | null>(null);
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
@@ -495,6 +587,7 @@ export default function TrustSlipVerifyPage() {
     (async () => {
       setLoading(true);
       setLoadError("");
+      setVerifyEndpointError(null);
       setMe(null);
       setCurrentClan(null);
       setRecord(null);
@@ -612,6 +705,7 @@ export default function TrustSlipVerifyPage() {
               })()
             : verifyResult;
         const normalized = normalizeTrustSlipVerification(mergedVerifyResult, codeToUse);
+        setVerifyEndpointError(null);
         setRecord(normalized);
         if (!isAppRoute) {
           setPrivateEvidenceRecord(null);
@@ -621,9 +715,26 @@ export default function TrustSlipVerifyPage() {
         setConfirmationOutcome(null);
 
         if (!normalized) {
-          setLoadError(
-            "The supplied TrustSlip code did not return a readable verification record."
-          );
+          const unreadableError: TrustSlipVerifyEndpointError = {
+            status: null,
+            category: "client_error",
+            detail: "The supplied TrustSlip code did not return a readable verification record.",
+          };
+          setVerifyEndpointError(unreadableError);
+          setLoadError(unreadableError.detail);
+        }
+      } catch (error: any) {
+        if (
+          alive &&
+          loadSeq === verifyLoadSeqRef.current &&
+          contextKey === verifyContextRef.current
+        ) {
+          const structuredError = normalizeVerifyEndpointError(error);
+          const copy = verifyEndpointErrorCopy(structuredError);
+          setRecord(null);
+          setPrivateEvidenceRecord(null);
+          setVerifyEndpointError(structuredError);
+          setLoadError(copy.detail);
         }
       } finally {
         if (
@@ -699,6 +810,16 @@ export default function TrustSlipVerifyPage() {
   );
 
   const banner = useMemo(() => deriveBanner(record), [record]);
+  const publicVerifyEndpointError =
+    !noPublicCodeSupplied && !record && verifyEndpointError ? verifyEndpointError : null;
+  const publicVerifyEndpointErrorCopy = useMemo(
+    () =>
+      publicVerifyEndpointError
+        ? verifyEndpointErrorCopy(publicVerifyEndpointError)
+        : null,
+    [publicVerifyEndpointError]
+  );
+  const publicVerifyEndpointErrorStyle = bannerToneStyle("error");
   const privateEvidenceCode = firstTruthy(privateEvidenceRecord?.code);
   const visibleRecordCode = firstTruthy(record?.code, resolvedCode);
   const ownsVisibleTrustSlip =
@@ -1543,7 +1664,17 @@ export default function TrustSlipVerifyPage() {
         </section>
       ) : null}
 
-      {noPublicCodeSupplied ? null : (
+      {noPublicCodeSupplied ? null : publicVerifyEndpointErrorCopy ? (
+        <TrustSlipVerifyResultCard
+          bannerTitle={publicVerifyEndpointErrorCopy.title}
+          bannerDetail={publicVerifyEndpointErrorCopy.detail}
+          bannerStyle={publicVerifyEndpointErrorStyle}
+          compact={isCompact}
+          loadError={publicVerifyEndpointErrorCopy.detail}
+          resolvedCode={resolvedCode || requestedCode}
+          statusLabel={publicVerifyEndpointErrorCopy.statusLabel}
+        />
+      ) : (
         <React.Suspense
           fallback={
             <section
@@ -1626,7 +1757,7 @@ export default function TrustSlipVerifyPage() {
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {canShowPrivateEvidence ? (
         <details

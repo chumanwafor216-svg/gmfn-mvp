@@ -126,8 +126,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?debugId="community-home\.spotlight-status\.open-free"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
-  "Community Home Free Spotlight actions must keep guarded routing to the canonical Shop Control spotlight publisher."
+  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Spotlight management live in Shop Control/,
+  "Community Home must expose only the compact Manage shop handoff for shop and Spotlight owner work."
+);
+
+assertNotContains(
+  "src/pages/CommunityHomePage.tsx",
+  /freeSpotlight:|subscriptionSpotlight:|paidRepost:|vaultControl:|ownerShopHandle|community-home\.spotlight-guided|community-home\.spotlight-status|community-home\.lane/,
+  "Community Home must not keep the retired specialist Spotlight/Vault launcher model."
 );
 
 assertContains(
@@ -138,32 +144,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.merchantRelease[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "community-packages"[\s\S]*?openCommunityNextAction\(event, "community-packages"\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
-  "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
+  /debugId="community-home\.goto\.marketplace"[\s\S]*?void openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.trust"/,
+  "Community Home must keep the compact Marketplace, Shop Control, Finance, Support, and Trust handoff rows."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /PAID_REPOST_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost/,
-  "Community Home Paid Repost must route through the paid placement rail while remaining a spotlight-family handle."
-);
-
-assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\(\s*"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?routes\.rosca[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}/,
-  "Community Home ROSCA must stay visible as its own launcher and route to the Marketplace ROSCA desk."
-);
-
-assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
-  "Community Home retained deep action groups must use item-based debug IDs while the retired front launcher grid stays absent."
-);
-
-assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
-  "Community Home community rows must keep a traceable Open Marketplace button."
+  /debugId=\{`community-home\.switch\.select\.\$\{clanId \|\| "unknown"\}`\}/,
+  "Community Home community switcher rows must keep traceable selected-community controls."
 );
 
 assertContains(
@@ -295,8 +283,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)[\s\S]*?Shop Diaries/,
-  "Public Shop Diaries section must keep polished white brand framing."
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Diary[\s\S]*?public-shop-diary-featured/,
+  "Public Shop Diary section must keep a dedicated activity-story anchor and premium framing."
 );
 
 assertContains(

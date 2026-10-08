@@ -107,7 +107,7 @@ const expectedModules = [
   {
     id: "marketplace.members.visible-members-module",
     tone: "members",
-    label: "Visible members",
+    label: "Find a shop or service",
   },
   {
     id: "marketplace.support.financial-support-module",
@@ -171,7 +171,7 @@ const tradeToMembersSection = sectionBetween(
 );
 
 if (!tradeToMembersSection.text) {
-  addFinding(-1, "Trade Evidence section must exist before Members & Shops.");
+  addFinding(-1, "Trade Evidence section must exist before Shops & Services.");
 } else {
   const tradeIndex = tradeToMembersSection.text.indexOf(
     "marketplace.trade.evidence-module"
@@ -179,7 +179,7 @@ if (!tradeToMembersSection.text) {
   if (tradeIndex === -1) {
     addFinding(
       tradeToMembersSection.start,
-      "Trade Evidence must appear as its own module before the Members & Shops section.",
+      "Trade Evidence must appear as its own module before the Shops & Services section.",
       "Expected marketplace.trade.evidence-module before id=\"marketplace-members-shops\"."
     );
   }
@@ -191,11 +191,11 @@ const membersToSupportSection = sectionBetween(
 );
 
 if (!membersToSupportSection.text) {
-  addFinding(-1, "Members & Shops section must exist before Support.");
+  addFinding(-1, "Shops & Services section must exist before Support.");
 } else if (!membersToSupportSection.text.includes("marketplace.members.visible-members-module")) {
   addFinding(
     membersToSupportSection.start,
-    "Visible Members must stay inside the Members & Shops section before Support.",
+    "Shops & Services must stay inside its directory section before Support.",
     "Expected marketplace.members.visible-members-module before id=\"marketplace-loans-support\"."
   );
 }

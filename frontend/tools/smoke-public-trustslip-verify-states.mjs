@@ -304,6 +304,22 @@ async function installApiMocks(page, requestLog) {
     const verifyMatch = path.match(/^\/trust-slips\/verify\/([^/?#]+)/);
     if (method === "GET" && verifyMatch) {
       const code = decodeURIComponent(verifyMatch[1]);
+      if (code === "TS-RESTRICTED-BOUNDARY") {
+        await route.fulfill(json({ detail: "TrustSlip check is restricted to an authorised viewer." }, 403));
+        return;
+      }
+      if (code === "TS-CONFLICT-BOUNDARY") {
+        await route.fulfill(json({ detail: "TrustSlip has been revoked." }, 409));
+        return;
+      }
+      if (code === "TS-SERVER-ERROR-BOUNDARY") {
+        await route.fulfill(json({ detail: "Temporary TrustSlip service failure." }, 503));
+        return;
+      }
+      if (code === "TS-NETWORK-ERROR-BOUNDARY") {
+        await route.abort("failed");
+        return;
+      }
       const scenario = Object.values(scenarios).find((item) => item.code === code);
       if (!scenario) {
         await route.fulfill(json({ detail: "TrustSlip not found" }, 404));
@@ -699,7 +715,11 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
   await context.close();
 }
 
-async function runUnknownCodeScenario(browser, baseURL) {
+async function runEndpointErrorScenario(
+  browser,
+  baseURL,
+  { code, expectedTitle, expectedDetail, expectedStatus }
+) {
   const requestLog = [];
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -710,28 +730,29 @@ async function runUnknownCodeScenario(browser, baseURL) {
   const page = await context.newPage();
   await installApiMocks(page, requestLog);
 
-  await page.goto(`${baseURL}/t/TS-UNKNOWN-BOUNDARY?level=standard`, {
+  await page.goto(`${baseURL}/t/${encodeURIComponent(code)}?level=standard`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
 
-  await assertPublicPaperBasics(page);
-  await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
-  await expectVisibleText(page, "No usable TrustSlip record was found");
-  await expectVisibleText(
-    page,
-    "The supplied TrustSlip code did not return a usable verification record from the available verification source."
-  );
-  await expect(page.getByText("Do not rely on this alone", { exact: true })).toBeVisible();
+  await expect(page.getByText(expectedTitle, { exact: false }).first()).toBeVisible({ timeout: 30000 });
+  await expectVisibleText(page, "Verification result");
+  await expectVisibleText(page, expectedDetail);
+  await expectVisibleText(page, expectedStatus);
+  await expect(page.getByText("This paper confirms", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Public Decision Pack", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("Fresh TrustSlip required", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("server down", { exact: false })).toHaveCount(0);
+  await assertNoPublicPrivateLeaks(page);
 
   const verifyRequests = publicVerifyRequests(requestLog);
   if (verifyRequests.length < 1) {
-    throw new Error("Unknown-code route did not call public verify.");
+    throw new Error(`${code} route did not call public verify.`);
   }
   const viewerContextRequests = verifyRequests.filter((entry) => entry.authPresent || entry.clanPresent);
   if (viewerContextRequests.length > 0) {
     throw new Error(
-      `Unknown-code public TrustSlip route sent viewer context: ${JSON.stringify(viewerContextRequests)}`
+      `${code} public TrustSlip route sent viewer context: ${JSON.stringify(viewerContextRequests)}`
     );
   }
 
@@ -760,7 +781,36 @@ async function main() {
     for (const scenario of Object.values(scenarios)) {
       await runCodedScenario(browser, baseURL, scenario);
     }
-    await runUnknownCodeScenario(browser, baseURL);
+    await runEndpointErrorScenario(browser, baseURL, {
+      code: "TS-UNKNOWN-BOUNDARY",
+      expectedTitle: "This TrustSlip code was not found.",
+      expectedDetail: "Ask the holder for a fresh TrustSlip link or code.",
+      expectedStatus: "Status: Not found",
+    });
+    await runEndpointErrorScenario(browser, baseURL, {
+      code: "TS-RESTRICTED-BOUNDARY",
+      expectedTitle: "This TrustSlip check is not available to this viewer.",
+      expectedDetail: "TrustSlip check is restricted to an authorised viewer.",
+      expectedStatus: "Status: Restricted",
+    });
+    await runEndpointErrorScenario(browser, baseURL, {
+      code: "TS-CONFLICT-BOUNDARY",
+      expectedTitle: "TrustSlip has been revoked.",
+      expectedDetail: "TrustSlip has been revoked.",
+      expectedStatus: "Status: Needs attention",
+    });
+    await runEndpointErrorScenario(browser, baseURL, {
+      code: "TS-SERVER-ERROR-BOUNDARY",
+      expectedTitle: "TrustSlip information is temporarily unavailable.",
+      expectedDetail: "The TrustSlip service did not return a usable response. Try again in a moment.",
+      expectedStatus: "Status: Temporarily unavailable",
+    });
+    await runEndpointErrorScenario(browser, baseURL, {
+      code: "TS-NETWORK-ERROR-BOUNDARY",
+      expectedTitle: "TrustSlip could not reach the verification server.",
+      expectedDetail: "Check the connection, then try the TrustSlip link or code again.",
+      expectedStatus: "Status: Connection issue",
+    });
     await runDecisionPackRecipientCardScenario(browser, baseURL);
     await runCodedScenario(browser, baseURL, scenarios.current, { signedInPublicState: true });
 
@@ -769,7 +819,7 @@ async function main() {
         "Public TrustSlip Verify state smoke passed:",
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
-        "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
+        "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and endpoint-error states stayed honest;",
         "expired and superseded records stayed visibly not-current;",
         "Decision Pack recipient-card, reading, redacted evidence extract, and no-evidence empty state stayed human, decision-first, and hid raw machine/private context across URL, backend-only, backend-recorded, and no-evidence paths;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",

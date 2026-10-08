@@ -65,6 +65,7 @@ export type ShopControlSpotlightFeedback = {
 
 export type ShopControlSpotlightRoutes = {
   freeSpotlight: string;
+  publicShopSpotlightPreview: string;
   shopGallery: string;
   subscriptionSpotlight: string;
 };

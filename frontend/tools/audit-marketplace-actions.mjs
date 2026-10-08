@@ -110,7 +110,7 @@ assertNotContains(
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /return publicShopUrl\(publicShopOwnerId\);[\s\S]*?const link = ownerId \? publicShopUrl\(ownerId\) : "";/,
-  "Marketplace owner share/copy/open actions must send outward visitors to the canonical public shop root; exact block links are handled by Shop Diaries item actions."
+  "Marketplace owner share/copy/open actions must send outward visitors to the canonical public shop root; exact block links are handled by Products & Services item actions."
 );
 
 assertContains(
@@ -326,13 +326,13 @@ assertContains(
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?readPaidRepostHandoff[\s\S]*?routeRepostHandoffProduct[\s\S]*?visibleRepostProducts[\s\S]*?marketplace-paid-network-placement[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?visibleRepostProducts\.find[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)/,
-  "Marketplace Paid Repost must accept exact Shop Diaries product/block handoff, keep it visible as a fallback selected block, and avoid opening as a generic marketplace stop."
+  "Marketplace Paid Repost must accept exact Products & Services product/block handoff, keep it visible as a fallback selected block, and avoid opening as a generic marketplace stop."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?function writePaidRepostHandoff\(product: ShopProduct\)[\s\S]*?source: "shop-diaries"[\s\S]*?shopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originShopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originCommunityId: positiveNumber\([\s\S]*?ownerCommunityId: ownerSurfaceCommunityId[\s\S]*?window\.sessionStorage\.setItem[\s\S]*?function paidRepostHandoffHandler\(product: ShopProduct\)[\s\S]*?<StableCtaLink[\s\S]*?to=\{blockPlacementPath\(product\)\}[\s\S]*?onClick=\{paidRepostHandoffHandler\(product\)\}[\s\S]*?Repost/,
-  "Shop Diaries Repost must store the exact public block plus source shop/community handoff before routing into Marketplace Paid Repost."
+  "Products & Services Repost must store the exact public block plus source shop/community handoff before routing into Marketplace Paid Repost."
 );
 
 {
@@ -429,14 +429,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?Shop Diaries[\s\S]*?visibleProducts\.map/,
-  "Public Shop Gallery must anchor the Shop Diaries shelf for shared shop links."
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?Shop Diary[\s\S]*?featuredDiaryEntry[\s\S]*?Products & Services[\s\S]*?visibleProducts\.map/,
+  "Public Shop Gallery must anchor the real Shop Diary before Products & Services."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /publicShopShareUrl\(\{[\s\S]*?productId: product\.id,[\s\S]*?block: product\.slotNumber,/,
-  "Public Shop Gallery product sharing must keep product/block links inside Shop Diaries."
+  "Public Shop Gallery product sharing must keep product/block links inside Products & Services."
 );
 
 assertContains(

@@ -11,11 +11,7 @@ const screenshotDir = join(frontendRoot, "screenshots");
 mkdirSync(screenshotDir, { recursive: true });
 
 function json(body, status = 200) {
-  return {
-    status,
-    contentType: "application/json",
-    body: JSON.stringify(body),
-  };
+  return { status, contentType: "application/json", body: JSON.stringify(body) };
 }
 
 async function installApiMocks(page, controls = {}) {
@@ -36,7 +32,6 @@ async function installApiMocks(page, controls = {}) {
       community_code: "GMFN-C-000008",
       gmfn_id: "GMFN-C-000008",
       member_count: 7,
-      public_shop_count: 5,
       notice_posting_policy: "members",
     },
   ];
@@ -47,7 +42,9 @@ async function installApiMocks(page, controls = {}) {
       display_name: "Pillar of Hope",
       status: "active",
       verification_status: "unverified",
-      clan_id: 13,
+      clan_id: 8,
+      viewer: { can_admin: true },
+      dashboard_path: "/app/community-domain/13",
     },
     {
       id: 14,
@@ -56,6 +53,7 @@ async function installApiMocks(page, controls = {}) {
       status: "draft",
       verification_status: "unverified",
       clan_id: null,
+      viewer: { can_admin: false },
     },
   ];
 
@@ -69,9 +67,7 @@ async function installApiMocks(page, controls = {}) {
       return route.fulfill(json(me));
     }
     if (path === "/clans/me") return route.fulfill(json(clans));
-    if (path === "/community-domains/my") {
-      return route.fulfill(json({ items: domains }));
-    }
+    if (path === "/community-domains/my") return route.fulfill(json({ items: domains }));
     const clanSelectMatch = path.match(/^\/clans\/(\d+)\/select\/?$/);
     if (clanSelectMatch) {
       controls.selectClanCalls.push(Number(clanSelectMatch[1]));
@@ -84,23 +80,6 @@ async function installApiMocks(page, controls = {}) {
     if (/^\/community-notices/.test(path)) {
       return route.fulfill(json({ notices: [], posting_policy: "members" }));
     }
-    if (/^\/pool\/me/.test(path)) {
-      return route.fulfill(
-        json({
-          balance: 1250.75,
-          available_balance: 1250.75,
-          cumulative_pool_balance: 1250.75,
-          communities_count: clans.length,
-          items: [],
-        })
-      );
-    }
-    if (/^\/marketplace\/shops\/mine/.test(path)) {
-      return route.fulfill(json({ shop: null, products: [] }));
-    }
-    if (/^\/marketplace\/shops/.test(path)) {
-      return route.fulfill(json({ items: [], shops: [] }));
-    }
     if (/^\/marketplace\/broadcasts/.test(path)) {
       if (controls.communityPhase) controls.communitySpotlightFetchCount += 1;
       return route.fulfill(json({ items: [], broadcasts: [] }));
@@ -108,14 +87,9 @@ async function installApiMocks(page, controls = {}) {
     if (/^\/trust-score\/clan/.test(path) || /^\/trust/.test(path)) {
       return route.fulfill(json({ score: 76, grade: "B", events: 24 }));
     }
-
-    if (
-      url.pathname.startsWith("/api/") ||
-      url.origin === "http://127.0.0.1:8012"
-    ) {
+    if (url.pathname.startsWith("/api/") || url.origin === "http://127.0.0.1:8012") {
       return route.fulfill(json({ items: [], results: [], status: "ok" }));
     }
-
     return route.continue();
   });
 }
@@ -136,11 +110,7 @@ async function run() {
     const baseURL = `http://127.0.0.1:${port}`;
 
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({
-      viewport: { width: 390, height: 844 },
-      deviceScaleFactor: 2,
-      isMobile: true,
-    });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true });
 
     let releaseAuth = () => {};
     const controls = {
@@ -157,24 +127,11 @@ async function run() {
     await page.addInitScript(() => {
       localStorage.setItem("access_token", "local-community-home-domain-token");
       localStorage.setItem("gmfn_selected_clan_id", "8");
-      localStorage.setItem(
-        "gmfn.communityHome.sections.v6",
-        JSON.stringify({
-          communities: true,
-          marketplaceTools: true,
-          subscriptions: true,
-          trustFinance: true,
-        })
-      );
+      localStorage.setItem("gmfn.communityHome.sections.v6", JSON.stringify({ communities: true, marketplaceTools: true, subscriptions: true, trustFinance: true }));
     });
 
-    await page.goto(`${baseURL}/app/community?community=8`, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
-    await page.waitForSelector('[data-cta-id="community-home.summary.visible-communities"]', {
-      timeout: 30000,
-    });
+    await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
 
     if (controls.authResolved) {
       console.error("Community Home first usable state waited for /auth/me.");
@@ -186,133 +143,150 @@ async function run() {
     }
 
     releaseAuth();
-    await page.waitForTimeout(100);
-
-    const selectCallsBeforeOpen = controls.selectClanCalls.length;
-    controls.communityPhase = false;
-    await page.locator('[data-cta-id="community-home.selected.open-marketplace"]').click();
-    await page.waitForURL(/\/app\/marketplace/, { timeout: 30000 });
-    if (controls.selectClanCalls.length !== selectCallsBeforeOpen) {
-      console.error(
-        "Community Home repeated selectClan before opening already-selected Marketplace.",
-        controls
-      );
-      process.exit(1);
-    }
-
-    await page.goto(`${baseURL}/app/community?community=8`, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
-    controls.communityPhase = true;
-    await page.waitForSelector('[data-cta-id="community-home.summary.visible-communities"]', {
-      timeout: 30000,
-    });
-    await page
-      .locator('[data-cta-id="community-home.summary.visible-communities"]')
-      .click();
-    await page.waitForFunction(
-      () => (document.body.textContent || "").includes("Pillar of Hope"),
-      null,
-      { timeout: 30000 }
-    );
-    await page
-      .locator('[aria-label="Dismiss companion message"]')
-      .first()
-      .click({ timeout: 5000 })
-      .catch(() => {});
     await page.waitForTimeout(250);
-    await page.screenshot({
-      path: join(screenshotDir, "community-home-domain-list-390x844.png"),
-      fullPage: false,
-    });
-
-    const result = await page.evaluate(() => {
-      const text = document.body.textContent || "";
-      const required = [
-        "My Communities",
-        "Homeland isa Marketplace",
-        "Open Marketplace",
-        "Close communities",
-        "Marketplace workspace for this community",
-        "Pillar of Hope",
-        "Community Domain marketplace workspace",
-        "Marketplace ready",
-        "Setup Domain",
-        "Setup needed",
-      ];
-      const forbidden = [
-        "Your Community Marketplaces",
-        "community-home.summary.community-domain",
-        "Strengthen your identity evidence",
-      ];
-      const missing = required.filter((item) => !text.includes(item));
-      const presentForbidden = forbidden.filter((item) => text.includes(item));
-      const forbiddenCtas = [
-        "community-home.lane.subscriptions.community-domain",
-      ];
-      const presentForbiddenCtas = forbiddenCtas.filter((id) =>
-        document.querySelector(`[data-cta-id="${id}"]`)
-      );
-      if (document.querySelector('[data-cta-id^="community-home.domain."][data-cta-id$=".billing"]')) {
-        presentForbiddenCtas.push("community-home.domain.*.billing");
-      }
-      if (document.querySelector('[data-cta-id^="community-home.domain."][data-cta-id$=".settings"]')) {
-        presentForbiddenCtas.push("community-home.domain.*.settings");
-      }
-      const overflow = Array.from(document.querySelectorAll("main *"))
+    const collectOverflow = () =>
+      Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
           const rect = element.getBoundingClientRect();
-          return (
-            rect.width > 0 &&
-            (rect.left < -2 ||
-              rect.right > document.documentElement.clientWidth + 2)
-          );
+          return rect.width > 0 && (rect.left < -2 || rect.right > document.documentElement.clientWidth + 2);
         })
         .slice(0, 6)
         .map((element) => ({
           tag: element.tagName,
           text: (element.textContent || "").trim().slice(0, 80),
+          left: Math.round(element.getBoundingClientRect().left),
           right: Math.round(element.getBoundingClientRect().right),
         }));
 
-      return { missing, presentForbidden, presentForbiddenCtas, overflow };
+    const overflow390 = await page.evaluate(collectOverflow);
+    await page.screenshot({ path: join(screenshotDir, "community-home-domain-list-390x844.png"), fullPage: false });
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.waitForTimeout(100);
+    const overflow360 = await page.evaluate(collectOverflow);
+    await page.screenshot({ path: join(screenshotDir, "community-home-phase1-360x780.png"), fullPage: false });
+    if (overflow390.length || overflow360.length) {
+      console.error("Community Home Phase 1 overflow detected:", { overflow390, overflow360 });
+      process.exit(1);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(100);
+
+    const firstState = await page.evaluate(() => {
+      const text = document.body.textContent || "";
+      const required = [
+        "Homeland isa Marketplace",
+        "GMFN-C-000008",
+        "Community Bulletin",
+        "Go to",
+        "Marketplace",
+        "Manage shop",
+        "Finance",
+        "Support",
+        "Trust",
+        "Switch community",
+        "Admin area",
+      ];
+      const forbidden = [
+        "Payments Â",
+        "Payments Ã",
+        "Open Free Spotlight",
+        "Subscription Spotlight",
+        "Paid Repost",
+        "Vault controls",
+        "Shop Gallery Tools",
+        "Merchant Release",
+        "Your Community Marketplaces",
+      ];
+      return {
+        missing: required.filter((item) => !text.includes(item)),
+        presentForbidden: forbidden.filter((item) => text.includes(item)),
+        oldCtas: Array.from(document.querySelectorAll('[data-cta-id^="community-home.lane."], [data-cta-id^="community-home.spotlight-guided."], [data-cta-id="community-home.summary.visible-communities"]')).map((element) => element.getAttribute("data-cta-id")),
+      };
     });
 
-    if (
-      result.missing.length ||
-      result.presentForbidden.length ||
-      result.presentForbiddenCtas.length ||
-      result.overflow.length
-    ) {
-      console.error("Community Home domain list smoke failed:", result);
+    if (firstState.missing.length || firstState.presentForbidden.length || firstState.oldCtas.length) {
+      console.error("Community Home Phase 1 smoke failed:", firstState);
       process.exit(1);
     }
 
-    await page.locator('[data-cta-id="community-home.communities.close"]').click();
-    await page.waitForFunction(
-      () => !(document.body.textContent || "").includes("Pillar of Hope"),
-      null,
-      { timeout: 30000 }
-    );
-    await page
-      .locator('[data-cta-id="community-home.summary.visible-communities"]')
-      .click();
-    await page.waitForFunction(
-      () => (document.body.textContent || "").includes("Pillar of Hope"),
-      null,
-      { timeout: 30000 }
-    );
-
-    await page.locator('[data-cta-id="community-home.domain.13.open"]').click();
-    await page.waitForURL(/\/app\/marketplace\?community=13/, {
-      timeout: 30000,
+    const routeCheckPage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true });
+    await installApiMocks(routeCheckPage, controls);
+    await routeCheckPage.addInitScript(() => {
+      localStorage.setItem("access_token", "local-community-home-domain-token");
+      localStorage.setItem("gmfn_selected_clan_id", "999");
+      localStorage.setItem("gmfn.communityHome.sections.v6", JSON.stringify({ communities: true, marketplaceTools: true, subscriptions: true, trustFinance: true }));
     });
 
-    console.log(
-      "Community Home domain list smoke passed: screenshot saved to screenshots/community-home-domain-list-390x844.png"
-    );
+    controls.selectClanCalls = [];
+    await routeCheckPage.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await routeCheckPage.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
+    const accessibleRouteState = await routeCheckPage.evaluate(() => {
+      const text = document.body.textContent || "";
+      return {
+        storage: localStorage.getItem("gmfn_selected_clan_id"),
+        selectedCommunity: text.includes("Homeland isa Marketplace"),
+        warning: text.includes("This community is not available here."),
+      };
+    });
+    if (accessibleRouteState.storage !== "8" || !accessibleRouteState.selectedCommunity || accessibleRouteState.warning || controls.selectClanCalls.includes(999)) {
+      console.error("Community Home route param did not reconcile the accessible route community over stored state.", { accessibleRouteState, controls });
+      process.exit(1);
+    }
+
+    controls.selectClanCalls = [];
+    await routeCheckPage.goto(`${baseURL}/app/community/999`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await routeCheckPage.waitForSelector('[data-cta-id="community-home.route-param.switch-community"]', { timeout: 30000 });
+    const inaccessibleRouteState = await routeCheckPage.evaluate(() => {
+      const text = document.body.textContent || "";
+      return {
+        warning: text.includes("This community is not available here."),
+        switchAction: Boolean(document.querySelector('[data-cta-id="community-home.route-param.switch-community"]')),
+      };
+    });
+    if (!inaccessibleRouteState.warning || !inaccessibleRouteState.switchAction || controls.selectClanCalls.includes(999)) {
+      console.error("Community Home inaccessible route param did not stay truthful and blocked.", { inaccessibleRouteState, controls });
+      process.exit(1);
+    }
+    await routeCheckPage.close();
+
+    controls.selectClanCalls = [];
+    await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
+
+    const selectCallsBeforeOpen = controls.selectClanCalls.length;
+    controls.communityPhase = false;
+    await page.locator('[data-cta-id="community-home.goto.marketplace"]').click();
+    await page.waitForURL(/\/app\/marketplace/, { timeout: 30000 });
+    if (controls.selectClanCalls.length !== selectCallsBeforeOpen) {
+      console.error("Community Home repeated selectClan before opening already-selected Marketplace.", controls);
+      process.exit(1);
+    }
+
+    await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    controls.communityPhase = true;
+    await page.waitForSelector('[data-cta-id="community-home.switch.toggle"]', { timeout: 30000 });
+    await page.locator('[data-cta-id="community-home.switch.toggle"]').click();
+    await page.waitForSelector('[data-cta-id="community-home.switch.select.8"]', { timeout: 30000 });
+
+    const switcherState = await page.evaluate(() => {
+      const text = document.body.textContent || "";
+      return {
+        hasCommunity: text.includes("Homeland isa Marketplace"),
+        leaksDomainPortfolio: text.includes("Setup Domain"),
+      };
+    });
+    if (!switcherState.hasCommunity || switcherState.leaksDomainPortfolio) {
+      console.error("Community Home switcher did not stay scoped to selectable communities.", switcherState);
+      process.exit(1);
+    }
+
+    await page.locator('[data-cta-id="community-home.admin.toggle"]').click();
+    await page.waitForSelector('[data-cta-id="community-home.admin.community-domain"]', { timeout: 30000 });
+    await page.locator('[data-cta-id="community-home.admin.community-domain"]').click();
+    await page.waitForURL(/\/app\/community-domain\/13/, { timeout: 30000 });
+
+    console.log("Community Home domain/admin smoke passed: screenshot saved to screenshots/community-home-domain-list-390x844.png");
   } finally {
     if (browser) await browser.close();
     if (server) await server.close();

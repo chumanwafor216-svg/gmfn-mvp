@@ -33,7 +33,7 @@ const expectedPageSourceActions = {
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
 const expectedInstallPromptActions = 1;
-const expectedMediaFrameInvocations = 2;
+const expectedMediaFrameInvocations = 3;
 const expectedSharedMediaAudioActionTemplates = 1;
 const expectedSocialTagActionTemplates = 2;
 const expectedWholeRouteActionFamilies =
@@ -339,13 +339,13 @@ if (mediaFrameInvocationCount !== expectedMediaFrameInvocations) {
 }
 
 assertContains(
-  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 34 : 38[\s\S]*?width: isCompact \? 34 : 38[\s\S]*?minHeight: isCompact \? 34 : 38/,
+  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 44 : 38[\s\S]*?width: isCompact \? 44 : 38[\s\S]*?minHeight: isCompact \? 44 : 38/,
   "Public Shop mini Spotlight media audio control must stay icon-only and fixed-size."
 );
 
 assertContains(
   /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight/,
-  "Public Shop diary media audio controls must stay icon-only, fixed-size, and tied to each product card."
+  "Public Shop Products & Services media audio controls must stay icon-only, fixed-size, and tied to each product card."
 );
 
 assertFileContains(
@@ -362,7 +362,7 @@ assertContains(
 
 assertContains(
   /onClick=\{\(event\) => \{[\s\S]*?if \(isInteractiveCardTarget\(event\.target\)\) return;[\s\S]*?if \(!isProductOpen\) \{[\s\S]*?setOpenProductId\(productOpenId\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?setOpenProductId\(null\);[\s\S]*?\}\}[\s\S]*?onDoubleClick=\{\(event\) => \{/,
-  "Public Shop diary blocks must open on a single tap of the card body, with double-click left only as a fallback."
+  "Public Shop Products & Services cards must open on a single tap of the card body, with double-click left only as a fallback."
 );
 
 assertContains(
@@ -411,7 +411,7 @@ assertContains(
 );
 assertContains(
   /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?mediaStyle=\{\{[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"[\s\S]*?\}\}[\s\S]*?productImageUrl \? \([\s\S]*?<img[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
-  "Public Shop diary media must fill the opened screen without distortion instead of leaving portrait side bars."
+  "Public Shop Products & Services media must fill the opened screen without distortion instead of leaving portrait side bars."
 );
 
 assertContains(
@@ -420,7 +420,7 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 340 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
   "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
 );
 
@@ -430,8 +430,8 @@ assertContains(
 );
 
 assertContains(
-  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)[\s\S]*?Shop Diaries/,
-  "Public Shop Diaries section must keep polished white brand framing."
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Diary[\s\S]*?public-shop-diary-featured/,
+  "Public Shop Diary section must keep a dedicated activity-story anchor and premium framing."
 );
 
 assertContains(
@@ -440,8 +440,8 @@ assertContains(
 );
 
 assertContains(
-  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangeProductsByPublicBlock\([\s\S]*?if \(slotNumber >= 1 && slotNumber <= GALLERY_SLOTS_TOTAL\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[slotNumber - 1\]\)[\s\S]*?slots\[slotNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
-  "Public Shop arranged diary blocks must keep the newest product for a numbered block and must not spill duplicate same-block products into another visible card."
+  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangeProductsByPublicBlock\([\s\S]*?const safeSlotCount = clampGallerySlotsTotal\(slotCount\)[\s\S]*?\{ length: safeSlotCount \}[\s\S]*?if \(slotNumber >= 1 && slotNumber <= safeSlotCount\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[slotNumber - 1\]\)[\s\S]*?slots\[slotNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
+  "Public Shop arranged product/service blocks must keep the newest product for a numbered block and must not spill duplicate same-block products into another visible card."
 );
 
 const rawActionPattern =
