@@ -444,6 +444,22 @@ function memberHomePointerLink(compact = false, primary = false): React.CSSPrope
   };
 }
 
+function memberHomeCompactActionLink(primary = false): React.CSSProperties {
+  return {
+    minHeight: 52,
+    borderRadius: 16,
+    justifyContent: "center",
+    textAlign: "center",
+    padding: "10px 12px",
+    fontSize: 13,
+    lineHeight: 1.2,
+    overflow: "hidden",
+    borderColor: primary ? "rgba(214,170,69,0.42)" : undefined,
+    background: primary
+      ? "linear-gradient(180deg, rgba(255,248,225,0.98) 0%, rgba(255,255,255,0.995) 100%)"
+      : undefined,
+  };
+}
 function memberHomeSectionShell(accent = false): React.CSSProperties {
   return {
     ...innerCard("rgba(255,255,255,0.98)"),
@@ -2942,63 +2958,54 @@ export default function MyGMFNAndIPage() {
                 ) : null}
 
                 <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
-                  <div style={sectionLabel()}>My shop / business</div>
+                  <div style={sectionLabel()}>Shop / TrustSlip</div>
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {hasOwnShop ? ownShopName : "No shop shown yet"}
+                    {hasOwnShop ? ownShopName : "Shop and evidence handoffs"}
                   </h2>
                   <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {hasOwnShop ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.` : "Open Shop Control when you are ready to set up or manage your shop."}
+                    {hasOwnShop
+                      ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.`
+                      : "Open Shop Control when you are ready to set up or manage your shop."}
                   </div>
-                  <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={{ ...memberHomePointerLink(isCompact, false), marginTop: 12 }}>
-                    Manage shop
-                  </StableCtaLink>
-                </div>
-
-                <div style={memberHomeSectionShell()} data-my-gsn-trust-evidence="true">
-                  <div style={sectionLabel()}>My trust / evidence</div>
-                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {trustEvidenceStatus}
-                  </h2>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    Trust Passport owns the private evidence review. TrustSlip owns portable public checks.
+                  <div data-my-gsn-trust-evidence="true" style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                    {trustEvidenceStatus}. Trust Passport owns private review. TrustSlip owns portable public checks.
                   </div>
-                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                    <StableCtaLink to={routes.trust} kind="primary" debugId="my-gmfn.evidence.trust-passport" style={memberHomePointerLink(isCompact, true)}>
-                      Trust Passport
+                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={memberHomeCompactActionLink(false)}>
+                      Manage shop
                     </StableCtaLink>
-                    <StableCtaLink to={APP_ROUTES.TRUST_SLIP} kind="secondary" debugId="my-gmfn.evidence.trustslip" style={memberHomePointerLink(isCompact, false)}>
+                    <StableCtaLink to={APP_ROUTES.TRUST_SLIP} kind="secondary" debugId="my-gmfn.evidence.trustslip" style={memberHomeCompactActionLink(false)}>
                       TrustSlip
+                    </StableCtaLink>
+                    <StableCtaLink to={routes.trust} kind="primary" debugId="my-gmfn.evidence.trust-passport" style={{ ...memberHomeCompactActionLink(true), gridColumn: isCompact ? "1 / -1" : undefined }}>
+                      Trust Passport
                     </StableCtaLink>
                   </div>
                 </div>
 
                 <div style={memberHomeSectionShell()} data-my-gsn-settings-account="true">
-                  <div style={sectionLabel()}>Settings / account</div>
+                  <div style={sectionLabel()}>Settings / Official GSN</div>
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Account and this device
+                    Account and confirmed channels
                   </h2>
                   <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
                     {settingsScopeStatus}
                   </div>
-                  <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={{ ...memberHomePointerLink(isCompact, false), marginTop: 12 }}>
-                    Open settings
-                  </StableCtaLink>
-                </div>
-                <div style={memberHomeSectionShell()} data-my-gsn-official-links="true">
-                  <div style={sectionLabel()}>Official GSN</div>
-                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Confirmed channels
-                  </h2>
-                  <SecondaryButton
-                    type="button"
-                    stableHeight={44}
-                    debugId="my-gmfn.official-links.toggle"
-                    onClick={() => setOfficialLinksOpen((value) => !value)}
-                    style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
-                    aria-expanded={officialLinksOpen}
-                  >
-                    {officialLinksOpen ? "Hide official links" : "Show official links"}
-                  </SecondaryButton>
+                  <div data-my-gsn-official-links="true" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={memberHomeCompactActionLink(false)}>
+                      Open settings
+                    </StableCtaLink>
+                    <SecondaryButton
+                      type="button"
+                      stableHeight={52}
+                      debugId="my-gmfn.official-links.toggle"
+                      onClick={() => setOfficialLinksOpen((value) => !value)}
+                      style={{ justifyContent: "center", borderRadius: 16, fontSize: 13 }}
+                      aria-expanded={officialLinksOpen}
+                    >
+                      {officialLinksOpen ? "Hide channels" : "Confirmed channels"}
+                    </SecondaryButton>
+                  </div>
                   {officialLinksOpen ? (
                     <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                       {OFFICIAL_GSN_LINKS.map((link) => (
