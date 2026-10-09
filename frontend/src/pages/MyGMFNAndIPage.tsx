@@ -2862,7 +2862,9 @@ export default function MyGMFNAndIPage() {
                     style={{
                       marginTop: 12,
                       display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "repeat(2, minmax(0, 1fr))",
                       gap: 8,
                     }}
                   >
@@ -2871,14 +2873,14 @@ export default function MyGMFNAndIPage() {
                       ["copy", "Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
                       ["phone", "Phone", accountPhoneStatus],
                     ] as Array<[GsnIconName, string, string]>).map(([icon, label, value]) => (
-                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 82 : 90 }}>
+                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 68 : 90 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                           {memberHomeIconBadge(icon, true, label === "GSN ID")}
-                          <div style={{ minWidth: 0 }}>
+                          <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                             <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
                               {label}
                             </div>
-                            <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 12.5 : 14, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                            <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 13.5 : 14, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "break-word", wordBreak: "normal" }}>
                               {value}
                             </div>
                           </div>
