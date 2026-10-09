@@ -414,7 +414,7 @@ function memberHomeSectionTitle(): React.CSSProperties {
 function memberHomeCard(compact = false, accent = false): React.CSSProperties {
   return {
     minHeight: compact ? 98 : 112,
-    borderRadius: 18,
+    borderRadius: compact ? 16 : 18,
     border: accent ? "1px solid rgba(214,170,69,0.34)" : "1px solid rgba(15,23,42,0.08)",
     background: accent
       ? "linear-gradient(180deg, rgba(255,250,235,0.98) 0%, rgba(255,255,255,0.995) 100%)"
@@ -423,7 +423,61 @@ function memberHomeCard(compact = false, accent = false): React.CSSProperties {
     boxSizing: "border-box",
     boxShadow: "0 12px 24px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)",
     minWidth: 0,
+    overflow: "hidden",
   };
+}
+
+function memberHomeIconBadge(
+  icon: GsnIconName,
+  compact = false,
+  accent = false
+) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        flex: "0 0 auto",
+        width: compact ? 44 : 52,
+        height: compact ? 44 : 52,
+        borderRadius: compact ? 16 : 18,
+        display: "inline-grid",
+        placeItems: "center",
+        background: accent
+          ? "linear-gradient(145deg, #FFF8DF 0%, #FFFFFF 76%)"
+          : "linear-gradient(145deg, #EEF6FF 0%, #FFFFFF 78%)",
+        border: accent
+          ? "1px solid rgba(214,170,69,0.34)"
+          : "1px solid rgba(13,95,168,0.14)",
+        boxShadow:
+          "0 10px 20px rgba(8,24,42,0.10), inset 0 1px 0 rgba(255,255,255,0.98)",
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={compact ? 30 : 36} decorative />
+    </span>
+  );
+}
+
+function memberHomeSectionKicker(
+  icon: GsnIconName,
+  label: React.ReactNode,
+  compact = false,
+  accent = false
+) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: compact ? 9 : 11,
+        minWidth: 0,
+      }}
+    >
+      {memberHomeIconBadge(icon, compact, accent)}
+      <div style={{ minWidth: 0 }}>
+        <div style={sectionLabel()}>{label}</div>
+      </div>
+    </div>
+  );
 }
 
 function memberHomePointerLink(compact = false, primary = false): React.CSSProperties {
@@ -431,15 +485,20 @@ function memberHomePointerLink(compact = false, primary = false): React.CSSPrope
     minHeight: compact ? 88 : 98,
     borderRadius: 18,
     justifyContent: "flex-start",
-    alignItems: "stretch",
+    alignItems: "center",
     textAlign: "left",
     padding: compact ? "12px" : "14px",
     fontSize: compact ? 13 : 14,
     lineHeight: 1.3,
     overflow: "hidden",
-    borderColor: primary ? "rgba(214,170,69,0.42)" : undefined,
+    gap: 8,
+    borderColor: primary ? "rgba(214,170,69,0.48)" : undefined,
+    color: primary ? "#FFFFFF" : undefined,
     background: primary
-      ? "linear-gradient(180deg, rgba(255,248,225,0.98) 0%, rgba(255,255,255,0.995) 100%)"
+      ? "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)"
+      : undefined,
+    boxShadow: primary
+      ? "0 14px 28px rgba(11,99,209,0.20), inset 0 1px 0 rgba(255,255,255,0.22)"
       : undefined,
   };
 }
@@ -454,9 +513,14 @@ function memberHomeCompactActionLink(primary = false): React.CSSProperties {
     fontSize: 13,
     lineHeight: 1.2,
     overflow: "hidden",
-    borderColor: primary ? "rgba(214,170,69,0.42)" : undefined,
+    gap: 7,
+    borderColor: primary ? "rgba(214,170,69,0.48)" : undefined,
+    color: primary ? "#FFFFFF" : undefined,
     background: primary
-      ? "linear-gradient(180deg, rgba(255,248,225,0.98) 0%, rgba(255,255,255,0.995) 100%)"
+      ? "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)"
+      : undefined,
+    boxShadow: primary
+      ? "0 14px 28px rgba(11,99,209,0.20), inset 0 1px 0 rgba(255,255,255,0.22)"
       : undefined,
   };
 }
@@ -464,6 +528,8 @@ function memberHomeSectionShell(accent = false): React.CSSProperties {
   return {
     ...innerCard("rgba(255,255,255,0.98)"),
     border: accent ? "1px solid rgba(214,170,69,0.30)" : "1px solid rgba(15,23,42,0.08)",
+    boxShadow:
+      "0 22px 46px rgba(7,20,36,0.13), 0 0 0 1px rgba(255,255,255,0.72), inset 0 1px 0 rgba(255,255,255,0.98)",
   };
 }
 function appGuidePanel(compact = false): React.CSSProperties {
@@ -2785,7 +2851,7 @@ export default function MyGMFNAndIPage() {
                 }}
               >
                 <div style={memberHomeSectionShell(true)} data-my-gsn-identity-first="true">
-                  <div style={sectionLabel()}>My identity</div>
+                  {memberHomeSectionKicker("id", "My identity", isCompact, true)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     {displayName}
                   </h2>
@@ -2800,18 +2866,22 @@ export default function MyGMFNAndIPage() {
                       gap: 8,
                     }}
                   >
-                    {[
-                      ["GSN ID", gmfnId || "Not issued yet"],
-                      ["Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
-                      ["Phone", accountPhoneStatus],
-
-                    ].map(([label, value]) => (
-                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 70 : 78 }}>
-                        <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
-                          {label}
-                        </div>
-                        <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 12.5 : 14, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
-                          {value}
+                    {([
+                      ["id", "GSN ID", gmfnId || "Not issued yet"],
+                      ["copy", "Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
+                      ["phone", "Phone", accountPhoneStatus],
+                    ] as Array<[GsnIconName, string, string]>).map(([icon, label, value]) => (
+                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 82 : 90 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                          {memberHomeIconBadge(icon, true, label === "GSN ID")}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                              {label}
+                            </div>
+                            <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 12.5 : 14, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                              {value}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2837,7 +2907,7 @@ export default function MyGMFNAndIPage() {
                 </div>
 
                 <div style={memberHomeSectionShell()} data-my-gsn-community-portfolio="true">
-                  <div style={sectionLabel()}>My communities</div>
+                  {memberHomeSectionKicker("community", "My communities", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     {communityStatus}
                   </h2>
@@ -2845,15 +2915,20 @@ export default function MyGMFNAndIPage() {
                     Your community list stays covered until you open it. Community Home owns the selected community work.
                   </div>
                   {selectedCommunityForShop ? (
-                    <div style={{ ...memberHomeCard(true), marginTop: 12, minHeight: isCompact ? 74 : 82 }}>
-                      <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
-                        Selected community
-                      </div>
-                      <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
-                        {selectedCommunityForShop.name}
-                      </div>
-                      <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
-                        {selectedCommunityForShop.roleStatus}{selectedCommunityForShop.stableId ? ` / ${selectedCommunityForShop.stableId}` : ""}
+                    <div style={{ ...memberHomeCard(true), marginTop: 12, minHeight: isCompact ? 82 : 92 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        {memberHomeIconBadge("community", true, true)}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                            Selected community
+                          </div>
+                          <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                            {selectedCommunityForShop.name}
+                          </div>
+                          <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+                            {selectedCommunityForShop.roleStatus}{selectedCommunityForShop.stableId ? ` / ${selectedCommunityForShop.stableId}` : ""}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : null}
@@ -2865,6 +2940,7 @@ export default function MyGMFNAndIPage() {
                     style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
                     aria-expanded={communitiesOpen}
                   >
+                    <GsnLegacyIcon name="community" size={20} decorative />
                     {communitiesOpen ? "Hide communities" : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
                   </SecondaryButton>
                   {communitiesOpen ? (
@@ -2928,7 +3004,7 @@ export default function MyGMFNAndIPage() {
               >
                 {shouldShowAttentionSummary ? (
                   <div style={memberHomeSectionShell()} data-my-gsn-attention-summary="true">
-                    <div style={sectionLabel()}>What needs my attention</div>
+                    {memberHomeSectionKicker("alert", "What needs my attention", isCompact)}
                     <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                       {attentionStatus}
                     </h2>
@@ -2936,21 +3012,28 @@ export default function MyGMFNAndIPage() {
                       My GSN shows the signal only. Notifications owns the full queue.
                     </div>
                     <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                      {[
-                        ["DemandBox", demandStatus],
-                        ["Signals", opportunityStatus],
-                      ].map(([label, value]) => (
-                        <div key={label} style={{ ...memberHomeCard(true), minHeight: 70 }}>
-                          <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>{label}</div>
-                          <div style={{ marginTop: 6, color: "#07172C", fontSize: 13, fontWeight: 1000, lineHeight: 1.18 }}>{value}</div>
+                      {([
+                        ["megaphone", "DemandBox", demandStatus],
+                        ["spark", "Signals", opportunityStatus],
+                      ] as Array<[GsnIconName, string, string]>).map(([icon, label, value]) => (
+                        <div key={label} style={{ ...memberHomeCard(true), minHeight: 78 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                            {memberHomeIconBadge(icon, true)}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>{label}</div>
+                              <div style={{ marginTop: 4, color: "#07172C", fontSize: 13, fontWeight: 1000, lineHeight: 1.18 }}>{value}</div>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
                     <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                       <StableCtaLink to={APP_ROUTES.NOTIFICATIONS} kind="primary" debugId="my-gmfn.attention.notifications" style={memberHomePointerLink(isCompact, true)}>
+                        <GsnLegacyIcon name="alert" size={20} decorative />
                         Open Notifications
                       </StableCtaLink>
                       <StableCtaLink to={demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community")} kind="secondary" debugId="my-gmfn.attention.demand-box" style={memberHomePointerLink(isCompact, false)}>
+                        <GsnLegacyIcon name="megaphone" size={20} decorative />
                         Open DemandBox
                       </StableCtaLink>
                     </div>
@@ -2958,7 +3041,7 @@ export default function MyGMFNAndIPage() {
                 ) : null}
 
                 <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
-                  <div style={sectionLabel()}>Shop / TrustSlip</div>
+                  {memberHomeSectionKicker("shop", "Shop / TrustSlip", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     {hasOwnShop ? ownShopName : "Shop and evidence handoffs"}
                   </h2>
@@ -2972,19 +3055,22 @@ export default function MyGMFNAndIPage() {
                   </div>
                   <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={memberHomeCompactActionLink(false)}>
+                      <GsnLegacyIcon name="shop" size={20} decorative />
                       Manage shop
                     </StableCtaLink>
                     <StableCtaLink to={APP_ROUTES.TRUST_SLIP} kind="secondary" debugId="my-gmfn.evidence.trustslip" style={memberHomeCompactActionLink(false)}>
+                      <GsnLegacyIcon name="certificate" size={20} decorative />
                       TrustSlip
                     </StableCtaLink>
                     <StableCtaLink to={routes.trust} kind="primary" debugId="my-gmfn.evidence.trust-passport" style={{ ...memberHomeCompactActionLink(true), gridColumn: isCompact ? "1 / -1" : undefined }}>
+                      <GsnLegacyIcon name="shield" size={20} decorative />
                       Trust Passport
                     </StableCtaLink>
                   </div>
                 </div>
 
                 <div style={memberHomeSectionShell()} data-my-gsn-settings-account="true">
-                  <div style={sectionLabel()}>Settings / Official GSN</div>
+                  {memberHomeSectionKicker("shield", "Settings / Official GSN", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     Account and confirmed channels
                   </h2>
@@ -2993,6 +3079,7 @@ export default function MyGMFNAndIPage() {
                   </div>
                   <div data-my-gsn-official-links="true" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={memberHomeCompactActionLink(false)}>
+                      <GsnLegacyIcon name="pen" size={20} decorative />
                       Open settings
                     </StableCtaLink>
                     <SecondaryButton
@@ -3003,6 +3090,7 @@ export default function MyGMFNAndIPage() {
                       style={{ justifyContent: "center", borderRadius: 16, fontSize: 13 }}
                       aria-expanded={officialLinksOpen}
                     >
+                      <GsnLegacyIcon name="globe" size={20} decorative />
                       {officialLinksOpen ? "Hide channels" : "Confirmed channels"}
                     </SecondaryButton>
                   </div>
@@ -3045,7 +3133,7 @@ export default function MyGMFNAndIPage() {
               ) : null}
 
               <div style={memberHomeSectionShell()} data-my-gsn-activity-note="quiet">
-                <div style={sectionLabel()}>My activity</div>
+                {memberHomeSectionKicker("document", "My activity", isCompact)}
                 <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                   {closedActivityStatus}
                 </h2>
