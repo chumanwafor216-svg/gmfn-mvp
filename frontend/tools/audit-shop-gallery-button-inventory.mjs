@@ -9,6 +9,7 @@ const shopGalleryFile = "src/pages/ShopGalleryPage.tsx";
 const ownerSurfaceNavFile = "src/components/OwnerOnlySurfaceNav.tsx";
 const installPromptFile = "src/components/GsnInstallPrompt.tsx";
 const mediaFrameFile = "src/components/SpotlightMediaFrame.tsx";
+const shopDiaryVisualSmokeFile = "tools/smoke-shop-diary-phase1-visual.mjs";
 const shopGallerySource = readFileSync(
   join(frontendRoot, shopGalleryFile),
   "utf8"
@@ -22,6 +23,10 @@ const installPromptSource = readFileSync(
   "utf8"
 );
 const mediaFrameSource = readFileSync(join(frontendRoot, mediaFrameFile), "utf8");
+const shopDiaryVisualSmokeSource = readFileSync(
+  join(frontendRoot, shopDiaryVisualSmokeFile),
+  "utf8"
+);
 const findings = [];
 
 const expectedPageSourceActions = {
@@ -318,6 +323,38 @@ assertFileContains(
 assertContains(
   /<GsnInstallPrompt[\s\S]*?tone="light"[\s\S]*?compact=\{isCompact\}[\s\S]*?surface="public-shop"/,
   "Public Shop must keep the phone-screen install prompt for WhatsApp/shared-link visitors."
+);
+
+assertContains(
+  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?name=\{isProductOpen \? "public-globe" : "shopping-cart"\}/,
+  "Public Shop product-commerce surfaces must use the shopping trolley/cart icon while keeping open-state view as the public globe."
+);
+
+assertContains(
+  /productImageUrl \? \([\s\S]*?<img[\s\S]*?: \([\s\S]*?<GsnRealisticIcon[\s\S]*?name="shopping-cart"[\s\S]*?Picture soon/,
+  "Public Shop no-image product cards must show a premium trolley object instead of a text-only placeholder."
+);
+
+assertContains(
+  /Available from \$\{shopName\}\. Contact the owner to request or confirm stock\.[\s\S]*?Contact the owner to request or confirm stock\./,
+  "Public Shop open product cards must tell visitors to request or confirm stock instead of implying fake checkout."
+);
+
+assertContains(
+  /Browse public items, then contact the owner to request or confirm availability\.[\s\S]*?data-public-shop-commerce-path="true"[\s\S]*?Browse[\s\S]*?Ask owner[\s\S]*?Owner confirms/,
+  "Public Shop product shelf must show the request-first commerce path."
+);
+
+assertContains(
+  /const productAskActionWidth = isProductOpen && !showBlockPlacementAction[\s\S]*?const productOpenActionRailWidth[\s\S]*?const productOpenActionColumns[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?width: productAskActionWidth[\s\S]*?padding: showBlockPlacementAction \? 0 : "0 10px 0 8px"[\s\S]*?!showBlockPlacementAction \? <span>Ask<\/span> : null/,
+  "Public Shop opened visitor product cards must expose a stable Ask owner action, not only an unlabeled phone icon."
+);
+
+assertFileContains(
+  shopDiaryVisualSmokeFile,
+  shopDiaryVisualSmokeSource,
+  /let activeAuthenticated = true[\s\S]*?if \(!activeAuthenticated\) \{[\s\S]*?json\(\{ detail: "Not authenticated" \}, 401\)[\s\S]*?preparePage\(browser, width, height = 844, authenticated = true\)[\s\S]*?localStorage\.removeItem\("access_token"\)[\s\S]*?14-public-shop-logged-out-open-product-390[\s\S]*?authenticated: false[\s\S]*?expectProductContactText: "Ask"[\s\S]*?metrics\.productContactText !== item\.expectProductContactText[\s\S]*?metrics\.productContactWidth < 70/,
+  "Public Shop visual smoke must keep the logged-out opened-product Ask action screenshot and geometry assertion."
 );
 
 assertFileContains(

@@ -2524,7 +2524,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>{labelWithIcon("shop", "2. Public products")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("cart", "2. Public products")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Add only the items people can browse and share openly.
               </div>

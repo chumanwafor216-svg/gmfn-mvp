@@ -4844,7 +4844,7 @@ export default function ShopControlPage() {
     },
     {
       key: "products",
-      icon: "document" as GsnIconName,
+      icon: "cart" as GsnIconName,
       label: "Products/services",
       value: productStatusLabel,
       detail: "Managed in Pictures & Products.",
@@ -7045,7 +7045,7 @@ export default function ShopControlPage() {
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <span style={badge(publicShopReady)}>{labelWithIcon("shop", publicShopReady ? "Public shop ready" : "Setup needed")}</span>
-                <span style={badge(occupiedPublicProductSlotCount > 0)}>{labelWithIcon("document", productStatusLabel)}</span>
+                <span style={badge(occupiedPublicProductSlotCount > 0)}>{labelWithIcon("cart", productStatusLabel)}</span>
                 <span style={badge(Boolean(currentActiveSpotlight))}>{labelWithIcon("megaphone", `Spotlight ${spotlightStatusLabel}`)}</span>
               </div>
             </div>

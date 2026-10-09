@@ -8,6 +8,7 @@ export type GsnLegacyIconName =
   | "briefcase"
   | "calendar"
   | "card"
+  | "cart"
   | "certificate"
   | "chart"
   | "chevronDown"
@@ -57,6 +58,7 @@ const GSN_LEGACY_ICON_MAP = {
   briefcase: "records-folder",
   calendar: "records-folder",
   card: "finance-wallet-card",
+  cart: "shopping-cart",
   certificate: "certificate-seal",
   chart: "finance-bank-building",
   chevronDown: "public-globe",

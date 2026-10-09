@@ -33,6 +33,11 @@ const requiredBasePackAssets = [
     importName: "marketStallIconUrl",
   },
   {
+    key: "shopping-cart",
+    fileName: "icon-shopping-cart-3d.webp",
+    importName: "shoppingCartIconUrl",
+  },
+  {
     key: "vault-safe",
     fileName: "icon-vault-safe-3d.webp",
     importName: "vaultSafeIconUrl",
@@ -413,7 +418,7 @@ assertContains(
 
 assertContains(
   "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
-  /apple-touch-icon` must point to `\/gsn-app-icon-ios-180-v14\.png`[\s\S]*?Manifest install icons must use `purpose: "any"`[\s\S]*?must not offer `maskable` or `\/gsn-app-icon\.svg`[\s\S]*?service worker cache must use `gsn-pwa-shell-v17`[\s\S]*?install prompt preview must use `\/gsn-app-icon-ios-180-v14\.png`/,
+  /apple-touch-icon` must point to `\/gsn-app-icon-ios-180-v14\.png`[\s\S]*?Manifest install icons must use `purpose: "any"`[\s\S]*?must not offer `maskable` or `\/gsn-app-icon\.svg`[\s\S]*?service worker cache must use `gsn-pwa-shell-v19`[\s\S]*?install prompt preview must use `\/gsn-app-icon-ios-180-v14\.png`/,
   "PWA icon batch manifest must cage the v14 metadata, no-maskable/SVG, service-worker, and prompt-preview contracts."
 );
 
@@ -576,7 +581,7 @@ if (existsSync(join(repoRoot, "frontend/dist"))) {
 
   assertBuiltArtifactContains(
     "frontend/dist/sw.js",
-    /const CACHE_VERSION = "gsn-pwa-shell-v17"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"/,
+    /const CACHE_VERSION = "gsn-pwa-shell-v19"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"/,
     "Built deploy service worker must precache the iPhone-safe app icon."
   );
 
@@ -621,7 +626,7 @@ assertContains(
 
 assertContains(
   "docs/GSN_ICON_MIGRATION.md",
-  /frontend\/src\/assets\/gsn-icons\/[\s\S]*?icon-trust-shield-3d\.webp[\s\S]*?icon-community-building-3d\.webp[\s\S]*?icon-shop-storefront-3d\.webp[\s\S]*?icon-market-stall-3d\.webp[\s\S]*?icon-vault-safe-3d\.webp[\s\S]*?icon-finance-bank-building-3d\.webp[\s\S]*?icon-finance-wallet-card-3d\.webp/,
+  /frontend\/src\/assets\/gsn-icons\/[\s\S]*?icon-trust-shield-3d\.webp[\s\S]*?icon-community-building-3d\.webp[\s\S]*?icon-shop-storefront-3d\.webp[\s\S]*?icon-market-stall-3d\.webp[\s\S]*?icon-shopping-cart-3d\.webp[\s\S]*?icon-vault-safe-3d\.webp[\s\S]*?icon-finance-bank-building-3d\.webp[\s\S]*?icon-finance-wallet-card-3d\.webp/,
   "Icon migration plan must define the future 3D icon asset home and core filenames."
 );
 
@@ -639,19 +644,19 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/gsnIconAssets.ts",
-  /export const GSN_3D_ICON_KEYS = \[[\s\S]*?"trust-shield"[\s\S]*?"community-building"[\s\S]*?"shop-storefront"[\s\S]*?"market-stall"[\s\S]*?"vault-safe"[\s\S]*?"finance-bank-building"[\s\S]*?"finance-wallet-card"[\s\S]*?"repayment-schedule"[\s\S]*?"records-folder"[\s\S]*?"certificate-seal"[\s\S]*?"join-person-plus"[\s\S]*?"spotlight-megaphone"[\s\S]*?"identity-card"[\s\S]*?"phone-contact"[\s\S]*?"qr-record"[\s\S]*?"public-globe"[\s\S]*?\] as const;/,
+  /export const GSN_3D_ICON_KEYS = \[[\s\S]*?"trust-shield"[\s\S]*?"community-building"[\s\S]*?"shop-storefront"[\s\S]*?"market-stall"[\s\S]*?"shopping-cart"[\s\S]*?"vault-safe"[\s\S]*?"finance-bank-building"[\s\S]*?"finance-wallet-card"[\s\S]*?"repayment-schedule"[\s\S]*?"records-folder"[\s\S]*?"certificate-seal"[\s\S]*?"join-person-plus"[\s\S]*?"spotlight-megaphone"[\s\S]*?"identity-card"[\s\S]*?"phone-contact"[\s\S]*?"qr-record"[\s\S]*?"public-globe"[\s\S]*?\] as const;/,
   "3D icon registry must include the required base-pack keys."
 );
 
 assertContains(
   "frontend/src/lib/gsnIconAssets.ts",
-  /(?=[\s\S]*?icon-trust-shield-3d\.webp)(?=[\s\S]*?icon-community-building-3d\.webp)(?=[\s\S]*?icon-shop-storefront-3d\.webp)(?=[\s\S]*?icon-market-stall-3d\.webp)(?=[\s\S]*?icon-vault-safe-3d\.webp)(?=[\s\S]*?icon-finance-bank-building-3d\.webp)(?=[\s\S]*?icon-finance-wallet-card-3d\.webp)(?=[\s\S]*?icon-repayment-schedule-3d\.webp)(?=[\s\S]*?icon-records-folder-3d\.webp)(?=[\s\S]*?icon-certificate-seal-3d\.webp)(?=[\s\S]*?icon-join-person-plus-3d\.webp)(?=[\s\S]*?icon-spotlight-megaphone-3d\.webp)/,
+  /(?=[\s\S]*?icon-trust-shield-3d\.webp)(?=[\s\S]*?icon-community-building-3d\.webp)(?=[\s\S]*?icon-shop-storefront-3d\.webp)(?=[\s\S]*?icon-market-stall-3d\.webp)(?=[\s\S]*?icon-shopping-cart-3d\.webp)(?=[\s\S]*?icon-vault-safe-3d\.webp)(?=[\s\S]*?icon-finance-bank-building-3d\.webp)(?=[\s\S]*?icon-finance-wallet-card-3d\.webp)(?=[\s\S]*?icon-repayment-schedule-3d\.webp)(?=[\s\S]*?icon-records-folder-3d\.webp)(?=[\s\S]*?icon-certificate-seal-3d\.webp)(?=[\s\S]*?icon-join-person-plus-3d\.webp)(?=[\s\S]*?icon-spotlight-megaphone-3d\.webp)/,
   "3D icon registry must preserve the required base-pack filenames."
 );
 
 assertContains(
   "frontend/src/components/GsnLegacyIcon.tsx",
-  /bank: "finance-bank-building"[\s\S]*?chart: "finance-bank-building"[\s\S]*?evidence: "certificate-seal"[\s\S]*?financeInstitution: "finance-bank-building"[\s\S]*?marketplace: "market-stall"[\s\S]*?proof: "certificate-seal"[\s\S]*?repaymentSchedule: "repayment-schedule"[\s\S]*?shop: "market-stall"[\s\S]*?soundOn: "audio-speaker"[\s\S]*?speaker: "audio-speaker"[\s\S]*?tag: "market-stall"[\s\S]*?video: "media-video"/,
+  /bank: "finance-bank-building"[\s\S]*?card: "finance-wallet-card"[\s\S]*?cart: "shopping-cart"[\s\S]*?chart: "finance-bank-building"[\s\S]*?evidence: "certificate-seal"[\s\S]*?financeInstitution: "finance-bank-building"[\s\S]*?marketplace: "market-stall"[\s\S]*?proof: "certificate-seal"[\s\S]*?repaymentSchedule: "repayment-schedule"[\s\S]*?shop: "market-stall"[\s\S]*?soundOn: "audio-speaker"[\s\S]*?speaker: "audio-speaker"[\s\S]*?tag: "market-stall"[\s\S]*?video: "media-video"/,
   "Legacy icon adapter must route domain finance, marketplace, certificate/evidence, repayment, sound, and video meanings to the stronger 3D assets."
 );
 

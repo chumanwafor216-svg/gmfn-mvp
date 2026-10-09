@@ -140,6 +140,7 @@ type LegacyShopIconName =
   | "briefcase"
   | "calendar"
   | "card"
+  | "cart"
   | "chart"
   | "chevronDown"
   | "chevronUp"
@@ -397,8 +398,8 @@ function productBuyerCue(product: ShopProduct, shopName: string): string {
   if (product.priceText.toLowerCase() === "price on request") {
     return "Ask the shop for today's price and availability.";
   }
-  if (shopName) return `Available from ${shopName}.`;
-  return "Ask, share, or save this offer for later.";
+  if (shopName) return `Available from ${shopName}. Contact the owner to request or confirm stock.`;
+  return "Contact the owner to request or confirm stock.";
 }
 
 function publicShopBlockLabel(product: ShopProduct): string {
@@ -1336,6 +1337,7 @@ function shop3DIconName(name: ShopIconName): Gsn3DIconKey {
     briefcase: "records-folder",
     calendar: "records-folder",
     card: "finance-wallet-card",
+    cart: "shopping-cart",
     chart: "finance-wallet-card",
     chevronDown: "public-globe",
     check: "trust-shield",
@@ -4106,7 +4108,7 @@ export default function ShopGalleryPage() {
               title: "Community Record",
               detail: shopCommunityIdText ? "ID check" : "Record pending",
             },
-            { icon: "globe" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
+            { icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
             { icon: "vault" as ShopIconName, title: "Private Vault", detail: "Owner-issued link" },
             { icon: "id" as ShopIconName, title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
@@ -5464,7 +5466,7 @@ export default function ShopGalleryPage() {
                     "0 1px 0 rgba(255,255,255,0.94), 0 10px 18px rgba(8,38,67,0.10)",
                 }}
               >
-                Products & Services
+                {labelWithShopIcon("cart", "Products & Services")}
               </div>
               <div
                 style={{
@@ -5477,8 +5479,42 @@ export default function ShopGalleryPage() {
               >
                 {focusedBlockLinkActive
                   ? "This shared link opens only this public product/service block."
-                  : "These are the public products and services anyone can browse or share."}
+                  : "Browse public items, then contact the owner to request or confirm availability."}
               </div>
+              {!focusedBlockLinkActive ? (
+                <div
+                  data-public-shop-commerce-path="true"
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    marginTop: 8,
+                  }}
+                >
+                  {[
+                    { icon: "cart" as ShopIconName, label: "Browse" },
+                    { icon: "phone" as ShopIconName, label: "Ask owner" },
+                    { icon: "shield" as ShopIconName, label: "Owner confirms" },
+                  ].map((step) => (
+                    <span
+                      key={`public-shop-commerce-path-${step.label}`}
+                      style={{
+                        ...badge(false),
+                        minHeight: isCompact ? 28 : 30,
+                        padding: isCompact ? "4px 8px" : "5px 9px",
+                        fontSize: isCompact ? 10.5 : 11.5,
+                        gap: 5,
+                        color: "#274D72",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(235,244,255,0.92) 100%)",
+                      }}
+                    >
+                      {inlineShopIcon(step.icon, "#0B4A7A", isCompact ? 10 : 11)}
+                      <span>{step.label}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <span style={badge(true)}>
               {focusedBlockProduct
@@ -5640,10 +5676,20 @@ export default function ShopGalleryPage() {
                   : isCompact
                   ? 40
                   : 44;
+                const productAskActionWidth = isProductOpen && !showBlockPlacementAction
+                  ? isCompact
+                    ? 76
+                    : 90
+                  : diaryActionWidth;
+                const productOpenActionRailWidth = showBlockPlacementAction
+                  ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
+                  : diaryActionWidth + productAskActionWidth + (isCompact ? 6 : 8);
+                const productOpenActionColumns = showBlockPlacementAction
+                  ? `repeat(4, ${diaryActionWidth}px)`
+                  : `${diaryActionWidth}px ${productAskActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
                 const diaryOpenDockHeight = isCompact ? 92 : 104;
-                const diaryOpenActionCount = showBlockPlacementAction ? 4 : 2;
 
                 return (
                   <article
@@ -5772,14 +5818,24 @@ export default function ShopGalleryPage() {
                             height: "100%",
                             display: "grid",
                             placeItems: "center",
-                            color: "#526C84",
+                            color: "#D7E3F1",
                             fontWeight: 850,
-                            fontSize: 12,
+                            fontSize: isCompact ? 11 : 12,
                             padding: 8,
                             textAlign: "center",
+                            background:
+                              "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.16) 0%, rgba(234,243,255,0.07) 42%, rgba(6,24,39,0.18) 100%)",
                           }}
                         >
-                          Picture soon
+                          <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+                            <GsnRealisticIcon
+                              name="shopping-cart"
+                              size={isCompact ? 54 : 66}
+                              decorative
+                              imageStyle={{ width: "100%", height: "100%" }}
+                            />
+                            <span>Picture soon</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -5801,10 +5857,7 @@ export default function ShopGalleryPage() {
                         boxSizing: "border-box",
                         display: "grid",
                         gridTemplateColumns: isProductOpen
-                          ? `minmax(0, 1fr) ${
-                              diaryActionWidth * diaryOpenActionCount +
-                              (isCompact ? 6 : 8) * (diaryOpenActionCount - 1)
-                            }px`
+                          ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
                           : `minmax(0, 1fr) ${diaryActionWidth}px`,
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto"
@@ -5910,7 +5963,7 @@ export default function ShopGalleryPage() {
                           gridRow: isProductOpen ? "3" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
-                            ? `repeat(${diaryOpenActionCount}, ${diaryActionWidth}px)`
+                            ? productOpenActionColumns
                             : `${diaryActionWidth}px`,
                           gap: isCompact ? 6 : 8,
                           width: "fit-content",
@@ -5956,7 +6009,7 @@ export default function ShopGalleryPage() {
                           }}
                         >
                           <GsnRealisticIcon
-                            name="public-globe"
+                            name={isProductOpen ? "public-globe" : "shopping-cart"}
                             size={isCompact ? 28 : 32}
                             decorative
                           />
@@ -6045,13 +6098,15 @@ export default function ShopGalleryPage() {
                           style={{
                             ...secondaryBtn(false),
                             display: isProductOpen ? "inline-flex" : "none",
-                            width: diaryActionWidth,
-                            maxWidth: diaryActionWidth,
+                            width: productAskActionWidth,
+                            maxWidth: productAskActionWidth,
                             minWidth: 0,
                             minHeight: diaryActionHeight,
-                            padding: 0,
+                            padding: showBlockPlacementAction ? 0 : "0 10px 0 8px",
                             borderRadius: 999,
-                            fontSize: isCompact ? 17 : 19,
+                            fontSize: showBlockPlacementAction ? (isCompact ? 17 : 19) : isCompact ? 12 : 13,
+                            fontWeight: showBlockPlacementAction ? undefined : 900,
+                            gap: showBlockPlacementAction ? 0 : 4,
                             lineHeight: 1,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -6064,7 +6119,8 @@ export default function ShopGalleryPage() {
                             borderColor: "rgba(18,140,76,0.52)",
                           }}
                         >
-                          <GsnRealisticIcon name="phone-contact" size={isCompact ? 28 : 32} decorative />
+                          <GsnRealisticIcon name="phone-contact" size={showBlockPlacementAction ? (isCompact ? 28 : 32) : 24} decorative />
+                          {!showBlockPlacementAction ? <span>Ask</span> : null}
                         </SecondaryButton>
                       </div>
                     </div>

@@ -237,14 +237,14 @@ Rules:
   and future access; a wallet/card can be used for personal payment details,
   but it should not be the only symbol for the whole finance domain.
 - `Marketplace` should lean toward a shopfront, stall, or real trading place;
-  a cart/basket belongs only where the action is literally shopping or moving
-  goods.
+  a shopping trolley/cart belongs where the action is literally browsing products, shopping, requesting, or moving goods.
 - Use real-object meaning:
   - spotlight = real loudspeaker or megaphone for announcement/publicity
   - sound controls = real speaker/loudspeaker for audio on/off
   - video/media = video camera or playable media object, not a megaphone
   - community home = premium house, hall, or civic building
   - shop / marketplace = shopfront, market stall, or real trading place
+  - product commerce = shopping trolley/cart for product browsing, requesting, or moving goods
   - vault = safe box
   - finance = bank building, cash drawer, or institutional money house
   - wallet/card = personal payout, payment-detail, or card context

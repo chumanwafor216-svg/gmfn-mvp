@@ -12,6 +12,7 @@ import publicGlobeIconUrl from "../assets/gsn-icons/icon-public-globe-3d.webp";
 import qrRecordIconUrl from "../assets/gsn-icons/icon-qr-record-3d.webp";
 import repaymentScheduleIconUrl from "../assets/gsn-icons/icon-repayment-schedule-3d.webp";
 import recordsFolderIconUrl from "../assets/gsn-icons/icon-records-folder-3d.webp";
+import shoppingCartIconUrl from "../assets/gsn-icons/icon-shopping-cart-3d.webp";
 import shopStorefrontIconUrl from "../assets/gsn-icons/icon-shop-storefront-3d.webp";
 import spotlightMegaphoneIconUrl from "../assets/gsn-icons/icon-spotlight-megaphone-3d.webp";
 import trustShieldIconUrl from "../assets/gsn-icons/icon-trust-shield-3d.webp";
@@ -24,6 +25,7 @@ export const GSN_3D_ICON_KEYS = [
   "community-building",
   "shop-storefront",
   "market-stall",
+  "shopping-cart",
   "vault-safe",
   "finance-bank-building",
   "finance-wallet-card",
@@ -73,7 +75,7 @@ export const GSN_3D_ICON_ASSETS = {
   "shop-storefront": {
     key: "shop-storefront",
     fileName: "icon-shop-storefront-3d.webp",
-    objectMeaning: "storefront or shopping bag/cart",
+    objectMeaning: "storefront or real shop front",
     promptSeed:
       "real-world storefront icon, high-fidelity marketplace icon, navy gold white, transparent background",
     assetUrl: shopStorefrontIconUrl,
@@ -86,6 +88,15 @@ export const GSN_3D_ICON_ASSETS = {
     promptSeed:
       "premium realistic 3D market stall icon, navy white canopy, gold trim, fresh goods, transparent background",
     assetUrl: marketStallIconUrl,
+    status: "available",
+  },
+  "shopping-cart": {
+    key: "shopping-cart",
+    fileName: "icon-shopping-cart-3d.webp",
+    objectMeaning: "shopping trolley or cart for product commerce actions",
+    promptSeed:
+      "premium realistic 3D shopping trolley icon, navy metal frame, white basket, gold accents, transparent background",
+    assetUrl: shoppingCartIconUrl,
     status: "available",
   },
   "vault-safe": {

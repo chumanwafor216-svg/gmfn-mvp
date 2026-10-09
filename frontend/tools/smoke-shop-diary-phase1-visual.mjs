@@ -178,6 +178,7 @@ const scenarios = {
   weak: [weakDataDiary, textOnlyDiary],
 };
 let activeScenario = "image";
+let activeAuthenticated = true;
 
 function serveDist() {
   if (!existsSync(join(distRoot, "index.html"))) {
@@ -212,6 +213,10 @@ async function installApiMocks(page) {
       return;
     }
     if (path === "/auth/me") {
+      if (!activeAuthenticated) {
+        await route.fulfill(json({ detail: "Not authenticated" }, 401));
+        return;
+      }
       await route.fulfill(json({ id: 410, user_id: 410, email: "diary-owner@gsn.local", display_name: "Diary Owner", gmfn_id: "GMFN-U-DIARY", gsn_id: "GMFN-U-DIARY", role: "member" }));
       return;
     }
@@ -259,13 +264,19 @@ async function installApiMocks(page) {
   });
 }
 
-async function preparePage(browser, width, height = 844) {
+async function preparePage(browser, width, height = 844, authenticated = true) {
+  activeAuthenticated = authenticated;
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true });
   await installApiMocks(page);
-  await page.addInitScript(() => {
-    localStorage.setItem("access_token", "shop-diary-visual-token");
-    localStorage.setItem("gmfn_selected_clan_id", "12");
-  });
+  await page.addInitScript((isAuthenticated) => {
+    if (isAuthenticated) {
+      localStorage.setItem("access_token", "shop-diary-visual-token");
+      localStorage.setItem("gmfn_selected_clan_id", "12");
+      return;
+    }
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("gmfn_selected_clan_id");
+  }, authenticated);
   return page;
 }
 
@@ -282,6 +293,8 @@ async function collectMetrics(page) {
       .find((node) => (node.textContent || "").trim() === "Products & Services");
     const frame = document.querySelector(".public-shop-diary-featured video, .public-shop-diary-featured img");
     const section = document.querySelector(".public-shop-diary-featured");
+    const productContactAction = document.querySelector('[data-cta-id^="shop-gallery.product."][data-cta-id$=".contact"]');
+    const productContactRect = productContactAction?.getBoundingClientRect();
     const diaryRect = diary?.getBoundingClientRect();
     const productRect = productHeading?.getBoundingClientRect();
     const frameRect = frame?.getBoundingClientRect();
@@ -299,6 +312,8 @@ async function collectMetrics(page) {
       hasVideo: Boolean(document.querySelector(".public-shop-diary-featured video")),
       hasImage: Boolean(document.querySelector(".public-shop-diary-featured img")),
       diaryDisplay: diary ? getComputedStyle(diary).display : null,
+      productContactText: (productContactAction?.textContent || "").replace(/\s+/g, " ").trim(),
+      productContactWidth: productContactRect ? Math.round(productContactRect.width) : null,
     };
   });
 }
@@ -328,11 +343,12 @@ async function run() {
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Confirmed activity" },
       { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
+      { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Contact the owner to request or confirm stock", authenticated: false, expectProductContactText: "Ask" },
     ];
 
     for (const item of cases) {
       activeScenario = item.scenario;
-      const page = await preparePage(browser, item.width);
+      const page = await preparePage(browser, item.width, 844, item.authenticated !== false);
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
       if (item.route.startsWith("/app/shop-control")) {
@@ -353,6 +369,12 @@ async function run() {
       }
       if (item.name.includes("focused") && metrics.diaryDisplay !== "none") {
         throw new Error(`${item.name} did not hide Shop Diary during focused product mode.`);
+      }
+      if (item.expectProductContactText && metrics.productContactText !== item.expectProductContactText) {
+        throw new Error(`${item.name} did not render product contact label ${item.expectProductContactText}. Contact text: ${metrics.productContactText || "<empty>"}`);
+      }
+      if (item.expectProductContactText && (!metrics.productContactWidth || metrics.productContactWidth < 70)) {
+        throw new Error(`${item.name} rendered a cramped product contact action: ${metrics.productContactWidth}`);
       }
       manifest.push({ ...item, screenshot, metrics });
     }

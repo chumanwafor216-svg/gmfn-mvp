@@ -77,6 +77,7 @@ icon-trust-shield-3d.webp
 icon-community-building-3d.webp
 icon-shop-storefront-3d.webp
 icon-market-stall-3d.webp
+icon-shopping-cart-3d.webp
 icon-vault-safe-3d.webp
 icon-finance-bank-building-3d.webp
 icon-finance-wallet-card-3d.webp
@@ -100,8 +101,9 @@ Create or source these first:
 | --- | --- | --- |
 | `trust-shield` | shield badge or seal | `premium skeuomorphic 3D icon, shield badge, navy and gold, transparent background` |
 | `community-building` | house, hall, or civic building | `3D community building icon, premium civic hall, navy gold white, transparent background` |
-| `shop-storefront` | storefront or shopping bag/cart | `real-world storefront icon, high-fidelity marketplace icon, navy gold white, transparent background` |
+| `shop-storefront` | storefront or real shop front | `real-world storefront icon, high-fidelity marketplace icon, navy gold white, transparent background` |
 | `market-stall` | market stall or real trading place | `premium realistic 3D market stall icon, navy white canopy, gold trim, fresh goods, transparent background` |
+| `shopping-cart` | shopping trolley or cart for product commerce actions | `premium realistic 3D shopping trolley icon, navy metal frame, white basket, gold accents, transparent background` |
 | `vault-safe` | safe box | `3D safe vault icon, premium banking icon, navy metal and gold accents, transparent background` |
 | `finance-bank-building` | bank building or institutional money house | `premium realistic 3D bank building icon, white stone columns, navy doors, gold accents, transparent background` |
 | `finance-wallet-card` | wallet or bank card for personal payment details | `premium banking icon, wallet and bank card, realistic 3D, navy gold green, transparent background` |
@@ -177,7 +179,7 @@ the object, size, and dignity of the mark more than the surrounding text.
   finance domain, because it carries more hope and authority. Keep wallet/card
   icons for personal payout, card, or payment-detail contexts.
 - Marketplace should use a shopfront, stall, or real trading-place object for
-  the domain. Use carts/baskets only for literal shopping or goods movement.
+  the domain. Use the shopping trolley/cart only for product browsing, requesting, shopping, or goods movement.
 - Trust, evidence, passport, certificate, and verification papers should look like
   evidence packages: light paper, seal, watermark, fixed fact chips, and clear
   object icons that do not cover the record.
@@ -192,6 +194,8 @@ The first semantic meaning upgrade now exists in the shared icon registry:
   institution contexts.
 - `market-stall` for Marketplace/domain opportunity contexts where a real
   trading place is stronger than a shopping cart.
+- `shopping-cart` for product-commerce contexts where the user is browsing,
+  requesting, shopping, or moving goods.
 - `certificate-seal` for Trust Passport, TrustSlip, public verification, and
   printable evidence packages.
 - `repayment-schedule` for borrowing repayment plans, instalments, and
