@@ -38,6 +38,7 @@ import {
   type ProtectedTradeRecord,
   type ShopDiaryEntryRecord,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
+  uploadMarketplaceFileToR2 as uploadMarketplaceFileToR2Api,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
 import {
@@ -645,16 +646,27 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-async function uploadMarketplaceImageFile(file: File): Promise<string> {
-  const data = await uploadMarketplaceImageFileApi(file);
+function shopAssetsR2UploadsEnabled(): boolean {
+  const env = (typeof import.meta !== "undefined" && (import.meta as any)?.env) || {};
+  const raw = String(env.VITE_GSN_SHOP_ASSETS_R2_UPLOADS || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(raw);
+}
+
+async function uploadMarketplaceImageFile(file: File, clanId?: number | null): Promise<string> {
+  const data = shopAssetsR2UploadsEnabled()
+    ? await uploadMarketplaceFileToR2Api({ file, media_type: "image", clan_id: clanId ?? null })
+    : await uploadMarketplaceImageFileApi(file, clanId ?? null);
   const url =
     firstTruthy(
       data?.image_url,
+      data?.public_url,
       data?.url,
       data?.path,
       data?.item?.image_url,
+      data?.item?.public_url,
       data?.item?.url,
       data?.data?.image_url,
+      data?.data?.public_url,
       data?.data?.url
     ) || "";
 
@@ -667,9 +679,10 @@ async function uploadMarketplaceImageFile(file: File): Promise<string> {
 
 async function uploadMarketplaceVideoFile(
   file: File,
-  durationSeconds?: number | null
+  durationSeconds?: number | null,
+  clanId?: number | null
 ): Promise<string> {
-  const data = await uploadMarketplaceVideoFileApi(file, durationSeconds ?? null);
+  const data = await uploadMarketplaceVideoFileApi(file, durationSeconds ?? null, clanId ?? null);
   const url =
     firstTruthy(
       data?.video_url,
@@ -1549,18 +1562,19 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     try {
       let nextImageUrl = safeStr(diaryImageUrlInput) || null;
       let nextVideoUrl = safeStr(diaryVideoUrlInput) || null;
+      const diaryClanId = Number(shop?.clan_id || selectedClanId || 0) || null;
       if (diarySelectedImageFile) {
-        nextImageUrl = await uploadMarketplaceImageFile(diarySelectedImageFile);
+        nextImageUrl = await uploadMarketplaceImageFile(diarySelectedImageFile, diaryClanId);
       }
       if (diarySelectedVideoFile) {
-        nextVideoUrl = await uploadMarketplaceVideoFile(diarySelectedVideoFile, null);
+        nextVideoUrl = await uploadMarketplaceVideoFile(diarySelectedVideoFile, null, diaryClanId);
         if (!nextImageUrl) nextImageUrl = nextVideoUrl;
       }
       const occurred = safeStr(diaryOccurredAt)
         ? new Date(`${diaryOccurredAt}T12:00:00`).toISOString()
         : new Date().toISOString();
       await createShopDiaryEntry({
-        clan_id: Number(shop?.clan_id || selectedClanId || 0) || null,
+        clan_id: diaryClanId,
         shop_id: Number(shop.id),
         activity_type: diaryActivityType,
         note: safeStr(diaryNote),

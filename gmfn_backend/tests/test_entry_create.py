@@ -3,6 +3,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from sqlalchemy import text
+
 from app.core.security import get_password_hash, verify_password
 from app.db.database import SessionLocal
 from app.db.models import (
@@ -806,6 +808,11 @@ def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypat
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
 
+    with SessionLocal() as db:
+        before_debits = db.execute(
+            text("SELECT COUNT(*) FROM pipeline_credit_ledger_entries WHERE entry_type = 'debit'")
+        ).scalar()
+
     start_res = client.post(
         "/entry/phone/start",
         json={
@@ -820,6 +827,17 @@ def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypat
     assert start_body["otp_preview"] is None
     assert start_body["registered_only"] is False
     assert start_body["verified"] is False
+    assert start_body["provider_key"] == "phone.sms_or_verify"
+    assert start_body["workflow_key"] == "phone.sms_or_verify.delivery"
+    assert start_body["provider_delivery_status"] == "not_wired_no_sms_sent"
+    assert "did not send an SMS" in start_body["provider_delivery_boundary"]
+    assert "debit Pipeline Credits" in start_body["provider_delivery_boundary"]
+
+    with SessionLocal() as db:
+        after_debits = db.execute(
+            text("SELECT COUNT(*) FROM pipeline_credit_ledger_entries WHERE entry_type = 'debit'")
+        ).scalar()
+    assert after_debits == before_debits
 
 
 def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):

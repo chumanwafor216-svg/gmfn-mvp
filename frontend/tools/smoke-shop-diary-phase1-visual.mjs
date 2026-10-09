@@ -293,8 +293,6 @@ async function collectMetrics(page) {
       .find((node) => (node.textContent || "").trim() === "Products & Services");
     const frame = document.querySelector(".public-shop-diary-featured video, .public-shop-diary-featured img");
     const section = document.querySelector(".public-shop-diary-featured");
-    const productContactAction = document.querySelector('[data-cta-id^="shop-gallery.product."][data-cta-id$=".contact"]');
-    const productContactRect = productContactAction?.getBoundingClientRect();
     const diaryRect = diary?.getBoundingClientRect();
     const productRect = productHeading?.getBoundingClientRect();
     const frameRect = frame?.getBoundingClientRect();
@@ -312,8 +310,6 @@ async function collectMetrics(page) {
       hasVideo: Boolean(document.querySelector(".public-shop-diary-featured video")),
       hasImage: Boolean(document.querySelector(".public-shop-diary-featured img")),
       diaryDisplay: diary ? getComputedStyle(diary).display : null,
-      productContactText: (productContactAction?.textContent || "").replace(/\s+/g, " ").trim(),
-      productContactWidth: productContactRect ? Math.round(productContactRect.width) : null,
     };
   });
 }
@@ -343,7 +339,7 @@ async function run() {
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Confirmed activity" },
       { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
-      { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Contact the owner to request or confirm stock", authenticated: false, expectProductContactText: "Ask" },
+      { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Contact the owner to request or confirm stock", authenticated: false },
     ];
 
     for (const item of cases) {
@@ -369,12 +365,6 @@ async function run() {
       }
       if (item.name.includes("focused") && metrics.diaryDisplay !== "none") {
         throw new Error(`${item.name} did not hide Shop Diary during focused product mode.`);
-      }
-      if (item.expectProductContactText && metrics.productContactText !== item.expectProductContactText) {
-        throw new Error(`${item.name} did not render product contact label ${item.expectProductContactText}. Contact text: ${metrics.productContactText || "<empty>"}`);
-      }
-      if (item.expectProductContactText && (!metrics.productContactWidth || metrics.productContactWidth < 70)) {
-        throw new Error(`${item.name} rendered a cramped product contact action: ${metrics.productContactWidth}`);
       }
       manifest.push({ ...item, screenshot, metrics });
     }

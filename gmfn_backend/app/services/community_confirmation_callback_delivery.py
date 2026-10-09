@@ -7,7 +7,11 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from sqlalchemy.orm import Session
+
+from app.services.pipeline_credit_spend_gate import debit_provider_spend
 
 
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
@@ -72,6 +76,69 @@ def _build_message(
     )
 
 
+def _webhook_spend_idempotency_key(*, event_key: str, channel: str) -> str:
+    raw = f"{event_key}:{channel}"
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+    return f"provider-spend:community.callback_webhook:{digest}"
+
+
+def _debit_callback_webhook_spend(
+    db: Optional[Session],
+    *,
+    request: Any,
+    event_key: str,
+    event: str,
+    channel: str,
+) -> Dict[str, Any]:
+    if db is None:
+        return {
+            "ok": False,
+            "status": "blocked_missing_database_session",
+            "note": "Callback webhook spend requires a database session so pipeline credits can be debited before delivery.",
+        }
+
+    workflow_key = "community.callback_webhook.delivery"
+    gate_result = debit_provider_spend(
+        db,
+        provider_key="community.callback_webhook",
+        workflow_key=workflow_key,
+        idempotency_key=_webhook_spend_idempotency_key(event_key=event_key, channel=channel),
+        reference_type="community_confirmation_callback",
+        reference_id=str(getattr(request, "id", 0) or event_key),
+        note="Community confirmation callback webhook provider delivery",
+        clan_id=int(getattr(request, "community_id", 0) or 0) or None,
+        user_id=int(getattr(request, "subject_user_id", 0) or 0) or None,
+        meta={
+            "event": event,
+            "event_key": event_key,
+            "channel": channel,
+            "request_id": int(getattr(request, "id", 0) or 0),
+        },
+    )
+    if not gate_result.ok:
+        return {
+            "ok": False,
+            "status": gate_result.status,
+            "note": gate_result.explanation,
+            "pipeline_credit_gate": {
+                "ok": False,
+                "status": gate_result.status,
+                "provider_key": gate_result.provider_key,
+                "workflow_key": gate_result.workflow_key,
+            },
+        }
+    return {
+        "ok": True,
+        "status": "debited",
+        "pipeline_credit_gate": {
+            "ok": True,
+            "status": gate_result.status,
+            "provider_key": gate_result.provider_key,
+            "workflow_key": gate_result.workflow_key,
+            "ledger_entry": gate_result.ledger_entry,
+        },
+    }
+
 def _post_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     url = _safe_text(os.getenv("GMFN_CONFIRMATION_CALLBACK_WEBHOOK_URL"))
     if not url:
@@ -116,6 +183,7 @@ def _post_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def attempt_confirmation_callback_delivery(
     *,
+    db: Optional[Session] = None,
     request: Any,
     requester_callback: Dict[str, Any],
     event: str,
@@ -187,6 +255,31 @@ def attempt_confirmation_callback_delivery(
             "last_delivery_attempt": delivery_snapshot,
         }
 
+    spend_result = _debit_callback_webhook_spend(
+        db,
+        request=request,
+        event_key=event_key,
+        event=event,
+        channel=channel,
+    )
+    if not spend_result.get("ok"):
+        status = _safe_text(spend_result.get("status"), "blocked_pipeline_credit_gate")
+        return {
+            **callback,
+            "delivery_status": status,
+            "delivery_note": (
+                "Configured callback delivery was blocked by the Pipeline Credit gate. The public result link remains the source of truth."
+            ),
+            "last_delivery_event_key": event_key,
+            "last_delivery_attempt": {
+                **delivery_snapshot,
+                "provider": "webhook",
+                "provider_status": status,
+                "pipeline_credit_gate": spend_result.get("pipeline_credit_gate"),
+                "error": spend_result.get("note"),
+            },
+        }
+
     provider_result = _post_webhook(
         {
             "event": event,
@@ -218,5 +311,6 @@ def attempt_confirmation_callback_delivery(
             "provider_status": status,
             "http_status": provider_result.get("http_status"),
             "error": provider_result.get("error"),
+            "pipeline_credit_gate": spend_result.get("pipeline_credit_gate"),
         },
     }

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -40,6 +40,8 @@ PLAN_COMMUNITY_MEETING_PACK = "community_meeting_pack"
 PLAN_COMMUNITY_DOMAIN_STARTER_YEAR = "community_domain_starter_year"
 
 COMMUNITY_PACKAGE_EXPECTED_TYPE = "community_package_subscription"
+PIPELINE_CREDIT_TOPUP_EXPECTED_TYPE = "pipeline_credit_topup"
+PIPELINE_CREDIT_TOPUP_MIN_AMOUNT = Decimal("1.00")
 
 COMMUNITY_PACKAGE_CATALOG: Dict[str, Dict[str, str]] = {
     "extra_shop_blocks": {
@@ -224,6 +226,17 @@ def calc_community_package_amount_for_code(
 
     return calc_community_package_amount(qty)
 
+
+def build_pipeline_credit_topup_reference(
+    *,
+    owner_user_id: int,
+    clan_id: Optional[int] = None,
+) -> str:
+    scope = f"C{int(clan_id)}" if clan_id is not None else "PLATFORM"
+    return (
+        f"GSN-PCREDIT-U{int(owner_user_id)}-{scope}-"
+        f"{_timestamp_code()}-{_unique_suffix()}"
+    )
 
 def build_vault_subscription_reference(
     *,
@@ -462,6 +475,70 @@ def create_loan_repayment_instruction(
         "expected_remaining_amount": str(exp.remaining_amount),
         "currency": exp.currency,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
+        **_payment_status_contract(exp),
+    }
+
+
+def create_pipeline_credit_topup_instruction(
+    db: Session,
+    *,
+    owner_user_id: int,
+    clan_id: int,
+    amount: Decimal,
+    currency: str = "GBP",
+    note: Optional[str] = None,
+    due_at: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    resolved_clan_id = _positive_int(clan_id, name="clan_id")
+    resolved_amount = _d(amount)
+    if resolved_amount < PIPELINE_CREDIT_TOPUP_MIN_AMOUNT:
+        raise ValueError("Pipeline Credit top-up amount must be at least 1.00")
+
+    resolved_currency = (currency or "GBP").strip().upper()
+    reference_display = build_pipeline_credit_topup_reference(
+        owner_user_id=int(owner_user_id),
+        clan_id=resolved_clan_id,
+    )
+    account_owner_type = "community"
+    topup_meta = {
+        "source": "payment_instruction.pipeline_credit_topup",
+        "payment_context": "pipeline_credit_topup",
+        "payment_beneficiary_scope": "platform",
+        "owner_user_id": int(owner_user_id),
+        "clan_id": resolved_clan_id,
+        "pipeline_credit_account_owner_type": account_owner_type,
+        "pipeline_credit_amount": str(resolved_amount),
+        "pipeline_credit_currency": resolved_currency,
+        "note": str(note or "").strip()[:300],
+        "boundary": "Internal API usage credit only; not customer funds, wallet balance, loan, or cash-out value.",
+    }
+
+    exp = create_expected_payment_row(
+        db,
+        clan_id=resolved_clan_id,
+        user_id=int(owner_user_id),
+        expected_type=PIPELINE_CREDIT_TOPUP_EXPECTED_TYPE,
+        amount=resolved_amount,
+        currency=resolved_currency,
+        reference_display=reference_display,
+        due_at=due_at or _default_due_at(),
+        meta=topup_meta,
+        commit=True,
+        refresh=True,
+    )
+
+    return {
+        "expected_payment_id": int(exp.id),
+        "reference": exp.reference_display,
+        "reference_display": exp.reference_display,
+        "reference_normalized": exp.reference_normalized,
+        "expected_type": exp.expected_type,
+        "amount": str(resolved_amount),
+        "currency": exp.currency,
+        "clan_id": resolved_clan_id,
+        "pipeline_credit_account_owner_type": account_owner_type,
+        "due_at": exp.due_at.isoformat() if exp.due_at else None,
+        "meta": topup_meta,
         **_payment_status_contract(exp),
     }
 

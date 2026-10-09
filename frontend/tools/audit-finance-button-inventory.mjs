@@ -54,8 +54,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 11;
-const expectedRenderedActions = 18;
+const expectedSourceActions = 14;
+const expectedRenderedActions = 21;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -93,6 +93,7 @@ const expectedOrder = [
   "finance.events.view-all",
   "finance.view-signals",
   "finance.toggle-pipeline-credits",
+  "finance.pipeline-credits.toggle-provider-gates",
   "finance.toggle-overview",
   "finance.toggle-reconciliation",
   "finance.toggle-borrower",
@@ -177,6 +178,10 @@ assertContains(
 assertContains(
   /It does not lend money, hold customer funds, approve credit, or promise that external money will move[\s\S]*?Not a wallet[\s\S]*?Not credit approval[\s\S]*?Pilot pricing/,
   "Finance Pipeline Credits must keep the non-lending and non-wallet decision boundary visible."
+);
+assertContains(
+  /Provider spend gates[\s\S]*?Owner-safe truth view for paid API\/provider readiness[\s\S]*?This checks metering, not secret validity or live delivery[\s\S]*?debugId="finance\.pipeline-credits\.toggle-provider-gates"/,
+  "Finance Pipeline Credits must expose the owner-safe provider-gate truth panel without pretending providers are live."
 );
 
 assertContains(

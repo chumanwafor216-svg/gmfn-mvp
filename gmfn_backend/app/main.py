@@ -22,6 +22,7 @@ import app.db.bank_models  # noqa: F401
 import app.db.identity_models  # noqa: F401
 import app.db.models  # noqa: F401
 import app.db.notification_models  # noqa: F401
+import app.db.pipeline_credit_models  # noqa: F401
 import app.db.verification_models  # noqa: F401
 
 from app.db.bank_models import BankEvent

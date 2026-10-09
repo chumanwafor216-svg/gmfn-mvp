@@ -88,6 +88,7 @@ from app.api.routes.admin_behaviour_metrics import router as admin_behaviour_met
 # Payments / Rails / Notifications / Identity
 # =========================
 from app.api.routes.payment_instructions import router as payment_router
+from app.api.routes.pipeline_credits import router as pipeline_credits_router
 from app.api.routes.payment_rails import router as payment_rails_router
 from app.api.routes.community_pay_in_accounts import router as community_pay_in_accounts_router
 from app.api.routes.rosca import router as rosca_router
@@ -197,6 +198,7 @@ api_router.include_router(admin_behaviour_metrics_router)
 
 # PAYMENTS / RAILS / NOTIFICATIONS / IDENTITY
 api_router.include_router(payment_router)
+api_router.include_router(pipeline_credits_router)
 api_router.include_router(payment_rails_router)
 api_router.include_router(community_pay_in_accounts_router)
 api_router.include_router(rosca_router)

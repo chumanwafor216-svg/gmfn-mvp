@@ -1234,7 +1234,7 @@ export default function LoanSuggestionsPage() {
         label="What this screen does"
         what="This page reads the current support item and shows visible support facts and broader evidence posture for the next move."
         why="Finance keeps the money record. This screen keeps planning evidence separate from approval, endorsement, or personal worth."
-        next="Planning evidence is decision support only; it does not choose a supporter, approve support, endorse anyone, or authorize release of goods, credit, or money."
+        next="Fit suggestions are decision support only; they do not choose a supporter, approve support, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1307,7 +1307,7 @@ export default function LoanSuggestionsPage() {
                 lineHeight: 1.1,
               }}
             >
-              Support planning evidence for {memberName}
+              Supporter fit suggestions for {memberName}
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>

@@ -212,11 +212,12 @@ function topRailCard(isCompact = false): React.CSSProperties {
     overflow: "hidden",
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "48px minmax(0, 1fr) auto"
+      ? "48px minmax(0, 1fr)"
       : "64px minmax(0, 1fr) auto",
+    gridTemplateAreas: isCompact ? "'back brand' 'actions actions'" : undefined,
     alignItems: "center",
     gap: isCompact ? 10 : 18,
-    minHeight: isCompact ? 96 : 124,
+    minHeight: isCompact ? 126 : 124,
     borderRadius: 28,
     padding: isCompact ? "12px" : "16px clamp(16px, 4vw, 28px)",
     boxSizing: "border-box",
@@ -282,7 +283,7 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
     height: isCompact ? 34 : 40,
     maxHeight: isCompact ? 34 : 40,
     minWidth: 0,
-    width: undefined,
+    width: isCompact ? "100%" : undefined,
     borderRadius: 999,
     padding: isCompact ? "0 9px" : about ? "0 18px" : "0 20px",
     border: about
@@ -297,6 +298,7 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
     letterSpacing: isCompact ? 0.25 : 0.55,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
+    flex: isCompact ? "1 1 0" : undefined,
     boxShadow: about
       ? "0 8px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"
       : "inset 0 1px 0 rgba(255,255,255,0.08)",
@@ -958,6 +960,7 @@ export default function MemberActivationPage() {
             style={{
               position: "relative",
               zIndex: 1,
+              gridArea: isCompact ? "back" : undefined,
               width: isCompact ? 48 : 54,
               height: isCompact ? 48 : 54,
               maxHeight: isCompact ? 48 : 54,
@@ -976,7 +979,14 @@ export default function MemberActivationPage() {
             {"←"}
           </StableCtaLink>
 
-          <div style={{ ...brandLockup(isCompact), position: "relative", zIndex: 1 }}>
+          <div
+            style={{
+              ...brandLockup(isCompact),
+              position: "relative",
+              zIndex: 1,
+              gridArea: isCompact ? "brand" : undefined,
+            }}
+          >
             <div style={crestStyle(isCompact ? 52 : 78)}>GSN</div>
             <div style={{ display: "grid", justifyItems: "start", minWidth: 0 }}>
               <div
@@ -1013,10 +1023,12 @@ export default function MemberActivationPage() {
               position: "relative",
               zIndex: 1,
               display: "flex",
+              gridArea: isCompact ? "actions" : undefined,
               gap: isCompact ? 8 : 12,
-              justifyContent: "flex-end",
+              justifyContent: isCompact ? "stretch" : "flex-end",
               flexWrap: "nowrap",
               minWidth: 0,
+              width: isCompact ? "100%" : undefined,
             }}
           >
             <SubtleButton

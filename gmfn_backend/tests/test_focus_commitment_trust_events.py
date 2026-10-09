@@ -313,6 +313,31 @@ def test_trustslip_me_exposes_official_id_context_before_phone_verification(
     )
 
 
+def test_signed_in_phone_start_sms_mode_reports_no_provider_send(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900112", "country": "GB"},
+    )
+    assert start_res.status_code == 201, start_res.text
+    body = start_res.json()
+
+    assert body["registered"] is True
+    assert body["delivery_mode"] == "pending-sms"
+    assert body["otp_preview"] is None
+    assert body["provider_key"] == "phone.sms_or_verify"
+    assert body["workflow_key"] == "phone.sms_or_verify.delivery"
+    assert body["provider_delivery_status"] == "not_wired_no_sms_sent"
+    assert "did not send an SMS" in body["provider_delivery_boundary"]
+    assert "debit Pipeline Credits" in body["provider_delivery_boundary"]
+
 def test_signed_in_phone_start_records_system_generated_phone_evidence(
     client: TestClient,
     monkeypatch,

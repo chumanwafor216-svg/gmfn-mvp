@@ -37,6 +37,7 @@ from app.services.payment_instruction_service import (
     create_loan_repayment_instruction,
     create_pool_deposit_instruction,
     create_community_package_instruction,
+    create_pipeline_credit_topup_instruction,
     create_merchant_verify_instruction,
     create_spotlight_subscription_instruction,
     create_vault_subscription_instruction,
@@ -51,6 +52,7 @@ from app.services.feature_entitlements_service import (
     get_active_feature_quantity,
 )
 from app.services.settlement_config_service import get_settlement_config
+from app.services.pipeline_credit_service import PIPELINE_CREDIT_BOUNDARY
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
 from app.services.vault_domain_service import (
@@ -475,6 +477,27 @@ class CommunityPackageInstructionIn(BaseModel):
         return _reject_non_decimal_string(value, info.field_name)
 
     @field_validator("package_code", "currency", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+class PipelineCreditTopupInstructionIn(BaseModel):
+    clan_id: int
+    amount: Decimal = Field(..., ge=Decimal("1.00"))
+    currency: str = "GBP"
+    note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("currency", "note", mode="before")
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -1081,6 +1104,35 @@ def create_community_package_payment_instruction(
     return out
 
 
+@router.post("/pipeline-credit-topup")
+def create_pipeline_credit_topup_payment_instruction(
+    payload: PipelineCreditTopupInstructionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_clan_admin(
+        db,
+        clan_id=int(payload.clan_id),
+        current_user=current_user,
+    )
+
+    try:
+        out = create_pipeline_credit_topup_instruction(
+            db,
+            owner_user_id=int(current_user.id),
+            clan_id=int(payload.clan_id),
+            amount=payload.amount,
+            currency=payload.currency,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    out["settlement"] = get_settlement_config()
+    out["instruction_type"] = "pipeline_credit_topup"
+    out["boundary"] = PIPELINE_CREDIT_BOUNDARY
+    return out
+
 @router.get("/my/expected")
 def my_expected_payments(
     clan_id: int = Query(..., ge=1),
@@ -1117,6 +1169,7 @@ def my_instruction_config(
             "merchant_verify_subscription",
             "spotlight_subscription",
             "community_package_subscription",
+            "pipeline_credit_topup",
             "community_domain_subscription",
         ],
         "vault_supported_quantities": [1, 2],
@@ -1169,5 +1222,14 @@ def my_instruction_config(
                 }
                 for code, cfg in COMMUNITY_PACKAGE_CATALOG.items()
             ],
+        },
+        "pipeline_credit_config": {
+            "min_topup_gbp": "1.00",
+            "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
+            "payment_method": "bank_transfer",
+            "payment_beneficiary_scope": "platform",
+            "credit_scope": "community_api_usage",
+            "applies_after": "bank_or_provider_reconciliation_confirmed",
+            "boundary": PIPELINE_CREDIT_BOUNDARY,
         },
     }

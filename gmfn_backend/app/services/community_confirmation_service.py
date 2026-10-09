@@ -2002,6 +2002,7 @@ def _notify_confirmation_requester_expired(
 
 
 def _apply_requester_callback_delivery(
+    db: Session,
     *,
     request: CommunityConfirmationRequest,
     summary: Dict[str, Any],
@@ -2014,6 +2015,7 @@ def _apply_requester_callback_delivery(
     if not isinstance(callback, dict):
         callback = {}
     updated_callback = attempt_confirmation_callback_delivery(
+        db=db,
         request=request,
         requester_callback=callback,
         event=event,
@@ -2053,6 +2055,7 @@ def _mark_confirmation_request_expired(
         "private_contacts_exposed": False,
     }
     expired_summary = _apply_requester_callback_delivery(
+        db,
         request=request,
         summary=expired_summary,
         event="community_confirmation.request_expired",
@@ -2180,6 +2183,7 @@ def recompute_confirmation_outcome(db: Session, *, request_id: int) -> Dict[str,
         active_members=active_members,
     )
     summary = _apply_requester_callback_delivery(
+        db,
         request=request,
         summary=summary,
         event="community_confirmation.outcome_updated",

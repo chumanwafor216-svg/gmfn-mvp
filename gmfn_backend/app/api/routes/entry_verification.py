@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
@@ -16,8 +17,13 @@ from app.core.auth import get_current_user, is_user_activation_pending
 from app.db.database import get_db
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, EntryPhoneVerification, User
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.pipeline_credit_spend_gate import debit_provider_spend
 from app.services.trust_events_services import build_trust_meta, log_trust_event
-from app.services.verification_adapters.base import VerificationAdapterRequest
+from app.services.verification_adapters.base import (
+    VERIFICATION_STATUS_UNAVAILABLE,
+    VerificationAdapterRequest,
+    VerificationAdapterResult,
+)
 from app.services.verification_router import (
     route_bank_verification,
     route_drivers_licence_verification,
@@ -168,6 +174,72 @@ def _clean_text(value: object, *, upper: bool = False) -> str:
     return text.upper() if upper else text
 
 
+def _bank_payload_ready_for_live_provider(payload: BankVerificationIn) -> bool:
+    account_number = _clean_text(payload.account_number).replace(" ", "")
+    sort_code = _clean_text(payload.sort_code).replace(" ", "").replace("-", "")
+    iban = _clean_text(payload.iban).replace(" ", "")
+    destination_name = _clean_text(payload.destination_name)
+    return bool(destination_name and ((account_number and sort_code) or iban))
+
+
+def _pipeline_credit_idempotency_for_bank_provider(
+    *,
+    provider_key: str,
+    session_id: int,
+    payload: BankVerificationIn,
+) -> str:
+    normalized = "|".join(
+        [
+            str(session_id),
+            _clean_text(payload.destination_name, upper=True),
+            _clean_text(payload.account_number).replace(" ", ""),
+            _clean_text(payload.sort_code).replace(" ", "").replace("-", ""),
+            _clean_text(payload.iban).replace(" ", "").upper(),
+            _clean_text(payload.country, upper=True),
+        ]
+    )
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:24]
+    return f"provider-spend:{provider_key}:entry-bank:{session_id}:{digest}"
+
+
+def _blocked_provider_spend_result(*, provider_key: str, gate_result: Any) -> VerificationAdapterResult:
+    return VerificationAdapterResult(
+        provider_key=provider_key,
+        status=VERIFICATION_STATUS_UNAVAILABLE,
+        explanation=(
+            "Live provider bank verification is blocked by the Pipeline Credit gate. "
+            f"{gate_result.explanation}"
+        ),
+        confidence_score=None,
+        normalized_identity={},
+        provider_response={
+            "pipeline_credit_gate": {
+                "ok": False,
+                "status": gate_result.status,
+                "provider_key": gate_result.provider_key,
+                "workflow_key": gate_result.workflow_key,
+            }
+        },
+    )
+
+
+def _with_provider_spend_receipt(
+    result: VerificationAdapterResult,
+    *,
+    gate_result: Any,
+) -> VerificationAdapterResult:
+    provider_response = dict(result.provider_response or {})
+    provider_response["pipeline_credit_gate"] = {
+        "ok": True,
+        "status": gate_result.status,
+        "provider_key": gate_result.provider_key,
+        "workflow_key": gate_result.workflow_key,
+        "ledger_entry": gate_result.ledger_entry,
+    }
+    result.provider_response = provider_response
+    return result
+
+
 REGION_ALIASES = {
     "UK": "GB",
     "UNITED KINGDOM": "GB",
@@ -236,6 +308,23 @@ def _signed_in_phone_delivery_mode() -> str:
         return "pending-sms"
     return "preview"
 
+
+def _phone_provider_delivery_context(delivery_mode: str) -> dict[str, Any]:
+    if delivery_mode != "pending-sms":
+        return {
+            "provider_key": None,
+            "workflow_key": None,
+            "provider_delivery_status": "not_requested",
+            "provider_delivery_boundary": "No live SMS provider delivery was requested for this phone session.",
+        }
+    return {
+        "provider_key": "phone.sms_or_verify",
+        "workflow_key": "phone.sms_or_verify.delivery",
+        "provider_delivery_status": "not_wired_no_sms_sent",
+        "provider_delivery_boundary": (
+            "SMS provider delivery is not wired in this backend slice. GSN created a verification code, but it did not send an SMS, debit Pipeline Credits, or prove phone ownership by provider delivery."
+        ),
+    }
 
 def _generate_code() -> str:
     return f"{secrets.randbelow(1000000):06d}"
@@ -564,6 +653,7 @@ def start_signed_in_phone_verification(
         "expires_at": verification.expires_at.isoformat(),
         "delivery_mode": delivery_mode,
         "otp_preview": verification.code if delivery_mode == "preview" else None,
+        **_phone_provider_delivery_context(delivery_mode),
         "message": (
             "Phone code created. Confirm the code to attach this phone to your signed-in identity."
         ),
@@ -735,13 +825,54 @@ def verify_bank_details(payload: BankVerificationIn, db: Session = Depends(get_d
     )
 
     adapter = route_bank_verification(region_code)
-    adapter_result = adapter.verify(
-        VerificationAdapterRequest(
-            verification_type="bank",
-            region_code=region_code,
-            payload=payload.model_dump(),
+    provider_key = str(getattr(adapter, "provider_key", "") or "").strip()
+    request_payload = payload.model_dump()
+    live_provider_has_token = bool(str(getattr(adapter, "access_token", "") or "").strip())
+
+    if provider_key == "bank.gb.truelayer" and live_provider_has_token and _bank_payload_ready_for_live_provider(payload):
+        workflow_key = "bank.gb.truelayer.account_holder_verification"
+        provider_idempotency_key = _pipeline_credit_idempotency_for_bank_provider(
+            provider_key=provider_key,
+            session_id=int(session_row.id),
+            payload=payload,
         )
-    )
+        gate_result = debit_provider_spend(
+            db,
+            provider_key=provider_key,
+            workflow_key=workflow_key,
+            idempotency_key=provider_idempotency_key,
+            reference_type="entry_bank_verification",
+            reference_id=str(session_row.id),
+            note="TrueLayer GB account-holder verification provider spend",
+            meta={
+                "verification_type": "bank",
+                "region_code": region_code,
+                "entry_phone_verification_id": int(session_row.id),
+            },
+        )
+        if not gate_result.ok:
+            adapter_result = _blocked_provider_spend_result(
+                provider_key=provider_key,
+                gate_result=gate_result,
+            )
+        else:
+            request_payload["provider_idempotency_key"] = provider_idempotency_key
+            adapter_result = adapter.verify(
+                VerificationAdapterRequest(
+                    verification_type="bank",
+                    region_code=region_code,
+                    payload=request_payload,
+                )
+            )
+            adapter_result = _with_provider_spend_receipt(adapter_result, gate_result=gate_result)
+    else:
+        adapter_result = adapter.verify(
+            VerificationAdapterRequest(
+                verification_type="bank",
+                region_code=region_code,
+                payload=request_payload,
+            )
+        )
 
     check = IdentityVerificationCheck(
         entry_phone_verification_id=int(session_row.id),

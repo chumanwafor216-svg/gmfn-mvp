@@ -296,6 +296,10 @@ class EntryPhoneStartOut(BaseModel):
     verified_at: Optional[str] = None
     bank_details_recorded: bool = False
     confirmation_message: Optional[str] = None
+    provider_key: Optional[str] = None
+    workflow_key: Optional[str] = None
+    provider_delivery_status: Optional[str] = None
+    provider_delivery_boundary: Optional[str] = None
 
 
 class EntryPhoneConfirmIn(BaseModel):
@@ -784,6 +788,23 @@ def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
 def _generate_code() -> str:
     return f"{secrets.randbelow(900000) + 100000}"
 
+
+def _phone_provider_delivery_context(delivery_mode: str) -> dict[str, Any]:
+    if delivery_mode != "pending-sms":
+        return {
+            "provider_key": None,
+            "workflow_key": None,
+            "provider_delivery_status": "not_requested",
+            "provider_delivery_boundary": "No live SMS provider delivery was requested for this phone session.",
+        }
+    return {
+        "provider_key": "phone.sms_or_verify",
+        "workflow_key": "phone.sms_or_verify.delivery",
+        "provider_delivery_status": "not_wired_no_sms_sent",
+        "provider_delivery_boundary": (
+            "SMS provider delivery is not wired in this backend slice. GSN created a verification code, but it did not send an SMS, debit Pipeline Credits, or prove phone ownership by provider delivery."
+        ),
+    }
 
 def _phone_confirmation_message(row: EntryPhoneVerification) -> str:
     return (
@@ -1630,6 +1651,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
             "registered_only": registration_only and not is_verified,
             "verified_at": verified_at.isoformat() if verified_at else None,
             "bank_details_recorded": resumable.bank_details_recorded_at is not None,
+            **_phone_provider_delivery_context(delivery_mode),
             "confirmation_message": (
                 "GSN found your unfinished entry record and reopened it so you can continue."
                 if not is_verified and not registration_only
@@ -1677,6 +1699,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         "delivery_mode": delivery_mode,
         "otp_preview": verification.code if preview_enabled else None,
         "registered_only": registration_only,
+        **_phone_provider_delivery_context(delivery_mode),
         "confirmation_message": _phone_registration_only_message(verification)
         if registration_only
         else None,

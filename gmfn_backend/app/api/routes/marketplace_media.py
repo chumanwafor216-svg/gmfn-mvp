@@ -6,9 +6,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile, Request
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
+from app.db.database import get_db
+from app.db.models import ClanMembership, User
+from app.services.storage_service import StorageServiceError, create_presigned_upload
 
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 
@@ -38,6 +44,23 @@ CONTENT_TYPE_ALIASES = {
 }
 
 GENERIC_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
+
+
+def _is_admin(user: Any) -> bool:
+    return bool(getattr(user, "is_admin", False)) or str(getattr(user, "role", "") or "").strip().lower() == "admin"
+
+
+def _is_community_admin(db: Session, *, clan_id: int, user_id: int) -> bool:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    return str(getattr(membership, "role", "") or "").strip().lower() == "admin"
 
 
 def _reject_non_text_value(value: Any, field_name: str) -> Any:
@@ -173,6 +196,11 @@ class UploadUrlCreateIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class R2UploadUrlCreateIn(UploadUrlCreateIn):
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    expires: int = Field(default=600, ge=60, le=3600)
+
+
 @router.post("/upload-url")
 async def create_marketplace_upload_url(
     payload: UploadUrlCreateIn,
@@ -201,6 +229,73 @@ async def create_marketplace_upload_url(
         "upload_url": upload_url,
         "public_url": public_url,
         "max_bytes": _max_bytes_for(media_type),
+    }
+
+
+@router.post("/r2-upload-url")
+async def create_marketplace_r2_upload_url(
+    payload: R2UploadUrlCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    current_user_id = int(getattr(current_user, "id", 0) or 0)
+    use_community_credit_account = False
+    if not _is_admin(current_user):
+        if payload.clan_id is None:
+            raise HTTPException(status_code=403, detail="Community R2 upload URL creation requires a community id and community admin access.")
+        if not _is_community_admin(db, clan_id=int(payload.clan_id), user_id=current_user_id):
+            raise HTTPException(status_code=403, detail="Community admin access required for community R2 upload spending.")
+        use_community_credit_account = True
+
+    media_type = _validate_media_type(payload.media_type)
+    ext = _safe_ext(payload.filename)
+    content_type = _normalize_content_type(payload.content_type)
+
+    _validate_ext(media_type, ext)
+    _validate_content_type(media_type, content_type, ext)
+
+    generated_name = _random_name(ext)
+    kind = "images" if media_type == "image" else "videos"
+    object_key = f"marketplace/{kind}/{generated_name}"
+
+    try:
+        result = create_presigned_upload(
+            db=db,
+            object_key=object_key,
+            content_type=content_type,
+            expires=int(payload.expires or 600),
+            reference_type="marketplace_media_r2_upload",
+            reference_id=object_key,
+            clan_id=payload.clan_id,
+            user_id=current_user_id or None,
+            pipeline_credit_owner_type="community" if use_community_credit_account else None,
+            meta={
+                "media_type": media_type,
+                "filename": payload.filename,
+                "route": "/marketplace/media/r2-upload-url",
+            },
+        )
+    except StorageServiceError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "r2_upload_unavailable",
+                "message": str(exc),
+                "boundary": "No R2 upload URL is issued unless storage config and Pipeline Credit spend gate both pass.",
+            },
+        ) from exc
+
+    return {
+        "ok": True,
+        "storage_provider": "cloudflare_r2",
+        "media_type": media_type,
+        "object_key": result["object_key"],
+        "upload_url": result["upload_url"],
+        "public_url": result["public_url"],
+        "max_bytes": _max_bytes_for(media_type),
+        "pipeline_credit_gate": result.get("pipeline_credit_gate"),
+        "spend_account_scope": "community" if use_community_credit_account else "configured_provider_account",
+        "boundary": "This creates a credit-metered R2 upload URL only. It does not migrate existing local upload routes or confirm that a client uploaded the file.",
     }
 
 

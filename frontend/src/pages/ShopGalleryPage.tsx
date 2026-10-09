@@ -630,8 +630,6 @@ function _ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
 }
 
 function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }) {
-  const uid = compact ? "compact" : "full";
-
   return (
     <div
       aria-hidden="true"
@@ -650,104 +648,54 @@ function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }
           "0 24px 46px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 0 42px rgba(246,196,83,0.08)",
       }}
     >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 260 250"
-        focusable="false"
-        role="presentation"
-        style={{ display: "block" }}
-      >
-        <defs>
-          <linearGradient
-            id={`shopGold-${uid}`}
-            x1="28"
-            y1="30"
-            x2="220"
-            y2="220"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0" stopColor="#FFF1B8" />
-            <stop offset="0.32" stopColor="#E4B85D" />
-            <stop offset="0.72" stopColor="#9C6A1E" />
-            <stop offset="1" stopColor="#F6D77A" />
-          </linearGradient>
-          <linearGradient
-            id={`shopBlue-${uid}`}
-            x1="80"
-            y1="52"
-            x2="182"
-            y2="178"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0" stopColor="#163E65" />
-            <stop offset="0.62" stopColor="#08233A" />
-            <stop offset="1" stopColor="#03111F" />
-          </linearGradient>
-          <radialGradient id={`shopSpark-${uid}`} cx="36%" cy="32%" r="64%">
-            <stop offset="0" stopColor="#FFE8A7" stopOpacity="0.50" />
-            <stop offset="0.38" stopColor="#D6AA45" stopOpacity="0.13" />
-            <stop offset="1" stopColor="#000000" stopOpacity="0" />
-          </radialGradient>
-          <filter id={`shopDrop-${uid}`} x="-25%" y="-25%" width="150%" height="155%">
-            <feDropShadow dx="0" dy="14" stdDeviation="10" floodColor="#000814" floodOpacity="0.44" />
-          </filter>
-        </defs>
-        <rect x="0" y="0" width="260" height="250" rx="34" fill={`url(#shopSpark-${uid})`} />
-        <rect x="15" y="14" width="230" height="222" rx="30" fill="none" stroke="#F6D77A" strokeOpacity="0.32" strokeWidth="2" />
-        <g
-          filter={`url(#shopDrop-${uid})`}
-          transform={compact ? "translate(8 0)" : undefined}
-        >
-          <path
-            d="M72 113c0-20 16-36 36-36h54c20 0 36 16 36 36v89H72v-89Z"
-            fill={`url(#shopBlue-${uid})`}
-            stroke={`url(#shopGold-${uid})`}
-            strokeWidth="5"
-          />
-          <path
-            d="M103 82c2-28 22-48 49-48 28 0 48 20 50 48"
-            fill="none"
-            stroke={`url(#shopGold-${uid})`}
-            strokeWidth="7"
-            strokeLinecap="round"
-          />
-          <path
-            d="M126 135l8-17 8 17 18 2-13 12 4 18-17-9-16 9 3-18-13-12 18-2Z"
-            fill="#F6D77A"
-            stroke="#8C5A12"
-            strokeWidth="2"
-          />
-          <path
-            d="M27 178h36l8 28H39l-12-28Z"
-            fill="#163E65"
-            stroke={`url(#shopGold-${uid})`}
-            strokeWidth="4"
-          />
-          <path d="M34 178h52" stroke={`url(#shopGold-${uid})`} strokeWidth="5" strokeLinecap="round" />
-          <path d="M74 178l12-26h34l-9 26" fill="none" stroke={`url(#shopGold-${uid})`} strokeWidth="5" strokeLinejoin="round" />
-          <circle cx="47" cy="214" r="6" fill="#E4B85D" />
-          <circle cx="84" cy="214" r="6" fill="#E4B85D" />
-          <rect x="40" y="150" width="36" height="36" rx="8" fill="#0A2B48" stroke="#E4B85D" strokeWidth="3" />
-          <path d="M40 167h36M58 150v36" stroke="#F6D77A" strokeWidth="3" />
-          <path d="M42 149l-10-12m32 12l11-12" stroke="#F6D77A" strokeWidth="4" strokeLinecap="round" />
-        </g>
-        {[
-          [45, 58],
-          [55, 76],
-          [217, 76],
-          [205, 58],
-          [31, 104],
-          [220, 150],
-        ].map(([cx, cy]) => (
-          <path
-            key={`${cx}-${cy}`}
-            d={`M${cx} ${cy - 7}l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z`}
-            fill="#F6D77A"
-            opacity="0.88"
-          />
-        ))}
-      </svg>
+      <span
+        style={{
+          position: "absolute",
+          inset: compact ? 8 : 16,
+          borderRadius: compact ? 20 : 28,
+          border: "1px solid rgba(246,215,122,0.26)",
+          background:
+            "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.13) 0%, transparent 38%)",
+          boxShadow: "inset 0 0 42px rgba(246,196,83,0.08)",
+        }}
+      />
+      <GsnRealisticIcon
+        name="shopping-cart"
+        size={compact ? 78 : 148}
+        decorative
+        loading="eager"
+        style={{
+          position: "relative",
+          zIndex: 2,
+          filter: "drop-shadow(0 18px 26px rgba(0,0,0,0.34))",
+          transform: "rotate(-3deg)",
+        }}
+        imageStyle={{ width: "106%", height: "106%" }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          left: compact ? 10 : 22,
+          top: compact ? 10 : 22,
+          width: compact ? 20 : 34,
+          height: compact ? 20 : 34,
+          borderRadius: "50%",
+          background: "linear-gradient(180deg, #FFECA8 0%, #D6AA45 100%)",
+          boxShadow: "0 10px 20px rgba(214,170,69,0.24)",
+        }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          right: compact ? 12 : 26,
+          bottom: compact ? 12 : 26,
+          width: compact ? 11 : 18,
+          height: compact ? 11 : 18,
+          borderRadius: "50%",
+          background: "#F6D77A",
+          opacity: 0.9,
+        }}
+      />
     </div>
   );
 }
@@ -3065,26 +3013,6 @@ export default function ShopGalleryPage() {
     };
   }
 
-  function contactOwnerAboutProduct(product: ShopProduct) {
-    trackMarketplaceAttention("contact_tap", {
-      product_id: positiveNumber(product.id) || undefined,
-      source: "public_shop_product_contact",
-    });
-
-    const productTitle = productDisplayTitle(product);
-    const blockLabel = publicShopBlockLabel(product);
-    const message = `Hello, I am asking about ${productTitle} (${blockLabel}) in your GSN public shop.`;
-
-    if (openOwnerWhatsAppChat(message, "Owner WhatsApp opened for this shop block.")) {
-      return;
-    }
-
-    setNotice({
-      tone: "error",
-      text: "Owner WhatsApp is not ready for this shop block. Use the main WhatsApp button near the shop signboard.",
-    });
-  }
-
   function openOwnerWhatsAppChat(message: string, successText: string): boolean {
     const chatUrl = buildWhatsAppChatUrl(effectiveShop?.whatsapp, message);
     if (!chatUrl || typeof window === "undefined") {
@@ -3825,7 +3753,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "clip",
                   }}
                 >
-                  {inlineShopIcon("chart", "#FFFFFF", isCompact ? 12 : 15)}
+                  {inlineShopIcon("chart", "#FFFFFF", isCompact ? 9 : 15)}
                   <span
                     style={{
                       display: isCompact ? "block" : "grid",
@@ -3833,9 +3761,9 @@ export default function ShopGalleryPage() {
                       minWidth: 0,
                       lineHeight: 1.05,
                       textAlign: isCompact ? "center" : "left",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      overflow: "visible",
+                      textOverflow: "clip",
+                      whiteSpace: isCompact ? "normal" : "nowrap",
                     }}
                   >
                     <span>{isCompact ? "Analytics" : "Shop analytics"}</span>
@@ -5002,14 +4930,14 @@ export default function ShopGalleryPage() {
               padding: isCompact ? 10 : 22,
               height: isCompact ? "auto" : undefined,
               minHeight: isCompact ? 456 : undefined,
-              border: isCompact ? "1px solid rgba(184,137,45,0.92)" : "1px solid rgba(255,255,255,0.92)",
+              border: isCompact ? "1px solid rgba(13,95,168,0.28)" : "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
-                  ? "radial-gradient(circle at 88% 4%, rgba(255,246,210,0.96) 0%, transparent 30%), radial-gradient(circle at 7% 4%, rgba(255,255,255,0.68) 0%, transparent 34%), linear-gradient(145deg, #FFF1B8 0%, #E4B54B 22%, #FFF5D0 48%, #C58E22 76%, #F2C766 100%)"
+                  ? "radial-gradient(circle at 88% 4%, rgba(47,128,237,0.18) 0%, transparent 32%), radial-gradient(circle at 7% 4%, rgba(255,255,255,0.86) 0%, transparent 34%), linear-gradient(145deg, #F8FBFF 0%, #EAF4FF 46%, #DCEBFA 100%)"
                   : "radial-gradient(circle at 82% 18%, rgba(47,128,237,0.18) 0%, transparent 34%), radial-gradient(circle at 8% 0%, rgba(246,196,83,0.12) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%)",
               boxShadow:
                 isCompact
-                  ? "0 26px 54px rgba(96,65,10,0.24), 0 3px 0 rgba(121,82,14,0.26), 0 0 0 1px rgba(255,239,184,0.82), inset 0 2px 0 rgba(255,255,255,0.72), inset 0 -10px 18px rgba(137,92,18,0.18)"
+                  ? "0 24px 46px rgba(8,38,67,0.16), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.92)"
                   : "0 24px 52px rgba(8,38,67,0.14), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
             }}
           >
@@ -5166,7 +5094,7 @@ export default function ShopGalleryPage() {
                   zIndex: 1,
                   background:
                     "radial-gradient(circle at 38% 18%, rgba(255,255,255,0.96) 0%, rgba(234,243,255,0.72) 46%, rgba(11,99,209,0.15) 100%)",
-                  border: isCompact ? "1px solid rgba(184,137,45,0.48)" : "1px solid rgba(255,255,255,0.94)",
+                  border: isCompact ? "1px solid rgba(13,95,168,0.18)" : "1px solid rgba(255,255,255,0.94)",
                   boxShadow:
                     isCompact
                       ? "inset 0 1px 0 rgba(255,255,255,0.10)"
@@ -5403,8 +5331,8 @@ export default function ShopGalleryPage() {
                   <div style={{ marginTop: 8, color: "#07172C", fontSize: isCompact ? 19 : 22, fontWeight: 950, lineHeight: 1.12 }}>{featuredDiaryEntry.note}</div>
                   <div style={{ marginTop: 8, color: "#526C84", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 700, lineHeight: 1.35 }}>
                     {new Date(featuredDiaryEntry.occurred_at || featuredDiaryEntry.created_at || Date.now()).toLocaleDateString()}
-                    {featuredDiaryEntry.product_name ? ` · Related to ${featuredDiaryEntry.product_name}` : ""}
-                    {featuredDiaryEntry.protected_trade_code ? ` · Trade Evidence ${featuredDiaryEntry.protected_trade_code}` : ""}
+                    {featuredDiaryEntry.product_name ? ` - Related to ${featuredDiaryEntry.product_name}` : ""}
+                    {featuredDiaryEntry.protected_trade_code ? ` - Trade Evidence ${featuredDiaryEntry.protected_trade_code}` : ""}
                   </div>
                   <div style={{ marginTop: 8, color: "#617085", fontSize: 12, lineHeight: 1.35, fontWeight: 650 }}>{featuredDiaryEntry.evidence_boundary || "The shop owner says this happened. It is not formal Trade Evidence by itself."}</div>
                 </div>
@@ -5417,7 +5345,7 @@ export default function ShopGalleryPage() {
                         <strong style={{ color: "#07172C", fontSize: 13.5 }}>{entry.activity_label || "Other update"}</strong>
                         <span style={badge(entry.evidence_class === "counterparty_confirmed")}>{entry.evidence_label || "Owner update"}</span>
                       </div>
-                      <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, fontWeight: 700 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` · ${entry.product_name}` : ""}</div>
+                      <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, fontWeight: 700 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` - ${entry.product_name}` : ""}</div>
                       <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 760, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }}>{entry.note}</div>
                     </article>
                   ))}
@@ -5481,40 +5409,7 @@ export default function ShopGalleryPage() {
                   ? "This shared link opens only this public product/service block."
                   : "Browse public items, then contact the owner to request or confirm availability."}
               </div>
-              {!focusedBlockLinkActive ? (
-                <div
-                  data-public-shop-commerce-path="true"
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 6,
-                    marginTop: 8,
-                  }}
-                >
-                  {[
-                    { icon: "cart" as ShopIconName, label: "Browse" },
-                    { icon: "phone" as ShopIconName, label: "Ask owner" },
-                    { icon: "shield" as ShopIconName, label: "Owner confirms" },
-                  ].map((step) => (
-                    <span
-                      key={`public-shop-commerce-path-${step.label}`}
-                      style={{
-                        ...badge(false),
-                        minHeight: isCompact ? 28 : 30,
-                        padding: isCompact ? "4px 8px" : "5px 9px",
-                        fontSize: isCompact ? 10.5 : 11.5,
-                        gap: 5,
-                        color: "#274D72",
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(235,244,255,0.92) 100%)",
-                      }}
-                    >
-                      {inlineShopIcon(step.icon, "#0B4A7A", isCompact ? 10 : 11)}
-                      <span>{step.label}</span>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+
             </div>
             <span style={badge(true)}>
               {focusedBlockProduct
@@ -5676,17 +5571,12 @@ export default function ShopGalleryPage() {
                   : isCompact
                   ? 40
                   : 44;
-                const productAskActionWidth = isProductOpen && !showBlockPlacementAction
-                  ? isCompact
-                    ? 76
-                    : 90
-                  : diaryActionWidth;
                 const productOpenActionRailWidth = showBlockPlacementAction
-                  ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
-                  : diaryActionWidth + productAskActionWidth + (isCompact ? 6 : 8);
+                  ? diaryActionWidth * 3 + (isCompact ? 6 : 8) * 2
+                  : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
-                  ? `repeat(4, ${diaryActionWidth}px)`
-                  : `${diaryActionWidth}px ${productAskActionWidth}px`;
+                  ? `repeat(3, ${diaryActionWidth}px)`
+                  : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
                 const diaryOpenDockHeight = isCompact ? 92 : 104;
@@ -6086,42 +5976,7 @@ export default function ShopGalleryPage() {
                             Repost
                           </StableCtaLink>
                         ) : null}
-                        <SecondaryButton
-                          onClick={() => {
-                            contactOwnerAboutProduct(product);
-                          }}
-                          minWidth={0}
-                          stableHeight={diaryActionHeight}
-                          debugId={`shop-gallery.product.${productOpenId}.contact`}
-                          aria-label={`Contact owner about ${displayTitle}`}
-                          title="Contact owner"
-                          style={{
-                            ...secondaryBtn(false),
-                            display: isProductOpen ? "inline-flex" : "none",
-                            width: productAskActionWidth,
-                            maxWidth: productAskActionWidth,
-                            minWidth: 0,
-                            minHeight: diaryActionHeight,
-                            padding: showBlockPlacementAction ? 0 : "0 10px 0 8px",
-                            borderRadius: 999,
-                            fontSize: showBlockPlacementAction ? (isCompact ? 17 : 19) : isCompact ? 12 : 13,
-                            fontWeight: showBlockPlacementAction ? undefined : 900,
-                            gap: showBlockPlacementAction ? 0 : 4,
-                            lineHeight: 1,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            overflowWrap: "normal",
-                            overflowAnchor: "none",
-                            background:
-                              "linear-gradient(180deg, rgba(37,211,102,0.98) 0%, rgba(18,140,76,0.94) 100%)",
-                            color: "#FFFFFF",
-                            borderColor: "rgba(18,140,76,0.52)",
-                          }}
-                        >
-                          <GsnRealisticIcon name="phone-contact" size={showBlockPlacementAction ? (isCompact ? 28 : 32) : 24} decorative />
-                          {!showBlockPlacementAction ? <span>Ask</span> : null}
-                        </SecondaryButton>
+
                       </div>
                     </div>
                   </article>

@@ -96,7 +96,35 @@ type ExpectedPaymentRecord = {
   status_reason?: string | null;
   due_at?: string | null;
   matched_bank_event_id?: number | null;
+  bank_event_id?: number | null;
   confirmed_at?: string | null;
+};
+type PipelineCreditStatus = {
+  configured?: boolean;
+  clan_id?: number | null;
+  account?: {
+    id?: number | null;
+    account_key?: string | null;
+    balance?: string | null;
+    currency?: string | null;
+    status?: string | null;
+  } | null;
+  entries?: any[];
+  boundary?: string | null;
+};
+type PipelineProviderGate = {
+  provider_key?: string | null;
+  workflow_key?: string | null;
+  label?: string | null;
+  integration_status?: string | null;
+  status?: string | null;
+  account_configured?: boolean | null;
+  cost_configured?: boolean | null;
+  account_exists?: boolean | null;
+  balance?: string | null;
+  currency?: string | null;
+  cost_per_attempt?: string | null;
+  boundary?: string | null;
 };
 
 type CrossCommunityPoolItem = {
@@ -1030,6 +1058,16 @@ export default function FinancePage() {
     useState<CrossCommunityPoolSummary | null>(null);
   const [trustWhy, setTrustWhy] = useState<any>(null);
   const [guarantorEarnings, setGuarantorEarnings] = useState<any>(null);
+  const [pipelineTopupAmount, setPipelineTopupAmount] = useState("50.00");
+  const [pipelineTopupBusy, setPipelineTopupBusy] = useState(false);
+  const [pipelineTopupResult, setPipelineTopupResult] = useState<any | null>(null);
+  const [pipelineCreditStatus, setPipelineCreditStatus] =
+    useState<PipelineCreditStatus | null>(null);
+  const [pipelineProviderGates, setPipelineProviderGates] =
+    useState<PipelineProviderGate[]>([]);
+  const [pipelineProviderGatesVisible, setPipelineProviderGatesVisible] =
+    useState(false);
+  const [pipelineTopupMessage, setPipelineTopupMessage] = useState("");
 
   useEffect(() => {
     if (routeSelectedClanId <= 0) return;
@@ -1108,6 +1146,8 @@ export default function FinancePage() {
       setPoolEvents([]);
       setClanLiquidity(null);
       setExpectedPayments([]);
+      setPipelineCreditStatus(null);
+      setPipelineProviderGates([]);
       setCrossCommunityPool(null);
       setTrustWhy(null);
       setGuarantorEarnings(null);
@@ -1151,6 +1191,19 @@ export default function FinancePage() {
             ? (api as any).getMyGuarantorEarnings(100).catch(() => null)
             : Promise.resolve(null);
 
+        const providerGatesPromise =
+          selectedClanId > 0 &&
+          typeof (api as any).getCommunityPipelineCreditProviderGates === "function"
+            ? (api as any)
+                .getCommunityPipelineCreditProviderGates({ clan_id: selectedClanId })
+                .catch(() =>
+                  typeof (api as any).getPipelineCreditProviderGates === "function"
+                    ? (api as any).getPipelineCreditProviderGates().catch(() => null)
+                    : null
+                )
+            : typeof (api as any).getPipelineCreditProviderGates === "function"
+              ? (api as any).getPipelineCreditProviderGates().catch(() => null)
+              : Promise.resolve(null);
         const [
           meRes,
           clanRes,
@@ -1159,6 +1212,7 @@ export default function FinancePage() {
           crossPoolRes,
           trustWhyRes,
           guarantorEarningsRes,
+          providerGatesRes,
         ] = await Promise.all([
           mePromise,
           clanPromise,
@@ -1167,6 +1221,7 @@ export default function FinancePage() {
           crossPoolPromise,
           trustWhyPromise,
           guarantorEarningsPromise,
+          providerGatesPromise,
         ]);
 
         if (!isCurrentFinanceLoad()) return;
@@ -1187,14 +1242,17 @@ export default function FinancePage() {
         setCrossCommunityPool(normalizeCrossCommunityPoolSummary(crossPoolRes));
         setTrustWhy(trustWhyRes || null);
         setGuarantorEarnings(guarantorEarningsRes || null);
+        setPipelineProviderGates(rowsOf<PipelineProviderGate>(providerGatesRes));
 
         const gmfnId = firstTruthy(meRes?.gmfn_id);
 
-        if (selectedClanId && gmfnId) {
-          const [surface, liquidityRes, expectedRes] = await Promise.all([
-            getCommunityMoneySurface(selectedClanId, gmfnId, "NGN").catch(
-              () => null
-            ),
+        if (selectedClanId) {
+          const [surface, liquidityRes, expectedRes, pipelineCreditRes] = await Promise.all([
+            gmfnId
+              ? getCommunityMoneySurface(selectedClanId, gmfnId, "NGN").catch(
+                  () => null
+                )
+              : Promise.resolve(null),
             fetchJson("/analytics/clan-liquidity", selectedClanId).catch(
               () => null
             ),
@@ -1204,6 +1262,11 @@ export default function FinancePage() {
               )}&limit=100`,
               selectedClanId
             ).catch(() => ({ items: [] })),
+            typeof (api as any).getCommunityPipelineCreditStatus === "function"
+              ? (api as any)
+                  .getCommunityPipelineCreditStatus({ clan_id: selectedClanId, limit: 8 })
+                  .catch(() => null)
+              : Promise.resolve(null),
           ]);
 
           if (!isCurrentFinanceLoad()) return;
@@ -1211,10 +1274,12 @@ export default function FinancePage() {
           setMoneySurface(surface);
           setClanLiquidity(normalizeClanLiquidity(liquidityRes));
           setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
+          setPipelineCreditStatus((pipelineCreditRes || null) as PipelineCreditStatus | null);
         } else {
           setMoneySurface(null);
           setClanLiquidity(null);
           setExpectedPayments([]);
+          setPipelineCreditStatus(null);
         }
 
         const summaryTargets = filteredLoans
@@ -1410,6 +1475,32 @@ export default function FinancePage() {
       return status === "expected" || status === "matched";
     }).length;
   }, [activeExpectedPayments]);
+
+  const pipelineCreditExpectedPayments = useMemo(() => {
+    return activeExpectedPayments.filter(
+      (item) => safeStr(item?.expected_type).toLowerCase() === "pipeline_credit_topup"
+    );
+  }, [activeExpectedPayments]);
+
+  const latestPipelineTopup = pipelineTopupResult || pipelineCreditExpectedPayments[0] || null;
+  const pipelineCreditAccount = pipelineCreditStatus?.account || null;
+  const pipelineCreditConfigured = Boolean(
+    pipelineCreditStatus?.configured && pipelineCreditAccount
+  );
+  const pipelineCreditBalance = safeStr(pipelineCreditAccount?.balance || "0.00");
+  const pipelineCreditCurrency = safeStr(pipelineCreditAccount?.currency || "GBP");
+  const pipelineCreditEntryCount = rowsOf<any>(pipelineCreditStatus?.entries).length;
+  const wiredPipelineProviderGates = pipelineProviderGates.filter((item) =>
+    ["wired", "community_admin_route_wired_default_uploads_local"].includes(
+      safeStr(item.integration_status).toLowerCase()
+    )
+  );
+  const blockedPipelineProviderGates = pipelineProviderGates.filter((item) =>
+    safeStr(item.status).toLowerCase().startsWith("blocked")
+  );
+  const notWiredPipelineProviderGates = pipelineProviderGates.filter(
+    (item) => safeStr(item.integration_status).toLowerCase() === "not_wired"
+  );
 
   const expectedPaymentStateCounts = useMemo(() => {
     return activeExpectedPayments.reduce(
@@ -1767,6 +1858,83 @@ export default function FinancePage() {
 
   function openFinanceRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
+  }
+
+  async function copyPipelineTopupReference() {
+    const reference = firstTruthy(
+      latestPipelineTopup?.reference_display,
+      latestPipelineTopup?.reference
+    );
+    if (!reference) {
+      setPipelineTopupMessage("Generate a top-up reference first.");
+      return;
+    }
+    const copied =
+      typeof (api as any).safeCopy === "function"
+        ? await (api as any).safeCopy(reference)
+        : false;
+    setPipelineTopupMessage(
+      copied
+        ? "Pipeline Credit reference copied."
+        : "Reference is shown below. Copy it from the payment card."
+    );
+  }
+
+  async function createPipelineTopupInstruction() {
+    const clanId = Number(selectedClanId || 0);
+    const cleanedAmount = safeStr(pipelineTopupAmount).replace(/,/g, "");
+    const amountNumber = Number(cleanedAmount);
+
+    if (!clanId) {
+      setPipelineTopupMessage("Choose a community before creating a top-up reference.");
+      return;
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(cleanedAmount) || !Number.isFinite(amountNumber) || amountNumber < 1) {
+      setPipelineTopupMessage("Enter a GBP top-up amount of at least 1.00.");
+      return;
+    }
+
+    setPipelineTopupBusy(true);
+    setPipelineTopupMessage("");
+    try {
+      const result = await (api as any).createPipelineCreditTopupPaymentInstruction({
+        clan_id: clanId,
+        amount: amountNumber.toFixed(2),
+        currency: "GBP",
+        note: "Pipeline Credit top-up from Finance.",
+      });
+      setPipelineTopupResult(result || null);
+      setExpectedPayments((prev) => {
+        const record: ExpectedPaymentRecord = {
+          id: positiveNumber(result?.expected_payment_id) || null,
+          expected_type: safeStr(result?.expected_type || "pipeline_credit_topup"),
+          amount: safeStr(result?.amount || amountNumber.toFixed(2)),
+          currency: safeStr(result?.currency || "GBP"),
+          reference_display: safeStr(result?.reference_display || result?.reference),
+          status: safeStr(result?.status || "expected"),
+          status_reason: safeStr(result?.status_reason),
+          due_at: safeStr(result?.due_at),
+          bank_event_id: positiveNumber(result?.bank_event_id) || null,
+        };
+        return [record, ...prev.filter((item) => Number(item.id || 0) !== Number(record.id || 0))];
+      });
+      const copied =
+        typeof (api as any).safeCopy === "function"
+          ? await (api as any).safeCopy(firstTruthy(result?.reference_display, result?.reference))
+          : false;
+      setPipelineTopupMessage(
+        copied
+          ? "Top-up reference created and copied. Credits apply only after bank confirmation."
+          : "Top-up reference created. Copy the reference before paying."
+      );
+      setCollapsed((prev) => ({ ...prev, pipelineCredits: false, reconciliation: false }));
+    } catch (err: any) {
+      setPipelineTopupMessage(
+        safeStr(err?.message) || "Pipeline Credit top-up reference could not be created."
+      );
+    } finally {
+      setPipelineTopupBusy(false);
+    }
   }
 
   function revealFinanceSection(targetId: string, attempt = 0) {
@@ -2683,6 +2851,148 @@ export default function FinancePage() {
           <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
             <div
               style={{
+                ...innerCard("#F8FBFF"),
+                borderColor: "rgba(31,115,224,0.16)",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.9fr) minmax(0, 1.1fr)",
+                gap: 12,
+                alignItems: "stretch",
+              }}
+            >
+              <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
+                <div style={sectionLabel()}>Create top-up reference</div>
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  Generate a bank-transfer code for community API usage credits. Credits appear only after finance confirmation.
+                </div>
+                <div
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(31,115,224,0.14)",
+                    background: "#FFFFFF",
+                    padding: "12px 13px",
+                    display: "grid",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ ...helperText(), fontSize: 11.5, fontWeight: 950, textTransform: "uppercase" }}>
+                    Confirmed Pipeline Credit balance
+                  </div>
+                  <div style={{ color: "#07172C", fontSize: 23, fontWeight: 950, lineHeight: 1 }}>
+                    {pipelineCreditBalance} {pipelineCreditCurrency}
+                  </div>
+                  <div style={{ ...helperText(), fontSize: 12.5 }}>
+                    {pipelineCreditConfigured
+                      ? `${pipelineCreditEntryCount} recent ledger ${pipelineCreditEntryCount === 1 ? "entry" : "entries"} visible for this community.`
+                      : "No confirmed credit account yet. Create a top-up reference and wait for finance confirmation."}
+                  </div>
+                </div>
+                <label
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    color: "#07172C",
+                    fontSize: 12,
+                    fontWeight: 950,
+                    letterSpacing: 0,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Amount GBP
+                  <input
+                    value={pipelineTopupAmount}
+                    onChange={(event) => setPipelineTopupAmount(event.target.value)}
+                    inputMode="decimal"
+                    aria-label="Pipeline Credit top-up amount in GBP"
+                    style={{
+                      width: "100%",
+                      minHeight: 48,
+                      borderRadius: 16,
+                      border: "1px solid rgba(31,115,224,0.18)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      font: "inherit",
+                      fontSize: 16,
+                      fontWeight: 850,
+                      padding: "10px 12px",
+                      boxSizing: "border-box",
+                      outline: "none",
+                    }}
+                  />
+                </label>
+                <PrimaryButton
+                  onClick={createPipelineTopupInstruction}
+                  busy={pipelineTopupBusy}
+                  busyLabel="Creating..."
+                  disabled={!selectedClanId || pipelineTopupBusy}
+                  fullWidth
+                  stableHeight={50}
+                  debugId="finance.pipeline-credits.create-topup"
+                  style={financeDarkButtonStyle()}
+                >
+                  Create top-up reference
+                </PrimaryButton>
+                {pipelineTopupMessage ? (
+                  <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 850 }}>
+                    {pipelineTopupMessage}
+                  </div>
+                ) : null}
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(214,170,69,0.22)",
+                  background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9E8 100%)",
+                  padding: 14,
+                  display: "grid",
+                  gap: 10,
+                  minWidth: 0,
+                  alignContent: "start",
+                }}
+              >
+                <div style={sectionLabel()}>Latest top-up code</div>
+                {latestPipelineTopup ? (
+                  <>
+                    <div
+                      style={{
+                        color: "#07172C",
+                        fontSize: 15,
+                        fontWeight: 950,
+                        lineHeight: 1.25,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {firstTruthy(latestPipelineTopup.reference_display, latestPipelineTopup.reference, "Reference pending")}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                      <span style={badge(true)}>
+                        {safeStr(latestPipelineTopup.amount || "0.00")} {safeStr(latestPipelineTopup.currency || "GBP")}
+                      </span>
+                      <span style={badge(false)}>{expectedPaymentState(latestPipelineTopup)}</span>
+                    </div>
+                    <SubtleButton
+                      onClick={copyPipelineTopupReference}
+                      fullWidth
+                      stableHeight={46}
+                      debugId="finance.pipeline-credits.copy-reference"
+                      style={financeCollapseButtonStyle()}
+                    >
+                      Copy reference
+                    </SubtleButton>
+                    <div style={{ ...helperText(), fontSize: 12.5 }}>
+                      Pay with the exact reference. GSN does not count this as usable credit until reconciliation confirms it.
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    No Pipeline Credit top-up code is open for this community yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
                 gap: 10,
@@ -2713,6 +3023,98 @@ export default function FinancePage() {
               ))}
             </div>
 
+            <div
+              style={{
+                ...innerCard("#FCFEFF"),
+                borderColor: "rgba(31,115,224,0.14)",
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={sectionLabel()}>Provider spend gates</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Owner-safe truth view for paid API/provider readiness. This checks metering, not secret validity or live delivery.
+                  </div>
+                </div>
+                <SubtleButton
+                  onClick={() => setPipelineProviderGatesVisible((prev) => !prev)}
+                  minWidth={124}
+                  stableHeight={44}
+                  debugId="finance.pipeline-credits.toggle-provider-gates"
+                  style={financeCollapseButtonStyle()}
+                >
+                  {pipelineProviderGatesVisible ? "Hide gates" : "Show gates"}
+                </SubtleButton>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(true)}>Visible: {pipelineProviderGates.length}</span>
+                <span style={badge(false)}>Wired: {wiredPipelineProviderGates.length}</span>
+                <span style={badge(false)}>Blocked: {blockedPipelineProviderGates.length}</span>
+                <span style={badge(false)}>Not wired: {notWiredPipelineProviderGates.length}</span>
+              </div>
+              {pipelineProviderGates.length === 0 ? (
+                <div style={{ ...helperText(), fontSize: 12.5 }}>
+                  Provider gate catalogue is hidden or unavailable for this community. Community admins see a redacted readiness view when the backend permits access.
+                </div>
+              ) : pipelineProviderGatesVisible ? (
+                isCompact ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {pipelineProviderGates.map((gate) => (
+                      <FinanceMobileRecord
+                        key={safeStr(gate.workflow_key || gate.provider_key)}
+                        title={firstTruthy(gate.label, gate.workflow_key, "Provider gate")}
+                        tone={safeStr(gate.status).startsWith("meter_ready") ? "good" : "watch"}
+                        rows={[
+                          ["Integration", safeStr(gate.integration_status || "unknown")],
+                          ["Meter", safeStr(gate.status || "unknown")],
+                          ["Cost", gate.cost_per_attempt ? `${safeStr(gate.cost_per_attempt)} ${safeStr(gate.currency || "GBP")}` : "Not configured"],
+                          ["Balance", gate.balance ? `${safeStr(gate.balance)} ${safeStr(gate.currency || "GBP")}` : "No account balance"],
+                        ]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div style={tableWrap()}>
+                    <table style={financeTable()}>
+                      <thead>
+                        <tr>
+                          <th style={tableHeadCell()}>Provider workflow</th>
+                          <th style={tableHeadCell()}>Integration</th>
+                          <th style={tableHeadCell()}>Meter status</th>
+                          <th style={tableHeadCell()}>Cost</th>
+                          <th style={tableHeadCell()}>Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pipelineProviderGates.map((gate) => (
+                          <tr key={safeStr(gate.workflow_key || gate.provider_key)}>
+                            <td style={tableCell(true)}>{firstTruthy(gate.label, gate.workflow_key, "Provider gate")}</td>
+                            <td style={tableCell()}>{safeStr(gate.integration_status || "unknown")}</td>
+                            <td style={tableCell()}>{safeStr(gate.status || "unknown")}</td>
+                            <td style={tableCell()}>
+                              {gate.cost_per_attempt ? `${safeStr(gate.cost_per_attempt)} ${safeStr(gate.currency || "GBP")}` : "Not configured"}
+                            </td>
+                            <td style={tableCell()}>
+                              {gate.balance ? `${safeStr(gate.balance)} ${safeStr(gate.currency || "GBP")}` : "No account balance"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : null}
+            </div>
             <div
               style={{
                 display: "grid",

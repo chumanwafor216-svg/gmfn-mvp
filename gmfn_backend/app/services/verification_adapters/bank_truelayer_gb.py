@@ -97,6 +97,7 @@ class TrueLayerGBBankVerificationAdapter(VerificationAdapter):
                 provider_response={"provider_configured": True},
             )
 
+        provider_idempotency_key = str(payload.get("provider_idempotency_key") or "").strip()
         request_body = {
             "account_holder_name": account_holder_name,
             "account_identifier": account_identifier,
@@ -107,6 +108,7 @@ class TrueLayerGBBankVerificationAdapter(VerificationAdapter):
                 method="POST",
                 url=f"{self.api_base_url}/v3/account-holder-verifications/requests",
                 body=request_body,
+                idempotency_key=provider_idempotency_key or None,
             )
         except urllib.error.HTTPError as exc:
             detail = self._read_error(exc)
@@ -246,6 +248,7 @@ class TrueLayerGBBankVerificationAdapter(VerificationAdapter):
         method: str,
         url: str,
         body: Optional[Dict[str, Any]] = None,
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         data = None
         headers = {
@@ -255,7 +258,7 @@ class TrueLayerGBBankVerificationAdapter(VerificationAdapter):
         if body is not None:
             data = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"
-            headers["Idempotency-Key"] = str(uuid.uuid4())
+            headers["Idempotency-Key"] = str(idempotency_key or uuid.uuid4())
 
         req = urllib.request.Request(
             url=url,

@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 8,
-  SecondaryButton: 13,
+  SecondaryButton: 12,
   StableCtaLink: 5,
-  total: 26,
+  total: 25,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
@@ -204,7 +204,6 @@ const expectedActionOrder = [
   "shop-gallery.product.${productOpenId}.toggle",
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
-  "shop-gallery.product.${productOpenId}.contact",
   "shop-gallery.toggle-all-products",
 ];
 let cursor = -1;
@@ -341,20 +340,25 @@ assertContains(
 );
 
 assertContains(
-  /Browse public items, then contact the owner to request or confirm availability\.[\s\S]*?data-public-shop-commerce-path="true"[\s\S]*?Browse[\s\S]*?Ask owner[\s\S]*?Owner confirms/,
-  "Public Shop product shelf must show the request-first commerce path."
+  /Browse public items, then contact the owner to request or confirm availability\./,
+  "Public Shop product shelf must keep concise commerce guidance without placeholder process chips."
 );
 
-assertContains(
-  /const productAskActionWidth = isProductOpen && !showBlockPlacementAction[\s\S]*?const productOpenActionRailWidth[\s\S]*?const productOpenActionColumns[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?width: productAskActionWidth[\s\S]*?padding: showBlockPlacementAction \? 0 : "0 10px 0 8px"[\s\S]*?!showBlockPlacementAction \? <span>Ask<\/span> : null/,
-  "Public Shop opened visitor product cards must expose a stable Ask owner action, not only an unlabeled phone icon."
+assertNotContains(
+  /data-public-shop-commerce-path="true"|Owner confirms|public-shop-commerce-path/,
+  "Public Shop product shelf must not show placeholder Browse / Ask owner / Owner confirms chips."
+);
+
+assertNotContains(
+  /shop-gallery\.product\.\$\{productOpenId\}\.contact|productAskActionWidth|<span>Ask<\/span>/,
+  "Public Shop product cards must not duplicate the owner contact path inside every product block."
 );
 
 assertFileContains(
   shopDiaryVisualSmokeFile,
   shopDiaryVisualSmokeSource,
-  /let activeAuthenticated = true[\s\S]*?if \(!activeAuthenticated\) \{[\s\S]*?json\(\{ detail: "Not authenticated" \}, 401\)[\s\S]*?preparePage\(browser, width, height = 844, authenticated = true\)[\s\S]*?localStorage\.removeItem\("access_token"\)[\s\S]*?14-public-shop-logged-out-open-product-390[\s\S]*?authenticated: false[\s\S]*?expectProductContactText: "Ask"[\s\S]*?metrics\.productContactText !== item\.expectProductContactText[\s\S]*?metrics\.productContactWidth < 70/,
-  "Public Shop visual smoke must keep the logged-out opened-product Ask action screenshot and geometry assertion."
+  /let activeAuthenticated = true[\s\S]*?if \(!activeAuthenticated\) \{[\s\S]*?json\(\{ detail: "Not authenticated" \}, 401\)[\s\S]*?preparePage\(browser, width, height = 844, authenticated = true\)[\s\S]*?localStorage\.removeItem\("access_token"\)[\s\S]*?14-public-shop-logged-out-open-product-390[\s\S]*?authenticated: false/,
+  "Public Shop visual smoke must keep the logged-out opened-product screenshot without restoring duplicate product contact controls."
 );
 
 assertFileContains(
@@ -433,8 +437,8 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?width: diaryActionWidth[\s\S]*?maxWidth: diaryActionWidth[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
-  "Public Shop product action dock must keep one always-available open/close control, hide block social sharing from visitors, and reveal owner Share, Paid Repost, and Contact only inside the opened diary card."
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?width: diaryActionWidth[\s\S]*?maxWidth: diaryActionWidth[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Public Shop product action dock must keep one always-available open/close control and reveal owner Share and Paid Repost only inside the opened product card."
 );
 
 assertContains(
@@ -452,8 +456,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(184,137,45,0\.92\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
-  "Public Shop Spotlight must keep polished 3D gold brand framing instead of the old silver/dark phone slab."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(13,95,168,0\.28\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
+  "Public Shop Spotlight must keep polished blue brand framing instead of the rejected gold phone slab."
 );
 
 assertContains(
@@ -462,8 +466,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(255,246,210,0\.96\) 0%, transparent 30%\), radial-gradient\(circle at 7% 4%, rgba\(255,255,255,0\.68\) 0%, transparent 34%\), linear-gradient\(145deg, #FFF1B8 0%, #E4B54B 22%, #FFF5D0 48%, #C58E22 76%, #F2C766 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
-  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the 3D gold frame."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(47,128,237,0\.18\) 0%, transparent 32%\), radial-gradient\(circle at 7% 4%, rgba\(255,255,255,0\.86\) 0%, transparent 34%\), linear-gradient\(145deg, #F8FBFF 0%, #EAF4FF 46%, #DCEBFA 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
+  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the blue brand frame."
 );
 
 assertContains(

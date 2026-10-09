@@ -7185,6 +7185,45 @@ export async function createCommunityPackagePaymentInstruction(payload: {
   });
 }
 
+export async function createPipelineCreditTopupPaymentInstruction(payload: {
+  clan_id: number;
+  amount: string;
+  currency?: string;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/payment-instructions/pipeline-credit-topup", "POST", {
+    clan_id: payload.clan_id,
+    amount: payload.amount,
+    currency: payload.currency || "GBP",
+    note: payload.note ?? undefined,
+  });
+}
+export async function getCommunityPipelineCreditStatus(payload: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/community-status${buildQuery({
+      clan_id: payload.clan_id,
+      limit: payload.limit ?? 10,
+    })}`,
+    "GET"
+  );
+}
+export async function getPipelineCreditProviderGates(): Promise<any> {
+  return httpJson("/pipeline-credits/provider-gates", "GET");
+}
+
+export async function getCommunityPipelineCreditProviderGates(payload: {
+  clan_id: number;
+}): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/community-provider-gates${buildQuery({
+      clan_id: payload.clan_id,
+    })}`,
+    "GET"
+  );
+}
 export async function getCommunityPackageStatus(payload: {
   clan_id: number;
   shop_id?: number | null;
@@ -7751,6 +7790,98 @@ export async function uploadPaymentInstructionProofFile(
     `/payment-instructions/expected/${encodeURIComponent(String(expectedPaymentId))}/proof`,
     fd
   );
+}
+
+export type MarketplaceR2UploadUrlInput = {
+  filename: string;
+  content_type: string;
+  media_type: "image" | "video";
+  clan_id?: number | null;
+  expires?: number | null;
+};
+
+export type MarketplaceR2UploadUrlResponse = {
+  ok: boolean;
+  storage_provider: "cloudflare_r2";
+  media_type: "image" | "video";
+  object_key: string;
+  upload_url: string;
+  public_url: string;
+  max_bytes: number;
+  pipeline_credit_gate?: any;
+  spend_account_scope?: "community" | "configured_provider_account" | string;
+  boundary?: string;
+};
+
+export async function createMarketplaceR2UploadUrl(
+  input: MarketplaceR2UploadUrlInput
+): Promise<MarketplaceR2UploadUrlResponse> {
+  const effectiveClanId = Number(input.clan_id ?? getSelectedClanId() ?? 0);
+  const body: Record<string, any> = {
+    filename: String(input.filename || ""),
+    content_type: String(input.content_type || ""),
+    media_type: input.media_type,
+  };
+
+  if (effectiveClanId > 0) {
+    body.clan_id = effectiveClanId;
+  }
+
+  if (input.expires != null) {
+    body.expires = Number(input.expires);
+  }
+
+  return httpJson("/marketplace/media/r2-upload-url", "POST", body, {
+    header_clan_id: effectiveClanId > 0 ? effectiveClanId : null,
+  });
+}
+
+export type MarketplaceR2FileUploadInput = {
+  file: File;
+  media_type?: "image" | "video";
+  clan_id?: number | null;
+  expires?: number | null;
+};
+
+export async function uploadMarketplaceFileToR2(
+  input: MarketplaceR2FileUploadInput
+): Promise<MarketplaceR2UploadUrlResponse> {
+  const file = input.file;
+  const contentType = String(file.type || "application/octet-stream");
+  const mediaType =
+    input.media_type ?? (contentType.toLowerCase().startsWith("video/") ? "video" : "image");
+  const presign = await createMarketplaceR2UploadUrl({
+    filename: file.name || "upload.bin",
+    content_type: contentType,
+    media_type: mediaType,
+    clan_id: input.clan_id ?? null,
+    expires: input.expires ?? null,
+  });
+
+  const maxBytes = Number(presign.max_bytes || 0);
+  if (maxBytes > 0 && file.size > maxBytes) {
+    throw new Error(
+      `File is too large. Maximum allowed is ${Math.floor(maxBytes / (1024 * 1024))}MB.`
+    );
+  }
+
+  const uploadRes = await fetchWithTimeout(
+    presign.upload_url,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+      },
+      body: file,
+    },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
+
+  if (!uploadRes.ok) {
+    throw new HttpStatusError(uploadRes.status, await parseError(uploadRes));
+  }
+
+  return presign;
 }
 
 export async function uploadMarketplaceImageFile(

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.db.bank_models import BankEvent, ExpectedPayment
 from app.db.models import PoolEvent, User
 from app.services.feature_entitlements_service import grant_or_extend_entitlement
+from app.services.pipeline_credit_service import allocate_pipeline_credits, serialize_pipeline_credit_entry
 from app.services.repayments_service import create_repayment
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
@@ -344,6 +345,123 @@ def _apply_repayment(
     }
 
 
+def _apply_pipeline_credit_topup(
+    db: Session,
+    *,
+    be: BankEvent,
+    exp: ExpectedPayment,
+) -> Dict[str, Any]:
+    if (exp.status or "").lower() != "confirmed":
+        return {
+            "ok": True,
+            "applied": False,
+            "kind": "pipeline_credit_topup",
+            "reason": "expected_not_fully_confirmed",
+        }
+
+    meta = _safe_meta_json(getattr(exp, "meta_json", None))
+    existing_entry_id = _safe_int(meta.get("pipeline_credit_ledger_entry_id"), 0)
+    if existing_entry_id > 0:
+        return {
+            "ok": True,
+            "applied": False,
+            "kind": "pipeline_credit_topup",
+            "reason": "already_applied",
+            "pipeline_credit_ledger_entry_id": existing_entry_id,
+        }
+
+    owner_user_id = _safe_int(meta.get("owner_user_id"), int(exp.user_id))
+    clan_id = _safe_int(meta.get("clan_id"), int(exp.clan_id)) or int(exp.clan_id)
+    owner_type = _safe_str(meta.get("pipeline_credit_account_owner_type"), "community")
+    if owner_type not in {"community", "platform", "user", "sponsor"}:
+        owner_type = "community"
+    if owner_type == "community" and clan_id <= 0:
+        return {
+            "ok": False,
+            "applied": False,
+            "kind": "pipeline_credit_topup",
+            "reason": "community_pipeline_credit_topup_requires_clan_id",
+        }
+
+    amount = _d(meta.get("pipeline_credit_amount") or exp.amount)
+    currency = _safe_str(meta.get("pipeline_credit_currency"), _safe_str(exp.currency, "GBP")).upper()
+    idempotency_key = f"pipeline-credit-topup:expected-payment:{int(exp.id)}"
+
+    entry = allocate_pipeline_credits(
+        db,
+        owner_type=owner_type,
+        owner_user_id=owner_user_id if owner_type == "user" else None,
+        clan_id=clan_id if owner_type == "community" else None,
+        amount=amount,
+        currency=currency,
+        workflow_key="pipeline_credit.topup.bank_confirmed",
+        idempotency_key=idempotency_key,
+        reference_type="expected_payment",
+        reference_id=str(int(exp.id)),
+        note="Pipeline Credit top-up from confirmed expected payment",
+        created_by_user_id=owner_user_id,
+        meta={
+            "bank_event_id": int(be.id),
+            "expected_payment_id": int(exp.id),
+            "reference": str(exp.reference_display),
+        },
+        commit=False,
+    )
+
+    meta["pipeline_credit_ledger_entry_id"] = int(entry.id)
+    meta["pipeline_credit_account_id"] = int(entry.account_id)
+    meta["application_kind"] = "pipeline_credit_topup"
+    _set_meta_json(exp, meta)
+
+    _mark_expected_applied(
+        db,
+        exp=exp,
+        be=be,
+        application_kind="pipeline_credit_topup",
+        applied_amount=amount,
+        extra={
+            "pipeline_credit_ledger_entry_id": int(entry.id),
+            "pipeline_credit_account_id": int(entry.account_id),
+            "pipeline_credit_amount": str(amount),
+            "pipeline_credit_currency": currency,
+            "pipeline_credit_owner_type": owner_type,
+        },
+    )
+
+    log_trust_event(
+        db,
+        event_type="pipeline_credit.topup_confirmed",
+        clan_id=int(clan_id or exp.clan_id or 0),
+        actor_user_id=int(owner_user_id),
+        subject_user_id=int(owner_user_id),
+        meta={
+            "reason": "confirmed_payment_allocated_pipeline_credits",
+            "bank_event_id": int(be.id),
+            "expected_payment_id": int(exp.id),
+            "pipeline_credit_ledger_entry_id": int(entry.id),
+            "pipeline_credit_account_id": int(entry.account_id),
+            "amount": str(amount),
+            "currency": currency,
+            "reference": str(exp.reference_display),
+            "boundary": "Internal API usage credit only; not customer funds, wallet balance, loan, or cash-out value.",
+        },
+        commit=False,
+        refresh=False,
+    )
+
+    db.add(exp)
+    db.add(entry)
+    db.commit()
+    db.refresh(exp)
+    db.refresh(entry)
+
+    return {
+        "ok": True,
+        "applied": True,
+        "kind": "pipeline_credit_topup",
+        "pipeline_credit_entry": serialize_pipeline_credit_entry(entry),
+    }
+
 def _apply_feature_subscription(
     db: Session,
     *,
@@ -591,6 +709,9 @@ def apply_expected_payment_match(
 
     if expected_type == "repayment":
         return _apply_repayment(db, be=be, exp=exp)
+
+    if expected_type == "pipeline_credit_topup":
+        return _apply_pipeline_credit_topup(db, be=be, exp=exp)
 
     if expected_type in {
         "vault_subscription",

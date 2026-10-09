@@ -75,7 +75,7 @@ def test_truelayer_gb_adapter_maps_match_result(monkeypatch):
         {"id": "ahv-123", "status": "completed", "match_result": {"type": "match"}},
     ]
 
-    def fake_request_json(*, method, url, body=None):
+    def fake_request_json(*, method, url, body=None, idempotency_key=None):
         return responses.pop(0)
 
     adapter._request_json = fake_request_json  # type: ignore[attr-defined]

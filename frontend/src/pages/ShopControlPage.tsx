@@ -4853,6 +4853,16 @@ export default function ShopControlPage() {
       debugId: "shop-control.orientation.products",
     },
     {
+      key: "analytics",
+      icon: "chart" as GsnIconName,
+      label: "Analytics",
+      value: shopAnalyticsWisdom.state,
+      detail: "Signals and experiments, not sales proof.",
+      to: routes.shopSummary,
+      action: "Open",
+      debugId: "shop-control.orientation.analytics",
+    },
+    {
       key: "spotlight",
       icon: "megaphone" as GsnIconName,
       label: "Spotlight",
@@ -4903,12 +4913,6 @@ export default function ShopControlPage() {
       detail: "Extra shop blocks, member places, ROSCA yearly, and meeting packs.",
       to: routes.communityPackages,
       debugId: "shop-control.more.community-packages",
-    },
-    {
-      label: "Shop analytics",
-      detail: "Signals and experiments, not sales proof.",
-      to: routes.shopSummary,
-      debugId: "shop-control.more.analytics",
     },
     {
       label: "Trade Evidence",
@@ -7079,7 +7083,7 @@ export default function ShopControlPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(170px, 1fr))",
               gap: 10,
             }}
           >
@@ -7142,7 +7146,7 @@ export default function ShopControlPage() {
               <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
                 <span>{labelWithIcon("shield", "More owner tools")}</span>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#617085", fontSize: 11.5, fontWeight: 820 }}>
-                  Vault · Spotlight plans · Repost · Capacity · Analytics
+                  Vault · Spotlight plans · Repost · Capacity
                 </span>
               </span>
 
