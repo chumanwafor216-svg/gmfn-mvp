@@ -11,3 +11,4 @@ email-validator
 reportlab
 pillow
 pywebpush
+boto3
