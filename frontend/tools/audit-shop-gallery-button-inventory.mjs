@@ -32,8 +32,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 8,
   SecondaryButton: 12,
-  StableCtaLink: 5,
-  total: 25,
+  StableCtaLink: 6,
+  total: 26,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;

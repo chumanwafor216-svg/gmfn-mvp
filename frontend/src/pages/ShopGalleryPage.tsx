@@ -2644,6 +2644,10 @@ export default function ShopGalleryPage() {
     `${APP_ROUTES.SHOP_ME}#${OWNER_SHOP_HASHES.summary}`,
     ownerSurfaceCommunityId
   );
+  const ownerShopDiaryPath = routeWithCommunity(
+    `${APP_ROUTES.SHOP_ME}#shop-assets-diary`,
+    ownerSurfaceCommunityId
+  );
   const signedInOwnsShop = Boolean(
     ownerSessionPresent &&
       signedInGmfnId &&
@@ -5199,7 +5203,7 @@ export default function ShopGalleryPage() {
             <div
               aria-hidden="true"
               style={{
-                minHeight: isCompact ? 92 : 132,
+                minHeight: isCompact ? 76 : 112,
                 display: "grid",
                 placeItems: "stretch",
               }}
@@ -5356,6 +5360,18 @@ export default function ShopGalleryPage() {
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No diary updates yet.</div>
               <div style={{ marginTop: 8, ...helperText() }}>This shop has not shared a recent business activity update. Products and services may still be available below.</div>
+              {signedInOwnsShop ? (
+                <StableCtaLink
+                  to={ownerShopDiaryPath}
+                  kind="secondary"
+                  fullWidth={isCompact}
+                  stableHeight={isCompact ? 52 : 46}
+                  debugId="shop-gallery.empty-diary.write-update"
+                  style={{ marginTop: 12, maxWidth: isCompact ? undefined : 260 }}
+                >
+                  Write diary update
+                </StableCtaLink>
+              ) : null}
             </div>
           )}
         </section>

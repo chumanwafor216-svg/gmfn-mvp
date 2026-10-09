@@ -1030,6 +1030,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [productSelectedVideoFile, setProductSelectedVideoFile] = useState<File | null>(null);
   const [productVideoDurationSeconds, setProductVideoDurationSeconds] = useState<number | null>(null);
   const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
+  const productImageInputRef = useRef<HTMLInputElement | null>(null);
+  const productVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedPublicSlot, setSelectedPublicSlot] = useState(1);
   const selectedPublicSlotRef = useRef(selectedPublicSlot);
   selectedPublicSlotRef.current = selectedPublicSlot;
@@ -1062,6 +1064,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     useState<File | null>(null);
   const [diarySelectedVideoFile, setDiarySelectedVideoFile] =
     useState<File | null>(null);
+  const diaryImageInputRef = useRef<HTMLInputElement | null>(null);
+  const diaryVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [diaryLinkedProductId, setDiaryLinkedProductId] = useState("");
   const [diaryLinkedTradeId, setDiaryLinkedTradeId] = useState("");
   const [diaryTradeOptions, setDiaryTradeOptions] = useState<ProtectedTradeRecord[]>([]);
@@ -2814,7 +2818,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section id="shop-assets-diary" style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}>
         <div
           style={{
             display: "flex",
@@ -2827,7 +2831,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <div>
             <div style={sectionLabel()}>{labelWithIcon("document", "Shop Diary")}</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Record what the business has been doing. Products stay below as offers; diary updates are activity history.
+              Post one clear shop update. Products stay below as offers; diary updates are activity history. GSN keeps the date, shop link, public display, and evidence boundary connected inside.
             </div>
           </div>
           {iconBadge("document", <>{diaryEntries.length} updates</>, diaryEntries.length > 0)}
@@ -2853,60 +2857,115 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Add update</div>
-            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <div>
-                  <div style={sectionLabel()}>Activity type</div>
-                  <select value={diaryActivityType} onChange={(event) => setDiaryActivityType(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
-                    {SHOP_DIARY_ACTIVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <div style={sectionLabel()}>When?</div>
-                  <input type="date" value={diaryOccurredAt} onChange={(event) => setDiaryOccurredAt(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }} />
-                </div>
-              </div>
+            <div style={sectionLabel()}>Write diary update</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: isCompact ? 20 : 24, fontWeight: 950, lineHeight: 1.12 }}>
+              Picture/video, then a short update.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13.5, lineHeight: 1.45 }}>
+              The public side stays simple; evidence and links stay under More options.
+            </div>
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>What happened?</div>
-                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Short update, for example: Delivered three orders for the weekend event." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96 }} />
+                <div style={sectionLabel()}>What should people know?</div>
+                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me on WhatsApp to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 112, fontSize: isCompact ? 16 : 15 }} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <input type="file" data-gmfn-action-root="true" data-cta-id="shop-assets.diary.image-file" accept="image/*" onChange={(event) => setDiarySelectedImageFile(event.target.files?.[0] || null)} style={inputStyle()} />
-                <input type="file" data-gmfn-action-root="true" data-cta-id="shop-assets.diary.video-file" accept="video/*,.mp4,.webm,.mov" onChange={(event) => setDiarySelectedVideoFile(event.target.files?.[0] || null)} style={inputStyle()} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <input value={diaryImageUrlInput} onChange={(event) => setDiaryImageUrlInput(event.target.value)} placeholder="Or paste photo URL" style={inputStyle()} />
-                <input value={diaryVideoUrlInput} onChange={(event) => setDiaryVideoUrlInput(event.target.value)} placeholder="Or paste video URL" style={inputStyle()} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <div>
-                  <div style={sectionLabel()}>Related product/service</div>
-                  <select value={diaryLinkedProductId} onChange={(event) => setDiaryLinkedProductId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
-                    <option value="">No product link</option>
-                    {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Block ${publicBlockNumberForProduct(item)}`)}</option>)}
-                  </select>
+              <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"), padding: isCompact ? 12 : 14 }}>
+                <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                  Add a picture, short video, or both. The public shop will show the strongest media first.
                 </div>
-                <div>
-                  <div style={sectionLabel()}>Stronger evidence link</div>
-                  <select value={diaryLinkedTradeId} onChange={(event) => setDiaryLinkedTradeId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
-                    <option value="">No Trade Evidence link</option>
-                    {diaryTradeOptions.map((trade) => <option key={`diary-trade-${trade.id}`} value={String(trade.id || "")}>{protectedTradeOptionLabel(trade)}</option>)}
-                  </select>
-                  <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                    {diaryTradeOptions.length > 0 ? "Only confirmed Trade Evidence records for this shop can strengthen a diary update." : "No confirmed Trade Evidence linked to this shop yet."}
+                <input
+                  ref={diaryImageInputRef}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-assets.diary.image-file"
+                  accept="image/*"
+                  onChange={(event) => setDiarySelectedImageFile(event.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <input
+                  ref={diaryVideoInputRef}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-assets.diary.video-file"
+                  accept="video/*,.mp4,.webm,.mov"
+                  onChange={(event) => setDiarySelectedVideoFile(event.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <div style={{ marginTop: 12, ...ownerActionGrid(isCompact) }}>
+                  <StableButton
+                    type="button"
+                    onClick={() => diaryImageInputRef.current?.click()}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.diary.pick-picture"
+                  >
+                    {labelWithIcon("image", diarySelectedImageFile || safeStr(diaryImageUrlInput) ? "Picture ready" : "Add picture")}
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    onClick={() => diaryVideoInputRef.current?.click()}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.diary.pick-video"
+                  >
+                    {labelWithIcon("video", diarySelectedVideoFile || safeStr(diaryVideoUrlInput) ? "Video ready" : "Add video")}
+                  </StableButton>
+                </div>
+              </div>
+              <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
+                <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+                  More options
+                </summary>
+                <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <div style={sectionLabel()}>Activity type</div>
+                      <select value={diaryActivityType} onChange={(event) => setDiaryActivityType(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                        {SHOP_DIARY_ACTIVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={sectionLabel()}>When?</div>
+                      <input type="date" value={diaryOccurredAt} onChange={(event) => setDiaryOccurredAt(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                    <input value={diaryImageUrlInput} onChange={(event) => setDiaryImageUrlInput(event.target.value)} placeholder="Paste photo URL" style={inputStyle()} />
+                    <input value={diaryVideoUrlInput} onChange={(event) => setDiaryVideoUrlInput(event.target.value)} placeholder="Paste video URL" style={inputStyle()} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <div style={sectionLabel()}>Related product/service</div>
+                      <select value={diaryLinkedProductId} onChange={(event) => setDiaryLinkedProductId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                        <option value="">No product link</option>
+                        {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Block ${publicBlockNumberForProduct(item)}`)}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={sectionLabel()}>Stronger evidence link</div>
+                      <select value={diaryLinkedTradeId} onChange={(event) => setDiaryLinkedTradeId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
+                        <option value="">No Trade Evidence link</option>
+                        {diaryTradeOptions.map((trade) => <option key={`diary-trade-${trade.id}`} value={String(trade.id || "")}>{protectedTradeOptionLabel(trade)}</option>)}
+                      </select>
+                      <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                        {diaryTradeOptions.length > 0 ? "Only confirmed Trade Evidence records for this shop can strengthen a diary update." : "No confirmed Trade Evidence linked to this shop yet."}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </details>
               <div style={ownerActionGrid(isCompact)}>
-                <PrimaryButton onClick={() => void submitDiaryEntry()} disabled={savingDiaryEntry || shopDiaryFeatureOff} busy={savingDiaryEntry} busyLabel="Adding..." fullWidth stableHeight={isCompact ? 56 : 48} debugId="shop-assets.diary.submit">Add update</PrimaryButton>
+                <PrimaryButton onClick={() => void submitDiaryEntry()} disabled={savingDiaryEntry || shopDiaryFeatureOff} busy={savingDiaryEntry} busyLabel="Adding..." fullWidth stableHeight={isCompact ? 56 : 48} debugId="shop-assets.diary.submit">Publish update</PrimaryButton>
                 <SecondaryButton onClick={resetDiaryForm} fullWidth stableHeight={isCompact ? 56 : 48} debugId="shop-assets.diary.reset">Clear</SecondaryButton>
               </div>
             </div>
           </div>
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Latest activity</div>
-            <div style={{ marginTop: 8, ...helperText() }}>Owner updates are shown as claims unless linked Trade Evidence genuinely supports confirmation.</div>
+          <details open={!isCompact} style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
+            <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+              Recent updates ({diaryEntries.length})
+            </summary>
+            <div style={{ marginTop: 8, ...helperText() }}>Owner updates stay separate from product offers. Evidence links remain inside the opened history.</div>
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {diaryEntries.length > 0 ? diaryEntries.slice(0, 4).map((entry) => (
                 <div key={`owner-diary-${entry.id}`} style={{ ...innerCard("#F8FBFF"), padding: 12 }}>
@@ -2934,14 +2993,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         stableHeight={isCompact ? 46 : 42}
                         debugId={`shop-assets.diary.${entry.id}.supporting-record`}
                       >
-                        Open Trade Evidence
+                        Evidence
                       </StableCtaLink>
                     ) : null}
                   </div>
                 </div>
               )) : <div style={{ ...helperText(), padding: 12 }}>No business activity updates yet. Add the first update when something real happens.</div>}
             </div>
-          </div>
+          </details>
         </div>
       </section>
       {embedded ? (
@@ -2958,8 +3017,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div>
               <div style={sectionLabel()}>Products & Services block control</div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                Tap + Add product for the next open block. Choose a numbered block only when
-                you want a specific position.
+                Tap + Add product. Numbered blocks and item controls stay under Manage blocks.
               </div>
             </div>
 
@@ -2996,7 +3054,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           ) : null}
 
-          <div
+          <details open={!isCompact} style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}>
+            <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+              Manage numbered blocks
+            </summary>
+            <div
             style={{
               marginTop: 16,
               display: "grid",
@@ -3376,6 +3438,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
             </div>
           </div>
+          </details>
         </section>
       ) : null}
 
@@ -3451,55 +3514,81 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             ) : null}
 
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              <input
-                type="file"
-                data-gmfn-action-root="true"
-                data-cta-id="shop-assets.product.image-file"
-                accept="image/*"
-                onChange={(e) => void setProductPreviewFromFile(e.target.files?.[0] || null)}
-                style={inputStyle()}
-              />
-
-              <input
-                value={productImageUrlInput}
-                onChange={(e) => {
-                  setProductFormNotice(null);
-                  setProductImageUrlInput(e.target.value);
-                  if (!productSelectedFile) {
-                    setProductPreviewUrl(e.target.value);
-                  }
-                }}
-                placeholder="Or paste item image URL"
-                style={inputStyle()}
-              />
-
-              <input
-                type="file"
-                data-gmfn-action-root="true"
-                data-cta-id="shop-assets.product.video-file"
-                accept="video/*,.mp4,.webm,.mov"
-                onChange={(e) => void setProductVideoPreviewFromFile(e.target.files?.[0] || null)}
-                style={inputStyle()}
-              />
-
-              <div style={{ ...helperText(), fontSize: 13 }}>
-                If the picture or video is too heavy, GSN prepares a lighter version before upload.
-                Video-only blocks get an automatic cover frame.
+              <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"), padding: isCompact ? 12 : 14 }}>
+                <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                  Add the item picture, short video, or both. GSN prepares heavy media quietly when needed.
+                </div>
+                <input
+                  ref={productImageInputRef}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-assets.product.image-file"
+                  accept="image/*"
+                  onChange={(e) => void setProductPreviewFromFile(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <input
+                  ref={productVideoInputRef}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-assets.product.video-file"
+                  accept="video/*,.mp4,.webm,.mov"
+                  onChange={(e) => void setProductVideoPreviewFromFile(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <div style={{ marginTop: 12, ...ownerActionGrid(isCompact) }}>
+                  <StableButton
+                    type="button"
+                    onClick={() => productImageInputRef.current?.click()}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.product.pick-picture"
+                  >
+                    {labelWithIcon("image", productSelectedFile || safeStr(productImageUrlInput) ? "Picture ready" : "Add picture")}
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    onClick={() => productVideoInputRef.current?.click()}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.product.pick-video"
+                  >
+                    {labelWithIcon("video", productSelectedVideoFile || safeStr(productVideoUrlInput) ? "Video ready" : "Add video")}
+                  </StableButton>
+                </div>
+                <details style={{ marginTop: 12 }}>
+                  <summary style={{ cursor: "pointer", color: "#31506D", fontWeight: 950, fontSize: 13 }}>
+                    More media options
+                  </summary>
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    <input
+                      value={productImageUrlInput}
+                      onChange={(e) => {
+                        setProductFormNotice(null);
+                        setProductImageUrlInput(e.target.value);
+                        if (!productSelectedFile) {
+                          setProductPreviewUrl(e.target.value);
+                        }
+                      }}
+                      placeholder="Paste item image URL"
+                      style={inputStyle()}
+                    />
+                    <input
+                      value={productVideoUrlInput}
+                      onChange={(e) => {
+                        setProductFormNotice(null);
+                        setProductVideoUrlInput(e.target.value);
+                        if (!productSelectedVideoFile) {
+                          setProductVideoPreviewUrl(e.target.value);
+                        }
+                      }}
+                      placeholder="Paste item video URL"
+                      style={inputStyle()}
+                    />
+                  </div>
+                </details>
               </div>
-
-              <input
-                value={productVideoUrlInput}
-                onChange={(e) => {
-                  setProductFormNotice(null);
-                  setProductVideoUrlInput(e.target.value);
-                  if (!productSelectedVideoFile) {
-                    setProductVideoPreviewUrl(e.target.value);
-                  }
-                }}
-                placeholder="Or paste item video URL"
-                style={inputStyle()}
-              />
-
               <div
                 style={{
                   display: "grid",

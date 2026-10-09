@@ -3806,6 +3806,12 @@ export default function ShopControlPage() {
         "shop-control.route.gallery",
         { hash: OWNER_SHOP_HASHES.diaries }
       ),
+      shopDiary: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.diary",
+        { hash: "shop-assets-diary" }
+      ),
       shopDetails: routeTarget(
         "shop",
         effectiveShopClanId,
@@ -4878,8 +4884,8 @@ export default function ShopControlPage() {
       label: "Shop Diary",
       value: shopDiaryStatusLabel,
       detail: "Public blocks and ordinary shop content, not formal evidence.",
-      to: routes.shopGallery,
-      action: "Review",
+      to: routes.shopDiary,
+      action: occupiedPublicProductSlotCount > 0 ? "Review" : "Write",
       debugId: "shop-control.orientation.diary",
     },
   ];
@@ -6399,9 +6405,6 @@ export default function ShopControlPage() {
 
       setSpotlightImageFile(prepared.file);
       setSpotlightPublishFeedback(null);
-      if (spotlightMediaChoice === "image" || spotlightMediaChoice === "both") {
-        setSpotlightFlowStep("preview");
-      }
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -6461,9 +6464,6 @@ export default function ShopControlPage() {
       setSpotlightVideoFile(prepared.file);
       setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
       setSpotlightPublishFeedback(null);
-      if (spotlightMediaChoice === "video" || spotlightMediaChoice === "both") {
-        setSpotlightFlowStep("preview");
-      }
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -6483,9 +6483,6 @@ export default function ShopControlPage() {
         setSpotlightVideoFile(file);
         setSpotlightVideoDurationSeconds(null);
         setSpotlightPublishFeedback(null);
-        if (spotlightMediaChoice === "video") {
-          setSpotlightFlowStep("preview");
-        }
         showNotice(
           "info",
           "This phone could not trim the video automatically, so GSN will use the uploaded file and play it as a 10-second spotlight clip."
@@ -7203,6 +7200,14 @@ export default function ShopControlPage() {
                 debugId="shop-control.gallery.shop-billboard"
               >
                 Shop billboard
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.shopDiary}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.gallery.write-diary"
+              >
+                Write diary update
               </StableCtaLink>
               <StableCtaLink
                 to={routes.communityPackages}

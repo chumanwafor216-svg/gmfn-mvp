@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 12,
-  SecondaryButton: 26,
+  SecondaryButton: 24,
   SubtleButton: 3,
-  StableButton: 6,
-  StableCtaLink: 12,
-  total: 59,
+  StableButton: 5,
+  StableCtaLink: 13,
+  total: 57,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
@@ -234,11 +234,8 @@ for (const action of actions) {
 const expectedActionOrder = [
   "shop-control.spotlight.setup.continue",
   "shop-control.spotlight.setup.cancel",
-  "shop-control.spotlight.free-lane",
-  "shop-control.spotlight.paid-lane",
   "shop-control.spotlight.media.image",
   "shop-control.spotlight.media.video",
-  "shop-control.spotlight.media.both",
   "shop-control.spotlight.upload.preview",
   "shop-control.spotlight.upload.cancel",
   "shop-control.spotlight.preview.back",
@@ -434,19 +431,23 @@ assertShopContains(
 
 
 assertShopContains(
-  /const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid[\s\S]*?\? "financeInstitution"[\s\S]*?: "megaphone";[\s\S]*?controlIconTile\("financeInstitution", spotlightPriorityMode === "paid"\)[\s\S]*?labelWithIcon\("financeInstitution", "Spotlight Subscription"\)/,
-  "Shop Control paid spotlight and subscription surfaces must use institutional finance imagery instead of generic card imagery."
-);
-
-assertShopContains(
   /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
   "Shop Control must own the rich owner-facing live Spotlight frame with media, public shop preview, publisher access, and take-down."
 );
 assertShopContains(
-  /debugId="shop-control\.spotlight\.media\.both"[\s\S]*?inlineIcon\("image"\)[\s\S]*?inlineIcon\("video"\)[\s\S]*?<span>Picture \+ video<\/span>/,
-  "Shop Control Picture + video choice must show both picture and video 3D meaning icons."
+  /Picture \/ video, item, message\.[\s\S]*?debugId="shop-control\.spotlight\.media\.image"[\s\S]*?Add picture[\s\S]*?debugId="shop-control\.spotlight\.media\.video"[\s\S]*?Add video[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.image-file"[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.video-file"/,
+  "Shop Control free Spotlight publisher must keep one simple outside flow with picture/video upload buttons and hidden audited file inputs."
 );
 
+assertShopContains(
+  /setSpotlightImageFile\(prepared\.file\);\s*setSpotlightPublishFeedback\(null\);\s*if \(prepared\.message\)/,
+  "Picking a Spotlight picture must keep the owner in the simple publisher until they tap Preview."
+);
+
+assertShopContains(
+  /setSpotlightVideoFile\(prepared\.file\);\s*setSpotlightVideoDurationSeconds\(prepared\.durationSeconds \?\? null\);\s*setSpotlightPublishFeedback\(null\);\s*if \(prepared\.message\)/,
+  "Picking a Spotlight video must keep the owner in the simple publisher until they tap Preview."
+);
 assertShopContains(
   /function inputStyle\(\): React\.CSSProperties \{[\s\S]*?minHeight: 48,[\s\S]*?fontFamily: "inherit",[\s\S]*?fontSize: 16,[\s\S]*?lineHeight: 1\.35,[\s\S]*?appearance: "none",[\s\S]*?WebkitAppearance: "none",[\s\S]*?touchAction: "manipulation",[\s\S]*?overflowAnchor: "none"/,
   "Shop Control native text fields must keep a system-level stable mobile input style to prevent browser focus zoom and tap jump."
@@ -679,7 +680,7 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard product\/service blocks, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard product\/service blocks, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
   "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the product/service block lane."
 );
 

@@ -549,151 +549,18 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
           </>
         ) : spotlightFlowStep === "upload" ? (
           <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  ...innerCard(
-                    spotlightPriorityMode === "free"
-                      ? "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)"
-                      : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
-                  ),
-                  border:
-                    spotlightPriorityMode === "free"
-                      ? "1px solid rgba(242,199,102,0.36)"
-                      : "1px solid rgba(13,95,168,0.12)",
-                }}
-              >
-                {controlIconTile("megaphone", spotlightPriorityMode === "free")}
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: spotlightPriorityMode === "free" ? "#FFFFFF" : "#07172C",
-                    fontSize: 17,
-                    fontWeight: 950,
-                  }}
-                >
-                  Free Spotlight
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: spotlightPriorityMode === "free" ? "#D7E3F1" : "#466078",
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    fontWeight: 700,
-                  }}
-                >
-                  Normal community visibility.
-                </div>
-                <SecondaryButton
-                  type="button"
-                  onClick={() => setSpotlightPriorityMode("free")}
-                  fullWidth
-                  style={{ marginTop: 12 }}
-                  debugId="shop-control.spotlight.free-lane"
-                >
-                  Use free lane
-                </SecondaryButton>
-              </div>
-
-              <div
-                style={{
-                  ...innerCard(
-                    spotlightPriorityMode === "paid"
-                      ? "linear-gradient(180deg, #FFF8DE 0%, #F8E6A6 100%)"
-                      : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
-                  ),
-                  border:
-                    spotlightPriorityMode === "paid"
-                      ? "1px solid rgba(183,128,24,0.28)"
-                      : "1px solid rgba(13,95,168,0.12)",
-                }}
-              >
-                {controlIconTile("financeInstitution", spotlightPriorityMode === "paid")}
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#07172C",
-                    fontSize: 17,
-                    fontWeight: 950,
-                  }}
-                >
-                  Spotlight Subscription
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                  Paid priority opens on its own focused page.
-                </div>
-                <SecondaryButton
-                  type="button"
-                  onClick={() =>
-                    navigateWithOrigin(navigate, routes.subscriptionSpotlight, location)
-                  }
-                  fullWidth
-                  style={{ marginTop: 12 }}
-                  debugId="shop-control.spotlight.paid-lane"
-                >
-                  Open paid lane
-                </SecondaryButton>
-                <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                  Payment and paid publishing are kept separate from Free Spotlight.
-                </div>
-              </div>
-            </div>
-
-            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>{labelWithIcon("navigation", "Choose what people will see")}</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 17, fontWeight: 900 }}>
-                Pick one clear format.
-              </div>
-              <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
-                <StableButton
-                  type="button"
-                  kind={spotlightMediaChoice === "image" ? "primary" : "secondary"}
-                  onClick={() => setSpotlightMediaChoice("image")}
-                  fullWidth
-                  debugId="shop-control.spotlight.media.image"
-                >
-                  {labelWithIcon("image", "Picture")}
-                </StableButton>
-                <StableButton
-                  type="button"
-                  kind={spotlightMediaChoice === "video" ? "primary" : "secondary"}
-                  onClick={() => setSpotlightMediaChoice("video")}
-                  fullWidth
-                  debugId="shop-control.spotlight.media.video"
-                >
-                  {labelWithIcon("video", "Video")}
-                </StableButton>
-                <StableButton
-                  type="button"
-                  kind={spotlightMediaChoice === "both" ? "primary" : "secondary"}
-                  onClick={() => setSpotlightMediaChoice("both")}
-                  fullWidth
-                  debugId="shop-control.spotlight.media.both"
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                    {inlineIcon("image")}
-                    {inlineIcon("video")}
-                    <span>Picture + video</span>
-                  </span>
-                </StableButton>
-              </div>
-            </div>
-
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>Product details</div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Your shop is already linked to your GSN ID. Add only the item or update people should see now.
+              <div style={sectionLabel()}>{labelWithIcon("megaphone", "Create one shop update")}</div>
+              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: isCompact ? 21 : 24, fontWeight: 950, lineHeight: 1.1 }}>
+                Picture / video, item, message.
               </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Keep it simple outside. GSN handles the shop link, community, timing, and publishing rules inside.
+              </div>
+
               <div
                 style={{
-                  marginTop: 12,
+                  marginTop: 14,
                   display: "grid",
                   gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                   gap: 12,
@@ -718,112 +585,133 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   />
                 </div>
               </div>
-            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 14,
-              }}
-            >
               <div
-                aria-hidden={spotlightMediaChoice === "video" || undefined}
                 style={{
-                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                  visibility: spotlightMediaChoice === "video" ? "hidden" : "visible",
-                  pointerEvents: spotlightMediaChoice === "video" ? "none" : "auto",
-                  minHeight: 170,
+                  marginTop: 14,
+                  borderRadius: 20,
+                  border: "1px solid rgba(13,95,168,0.14)",
+                  background: "linear-gradient(180deg, #FFFFFF 0%, #F2F8FF 100%)",
+                  padding: isCompact ? 12 : 14,
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
               >
-                  <div style={sectionLabel()}>{labelWithIcon("image", "Picture")}</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Choose the picture people should notice first.
-                  </div>
-                  <input
-                    key={spotlightImageInputKey}
-                    type="file"
-                    data-gmfn-action-root="true"
-                    data-cta-id="shop-control.spotlight.image-file"
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-                    aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
-                    onClick={(e) => {
-                      if (preparingSpotlightImage || creatingSpotlight) {
-                        e.preventDefault();
-                        showNotice("info", "GSN is still preparing the current spotlight media.");
-                      }
+                <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
+                  Add a picture, a short video, or both. Use what people will understand fastest.
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(2, minmax(160px, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <StableButton
+                    type="button"
+                    kind={spotlightImageFile ? "primary" : "secondary"}
+                    onClick={() => {
+                      setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
+                      const input = document.getElementById("shop-control-spotlight-image-file") as HTMLInputElement | null;
+                      input?.click();
                     }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      void handleSpotlightImagePicked(file);
+                    disabled={preparingSpotlightImage || creatingSpotlight}
+                    busy={preparingSpotlightImage}
+                    busyLabel="Preparing..."
+                    fullWidth
+                    debugId="shop-control.spotlight.media.image"
+                  >
+                    {labelWithIcon("image", spotlightImageFile ? "Picture ready" : "Add picture")}
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    kind={spotlightVideoFile ? "primary" : "secondary"}
+                    onClick={() => {
+                      setSpotlightMediaChoice(spotlightImageFile ? "both" : "video");
+                      const input = document.getElementById("shop-control-spotlight-video-file") as HTMLInputElement | null;
+                      input?.click();
                     }}
-                    style={{ ...inputStyle(), marginTop: 10 }}
-                  />
-                  {spotlightImageFile ? (
-                    <div style={{ marginTop: 10 }}>
+                    disabled={preparingSpotlightVideo || creatingSpotlight}
+                    busy={preparingSpotlightVideo}
+                    busyLabel="Preparing..."
+                    fullWidth
+                    debugId="shop-control.spotlight.media.video"
+                  >
+                    {labelWithIcon("video", spotlightVideoFile ? "Video ready" : "Add video")}
+                  </StableButton>
+                </div>
+                <input
+                  id="shop-control-spotlight-image-file"
+                  key={spotlightImageInputKey}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-control.spotlight.image-file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+                  aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
+                  onClick={(e) => {
+                    if (preparingSpotlightImage || creatingSpotlight) {
+                      e.preventDefault();
+                      showNotice("info", "GSN is still preparing the current spotlight media.");
+                    }
+                  }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    void handleSpotlightImagePicked(file);
+                  }}
+                  style={{ display: "none" }}
+                />
+                <input
+                  id="shop-control-spotlight-video-file"
+                  key={spotlightVideoInputKey}
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-control.spotlight.video-file"
+                  accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
+                  aria-disabled={preparingSpotlightVideo || creatingSpotlight || undefined}
+                  onClick={(e) => {
+                    if (preparingSpotlightVideo || creatingSpotlight) {
+                      e.preventDefault();
+                      showNotice("info", "GSN is still preparing the current spotlight media.");
+                    }
+                  }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    void handleSpotlightVideoPicked(file);
+                  }}
+                  style={{ display: "none" }}
+                />
+                {spotlightImageFile || spotlightVideoFile ? (
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {spotlightImageFile ? (
                       <span style={badge(true)}>
-                        {labelWithIcon("check", <>Picture ready - {formatFileSize(spotlightImageFile.size)}</>)}
+                        {labelWithIcon("check", <>Picture - {formatFileSize(spotlightImageFile.size)}</>)}
                       </span>
-                    </div>
-                  ) : null}
-              </div>
-
-              <div
-                aria-hidden={spotlightMediaChoice === "image" || undefined}
-                style={{
-                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                  visibility: spotlightMediaChoice === "image" ? "hidden" : "visible",
-                  pointerEvents: spotlightMediaChoice === "image" ? "none" : "auto",
-                  minHeight: 170,
-                }}
-              >
-                  <div style={sectionLabel()}>{labelWithIcon("video", "Short video")}</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Use a short clip when movement explains the shop better.
-                  </div>
-                  <input
-                    key={spotlightVideoInputKey}
-                    type="file"
-                    data-gmfn-action-root="true"
-                    data-cta-id="shop-control.spotlight.video-file"
-                    accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
-                    aria-disabled={preparingSpotlightVideo || creatingSpotlight || undefined}
-                    onClick={(e) => {
-                      if (preparingSpotlightVideo || creatingSpotlight) {
-                        e.preventDefault();
-                        showNotice("info", "GSN is still preparing the current spotlight media.");
-                      }
-                    }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      void handleSpotlightVideoPicked(file);
-                    }}
-                    style={{ ...inputStyle(), marginTop: 10 }}
-                  />
-                  {spotlightVideoFile ? (
-                    <div style={{ marginTop: 10 }}>
+                    ) : null}
+                    {spotlightVideoFile ? (
                       <span style={badge(true)}>
-                        {labelWithIcon("check", <>Video ready - {formatFileSize(spotlightVideoFile.size)}</>)}
+                        {labelWithIcon("check", <>Video - {formatFileSize(spotlightVideoFile.size)}</>)}
                         {spotlightVideoDurationSeconds != null
                           ? ` - ${spotlightVideoDurationSeconds.toFixed(1)}s`
                           : ""}
                       </span>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-            </div>
 
-            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>{labelWithIcon("pen", "Message")}</div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Add availability, delivery, WhatsApp instruction, or any short note for this update.
+              <div style={{ marginTop: 14 }}>
+                <div style={sectionLabel()}>{labelWithIcon("pen", "Message")}</div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
+                  Tell customers what is available or how to order.
+                </div>
+                <textarea
+                  value={spotlightMessage}
+                  onChange={(e) => setSpotlightMessage(e.target.value)}
+                  placeholder="Available today. Message me on WhatsApp to order."
+                  style={{ ...textAreaStyle(), marginTop: 10 }}
+                />
               </div>
-              <textarea
-                value={spotlightMessage}
-                onChange={(e) => setSpotlightMessage(e.target.value)}
-                placeholder="Available today. Message me on WhatsApp to order."
-                style={{ ...textAreaStyle(), marginTop: 10 }}
-              />
             </div>
 
             <div style={controlGrid(isCompact, 150)}>
@@ -840,7 +728,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 fullWidth
                 debugId="shop-control.spotlight.upload.preview"
               >
-                Preview spotlight
+                Preview
               </PrimaryButton>
               <SecondaryButton
                 type="button"
@@ -848,7 +736,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 fullWidth
                 debugId="shop-control.spotlight.upload.cancel"
               >
-                Cancel spotlight
+                Cancel
               </SecondaryButton>
             </div>
           </>
