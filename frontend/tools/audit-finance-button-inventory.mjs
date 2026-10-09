@@ -54,8 +54,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 10;
-const expectedRenderedActions = 16;
+const expectedSourceActions = 11;
+const expectedRenderedActions = 18;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -92,6 +92,7 @@ const expectedOrder = [
   "finance.mini-tool.${tool.label",
   "finance.events.view-all",
   "finance.view-signals",
+  "finance.toggle-pipeline-credits",
   "finance.toggle-overview",
   "finance.toggle-reconciliation",
   "finance.toggle-borrower",
@@ -167,6 +168,15 @@ assertContains(
 assertContains(
   /FinanceSectionLabel icon="down"[\s\S]*?Finance quick snapshot[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?Finance Signals/,
   "Finance phone-visible snapshot labels must use deterministic glyphs instead of emoji text."
+);
+assertContains(
+  /label: "Pipeline Credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?Pipeline credit programmes[\s\S]*?One pipeline credit means GBP 1 of planned usage value[\s\S]*?Credits fund usage\. They are not loans\./,
+  "Finance Pipeline Credits lane must stay wired from the secondary lane chooser to a truthful pricing/planning panel."
+);
+
+assertContains(
+  /It does not lend money, hold customer funds, approve credit, or promise that external money will move[\s\S]*?Not a wallet[\s\S]*?Not credit approval[\s\S]*?Pilot pricing/,
+  "Finance Pipeline Credits must keep the non-lending and non-wallet decision boundary visible."
 );
 
 assertContains(

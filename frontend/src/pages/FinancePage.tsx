@@ -29,6 +29,7 @@ import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 type CollapseState = {
   overview: boolean;
   borrower: boolean;
+  pipelineCredits: boolean;
   events: boolean;
   reconciliation: boolean;
 };
@@ -922,6 +923,7 @@ function defaultCollapseState(): CollapseState {
   return {
     overview: true,
     borrower: true,
+    pipelineCredits: true,
     events: true,
     reconciliation: true,
   };
@@ -933,6 +935,7 @@ function normalizeCollapseState(raw: any): CollapseState {
   return {
     overview: Boolean(raw?.overview ?? base.overview),
     borrower: Boolean(raw?.borrower ?? base.borrower),
+    pipelineCredits: Boolean(raw?.pipelineCredits ?? base.pipelineCredits),
     events: Boolean(raw?.events ?? base.events),
     reconciliation: Boolean(raw?.reconciliation ?? base.reconciliation),
   };
@@ -1706,6 +1709,41 @@ export default function FinancePage() {
       ),
     ],
   ];
+  const pipelineCreditProgrammes = [
+    {
+      name: "Free discovery",
+      price: "GBP 0",
+      credits: "No paid usage",
+      bestFor: "Map one narrow pilot workflow before money is promised.",
+    },
+    {
+      name: "Founding proof pilot",
+      price: "GBP 99 / 4 weeks",
+      credits: "GBP 70 pipeline balance",
+      bestFor: "First paid proof with enough credit for real verification or report work.",
+    },
+    {
+      name: "Starter continuation",
+      price: "GBP 29 / month",
+      credits: "5 included credits",
+      bestFor: "A small active community after the proof pilot.",
+    },
+    {
+      name: "Sponsor-backed top-up",
+      price: "GBP 50-250 blocks",
+      credits: "Sponsor-funded usage",
+      bestFor: "Useful communities where value is high but cash capacity is weak.",
+    },
+  ];
+
+  const pipelineCreditUsageRows: Array<[string, string, string]> = [
+    ["Member ID record", "0.05-0.15 credits", "Storage, correction, and admin support burden."],
+    ["Witnessed verification", "0.25-2 credits", "Evidence, audit trail, and helper responsibility."],
+    ["TrustSlip or evidence summary", "0.25-1 credit", "Document generation and public-safe evidence presentation."],
+    ["Meeting pack or report", "1-5 credits", "AI, formatting, review, and support time."],
+    ["SMS or external ID check", "0.20-5 credits", "Provider cost and compliance pressure."],
+    ["Data clean-up or support hour", "10-30 credits", "Human time must not hide inside a cheap plan."],
+  ];
   const showOtherFinanceLanes = !isCompact || otherFinanceLanesOpen;
 
   function toggleSection(key: keyof CollapseState) {
@@ -2252,6 +2290,12 @@ export default function FinancePage() {
                   action: () => openFinanceRoute(routes.loanReadiness),
                 },
                 {
+                  icon: "signal" as FinanceGlyphName,
+                  label: "Pipeline Credits",
+                  detail: "Plan usage credits.",
+                  action: () => openFinanceDetailLane("pipelineCredits", "finance-pipeline-credits"),
+                },
+                {
                   icon: "shield" as FinanceGlyphName,
                   label: "Trust Passport",
                   detail: "Read trust record.",
@@ -2604,6 +2648,152 @@ export default function FinancePage() {
         </div>
       </section>
 
+      <section
+        id="finance-pipeline-credits"
+        style={pageCard("#FFFFFF")}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <FinanceSectionLabel icon="signal">Pipeline credit programmes</FinanceSectionLabel>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Plan low base access plus prepaid usage credits before costly verification, reports, messages, or support work starts.
+            </div>
+          </div>
+
+          <SubtleButton
+            onClick={() => handleCollapseTap("pipelineCredits")}
+            minWidth={124}
+            stableHeight={50}
+            debugId="finance.toggle-pipeline-credits"
+            style={financeCollapseButtonStyle()}
+          >
+            {collapsed.pipelineCredits ? "Show credits" : "Hide credits"}
+          </SubtleButton>
+        </div>
+
+        {!collapsed.pipelineCredits ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {pipelineCreditProgrammes.map((programme) => (
+                <div
+                  key={programme.name}
+                  style={{
+                    ...innerCard("#F8FBFF"),
+                    borderColor: "rgba(19,95,209,0.12)",
+                    display: "grid",
+                    gap: 8,
+                    alignContent: "start",
+                  }}
+                >
+                  <div style={{ color: "#07172C", fontSize: 15, fontWeight: 950, lineHeight: 1.18 }}>
+                    {programme.name}
+                  </div>
+                  <span style={{ ...badge(true), width: "fit-content" }}>{programme.price}</span>
+                  <div style={{ color: "#0B4EA2", fontSize: 13, fontWeight: 900, lineHeight: 1.32 }}>
+                    {programme.credits}
+                  </div>
+                  <div style={{ color: "#52697F", fontSize: 12.5, fontWeight: 760, lineHeight: 1.42 }}>
+                    {programme.bestFor}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) minmax(0, 0.9fr)",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>What spends credits</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  One pipeline credit means GBP 1 of planned usage value. These are pilot estimates, not final pricing.
+                </div>
+                {isCompact ? (
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    {pipelineCreditUsageRows.map(([item, debit, reason]) => (
+                      <FinanceMobileRecord
+                        key={item}
+                        title={item}
+                        rows={[
+                          ["Credit use", debit],
+                          ["Reason", reason],
+                        ]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12, ...tableWrap() }}>
+                    <table style={financeTable()}>
+                      <thead>
+                        <tr>
+                          <th style={tableHeadCell()}>Usage item</th>
+                          <th style={tableHeadCell()}>Credit use</th>
+                          <th style={tableHeadCell()}>Why it spends credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pipelineCreditUsageRows.map(([item, debit, reason]) => (
+                          <tr key={item}>
+                            <td style={tableCell(true)}>{item}</td>
+                            <td style={tableCell(true)}>{debit}</td>
+                            <td style={tableCell()}>{reason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  ...innerCard("linear-gradient(145deg, #07172C 0%, #092642 76%, #03101F 100%)"),
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(214,170,69,0.26)",
+                  display: "grid",
+                  gap: 10,
+                  alignContent: "start",
+                }}
+              >
+                <FinanceSectionLabel icon="shield" color="#F2CF77">
+                  Decision boundary
+                </FinanceSectionLabel>
+                <div style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                  Credits fund usage. They are not loans.
+                </div>
+                <div style={{ color: "#D8E7F5", fontSize: 13, lineHeight: 1.48, fontWeight: 760 }}>
+                  GSN records, coordinates, and prices costly work. It does not lend money, hold customer funds, approve credit, or promise that external money will move.
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ ...badge(false), color: "#07172C" }}>Not a wallet</span>
+                  <span style={{ ...badge(false), color: "#07172C" }}>Not credit approval</span>
+                  <span style={{ ...badge(false), color: "#07172C" }}>Pilot pricing</span>
+                </div>
+                <div style={{ color: "#FFF4CC", fontSize: 12.5, fontWeight: 850, lineHeight: 1.45 }}>
+                  First step: agree the pilot workflow, choose a base access level, then buy or sponsor a credit block only when real usage is planned.
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
       <section
         id="finance-summary"
         style={pageCard("#FFFFFF")}

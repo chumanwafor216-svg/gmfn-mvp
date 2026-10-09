@@ -63,6 +63,7 @@ function assertOrderedSnippets(file, source, snippets, message) {
   "Banking Rails",
   "Records / Events",
   "Signals / Readiness",
+  "Pipeline Credits",
 ].forEach((lane) => {
   assertContains(
     specsFile,
@@ -101,6 +102,7 @@ function assertOrderedSnippets(file, source, snippets, message) {
 [
   ["Money Out", "routes.moneyOut"],
   ["Signals / Readiness", "routes.loanReadiness"],
+  ["Pipeline Credits", "finance-pipeline-credits"],
 ].forEach(([label, target]) => {
   assertContains(
     financeFile,

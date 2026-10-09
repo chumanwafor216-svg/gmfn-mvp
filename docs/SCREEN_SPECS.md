@@ -737,9 +737,9 @@ communities.
 Must show:
 - plain finance summary first
 - major finance lanes such as Money Summary, Money In, Money Out, Banking
-  Rails, Records / Events, and Signals / Readiness
-- Secondary route tools such as Payout Details and Trust Passport may remain
-  visible only as compact linked tools, not as competing major Finance lanes.
+  Rails, Records / Events, Signals / Readiness, and Pipeline Credits
+- Secondary route tools such as Payout Details, Pipeline Credits, and Trust Passport
+  may remain visible only as compact linked tools, not as competing major Finance lanes.
 - clear route back to the originating marketplace or Dashboard
 
 Rules:
@@ -754,6 +754,10 @@ Rules:
   Marketplace-owned.
 - Deep finance records and secondary tools should appear only after the user
   opens the relevant lane.
+- Pipeline Credits is a pricing/planning lane for base access plus prepaid usage value.
+  It must not imply GSN lends money, holds customer funds, approves credit, or
+  exposes a real spendable wallet balance before backend entitlement accounting is
+  intentionally designed.
 
 ## TrustPassportPage
 

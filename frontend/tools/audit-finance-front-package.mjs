@@ -102,7 +102,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Other finance lanes[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Trust Passport/,
+  /Other finance lanes[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Pipeline Credits[\s\S]*?Trust Passport/,
   "Finance secondary lanes must remain grouped below the four main lane choices."
 );
 
@@ -118,6 +118,12 @@ assertContains(
   financeSource,
   /Finance quick snapshot[\s\S]*?Short reading only\. Open a lane for the full record\.[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?Finance Signals[\s\S]*?debugId="finance\.view-signals"/,
   "Finance must keep one compact snapshot after the lane chooser instead of exposing separate cash-flow, event, and signal blocks."
+);
+assertContains(
+  financeFile,
+  financeSource,
+  /Pipeline Credits[\s\S]*?finance-pipeline-credits[\s\S]*?Pipeline credit programmes[\s\S]*?Credits fund usage\. They are not loans\./,
+  "Finance front package must include the Pipeline Credits planning lane without implying lending or wallet behaviour."
 );
 
 assertNotContains(

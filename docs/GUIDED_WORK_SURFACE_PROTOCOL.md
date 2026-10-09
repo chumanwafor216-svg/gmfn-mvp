@@ -158,10 +158,12 @@ Finance should guide through major lanes such as:
 - Banking Rails
 - Records / Events
 - Signals / Readiness
+- Pipeline Credits
 
 Only one finance lane should be expanded as the active work area. Cumulative
 summary belongs at the front. Deep records and route tools belong behind lane
-choices.
+choices. Pipeline Credits belongs here as a planning lane for usage credits, not
+as lending, wallet custody, or automatic payment movement.
 
 ## Trust Passport Application
 
