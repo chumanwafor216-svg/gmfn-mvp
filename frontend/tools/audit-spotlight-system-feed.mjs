@@ -87,6 +87,11 @@ assertNotContains(
   /getMarketplaceBroadcasts|activeSpotlight|buildSpotlightRotationQueue|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS|synthetic-spotlight|dashboard\.spotlight\./,
   "Dashboard must not fetch, rotate, render, or synthesize Spotlight now that Spotlight belongs to the Shop ecosystem."
 );
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /const currentLiveSpotlightIsPaid =[\s\S]*?currentActiveSpotlight\?\.priority_mode[\s\S]*?spotlightPriorityMode !== "paid" && currentActiveSpotlight && !currentLiveSpotlightIsPaid[\s\S]*?take down the live Spotlight first[\s\S]*?return;/,
+  "Shop Control must stop free Spotlight replacement attempts before uploading media when a free Spotlight is already live."
+);
 assertLineNotContains(
   "frontend/src/pages/DashboardPage.tsx",
   /getMarketplaceBroadcasts\(\{[^}]*clan_id:\s*selectedClanId/,

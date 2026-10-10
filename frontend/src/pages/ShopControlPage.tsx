@@ -6543,6 +6543,15 @@ export default function ShopControlPage() {
       return;
     }
 
+    const currentLiveSpotlightIsPaid =
+      safeStr(currentActiveSpotlight?.priority_mode).toLowerCase() === "paid";
+    if (spotlightPriorityMode !== "paid" && currentActiveSpotlight && !currentLiveSpotlightIsPaid) {
+      const activeFreeMessage =
+        "A free Spotlight is already live. To add this video, take down the live Spotlight first, then publish the corrected video Spotlight from this page.";
+      setSpotlightPublishFeedback({ tone: "error", text: activeFreeMessage });
+      showNotice("error", activeFreeMessage);
+      return;
+    }
     const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
     if (!activeShop?.id) {
       const missingShopMessage =
