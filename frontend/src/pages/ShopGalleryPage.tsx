@@ -1690,7 +1690,8 @@ export default function ShopGalleryPage() {
       publicShopRes: any,
       clanRes: any,
       cleanedGmfnId: string,
-      viewerSpotlightRows?: any[] | null
+      viewerSpotlightRows?: any[] | null,
+      publicDiaryRows?: ShopDiaryEntryRecord[] | null
     ) {
       const normalizedShop = normalizeShop(
         publicShopRes?.item || publicShopRes,
@@ -1811,7 +1812,13 @@ export default function ShopGalleryPage() {
       setShop(normalizedShop);
       setPublicShopVerification(publicShopRes?.verification || null);
       setProducts(arrangedProducts);
-      setShopDiaryEntries(Array.isArray(publicShopRes?.shop_diary_entries) ? publicShopRes.shop_diary_entries : []);
+      setShopDiaryEntries(
+        Array.isArray(publicDiaryRows)
+          ? publicDiaryRows
+          : Array.isArray(publicShopRes?.shop_diary_entries)
+          ? publicShopRes.shop_diary_entries
+          : []
+      );
       setBroadcast(relevantBroadcast);
       setCommunitySpotlights(rotationBroadcasts);
       setMiniSpotlightIndex(
@@ -1838,6 +1845,34 @@ export default function ShopGalleryPage() {
       });
 
       return publicShopRes;
+    }
+
+    async function loadPublicShopDiaryRows(
+      cleanedGmfnId: string,
+      publicShopRes: any,
+      options: { useCommunityScope?: boolean } = {}
+    ) {
+      const diaryGmfnId = firstMeaningful(publicShopRes?.gmfn_id, cleanedGmfnId);
+      if (!diaryGmfnId) return null;
+
+      const useCommunityScope = options.useCommunityScope !== false;
+      const scopedClanId = useCommunityScope
+        ? positiveNumber(publicShopRes?.clan_id || routeClanId)
+        : 0;
+      const scopedRes = await getPublicShopDiaryEntries(diaryGmfnId, {
+        clan_id: scopedClanId > 0 ? scopedClanId : undefined,
+        limit: 12,
+      }).catch(() => null);
+      const scopedRows = Array.isArray(scopedRes?.items) ? scopedRes.items : null;
+
+      if (!useCommunityScope || scopedClanId <= 0 || (scopedRows && scopedRows.length > 0)) {
+        return scopedRows;
+      }
+
+      const unscopedRes = await getPublicShopDiaryEntries(diaryGmfnId, {
+        limit: 12,
+      }).catch(() => null);
+      return Array.isArray(unscopedRes?.items) ? unscopedRes.items : scopedRows;
     }
 
     async function loadViewerSpotlightRows() {
@@ -1939,10 +1974,12 @@ export default function ShopGalleryPage() {
           : null;
         let publicShopRes: any = null;
         let viewerSpotlightRows: any[] | null = null;
+        let publicDiaryRows: ShopDiaryEntryRecord[] | null = null;
 
         try {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
           viewerSpotlightRows = await loadViewerSpotlightRows();
+          publicDiaryRows = await loadPublicShopDiaryRows(cleanedGmfnId, publicShopRes);
         } catch (err: any) {
           const message = safeStr(err?.message);
           if (
@@ -1955,11 +1992,17 @@ export default function ShopGalleryPage() {
             }).catch(() => null);
             if (publicShopRes) {
               viewerSpotlightRows = await loadViewerSpotlightRows();
+              publicDiaryRows = await loadPublicShopDiaryRows(
+                cleanedGmfnId,
+                publicShopRes,
+                { useCommunityScope: false }
+              );
               applyPublicShop(
                 publicShopRes,
                 clanRes,
                 effectiveGmfnId,
-                viewerSpotlightRows
+                viewerSpotlightRows,
+                publicDiaryRows
               );
               return;
             }
@@ -1990,6 +2033,7 @@ export default function ShopGalleryPage() {
           replacePublicShopAddress(refreshedGmfnId);
           publicShopRes = await loadPublicShop(effectiveGmfnId);
           viewerSpotlightRows = await loadViewerSpotlightRows();
+          publicDiaryRows = await loadPublicShopDiaryRows(effectiveGmfnId, publicShopRes);
           if (alive) {
             setNotice({
               tone: "success",
@@ -2000,7 +2044,13 @@ export default function ShopGalleryPage() {
           }
         }
 
-        applyPublicShop(publicShopRes, clanRes, effectiveGmfnId, viewerSpotlightRows);
+        applyPublicShop(
+          publicShopRes,
+          clanRes,
+          effectiveGmfnId,
+          viewerSpotlightRows,
+          publicDiaryRows
+        );
       } catch (err: any) {
         if (!alive) return;
         const message = safeStr(err?.message);

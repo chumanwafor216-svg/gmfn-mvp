@@ -41,7 +41,8 @@ assertContains(files.api, "getPublicShopDiaryEntries", "Public Shop must fetch d
 assertContains(files.api, "createShopDiaryEntry", "Owner tools must create diary entries separately from products.");
 assertContains(files.assets, "Shop Diary", "Shop Control embedded tools must expose a Shop Diary owner lane.");
 assertContains(files.assets, "debugId=\"shop-assets.diary.submit\"", "Owner diary lane must have a traceable add-update action.");
-assertContains(files.assets, "Products stay below as offers", "Owner copy must separate products from activity history.");
+assertContains(files.assets, "Add a short update. Add a picture or short video only when it helps.", "Owner copy must keep the diary action simple and separate from product offers.");
+assertContains(files.gallery, "loadPublicShopDiaryRows", "Public Shop must fetch public diary entries from the dedicated diary API instead of relying only on product/shop payloads.");
 assertContains(files.gallery, /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Diary[\s\S]*?public-shop-diary-featured/, "Public Shop diary anchor must belong to the real activity diary with featured frame.");
 assertContains(files.gallery, /Products & Services[\s\S]*?visibleProducts\.map/, "Old product blocks must remain as Products & Services below diary.");
 assertContains(files.gallery, "height: isCompact ? 318 : 340", "Featured diary frame must keep the premium phone media-frame target.");

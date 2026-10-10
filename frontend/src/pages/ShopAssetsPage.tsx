@@ -1064,8 +1064,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     useState<File | null>(null);
   const [diarySelectedVideoFile, setDiarySelectedVideoFile] =
     useState<File | null>(null);
-  const diaryImageInputRef = useRef<HTMLInputElement | null>(null);
-  const diaryVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const diaryMediaInputRef = useRef<HTMLInputElement | null>(null);
   const [diaryLinkedProductId, setDiaryLinkedProductId] = useState("");
   const [diaryLinkedTradeId, setDiaryLinkedTradeId] = useState("");
   const [diaryTradeOptions, setDiaryTradeOptions] = useState<ProtectedTradeRecord[]>([]);
@@ -1543,8 +1542,40 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setDiaryVideoUrlInput("");
     setDiarySelectedImageFile(null);
     setDiarySelectedVideoFile(null);
+    if (diaryMediaInputRef.current) diaryMediaInputRef.current.value = "";
     setDiaryLinkedProductId("");
     setDiaryLinkedTradeId("");
+  }
+
+  function setDiaryMediaFromFile(file: File | null) {
+    setDiaryNotice(null);
+    if (!file) {
+      setDiarySelectedImageFile(null);
+      setDiarySelectedVideoFile(null);
+      return;
+    }
+
+    const fileName = firstTruthy(file.name, "Selected media");
+    const fileType = safeStr(file.type).toLowerCase();
+    const looksLikeVideo =
+      fileType.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(fileName);
+
+    if (looksLikeVideo) {
+      setDiarySelectedVideoFile(file);
+      setDiarySelectedImageFile(null);
+      setDiaryNotice({ tone: "success", text: `${fileName} is ready. Add the update text, then publish.` });
+      return;
+    }
+
+    setDiarySelectedImageFile(file);
+    setDiarySelectedVideoFile(null);
+    setDiaryNotice({ tone: "success", text: `${fileName} is ready. Add the update text, then publish.` });
+  }
+
+  function diaryMediaButtonLabel() {
+    if (diarySelectedVideoFile || safeStr(diaryVideoUrlInput)) return "Video ready";
+    if (diarySelectedImageFile || safeStr(diaryImageUrlInput)) return "Picture ready";
+    return "Add picture/video";
   }
 
   async function submitDiaryEntry() {
@@ -2831,7 +2862,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <div>
             <div style={sectionLabel()}>{labelWithIcon("document", "Shop Diary")}</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Post one clear shop update. Products stay below as offers; diary updates are activity history. GSN keeps the date, shop link, public display, and evidence boundary connected inside.
+              Add a short update. Add a picture or short video only when it helps.
             </div>
           </div>
           {iconBadge("document", <>{diaryEntries.length} updates</>, diaryEntries.length > 0)}
@@ -2857,61 +2888,36 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Write diary update</div>
+            <div style={sectionLabel()}>Add update</div>
             <div style={{ marginTop: 8, color: "#0B1F33", fontSize: isCompact ? 20 : 24, fontWeight: 950, lineHeight: 1.12 }}>
-              Picture/video, then a short update.
+              Say what people need to know.
             </div>
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13.5, lineHeight: 1.45 }}>
-              The public side stays simple; evidence and links stay under More options.
-            </div>
+
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>What should people know?</div>
-                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me on WhatsApp to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 112, fontSize: isCompact ? 16 : 15 }} />
+                <div style={sectionLabel()}>Update text</div>
+                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
               </div>
               <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"), padding: isCompact ? 12 : 14 }}>
-                <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
-                <div style={{ marginTop: 7, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                  Add a picture, short video, or both. The public shop will show the strongest media first.
-                </div>
+                <div style={sectionLabel()}>{labelWithIcon("image", "Media")}</div>
                 <input
-                  ref={diaryImageInputRef}
+                  ref={diaryMediaInputRef}
                   type="file"
                   data-gmfn-action-root="true"
-                  data-cta-id="shop-assets.diary.image-file"
-                  accept="image/*"
-                  onChange={(event) => setDiarySelectedImageFile(event.target.files?.[0] || null)}
+                  data-cta-id="shop-assets.diary.media-file"
+                  accept="image/*,video/*,.mp4,.webm,.mov"
+                  onChange={(event) => setDiaryMediaFromFile(event.target.files?.[0] || null)}
                   style={{ display: "none" }}
                 />
-                <input
-                  ref={diaryVideoInputRef}
-                  type="file"
-                  data-gmfn-action-root="true"
-                  data-cta-id="shop-assets.diary.video-file"
-                  accept="video/*,.mp4,.webm,.mov"
-                  onChange={(event) => setDiarySelectedVideoFile(event.target.files?.[0] || null)}
-                  style={{ display: "none" }}
-                />
-                <div style={{ marginTop: 12, ...ownerActionGrid(isCompact) }}>
-                  <StableButton
-                    type="button"
-                    onClick={() => diaryImageInputRef.current?.click()}
-                    fullWidth
-                    stableHeight={isCompact ? 56 : 48}
-                    debugId="shop-assets.diary.pick-picture"
-                  >
-                    {labelWithIcon("image", diarySelectedImageFile || safeStr(diaryImageUrlInput) ? "Picture ready" : "Add picture")}
-                  </StableButton>
-                  <StableButton
-                    type="button"
-                    onClick={() => diaryVideoInputRef.current?.click()}
-                    fullWidth
-                    stableHeight={isCompact ? 56 : 48}
-                    debugId="shop-assets.diary.pick-video"
-                  >
-                    {labelWithIcon("video", diarySelectedVideoFile || safeStr(diaryVideoUrlInput) ? "Video ready" : "Add video")}
-                  </StableButton>
-                </div>
+                <StableButton
+                  type="button"
+                  onClick={() => diaryMediaInputRef.current?.click()}
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.diary.pick-media"
+                >
+                  {labelWithIcon(diarySelectedVideoFile || safeStr(diaryVideoUrlInput) ? "video" : "image", diaryMediaButtonLabel())}
+                </StableButton>
               </div>
               <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
                 <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
