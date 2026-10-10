@@ -95,8 +95,14 @@ assertLineNotContains(
 
 assertContains(
   "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
-  /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
+  /const liveImageUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.image_url[\s\S]*?currentActiveSpotlight\?\.source_product_image_url[\s\S]*?const liveVideoUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.video_url[\s\S]*?currentActiveSpotlight\?\.source_product_video_url[\s\S]*?data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?imageUrl=\{liveImageUrl\}[\s\S]*?videoUrl=\{liveVideoUrl\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
   "Shop Control must own the rich owner-facing live Spotlight frame with media, sound control, public shop preview, publisher access, and take-down."
+);
+
+assertContains(
+  "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /function resolveSpotlightMediaSrc\([\s\S]*?publicApiOrigin\(\)[\s\S]*?imageUrl=\{resolveSpotlightMediaSrc\(spotlightImagePreviewUrl\)\}[\s\S]*?videoUrl=\{resolveSpotlightMediaSrc\(spotlightVideoPreviewUrl\)\}/,
+  "Shop Control Spotlight media must resolve backend /uploads URLs before rendering live and preview frames."
 );
 assertLineNotContains(
   "frontend/src/pages/DashboardPage.tsx",

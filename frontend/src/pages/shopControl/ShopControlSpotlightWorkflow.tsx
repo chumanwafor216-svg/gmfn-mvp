@@ -7,6 +7,7 @@ import {
 } from "../../components/StableButton";
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
+import { publicApiOrigin } from "../../lib/publicLinks";
 import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
 function safeSpotlightText(value: unknown): string {
@@ -26,6 +27,22 @@ function formatSpotlightDate(value: unknown): string {
   const parsed = new Date(raw);
   if (!Number.isFinite(parsed.getTime())) return raw;
   return parsed.toLocaleString();
+}
+
+function resolveSpotlightMediaSrc(value: unknown): string {
+  const raw = safeSpotlightText(value);
+  if (!raw) return "";
+
+  if (
+    /^https?:\/\//i.test(raw) ||
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
+  ) {
+    return raw;
+  }
+
+  const path = raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
+  return `${publicApiOrigin()}${path}`;
 }
 
 function liveSpotlightStatus(item: ShopControlSpotlightBroadcast | null) {
@@ -248,6 +265,18 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
           shopName,
           "Your shop"
         );
+        const liveImageUrl = resolveSpotlightMediaSrc(
+          firstTruthy(
+            currentActiveSpotlight?.image_url,
+            currentActiveSpotlight?.source_product_image_url
+          )
+        );
+        const liveVideoUrl = resolveSpotlightMediaSrc(
+          firstTruthy(
+            currentActiveSpotlight?.video_url,
+            currentActiveSpotlight?.source_product_video_url
+          )
+        );
 
         return (
           <div
@@ -287,9 +316,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 }}
               >
                 <SpotlightMediaFrame
-                  imageUrl={currentActiveSpotlight?.image_url || ""}
-                  videoUrl={currentActiveSpotlight?.video_url || ""}
-                  videoPoster={currentActiveSpotlight?.image_url || ""}
+                  imageUrl={liveImageUrl}
+                  videoUrl={liveVideoUrl}
+                  videoPoster={liveImageUrl}
                   alt={liveTitle}
                   frameStyle={{
                     width: "100%",
@@ -301,10 +330,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   mediaStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
                   contentPadding={0}
                   showVideoControls={false}
-                  autoPlayVideo={Boolean(currentActiveSpotlight?.video_url)}
-                  mutedVideo={Boolean(currentActiveSpotlight?.video_url)}
-                  loopVideo={Boolean(currentActiveSpotlight?.video_url)}
-                  showAudioUnlock={Boolean(currentActiveSpotlight?.video_url)}
+                  autoPlayVideo={Boolean(liveVideoUrl)}
+                  mutedVideo={Boolean(liveVideoUrl)}
+                  loopVideo={Boolean(liveVideoUrl)}
+                  showAudioUnlock={Boolean(liveVideoUrl)}
                   audioUnlockLabel="Sound on"
                   audioUnlockOffLabel="Muted"
                   audioUnlockErrorLabel="Play"
@@ -747,9 +776,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               <div style={{ marginTop: 10 }}>
                 {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
                   <SpotlightMediaFrame
-                    imageUrl={spotlightImagePreviewUrl}
-                    videoUrl={spotlightVideoPreviewUrl}
-                    videoPoster={spotlightImagePreviewUrl}
+                    imageUrl={resolveSpotlightMediaSrc(spotlightImagePreviewUrl)}
+                    videoUrl={resolveSpotlightMediaSrc(spotlightVideoPreviewUrl)}
+                    videoPoster={resolveSpotlightMediaSrc(spotlightImagePreviewUrl)}
                     alt="Draft spotlight preview"
                     frameStyle={{
                       minHeight: isCompact ? 240 : 280,

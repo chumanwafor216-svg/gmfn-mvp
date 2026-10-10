@@ -44,6 +44,8 @@ export type ShopControlSpotlightBroadcast = {
   body?: string | null;
   image_url?: string | null;
   video_url?: string | null;
+  source_product_image_url?: string | null;
+  source_product_video_url?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
   expires_at?: string | null;
