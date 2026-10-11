@@ -2569,8 +2569,16 @@ export default function ShopGalleryPage() {
     ? 0
     : Math.max(0, products.length - gallerySlotsTotal);
 
-  const featuredDiaryEntry = shopDiaryEntries[0] || null;
-  const recentDiaryEntries = featuredDiaryEntry ? shopDiaryEntries.slice(1, 5) : [];
+  const liveShopDiaryEntries = useMemo(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return shopDiaryEntries
+      .filter((entry) => {
+        const timestamp = Date.parse(String(entry.occurred_at || entry.created_at || ""));
+        return Number.isFinite(timestamp) && timestamp >= cutoff;
+      })
+      .slice(0, 1);
+  }, [shopDiaryEntries]);
+  const featuredDiaryEntry = liveShopDiaryEntries[0] || null;
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -5351,9 +5359,9 @@ export default function ShopGalleryPage() {
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: isCompact ? 8 : 12, marginBottom: isCompact ? 10 : 14 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Diary</div>
-              <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>Recent activity recorded by this business.</div>
+              <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>One live business update. It clears after 24 hours.</div>
             </div>
-            <span style={badge(shopDiaryEntries.length > 0)}>{shopDiaryEntries.length > 0 ? `${shopDiaryEntries.length} updates` : "No updates yet"}</span>
+            <span style={badge(Boolean(featuredDiaryEntry))}>{featuredDiaryEntry ? "Live now" : "No live update"}</span>
           </div>
 
           {featuredDiaryEntry ? (
@@ -5388,28 +5396,16 @@ export default function ShopGalleryPage() {
                     {featuredDiaryEntry.product_name ? ` - Related to ${featuredDiaryEntry.product_name}` : ""}
                     {featuredDiaryEntry.protected_trade_code ? ` - Trade Evidence ${featuredDiaryEntry.protected_trade_code}` : ""}
                   </div>
+                  <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, lineHeight: 1.35, fontWeight: 780 }}>Visible for 24 hours on this shop face. Older diary records stay in the owner trail, not here.</div>
                   <div style={{ marginTop: 8, color: "#617085", fontSize: 12, lineHeight: 1.35, fontWeight: 650 }}>{featuredDiaryEntry.evidence_boundary || "The shop owner says this happened. It is not formal Trade Evidence by itself."}</div>
                 </div>
               </article>
-              {recentDiaryEntries.length > 0 ? (
-                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                  {recentDiaryEntries.map((entry) => (
-                    <article key={`public-shop-diary-recent-${entry.id}`} style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                        <strong style={{ color: "#07172C", fontSize: 13.5 }}>{entry.activity_label || "Other update"}</strong>
-                        <span style={badge(entry.evidence_class === "counterparty_confirmed")}>{entry.evidence_label || "Owner update"}</span>
-                      </div>
-                      <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, fontWeight: 700 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` - ${entry.product_name}` : ""}</div>
-                      <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 760, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }}>{entry.note}</div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
+
             </div>
           ) : (
             <div style={{ ...innerCard("#F8FBFF") }}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No diary updates yet.</div>
-              <div style={{ marginTop: 8, ...helperText() }}>This shop has not shared a recent business activity update. Products and services may still be available below.</div>
+              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No live update right now.</div>
+              <div style={{ marginTop: 8, ...helperText() }}>Short shop updates disappear from this public face after 24 hours. Products and services may still be available below.</div>
               {signedInOwnsShop ? (
                 <StableCtaLink
                   to={ownerShopDiaryPath}

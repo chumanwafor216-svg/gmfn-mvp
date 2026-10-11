@@ -44,6 +44,11 @@ assertContains(files.assets, "debugId=\"shop-assets.diary.submit\"", "Owner diar
 assertContains(files.assets, "Add a short update. Add a picture or short video only when it helps.", "Owner copy must keep the diary action simple and separate from product offers.");
 assertContains(files.gallery, "loadPublicShopDiaryRows", "Public Shop must fetch public diary entries from the dedicated diary API instead of relying only on product/shop payloads.");
 assertContains(files.gallery, /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Diary[\s\S]*?public-shop-diary-featured/, "Public Shop diary anchor must belong to the real activity diary with featured frame.");
+assertContains(files.route, "PUBLIC_SHOP_DIARY_LIVE_HOURS = 24", "Public Shop diary entries must expire from the public shop face after 24 hours.");
+assertContains(files.route, ".filter(ShopDiaryEntry.occurred_at >= live_cutoff)", "Public Shop diary API must not replay expired historical entries.");
+assertContains(files.gallery, "liveShopDiaryEntries", "Public Shop must filter the diary shelf to one current live update.");
+assertContains(files.gallery, "One live business update. It clears after 24 hours.", "Public Shop diary copy must explain the live-update behavior instead of sounding like a notice board.");
+assertNotContains(files.gallery, "recentDiaryEntries", "Public Shop diary must not render a recent-updates trail.");
 assertContains(files.gallery, /Products & Services[\s\S]*?visibleProducts\.map/, "Old product blocks must remain as Products & Services below diary.");
 assertContains(files.gallery, "height: isCompact ? 318 : 340", "Featured diary frame must keep the premium phone media-frame target.");
 assertContains(files.gallery, "The shop owner says this happened", "Public diary must preserve owner-assertion boundary language.");

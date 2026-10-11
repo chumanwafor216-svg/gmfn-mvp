@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -49,6 +49,7 @@ EVIDENCE_BOUNDARIES = {
 }
 
 CONFIRMED_TRADE_STATES = {"MUTUALLY_CONFIRMED", "PROVIDER_REPORTED_COMPLETED", "REQUESTER_REPORTED_RECEIVED"}
+PUBLIC_SHOP_DIARY_LIVE_HOURS = 24
 
 
 def _now_utc() -> datetime:
@@ -214,14 +215,16 @@ def list_public_shop_diary_entries(
     shop = q.order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc()).first()
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
+    live_cutoff = _now_utc() - timedelta(hours=PUBLIC_SHOP_DIARY_LIVE_HOURS)
     rows = (
         db.query(ShopDiaryEntry)
         .filter(ShopDiaryEntry.shop_id == int(shop.id))
         .filter(ShopDiaryEntry.is_public.is_(True))
         .filter(ShopDiaryEntry.is_active.is_(True))
         .filter(ShopDiaryEntry.evidence_class != "gsn_insight")
+        .filter(ShopDiaryEntry.occurred_at >= live_cutoff)
         .order_by(ShopDiaryEntry.occurred_at.desc(), ShopDiaryEntry.id.desc())
-        .limit(int(limit))
+        .limit(min(int(limit), 1))
         .all()
     )
     return {"items": [_entry_out(db, row) for row in rows]}

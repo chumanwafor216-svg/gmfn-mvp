@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import text
 
 from app.db.database import engine
@@ -346,6 +348,9 @@ def test_shop_diary_public_list_returns_only_public_active_non_insight_entries(
 ):
     _seed_user(1, gmfn_id="GMFN-DIARY-OWNER")
     _seed_shop(shop_id=101, owner_user_id=1)
+    now = datetime.now(timezone.utc)
+    visible_at = now - timedelta(hours=1)
+    expired_at = now - timedelta(hours=25)
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -355,12 +360,14 @@ def test_shop_diary_public_list_returns_only_public_active_non_insight_entries(
                     occurred_at, is_public, is_active, created_at, updated_at
                 )
                 VALUES
-                    (301, 1, 101, 1, 'work_completed', 'owner_update', 'Visible newest update', '2026-10-08 12:00:00', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                    (302, 1, 101, 1, 'work_completed', 'owner_update', 'Private update', '2026-10-08 13:00:00', 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                    (303, 1, 101, 1, 'work_completed', 'owner_update', 'Inactive update', '2026-10-08 14:00:00', 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                    (304, 1, 101, 1, 'work_completed', 'gsn_insight', 'Hidden insight update', '2026-10-08 15:00:00', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    (301, 1, 101, 1, 'work_completed', 'owner_update', 'Visible current update', :visible_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (302, 1, 101, 1, 'work_completed', 'owner_update', 'Private update', :visible_at, 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (303, 1, 101, 1, 'work_completed', 'owner_update', 'Inactive update', :visible_at, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (304, 1, 101, 1, 'work_completed', 'gsn_insight', 'Hidden insight update', :visible_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (305, 1, 101, 1, 'work_completed', 'owner_update', 'Expired public update', :expired_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
-            )
+            ),
+            {"visible_at": visible_at, "expired_at": expired_at},
         )
 
     res = client.get("/shop-diaries/public/GMFN-DIARY-OWNER")
@@ -368,7 +375,7 @@ def test_shop_diary_public_list_returns_only_public_active_non_insight_entries(
     assert res.status_code == 200, res.text
     items = res.json()["items"]
     assert [item["id"] for item in items] == [301]
-    assert items[0]["note"] == "Visible newest update"
+    assert items[0]["note"] == "Visible current update"
     assert items[0]["evidence_class"] == "owner_update"
 
 

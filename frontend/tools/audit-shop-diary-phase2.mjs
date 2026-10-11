@@ -66,9 +66,9 @@ assertContains(files.control, "SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY", "Shop 
 assertContains(files.control, "Diary update loaded. Review it before publishing Spotlight.", "Spotlight handoff must stop at owner review instead of auto-publishing.");
 assertNotContains(files.control, "source_diary_entry_id", "Phase 2 must not force a risky frozen Spotlight model migration.");
 
-assertContains(files.gallery, "featuredDiaryEntry = shopDiaryEntries[0] || null", "Public Shop must keep latest visible diary entry as the featured entry.");
+assertContains(files.gallery, "featuredDiaryEntry = liveShopDiaryEntries[0] || null", "Public Shop must keep one current live diary update as the featured entry.");
 assertNotContains(files.gallery, /promot/i, "Public Shop diary ranking/presentation must not imply promoted means confirmed or featured.");
-assertContains(files.gallery, "entry.evidence_label", "Public Shop diary must keep subtle evidence labels.");
+assertContains(files.gallery, "featuredDiaryEntry.evidence_label", "Public Shop diary must keep subtle evidence labels.");
 assertContains(files.gallery, "evidence_boundary", "Public Shop diary must keep evidence boundary text.");
 
 if (findings.length) {
