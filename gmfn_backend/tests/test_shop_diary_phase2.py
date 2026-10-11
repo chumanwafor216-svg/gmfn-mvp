@@ -124,13 +124,22 @@ def test_shop_diary_owner_can_create_entry_for_own_shop(
 ):
     _seed_shop(shop_id=101, owner_user_id=1)
 
-    res = client.post("/shop-diaries", json=_diary_payload(evidence_class="owner_update"))
+    res = client.post(
+        "/shop-diaries",
+        json=_diary_payload(
+            evidence_class="owner_update",
+            image_url="https://example.test/diary.jpg",
+            video_url="https://example.test/diary.mp4",
+        ),
+    )
 
     assert res.status_code == 201, res.text
     body = res.json()
     assert body["shop_id"] == 101
     assert body["owner_user_id"] == 1
     assert body["evidence_class"] == "owner_update"
+    assert body["image_url"] is None
+    assert body["video_url"] is None
     assert body["protected_trade_id"] is None
 
 

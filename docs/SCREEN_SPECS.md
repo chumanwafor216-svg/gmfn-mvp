@@ -1143,8 +1143,8 @@ Shop Diary status:
 CLOSED/FROZEN as of 2026-10-08 after final Shop Diary verification gate.
 
 Shop Diary contract:
-- Shop Control owns owner-side Shop Diary creation, latest activity, safe same-shop confirmed Trade Evidence selection, and the optional `Promote this update` handoff to the canonical Spotlight publisher.
-- Public Shop owns visitor-facing Shop Diary presentation: one current live diary update only, automatically cleared from the public shop face after 24 hours, then distinct Products & Services. Historical diary/audit records remain preserved in owner/evidence trails, not replayed on the public shop face.
+- Shop Control owns owner-side Shop Diary creation as short text updates, latest activity, safe same-shop confirmed Trade Evidence selection, and the optional `Promote this update` handoff to the canonical Spotlight publisher. Diary pictures/videos are disabled for now; product media belongs in Products & Services until a governed preset media workflow exists.
+- Public Shop owns visitor-facing Shop Update presentation: one current live text message only, automatically cleared from the public shop face after 24 hours, then distinct Products & Services. Historical diary/audit records remain preserved in owner/evidence trails, not replayed on the public shop face.
 - Diary entries are chronological shop activity history, not products/services, paid placement, Spotlight ranking, TrustSlip proof, analytics inference, or formal transaction workflow.
 - Ordinary owner-created entries default to `Owner update`; owner-requested `system_recorded` must not self-assert system truth; stronger confirmation requires a same-shop confirmed Protected Trade.
 - Unscoped, cross-shop, unauthorized, unconfirmed, malformed, and missing evidence links must fail server-side, not only in the frontend.

@@ -1,3 +1,10 @@
+## 2026-10-11 - Public Shop Update visitor-copy and text-only correction (local)
+- Status: Implemented locally after owner phone review showed Public Shop Diary still sounded like an internal notice/evidence board.
+- Public Shop change: visitor section now reads `Shop Update` / `Latest message from this shop.`, shows only the live message, date, and optional product relation, and removes media, owner/evidence labels, expiry-mechanics copy, owner-trail copy, and Trade Evidence boundary paragraphs from the customer-facing card.
+- Owner Shop Control change: Shop Diary creation is now a short text-message action only. Picture/video picker and pasted diary media URLs were removed; product media remains in Products & Services.
+- Backend boundary: `/shop-diaries` now stores new diary rows with `image_url=None` and `video_url=None` even if an older cached frontend sends media fields.
+- Audit guard updated: Shop Diary phase audits now require text-only diary creation and visitor-facing public copy.
+- Deployment note: this needs frontend and backend deploy for old media-capable clients and old visitor copy to disappear in production.
 ## 2026-10-11 - Public Shop Diary live-update expiry correction (local)
 - Status: Implemented locally after owner clarified Public Shop Diary must not behave like a notification board/history feed.
 - Runtime behavior: Public Shop shows only one current live Shop Diary update and hides it after 24 hours. Older diary rows remain preserved in owner/evidence trails, not replayed on the public shop face.

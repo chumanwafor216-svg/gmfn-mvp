@@ -68,8 +68,8 @@ assertNotContains(files.control, "source_diary_entry_id", "Phase 2 must not forc
 
 assertContains(files.gallery, "featuredDiaryEntry = liveShopDiaryEntries[0] || null", "Public Shop must keep one current live diary update as the featured entry.");
 assertNotContains(files.gallery, /promot/i, "Public Shop diary ranking/presentation must not imply promoted means confirmed or featured.");
-assertContains(files.gallery, "featuredDiaryEntry.evidence_label", "Public Shop diary must keep subtle evidence labels.");
-assertContains(files.gallery, "evidence_boundary", "Public Shop diary must keep evidence boundary text.");
+assertNotContains(files.gallery, "featuredDiaryEntry.evidence_label", "Public Shop diary must not expose owner/evidence labels in visitor copy.");
+assertNotContains(files.gallery, "evidence_boundary ||", "Public Shop diary must not expose evidence boundary paragraphs in visitor copy.");
 
 if (findings.length) {
   console.error("Shop Diary Phase 2 audit failed:");

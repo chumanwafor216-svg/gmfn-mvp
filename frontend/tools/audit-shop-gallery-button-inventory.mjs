@@ -38,7 +38,7 @@ const expectedPageSourceActions = {
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 1;
-const expectedMediaFrameInvocations = 3;
+const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
 const expectedSocialTagActionTemplates = 2;
 const expectedWholeRouteActionFamilies =
@@ -471,7 +471,7 @@ assertContains(
 );
 
 assertContains(
-  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Diary[\s\S]*?public-shop-diary-featured/,
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Update[\s\S]*?public-shop-diary-featured/,
   "Public Shop Diary section must keep a dedicated activity-story anchor and premium framing."
 );
 

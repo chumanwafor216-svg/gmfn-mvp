@@ -5358,46 +5358,24 @@ export default function ShopGalleryPage() {
         >
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: isCompact ? 8 : 12, marginBottom: isCompact ? 10 : 14 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Diary</div>
-              <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>One live business update. It clears after 24 hours.</div>
+              <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Update</div>
+              <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>Latest message from this shop.</div>
             </div>
             <span style={badge(Boolean(featuredDiaryEntry))}>{featuredDiaryEntry ? "Live now" : "No live update"}</span>
           </div>
 
           {featuredDiaryEntry ? (
             <div style={{ display: "grid", gap: 12 }}>
-              <article className="public-shop-diary-featured" style={{ borderRadius: isCompact ? 20 : 24, overflow: "hidden", border: "1px solid rgba(184,137,45,0.42)", background: "linear-gradient(180deg, #0B1F33 0%, #061827 100%)", boxShadow: "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)" }}>
-                <SpotlightMediaFrame
-                  imageUrl={featuredDiaryEntry.image_url || ""}
-                  videoUrl={featuredDiaryEntry.video_url || ""}
-                  videoPoster={featuredDiaryEntry.image_url || ""}
-                  alt={featuredDiaryEntry.activity_label || "Shop diary update"}
-                  frameStyle={{ width: "100%", height: isCompact ? 318 : 340, minHeight: isCompact ? 318 : 340, borderRadius: isCompact ? 20 : 24, background: "transparent" }}
-                  mediaStyle={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
-                  contentPadding={0}
-                  showVideoControls={Boolean(featuredDiaryEntry.video_url)}
-                  autoPlayVideo={Boolean(featuredDiaryEntry.video_url)}
-                  mutedVideo={true}
-                  loopVideo={Boolean(featuredDiaryEntry.video_url)}
-                  showAudioUnlock={Boolean(featuredDiaryEntry.video_url)}
-                  audioUnlockLabel="Sound on"
-                  audioUnlockOffLabel="Muted"
-                  audioUnlockErrorLabel="Play"
-                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                />
+              <article className="public-shop-diary-featured" style={{ borderRadius: isCompact ? 20 : 24, overflow: "hidden", border: "1px solid rgba(184,137,45,0.42)", background: "#FFFFFF", boxShadow: "0 18px 36px rgba(6,24,39,0.12)" }}>
                 <div style={{ padding: isCompact ? "12px 12px 14px" : "15px 16px 17px", background: "#FFFFFF" }}>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span style={badge(true)}>{featuredDiaryEntry.activity_label || "Other update"}</span>
-                    <span style={badge(featuredDiaryEntry.evidence_class === "counterparty_confirmed")}>{featuredDiaryEntry.evidence_label || "Owner update"}</span>
                   </div>
                   <div style={{ marginTop: 8, color: "#07172C", fontSize: isCompact ? 19 : 22, fontWeight: 950, lineHeight: 1.12 }}>{featuredDiaryEntry.note}</div>
                   <div style={{ marginTop: 8, color: "#526C84", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 700, lineHeight: 1.35 }}>
                     {new Date(featuredDiaryEntry.occurred_at || featuredDiaryEntry.created_at || Date.now()).toLocaleDateString()}
                     {featuredDiaryEntry.product_name ? ` - Related to ${featuredDiaryEntry.product_name}` : ""}
-                    {featuredDiaryEntry.protected_trade_code ? ` - Trade Evidence ${featuredDiaryEntry.protected_trade_code}` : ""}
                   </div>
-                  <div style={{ marginTop: 6, color: "#526C84", fontSize: 12, lineHeight: 1.35, fontWeight: 780 }}>Visible for 24 hours on this shop face. Older diary records stay in the owner trail, not here.</div>
-                  <div style={{ marginTop: 8, color: "#617085", fontSize: 12, lineHeight: 1.35, fontWeight: 650 }}>{featuredDiaryEntry.evidence_boundary || "The shop owner says this happened. It is not formal Trade Evidence by itself."}</div>
                 </div>
               </article>
 
@@ -5405,7 +5383,7 @@ export default function ShopGalleryPage() {
           ) : (
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No live update right now.</div>
-              <div style={{ marginTop: 8, ...helperText() }}>Short shop updates disappear from this public face after 24 hours. Products and services may still be available below.</div>
+              <div style={{ marginTop: 8, ...helperText() }}>Browse the products and services below, or contact the owner to ask what is available today.</div>
               {signedInOwnsShop ? (
                 <StableCtaLink
                   to={ownerShopDiaryPath}

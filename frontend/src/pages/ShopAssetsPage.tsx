@@ -1058,13 +1058,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     new Date().toISOString().slice(0, 10)
   );
   const [diaryNote, setDiaryNote] = useState("");
-  const [diaryImageUrlInput, setDiaryImageUrlInput] = useState("");
-  const [diaryVideoUrlInput, setDiaryVideoUrlInput] = useState("");
-  const [diarySelectedImageFile, setDiarySelectedImageFile] =
-    useState<File | null>(null);
-  const [diarySelectedVideoFile, setDiarySelectedVideoFile] =
-    useState<File | null>(null);
-  const diaryMediaInputRef = useRef<HTMLInputElement | null>(null);
   const [diaryLinkedProductId, setDiaryLinkedProductId] = useState("");
   const [diaryLinkedTradeId, setDiaryLinkedTradeId] = useState("");
   const [diaryTradeOptions, setDiaryTradeOptions] = useState<ProtectedTradeRecord[]>([]);
@@ -1538,45 +1531,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setDiaryActivityType("other_update");
     setDiaryOccurredAt(new Date().toISOString().slice(0, 10));
     setDiaryNote("");
-    setDiaryImageUrlInput("");
-    setDiaryVideoUrlInput("");
-    setDiarySelectedImageFile(null);
-    setDiarySelectedVideoFile(null);
-    if (diaryMediaInputRef.current) diaryMediaInputRef.current.value = "";
     setDiaryLinkedProductId("");
     setDiaryLinkedTradeId("");
   }
 
-  function setDiaryMediaFromFile(file: File | null) {
-    setDiaryNotice(null);
-    if (!file) {
-      setDiarySelectedImageFile(null);
-      setDiarySelectedVideoFile(null);
-      return;
-    }
-
-    const fileName = firstTruthy(file.name, "Selected media");
-    const fileType = safeStr(file.type).toLowerCase();
-    const looksLikeVideo =
-      fileType.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(fileName);
-
-    if (looksLikeVideo) {
-      setDiarySelectedVideoFile(file);
-      setDiarySelectedImageFile(null);
-      setDiaryNotice({ tone: "success", text: `${fileName} is ready. Add the update text, then publish.` });
-      return;
-    }
-
-    setDiarySelectedImageFile(file);
-    setDiarySelectedVideoFile(null);
-    setDiaryNotice({ tone: "success", text: `${fileName} is ready. Add the update text, then publish.` });
-  }
-
-  function diaryMediaButtonLabel() {
-    if (diarySelectedVideoFile || safeStr(diaryVideoUrlInput)) return "Video ready";
-    if (diarySelectedImageFile || safeStr(diaryImageUrlInput)) return "Picture ready";
-    return "Add picture/video";
-  }
 
   async function submitDiaryEntry() {
     if (shopDiaryFeatureOff) {
@@ -1595,16 +1553,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setSavingDiaryEntry(true);
     setDiaryNotice(null);
     try {
-      let nextImageUrl = safeStr(diaryImageUrlInput) || null;
-      let nextVideoUrl = safeStr(diaryVideoUrlInput) || null;
       const diaryClanId = Number(shop?.clan_id || selectedClanId || 0) || null;
-      if (diarySelectedImageFile) {
-        nextImageUrl = await uploadMarketplaceImageFile(diarySelectedImageFile, diaryClanId);
-      }
-      if (diarySelectedVideoFile) {
-        nextVideoUrl = await uploadMarketplaceVideoFile(diarySelectedVideoFile, null, diaryClanId);
-        if (!nextImageUrl) nextImageUrl = nextVideoUrl;
-      }
       const occurred = safeStr(diaryOccurredAt)
         ? new Date(`${diaryOccurredAt}T12:00:00`).toISOString()
         : new Date().toISOString();
@@ -1614,8 +1563,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         activity_type: diaryActivityType,
         note: safeStr(diaryNote),
         occurred_at: occurred,
-        image_url: nextImageUrl,
-        video_url: nextVideoUrl,
+        image_url: null,
+        video_url: null,
         product_id: Number(diaryLinkedProductId || 0) || null,
         protected_trade_id: selectedDiaryTrade ? Number(selectedDiaryTrade.id || 0) : null,
         evidence_class: selectedDiaryTrade ? "counterparty_confirmed" : "owner_update",
@@ -1624,7 +1573,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       const diaryRes = await getMyShopDiaryEntries({ shop_id: Number(shop.id), limit: 30 }).catch(() => ({ items: [] }));
       setDiaryEntries(Array.isArray(diaryRes?.items) ? diaryRes.items : []);
       resetDiaryForm();
-      setDiaryNotice({ tone: "success", text: "Diary update added. Public Shop can now show it as business activity." });
+      setDiaryNotice({ tone: "success", text: "Shop update published. Visitors can see the message while it is live." });
     } catch (err: any) {
       setDiaryNotice({ tone: "error", text: shopAssetsRequestErrorMessage(err) });
     } finally {
@@ -2862,7 +2811,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <div>
             <div style={sectionLabel()}>{labelWithIcon("document", "Shop Diary")}</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Add a short update. Add a picture or short video only when it helps.
+              Add one short message for visitors. Pictures and videos belong in Products & Services.
             </div>
           </div>
           {iconBadge("document", <>{diaryEntries.length} updates</>, diaryEntries.length > 0)}
@@ -2898,27 +2847,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <div style={sectionLabel()}>Update text</div>
                 <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
               </div>
-              <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"), padding: isCompact ? 12 : 14 }}>
-                <div style={sectionLabel()}>{labelWithIcon("image", "Media")}</div>
-                <input
-                  ref={diaryMediaInputRef}
-                  type="file"
-                  data-gmfn-action-root="true"
-                  data-cta-id="shop-assets.diary.media-file"
-                  accept="image/*,video/*,.mp4,.webm,.mov"
-                  onChange={(event) => setDiaryMediaFromFile(event.target.files?.[0] || null)}
-                  style={{ display: "none" }}
-                />
-                <StableButton
-                  type="button"
-                  onClick={() => diaryMediaInputRef.current?.click()}
-                  fullWidth
-                  stableHeight={isCompact ? 56 : 48}
-                  debugId="shop-assets.diary.pick-media"
-                >
-                  {labelWithIcon(diarySelectedVideoFile || safeStr(diaryVideoUrlInput) ? "video" : "image", diaryMediaButtonLabel())}
-                </StableButton>
-              </div>
               <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
                 <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
                   More options
@@ -2935,10 +2863,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       <div style={sectionLabel()}>When?</div>
                       <input type="date" value={diaryOccurredAt} onChange={(event) => setDiaryOccurredAt(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }} />
                     </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
-                    <input value={diaryImageUrlInput} onChange={(event) => setDiaryImageUrlInput(event.target.value)} placeholder="Paste photo URL" style={inputStyle()} />
-                    <input value={diaryVideoUrlInput} onChange={(event) => setDiaryVideoUrlInput(event.target.value)} placeholder="Paste video URL" style={inputStyle()} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
                     <div>
