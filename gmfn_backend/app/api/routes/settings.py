@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, User, UserSettings
+from app.services.spotlight_member_interest_service import (
+    parse_spotlight_interests,
+    serialize_spotlight_interests,
+)
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -33,6 +37,7 @@ DEFAULT_SETTINGS = {
     "soundEnabled": False,
     "unreadFirst": True,
     "openActionsDirectly": True,
+    "spotlightInterests": [],
 }
 
 
@@ -63,6 +68,7 @@ class SettingsPatchIn(BaseModel):
     soundEnabled: Optional[bool] = None
     unreadFirst: Optional[bool] = None
     openActionsDirectly: Optional[bool] = None
+    spotlightInterests: Optional[list[str]] = None
 
 
 def _get_or_create_settings(db: Session, user: User) -> UserSettings:
@@ -130,6 +136,7 @@ def _row_to_payload(row: UserSettings) -> dict:
         "soundEnabled": bool(row.sound_enabled),
         "unreadFirst": bool(row.unread_first),
         "openActionsDirectly": bool(row.open_actions_directly),
+        "spotlightInterests": list(parse_spotlight_interests(row.spotlight_interests_json)),
     }
 
 
@@ -153,6 +160,7 @@ def _apply_defaults(row: UserSettings) -> UserSettings:
     row.sound_enabled = False
     row.unread_first = True
     row.open_actions_directly = True
+    row.spotlight_interests_json = serialize_spotlight_interests([])
     return row
 
 
@@ -234,6 +242,12 @@ def update_my_settings(
 
     if "openActionsDirectly" in data:
         row.open_actions_directly = bool(data["openActionsDirectly"])
+
+    if "spotlightInterests" in data:
+        try:
+            row.spotlight_interests_json = serialize_spotlight_interests(data["spotlightInterests"] or [])
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     db.add(row)
     db.commit()

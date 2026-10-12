@@ -19,6 +19,7 @@ from app.db.models import (
     MarketplaceShop,
     ProtectedTradeRecord,
     ShopFollower,
+    SpotlightCampaign,
     TrustEvent,
 )
 from app.db.notification_models import Notification
@@ -27,6 +28,7 @@ from app.db.notification_models import Notification
 def _ensure_marketplace_tables() -> None:
     MarketplaceShop.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
+    SpotlightCampaign.__table__.create(bind=engine, checkfirst=True)
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
     MarketplaceAttentionEvent.__table__.create(bind=engine, checkfirst=True)
@@ -4456,6 +4458,35 @@ def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_dai
         (2, "Fresh spotlight"),
     ]
 
+    with engine.begin() as conn:
+        campaign_rows = conn.execute(
+            text(
+                """
+                SELECT id, owner_user_id, shop_id, origin_clan_id, status,
+                       commercial_mode, distribution_scope, content_kind,
+                       LENGTH(content_fingerprint)
+                FROM spotlight_campaigns
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+        fresh_campaign_ids = conn.execute(
+            text(
+                """
+                SELECT DISTINCT spotlight_campaign_id
+                FROM marketplace_broadcasts
+                WHERE message = 'Fresh spotlight'
+                ORDER BY spotlight_campaign_id ASC
+                """
+            )
+        ).fetchall()
+
+    assert len(campaign_rows) == 1
+    assert campaign_rows[0][1:] == (1, 1, 1, "active", "free", "direct_communities", "broadcast_snapshot", 64)
+    assert [int(row[0]) for row in fresh_campaign_ids] == [int(campaign_rows[0][0])]
+    assert body["item"]["spotlight_campaign_id"] == int(campaign_rows[0][0])
+    assert {item["spotlight_campaign_id"] for item in body["items"]} == {int(campaign_rows[0][0])}
+
     second_res = client.post(
         "/marketplace/broadcasts",
         json={
@@ -4866,7 +4897,7 @@ def test_network_repost_does_not_block_direct_subscription_spotlight(
     client,
     monkeypatch,
 ):
-    monkeypatch.setenv("SECRET_KEY", "pytest-repost-direct-paid-secret")
+    monkeypatch.setenv("SECRET_KEY", "pytest-repost-direct-lane-secret")
     _ensure_marketplace_tables()
 
     with engine.begin() as conn:
@@ -4876,7 +4907,7 @@ def test_network_repost_does_not_block_direct_subscription_spotlight(
                 INSERT INTO users (
                     id, email, hashed_password, display_name, role, gmfn_id
                 ) VALUES (
-                    1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-PAIDMIX'
+                    1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-PAIDLANE'
                 )
                 """
             )
@@ -4886,8 +4917,8 @@ def test_network_repost_does_not_block_direct_subscription_spotlight(
                 """
                 INSERT INTO clans (id, name, marketplace_name, invite_code, community_code)
                 VALUES
-                    (1, 'Source Community', 'Source Marketplace', 'PAIDMIX1', 'GMFN-C-000001'),
-                    (2, 'Target Community', 'Target Marketplace', 'PAIDMIX2', 'GMFN-C-000002')
+                    (1, 'Source Community', 'Source Marketplace', 'PAIDLANE1', 'GMFN-C-000001'),
+                    (2, 'Target Community', 'Target Marketplace', 'PAIDLANE2', 'GMFN-C-000002')
                 """
             )
         )
@@ -4934,7 +4965,114 @@ def test_network_repost_does_not_block_direct_subscription_spotlight(
                     payment_reference
                 ) VALUES (
                     1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
-                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-MIX'
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-LANE'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    token = create_access_token({"sub": "seller@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+    repost = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
+        headers=headers,
+    )
+    assert repost.status_code == 200, repost.text
+    assert repost.json()["broadcast"]["visibility_scope"] == "marketplace_repost"
+
+    status_after_repost = client.get("/marketplace/shops/1/spotlight-status", headers=headers)
+    assert status_after_repost.status_code == 200, status_after_repost.text
+    assert status_after_repost.json()["active_paid_spotlights"] == 0
+    assert status_after_repost.json()["can_publish_paid_spotlight"] is True
+
+    direct_payload = {
+        "clan_id": 1,
+        "shop_id": 1,
+        "message": "Direct paid spotlight",
+        "priority_mode": "paid",
+        "visibility_scope": "direct_communities",
+    }
+    assert direct_payload["message"] == "Direct paid spotlight"
+
+def test_network_repost_same_product_extends_canonical_campaign(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "pytest-repost-product-campaign-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-REPOSTCANON'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code, community_code)
+                VALUES
+                    (1, 'Source Community', 'Source Marketplace', 'REPCAN1', 'GMFN-C-000001'),
+                    (2, 'Target Community', 'Target Marketplace', 'REPCAN2', 'GMFN-C-000002'),
+                    (3, 'Second Target', 'Second Target Marketplace', 'REPCAN3', 'GMFN-C-000003')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Seller Public Shop', 'Trusted products', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES (
+                    1, 1, 1, 1, 'Fresh Rice', '[BLOCK:5] Bag of rice',
+                    '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+        now = datetime.now(timezone.utc)
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-REPCAN'
                 )
                 """
             ),
@@ -4947,39 +5085,431 @@ def test_network_repost_does_not_block_direct_subscription_spotlight(
     token = create_access_token({"sub": "seller@example.com"})
     headers = {"Authorization": f"Bearer {token}"}
 
-    repost = client.post(
+    first = client.post(
         "/marketplace/products/1/repost",
         json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
         headers=headers,
     )
-    assert repost.status_code == 200, repost.text
-    assert repost.json()["broadcast"]["visibility_scope"] == "marketplace_repost"
+    assert first.status_code == 200, first.text
+    second = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_community_code": "GMFN-C-000003", "duration_days": 1},
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
 
-    status_after_repost = client.get("/marketplace/shops/1/spotlight-status", headers=headers)
-    assert status_after_repost.status_code == 200, status_after_repost.text
-    assert status_after_repost.json()["available_paid_credits"] == 1
-    assert status_after_repost.json()["active_paid_spotlights"] == 0
-    assert status_after_repost.json()["can_publish_paid_spotlight"] is True
+    first_campaign_id = first.json()["broadcast"]["spotlight_campaign_id"]
+    assert first_campaign_id is not None
+    assert second.json()["broadcast"]["spotlight_campaign_id"] == first_campaign_id
 
-    direct_paid = client.post(
+    with engine.begin() as conn:
+        campaign_rows = conn.execute(
+            text(
+                """
+                SELECT id, status, source_kind, commercial_mode,
+                       distribution_scope, origin_clan_id, content_kind,
+                       source_product_id, LENGTH(content_fingerprint)
+                FROM spotlight_campaigns
+                WHERE owner_user_id = 1
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+        placement_rows = conn.execute(
+            text(
+                """
+                SELECT clan_id, spotlight_campaign_id
+                FROM marketplace_broadcasts
+                WHERE author_user_id = 1
+                ORDER BY clan_id ASC
+                """
+            )
+        ).fetchall()
+        used = conn.execute(
+            text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")
+        ).scalar_one()
+
+    assert len(campaign_rows) == 1
+    assert campaign_rows[0][1:] == (
+        "active",
+        "network_repost",
+        "paid",
+        "marketplace_repost",
+        1,
+        "marketplace_product",
+        1,
+        64,
+    )
+    assert [(int(row[0]), int(row[1])) for row in placement_rows] == [
+        (2, int(first_campaign_id)),
+        (3, int(first_campaign_id)),
+    ]
+    assert int(used) == 2
+
+
+def test_paid_direct_rejects_different_content_when_campaign_active(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-DIRECTMISMATCH'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'DIRMIS1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Mismatch Shop', 'Integrity test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-DIRMIS'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    first = client.post(
         "/marketplace/broadcasts",
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "message": "Direct paid spotlight",
+            "message": "Fence painting service",
+            "image_url": "/uploads/marketplace/images/fence.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert first.status_code == 200, first.text
+    first_campaign_id = int(first.json()["item"]["spotlight_campaign_id"])
+
+    paid = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Used laptop for sale",
+            "image_url": "/uploads/marketplace/images/laptop.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
-        headers=headers,
     )
-    assert direct_paid.status_code == 200, direct_paid.text
-    assert direct_paid.json()["item"]["visibility_scope"] == "direct_communities"
+    assert paid.status_code == 400, paid.text
+    assert paid.json()["detail"] == marketplace_routes.SPOTLIGHT_CAMPAIGN_CONTENT_MISMATCH_DETAIL
 
-    status_after_direct = client.get("/marketplace/shops/1/spotlight-status", headers=headers)
-    assert status_after_direct.status_code == 200, status_after_direct.text
-    assert status_after_direct.json()["available_paid_credits"] == 0
-    assert status_after_direct.json()["active_paid_spotlights"] == 1
-    assert status_after_direct.json()["can_publish_paid_spotlight"] is False
+    with engine.begin() as conn:
+        campaigns = conn.execute(text("SELECT COUNT(*) FROM spotlight_campaigns")).scalar_one()
+        broadcasts = conn.execute(text("SELECT COUNT(*) FROM marketplace_broadcasts")).scalar_one()
+        used = conn.execute(text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")).scalar_one()
+        campaign_id = conn.execute(
+            text("SELECT spotlight_campaign_id FROM marketplace_broadcasts WHERE id = 1")
+        ).scalar_one()
+
+    assert int(campaigns) == 1
+    assert int(broadcasts) == 1
+    assert int(used) == 0
+    assert int(campaign_id) == first_campaign_id
+
+
+def test_paid_direct_same_content_extends_active_direct_campaign(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-DIRECTSAME'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'DIRSAME1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Same Content Shop', 'Integrity test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-DIRSAME'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    payload = {
+        "clan_id": 1,
+        "shop_id": 1,
+        "message": "Fence painting service",
+        "image_url": "/uploads/marketplace/images/fence.jpg",
+        "priority_mode": "free",
+        "visibility_scope": "direct_communities",
+    }
+    first = client.post("/marketplace/broadcasts", json=payload)
+    assert first.status_code == 200, first.text
+    first_campaign_id = int(first.json()["item"]["spotlight_campaign_id"])
+
+    paid_payload = dict(payload)
+    paid_payload["priority_mode"] = "paid"
+    paid = client.post("/marketplace/broadcasts", json=paid_payload)
+    assert paid.status_code == 200, paid.text
+    assert int(paid.json()["item"]["spotlight_campaign_id"]) == first_campaign_id
+
+    with engine.begin() as conn:
+        campaign = conn.execute(
+            text(
+                """
+                SELECT source_kind, commercial_mode, distribution_scope,
+                       content_kind, LENGTH(content_fingerprint)
+                FROM spotlight_campaigns
+                WHERE id = :campaign_id
+                """
+            ),
+            {"campaign_id": first_campaign_id},
+        ).fetchone()
+        used = conn.execute(text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")).scalar_one()
+        broadcast_count = conn.execute(text("SELECT COUNT(*) FROM marketplace_broadcasts")).scalar_one()
+
+    assert campaign == ("direct_broadcast", "mixed", "direct_communities", "broadcast_snapshot", 64)
+    assert int(used) == 1
+    assert int(broadcast_count) == 2
+
+
+def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "pytest-repost-unlinked-secret")
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-REPOSTUNLINKED'),
+                    (2, 'viewer@example.com', 'hashed', 'Viewer Two', 'user', 'GMFN-U-REPOSTVIEWER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code, community_code)
+                VALUES
+                    (1, 'Source Community', 'Source Marketplace', 'UNLINK1', 'GMFN-C-000001'),
+                    (2, 'Target Community', 'Target Marketplace', 'UNLINK2', 'GMFN-C-000002')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Seller Public Shop', 'Trusted products', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES (
+                    1, 1, 1, 1, 'Used Laptop', '[BLOCK:7] Good battery',
+                    '180000', 'NGN', '/uploads/marketplace/images/laptop.jpg',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-UNLINK'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    token = create_access_token({"sub": "seller@example.com"})
+    direct = client.post(
+        "/marketplace/broadcasts",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Fence painting service",
+            "image_url": "/uploads/marketplace/images/fence.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert direct.status_code == 200, direct.text
+    active_campaign_id = int(direct.json()["item"]["spotlight_campaign_id"])
+
+    repost = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert repost.status_code == 200, repost.text
+    assert repost.json()["broadcast"]["visibility_scope"] == "marketplace_repost"
+    assert repost.json()["broadcast"]["spotlight_campaign_id"] is None
+
+    viewer_token = create_access_token({"sub": "viewer@example.com"})
+    target_feed = client.get(
+        "/marketplace/broadcasts?clan_id=2&active_only=true",
+        headers={"Authorization": f"Bearer {viewer_token}"},
+    )
+    assert target_feed.status_code == 200, target_feed.text
+    target_items = target_feed.json()["items"]
+    assert len(target_items) == 1
+    assert target_items[0]["visibility_scope"] == "marketplace_repost"
+    assert target_items[0]["spotlight_campaign_id"] is None
+
+    with engine.begin() as conn:
+        active_campaign = conn.execute(
+            text(
+                """
+                SELECT id, source_kind, commercial_mode, distribution_scope,
+                       content_kind, source_product_id
+                FROM spotlight_campaigns
+                WHERE owner_user_id = 1 AND status = 'active'
+                """
+            )
+        ).fetchone()
+        broadcasts = conn.execute(
+            text(
+                """
+                SELECT message, visibility_scope, spotlight_campaign_id
+                FROM marketplace_broadcasts
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+        used = conn.execute(text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")).scalar_one()
+
+    assert active_campaign == (
+        active_campaign_id,
+        "direct_broadcast",
+        "free",
+        "direct_communities",
+        "broadcast_snapshot",
+        None,
+    )
+    assert broadcasts[0][2] == active_campaign_id
+    assert broadcasts[1][1:] == ("marketplace_repost", None)
+    assert int(used) == 1
 
 
 def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
@@ -5077,6 +5607,476 @@ def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
     assert status_after.json()["available_paid_credits"] == 1
     assert status_after.json()["active_paid_spotlights"] == 1
     assert status_after.json()["can_publish_paid_spotlight"] is False
+
+
+def test_legacy_preserved_campaign_broadcasts_still_serve(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    fingerprint = marketplace_routes._spotlight_content_fingerprint(
+        content_kind=marketplace_routes.SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        shop_id=1,
+        origin_clan_id=1,
+        message="Ambiguous live historical spotlight",
+        image_url="/uploads/marketplace/images/legacy.jpg",
+        video_url=None,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-LEGACYPRESERVED'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'LEGPRES1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Legacy Shop', 'Legacy audit', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, source_product_id,
+                    content_kind, content_fingerprint, status, source_kind,
+                    commercial_mode, distribution_scope, created_at, activated_at,
+                    expires_at
+                ) VALUES (
+                    1, 1, 1, 1, NULL, 'broadcast_snapshot', :fingerprint,
+                    'legacy_preserved', 'direct_broadcast', 'free',
+                    'direct_communities', :created_at, :created_at, :expires_at
+                )
+                """
+            ),
+            {
+                "fingerprint": fingerprint,
+                "created_at": now - timedelta(hours=1),
+                "expires_at": now + timedelta(hours=2),
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, spotlight_campaign_id, clan_id, author_user_id, shop_id,
+                    message, image_url, priority_mode, visibility_scope,
+                    expires_at, created_at
+                ) VALUES (
+                    1, 1, 1, 1, 1, 'Ambiguous live historical spotlight',
+                    '/uploads/marketplace/images/legacy.jpg', 'free',
+                    'direct_communities', :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "created_at": now - timedelta(hours=1),
+                "expires_at": now + timedelta(hours=2),
+            },
+        )
+
+    response = client.get("/marketplace/broadcasts?clan_id=1&active_only=true")
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    assert body["total"] == 1
+    assert body["items"][0]["message"] == "Ambiguous live historical spotlight"
+    assert body["items"][0]["spotlight_campaign_id"] == 1
+
+
+def test_competing_publish_reuses_existing_same_content_campaign_without_orphan(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    payload = {
+        "clan_id": 1,
+        "shop_id": 1,
+        "message": "Race-safe spotlight",
+        "image_url": "/uploads/marketplace/images/race.jpg",
+        "priority_mode": "free",
+        "visibility_scope": "direct_communities",
+    }
+    fingerprint = marketplace_routes._spotlight_content_fingerprint(
+        content_kind=marketplace_routes.SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        shop_id=1,
+        origin_clan_id=1,
+        message=payload["message"],
+        image_url=payload["image_url"],
+        video_url=None,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-RACECANON'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'RACECAN1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Race Shop', 'Race audit', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id,
+                    source_product_id, content_kind, content_fingerprint,
+                    status, source_kind, commercial_mode,
+                    distribution_scope, created_at, activated_at, expires_at
+                ) VALUES (
+                    91, 1, 1, 1, NULL, 'broadcast_snapshot', :fingerprint,
+                    'active', 'direct_broadcast', 'free', 'direct_communities',
+                    :created_at, :created_at, :expires_at
+                )
+                """
+            ),
+            {
+                "fingerprint": fingerprint,
+                "created_at": now,
+                "expires_at": now + timedelta(days=1),
+            },
+        )
+
+    original_active = marketplace_routes._active_spotlight_campaign_for_owner
+    forced_stale = {"done": False}
+
+    def racing_active(*, db, owner_user_id, now=None):
+        if not forced_stale["done"]:
+            forced_stale["done"] = True
+            return None
+        return original_active(db=db, owner_user_id=owner_user_id, now=now)
+
+    monkeypatch.setattr(
+        marketplace_routes,
+        "_active_spotlight_campaign_for_owner",
+        racing_active,
+    )
+
+    response = client.post("/marketplace/broadcasts", json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    assert body["item"]["spotlight_campaign_id"] == 91
+    with engine.begin() as conn:
+        active_campaigns = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM spotlight_campaigns
+                WHERE owner_user_id = 1 AND status = 'active'
+                """
+            )
+        ).scalar_one()
+        broadcasts = conn.execute(
+            text(
+                """
+                SELECT COUNT(*), SUM(CASE WHEN spotlight_campaign_id IS NULL THEN 1 ELSE 0 END)
+                FROM marketplace_broadcasts
+                """
+            )
+        ).fetchone()
+
+    assert int(active_campaigns) == 1
+    assert tuple(int(value or 0) for value in broadcasts) == (1, 0)
+
+def test_spotlight_campaign_database_invariant_blocks_second_active_campaign(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-CAMPAIGNCAP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'CAMPCAP1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Campaign Cap Shop', 'Invariant test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, status,
+                    source_kind, commercial_mode, distribution_scope,
+                    created_at, activated_at, expires_at
+                ) VALUES (
+                    1, 1, 1, 1, 'active', 'direct_broadcast', 'free',
+                    'direct_communities', :created_at, :created_at, :expires_at
+                )
+                """
+            ),
+            {"created_at": now, "expires_at": now + timedelta(days=1)},
+        )
+
+    duplicate_blocked = False
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO spotlight_campaigns (
+                        id, owner_user_id, shop_id, origin_clan_id, status,
+                        source_kind, commercial_mode, distribution_scope,
+                        created_at, activated_at, expires_at
+                    ) VALUES (
+                        2, 1, 1, 1, 'active', 'direct_broadcast', 'paid',
+                        'direct_communities', :created_at, :created_at, :expires_at
+                    )
+                    """
+                ),
+                {"created_at": now, "expires_at": now + timedelta(days=1)},
+            )
+    except Exception:
+        duplicate_blocked = True
+
+    assert duplicate_blocked is True
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, status,
+                    source_kind, commercial_mode, distribution_scope,
+                    created_at, activated_at, expires_at, ended_at
+                ) VALUES (
+                    3, 1, 1, 1, 'ended', 'direct_broadcast', 'paid',
+                    'direct_communities', :created_at, :created_at, :expires_at, :created_at
+                )
+                """
+            ),
+            {"created_at": now, "expires_at": now + timedelta(days=1)},
+        )
+        active_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM spotlight_campaigns
+                WHERE owner_user_id = 1 AND status = 'active'
+                """
+            )
+        ).scalar_one()
+        total_count = conn.execute(text("SELECT COUNT(*) FROM spotlight_campaigns")).scalar_one()
+
+    assert int(active_count) == 1
+    assert int(total_count) == 2
+
+
+def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-CAMPAIGNEND'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'CAMPEND1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Campaign End Shop', 'End-state test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-END'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    first = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "First paid campaign",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert first.status_code == 200, first.text
+    first_body = first.json()
+    first_campaign_id = int(first_body["item"]["spotlight_campaign_id"])
+    first_broadcast_id = int(first_body["item"]["id"])
+
+    deleted = client.delete(f"/marketplace/broadcasts/{first_broadcast_id}")
+    assert deleted.status_code == 200, deleted.text
+
+    with engine.begin() as conn:
+        ended = conn.execute(
+            text(
+                """
+                SELECT status, ended_at
+                FROM spotlight_campaigns
+                WHERE id = :campaign_id
+                """
+            ),
+            {"campaign_id": first_campaign_id},
+        ).fetchone()
+    assert ended is not None
+    assert ended[0] == "ended"
+    assert ended[1] is not None
+
+    second = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Second paid campaign",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert second.status_code == 200, second.text
+    second_campaign_id = int(second.json()["item"]["spotlight_campaign_id"])
+    assert second_campaign_id != first_campaign_id
+
+    with engine.begin() as conn:
+        statuses = conn.execute(
+            text(
+                """
+                SELECT status, COUNT(*)
+                FROM spotlight_campaigns
+                GROUP BY status
+                ORDER BY status ASC
+                """
+            )
+        ).fetchall()
+        used = conn.execute(
+            text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")
+        ).scalar_one()
+
+    assert [(row[0], int(row[1])) for row in statuses] == [("active", 1), ("ended", 1)]
+    assert int(used) == 2
 
 
 def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(

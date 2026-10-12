@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from math import floor
 import os
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import case, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -27,6 +29,7 @@ from app.db.models import (
     MarketplaceReview,
     MarketplaceShop,
     ShopFollower,
+    SpotlightCampaign,
     TrustEvent,
     User,
 )
@@ -57,7 +60,13 @@ from app.services.vault_domain_service import (
     find_vault_block_for_product,
     sync_legacy_entitlements_to_blocks,
 )
-
+from app.services.spotlight_presentation_service import (
+    SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    PRESENTATION_REJECTION_OWNER_PREVIEW,
+    presentation_policy,
+    record_spotlight_presentation_qualification,
+    select_spotlight_presentation,
+)
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
@@ -95,6 +104,46 @@ SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 5, 17, 23, 59, 59, tzin
 # credits stay separate.
 FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR = 1
 
+SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE = "active"
+SPOTLIGHT_CAMPAIGN_STATUS_ENDED = "ended"
+SPOTLIGHT_CAMPAIGN_STATUS_EXPIRED = "expired"
+SPOTLIGHT_CAMPAIGN_SOURCE_DIRECT = "direct_broadcast"
+SPOTLIGHT_CAMPAIGN_SOURCE_REPOST = "network_repost"
+SPOTLIGHT_CAMPAIGN_SOURCE_MIXED = "mixed"
+SPOTLIGHT_CONTENT_KIND_BROADCAST = "broadcast_snapshot"
+SPOTLIGHT_CONTENT_KIND_PRODUCT = "marketplace_product"
+SPOTLIGHT_CAMPAIGN_CONTENT_MISMATCH_DETAIL = (
+    "A different Spotlight campaign is already active. Take it down before publishing different Spotlight content."
+)
+SPOTLIGHT_OPPORTUNITY_INTENTS = {"offer", "need", "unspecified"}
+SPOTLIGHT_OPPORTUNITY_CATEGORIES = {
+    "employment",
+    "business_service",
+    "product",
+    "property",
+    "education_training",
+    "professional_service",
+    "community_support",
+    "event",
+    "volunteering",
+    "buy_sell",
+    "other",
+    "unspecified",
+}
+SPOTLIGHT_OPPORTUNITY_GEO_SCOPES = {
+    "community",
+    "local",
+    "regional",
+    "national",
+    "remote",
+    "global",
+    "unspecified",
+}
+SPOTLIGHT_OPPORTUNITY_AVAILABILITY_STATES = {
+    "available",
+    "unavailable",
+    "unspecified",
+}
 SHOP_IMAGE_ATTRS = (
     "image_url",
     "photo_url",
@@ -1787,6 +1836,458 @@ def _count_active_paid_spotlights_for_shop(
     )
 
 
+def _as_aware_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _expire_stale_spotlight_campaigns_for_owner(
+    *,
+    db: Session,
+    owner_user_id: int,
+    now: Optional[datetime] = None,
+) -> None:
+    current_time = now or _now_utc()
+    (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.owner_user_id == int(owner_user_id))
+        .filter(SpotlightCampaign.status == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE)
+        .filter(SpotlightCampaign.expires_at.isnot(None))
+        .filter(SpotlightCampaign.expires_at <= current_time)
+        .update(
+            {
+                SpotlightCampaign.status: SPOTLIGHT_CAMPAIGN_STATUS_EXPIRED,
+                SpotlightCampaign.ended_at: current_time,
+            },
+            synchronize_session=False,
+        )
+    )
+
+
+def _combine_spotlight_campaign_value(current: Any, incoming: str) -> str:
+    current_value = _safe_str(current)
+    incoming_value = _safe_str(incoming)
+    if not current_value:
+        return incoming_value
+    if not incoming_value or current_value == incoming_value:
+        return current_value
+    return SPOTLIGHT_CAMPAIGN_SOURCE_MIXED
+
+
+def _normalize_spotlight_opportunity_choice(
+    value: Any,
+    *,
+    allowed: set[str],
+    default: str,
+    field_name: str,
+) -> str:
+    normalized = _safe_str(value, default).lower().replace("-", "_").replace(" ", "_")
+    if normalized not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_spotlight_opportunity_metadata",
+                "field": field_name,
+                "allowed_values": sorted(allowed),
+            },
+        )
+    return normalized
+
+
+def _normalize_spotlight_opportunity_text(value: Any, *, max_length: int) -> Optional[str]:
+    text = _safe_str(value)
+    if not text:
+        return None
+    return text[:max_length]
+
+
+def _normalize_spotlight_opportunity_keywords(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_spotlight_opportunity_metadata",
+                "field": "opportunity_keywords",
+            },
+        )
+    keywords: list[str] = []
+    seen: set[str] = set()
+    for raw_keyword in value[:12]:
+        keyword = re.sub(r"\s+", " ", _safe_str(raw_keyword).lower()).strip()
+        if not keyword:
+            continue
+        keyword = keyword[:40]
+        if keyword in seen:
+            continue
+        seen.add(keyword)
+        keywords.append(keyword)
+    return json.dumps(keywords, sort_keys=True, separators=(",", ":")) if keywords else None
+
+
+def _normalize_spotlight_opportunity_expiry(value: Any) -> Optional[datetime]:
+    if value is None:
+        return None
+    if not isinstance(value, datetime):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_spotlight_opportunity_metadata",
+                "field": "opportunity_expires_at",
+            },
+        )
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _spotlight_opportunity_metadata(
+    *,
+    intent: Any = None,
+    category: Any = None,
+    subcategory: Any = None,
+    keywords: Any = None,
+    geo_scope: Any = None,
+    country: Any = None,
+    region: Any = None,
+    locality: Any = None,
+    remote_available: Any = None,
+    availability: Any = None,
+    opportunity_expires_at: Any = None,
+) -> dict[str, Any]:
+    return {
+        "opportunity_intent": _normalize_spotlight_opportunity_choice(
+            intent,
+            allowed=SPOTLIGHT_OPPORTUNITY_INTENTS,
+            default="unspecified",
+            field_name="opportunity_intent",
+        ),
+        "opportunity_category": _normalize_spotlight_opportunity_choice(
+            category,
+            allowed=SPOTLIGHT_OPPORTUNITY_CATEGORIES,
+            default="unspecified",
+            field_name="opportunity_category",
+        ),
+        "opportunity_subcategory": _normalize_spotlight_opportunity_text(
+            subcategory,
+            max_length=80,
+        ),
+        "opportunity_keywords_json": _normalize_spotlight_opportunity_keywords(keywords),
+        "opportunity_geo_scope": _normalize_spotlight_opportunity_choice(
+            geo_scope,
+            allowed=SPOTLIGHT_OPPORTUNITY_GEO_SCOPES,
+            default="unspecified",
+            field_name="opportunity_geo_scope",
+        ),
+        "opportunity_country": _normalize_spotlight_opportunity_text(country, max_length=80),
+        "opportunity_region": _normalize_spotlight_opportunity_text(region, max_length=120),
+        "opportunity_locality": _normalize_spotlight_opportunity_text(locality, max_length=120),
+        "opportunity_remote_available": (
+            bool(remote_available) if remote_available is not None else None
+        ),
+        "opportunity_availability": _normalize_spotlight_opportunity_choice(
+            availability,
+            allowed=SPOTLIGHT_OPPORTUNITY_AVAILABILITY_STATES,
+            default="unspecified",
+            field_name="opportunity_availability",
+        ),
+        "opportunity_expires_at": _normalize_spotlight_opportunity_expiry(
+            opportunity_expires_at
+        ),
+    }
+
+
+def _spotlight_opportunity_metadata_from_payload(payload: Any) -> dict[str, Any]:
+    return _spotlight_opportunity_metadata(
+        intent=getattr(payload, "opportunity_intent", None),
+        category=getattr(payload, "opportunity_category", None),
+        subcategory=getattr(payload, "opportunity_subcategory", None),
+        keywords=getattr(payload, "opportunity_keywords", None),
+        geo_scope=getattr(payload, "opportunity_geo_scope", None),
+        country=getattr(payload, "opportunity_country", None),
+        region=getattr(payload, "opportunity_region", None),
+        locality=getattr(payload, "opportunity_locality", None),
+        remote_available=getattr(payload, "opportunity_remote_available", None),
+        availability=getattr(payload, "opportunity_availability", None),
+        opportunity_expires_at=getattr(payload, "opportunity_expires_at", None),
+    )
+
+
+def _spotlight_opportunity_metadata_for_product(product: MarketplaceProduct) -> dict[str, Any]:
+    return _spotlight_opportunity_metadata(
+        intent="offer",
+        category="product",
+        geo_scope="community",
+        availability=("available" if bool(getattr(product, "is_active", True)) else "unavailable"),
+    )
+
+
+def _spotlight_metadata_value_is_specific(field_name: str, value: Any) -> bool:
+    if value is None:
+        return False
+    if field_name in {
+        "opportunity_intent",
+        "opportunity_category",
+        "opportunity_geo_scope",
+        "opportunity_availability",
+    }:
+        return _safe_str(value) != "unspecified"
+    if isinstance(value, str):
+        return bool(_safe_str(value))
+    return True
+
+
+def _apply_spotlight_opportunity_metadata(
+    campaign: SpotlightCampaign,
+    metadata: Optional[dict[str, Any]],
+) -> None:
+    if not metadata:
+        return
+    for field_name, incoming_value in metadata.items():
+        if not _spotlight_metadata_value_is_specific(field_name, incoming_value):
+            continue
+        current_value = getattr(campaign, field_name, None)
+        if not _spotlight_metadata_value_is_specific(field_name, current_value):
+            setattr(campaign, field_name, incoming_value)
+            continue
+        if isinstance(incoming_value, datetime) or isinstance(current_value, datetime):
+            incoming_compare = _as_aware_utc(incoming_value)
+            current_compare = _as_aware_utc(current_value)
+        else:
+            incoming_compare = incoming_value
+            current_compare = current_value
+        if current_compare != incoming_compare:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "spotlight_opportunity_metadata_conflict",
+                    "field": field_name,
+                    "message": (
+                        "This active Spotlight campaign already has different canonical "
+                        "opportunity metadata. End it before changing its meaning."
+                    ),
+                },
+            )
+
+def _spotlight_content_fingerprint(
+    *,
+    content_kind: str,
+    shop_id: Optional[int],
+    origin_clan_id: Optional[int],
+    message: Optional[str] = None,
+    image_url: Optional[str] = None,
+    video_url: Optional[str] = None,
+    source_product_id: Optional[int] = None,
+) -> str:
+    if content_kind == SPOTLIGHT_CONTENT_KIND_PRODUCT:
+        canonical: dict[str, Any] = {
+            "content_kind": SPOTLIGHT_CONTENT_KIND_PRODUCT,
+            "source_product_id": int(source_product_id or 0),
+            "shop_id": int(shop_id or 0),
+            "origin_clan_id": int(origin_clan_id or 0),
+        }
+    else:
+        canonical = {
+            "content_kind": SPOTLIGHT_CONTENT_KIND_BROADCAST,
+            "shop_id": int(shop_id or 0),
+            "origin_clan_id": int(origin_clan_id or 0),
+            "message": _safe_str(message),
+            "image_url": _safe_str(image_url),
+            "video_url": _safe_str(video_url),
+        }
+    payload = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _spotlight_campaign_content_matches(
+    campaign: SpotlightCampaign,
+    *,
+    content_kind: str,
+    content_fingerprint: str,
+) -> bool:
+    return (
+        _safe_str(getattr(campaign, "content_kind", None)) == _safe_str(content_kind)
+        and _safe_str(getattr(campaign, "content_fingerprint", None))
+        == _safe_str(content_fingerprint)
+    )
+
+
+def _raise_spotlight_campaign_content_mismatch() -> None:
+    raise HTTPException(
+        status_code=400,
+        detail=SPOTLIGHT_CAMPAIGN_CONTENT_MISMATCH_DETAIL,
+    )
+
+
+def _extend_spotlight_campaign(
+    campaign: SpotlightCampaign,
+    *,
+    source_kind: str,
+    commercial_mode: str,
+    distribution_scope: str,
+    expires_at: Optional[datetime],
+) -> None:
+    campaign.source_kind = _combine_spotlight_campaign_value(
+        getattr(campaign, "source_kind", None),
+        source_kind,
+    )
+    campaign.commercial_mode = _combine_spotlight_campaign_value(
+        getattr(campaign, "commercial_mode", None),
+        commercial_mode,
+    )
+    campaign.distribution_scope = _combine_spotlight_campaign_value(
+        getattr(campaign, "distribution_scope", None),
+        distribution_scope,
+    )
+
+    incoming_expiry = _as_aware_utc(expires_at)
+    current_expiry = _as_aware_utc(getattr(campaign, "expires_at", None))
+    if current_expiry is None or (
+        incoming_expiry is not None and incoming_expiry > current_expiry
+    ):
+        campaign.expires_at = incoming_expiry
+
+
+def _active_spotlight_campaign_for_owner(
+    *,
+    db: Session,
+    owner_user_id: int,
+    now: Optional[datetime] = None,
+) -> Optional[SpotlightCampaign]:
+    current_time = now or _now_utc()
+    _expire_stale_spotlight_campaigns_for_owner(
+        db=db,
+        owner_user_id=int(owner_user_id),
+        now=current_time,
+    )
+    return (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.owner_user_id == int(owner_user_id))
+        .filter(SpotlightCampaign.status == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE)
+        .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .first()
+    )
+
+
+def _ensure_active_spotlight_campaign(
+    *,
+    db: Session,
+    owner_user_id: int,
+    shop_id: Optional[int],
+    origin_clan_id: Optional[int],
+    source_kind: str,
+    commercial_mode: str,
+    distribution_scope: str,
+    expires_at: Optional[datetime],
+    content_kind: str,
+    content_fingerprint: str,
+    source_product_id: Optional[int] = None,
+    opportunity_metadata: Optional[dict[str, Any]] = None,
+    created_at: Optional[datetime] = None,
+) -> SpotlightCampaign:
+    current_time = created_at or _now_utc()
+    campaign = _active_spotlight_campaign_for_owner(
+        db=db,
+        owner_user_id=int(owner_user_id),
+        now=current_time,
+    )
+    if campaign is not None:
+        if not _spotlight_campaign_content_matches(
+            campaign,
+            content_kind=content_kind,
+            content_fingerprint=content_fingerprint,
+        ):
+            _raise_spotlight_campaign_content_mismatch()
+        _apply_spotlight_opportunity_metadata(campaign, opportunity_metadata)
+        _extend_spotlight_campaign(
+            campaign,
+            source_kind=source_kind,
+            commercial_mode=commercial_mode,
+            distribution_scope=distribution_scope,
+            expires_at=expires_at,
+        )
+        return campaign
+
+    campaign = SpotlightCampaign(
+        owner_user_id=int(owner_user_id),
+        shop_id=int(shop_id) if shop_id is not None else None,
+        origin_clan_id=int(origin_clan_id) if origin_clan_id is not None else None,
+        source_product_id=(
+            int(source_product_id) if source_product_id is not None else None
+        ),
+        content_kind=content_kind,
+        content_fingerprint=content_fingerprint,
+        status=SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE,
+        source_kind=source_kind,
+        commercial_mode=commercial_mode,
+        distribution_scope=distribution_scope,
+        **(opportunity_metadata or _spotlight_opportunity_metadata()),
+        created_at=current_time,
+        activated_at=current_time,
+        expires_at=expires_at,
+    )
+    db.add(campaign)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        campaign = _active_spotlight_campaign_for_owner(
+            db=db,
+            owner_user_id=int(owner_user_id),
+            now=current_time,
+        )
+        if campaign is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Another Spotlight campaign is already being created for this member. Please retry.",
+            )
+        if not _spotlight_campaign_content_matches(
+            campaign,
+            content_kind=content_kind,
+            content_fingerprint=content_fingerprint,
+        ):
+            _raise_spotlight_campaign_content_mismatch()
+        _apply_spotlight_opportunity_metadata(campaign, opportunity_metadata)
+        _extend_spotlight_campaign(
+            campaign,
+            source_kind=source_kind,
+            commercial_mode=commercial_mode,
+            distribution_scope=distribution_scope,
+            expires_at=expires_at,
+        )
+    return campaign
+
+def _end_spotlight_campaign_if_no_active_placements(
+    *,
+    db: Session,
+    campaign_id: int,
+    ended_at: Optional[datetime] = None,
+) -> None:
+    current_time = ended_at or _now_utc()
+    campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.id == int(campaign_id))
+        .first()
+    )
+    if campaign is None or campaign.status != SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE:
+        return
+
+    active_placement_count = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign_id))
+        .filter(
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > current_time)
+        )
+        .count()
+    )
+    if active_placement_count <= 0:
+        campaign.status = SPOTLIGHT_CAMPAIGN_STATUS_ENDED
+        campaign.ended_at = current_time
 def _active_spotlight_rows_for_clan_ids(
     *,
     db: Session,
@@ -2273,9 +2774,28 @@ class MarketplaceBroadcastCreateIn(BaseModel):
     expires_at: Optional[datetime] = None
     priority_mode: Optional[str] = Field(default=SPOTLIGHT_FREE, max_length=20)
     visibility_scope: Optional[str] = Field(default="direct_communities", max_length=32)
+    opportunity_intent: Optional[str] = Field(default=None, max_length=16)
+    opportunity_category: Optional[str] = Field(default=None, max_length=40)
+    opportunity_subcategory: Optional[str] = Field(default=None, max_length=80)
+    opportunity_keywords: Optional[list[str]] = Field(default=None, max_length=12)
+    opportunity_geo_scope: Optional[str] = Field(default=None, max_length=24)
+    opportunity_country: Optional[str] = Field(default=None, max_length=80)
+    opportunity_region: Optional[str] = Field(default=None, max_length=120)
+    opportunity_locality: Optional[str] = Field(default=None, max_length=120)
+    opportunity_remote_available: Optional[bool] = None
+    opportunity_availability: Optional[str] = Field(default=None, max_length=24)
+    opportunity_expires_at: Optional[datetime] = None
 
 
+class SpotlightPresentationQualificationIn(BaseModel):
+    presentation_token: str = Field(..., min_length=20, max_length=4000)
+    qualification_key: Optional[str] = Field(default=None, max_length=120)
+    visible_ms: int = Field(default=0, ge=0, le=600000)
+    visible_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
+    document_visible: bool = False
+    owner_preview: bool = False
 class MarketplaceRepostCreateIn(BaseModel):
+
     target_clan_id: Optional[int] = Field(default=None, gt=0)
     target_community_code: Optional[str] = Field(default=None, max_length=64)
     duration_days: Optional[int] = Field(default=1, ge=1, le=365)
@@ -2668,6 +3188,11 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
 
     return {
         "id": int(item.id),
+        "spotlight_campaign_id": (
+            int(item.spotlight_campaign_id)
+            if getattr(item, "spotlight_campaign_id", None) is not None
+            else None
+        ),
         "clan_id": int(item.clan_id),
         "author_user_id": int(item.author_user_id),
         "author_gmfn_id": author_gmfn_id,
@@ -3150,6 +3675,175 @@ def get_public_marketplace_shop_by_gmfn_id(
         "is_public_shop_face": True,
     }
 
+
+def _presentation_broadcast_for_candidate(
+    db: Session,
+    *,
+    candidate: Any,
+    campaign_id: int,
+) -> Optional[MarketplaceBroadcast]:
+    placement_ids: list[int] = []
+    eligibility = getattr(candidate, "eligibility", None)
+    for route in getattr(eligibility, "routes", ()) or ():
+        placement_id = _safe_int(getattr(route, "placement_broadcast_id", None), 0)
+        if placement_id > 0 and placement_id not in placement_ids:
+            placement_ids.append(int(placement_id))
+
+    now = _now_utc()
+    base_query = db.query(MarketplaceBroadcast).filter(
+        MarketplaceBroadcast.spotlight_campaign_id == int(campaign_id),
+        (MarketplaceBroadcast.expires_at.is_(None)) | (MarketplaceBroadcast.expires_at > now),
+    )
+    if placement_ids:
+        preferred = (
+            base_query.filter(MarketplaceBroadcast.id.in_(placement_ids))
+            .order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
+            .first()
+        )
+        if preferred is not None:
+            return preferred
+    return (
+        base_query.order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
+        .first()
+    )
+
+
+@router.get("/public/shop/{gmfn_id}/spotlight-opportunity")
+def get_public_shop_spotlight_opportunity(
+    gmfn_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
+    policy = presentation_policy().to_public_dict()
+    if not owner:
+        raise HTTPException(status_code=404, detail="Seller identity not found")
+    if int(owner.id) == int(current_user.id):
+        return {
+            "ok": True,
+            "item": None,
+            "presentation": None,
+            "policy": policy,
+            "fallback": "legacy_public_shop_broadcasts",
+            "rejection_code": PRESENTATION_REJECTION_OWNER_PREVIEW,
+        }
+
+    selection = select_spotlight_presentation(
+        db,
+        viewer_user_id=int(current_user.id),
+        requested_delivery_slots=1,
+        surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    )
+    db.commit()
+    if not selection.selected or selection.candidate is None:
+        return {
+            "ok": True,
+            "item": None,
+            "presentation": None,
+            "policy": policy,
+            "fallback": "legacy_public_shop_broadcasts",
+            "rejection_code": selection.rejection_code,
+        }
+
+    campaign_id = int(selection.candidate.campaign_id)
+    broadcast = _presentation_broadcast_for_candidate(
+        db,
+        candidate=selection.candidate,
+        campaign_id=campaign_id,
+    )
+    if broadcast is None:
+        return {
+            "ok": True,
+            "item": None,
+            "presentation": None,
+            "policy": policy,
+            "fallback": "legacy_public_shop_broadcasts",
+            "rejection_code": "canonical_broadcast_snapshot_missing",
+        }
+
+    item = _broadcast_out(db, broadcast)
+    item["is_canonical_opportunity"] = True
+    item["opportunity_campaign_id"] = campaign_id
+    item["opportunity_presentation_id"] = selection.presentation_id
+    item["opportunity_presentation_token"] = selection.presentation_token
+    item["opportunity_presentation_expires_at"] = (
+        selection.token_expires_at.isoformat() if selection.token_expires_at else None
+    )
+    item["opportunity_presentation_surface"] = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+    return {
+        "ok": True,
+        "item": item,
+        "items": [item],
+        "presentation": {
+            "presentation_id": selection.presentation_id,
+            "presentation_token": selection.presentation_token,
+            "presentation_expires_at": item["opportunity_presentation_expires_at"],
+            "campaign_id": campaign_id,
+            "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+            "delivery_round_consumed": True,
+        },
+        "policy": policy,
+        "fallback": None,
+        "rejection_code": None,
+    }
+
+
+@router.post("/spotlight-presentations/qualify")
+def qualify_spotlight_presentation(
+    payload: SpotlightPresentationQualificationIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    policy = presentation_policy()
+    if payload.owner_preview:
+        return {
+            "ok": False,
+            "recorded": False,
+            "deduped": False,
+            "rejection_code": PRESENTATION_REJECTION_OWNER_PREVIEW,
+            "policy": policy.to_public_dict(),
+            "boundary_note": "Owner preview does not create canonical Opportunity Engine exposure.",
+        }
+    if not payload.document_visible:
+        return {
+            "ok": False,
+            "recorded": False,
+            "deduped": False,
+            "rejection_code": "document_hidden",
+            "policy": policy.to_public_dict(),
+            "boundary_note": "Hidden-tab time is not counted as a qualifying Spotlight impression.",
+        }
+    if int(payload.visible_ms or 0) < int(policy.qualifying_visible_ms):
+        return {
+            "ok": False,
+            "recorded": False,
+            "deduped": False,
+            "rejection_code": "visible_duration_below_threshold",
+            "policy": policy.to_public_dict(),
+            "boundary_note": "The Spotlight must remain visibly present long enough to qualify.",
+        }
+    if float(payload.visible_ratio or 0.0) < float(policy.minimum_visible_ratio):
+        return {
+            "ok": False,
+            "recorded": False,
+            "deduped": False,
+            "rejection_code": "viewport_ratio_below_threshold",
+            "policy": policy.to_public_dict(),
+            "boundary_note": "A substantially off-screen Spotlight is not a qualifying impression.",
+        }
+
+    result = record_spotlight_presentation_qualification(
+        db,
+        viewer_user_id=int(current_user.id),
+        presentation_token=payload.presentation_token,
+        qualification_key=payload.qualification_key,
+        visible_ms=int(payload.visible_ms or 0),
+        visible_ratio=float(payload.visible_ratio or 0.0),
+        document_visible=bool(payload.document_visible),
+        owner_preview=False,
+        surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    )
+    return result.to_public_dict()
 
 @router.post("/shops")
 def create_marketplace_shop(
@@ -5015,6 +5709,38 @@ def repost_marketplace_product(
         else spotlight_title
     )[:2000]
     spotlight_expires_at = (current_time + timedelta(days=duration_days)).replace(microsecond=0)
+    content_fingerprint = _spotlight_content_fingerprint(
+        content_kind=SPOTLIGHT_CONTENT_KIND_PRODUCT,
+        shop_id=int(shop.id),
+        origin_clan_id=origin_clan_id,
+        source_product_id=int(product.id),
+    )
+    active_campaign = _active_spotlight_campaign_for_owner(
+        db=db,
+        owner_user_id=int(current_user.id),
+        now=current_time,
+    )
+    campaign: Optional[SpotlightCampaign] = None
+    if active_campaign is None or _spotlight_campaign_content_matches(
+        active_campaign,
+        content_kind=SPOTLIGHT_CONTENT_KIND_PRODUCT,
+        content_fingerprint=content_fingerprint,
+    ):
+        campaign = _ensure_active_spotlight_campaign(
+            db=db,
+            owner_user_id=int(current_user.id),
+            shop_id=int(shop.id),
+            origin_clan_id=origin_clan_id,
+            source_kind=SPOTLIGHT_CAMPAIGN_SOURCE_REPOST,
+            commercial_mode=SPOTLIGHT_PAID,
+            distribution_scope="marketplace_repost",
+            expires_at=spotlight_expires_at,
+            content_kind=SPOTLIGHT_CONTENT_KIND_PRODUCT,
+            content_fingerprint=content_fingerprint,
+            source_product_id=int(product.id),
+            opportunity_metadata=_spotlight_opportunity_metadata_for_product(product),
+            created_at=current_time,
+        )
 
     repost = MarketplaceProductRepost(
         original_product_id=int(product.id),
@@ -5023,6 +5749,7 @@ def repost_marketplace_product(
         created_at=current_time,
     )
     broadcast = MarketplaceBroadcast(
+        spotlight_campaign_id=(int(campaign.id) if campaign is not None else None),
         clan_id=target_clan_id,
         author_user_id=int(current_user.id),
         shop_id=int(product.shop_id),
@@ -5074,6 +5801,13 @@ def repost_marketplace_product(
             "target_community_code": target_community_code,
             "repost_id": int(repost.id),
             "broadcast_id": int(broadcast.id),
+            "spotlight_campaign_id": (int(campaign.id) if campaign is not None else None),
+            "canonical_campaign_linked": campaign is not None,
+            "canonical_campaign_link_reason": (
+                "same_canonical_spotlight"
+                if campaign is not None
+                else "content_mismatch_legacy_repost"
+            ),
             "duration_days": duration_days,
             "expires_at": spotlight_expires_at.isoformat(),
             "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
@@ -5434,10 +6168,33 @@ def create_marketplace_broadcast(
         raise HTTPException(status_code=400, detail="No eligible community spotlight placements found")
 
     created_at = _now_utc()
+    content_fingerprint = _spotlight_content_fingerprint(
+        content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        shop_id=int(shop.id) if shop is not None else None,
+        origin_clan_id=resolved_clan_id,
+        message=payload.message,
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+    )
+    campaign = _ensure_active_spotlight_campaign(
+        db=db,
+        owner_user_id=int(current_user.id),
+        shop_id=int(shop.id) if shop is not None else None,
+        origin_clan_id=resolved_clan_id,
+        source_kind=SPOTLIGHT_CAMPAIGN_SOURCE_DIRECT,
+        commercial_mode=priority_mode,
+        distribution_scope=visibility_scope,
+        expires_at=expires_at,
+        content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        content_fingerprint=content_fingerprint,
+        opportunity_metadata=_spotlight_opportunity_metadata_from_payload(payload),
+        created_at=created_at,
+    )
     created_items: list[MarketplaceBroadcast] = []
 
     for clan_id in target_clan_ids:
         item = MarketplaceBroadcast(
+            spotlight_campaign_id=int(campaign.id),
             clan_id=int(clan_id),
             author_user_id=int(current_user.id),
             shop_id=int(shop.id) if shop is not None else None,
@@ -5498,6 +6255,7 @@ def create_marketplace_broadcast(
             guarantor_id=None,
             meta={
                 "broadcast_id": int(item.id),
+                "spotlight_campaign_id": int(campaign.id),
                 "shop_id": int(canonical_shop.id) if canonical_shop else None,
                 "message_preview": _safe_str(item.message)[:120],
                 "image_url": item.image_url,
@@ -5607,9 +6365,22 @@ def delete_marketplace_broadcast(
         sibling_rows.insert(0, item)
 
     deleted_snapshots = [_broadcast_out(db, row) for row in sibling_rows]
+    campaign_ids = sorted(
+        {
+            int(row.spotlight_campaign_id)
+            for row in sibling_rows
+            if getattr(row, "spotlight_campaign_id", None) is not None
+        }
+    )
 
     for row in sibling_rows:
         db.delete(row)
+    db.flush()
+    for campaign_id in campaign_ids:
+        _end_spotlight_campaign_if_no_active_placements(
+            db=db,
+            campaign_id=int(campaign_id),
+        )
     db.commit()
 
     for deleted_snapshot in deleted_snapshots:
@@ -5623,6 +6394,7 @@ def delete_marketplace_broadcast(
             guarantor_id=None,
             meta={
                 "broadcast_id": int(deleted_snapshot["id"]),
+                "spotlight_campaign_id": deleted_snapshot.get("spotlight_campaign_id"),
                 "shop_id": deleted_snapshot.get("shop_id"),
                 "priority_mode": deleted_snapshot.get("priority_mode"),
                 "visibility_scope": deleted_snapshot.get("visibility_scope"),

@@ -135,8 +135,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /async function loadViewerSpotlightRows\(\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
-  "Signed-in Public Shop Spotlight must read the all-active-communities broadcast feed now owned by Shop/Public Shop surfaces."
+  /async function loadViewerSpotlightRows\(cleanedGmfnId: string\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
+  "Signed-in Public Shop Spotlight must request the canonical opportunity endpoint first and keep the all-active-communities broadcast feed as the legacy fallback."
 );
 
 assertContains(

@@ -3469,11 +3469,279 @@ class ShopDiaryEntry(Base):
         index=True,
     )
 
+class SpotlightCampaign(Base):
+    __tablename__ = "spotlight_campaigns"
+
+    __table_args__ = (
+        CheckConstraint(
+            "opportunity_intent IN ('offer', 'need', 'unspecified')",
+            name="ck_spotlight_campaigns_opportunity_intent",
+        ),
+        CheckConstraint(
+            "opportunity_category IN ("
+            "'employment', 'business_service', 'product', 'property', "
+            "'education_training', 'professional_service', 'community_support', "
+            "'event', 'volunteering', 'buy_sell', 'other', 'unspecified'"
+            ")",
+            name="ck_spotlight_campaigns_opportunity_category",
+        ),
+        CheckConstraint(
+            "opportunity_geo_scope IN ("
+            "'community', 'local', 'regional', 'national', 'remote', 'global', "
+            "'unspecified'"
+            ")",
+            name="ck_spotlight_campaigns_opportunity_geo_scope",
+        ),
+        CheckConstraint(
+            "opportunity_availability IN ('available', 'unavailable', 'unspecified')",
+            name="ck_spotlight_campaigns_opportunity_availability",
+        ),
+        Index(
+            "uq_spotlight_campaigns_one_active_owner",
+            "owner_user_id",
+            unique=True,
+            sqlite_where=text("status = 'active'"),
+            postgresql_where=text("status = 'active'"),
+        ),
+        Index("ix_spotlight_campaigns_owner_status", "owner_user_id", "status"),
+        Index("ix_spotlight_campaigns_shop_status", "shop_id", "status"),
+        Index("ix_spotlight_campaigns_origin_status", "origin_clan_id", "status"),
+        Index("ix_spotlight_campaigns_content", "content_kind", "content_fingerprint"),
+        Index("ix_spotlight_campaigns_source_product", "source_product_id"),
+        Index("ix_spotlight_campaigns_opportunity_intent", "opportunity_intent"),
+        Index("ix_spotlight_campaigns_opportunity_category", "opportunity_category"),
+        Index("ix_spotlight_campaigns_opportunity_geo_scope", "opportunity_geo_scope"),
+        Index("ix_spotlight_campaigns_opportunity_availability", "opportunity_availability"),
+        Index("ix_spotlight_campaigns_expiry", "expires_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    origin_clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    source_product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    content_kind: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="broadcast_snapshot",
+        server_default="broadcast_snapshot",
+        index=True,
+    )
+    content_fingerprint: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="",
+        server_default="",
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    source_kind: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="direct_broadcast",
+        server_default="direct_broadcast",
+        index=True,
+    )
+    commercial_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="free",
+        server_default="free",
+        index=True,
+    )
+    distribution_scope: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="direct_communities",
+        server_default="direct_communities",
+        index=True,
+    )
+    opportunity_intent: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="unspecified",
+        server_default="unspecified",
+    )
+    opportunity_category: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="unspecified",
+        server_default="unspecified",
+    )
+    opportunity_subcategory: Mapped[Optional[str]] = mapped_column(
+        String(80),
+        nullable=True,
+    )
+    opportunity_keywords_json: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    opportunity_geo_scope: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="unspecified",
+        server_default="unspecified",
+    )
+    opportunity_country: Mapped[Optional[str]] = mapped_column(
+        String(80),
+        nullable=True,
+    )
+    opportunity_region: Mapped[Optional[str]] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+    opportunity_locality: Mapped[Optional[str]] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+    opportunity_remote_available: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
+    opportunity_availability: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="unspecified",
+        server_default="unspecified",
+    )
+    opportunity_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    activated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    ended_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+class SpotlightCampaignPacingState(Base):
+    __tablename__ = "spotlight_campaign_pacing_states"
+
+    __table_args__ = (
+        CheckConstraint("max_delivery_rounds >= 0", name="ck_spotlight_pacing_max_rounds_nonnegative"),
+        CheckConstraint("consumed_delivery_rounds >= 0", name="ck_spotlight_pacing_consumed_rounds_nonnegative"),
+        CheckConstraint("consumed_delivery_rounds <= max_delivery_rounds", name="ck_spotlight_pacing_consumed_lte_max"),
+        CheckConstraint("version >= 0", name="ck_spotlight_pacing_version_nonnegative"),
+        CheckConstraint(
+            "pacing_profile IN ('neutral', 'peak', 'balanced', 'off_peak')",
+            name="ck_spotlight_pacing_profile",
+        ),
+        Index("ix_spotlight_pacing_next_eligible", "next_eligible_delivery_at"),
+        Index("ix_spotlight_pacing_exhausted", "exhausted"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    max_delivery_rounds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=10,
+        server_default="10",
+    )
+    consumed_delivery_rounds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    last_delivery_opportunity_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    next_eligible_delivery_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    pacing_profile: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="neutral",
+        server_default="neutral",
+        index=True,
+    )
+    delivery_window_policy_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    exhausted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+        index=True,
+    )
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=utcnow,
+    )
 
 class MarketplaceBroadcast(Base):
     __tablename__ = "marketplace_broadcasts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    spotlight_campaign_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("spotlight_campaigns.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     clan_id: Mapped[int] = mapped_column(
         ForeignKey("clans.id", ondelete="CASCADE"),
@@ -3664,6 +3932,81 @@ class MarketplaceAttentionEvent(Base):
         server_default=func.now(),
         index=True,
     )
+class SpotlightExposureEvent(Base):
+    __tablename__ = "spotlight_exposure_events"
+
+    __table_args__ = (
+        CheckConstraint(
+            "event_type IN ('served', 'qualifying_impression', 'opened_interaction')",
+            name="ck_spotlight_exposure_events_event_type",
+        ),
+        Index("ix_spotlight_exposures_viewer_event_at", "viewer_user_id", "event_at"),
+        Index("ix_spotlight_exposures_viewer_campaign", "viewer_user_id", "campaign_id", "event_at"),
+        Index("ix_spotlight_exposures_viewer_route_source", "viewer_user_id", "allocation_route_type", "allocation_source_id", "event_at"),
+        Index("ix_spotlight_exposures_campaign_event_at", "campaign_id", "event_at"),
+        UniqueConstraint("viewer_user_id", "idempotency_key", name="uq_spotlight_exposures_viewer_idempotency"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="qualifying_impression",
+        server_default="qualifying_impression",
+    )
+    viewer_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    event_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    allocation_route_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    allocation_source_kind: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    allocation_source_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    allocation_route_clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    placement_broadcast_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_broadcasts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    marketplace_attention_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_attention_events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    presentation_surface: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    demandbox_relevant: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    explicit_interest_relevant: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    supporting_routes_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    relevance_signals_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    presentation_context_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
 class MarketWisdomSource(Base):
     __tablename__ = "market_wisdom_sources"
 
@@ -5065,6 +5408,7 @@ class UserSettings(Base):
         default=True,
         server_default="1",
     )
+    spotlight_interests_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

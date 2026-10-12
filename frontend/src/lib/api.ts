@@ -6715,6 +6715,32 @@ export async function recordMarketplaceAttentionEvent(payload: {
   );
 }
 
+export async function getPublicShopSpotlightOpportunity(
+  gmfnId: string
+): Promise<any> {
+  return httpJson(
+    `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}/spotlight-opportunity`,
+    "GET",
+    undefined,
+    { header_clan_id: null, quiet: true, timeoutMs: 8000 }
+  );
+}
+
+export async function qualifySpotlightPresentation(payload: {
+  presentation_token: string;
+  qualification_key?: string | null;
+  visible_ms: number;
+  visible_ratio: number;
+  document_visible: boolean;
+  owner_preview?: boolean;
+}): Promise<any> {
+  return httpJson(
+    "/marketplace/spotlight-presentations/qualify",
+    "POST",
+    payload,
+    { header_clan_id: null, keepalive: true, quiet: true, timeoutMs: 8000 }
+  );
+}
 export async function getMarketplaceShopAttentionSummary(
   shopId: number,
   params?: { days?: number }
