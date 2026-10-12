@@ -61,6 +61,17 @@ assertContains(
   /getPublicShopSpotlightOpportunity[\s\S]*?qualifySpotlightPresentation[\s\S]*?document\.visibilityState[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS[\s\S]*?IntersectionObserver[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO/,
   "Public Shop must fetch canonical presentation and qualify only via viewport and tab-visibility evidence."
 );
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /publicShopSpotlightSelectionCycles[\s\S]*?function loadPublicShopSpotlightPresentationCycle[\s\S]*?existingCycle\?\.promise[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
+  "Public Shop canonical presentation selection must use one authoritative in-flight/request-cycle guard before falling back to legacy broadcasts."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /async function loadViewerSpotlightRows\(cleanedGmfnId: string\)[\s\S]*?loadPublicShopSpotlightPresentationCycle\(\s*cleanedGmfnId\s*\)[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
+  "Public Shop Spotlight loader must ask the guarded canonical selector once before using the legacy broadcast fallback."
+);
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",

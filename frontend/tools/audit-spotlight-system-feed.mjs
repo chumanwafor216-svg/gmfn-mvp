@@ -135,8 +135,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /async function loadViewerSpotlightRows\(cleanedGmfnId: string\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
-  "Signed-in Public Shop Spotlight must request the canonical opportunity endpoint first and keep the all-active-communities broadcast feed as the legacy fallback."
+  /function loadPublicShopSpotlightPresentationCycle\([\s\S]*?existingCycle\?\.promise[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?publicShopSpotlightCycleIsAuthoritative/,
+  "Signed-in Public Shop Spotlight must use one guarded canonical presentation selector per request cycle."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /async function loadViewerSpotlightRows\(cleanedGmfnId: string\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?loadPublicShopSpotlightPresentationCycle\(\s*cleanedGmfnId\s*\)[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
+  "Signed-in Public Shop Spotlight must request the guarded canonical opportunity selector first and keep the all-active-communities broadcast feed as the legacy fallback."
 );
 
 assertContains(

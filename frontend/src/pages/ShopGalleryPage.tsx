@@ -148,6 +148,18 @@ type ShopBroadcast = {
   expiresAt?: string;
 };
 
+type PublicShopSpotlightSelectionCycle = {
+  items: any[] | null;
+  promise?: Promise<any[] | null>;
+  selectedAtMs: number;
+  expiresAtMs: number;
+};
+
+const publicShopSpotlightSelectionCycles = new Map<
+  string,
+  PublicShopSpotlightSelectionCycle
+>();
+
 type LegacyShopIconName =
   | "alert"
   | "bank"
@@ -289,6 +301,140 @@ function publicShopReconnectAttemptKey(gmfnId: string): string {
   const token = safeStr(getAccessToken());
   const sessionKey = token ? token.slice(-16) : "no-owner-session";
   return `${safeStr(gmfnId).toUpperCase()}::${sessionKey}`;
+}
+
+function publicShopSpotlightSelectionCycleKey(gmfnId: string): string {
+  const shopKey = safeStr(gmfnId).toUpperCase();
+  const token = safeStr(getAccessToken());
+  const viewerKey = firstMeaningful(
+    getStoredGmfnId(),
+    token ? `session:${token.slice(-16)}` : ""
+  );
+  return shopKey && viewerKey ? `${shopKey}::${viewerKey}` : "";
+}
+
+function publicShopSpotlightResponseItems(response: any): any[] {
+  return Array.isArray(response?.items)
+    ? response.items
+    : response?.item
+    ? [response.item]
+    : [];
+}
+
+function publicShopSpotlightRowIsCanonical(row: any): boolean {
+  const src = row?.item || row?.broadcast || row?.data || row;
+  return Boolean(
+    src?.is_canonical_opportunity &&
+      firstMeaningful(
+        src?.opportunity_presentation_token,
+        src?.opportunityPresentationToken
+      )
+  );
+}
+
+function publicShopSpotlightRowsAreCanonical(items: any[] | null | undefined): boolean {
+  return Array.isArray(items) && items.some((item) => publicShopSpotlightRowIsCanonical(item));
+}
+
+function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): number {
+  const explicitExpiry = items
+    .map((item) => {
+      const src = item?.item || item?.broadcast || item?.data || item;
+      return new Date(
+        firstMeaningful(
+          src?.opportunity_presentation_expires_at,
+          src?.opportunityPresentationExpiresAt
+        )
+      ).getTime();
+    })
+    .filter((value) => Number.isFinite(value) && value > selectedAtMs)
+    .sort((a, b) => a - b)[0];
+  const nextScheduledRefresh = selectedAtMs + SPOTLIGHT_PILOT_REFRESH_MS;
+  return explicitExpiry
+    ? Math.min(explicitExpiry, nextScheduledRefresh)
+    : nextScheduledRefresh;
+}
+
+function prunePublicShopSpotlightSelectionCycles(nowMs: number): void {
+  for (const [key, cycle] of publicShopSpotlightSelectionCycles.entries()) {
+    if (!cycle.promise && cycle.expiresAtMs <= nowMs) {
+      publicShopSpotlightSelectionCycles.delete(key);
+    }
+  }
+}
+
+function publicShopSpotlightCycleIsAuthoritative(
+  cycle: PublicShopSpotlightSelectionCycle | undefined,
+  nowMs: number
+): boolean {
+  return Boolean(
+    cycle &&
+      publicShopSpotlightRowsAreCanonical(cycle.items) &&
+      cycle.expiresAtMs > nowMs
+  );
+}
+
+async function loadPublicShopSpotlightPresentationCycle(
+  cleanedGmfnId: string
+): Promise<any[] | null> {
+  const cycleKey = publicShopSpotlightSelectionCycleKey(cleanedGmfnId);
+  if (!cycleKey) return null;
+
+  const nowMs = Date.now();
+  prunePublicShopSpotlightSelectionCycles(nowMs);
+
+  const existingCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
+  if (existingCycle?.promise) return existingCycle.promise;
+  if (publicShopSpotlightCycleIsAuthoritative(existingCycle, nowMs)) {
+    return existingCycle?.items || null;
+  }
+
+  const requestStartedAtMs = Date.now();
+  let requestPromise: Promise<any[] | null>;
+  requestPromise = getPublicShopSpotlightOpportunity(cleanedGmfnId)
+    .then((opportunityRes) => {
+      const opportunityItems = publicShopSpotlightResponseItems(opportunityRes);
+      const requestFinishedAtMs = Date.now();
+      if (publicShopSpotlightRowsAreCanonical(opportunityItems)) {
+        publicShopSpotlightSelectionCycles.set(cycleKey, {
+          items: opportunityItems,
+          selectedAtMs: requestFinishedAtMs,
+          expiresAtMs: publicShopSpotlightCycleExpiryMs(
+            opportunityItems,
+            requestFinishedAtMs
+          ),
+        });
+        return opportunityItems;
+      }
+
+      const currentCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
+      if (
+        currentCycle &&
+        currentCycle.promise === requestPromise &&
+        publicShopSpotlightCycleIsAuthoritative(currentCycle, requestFinishedAtMs)
+      ) {
+        return currentCycle.items || null;
+      }
+      if (currentCycle?.promise === requestPromise) {
+        publicShopSpotlightSelectionCycles.delete(cycleKey);
+      }
+      return null;
+    })
+    .catch(() => {
+      const currentCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
+      if (currentCycle?.promise === requestPromise) {
+        publicShopSpotlightSelectionCycles.delete(cycleKey);
+      }
+      return null;
+    });
+
+  publicShopSpotlightSelectionCycles.set(cycleKey, {
+    items: null,
+    promise: requestPromise,
+    selectedAtMs: requestStartedAtMs,
+    expiresAtMs: requestStartedAtMs + SPOTLIGHT_PILOT_REFRESH_MS,
+  });
+  return requestPromise;
 }
 
 function publicShopReconnectErrorMessage(message: string): string {
@@ -1929,15 +2075,10 @@ export default function ShopGalleryPage() {
         (typeof document === "undefined" || document.visibilityState === "visible");
 
       if (canRequestCanonicalPresentation) {
-        const opportunityRes = await getPublicShopSpotlightOpportunity(cleanedGmfnId).catch(
-          () => null
+        const opportunityItems = await loadPublicShopSpotlightPresentationCycle(
+          cleanedGmfnId
         );
-        const opportunityItems = Array.isArray((opportunityRes as any)?.items)
-          ? (opportunityRes as any).items
-          : (opportunityRes as any)?.item
-          ? [(opportunityRes as any).item]
-          : [];
-        if (opportunityItems.length > 0) return opportunityItems;
+        if (opportunityItems && opportunityItems.length > 0) return opportunityItems;
       }
 
       const res = await getMarketplaceBroadcasts({
