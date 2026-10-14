@@ -922,8 +922,14 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /minWidth=\{132\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loans\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?\{collapsed\.overview \? "View details" : "Hide details"\}/,
-  "Loans overview toggle must keep fixed no-wrap geometry and a real open/closed label."
+  /minWidth=\{isCompact \? 76 : 132\}[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?debugId="loans\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?isCompact[\s\S]*?"Open"[\s\S]*?"View details"[\s\S]*?"Close"[\s\S]*?"Hide details"/,
+  "Loans overview toggle must keep compact phone geometry and real open/closed labels."
+);
+
+assertContains(
+  "src/components/PageTopNav.tsx",
+  /isAuthenticatedPhone[\s\S]*?location\.pathname\.startsWith\("\/app\/"\)[\s\S]*?data-gmfn-page-top-nav="compact"[\s\S]*?renderNavRow\(compactLinks, "soft", true\)/,
+  "Authenticated phone pages must replace repeated title cards with one compact shared navigation row."
 );
 
 assertNotContains(

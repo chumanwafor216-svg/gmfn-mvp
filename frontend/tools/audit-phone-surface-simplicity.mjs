@@ -1,0 +1,72 @@
+/* global console, process */
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const files = {
+  pageTopNav: "src/components/PageTopNav.tsx",
+  supportContact: "src/components/GsnSupportContact.tsx",
+  loans: "src/pages/LoansPage.tsx",
+  moneyIn: "src/pages/PaymentInstructionsPage.tsx",
+  moneyOut: "src/pages/WithdrawalInstructionsPage.tsx",
+};
+const source = Object.fromEntries(
+  Object.entries(files).map(([key, relativePath]) => [
+    key,
+    readFileSync(join(frontendRoot, relativePath), "utf8"),
+  ])
+);
+const findings = [];
+
+function assertContains(key, pattern, message) {
+  if (pattern.test(source[key])) return;
+  findings.push({ file: files[key], message });
+}
+
+assertContains(
+  "pageTopNav",
+  /isAuthenticatedPhone[\s\S]*?location\.pathname\.startsWith\("\/app\/"\)[\s\S]*?if \(compactLinks\.length === 0\) return null;[\s\S]*?data-gmfn-page-top-nav="compact"/,
+  "Authenticated phone routes must not repeat the app-shell title card when no route-local navigation remains."
+);
+assertContains(
+  "pageTopNav",
+  /const compactLinks = \[[\s\S]*?resolvedBackTo && resolvedBackLabel[\s\S]*?\.\.\.\(nextLinks \|\| \[\]\)[\s\S]*?\.\.\.\(utilityLinks \|\| \[\]\)/,
+  "The compact phone row must preserve required back, next, and utility routes."
+);
+assertContains(
+  "supportContact",
+  /compact\?: boolean[\s\S]*?if \(compact\)[\s\S]*?stableHeight=\{44\}[\s\S]*?Email support/,
+  "Shared phone support contact must collapse to one compact Email support action."
+);
+assertContains(
+  "loans",
+  /data-gmfn-loans-surface="primary"[\s\S]*?Active \$\{activeLoans\.length\}[\s\S]*?Waiting \$\{guarantorInbox\.length\}[\s\S]*?Request support/,
+  "Loan Support phone hero must show only community state, two counts, and one primary request action."
+);
+assertContains(
+  "loans",
+  /\{!isCompact \|\| hasActiveSupportFocus \? \([\s\S]*?isCompact \? "More tools" : "More support tools"[\s\S]*?compact=\{isCompact\}/,
+  "Loan Support must hide a calm phone focus card and keep secondary tools and help compact."
+);
+assertContains(
+  "moneyIn",
+  /<GsnSupportContact[\s\S]*?context="Money In"[\s\S]*?compact=\{isCompact\}/,
+  "Money In must use the compact shared phone support action."
+);
+assertContains(
+  "moneyOut",
+  /<GsnSupportContact[\s\S]*?context="Money Out"[\s\S]*?compact=\{isCompact\}/,
+  "Money Out must use the compact shared phone support action."
+);
+
+if (findings.length > 0) {
+  console.error("Phone surface simplicity audit failed:");
+  for (const finding of findings) {
+    console.error(`- ${finding.file}: ${finding.message}`);
+  }
+  process.exit(1);
+}
+
+console.log("Phone surface simplicity audit passed.");

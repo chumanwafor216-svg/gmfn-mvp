@@ -6,6 +6,7 @@ type GsnSupportContactProps = {
   context: string;
   subject?: string;
   body?: string;
+  compact?: boolean;
   style?: React.CSSProperties;
 };
 
@@ -66,6 +67,7 @@ export default function GsnSupportContact({
   context,
   subject,
   body,
+  compact = false,
   style,
 }: GsnSupportContactProps) {
   const email = getGsnSupportEmail();
@@ -82,6 +84,27 @@ export default function GsnSupportContact({
   }, [body, context, email, subject]);
 
   if (!email) return null;
+
+  if (compact) {
+    return (
+      <StableCtaLink
+        to={href}
+        debugId={`gsn-support-contact.${context.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+        stableHeight={44}
+        fullWidth
+        style={{
+          ...style,
+          borderRadius: 14,
+          background: "#FFFFFF",
+          color: "#0B1F33",
+          border: "1px solid rgba(76,111,146,0.16)",
+          boxShadow: "0 8px 18px rgba(7,20,36,0.06)",
+        }}
+      >
+        Email support
+      </StableCtaLink>
+    );
+  }
 
   return (
     <section style={{ ...supportCardStyle(), ...style }}>

@@ -107,3 +107,20 @@ The current polished mobile shell uses 58px bottom-rail action cells with
 approved GSN 3D icons and two-line label room, plus 56px drawer rows. These
 values are caged by the route-local button inventory audits and the protected
 button freeze.
+
+## 2026-10-14 Community Home Invite Exception
+
+The product owner explicitly reopened only the selected-community hero invite
+placement. The separate large Copy/Share card is replaced by one compact
+`Invite` disclosure inside the hero. Opening it exposes only recipient name and
+`Send invite`; the signed-in member remains the server-recorded invite creator.
+Community identity, Bulletin order, route reconciliation, handoffs, switcher,
+admin gating, and app-shell geometry remain frozen.
+
+## 2026-10-14 Authenticated Phone Simplicity Exception
+
+The product owner explicitly reopened authenticated phone surfaces for an
+app-wide wordiness cleanup. The shared `PageTopNav` may no longer repeat the
+app-shell page title, section label, and subtitle on `/app/*` phone routes.
+Required back and route links remain available in one compact horizontal row;
+desktop presentation and all route targets remain unchanged.

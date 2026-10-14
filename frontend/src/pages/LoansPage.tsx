@@ -764,9 +764,8 @@ export default function LoansPage() {
     }
 
     return {
-      title: "Your support activity is calm right now.",
-      detail:
-        "No urgent request-side or supporter-side pressure is currently shown.",
+      title: "No active support requests",
+      detail: "Nothing needs your attention.",
     };
   }, [
     hasWithdrawalSupportHandoff,
@@ -777,6 +776,14 @@ export default function LoansPage() {
     guarantorLoans,
     guidance,
   ]);
+  const hasActiveSupportFocus = Boolean(
+    hasWithdrawalSupportHandoff ||
+      guarantorInbox.length > 0 ||
+      borrowerLoans.length > 0 ||
+      guarantorLoans.length > 0 ||
+      safeStr(guidance?.nextBestStep?.kind).toLowerCase().includes("loan") ||
+      safeStr(guidance?.nextBestStep?.kind).toLowerCase().includes("guarantor")
+  );
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -821,7 +828,7 @@ export default function LoansPage() {
         margin: "0 auto",
         paddingBottom: isCompact ? 40 : 60,
         display: "grid",
-        gap: 18,
+        gap: isCompact ? 10 : 18,
       }}
     >
       <PageTopNav
@@ -834,9 +841,13 @@ export default function LoansPage() {
 
       <section
         id="loans-support-overview"
-        style={pageCard(
-          "radial-gradient(circle at top right, rgba(242,207,119,0.20), transparent 34%), linear-gradient(135deg, #061827 0%, #0A2A48 62%, #0B4EB3 100%)"
-        )}
+        data-gmfn-loans-surface="primary"
+        style={{
+          ...pageCard(
+            "radial-gradient(circle at top right, rgba(242,207,119,0.20), transparent 34%), linear-gradient(135deg, #061827 0%, #0A2A48 62%, #0B4EB3 100%)"
+          ),
+          ...(isCompact ? { padding: 14, borderRadius: 18 } : {}),
+        }}
       >
         <div
           style={{
@@ -847,72 +858,101 @@ export default function LoansPage() {
           }}
         >
           <div>
-            <div
-              style={{
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 30 : 46,
-                lineHeight: 1.1,
-              }}
-            >
-              {hasWithdrawalSupportHandoff ? "Withdrawal support" : "Loan Support"}
-            </div>
+            {!isCompact || hasWithdrawalSupportHandoff ? (
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontWeight: 900,
+                  fontSize: isCompact ? 21 : 46,
+                  lineHeight: 1.1,
+                }}
+              >
+                {hasWithdrawalSupportHandoff ? "Withdrawal support" : "Loan Support"}
+              </div>
+            ) : null}
+
+            {!isCompact ? (
+              <>
+                <div
+                  style={{
+                    width: 54,
+                    height: 4,
+                    borderRadius: 999,
+                    marginTop: 12,
+                    background:
+                      "linear-gradient(90deg, #F2CF77 0%, rgba(242,207,119,0.18) 100%)",
+                  }}
+                />
+
+                <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
+                  {hasWithdrawalSupportHandoff
+                    ? "Money Out sent this here because the amount needs community support."
+                    : "Ask for support, respond to requests, and keep repayment visible inside this community."}
+                </div>
+              </>
+            ) : null}
+
+            {isCompact ? (
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {communityLabel}
+              </div>
+            ) : null}
 
             <div
               style={{
-                width: 54,
-                height: 4,
-                borderRadius: 999,
-                marginTop: 12,
-                background:
-                  "linear-gradient(90deg, #F2CF77 0%, rgba(242,207,119,0.18) 100%)",
-              }}
-            />
-
-            <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
-              {hasWithdrawalSupportHandoff
-                ? "Money Out sent this here because the amount needs community support."
-                : "Ask for support, respond to requests, and keep repayment visible inside this community."}
-            </div>
-
-            <div
-              style={{
-                marginTop: 18,
+                marginTop: isCompact ? 10 : 18,
                 display: "grid",
-                gap: 8,
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : undefined,
+                gap: isCompact ? 6 : 8,
                 maxWidth: 580,
               }}
             >
-              <span style={badge(false)}>Community: {communityLabel}</span>
+              {!isCompact ? <span style={badge(false)}>Community: {communityLabel}</span> : null}
               {hasWithdrawalSupportHandoff ? (
-                <span style={badge(false)}>Money Out support needed</span>
+                <span
+                  style={{
+                    ...badge(false),
+                    ...(isCompact ? { gridColumn: "1 / -1", justifyContent: "center" } : {}),
+                  }}
+                >
+                  Support needed
+                </span>
               ) : null}
-              <span style={badge(false)}>Active support items: {activeLoans.length}</span>
-              <span style={badge(false)}>
-                Waiting support requests: {guarantorInbox.length}
+              <span style={{ ...badge(false), justifyContent: "center", padding: "6px 8px" }}>
+                {isCompact ? `Active ${activeLoans.length}` : `Active support items: ${activeLoans.length}`}
+              </span>
+              <span style={{ ...badge(false), justifyContent: "center", padding: "6px 8px" }}>
+                {isCompact ? `Waiting ${guarantorInbox.length}` : `Waiting support requests: ${guarantorInbox.length}`}
               </span>
             </div>
 
             <StableCtaLink
               to={routes.startSupport}
               debugId="loans.hero.start-support"
-              stableHeight={isCompact ? 58 : 68}
+              stableHeight={isCompact ? 52 : 68}
               fullWidth={isCompact}
               minWidth={isCompact ? undefined : 260}
               style={{
                 ...routeTileStyle(true, isCompact),
-                marginTop: isCompact ? 12 : 18,
+                marginTop: isCompact ? 10 : 18,
                 maxWidth: isCompact ? "100%" : 360,
-                height: isCompact ? 58 : 68,
-                minHeight: isCompact ? 58 : 68,
-                maxHeight: isCompact ? 58 : 68,
+                height: isCompact ? 52 : 68,
+                minHeight: isCompact ? 52 : 68,
+                maxHeight: isCompact ? 52 : 68,
                 border: "1px solid rgba(255,255,255,0.48)",
               }}
             >
               {routeIcon("spark", true, isCompact)}
               <div>
                 <div style={routeTitleStyle(isCompact)}>
-                  {hasWithdrawalSupportHandoff ? "Continue support request" : "Start Support Request"}
+                  {hasWithdrawalSupportHandoff ? "Continue request" : "Request support"}
                 </div>
                 <div style={routeHelperStyle(isCompact)}>
                   {hasWithdrawalSupportHandoff
@@ -981,7 +1021,13 @@ export default function LoansPage() {
         </div>
       </section>
 
-      <section id="loans-support-summary" style={pageCard("#FFFFFF")}>
+      <section
+        id="loans-support-summary"
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...(isCompact ? { padding: 10, borderRadius: 16 } : {}),
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -992,19 +1038,21 @@ export default function LoansPage() {
           }}
         >
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {routeIcon("chart")}
+            {routeIcon("chart", false, isCompact)}
             <div>
-              <div style={sectionLabel()}>Support summary</div>
-              <div style={{ marginTop: 4, ...helperText() }}>
-                Overview of your support and queues.
-              </div>
+              <div style={sectionLabel()}>{isCompact ? "Summary" : "Support summary"}</div>
+              {!isCompact ? (
+                <div style={{ marginTop: 4, ...helperText() }}>
+                  Overview of your support and queues.
+                </div>
+              ) : null}
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("overview")}
-            minWidth={132}
-            stableHeight={48}
+            minWidth={isCompact ? 76 : 132}
+            stableHeight={isCompact ? 44 : 48}
             debugId="loans.toggle-overview"
             style={{
               borderRadius: 999,
@@ -1012,7 +1060,13 @@ export default function LoansPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.overview ? "View details" : "Hide details"}
+            {collapsed.overview
+              ? isCompact
+                ? "Open"
+                : "View details"
+              : isCompact
+                ? "Close"
+                : "Hide details"}
           </SubtleButton>
         </div>
 
@@ -1099,7 +1153,14 @@ export default function LoansPage() {
         ) : null}
       </section>
 
-      <section id="loans-current-focus" style={pageCard("#FFFFFF")}>
+      {!isCompact || hasActiveSupportFocus ? (
+      <section
+        id="loans-current-focus"
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...(isCompact ? { padding: 12, borderRadius: 16 } : {}),
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -1108,24 +1169,45 @@ export default function LoansPage() {
             alignItems: "stretch",
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "96px minmax(0, 1fr)", gap: 16 }}>
-            <span style={{ ...routeIconCircle(false), width: 86, height: 86 }}>
-              <GsnLegacyIcon name="spark" size={52} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "38px minmax(0, 1fr)" : "96px minmax(0, 1fr)",
+              gap: isCompact ? 10 : 16,
+              alignItems: isCompact ? "center" : "start",
+            }}
+          >
+            <span
+              style={{
+                ...routeIconCircle(false, isCompact),
+                width: isCompact ? 38 : 86,
+                height: isCompact ? 38 : 86,
+              }}
+            >
+              <GsnLegacyIcon name="spark" size={isCompact ? 32 : 52} />
             </span>
             <div>
-              <div style={sectionLabel()}>Current support focus</div>
+              <div style={sectionLabel()}>{isCompact ? "Now" : "Current support focus"}</div>
               <div
                 style={{
-                  marginTop: 12,
+                  marginTop: isCompact ? 4 : 12,
                   color: "#07172C",
-                  fontSize: 22,
+                  fontSize: isCompact ? 15 : 22,
                   fontWeight: 950,
                   lineHeight: 1.25,
                 }}
               >
                 {supportFocus.title}
               </div>
-              <div style={{ marginTop: 10, ...helperText() }}>{supportFocus.detail}</div>
+              <div
+                style={{
+                  marginTop: isCompact ? 4 : 10,
+                  ...helperText(),
+                  ...(isCompact ? { fontSize: 12.5, lineHeight: 1.35, ...brandClampLines(2) } : {}),
+                }}
+              >
+                {supportFocus.detail}
+              </div>
             </div>
           </div>
 
@@ -1149,8 +1231,15 @@ export default function LoansPage() {
           ) : null}
         </div>
       </section>
+      ) : null}
 
-      <section id="loans-next-routes" style={pageCard("#FFFFFF")}>
+      <section
+        id="loans-next-routes"
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...(isCompact ? { padding: 10, borderRadius: 16 } : {}),
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -1161,19 +1250,21 @@ export default function LoansPage() {
           }}
         >
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {routeIcon("globe")}
+            {routeIcon("globe", false, isCompact)}
             <div>
-              <div style={sectionLabel()}>More support tools</div>
-              <div style={{ marginTop: 4, ...helperText() }}>
-                Open only when the support request needs a deeper step.
-              </div>
+              <div style={sectionLabel()}>{isCompact ? "More tools" : "More support tools"}</div>
+              {!isCompact ? (
+                <div style={{ marginTop: 4, ...helperText() }}>
+                  Open only when the support request needs a deeper step.
+                </div>
+              ) : null}
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("routes")}
-            minWidth={132}
-            stableHeight={48}
+            minWidth={isCompact ? 76 : 132}
+            stableHeight={isCompact ? 44 : 48}
             debugId="loans.toggle-routes"
             style={{
               borderRadius: 999,
@@ -1181,7 +1272,13 @@ export default function LoansPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.routes ? "Open tools" : "Hide tools"}
+            {collapsed.routes
+              ? isCompact
+                ? "Open"
+                : "Open tools"
+              : isCompact
+                ? "Close"
+                : "Hide tools"}
           </SubtleButton>
         </div>
 
@@ -1478,6 +1575,7 @@ export default function LoansPage() {
       <GsnSupportContact
         context="Loan Support"
         subject="GSN support request help"
+        compact={isCompact}
         style={{ marginTop: 16 }}
       />
 

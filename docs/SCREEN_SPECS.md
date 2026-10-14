@@ -219,10 +219,36 @@ Rules:
 - one phone screen should present one decision;
 - the current state and next action should be visible without scrolling
   whenever possible;
+- the authenticated app shell owns the phone page name; route-level
+  `PageTopNav` must not repeat its title, section label, or subtitle in another
+  large card;
+- required back, next, and utility routes may remain in one compact horizontal
+  row, while redundant Dashboard/Home links should rely on the shared shell;
 - short facts should use chips or two-column mini cards;
 - raw URLs, logs, policy text, repeated explanation, and admin-only controls
   should be collapsed by default;
 - long processes should show only the current step expanded.
+
+## Loan Support Page
+
+Route: `/app/loans`
+
+Phone first surface:
+- selected community;
+- Active and Waiting counts;
+- one `Request support` primary action;
+- one compact Summary disclosure;
+- one compact More tools disclosure.
+
+Rules:
+- do not repeat the Loan Support title or its general explanation under the
+  authenticated app-shell header;
+- hide the Current support focus card when nothing needs attention;
+- when a real support item needs attention, show its short state and next step;
+- keep support summary, route tools, and email help collapsed or compact until
+  the user asks for them;
+- do not change support, finance, repayment, approval, or route contracts while
+  simplifying the surface.
 
 ## AuthGatewayPage
 
@@ -232,20 +258,17 @@ Choose existing member or new member.
 Must show:
 - GSN
 - Welcome
-- Choose one.
-- Existing member card
-- Sign in button
-- New member card
-- Sign up button
+- Existing member card with the primary Sign in button
+- one compact `New to GSN? Sign up` secondary row
 - note: After registration or approval, you will return here and sign in as an existing member.
 
-Primary actions:
+Primary action:
 - Sign in
-- Sign up
 
 Rules:
 - Existing users go to SignInPage.
-- New users go to SignUpChoicePage.
+- New users go to SignUpChoicePage from the compact secondary Sign up action.
+- Sign up must not use a second large card or compete visually with Sign in.
 
 ## SignInPage
 
@@ -290,21 +313,19 @@ New member chooses starting path.
 
 Must show:
 - GSN
-- New member sign up
-- Choose your starting path.
-- Create community card
-- Join request membership card
+- New member
+- one primary Join community card
+- one compact `Starting your own? Start community` secondary row
 - Compact Institutional setup option for Purchase Community Domain
 - information note: Once your setup or join request is completed, you will sign in from the Existing Member page.
 
-Primary actions:
-- Start community
+Primary action:
 - Request to join
-- Purchase Community Domain, kept secondary to ordinary Create/Join choices
 
 Rules:
 - Create community goes to StartCommunityPage.
 - Request to join goes to JoinRequestMembershipPage.
+- Join stays visually primary for the ordinary new-member path; Start community stays visible but compact.
 - Purchase Community Domain goes to CommunityDomainPurchasePage from the compact Institutional setup option.
 - Purchase Community Domain is a separate institutional provisioning path and must not be
   merged into ordinary Create Community or shown as a competing ordinary-member path.
@@ -377,6 +398,8 @@ Must show:
 - Step 3: Founder trust level / optional verification choices
 
 Rules:
+- The first phone surface asks only whether the founder is new to GSN. `Continue as new founder` is primary; `I have a GSN ID` is secondary and routes to sign in.
+- Do not expose the long duplicate-identity explanation before the founder makes that first choice.
 - Only one step expanded at a time.
 - Future steps collapsed or clearly marked optional.
 - User completes Step 1 before Step 2.
@@ -405,6 +428,10 @@ Must show:
 - submit request button
 - privacy and approval note
 
+Phone-first rule:
+- Show community, inviter, expiry where known, one short approval boundary, and the next action.
+- Keep the full invite note collapsed. Hide promotional invite artwork, repeated evidence chips, and the official footer from the first phone surface.
+
 After submission:
 - show JoinRequestSubmittedPage
 - tell user they must sign in as existing member after approval or completion
@@ -426,15 +453,15 @@ Canonical rule:
 Must show, in phone-first order:
 - selected community identity hero
   - community name
+  - compact member count directly after the name
   - stable community reference / global ID where available
   - member role/status
-  - compact member count only when known
-- compact invite card immediately after identity
-  - plain explanation: send the link, the person asks to join, and the community reviews the request
-  - one primary "Copy invite link" action
-  - one secondary "Share invite" action
-  - no required receiver, relationship, or message fields
-- Community Bulletin immediately after the compact invite card
+  - one small `Invite` action inside the hero
+- tapping `Invite` opens one recipient-name field and one `Send invite` action
+  - the signed-in member is attached automatically as inviter
+  - the recipient name is required and attached to the personalised join link
+  - sending opens the device share sheet; clipboard fallback copies the full personalised message
+- Community Bulletin immediately after the identity hero
   - one live announcement presentation
   - Details for acknowledgement/contact/availability/attachment/QR actions
   - no Ask Community / market-need records in the Bulletin by default
@@ -466,7 +493,7 @@ Rules:
 - Community Home must not expose a full cross-community portfolio; My GSN owns cross-GSN/community identity orientation later.
 - Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
 - Secondary details stay collapsed, grouped, or represented as compact rows.
-- Every selected community must expose the shared compact invite card. Invite personalization may exist only as an optional collapsed control.
+- Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.

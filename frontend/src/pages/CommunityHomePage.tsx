@@ -4154,12 +4154,12 @@ export default function CommunityHomePage() {
                 </div>
               ) : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={badge(Boolean(selectedClan))}>{selectedCommunityReference}</span>
-                <span style={badge(Boolean(selectedClan))}>{selectedCommunityRoleLabel}</span>
-                <span style={badge(Boolean(selectedClan))}>{selectedCommunityStatusLabel}</span>
-                {selectedCommunityMemberCount > 0 ? (
-                  <span style={badge(false)}>{selectedCommunityMemberCount} members</span>
-                ) : null}
+                <span style={badge(false)}>
+                  {selectedCommunityMemberCount} {selectedCommunityMemberCount === 1 ? "member" : "members"}
+                </span>
+              </div>
+              <div style={{ color: "#C8D8E8", fontSize: 12, fontWeight: 780, lineHeight: 1.35 }}>
+                {selectedCommunityReference} · {selectedCommunityRoleLabel} · {selectedCommunityStatusLabel}
               </div>
               {communityHomeNeedsDisplayName ? (
                 <StableButton
@@ -4173,13 +4173,16 @@ export default function CommunityHomePage() {
               ) : null}
             </div>
           </div>
-        </section>
 
-        <SimpleCommunityInviteCard
-          communityId={selectedClanId}
-          communityName={selectedClanName}
-          compact={isCompact}
-        />
+          <SimpleCommunityInviteCard
+            communityId={selectedClanId}
+            communityName={selectedClanName}
+            communityCode={selectedCommunityReference}
+            inviterName={hasHumanMemberName(me) ? resolveMemberName(me) : ""}
+            compact={isCompact}
+            hero
+          />
+        </section>
 
         <section id="community-home-bulletin" style={announcementBoardShellStyle()} data-debug-id="community-home.bulletin">
           <div style={announcementBoardHeaderStyle(isCompact)} aria-label="Community announcements">

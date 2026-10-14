@@ -78,8 +78,8 @@ assertContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /New member sign up[\s\S]*?Choose one\.[\s\S]*?Sign in[\s\S]*?New member[\s\S]*?Create a new community[\s\S]*?Join an existing community[\s\S]*?Request to join[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
-  "Welcome must speak in simple user choices first, with institutional setup kept secondary."
+  /New member[\s\S]*?Existing member[\s\S]*?debugId="welcome\.identity\.sign-in"[\s\S]*?New to GSN\?[\s\S]*?variant="secondary"[\s\S]*?debugId="welcome\.identity\.sign-up"[\s\S]*?Most new members[\s\S]*?Join a community[\s\S]*?debugId="welcome\.new\.join-community"[\s\S]*?Starting your own\?[\s\S]*?variant="secondary"[\s\S]*?debugId="welcome\.new\.start-community"[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
+  "Welcome must make Sign in primary, keep Sign up secondary, make Join the primary new-member path, and keep founder/institutional setup visually subordinate."
 );
 
 assertContains(

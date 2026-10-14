@@ -1307,44 +1307,46 @@ function BrandedInvitationPaper({
           ) : null}
         </div>
 
-        <div
-          data-gsn-invite-promo-pack="true"
-          style={invitationPromotionPackStyle(isCompact)}
-        >
-          <div style={invitationPromotionVisualStyle(isCompact)} aria-hidden="true">
-            <div style={invitationPromotionShopTileStyle(isCompact)}>
-              {promoImageUrl ? (
-                <img
-                  src={promoImageUrl}
-                  alt={promoImageAlt || "GSN invite promotion"}
-                  loading="eager"
-                  decoding="async"
-                  style={invitationPromotionImageStyle()}
-                />
-              ) : (
-                <GsnRealisticIcon
-                  name="shop-storefront"
-                  size={isCompact ? 58 : 72}
-                  decorative
-                  loading="eager"
-                />
-              )}
+        {!isCompact ? (
+          <div
+            data-gsn-invite-promo-pack="true"
+            style={invitationPromotionPackStyle(isCompact)}
+          >
+            <div style={invitationPromotionVisualStyle(isCompact)} aria-hidden="true">
+              <div style={invitationPromotionShopTileStyle(isCompact)}>
+                {promoImageUrl ? (
+                  <img
+                    src={promoImageUrl}
+                    alt={promoImageAlt || "GSN invite promotion"}
+                    loading="eager"
+                    decoding="async"
+                    style={invitationPromotionImageStyle()}
+                  />
+                ) : (
+                  <GsnRealisticIcon
+                    name="shop-storefront"
+                    size={72}
+                    decorative
+                    loading="eager"
+                  />
+                )}
+              </div>
+              <div style={invitationPromotionGsnBadgeStyle(isCompact)}>
+                <GSNBrandMark width={29} height={38} />
+              </div>
             </div>
-            <div style={invitationPromotionGsnBadgeStyle(isCompact)}>
-              <GSNBrandMark width={isCompact ? 25 : 29} height={isCompact ? 32 : 38} />
-            </div>
-          </div>
 
-          <div style={invitationPromotionCopyStyle(isCompact)}>
-            <div style={invitationPromotionKickerStyle()}>GSN invite pack</div>
-            <div style={invitationPromotionTitleStyle(isCompact)}>
-              {communityName || "GSN community"}
-            </div>
-            <div style={invitationPromotionMessageStyle(isCompact)}>
-              Request access through GSN. Approval required.
+            <div style={invitationPromotionCopyStyle(isCompact)}>
+              <div style={invitationPromotionKickerStyle()}>GSN invite pack</div>
+              <div style={invitationPromotionTitleStyle(isCompact)}>
+                {communityName || "GSN community"}
+              </div>
+              <div style={invitationPromotionMessageStyle(isCompact)}>
+                Request access through GSN. Approval required.
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <details style={invitationPaperDetailsStyle(isCompact)}>
           <StableDisclosureSummary
@@ -1359,10 +1361,12 @@ function BrandedInvitationPaper({
           </div>
         </details>
 
-        <div style={invitationPaperFooterStyle()}>
-          <span>Official GSN access</span>
-          <span>One identity. Community review.</span>
-        </div>
+        {!isCompact ? (
+          <div style={invitationPaperFooterStyle()}>
+            <span>Official GSN access</span>
+            <span>One identity. Community review.</span>
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -2803,32 +2807,37 @@ export default function JoinEntryPage() {
                     lineHeight: 1.4,
                   }}
                 >
-                  A QR code or invite link starts a request. It does not confirm
-                  membership, and it does not verify identity.
+                  {isCompact
+                    ? "This starts a request. The community still approves access."
+                    : "A QR code or invite link starts a request. It does not confirm membership, and it does not verify identity."}
                 </div>
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span style={badge(true)}>
-                    {joinEntryIconText("navigation", "Request access", 18)}
-                  </span>
-                  <span style={badge(false)}>
-                    {joinEntryIconText("check", "Approval required", 18)}
-                  </span>
-                  <span style={badge(false)}>
-                    {joinEntryIconText("id", "Verification later", 18)}
-                  </span>
-                </div>
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  The community reviews who enters. Stronger evidence can be
-                  requested later before verified status, sensitive benefits,
-                  marketplace trust, or official community decisions.
-                </div>
+                {!isCompact ? (
+                  <>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span style={badge(true)}>
+                        {joinEntryIconText("navigation", "Request access", 18)}
+                      </span>
+                      <span style={badge(false)}>
+                        {joinEntryIconText("check", "Approval required", 18)}
+                      </span>
+                      <span style={badge(false)}>
+                        {joinEntryIconText("id", "Verification later", 18)}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                      The community reviews who enters. Stronger evidence can be
+                      requested later before verified status, sensitive benefits,
+                      marketplace trust, or official community decisions.
+                    </div>
+                  </>
+                ) : null}
               </div>
 
 

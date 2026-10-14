@@ -3171,6 +3171,7 @@ export default function WithdrawalInstructionsPage() {
       <GsnSupportContact
         context="Money Out"
         subject="GSN Money Out help"
+        compact={isCompact}
         style={{ marginTop: 16 }}
       />
     </div>

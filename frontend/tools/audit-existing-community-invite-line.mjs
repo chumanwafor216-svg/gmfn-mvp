@@ -148,8 +148,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?data-gsn-invite-promo-pack="true"[\s\S]*?name="shop-storefront"[\s\S]*?Full invite note[\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?<BrandedInvitationPaper/,
-  "Existing-community invites must render as a compact branded GSN invite pack with GSN mark, shop/product-style visual tile, collapsed full note, and official-access footer."
+  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?!isCompact \? \([\s\S]*?data-gsn-invite-promo-pack="true"[\s\S]*?name="shop-storefront"[\s\S]*?\) : null[\s\S]*?Full invite note[\s\S]*?!isCompact \? \([\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?\) : null[\s\S]*?<BrandedInvitationPaper/,
+  "Existing-community invites must keep the branded paper and collapsed note while moving promotional art and the repeated official footer off the phone surface."
 );
 
 assertContains(

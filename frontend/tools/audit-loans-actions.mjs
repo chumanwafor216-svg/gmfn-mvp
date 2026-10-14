@@ -146,8 +146,26 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 58 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 58 : 68,[\s\S]*?minHeight: isCompact \? 58 : 68,[\s\S]*?maxHeight: isCompact \? 58 : 68,[\s\S]*?Start Support Request/,
-  "Loans first phone viewport must expose a fixed-height Start Support Request CTA in the hero before the user reaches the deeper route grid."
+  /data-gmfn-loans-surface="primary"[\s\S]*?debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 52 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 52 : 68,[\s\S]*?minHeight: isCompact \? 52 : 68,[\s\S]*?maxHeight: isCompact \? 52 : 68,[\s\S]*?Request support/,
+  "Loans first phone viewport must expose one compact fixed-height Request support CTA before the deeper route grid."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /const hasActiveSupportFocus = Boolean\([\s\S]*?\);/,
+  "Loan Support must calculate whether a real support focus needs phone space."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /\{!isCompact \|\| hasActiveSupportFocus \? \([\s\S]*?isCompact \? "Summary" : "Support summary"|isCompact \? "Summary" : "Support summary"[\s\S]*?\{!isCompact \|\| hasActiveSupportFocus \? \(/,
+  "Loan Support phone surface must hide the calm focus card while keeping its compact summary label."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /isCompact \? "More tools" : "More support tools"[\s\S]*?compact=\{isCompact\}/,
+  "Loan Support must shorten the closed phone tools label and keep support contact compact."
 );
 
 assertContains(

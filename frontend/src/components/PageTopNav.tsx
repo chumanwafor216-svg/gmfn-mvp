@@ -249,6 +249,51 @@ export default function PageTopNav(props: PageTopNavProps) {
       );
     }) as NavItem[];
 
+  const isAuthenticatedPhone =
+    isPhone && location.pathname.startsWith("/app/");
+  const compactLinks = [
+    resolvedBackTo && resolvedBackLabel
+      ? {
+          label: originPath ? "Back" : resolvedBackLabel,
+          to: resolvedBackTo,
+          preserveOrigin: false,
+        }
+      : null,
+    ...(nextLinks || []),
+    ...(utilityLinks || []),
+  ]
+    .filter(Boolean)
+    .filter((item, index, items) => {
+      const candidate = item as NavItem;
+      return (
+        items.findIndex(
+          (entry) => (entry as NavItem).to === candidate.to
+        ) === index
+      );
+    }) as NavItem[];
+
+  if (isAuthenticatedPhone) {
+    if (compactLinks.length === 0) return null;
+
+    return (
+      <nav
+        aria-label="Page navigation"
+        data-gmfn-page-top-nav="compact"
+        style={{
+          borderRadius: 14,
+          border: "1px solid rgba(76,111,146,0.14)",
+          background:
+            "linear-gradient(180deg, #071424 0%, #0C2338 100%)",
+          padding: 6,
+          boxShadow: "0 8px 18px rgba(7,20,36,0.06)",
+          overflow: "hidden",
+        }}
+      >
+        {renderNavRow(compactLinks, "soft", true)}
+      </nav>
+    );
+  }
+
   return (
     <section
       style={wrapCard(

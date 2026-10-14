@@ -6,6 +6,7 @@ import {
 } from "../components/EntryControls";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
+import { StableDisclosureSummary } from "../components/StableButton";
 import { getAccessToken } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -264,7 +265,7 @@ export default function WelcomePage() {
       : entryMode === "existing"
       ? "Open sign in."
       : step === "choose_new_lane"
-      ? "New member sign up"
+      ? "New member"
       : "Welcome";
 
   const subtext =
@@ -277,8 +278,8 @@ export default function WelcomePage() {
       : entryMode === "existing"
       ? "For active accounts."
       : step === "choose_new_lane"
-      ? "Choose one."
-      : "Choose one.";
+      ? ""
+      : "";
 
   return (
     <div style={pageShell()}>
@@ -508,13 +509,20 @@ export default function WelcomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 318px))",
-                gap: isCompact ? 16 : 20,
-                justifyContent: "center",
-                alignItems: "stretch",
+                width: "min(100%, 480px)",
+                justifySelf: "center",
+                gap: isCompact ? 10 : 12,
               }}
             >
-              <div style={{ ...choiceCard(), minHeight: isCompact ? 132 : 150 }}>
+              <div
+                style={{
+                  ...choiceCard(),
+                  minHeight: isCompact ? 142 : 156,
+                  border: "1px solid rgba(243,208,106,0.30)",
+                  boxShadow:
+                    "0 28px 52px rgba(0,8,18,0.32), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
+              >
                 <div style={iconBadge()} aria-hidden="true">
                   <WelcomeIcon name="identity-card" />
                 </div>
@@ -536,43 +544,46 @@ export default function WelcomePage() {
                   <EntryActionButton
                     type="button"
                     onClick={openExisting}
-                    variant="secondary"
                     debugId="welcome.identity.sign-in"
-                    style={{ width: isCompact ? "min(100%, 180px)" : 180 }}
+                    style={{ width: "100%" }}
                   >
                     Sign in
                   </EntryActionButton>
                 </div>
               </div>
 
-              <div style={choiceCard()}>
-                <div style={iconBadge()} aria-hidden="true">
-                  <WelcomeIcon name="join-person-plus" />
-                </div>
-
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={routePill()}>New member</div>
-                  <div
-                    style={{
-                      fontSize: isCompact ? 25 : 30,
-                      fontWeight: 900,
-                      lineHeight: 1.08,
-                    }}
-                  >
-                    Sign up
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                  <EntryActionButton
-                    type="button"
-                    onClick={() => setStep("choose_new_lane")}
-                    debugId="welcome.identity.sign-up"
-                    style={{ width: "100%" }}
-                  >
-                    Sign up
-                  </EntryActionButton>
-                </div>
+              <div
+                style={{
+                  minHeight: 48,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  padding: "2px 8px",
+                  color: "rgba(255,255,255,0.72)",
+                  fontSize: 13,
+                  fontWeight: 750,
+                }}
+              >
+                <span>New to GSN?</span>
+                <EntryActionButton
+                  type="button"
+                  onClick={() => setStep("choose_new_lane")}
+                  variant="secondary"
+                  debugId="welcome.identity.sign-up"
+                  style={{
+                    minHeight: 42,
+                    width: 112,
+                    padding: "9px 14px",
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.07)",
+                    boxShadow: "none",
+                    color: "rgba(255,255,255,0.88)",
+                    fontSize: 13,
+                  }}
+                >
+                  Sign up
+                </EntryActionButton>
               </div>
 
             </div>
@@ -588,55 +599,26 @@ export default function WelcomePage() {
             >
               <div
                 style={{
-                  width: "min(100%, 680px)",
+                  width: "min(100%, 480px)",
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 318px))",
-                  justifyContent: "center",
-                  gap: isCompact ? 14 : 18,
+                  gap: isCompact ? 10 : 12,
                   padding: 0,
                 }}
               >
-                <div style={choiceCard()}>
-                  <div style={iconBadge()} aria-hidden="true">
-                    <WelcomeIcon name="community-building" />
-                  </div>
-
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={routePill()}>Create</div>
-                    <div
-                      style={{
-                        fontSize: isCompact ? 23 : 26,
-                        fontWeight: 900,
-                        lineHeight: 1.08,
-                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
-                      }}
-                    >
-                      Create a new community
-                    </div>
-                    <div style={supportText()}>
-                      Start a trusted group and invite your first people.
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                    <EntryActionButton
-                      type="button"
-                      onClick={openCreate}
-                      debugId="welcome.new.start-community"
-                      style={{ width: "100%" }}
-                    >
-                      Start community
-                    </EntryActionButton>
-                  </div>
-                </div>
-
-                <div style={choiceCard()}>
+                <div
+                  style={{
+                    ...choiceCard(),
+                    border: "1px solid rgba(243,208,106,0.30)",
+                    boxShadow:
+                      "0 28px 52px rgba(0,8,18,0.32), inset 0 1px 0 rgba(255,255,255,0.15)",
+                  }}
+                >
                   <div style={iconBadge()} aria-hidden="true">
                     <WelcomeIcon name="join-person-plus" />
                   </div>
 
                   <div style={{ display: "grid", gap: 6 }}>
-                    <div style={routePill()}>Join</div>
+                    <div style={routePill()}>Most new members</div>
                     <div
                       style={{
                         fontSize: isCompact ? 23 : 26,
@@ -645,10 +627,10 @@ export default function WelcomePage() {
                         textShadow: "0 10px 24px rgba(0,0,0,0.12)",
                       }}
                     >
-                      Join an existing community
+                      Join a community
                     </div>
                     <div style={supportText()}>
-                      Use an invite or request access from the community.
+                      Use an invite or community code.
                     </div>
                   </div>
 
@@ -663,19 +645,54 @@ export default function WelcomePage() {
                     </EntryActionButton>
                   </div>
                 </div>
+
+                <div
+                  style={{
+                    minHeight: 48,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    padding: "2px 8px",
+                    color: "rgba(255,255,255,0.72)",
+                    fontSize: 13,
+                    fontWeight: 750,
+                  }}
+                >
+                  <span>Starting your own?</span>
+                  <EntryActionButton
+                    type="button"
+                    onClick={openCreate}
+                    variant="secondary"
+                    debugId="welcome.new.start-community"
+                    style={{
+                      minHeight: 42,
+                      width: 150,
+                      padding: "9px 14px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.07)",
+                      boxShadow: "none",
+                      color: "rgba(255,255,255,0.88)",
+                      fontSize: 13,
+                    }}
+                  >
+                    Start community
+                  </EntryActionButton>
+                </div>
               </div>
 
               <details
                 style={{
-                  width: "min(100%, 680px)",
+                  width: "min(100%, 480px)",
                   borderRadius: 18,
                   border: "1px solid rgba(220,231,243,0.14)",
                   background: "rgba(255,255,255,0.055)",
                   padding: isCompact ? 12 : 14,
                 }}
               >
-                <summary
-                  data-debug-id="welcome.new.institutional-setup-toggle"
+                <StableDisclosureSummary
+                  debugId="welcome.new.institutional-setup-toggle"
+                  stableHeight={44}
                   style={{
                     cursor: "pointer",
                     color: "rgba(243,208,106,0.94)",
@@ -685,7 +702,7 @@ export default function WelcomePage() {
                   }}
                 >
                   Institutional setup
-                </summary>
+                </StableDisclosureSummary>
 
                 <div
                   style={{

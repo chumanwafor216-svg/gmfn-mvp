@@ -31,13 +31,13 @@ function assertNotContains(key, pattern, message) {
 
 assertContains(
   "component",
-  /getClanInviteLink\(communityId\)[\s\S]*?normalizedJoinInviteUrl\(response\)/,
-  "The simple invite card must load the canonical invite for the selected community."
+  /hero[\s\S]*?createClanInvite\(communityId\)[\s\S]*?getClanInviteLink\(communityId\)[\s\S]*?normalizedJoinInviteUrl\(response\)/,
+  "The hero invite must create a sender-owned invite while other surfaces may load the reusable community invite."
 );
 assertContains(
   "component",
-  /Copy and send the link\. They tap it to ask to join\. You approve them before they join\./,
-  "The simple invite card must explain the three-step invite outcome in plain language."
+  /personalizedJoinInviteUrl\(link,[\s\S]*?inviterName: safeInviterName[\s\S]*?recipientName: safeRecipientName[\s\S]*?communityCode[\s\S]*?communityName/,
+  "The simple invite must attach the signed-in inviter and typed recipient to the shared join link."
 );
 assertNotContains(
   "component",
@@ -46,18 +46,18 @@ assertNotContains(
 );
 assertContains(
   "component",
-  /kind="primary"[\s\S]*?debugId="simple-community-invite\.copy"[\s\S]*?Copy invite link[\s\S]*?debugId="simple-community-invite\.share"[\s\S]*?Share invite/,
-  "Copy invite link must remain the dominant action, with Share invite as the only secondary action."
+  /debugId="simple-community-invite\.open"[\s\S]*?Invite[\s\S]*?Their name[\s\S]*?data-debug-id="simple-community-invite\.recipient-name"[\s\S]*?debugId="simple-community-invite\.send"[\s\S]*?Send invite/,
+  "The hero invite must stay closed behind one compact Invite action, then ask only for the recipient name before Send invite."
 );
-assertNotContains(
+assertContains(
   "component",
-  /<(?:input|select|textarea|details)\b/,
-  "The simple invite card must not expose forms or advanced disclosure controls."
+  /if \(hero\)[\s\S]*?<details[\s\S]*?<StableDisclosureSummary[\s\S]*?<input[\s\S]*?fontSize: 16/,
+  "The hero invite recipient field must remain collapsed, stable, and phone-safe."
 );
 assertContains(
   "community",
-  /data-debug-id="community-home\.identity-card"[\s\S]*?<SimpleCommunityInviteCard[\s\S]*?communityId=\{selectedClanId\}[\s\S]*?id="community-home-bulletin"/,
-  "Every selected Community Home must show the simple invite card directly after community identity."
+  /data-debug-id="community-home\.identity-card"[\s\S]*?selectedCommunityMemberCount[\s\S]*?<SimpleCommunityInviteCard[\s\S]*?communityId=\{selectedClanId\}[\s\S]*?inviterName=\{hasHumanMemberName\(me\) \? resolveMemberName\(me\) : ""\}[\s\S]*?hero[\s\S]*?<\/section>[\s\S]*?id="community-home-bulletin"/,
+  "Every selected Community Home must keep member count and one personalized invite action inside the identity hero before Bulletin."
 );
 assertContains(
   "marketplace",

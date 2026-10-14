@@ -3065,6 +3065,7 @@ export default function PaymentInstructionsPage() {
       <GsnSupportContact
         context="Money In"
         subject="GSN Money In help"
+        compact={isCompact}
         style={{ marginTop: 16 }}
       />
     </div>

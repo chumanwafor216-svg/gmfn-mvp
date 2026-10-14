@@ -2445,7 +2445,7 @@ export default function CreateEntryPage() {
             }}
           >
             {identityGateActive
-              ? "Do you already have a GSN ID?"
+              ? "New founder"
               : "Already have a GSN ID? Use it first."}
           </div>
         </div>
@@ -2495,42 +2495,73 @@ export default function CreateEntryPage() {
           >
             {identityGateActive
               ? isAuthenticated()
-                ? "You are already signed in. Open the signed-in community lane so this same GSN ID starts the new community without repeating phone, bank, or identity records."
-                : "Before GSN opens a fresh founder record, answer this first. If you already have a GSN ID, sign in and create the new community from that same identity. GSN will ask for the community details, not another full personal record."
+                ? "Continue with your current GSN ID."
+                : "New to GSN? Continue. Already have a GSN ID? Sign in instead."
               : "One person should keep one GSN ID across every community. Sign in first, then create or join communities from that same identity."}
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <PrimaryButton
-              onClick={handleExistingMemberLogin}
-              minWidth={178}
-              stableHeight={52}
-              debugId="create-entry.existing-member.sign-in"
-              style={{
-                ...primaryBtn(false),
-                width: "auto",
-                minWidth: 178,
-                flex: "1 1 220px",
-              }}
-            >
-              {isAuthenticated() ? "Open signed-in create" : "Sign in with GSN ID"}
-            </PrimaryButton>
-            <SecondaryButton
-              onClick={
-                identityGateActive
-                  ? handleConfirmNewIdentity
-                  : () => setExistingMemberOpen(false)
-              }
-              minWidth={identityGateActive ? 176 : 112}
-              stableHeight={52}
-              debugId="create-entry.existing-member.stay"
-              style={{
-                ...secondaryBtn(),
-                minWidth: identityGateActive ? 176 : 112,
-              }}
-            >
-              {identityGateActive ? "I do not have one" : "Stay here"}
-            </SecondaryButton>
+            {identityGateActive && !isAuthenticated() ? (
+              <>
+                <PrimaryButton
+                  onClick={handleConfirmNewIdentity}
+                  minWidth={190}
+                  stableHeight={52}
+                  debugId="create-entry.existing-member.stay"
+                  style={{
+                    ...primaryBtn(false),
+                    width: "auto",
+                    minWidth: 190,
+                    flex: "1 1 220px",
+                  }}
+                >
+                  Continue as new founder
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={handleExistingMemberLogin}
+                  minWidth={150}
+                  stableHeight={52}
+                  debugId="create-entry.existing-member.sign-in"
+                  style={{
+                    ...secondaryBtn(),
+                    minWidth: 150,
+                  }}
+                >
+                  I have a GSN ID
+                </SecondaryButton>
+              </>
+            ) : (
+              <>
+                <PrimaryButton
+                  onClick={handleExistingMemberLogin}
+                  minWidth={178}
+                  stableHeight={52}
+                  debugId="create-entry.existing-member.sign-in"
+                  style={{
+                    ...primaryBtn(false),
+                    width: "auto",
+                    minWidth: 178,
+                    flex: "1 1 220px",
+                  }}
+                >
+                  {isAuthenticated() ? "Continue with my GSN ID" : "Sign in with GSN ID"}
+                </PrimaryButton>
+                {!identityGateActive ? (
+                  <SecondaryButton
+                    onClick={() => setExistingMemberOpen(false)}
+                    minWidth={112}
+                    stableHeight={52}
+                    debugId="create-entry.existing-member.stay"
+                    style={{
+                      ...secondaryBtn(),
+                      minWidth: 112,
+                    }}
+                  >
+                    Stay here
+                  </SecondaryButton>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
       ) : null}
