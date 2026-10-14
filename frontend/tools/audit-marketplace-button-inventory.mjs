@@ -47,7 +47,7 @@ const expectedSourceBreakdown = {
   front: 5,
   body: 88,
 };
-const expectedVisibleIntentActionCount = 5;
+const expectedVisibleIntentActionCount = 6;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 30,

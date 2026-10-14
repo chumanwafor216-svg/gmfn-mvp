@@ -48,6 +48,7 @@ const visibleIds = [
   .map((match) => match[1]);
 
 const expectedVisibleIds = [
+  "invite",
   "trust",
   "identity",
   "trustslip",
@@ -58,7 +59,7 @@ const expectedVisibleIds = [
 if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
   addFinding(
     source.indexOf(intentItemsBlock),
-    "Marketplace Tools helper must expose only secondary helper buttons; major lanes stay searchable but hidden from the expanded button grid.",
+    "Marketplace Tools helper must expose Invite people plus secondary helper buttons; other major lanes stay searchable but hidden from the expanded button grid.",
     `visible=${visibleIds.join(", ") || "none"}`
   );
 }
@@ -70,7 +71,6 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
   "rosca",
   "support",
   "shop",
-  "invite",
   "demand",
 ].forEach((id) => {
   const itemPattern = new RegExp(`id: "${id}"[\\s\\S]*?visible: false`);

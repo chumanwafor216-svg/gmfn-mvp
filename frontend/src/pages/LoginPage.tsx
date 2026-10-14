@@ -185,6 +185,48 @@ function compactActionRail(): React.CSSProperties {
   };
 }
 
+function quietDisclosureStyle(): React.CSSProperties {
+  return {
+    marginTop: 6,
+    padding: 0,
+    border: "none",
+    background: "transparent",
+  };
+}
+
+function quietDisclosureSummaryStyle(): React.CSSProperties {
+  return {
+    width: "fit-content",
+    minHeight: 32,
+    margin: "0 auto",
+    padding: "6px 10px",
+    color: "rgba(226,232,240,0.82)",
+    fontSize: 12.5,
+    fontWeight: 850,
+    lineHeight: 1.2,
+    cursor: "pointer",
+  };
+}
+
+function quietSecondaryActionStyle(): React.CSSProperties {
+  return {
+    ...secondaryBtn(),
+    width: "100%",
+    minWidth: 0,
+    minHeight: 44,
+    height: 44,
+    maxHeight: 44,
+    padding: "0 8px",
+    borderRadius: 12,
+    border: "1px solid rgba(220,231,243,0.18)",
+    background: "rgba(255,255,255,0.035)",
+    boxShadow: "none",
+    color: "#E5EDF6",
+    fontSize: 12.5,
+    fontWeight: 850,
+  };
+}
+
 function inputIconBadge(): React.CSSProperties {
   return {
     color: "#F3D06A",
@@ -720,6 +762,7 @@ export default function LoginPage() {
   }
 
   function openRecoveryLane() {
+    setSupportOpen(false);
     setRecoveryOpen((current) => !current);
     setRecoveryError(null);
     setRecoveryMessage(null);
@@ -1398,71 +1441,6 @@ export default function LoginPage() {
             <div
               style={{
                 marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-                gap: 8,
-                justifyContent: "stretch",
-                alignItems: "center",
-                minHeight: 36,
-              }}
-            >
-              <SecondaryButton
-                type="button"
-                onClick={() => setSupportOpen((current) => !current)}
-                disabled={busy || recoveryBusy}
-                stableHeight={36}
-                debugId="login.support.open"
-                style={{
-                  ...secondaryBtn(),
-                  width: "100%",
-                  minWidth: 0,
-                  minHeight: 36,
-                  height: 36,
-                  maxHeight: 36,
-                  padding: "0 4px",
-                  border: "none",
-                  borderRadius: 10,
-                  background: "transparent",
-                  boxShadow: "none",
-                  color: "#E5E7EB",
-                  fontSize: 13.5,
-                  fontWeight: 900,
-                  textAlign: "left",
-                }}
-              >
-                Need sign-in help?
-              </SecondaryButton>
-              <SecondaryButton
-                type="button"
-                onClick={openRecoveryLane}
-                disabled={busy || recoveryBusy}
-                stableHeight={36}
-                debugId="login.password-recovery.open"
-                style={{
-                  ...secondaryBtn(),
-                  width: "auto",
-                  minWidth: 0,
-                  minHeight: 36,
-                  height: 36,
-                  maxHeight: 36,
-                  padding: "0 4px",
-                  border: "none",
-                  borderRadius: 10,
-                  background: "transparent",
-                  boxShadow: "none",
-                  color: "#F3D06A",
-                  fontSize: 13.5,
-                  fontWeight: 900,
-                  textAlign: "right",
-                }}
-              >
-                Forgot password?
-              </SecondaryButton>
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "flex",
                 justifyContent: "center",
               }}
@@ -1480,58 +1458,61 @@ export default function LoginPage() {
               </PrimaryButton>
             </div>
 
-            <details
-              style={{
-                marginTop: 12,
-                borderRadius: 18,
-                border: "1px solid rgba(220,231,243,0.16)",
-                background: "rgba(255,255,255,0.045)",
-                padding: 12,
-              }}
-            >
+            <details style={quietDisclosureStyle()}>
               <StableDisclosureSummary
-                debugId="login.new-member-options.toggle"
-                style={{
-                  cursor: "pointer",
-                  color: "#F3D06A",
-                  fontSize: 13.5,
-                  fontWeight: 1000,
-                  lineHeight: 1.3,
-                }}
+                debugId="login.secondary-options.toggle"
+                style={quietDisclosureSummaryStyle()}
               >
-                Not signed in yet?
+                ⋯ More sign-in options
               </StableDisclosureSummary>
               <div
                 style={{
+                  marginTop: 6,
                   display: "grid",
-                  gap: 10,
-                  marginTop: 12,
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 8,
                 }}
               >
                 <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    setSupportOpen((current) => !current);
+                    setRecoveryOpen(false);
+                  }}
+                  disabled={busy || recoveryBusy}
+                  stableHeight={44}
+                  debugId="login.support.open"
+                  style={quietSecondaryActionStyle()}
+                >
+                  Sign-in support
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={openRecoveryLane}
+                  disabled={busy || recoveryBusy}
+                  stableHeight={44}
+                  debugId="login.password-recovery.open"
+                  style={quietSecondaryActionStyle()}
+                >
+                  Forgot password
+                </SecondaryButton>
+                <SecondaryButton
                   onClick={openActivationRoute}
                   disabled={busy}
-                  stableHeight={50}
+                  stableHeight={44}
                   debugId="login.activate-approved"
-                  style={supportBtn()}
+                  style={quietSecondaryActionStyle()}
                 >
-                  {loginIconText("join-person-plus", "Activate membership", 24)}
+                  Activate membership
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={openCreateRoute}
                   disabled={busy}
-                  stableHeight={50}
+                  stableHeight={44}
                   debugId="login.start-community"
-                  style={{
-                    ...supportBtn(),
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(220,231,243,0.28)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.035) 100%)",
-                    justifySelf: "center",
-                  }}
+                  style={quietSecondaryActionStyle()}
                 >
-                  {loginIconText("community", "Start a new community", 24)}
+                  Start a new community
                 </SecondaryButton>
               </div>
             </details>

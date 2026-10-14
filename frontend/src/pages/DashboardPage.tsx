@@ -6920,35 +6920,37 @@ export default function DashboardPage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isPhone
-                        ? "repeat(2, minmax(0, auto))"
+                        ? "1fr"
                         : "1fr",
                       gap: isPhone ? 7 : 6,
                       alignItems: "center",
                       justifyContent: isPhone ? "start" : undefined,
-                      justifyItems: isCompact ? "start" : "end",
+                      justifyItems: isPhone ? "end" : isCompact ? "start" : "end",
                     }}
                   >
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: isPhone ? 5 : 6,
-                        minHeight: isPhone ? 26 : 28,
-                        padding: isPhone ? "4px 8px" : "5px 9px",
-                        borderRadius: 999,
-                        background: attentionPopupChrome.stageBg,
-                        border: attentionPopupChrome.stageBorder,
-                        color: attentionPopupChrome.stageText,
-                        fontSize: isPhone ? 10.2 : 11,
-                        fontWeight: 900,
-                        letterSpacing: 0.12,
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 20px rgba(7,16,28,0.10)",
-                      }}
-                    >
-                      Every {attentionDisplaySignal.intervalHours} hour
-                      {attentionDisplaySignal.intervalHours === 1 ? "" : "s"}
-                    </span>
+                    {!isPhone ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          minHeight: 28,
+                          padding: "5px 9px",
+                          borderRadius: 999,
+                          background: attentionPopupChrome.stageBg,
+                          border: attentionPopupChrome.stageBorder,
+                          color: attentionPopupChrome.stageText,
+                          fontSize: 11,
+                          fontWeight: 900,
+                          letterSpacing: 0.12,
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 20px rgba(7,16,28,0.10)",
+                        }}
+                      >
+                        Every {attentionDisplaySignal.intervalHours} hour
+                        {attentionDisplaySignal.intervalHours === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
 
                     <StableButton
                       debugId="dashboard.attention-popup.dismiss"
@@ -6971,12 +6973,12 @@ export default function DashboardPage() {
                           "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
                       })}
                     >
-                      Hide for now
+                      {isPhone ? "Not now" : "Hide for now"}
                     </StableButton>
                   </div>
                 </div>
 
-                {attentionDisplaySignal.sourceLine ? (
+                {!isPhone && attentionDisplaySignal.sourceLine ? (
                   <div
                     style={{
                       marginTop: 10,
@@ -7018,65 +7020,65 @@ export default function DashboardPage() {
                   background: attentionPopupChrome.bodyBg,
                 }}
               >
-                <div
-                  style={{
-                    ...innerCard(attentionPopupChrome.connectBg),
-                    ...attentionPhoneCardTight,
-                    padding: isPhone ? 8 : isCompact ? 10 : 11,
-                    border: attentionPopupChrome.connectBorder,
-                    marginTop: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      ...attentionPopupLabelStyle(
-                        attentionPopupTone.labelColor
-                      ),
-                    }}
-                  >
-                    How it connects
-                  </div>
-                  <div
-                    style={{
-                      marginTop: isPhone ? 5 : 7,
-                      color: DASHBOARD_BRAND.ink,
-                      fontSize: isPhone ? 11.35 : 12.5,
-                      fontWeight: 800,
-                      lineHeight: isPhone ? 1.34 : 1.54,
-                    }}
-                  >
-                    {attentionConnectionText}
-                  </div>
-                </div>
+                {!isPhone ? (
+                  <>
+                    <div
+                      style={{
+                        ...innerCard(attentionPopupChrome.connectBg),
+                        ...attentionPhoneCardTight,
+                        padding: isCompact ? 10 : 11,
+                        border: attentionPopupChrome.connectBorder,
+                        marginTop: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...attentionPopupLabelStyle(
+                            attentionPopupTone.labelColor
+                          ),
+                        }}
+                      >
+                        How it connects
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 7,
+                          color: DASHBOARD_BRAND.ink,
+                          fontSize: 12.5,
+                          fontWeight: 800,
+                          lineHeight: 1.54,
+                        }}
+                      >
+                        {attentionConnectionText}
+                      </div>
+                    </div>
 
-                <div
-                  style={{
-                    marginTop: isPhone ? 7 : 10,
-                    display: "grid",
-                    gridTemplateColumns: isPhone
-                      ? "minmax(0, 0.9fr) minmax(0, 1.1fr)"
-                      : isCompact
-                      ? "1fr"
-                      : "minmax(0, 1fr) minmax(0, 1fr)",
-                    gap: isPhone ? 7 : 8,
-                  }}
-                >
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "minmax(0, 1fr) minmax(0, 1fr)",
+                        gap: 8,
+                      }}
+                    >
                   <div
                     style={{
                       ...innerCard(attentionPopupChrome.panelBg),
                       border: attentionPopupChrome.panelBorder,
                       ...attentionPhoneCardTight,
-                      padding: isPhone ? 8 : isCompact ? 10 : 11,
+                      padding: isCompact ? 10 : 11,
                     }}
                   >
                     <div style={attentionPopupLabelStyle()}>Problem</div>
                     <div
                       style={{
-                        marginTop: isPhone ? 5 : 8,
+                        marginTop: 8,
                         color: DASHBOARD_BRAND.ink,
-                        fontSize: isPhone ? 11.4 : 13.5,
+                        fontSize: 13.5,
                         fontWeight: 800,
-                        lineHeight: isPhone ? 1.34 : 1.52,
+                        lineHeight: 1.52,
                       }}
                     >
                       {attentionDisplaySignal.problemText}
@@ -7088,58 +7090,60 @@ export default function DashboardPage() {
                       ...innerCard(attentionPopupChrome.panelBg),
                       border: attentionPopupChrome.panelBorder,
                       ...attentionPhoneCardTight,
-                      padding: isPhone ? 8 : isCompact ? 10 : 11,
+                      padding: isCompact ? 10 : 11,
                     }}
                   >
                     <div style={attentionPopupLabelStyle()}>Why it matters</div>
                     <div
                       style={{
-                        marginTop: isPhone ? 5 : 8,
+                        marginTop: 8,
                         color: DASHBOARD_BRAND.subInk,
-                        fontSize: isPhone ? 11.2 : 13,
+                        fontSize: 13,
                         fontWeight: 800,
-                        lineHeight: isPhone ? 1.34 : 1.54,
+                        lineHeight: 1.54,
                       }}
                     >
                       {attentionConsequenceText}
                     </div>
                   </div>
-                </div>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        ...innerCard(attentionPopupChrome.actionBg),
+                        border: attentionPopupChrome.panelBorder,
+                        ...attentionPhoneCardTight,
+                        padding: isCompact ? 10 : 11,
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...attentionPopupLabelStyle(
+                            attentionPopupTone.labelColor
+                          ),
+                        }}
+                      >
+                        Do this now
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#1D4ED8",
+                          fontSize: 13.5,
+                          fontWeight: 900,
+                          lineHeight: 1.54,
+                        }}
+                      >
+                        {attentionDisplaySignal.actionText}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
                 <div
                   style={{
-                    marginTop: isPhone ? 7 : 8,
-                    ...innerCard(attentionPopupChrome.actionBg),
-                    border: attentionPopupChrome.panelBorder,
-                    ...attentionPhoneCardTight,
-                    padding: isPhone ? 8 : isCompact ? 10 : 11,
-                  }}
-                >
-                  <div
-                    style={{
-                      ...attentionPopupLabelStyle(
-                        attentionPopupTone.labelColor
-                      ),
-                    }}
-                  >
-                    Do this now
-                  </div>
-                  <div
-                    style={{
-                      marginTop: isPhone ? 5 : 8,
-                      color: "#1D4ED8",
-                      fontSize: isPhone ? 11.8 : 13.5,
-                      fontWeight: 900,
-                      lineHeight: isPhone ? 1.32 : 1.54,
-                    }}
-                  >
-                    {attentionDisplaySignal.actionText}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: isPhone ? 7 : 10,
+                    marginTop: isPhone ? 0 : 10,
                     ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)"),
                     ...attentionPhoneCardTight,
                     padding: isPhone ? 6 : 8,
@@ -7147,11 +7151,7 @@ export default function DashboardPage() {
                     ...(isPhone
                       ? {
                           display: "grid",
-                          gridTemplateColumns:
-                            attentionDisplaySignal.secondaryCtaLabel &&
-                            attentionDisplaySignal.secondaryCtaTo
-                              ? "repeat(3, minmax(0, 1fr))"
-                              : "repeat(2, minmax(0, 1fr))",
+                          gridTemplateColumns: "1fr",
                           gap: 6,
                           alignItems: "stretch",
                         }
@@ -7165,17 +7165,16 @@ export default function DashboardPage() {
                       openAttentionTarget(event, attentionDisplaySignal.ctaTo)
                     }
                     onPointerDown={consumeDashboardPointerEvent}
-                    onMouseDown={consumeDashboardPointerEvent}
                     style={{
                       ...dashboardFillButton(primaryBtn(false), {
-                        minHeight: isPhone ? 30 : isCompact ? 34 : 36,
+                        minHeight: isPhone ? 42 : isCompact ? 34 : 36,
                         padding: isPhone
-                          ? "5px 6px"
+                          ? "8px 12px"
                           : isCompact
                           ? "7px 10px"
                           : "8px 12px",
-                        fontSize: isPhone ? 10.1 : isCompact ? 11.5 : 12.25,
-                        borderRadius: isPhone ? 10 : isCompact ? 11 : 13,
+                        fontSize: isPhone ? 12.4 : isCompact ? 11.5 : 12.25,
+                        borderRadius: isPhone ? 12 : isCompact ? 11 : 13,
                       }),
                       background:
                         "linear-gradient(180deg, #103B70 0%, #0B63D1 60%, #3B82F6 100%)",
@@ -7186,7 +7185,8 @@ export default function DashboardPage() {
                     {attentionDisplaySignal.ctaLabel}
                   </StableButton>
 
-                  {attentionDisplaySignal.secondaryCtaLabel &&
+                  {!isPhone &&
+                  attentionDisplaySignal.secondaryCtaLabel &&
                   attentionDisplaySignal.secondaryCtaTo ? (
                     <StableButton
                       debugId="dashboard.attention-popup.secondary"
@@ -7225,33 +7225,31 @@ export default function DashboardPage() {
                     </StableButton>
                   ) : null}
 
-                  <StableButton
-                    debugId="dashboard.attention-popup.trust-journey"
-                    type="button"
-                    onClick={openTrustJourneyFromAttention}
-                    onPointerDown={consumeDashboardPointerEvent}
-                    onMouseDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...dashboardFillButton(secondaryBtn(false), {
-                        minHeight: isPhone ? 30 : isCompact ? 34 : 36,
-                        padding: isPhone
-                          ? "5px 6px"
-                          : isCompact
-                          ? "7px 10px"
-                          : "8px 12px",
-                        fontSize: isPhone ? 10.1 : isCompact ? 11.5 : 12.25,
-                        borderRadius: isPhone ? 10 : isCompact ? 11 : 13,
-                      }),
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
-                      border: "1px solid rgba(184,137,45,0.20)",
-                      color: DASHBOARD_BRAND.goldText,
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.88), 0 14px 24px rgba(10,24,49,0.08)",
-                    }}
-                  >
-                    Trust Journey
-                  </StableButton>
+                  {!isPhone ? (
+                    <StableButton
+                      debugId="dashboard.attention-popup.trust-journey"
+                      type="button"
+                      onClick={openTrustJourneyFromAttention}
+                      onPointerDown={consumeDashboardPointerEvent}
+                      onMouseDown={consumeDashboardPointerEvent}
+                      style={{
+                        ...dashboardFillButton(secondaryBtn(false), {
+                          minHeight: isCompact ? 34 : 36,
+                          padding: isCompact ? "7px 10px" : "8px 12px",
+                          fontSize: isCompact ? 11.5 : 12.25,
+                          borderRadius: isCompact ? 11 : 13,
+                        }),
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.96) 100%)",
+                        border: "1px solid rgba(184,137,45,0.20)",
+                        color: DASHBOARD_BRAND.goldText,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.88), 0 14px 24px rgba(10,24,49,0.08)",
+                      }}
+                    >
+                      Trust Journey
+                    </StableButton>
+                  ) : null}
                 </div>
               </div>
             </div>

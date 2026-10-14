@@ -179,10 +179,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 39,
+  StableButton: 40,
   StableDisclosureSummary: 2,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 49,
+  EffectiveDashboardActionRoots: 50,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;

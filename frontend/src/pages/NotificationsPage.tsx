@@ -1598,6 +1598,7 @@ export default function NotificationsPage() {
       </section>
       ) : null}
 
+      {!isPhone ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1736,29 +1737,16 @@ export default function NotificationsPage() {
           </PrimaryButton>
         </div>
 
-        {isPhone ? (
-          <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-start" }}>
-            <StableCtaLink
-              to={routes.dashboard}
-              kind="secondary"
-              stableHeight={52}
-              debugId="notifications.hero.dashboard"
-              style={{
-                width: "fit-content",
-                minWidth: 164,
-                padding: "8px 16px",
-                borderRadius: 14,
-                fontSize: 13,
-                fontWeight: 900,
-              }}
-            >
-              {notificationIconText("home", "Go to Dashboard")}
-            </StableCtaLink>
-          </div>
-        ) : null}
       </section>
+      ) : null}
 
-      <section style={pageCard("linear-gradient(180deg, #061827 0%, #082B4A 100%)")}>
+      <section
+        style={pageCard(
+          isPhone
+            ? "#FFFFFF"
+            : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
+        )}
+      >
         <div
           style={{
             display: "flex",
@@ -1770,42 +1758,51 @@ export default function NotificationsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "56px minmax(0, 1fr)",
+              gridTemplateColumns: isPhone ? "44px minmax(0, 1fr)" : "56px minmax(0, 1fr)",
               gap: 12,
               alignItems: "center",
             }}
           >
-            {notificationIconTile("navigation", 56, "rgba(219,234,254,0.12)", 999)}
+            {notificationIconTile(
+              "navigation",
+              isPhone ? 44 : 56,
+              isPhone ? "#EAF3FF" : "rgba(219,234,254,0.12)",
+              999
+            )}
             <div>
-              <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>Start here</div>
+              <div style={{ ...sectionLabel(), color: isPhone ? "#50647C" : "#AFC4DA" }}>
+                Notifications
+              </div>
               <div
                 style={{
-                  color: "#F8FBFF",
-                  fontSize: isPhone ? 23 : 28,
+                  color: isPhone ? "#07172C" : "#F8FBFF",
+                  fontSize: isPhone ? 21 : 28,
                   fontWeight: 950,
                   lineHeight: 1.15,
                 }}
               >
-                First item to check
+                {operationalFocus ? "What needs you now" : "You are all caught up"}
               </div>
             </div>
           </div>
-          <SubtleButton
-            onClick={() => toggleSection("focus")}
-            style={collapseToggle()}
-            stableHeight={48}
-            debugId="notifications.toggle-focus"
-          >
-            {notificationIconText(
-              collapsed.focus ? "chevronDown" : "chevronUp",
-              collapsed.focus ? "Open" : "Collapse",
-              20
-            )}
-          </SubtleButton>
+          {!isPhone ? (
+            <SubtleButton
+              onClick={() => toggleSection("focus")}
+              style={collapseToggle()}
+              stableHeight={48}
+              debugId="notifications.toggle-focus"
+            >
+              {notificationIconText(
+                collapsed.focus ? "chevronDown" : "chevronUp",
+                collapsed.focus ? "Open" : "Collapse",
+                20
+              )}
+            </SubtleButton>
+          ) : null}
         </div>
 
-        {!collapsed.focus ? (
-          <div style={{ marginTop: 18, ...innerCard("#FFFFFF") }}>
+        {isPhone || !collapsed.focus ? (
+          <div style={{ marginTop: isPhone ? 14 : 18, ...innerCard(isPhone ? "#F8FBFF" : "#FFFFFF") }}>
             <div
               style={{
                 display: "grid",
@@ -1817,12 +1814,12 @@ export default function NotificationsPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "72px minmax(0, 1fr)",
+                  gridTemplateColumns: isPhone ? "1fr" : "72px minmax(0, 1fr)",
                   gap: 14,
                   alignItems: "center",
                 }}
               >
-                {notificationIconTile("alert", 72, "#FFF7E0", 18)}
+                {!isPhone ? notificationIconTile("alert", 72, "#FFF7E0", 18) : null}
                 <div>
                   <div
                     style={{
@@ -1833,14 +1830,14 @@ export default function NotificationsPage() {
                     }}
                   >
                     {focusNotice.title}
-                    {focusNotice.unread ? (
+                    {!isPhone && focusNotice.unread ? (
                       <span style={{ marginLeft: 8, ...badge(true) }}>
                         Needs your attention
                       </span>
                     ) : null}
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
-                    {truncateText(focusNotice.detail, isPhone ? 112 : 150)}
+                    {truncateText(focusNotice.detail, isPhone ? 96 : 150)}
                   </div>
                 </div>
               </div>
@@ -1848,6 +1845,7 @@ export default function NotificationsPage() {
               <div style={{ display: "grid", gap: 10, marginTop: isPhone ? 26 : 0 }}>
                 <PrimaryButton
                   onClick={() => void handlePrimaryNoticeAction(focusNotice)}
+                  fullWidth
                   stableHeight={54}
                   debugId="notifications.focus.primary"
                 >
@@ -1861,6 +1859,7 @@ export default function NotificationsPage() {
                   )}
                 </PrimaryButton>
 
+                {!isPhone ? (
                 <StableCtaLink
                   to={focusNotice.ctaTo}
                   stableHeight={50}
@@ -1885,8 +1884,9 @@ export default function NotificationsPage() {
                       : "Open page"
                   )}
                 </StableCtaLink>
+                ) : null}
 
-                {(isActiveRelayOfferNotice(focusNotice) || (!isRelayOfferNotice(focusNotice) && focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)))) ? (
+                {!isPhone && (isActiveRelayOfferNotice(focusNotice) || (!isRelayOfferNotice(focusNotice) && focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)))) ? (
                   <SecondaryButton
                     onClick={() =>
                       isActiveRelayOfferNotice(focusNotice)
@@ -1903,9 +1903,16 @@ export default function NotificationsPage() {
             </div>
           </div>
         ) : null}
+
       </section>
 
-      <section style={pageCard("linear-gradient(180deg, #061827 0%, #082B4A 100%)")}>
+      <section
+        style={pageCard(
+          isPhone
+            ? "#FFFFFF"
+            : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
+        )}
+      >
         <div
           style={{
             display: "flex",
@@ -1918,25 +1925,27 @@ export default function NotificationsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "56px minmax(0, 1fr)",
+              gridTemplateColumns: isPhone ? "1fr" : "56px minmax(0, 1fr)",
               gap: 12,
               alignItems: "center",
             }}
           >
-            {notificationIconTile("document", 56, "rgba(219,234,254,0.12)", 999)}
+            {!isPhone
+              ? notificationIconTile("document", 56, "rgba(219,234,254,0.12)", 999)
+              : null}
             <div>
-              <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
-                All waiting items
+              <div style={{ ...sectionLabel(), color: isPhone ? "#50647C" : "#AFC4DA" }}>
+                {isPhone ? "More notifications" : "All waiting items"}
               </div>
               <div
                 style={{
-                  color: "#F8FBFF",
-                  fontSize: isPhone ? 23 : 28,
+                  color: isPhone ? "#07172C" : "#F8FBFF",
+                  fontSize: isPhone ? 18 : 28,
                   fontWeight: 950,
                   lineHeight: 1.15,
                 }}
               >
-                Handle in order
+                {isPhone ? "Open when needed" : "Handle in order"}
               </div>
             </div>
           </div>
@@ -2218,6 +2227,7 @@ export default function NotificationsPage() {
         </section>
       ) : null}
 
+      {!isPhone ? (
       <section
         style={{
           ...softCard("#EAF3FF"),
@@ -2256,7 +2266,9 @@ export default function NotificationsPage() {
           <GsnLegacyIcon name="vault" size={78} />
         </div>
       </section>
+      ) : null}
 
+      {!isPhone || !collapsed.buckets ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2268,10 +2280,14 @@ export default function NotificationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Recent notifications</div>
-            <div style={{ marginTop: 6, ...helperText() }}>
-              Latest messages remain available without crowding the first screen.
+            <div style={sectionLabel()}>
+              {isPhone ? "Past notifications" : "Recent notifications"}
             </div>
+            {!isPhone ? (
+              <div style={{ marginTop: 6, ...helperText() }}>
+                Latest messages remain available without crowding the first screen.
+              </div>
+            ) : null}
           </div>
 
           <SubtleButton
@@ -2371,7 +2387,9 @@ export default function NotificationsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {!isPhone ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2439,6 +2457,7 @@ export default function NotificationsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
     </div>
   );
 }

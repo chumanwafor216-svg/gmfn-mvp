@@ -24,7 +24,7 @@ const expectedSourceActions = {
   PrimaryButton: 3,
   SecondaryButton: 2,
   StableButton: 1,
-  StableCtaLink: 6,
+  StableCtaLink: 5,
   SubtleButton: 6,
 };
 const expectedSourceActionCount = Object.values(expectedSourceActions).reduce(
@@ -43,7 +43,7 @@ const expectedMobileShellActionCount = Object.values(
   expectedMobileShellBreakdown
 ).reduce((sum, count) => sum + count, 0);
 const expectedWholeMobileRouteFixedActionFamilies =
-  expectedSourceActionCount + expectedBucketRowCount - 1 + expectedMobileShellActionCount;
+  expectedSourceActionCount + expectedBucketRowCount + expectedMobileShellActionCount;
 
 function lineAt(sourceText, index) {
   return sourceText.slice(0, index).split(/\r?\n/).length;
@@ -224,7 +224,6 @@ for (const action of actions) {
 const expectedOrder = [
   "notifications.hero.dashboard",
   "notifications.show-urgent",
-  "notifications.hero.dashboard",
   "notifications.toggle-focus",
   "notifications.focus.primary",
   "notifications.focus.open-page",
@@ -304,8 +303,20 @@ assertContains(
 );
 
 assertContains(
-  /isPhone \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{routes\.dashboard\}[\s\S]*?kind="secondary"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?width: "fit-content"[\s\S]*?minWidth: 164/,
-  "Notifications phone Dashboard escape must stay a compact secondary action under the urgent primary button."
+  /\{!isPhone \? \([\s\S]*?<section style=\{pageCard\("#FFFFFF"\)\}>[\s\S]*?What needs your attention[\s\S]*?notifications\.show-urgent[\s\S]*?<section[\s\S]*?isPhone[\s\S]*?What needs you now[\s\S]*?\{!isPhone \? \([\s\S]*?notifications\.focus\.open-page/,
+  "Notifications phone must hide the four-stat summary and duplicate Open page action while leading with the current item."
+);
+assertContains(
+  /\{!isPhone && \(isActiveRelayOfferNotice\(focusNotice\)[\s\S]*?notifications\.focus\.mark-read/,
+  "Notifications phone must hide the current-item housekeeping action and keep one primary action on the surface."
+);
+assertContains(
+  /\{!isPhone \? \([\s\S]*?<section[\s\S]*?Stay consistent\. Build trust\.[\s\S]*?<\/section>[\s\S]*?\) : null\}/,
+  "Notifications phone must hide the decorative trust message."
+);
+assertContains(
+  /\{!isPhone \|\| !collapsed\.buckets \? \([\s\S]*?isPhone \? "Past notifications" : "Recent notifications"[\s\S]*?\{!isPhone \? \([\s\S]*?What the labels mean/,
+  "Notifications phone must hide history until More notifications opens and keep the label glossary off phone."
 );
 assertContains(
   /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v2"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,

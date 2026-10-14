@@ -190,7 +190,17 @@ assertContains(
 
 assertContains(
   /attentionPopupVisible \? \([\s\S]*?position: "fixed"[\s\S]*?zIndex: isPhone \? 2300 : 1200/,
-  "Dashboard opened attention popup must sit above Companion on phone so its notifications CTA remains tappable."
+  "Dashboard opened attention popup must sit above Companion on phone so its primary action remains tappable."
+);
+
+assertContains(
+  /gridTemplateColumns: isPhone[\s\S]*?\? "1fr"[\s\S]*?!isPhone \? \([\s\S]*?Every \{attentionDisplaySignal\.intervalHours\} hour[\s\S]*?\{isPhone \? "Not now" : "Hide for now"\}[\s\S]*?!isPhone && attentionDisplaySignal\.sourceLine/,
+  "Dashboard phone Attention Guide must hide cadence and source metadata while keeping a simple Not now dismissal."
+);
+
+assertContains(
+  /!isPhone \? \([\s\S]*?How it connects[\s\S]*?Problem[\s\S]*?Why it matters[\s\S]*?Do this now[\s\S]*?\) : null\}[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?debugId="dashboard\.attention-popup\.primary"[\s\S]*?!isPhone &&[\s\S]*?debugId="dashboard\.attention-popup\.secondary"[\s\S]*?!isPhone \? \([\s\S]*?debugId="dashboard\.attention-popup\.trust-journey"/,
+  "Dashboard phone Attention Guide must show one primary action while keeping explanatory cards and secondary destinations off the phone popup."
 );
 
 assertContains(

@@ -9,6 +9,7 @@ import PageTopNav from "../components/PageTopNav";
 import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
+import SimpleCommunityInviteCard from "../components/SimpleCommunityInviteCard";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -4171,6 +4172,12 @@ export default function CommunityHomePage() {
             </div>
           </div>
         </section>
+
+        <SimpleCommunityInviteCard
+          communityId={selectedClanId}
+          communityName={selectedClanName}
+          compact={isCompact}
+        />
 
         <section id="community-home-bulletin" style={announcementBoardShellStyle()} data-debug-id="community-home.bulletin">
           <div style={announcementBoardHeaderStyle(isCompact)} aria-label="Community announcements">

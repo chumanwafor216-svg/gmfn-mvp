@@ -150,14 +150,14 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /GSN_SIGN_IN_SUPPORT_EMAIL[\s\S]*GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER[\s\S]*signInSupportEmailUrl[\s\S]*signInSupportWhatsAppUrl[\s\S]*setSupportOpen\(true\)[\s\S]*login\.support\.open[\s\S]*Need sign-in help\?[\s\S]*Do not send any password[\s\S]*login\.support\.whatsapp[\s\S]*login\.support\.email/,
+  /GSN_SIGN_IN_SUPPORT_EMAIL[\s\S]*GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER[\s\S]*signInSupportEmailUrl[\s\S]*signInSupportWhatsAppUrl[\s\S]*setSupportOpen\(true\)[\s\S]*debugId="login\.submit"[\s\S]*debugId="login\.secondary-options\.toggle"[\s\S]*More sign-in options[\s\S]*login\.support\.open[\s\S]*Sign-in support[\s\S]*login\.password-recovery\.open[\s\S]*Forgot password[\s\S]*Do not send any password[\s\S]*login\.support\.whatsapp[\s\S]*login\.support\.email/,
   "Login must keep the pre-auth sign-in support bridge with WhatsApp, email, no-password warning, and blocked-state visibility."
 );
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /<details[\s\S]*?debugId="login\.new-member-options\.toggle"[\s\S]*?Not signed in yet\?[\s\S]*?debugId="login\.activate-approved"[\s\S]*?Activate membership[\s\S]*?debugId="login\.start-community"[\s\S]*?Start a new community[\s\S]*?<\/details>/,
-  "Login must keep activation and new-community routes inside one collapsed secondary disclosure so sign-in remains the first decision."
+  /debugId="login\.submit"[\s\S]*?<details style=\{quietDisclosureStyle\(\)\}>[\s\S]*?debugId="login\.secondary-options\.toggle"[\s\S]*?More sign-in options[\s\S]*?debugId="login\.support\.open"[\s\S]*?Sign-in support[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?Forgot password[\s\S]*?debugId="login\.activate-approved"[\s\S]*?Activate membership[\s\S]*?debugId="login\.start-community"[\s\S]*?Start a new community[\s\S]*?<\/details>/,
+  "Login must place the primary sign-in action before one quiet collapsed secondary-options disclosure."
 );
 
 assertContains(

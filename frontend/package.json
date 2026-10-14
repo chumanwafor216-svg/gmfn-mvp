@@ -126,6 +126,7 @@
     "audit:community-domain-evidence-readiness-boundary": "node tools/audit-community-domain-evidence-readiness-boundary.mjs",
     "audit:community-confirmation-outcome-boundary": "node tools/audit-community-confirmation-outcome-boundary.mjs",
     "audit:existing-community-invite-line": "node tools/audit-existing-community-invite-line.mjs",
+    "audit:simple-community-invite": "node tools/audit-simple-community-invite.mjs",
     "audit:share-tag-actions": "node tools/audit-share-tag-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",
     "audit:real-life-trust-guidance": "node tools/audit-real-life-trust-guidance.mjs",

@@ -861,7 +861,6 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     to: "#marketplace-owned-links",
     tone: "soft",
     keywords: ["invite", "join", "link", "bring", "people", "share"],
-    visible: false,
   },
   {
     id: "trust",

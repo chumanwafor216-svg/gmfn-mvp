@@ -177,6 +177,8 @@ Rules:
 - Outside-tool links may point to WhatsApp, spreadsheets, or a CRM already used by the community. GSN remains the commitment organiser and trust reflection layer, not the owner of every external conversation.
 - Market Wisdom may use Focus Commitment pressure as a `Now` reading so the user sees execution risk before acting, but the actual commitment work must remain inside Focus Commitments and the Action Inbox; do not create a second task manager from Market Wisdom.
 - Dashboard may show a compact `My Pulse` strip inside `What needs your attention`. My Pulse reads server-owned Attention Spine signals from `/attention-spine/me` first, then local Focus Commitments and Market Wisdom context where those engines are not yet server-persisted. It must reveal the current signal list in place when tapped, while any deeper action routes back to the existing owner screen. It must not become a separate dashboard card, inbox, posting area, approval queue, or commitment manager.
+- On phones, the Attention Guide popup must stay compact: show the urgency, the issue title, one short consequence, one primary action, and `Not now`. Hide cadence/source metadata, explanatory evidence cards, Notifications, and Trust Journey from the phone popup; those deeper routes remain available from their canonical screens and may remain in the wider desktop guide.
+- On phones, Notifications must open with one current item and one primary action. Hide the four-stat summary, duplicate `Open page`, `Not now` / `Mark as read`, Dashboard return, current-item collapse control, decorative trust message, history, and label glossary from the first surface. Keep one closed `More notifications` row; opening it may reveal the existing grouped items and terse past-notification access. Dashboard remains available through the fixed authenticated bottom navigation.
 
 
 ## MyGMFNAndIPage / Profile
@@ -257,9 +259,8 @@ Must show:
 - Verification code field
 - Send code action
 - Continue button
-- Open sign-in help
-- compact `Not signed in yet?` disclosure for membership activation and starting
-  a new community
+- one compact `More sign-in options` disclosure containing sign-in support,
+  password recovery, membership activation, and starting a new community
 - privacy note
 - blocked password recovery must expose an owner/support review packet without revealing or requesting any password
 - owner/admin recovery review must route to Identity Risk with the typed phone and GSN ID so the admin can confirm ownership before issuing a temporary password
@@ -270,6 +271,9 @@ Must not show:
 
 Rules:
 - Sign in stays the only primary action in the default view.
+- Sign in appears immediately after the identity and password fields.
+- `More sign-in options` remains a small, borderless, text-level disclosure
+  after Sign in; all secondary actions stay hidden until it is opened.
 - Membership activation and new-community setup stay secondary inside the
   compact disclosure instead of competing with the sign-in form.
 
@@ -425,7 +429,12 @@ Must show, in phone-first order:
   - stable community reference / global ID where available
   - member role/status
   - compact member count only when known
-- Community Bulletin immediately after identity
+- compact invite card immediately after identity
+  - plain explanation: send the link, the person asks to join, and the community reviews the request
+  - one primary "Copy invite link" action
+  - one secondary "Share invite" action
+  - no required receiver, relationship, or message fields
+- Community Bulletin immediately after the compact invite card
   - one live announcement presentation
   - Details for acknowledgement/contact/availability/attachment/QR actions
   - no Ask Community / market-need records in the Bulletin by default
@@ -456,6 +465,7 @@ Rules:
 - Community Home must not expose a full cross-community portfolio; My GSN owns cross-GSN/community identity orientation later.
 - Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
 - Secondary details stay collapsed, grouped, or represented as compact rows.
+- Every selected community must expose the shared compact invite card. Invite personalization may exist only as an optional collapsed control.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
@@ -716,6 +726,7 @@ Rules:
   context`, not `verified community context`, unless the selected community has
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
+- Marketplace search must expose "Invite people". Its first invite surface must be the shared compact Copy/Share card; receiver and relationship personalization must remain optional and collapsed.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized

@@ -13,6 +13,7 @@ import {
   StableCtaLink,
   StableDisclosureSummary,
 } from "../../components/StableButton";
+import SimpleCommunityInviteCard from "../../components/SimpleCommunityInviteCard";
 import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import { APP_ROUTES, routeWithCommunity } from "../../lib/appRoutes";
 import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
@@ -658,6 +659,33 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                 </div>
                 <div style={marketplaceLinkActiveToolStackStyle()}>
                 {activeLinkCenterTool === "join" ? (
+                <>
+                <SimpleCommunityInviteCard
+                  communityId={activeCommunityId}
+                  initialLink={inviteLink}
+                  compact={isCompact}
+                  embedded
+                />
+                <details
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(9,27,46,0.12)",
+                    background: "rgba(255,255,255,0.78)",
+                    padding: isCompact ? 12 : 14,
+                  }}
+                >
+                  <summary
+                    data-debug-id="marketplace.links.join.personalise"
+                    style={{
+                      cursor: "pointer",
+                      color: "#42556A",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Personalise invite (optional)
+                  </summary>
                 <div
                   {...marketplaceSurfaceTouchProps("marketplace.links.join.surface")}
                   style={marketplaceLinkRowStyle(isCompact, true)}
@@ -1112,6 +1140,8 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     </div>
                   ) : null}
                 </div>
+                </details>
+                </>
                 ) : null}
 
                 {activeLinkCenterTool === "verify" ? (
