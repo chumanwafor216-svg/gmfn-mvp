@@ -4551,8 +4551,8 @@ assertContains(
 
 assertContains(
   "src/pages/CreateEntryPage.tsx",
-  /StableDisclosureSummary[\s\S]*const entrySource = safeStr[\s\S]*search\.get\("source"\)[\s\S]*isCommunityDomainLocalAnchor =[\s\S]*community-domain-local-anchor[\s\S]*isCommunityDomainLocalAnchor \?[\s\S]*create-entry\.community\.review-setup-controls[\s\S]*Review setup controls[\s\S]*GSN filled these from your Community Domain kind[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map[\s\S]*: \([\s\S]*<div style=\{sectionLabel\(\)\}>Setup controls<\/div>[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map/,
-  "Create Community must keep Community Domain handoff governance controls collapsed while preserving ordinary create setup controls.",
+  /StableDisclosureSummary[\s\S]*const entrySource = safeStr[\s\S]*search\.get\("source"\)[\s\S]*isCommunityDomainLocalAnchor =[\s\S]*community-domain-local-anchor[\s\S]*isCommunityDomainLocalAnchor \?[\s\S]*create-entry\.community\.review-setup-controls[\s\S]*Review setup controls[\s\S]*GSN filled these from your Community Domain kind[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map[\s\S]*: \([\s\S]*<details[\s\S]*create-entry\.community\.review-setup-controls[\s\S]*GSN has chosen sensible defaults for this community type[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map/,
+  "Create Community must keep setup controls collapsed while preserving both Community Domain handoff and ordinary create governance controls.",
   { frontend: true }
 );
 assertContains(
@@ -4641,8 +4641,8 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /## SignUpChoicePage[\s\S]*Purchase Community Domain card[\s\S]*Purchase Community Domain goes to CommunityDomainPurchasePage[\s\S]*must not be\s+merged into ordinary Create Community/,
-  "Sign-up choice must expose Purchase Community Domain as a separate institutional path."
+  /## SignUpChoicePage[\s\S]*Compact Institutional setup option for Purchase Community Domain[\s\S]*Purchase Community Domain goes to CommunityDomainPurchasePage from the compact Institutional setup option[\s\S]*must not be\s+merged into ordinary Create Community or shown as a competing ordinary-member path/,
+  "Sign-up choice must keep Purchase Community Domain separate while keeping it secondary to ordinary Create/Join choices."
 );
 
 assertContains(

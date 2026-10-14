@@ -78,8 +78,8 @@ assertContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /Choose how you want to continue[\s\S]*?Sign in[\s\S]*?Create a new community[\s\S]*?Join an existing community/,
-  "Welcome must speak in user choices: sign in, create, or join."
+  /New member sign up[\s\S]*?Choose how you want to continue[\s\S]*?Sign in[\s\S]*?New member[\s\S]*?Create a new community[\s\S]*?Join an existing community[\s\S]*?Request to join[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
+  "Welcome must speak in simple user choices first, with institutional setup kept secondary."
 );
 
 assertContains(

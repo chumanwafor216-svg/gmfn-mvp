@@ -92,19 +92,19 @@ function choiceCard(): React.CSSProperties {
     border: "1px solid rgba(220,231,243,0.20)",
     boxShadow:
       "0 24px 46px rgba(0,8,18,0.28), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -10px 22px rgba(6,18,35,0.12)",
-    padding: 18,
+    padding: 16,
     display: "grid",
-    gridTemplateColumns: "68px minmax(0, 1fr)",
-    gap: "14px 16px",
+    gridTemplateColumns: "58px minmax(0, 1fr)",
+    gap: "12px 14px",
     alignItems: "center",
-    minHeight: 202,
+    minHeight: 166,
   };
 }
 
 function iconBadge(): React.CSSProperties {
   return {
-    width: 66,
-    height: 66,
+    width: 58,
+    height: 58,
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
@@ -155,8 +155,8 @@ function routePill(): React.CSSProperties {
 function supportText(): React.CSSProperties {
   return {
     color: "rgba(255,255,255,0.84)",
-    fontSize: 14,
-    lineHeight: 1.75,
+    fontSize: 13.5,
+    lineHeight: 1.55,
   };
 }
 
@@ -588,16 +588,16 @@ export default function WelcomePage() {
               style={{
                 display: "grid",
                 justifyItems: "center",
-                gap: 14,
+                gap: 12,
               }}
             >
               <div
                 style={{
-                  width: "min(100%, 980px)",
+                  width: "min(100%, 680px)",
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 302px))",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 318px))",
                   justifyContent: "center",
-                  gap: isCompact ? 16 : 20,
+                  gap: isCompact ? 14 : 18,
                   padding: 0,
                 }}
               >
@@ -606,11 +606,11 @@ export default function WelcomePage() {
                     <WelcomeIcon name="community-building" />
                   </div>
 
-                  <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ display: "grid", gap: 6 }}>
                     <div style={routePill()}>Create</div>
                     <div
                       style={{
-                        fontSize: isCompact ? 24 : 28,
+                        fontSize: isCompact ? 23 : 26,
                         fontWeight: 900,
                         lineHeight: 1.08,
                         textShadow: "0 10px 24px rgba(0,0,0,0.12)",
@@ -619,7 +619,7 @@ export default function WelcomePage() {
                       Create a new community
                     </div>
                     <div style={supportText()}>
-                      Create your community and invite your first people.
+                      Start a trusted group and invite your first people.
                     </div>
                   </div>
 
@@ -640,20 +640,20 @@ export default function WelcomePage() {
                     <WelcomeIcon name="join-person-plus" />
                   </div>
 
-                  <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ display: "grid", gap: 6 }}>
                     <div style={routePill()}>Join</div>
-                  <div
-                    style={{
-                      fontSize: isCompact ? 24 : 28,
-                      fontWeight: 900,
-                      lineHeight: 1.08,
-                      textShadow: "0 10px 24px rgba(0,0,0,0.12)",
-                    }}
-                  >
-                    Join an existing community
-                  </div>
+                    <div
+                      style={{
+                        fontSize: isCompact ? 23 : 26,
+                        fontWeight: 900,
+                        lineHeight: 1.08,
+                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                      }}
+                    >
+                      Join an existing community
+                    </div>
                     <div style={supportText()}>
-                      Use an invite or request access to a trusted community.
+                      Use an invite or request access from the community.
                     </div>
                   </div>
 
@@ -664,45 +664,55 @@ export default function WelcomePage() {
                       debugId="welcome.new.join-community"
                       style={{ width: "100%" }}
                     >
-                      Join community
-                    </EntryActionButton>
-                  </div>
-                </div>
-
-                <div style={choiceCard()}>
-                  <div style={iconBadge()} aria-hidden="true">
-                    <WelcomeIcon name="public-globe" />
-                  </div>
-
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <div style={routePill()}>Institution</div>
-                    <div
-                      style={{
-                        fontSize: isCompact ? 24 : 28,
-                        fontWeight: 900,
-                        lineHeight: 1.08,
-                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
-                      }}
-                    >
-                      Purchase Community Domain
-                    </div>
-                    <div style={supportText()}>
-                      Check a paid institutional domain name before setup.
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                    <EntryActionButton
-                      type="button"
-                      onClick={openCommunityDomainPurchase}
-                      debugId="welcome.new.purchase-community-domain"
-                      style={{ width: "100%" }}
-                    >
-                      Check domain name
+                      Request to join
                     </EntryActionButton>
                   </div>
                 </div>
               </div>
+
+              <details
+                style={{
+                  width: "min(100%, 680px)",
+                  borderRadius: 18,
+                  border: "1px solid rgba(220,231,243,0.14)",
+                  background: "rgba(255,255,255,0.055)",
+                  padding: isCompact ? 12 : 14,
+                }}
+              >
+                <summary
+                  data-debug-id="welcome.new.institutional-setup-toggle"
+                  style={{
+                    cursor: "pointer",
+                    color: "rgba(243,208,106,0.94)",
+                    fontSize: 13,
+                    fontWeight: 900,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Institutional setup
+                </summary>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                    paddingTop: 12,
+                  }}
+                >
+                  <div style={{ ...supportText(), color: "rgba(255,255,255,0.80)" }}>
+                    For schools, churches, unions, markets, NGOs, and other organisations that need a protected Community Domain.
+                  </div>
+                  <EntryActionButton
+                    type="button"
+                    onClick={openCommunityDomainPurchase}
+                    variant="secondary"
+                    debugId="welcome.new.purchase-community-domain"
+                    style={{ width: "100%" }}
+                  >
+                    Purchase Community Domain
+                  </EntryActionButton>
+                </div>
+              </details>
             </div>
           ) : null}
 

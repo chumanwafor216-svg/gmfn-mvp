@@ -155,6 +155,18 @@ assertContains(
   "Shared entry back control must stay stable and traceable."
 );
 
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /right: 8,[\s\S]*?top: 210,[\s\S]*?transform: "rotate\(45deg\)"/,
+  "Create Community must keep its rotated details decoration inside the compact phone canvas."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /\{guideDone && openPanel === "details" \? \([\s\S]*?Name, birth details, residence, phone, email\.[\s\S]*?\{guideDone && openPanel === "details" \? \([\s\S]*?Display name or nickname/,
+  "Create Community must render the full founder-details form only when Step 1 is the active panel."
+);
+
 if (findings.length > 0) {
   console.error("Entry flow polish audit failed:");
   for (const finding of findings) {

@@ -126,6 +126,23 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
   return finalQuery ? `${basePath}?${finalQuery}` : basePath;
 }
 
+function fullNameFromParts(firstName: unknown, surname: unknown): string {
+  return [cleanText(firstName), cleanText(surname)].filter(Boolean).join(" ");
+}
+
+function splitFullNameForState(value: unknown): { firstName: string; surname: string } {
+  const fullName = cleanText(value).replace(/\s+/g, " ");
+  const [firstName = "", ...rest] = fullName.split(" ").filter(Boolean);
+  return {
+    firstName,
+    surname: rest.join(" "),
+  };
+}
+
+function splitFullNameForSubmit(value: unknown): { firstName: string; surname: string } {
+  return splitFullNameForState(value);
+}
+
 function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -1760,6 +1777,11 @@ export default function JoinEntryPage() {
     canUseNewMemberForm &&
     !showUnclearSessionRecovery &&
     !showDraftRecovery;
+  const applicantFullName = fullNameFromParts(firstName, surname);
+  const applicantNameParts = splitFullNameForSubmit(applicantFullName);
+  const applicantNameReady = Boolean(
+    cleanText(applicantNameParts.firstName) && cleanText(applicantNameParts.surname)
+  );
 
   const canSubmit =
     !!effectiveInviteCode &&
@@ -1768,8 +1790,7 @@ export default function JoinEntryPage() {
     inviteAcknowledged &&
     (!joinRequiresRulesAcceptance || rulesAccepted) &&
     !hasExistingGsnClaim &&
-    !!cleanText(firstName) &&
-    !!cleanText(surname) &&
+    applicantNameReady &&
     !!cleanText(phone) &&
     !!cleanText(country) &&
     !busy;
@@ -1780,8 +1801,7 @@ export default function JoinEntryPage() {
     inviteAcknowledged &&
     (!joinRequiresRulesAcceptance || rulesAccepted) &&
     hasExistingGsnClaim &&
-    !!cleanText(firstName) &&
-    !!cleanText(surname) &&
+    applicantNameReady &&
     !!cleanText(phone) &&
     !busy;
 
@@ -1819,6 +1839,13 @@ export default function JoinEntryPage() {
       }),
     [submittedRequestId]
   );
+  const signInInvitePath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    if (effectiveInviteCode) params.set("invite_code", effectiveInviteCode);
+    params.set("force", "1");
+    const query = params.toString();
+    return query ? `/login?${query}` : "/login?force=1";
+  }, [effectiveInviteCode, location.search]);
 
   const continueExistingRequest = useCallback(
     (result: any): boolean => {
@@ -2113,6 +2140,12 @@ export default function JoinEntryPage() {
     setSuccess(null);
   }
 
+  function handleApplicantFullNameChange(value: string) {
+    const parts = splitFullNameForState(value);
+    setFirstName(parts.firstName);
+    setSurname(parts.surname);
+  }
+
   function continueRestoredDraft() {
     setJoinResumeNotice(null);
     if (hasExistingGsnClaim) {
@@ -2133,8 +2166,9 @@ export default function JoinEntryPage() {
 
     try {
       const safeInviteCode = cleanText(effectiveInviteCode);
-      const safeFirstName = cleanText(firstName);
-      const safeSurname = cleanText(surname);
+      const nameParts = splitFullNameForSubmit(applicantFullName);
+      const safeFirstName = cleanText(nameParts.firstName);
+      const safeSurname = cleanText(nameParts.surname);
       const safePhone = cleanText(phone);
       const safeCountry = cleanText(country);
       const safeDateOfBirth = cleanText(dateOfBirth);
@@ -2157,11 +2191,8 @@ export default function JoinEntryPage() {
       if (inviteChecking) {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
-      if (!safeFirstName) {
-        throw new Error("Enter first name.");
-      }
-      if (!safeSurname) {
-        throw new Error("Enter surname.");
+      if (!safeFirstName || !safeSurname) {
+        throw new Error("Enter full name.");
       }
       if (!safePhone) {
         throw new Error("Enter phone number.");
@@ -2415,14 +2446,15 @@ export default function JoinEntryPage() {
       if (!safeExistingGsnId) {
         throw new Error("Enter your GSN ID first.");
       }
-      const safeFirstName = cleanText(firstName);
-      const safeSurname = cleanText(surname);
+      const nameParts = splitFullNameForSubmit(applicantFullName);
+      const safeFirstName = cleanText(nameParts.firstName);
+      const safeSurname = cleanText(nameParts.surname);
       const safePhone = cleanText(phone);
       const safeBusinessName = buildWorkSummary(workCategory, workDetail);
 
       if (!safeFirstName || !safeSurname || !safePhone) {
         throw new Error(
-          "Add your name and phone number with the GSN ID before sending the request."
+          "Add your full name and phone number with the GSN ID before sending the request."
         );
       }
 
@@ -3011,36 +3043,25 @@ export default function JoinEntryPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Use your existing GSN ID if you have one. If you are new, fill the
-              short form for community review.
+              Choose one next step. The community can still review the request before membership opens.
             </div>
 
-            {isCompact ? (
-              <details style={{ marginTop: 14 }}>
-                <StableDisclosureSummary
-                  debugId="join-entry.request-meaning-details"
-                  stableHeight={48}
-                  style={entryChoiceActionStyle("secondary")}
-                >
-                  {joinEntryIconText("eye", "Why review matters", 20)}
-                </StableDisclosureSummary>
-                <RealLifeMeaningGuide
-                  compact
-                  guidance={getRealLifeTrustGuidance("join-request", {
-                    communityName: resolvedCommunityName || "this community",
-                  })}
-                  style={{ marginTop: 10 }}
-                />
-              </details>
-            ) : (
+            <details style={{ marginTop: 14 }}>
+              <StableDisclosureSummary
+                debugId="join-entry.request-meaning-details"
+                stableHeight={48}
+                style={entryChoiceActionStyle("secondary")}
+              >
+                {joinEntryIconText("eye", "Why review matters", 20)}
+              </StableDisclosureSummary>
               <RealLifeMeaningGuide
-                compact={false}
+                compact={isCompact}
                 guidance={getRealLifeTrustGuidance("join-request", {
                   communityName: resolvedCommunityName || "this community",
                 })}
-                style={{ marginTop: 14 }}
+                style={{ marginTop: 10 }}
               />
-            )}
+            </details>
 
             {joinRequiresRulesAcceptance && isCompact ? (
               <label
@@ -3213,18 +3234,17 @@ export default function JoinEntryPage() {
               >
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ ...labelText(), marginBottom: 0 }}>
-                    {joinEntryIconText("id", "Already a member?", 22)}
+                    {joinEntryIconText("id", "Community invitation", 22)}
                   </div>
                   <div
                     style={{
-                      color: "#35516B",
-                      fontSize: 14,
-                      lineHeight: 1.55,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      lineHeight: 1.3,
+                      fontWeight: 1000,
                     }}
                   >
-                    Use your GSN ID so GSN does not issue another identity after
-                    approval. If you are new to GSN, fill the short request form
-                    for community review.
+                    Already on GSN? Sign in. New here? Request access.
                   </div>
                   {inviteReady ? (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -3236,25 +3256,15 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div style={entryActionGrid(isCompact)}>
-                  <SecondaryButton
-                    type="button"
-                    disabled={!canOpenForm}
-                    onClick={() => {
-                      if (!canOpenForm) return;
-                      chooseExistingGsnPath();
-                    }}
-                    debugId="join-entry.choose-existing-gsn"
+                  <StableCtaLink
+                    to={signInInvitePath}
+                    kind="secondary"
+                    debugId="join-entry.sign-in-existing"
                     stableHeight={52}
-                    style={{
-                      ...entryChoiceActionStyle(
-                        joinPathChoice === "existing" ? "primary" : "secondary"
-                      ),
-                      opacity: canOpenForm ? 1 : 0.62,
-                      cursor: canOpenForm ? "pointer" : "not-allowed",
-                    }}
+                    style={entryChoiceActionStyle("primary")}
                   >
-                    {joinEntryIconText("id", "Use GSN ID")}
-                  </SecondaryButton>
+                    {joinEntryIconText("id", "Sign in")}
+                  </StableCtaLink>
                   <SecondaryButton
                     type="button"
                     disabled={!canOpenForm}
@@ -3271,12 +3281,44 @@ export default function JoinEntryPage() {
                   >
                     {joinEntryIconText(
                       "join-person-plus",
-                      inviteChecking
-                        ? "Checking"
-                        : "New to GSN"
+                      inviteChecking ? "Checking" : "Request access"
                     )}
                   </SecondaryButton>
                 </div>
+
+                <details style={{ marginTop: 2 }}>
+                  <StableDisclosureSummary
+                    debugId="join-entry.existing-gsn-help-toggle"
+                    stableHeight={48}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("eye", "Already have a GSN ID?", 20)}
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 10, ...noticeStyle("info") }}>
+                    Use your existing GSN ID if you have one so GSN does not create a second identity for you. If you can sign in, use Sign in. If you know your GSN ID but cannot sign in on this phone, continue with the GSN ID option below.
+                    <div style={{ marginTop: 12 }}>
+                      <SecondaryButton
+                        type="button"
+                        disabled={!canOpenForm}
+                        onClick={() => {
+                          if (!canOpenForm) return;
+                          chooseExistingGsnPath();
+                        }}
+                        debugId="join-entry.choose-existing-gsn"
+                        stableHeight={52}
+                        style={{
+                          ...entryChoiceActionStyle(
+                            joinPathChoice === "existing" ? "primary" : "secondary"
+                          ),
+                          opacity: canOpenForm ? 1 : 0.62,
+                          cursor: canOpenForm ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        {joinEntryIconText("id", "Use existing GSN ID")}
+                      </SecondaryButton>
+                    </div>
+                  </div>
+                </details>
 
                 {joinPathChoice === "existing" ? (
                   <div style={{ display: "grid", gap: 12 }}>
@@ -3294,31 +3336,14 @@ export default function JoinEntryPage() {
                         style={{ ...inputStyle(), marginTop: 8 }}
                       />
                     </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                        gap: 12,
-                      }}
-                    >
-                      <div>
-                        <div style={labelText()}>First name</div>
-                        <input
-                          value={firstName}
-                          onChange={(event) => setFirstName(event.target.value)}
-                          placeholder="Enter first name"
-                          style={{ ...inputStyle(), marginTop: 8 }}
-                        />
-                      </div>
-                      <div>
-                        <div style={labelText()}>Surname</div>
-                        <input
-                          value={surname}
-                          onChange={(event) => setSurname(event.target.value)}
-                          placeholder="Enter surname"
-                          style={{ ...inputStyle(), marginTop: 8 }}
-                        />
-                      </div>
+                    <div>
+                      <div style={labelText()}>Full name</div>
+                      <input
+                        value={applicantFullName}
+                        onChange={(event) => handleApplicantFullNameChange(event.target.value)}
+                        placeholder="Enter full name"
+                        style={{ ...inputStyle(), marginTop: 8 }}
+                      />
                     </div>
                     <div>
                       <div style={labelText()}>Phone number</div>
@@ -3330,46 +3355,55 @@ export default function JoinEntryPage() {
                         style={{ ...inputStyle(), marginTop: 8 }}
                       />
                     </div>
-                    <div>
-                      <div style={labelText()}>Work, business, or trade (optional)</div>
-                      <select
-                        value={workCategory}
-                        onChange={(event) => handleWorkCategoryChange(event.target.value)}
-                        style={{ ...inputStyle(), marginTop: 8 }}
+                    <details>
+                      <StableDisclosureSummary
+                        debugId="join-entry.existing-optional-details-toggle"
+                        stableHeight={48}
+                        style={entryChoiceActionStyle("secondary")}
                       >
-                        <option value="">Select the closest one</option>
-                        {WORK_OPTIONS.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {workCategory && workCategory !== "none" ? (
-                      <div>
-                        <div style={labelText()}>Short detail (optional)</div>
-                        <input
-                          value={workDetail}
-                          onChange={(event) => setWorkDetail(event.target.value)}
-                          placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
-                          style={{ ...inputStyle(), marginTop: 8 }}
-                        />
+                        {joinEntryIconText("eye", "Optional details", 20)}
+                      </StableDisclosureSummary>
+                      <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                        <div>
+                          <div style={labelText()}>Work, business, or trade (optional)</div>
+                          <select
+                            value={workCategory}
+                            onChange={(event) => handleWorkCategoryChange(event.target.value)}
+                            style={{ ...inputStyle(), marginTop: 8 }}
+                          >
+                            <option value="">Select the closest one</option>
+                            {WORK_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {workCategory && workCategory !== "none" ? (
+                          <div>
+                            <div style={labelText()}>Short detail (optional)</div>
+                            <input
+                              value={workDetail}
+                              onChange={(event) => setWorkDetail(event.target.value)}
+                              placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
+                              style={{ ...inputStyle(), marginTop: 8 }}
+                            />
+                          </div>
+                        ) : null}
+                        <div>
+                          <div style={labelText()}>Short note to the community (optional)</div>
+                          <textarea
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                            placeholder="Add a short note"
+                            style={{ ...textareaStyle(), marginTop: 8, minHeight: 84 }}
+                          />
+                        </div>
                       </div>
-                    ) : null}
-                    <div>
-                      <div style={labelText()}>Short note to the community (optional)</div>
-                      <textarea
-                        value={note}
-                        onChange={(event) => setNote(event.target.value)}
-                        placeholder="Add a short note"
-                        style={{ ...textareaStyle(), marginTop: 8, minHeight: 84 }}
-                      />
-                    </div>
+                    </details>
                     {identityNoteOpen ? (
                       <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
-                        One person should keep one GSN identity across
-                        communities. If the community accepts this request, GSN
-                        uses that same identity instead of creating another one.
+                        One person should keep one GSN identity across communities. If the community accepts this request, GSN uses that same identity instead of creating another one.
                       </div>
                     ) : null}
                     <div style={entryActionGrid(isCompact)}>
@@ -3434,7 +3468,6 @@ export default function JoinEntryPage() {
                 ) : null}
               </div>
             ) : null}
-
             {inviteChecking ? (
               <div style={{ marginTop: 18, ...noticeStyle("info") }}>
                 Checking this GSN invite link before you fill the form.
@@ -3563,33 +3596,20 @@ export default function JoinEntryPage() {
             canUseNewMemberForm &&
             !hasExistingGsnClaim ? (
             <form onSubmit={onSubmit}>
-              <div
-                style={{
-                  marginTop: 18,
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <div style={labelText()}>First name</div>
-                  <input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter first name"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div>
-                  <div style={labelText()}>Surname</div>
-                  <input
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                    placeholder="Enter surname"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
+              <div style={{ marginTop: 18 }}>
+                <div style={labelText()}>Full name</div>
+                <input
+                  value={applicantFullName}
+                  onChange={(e) => handleApplicantFullNameChange(e.target.value)}
+                  placeholder="Enter full name"
+                  autoComplete="name"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+                {applicantFullName && !applicantNameReady ? (
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Add the name people know you by, including family name where possible.
+                  </div>
+                ) : null}
               </div>
 
               <div
@@ -3637,9 +3657,17 @@ export default function JoinEntryPage() {
                 </div>
               </div>
 
+              <details style={{ marginTop: 12 }}>
+                <StableDisclosureSummary
+                  debugId="join-entry.new-optional-details-toggle"
+                  stableHeight={48}
+                  style={entryChoiceActionStyle("secondary")}
+                >
+                  {joinEntryIconText("eye", "Optional details", 20)}
+                </StableDisclosureSummary>
+                <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
               <div
                 style={{
-                  marginTop: 12,
                   display: "grid",
                   gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                   gap: 12,
@@ -3773,6 +3801,8 @@ export default function JoinEntryPage() {
                   style={{ ...textareaStyle(), marginTop: 8 }}
                 />
               </div>
+                </div>
+              </details>
 
               <div
                 style={{

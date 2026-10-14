@@ -104,16 +104,22 @@ assertNotContains(
   "Existing-community Join Entry must not restore the old stale-token gate that hid the request form after invite validation."
 );
 
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const signInInvitePath = useMemo[\s\S]*params\.set\("invite_code", effectiveInviteCode\)[\s\S]*to=\{signInInvitePath\}/,
+  "Existing-community Join Entry must preserve invite context when the simple Sign in action is used."
+);
+
 assertNotContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta|I am new/,
-  "Existing-community Join Entry must not restore the old sign-in detour for invite recipients; existing members should type their GSN ID here."
+  /Sign in \/ use GSN ID|Sign in to reuse|signInConflictCta|I am new/,
+  "Existing-community Join Entry must not restore old mixed-choice wording after the simplified Sign in / Request access decision."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showJoinPathLauncher[\s\S]*?Already a member\?[\s\S]*?Use GSN ID[\s\S]*?New to GSN[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Work, business, or trade[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
-  "A ready existing-community invite must first present one guided choice, then reveal either direct existing GSN ID submission or the new-member request form without dumping both paths at once."
+  /showJoinPathLauncher[\s\S]*?Already on GSN\? Sign in\. New here\? Request access\.[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?Request access[\s\S]*?Already have a GSN ID\?[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  "A ready existing-community invite must first present Sign in / Request access, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
 );
 
 assertContains(

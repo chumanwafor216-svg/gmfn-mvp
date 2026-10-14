@@ -8,6 +8,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import {
@@ -1479,17 +1480,61 @@ export default function LoginPage() {
               </PrimaryButton>
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <SecondaryButton
-                onClick={openActivationRoute}
-                disabled={busy}
-                stableHeight={52}
-                debugId="login.activate-approved"
-                style={supportBtn()}
+            <details
+              style={{
+                marginTop: 12,
+                borderRadius: 18,
+                border: "1px solid rgba(220,231,243,0.16)",
+                background: "rgba(255,255,255,0.045)",
+                padding: 12,
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="login.new-member-options.toggle"
+                style={{
+                  cursor: "pointer",
+                  color: "#F3D06A",
+                  fontSize: 13.5,
+                  fontWeight: 1000,
+                  lineHeight: 1.3,
+                }}
               >
-                {loginIconText("join-person-plus", "Activate membership", 24)}
-              </SecondaryButton>
-            </div>
+                Not signed in yet?
+              </StableDisclosureSummary>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  marginTop: 12,
+                }}
+              >
+                <SecondaryButton
+                  onClick={openActivationRoute}
+                  disabled={busy}
+                  stableHeight={50}
+                  debugId="login.activate-approved"
+                  style={supportBtn()}
+                >
+                  {loginIconText("join-person-plus", "Activate membership", 24)}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={openCreateRoute}
+                  disabled={busy}
+                  stableHeight={50}
+                  debugId="login.start-community"
+                  style={{
+                    ...supportBtn(),
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(220,231,243,0.28)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.035) 100%)",
+                    justifySelf: "center",
+                  }}
+                >
+                  {loginIconText("community", "Start a new community", 24)}
+                </SecondaryButton>
+              </div>
+            </details>
 
             {supportOpen ? (
               <div
@@ -1818,23 +1863,6 @@ export default function LoginPage() {
             compact={isCompact}
             surface="login"
           />
-
-          <SecondaryButton
-            onClick={openCreateRoute}
-            disabled={busy}
-            stableHeight={52}
-            debugId="login.start-community"
-            style={{
-              ...supportBtn(),
-              color: "#F8FBFF",
-              border: "1px solid rgba(220,231,243,0.28)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.035) 100%)",
-              justifySelf: "center",
-            }}
-          >
-            {loginIconText("community", "Start a new community", 24)}
-          </SecondaryButton>
           </div>
         </div>
       </div>

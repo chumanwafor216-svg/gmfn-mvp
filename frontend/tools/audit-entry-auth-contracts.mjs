@@ -156,6 +156,12 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
+  /<details[\s\S]*?debugId="login\.new-member-options\.toggle"[\s\S]*?Not signed in yet\?[\s\S]*?debugId="login\.activate-approved"[\s\S]*?Activate membership[\s\S]*?debugId="login\.start-community"[\s\S]*?Start a new community[\s\S]*?<\/details>/,
+  "Login must keep activation and new-community routes inside one collapsed secondary disclosure so sign-in remains the first decision."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
   /buildSignInSupportMessage[\s\S]*?recoveryAdminReviewPath[\s\S]*?APP_ROUTES\.IDENTITY_RISK[\s\S]*?recoverySupportMessage[\s\S]*?copyRecoveryReviewPacket[\s\S]*?Owner\/support review:[\s\S]*?debugId="login\.password-recovery\.copy-review-packet"[\s\S]*?debugId="login\.password-recovery\.admin-review"/,
   "Login blocked password recovery must produce an owner/support review packet and route admins into Identity Risk with the typed phone and GSN ID."
 );
@@ -180,8 +186,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /Already a member\?[\s\S]*Use GSN ID[\s\S]*New to GSN[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*First name[\s\S]*Surname[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
-  "Logged-out invite entry must branch existing GSN holders away from new-person signup before exposing the new-person form."
+  /Already on GSN\? Sign in\. New here\? Request access\.[\s\S]*debugId="join-entry\.sign-in-existing"[\s\S]*Sign in[\s\S]*debugId="join-entry\.toggle-new-member-request-form"[\s\S]*Request access[\s\S]*Already have a GSN ID\?[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*Full name[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
+  "Logged-out invite entry must show the simple Sign in / Request access decision first, while keeping existing-GSN-ID reuse behind help before the new-person form."
 );
 
 assertContains(
@@ -196,10 +202,16 @@ assertContains(
   "Logged-out invite entry must route auto-approved QR preapproval responses using flattened approval/result fields before falling through to pending."
 );
 
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /const signInInvitePath = useMemo[\s\S]*params\.set\("invite_code", effectiveInviteCode\)[\s\S]*params\.set\("force", "1"\)[\s\S]*to=\{signInInvitePath\}/,
+  "Logged-out existing-community invite entry must preserve invite context when the simple Sign in action is used."
+);
+
 assertNotContains(
   "src/pages/JoinEntryPage.tsx",
-  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta|I am new/,
-  "Logged-out existing-community invite entry must not route existing GSN holders into a sign-in detour."
+  /Sign in \/ use GSN ID|Sign in to reuse|signInConflictCta|I am new/,
+  "Logged-out existing-community invite entry must avoid old mixed-choice wording after the simplified Sign in / Request access decision."
 );
 
 assertContains(

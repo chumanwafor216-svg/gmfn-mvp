@@ -4325,7 +4325,7 @@ export default function CreateEntryPage() {
                 </span>
               </SecondaryButton>
 
-              {guideDone && openPanel !== null ? (
+              {guideDone && openPanel === "details" ? (
                 <div
                   style={{
                     marginTop: 6,
@@ -4370,7 +4370,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {guideDone && openPanel !== null ? (
+              {guideDone && openPanel === "details" ? (
                 <div
                   style={{
                     display: "grid",
@@ -4384,7 +4384,7 @@ export default function CreateEntryPage() {
                     aria-hidden="true"
                     style={{
                       position: "absolute",
-                      right: -14,
+                      right: 8,
                       top: 210,
                       width: 150,
                       height: 150,
@@ -6319,19 +6319,40 @@ export default function CreateEntryPage() {
                         </div>
                       </details>
                     ) : (
-                      <div
+                      <details
                         style={{
                           ...softCard("#F8FBFF"),
                           display: "grid",
                           gap: 10,
                         }}
                       >
-                        <div style={sectionLabel()}>Setup controls</div>
+                        <StableDisclosureSummary
+                          debugId="create-entry.community.review-setup-controls"
+                          style={{
+                            cursor: "pointer",
+                            color: "#0B1F33",
+                            fontWeight: 1000,
+                          }}
+                        >
+                          Review setup controls
+                        </StableDisclosureSummary>
+                        <div
+                          style={{
+                            color: "#5D718A",
+                            fontSize: 12.5,
+                            lineHeight: 1.5,
+                            fontWeight: 760,
+                            marginTop: 10,
+                          }}
+                        >
+                          GSN has chosen sensible defaults for this community type. Open this only if the setup needs different rules before registration.
+                        </div>
                         <div
                           style={{
                             display: "grid",
                             gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
                             gap: 8,
+                            marginTop: 10,
                           }}
                         >
                           {GOVERNANCE_TOGGLE_OPTIONS.map((item) => {
@@ -6370,17 +6391,7 @@ export default function CreateEntryPage() {
                             );
                           })}
                         </div>
-                        <div
-                          style={{
-                            color: "#5D718A",
-                            fontSize: 12.5,
-                            lineHeight: 1.5,
-                            fontWeight: 760,
-                          }}
-                        >
-                          This records the setup choice now. Full policy enforcement can be deepened later without changing this entry path.
-                        </div>
-                      </div>
+                      </details>
                     )}
                   </div>
 

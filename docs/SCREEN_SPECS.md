@@ -258,8 +258,8 @@ Must show:
 - Send code action
 - Continue button
 - Open sign-in help
-- Start a new community link
-- Request to join a community link
+- compact `Not signed in yet?` disclosure for membership activation and starting
+  a new community
 - privacy note
 - blocked password recovery must expose an owner/support review packet without revealing or requesting any password
 - owner/admin recovery review must route to Identity Risk with the typed phone and GSN ID so the admin can confirm ownership before issuing a temporary password
@@ -267,6 +267,11 @@ Must show:
 Must not show:
 - bottom navigation
 - dashboard content
+
+Rules:
+- Sign in stays the only primary action in the default view.
+- Membership activation and new-community setup stay secondary inside the
+  compact disclosure instead of competing with the sign-in form.
 
 Primary action:
 
@@ -285,20 +290,20 @@ Must show:
 - Choose your starting path.
 - Create community card
 - Join request membership card
-- Purchase Community Domain card
+- Compact Institutional setup option for Purchase Community Domain
 - information note: Once your setup or join request is completed, you will sign in from the Existing Member page.
 
 Primary actions:
 - Start community
 - Request to join
-- Purchase Community Domain
+- Purchase Community Domain, kept secondary to ordinary Create/Join choices
 
 Rules:
 - Create community goes to StartCommunityPage.
 - Request to join goes to JoinRequestMembershipPage.
-- Purchase Community Domain goes to CommunityDomainPurchasePage.
+- Purchase Community Domain goes to CommunityDomainPurchasePage from the compact Institutional setup option.
 - Purchase Community Domain is a separate institutional provisioning path and must not be
-  merged into ordinary Create Community.
+  merged into ordinary Create Community or shown as a competing ordinary-member path.
 - After successful completion, user returns to SignInPage.
 
 ## CommunityDomainPurchasePage
