@@ -366,6 +366,12 @@ assertContains(
 
 assertContains(
   "publicPaper",
+  /data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?data-gsn-public-phone-primary-action="one-next-step"[\s\S]*?communityPulseAvailable && canRequestCommunityPulse[\s\S]*?Ask community[\s\S]*?memberCredentialPath[\s\S]*?Check membership[\s\S]*?Read evidence/,
+  "Public TrustSlip phone view must expose one next action and keep the duplicate evidence snapshot off the first surface."
+);
+
+assertContains(
+  "publicPaper",
   /title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Purpose \/ Relevant evidence"[\s\S]*?rows=\{relevantEvidenceRows\}[\s\S]*?title="What it suggests"[\s\S]*?rows=\{suggestionRows\}[\s\S]*?title="Source \/ Recency"[\s\S]*?rows=\{sourceFamilyRows\}[\s\S]*?title="Next check"[\s\S]*?rows=\{nextCheckRows\}[\s\S]*?title="Limitations"[\s\S]*?rows=\{limitationRows\}/,
   "Public TrustSlip paper must group purpose, relevant evidence, source/recency, next check, and limitations inside the full-evidence disclosure."
 );

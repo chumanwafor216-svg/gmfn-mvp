@@ -100,6 +100,18 @@ assertContains(
   "Community Home shop owner handoff must point to Shop Control without embedding Spotlight controls."
 );
 assertContains(
+  /subtitle=\{isCompact \? undefined : "One selected community at a time\."\}/,
+  "Community Home phone top navigation must not repeat selected-community guidance."
+);
+assertContains(
+  /data-debug-id="community-home\.identity-card"[\s\S]*?!isCompact \? \([\s\S]*?You are inside one selected community[\s\S]*?\) : null/,
+  "Community Home phone identity must keep the explanatory paragraph off the first surface."
+);
+assertContains(
+  /debugId="community-home\.goto\.marketplace"[\s\S]*?Marketplace<\/span>\{!isCompact \? <span[\s\S]*?debugId="community-home\.goto\.trust"[\s\S]*?Trust<\/span>\{!isCompact \? <span/,
+  "Community Home phone destination rows must show labels without repeated explanatory sentences."
+);
+assertContains(
   /debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
   "Community Home switcher must be a protected compact row."
 );

@@ -888,21 +888,21 @@ function normalizeGuidanceNotice(item: GuidanceNotice): ActionableNotice {
 function bucketTitle(bucket: GuidanceInboxBucketKey): string {
   if (bucket === "actNow") return "Act now";
   if (bucket === "dueSoon") return "Due soon";
-  if (bucket === "watchAndWait") return "Watch and wait";
-  return "General updates";
+  if (bucket === "watchAndWait") return "Waiting";
+  return "Updates";
 }
 
 function bucketDescription(bucket: GuidanceInboxBucketKey): string {
   if (bucket === "actNow") {
-    return "Someone may be waiting for your answer. Open these first.";
+    return "Needs your answer.";
   }
   if (bucket === "dueSoon") {
-    return "These are not urgent yet, but it is better to handle them soon.";
+    return "Handle soon.";
   }
   if (bucket === "watchAndWait") {
-    return "These are already moving. Check them, but you may not need to act now.";
+    return "No action yet.";
   }
-  return "These are useful updates. Read them when you have time.";
+  return "Read later.";
 }
 
 function bucketTone(
@@ -1453,7 +1453,7 @@ export default function NotificationsPage() {
       unread: false,
     });
   const selectedBucketRows = selectedBucket ? bucketRows[selectedBucket] : [];
-  const bucketRowHeight = isPhone ? 124 : 86;
+  const bucketRowHeight = isPhone ? 76 : 86;
 
   function showUrgentItems() {
     setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
@@ -1770,9 +1770,11 @@ export default function NotificationsPage() {
               999
             )}
             <div>
-              <div style={{ ...sectionLabel(), color: isPhone ? "#50647C" : "#AFC4DA" }}>
-                Notifications
-              </div>
+              {!isPhone ? (
+                <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
+                  Notifications
+                </div>
+              ) : null}
               <div
                 style={{
                   color: isPhone ? "#07172C" : "#F8FBFF",
@@ -1837,7 +1839,7 @@ export default function NotificationsPage() {
                     ) : null}
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
-                    {truncateText(focusNotice.detail, isPhone ? 96 : 150)}
+                    {truncateText(focusNotice.detail, isPhone ? 72 : 150)}
                   </div>
                 </div>
               </div>
@@ -1935,18 +1937,20 @@ export default function NotificationsPage() {
               : null}
             <div>
               <div style={{ ...sectionLabel(), color: isPhone ? "#50647C" : "#AFC4DA" }}>
-                {isPhone ? "More notifications" : "All waiting items"}
+                {isPhone ? "Other items" : "All waiting items"}
               </div>
-              <div
-                style={{
-                  color: isPhone ? "#07172C" : "#F8FBFF",
-                  fontSize: isPhone ? 18 : 28,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
-                {isPhone ? "Open when needed" : "Handle in order"}
-              </div>
+              {!isPhone ? (
+                <div
+                  style={{
+                    color: "#F8FBFF",
+                    fontSize: 28,
+                    fontWeight: 950,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  Handle in order
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -2043,21 +2047,23 @@ export default function NotificationsPage() {
                       >
                         {bucketTitle(bucket)}
                       </span>
+                      {!isPhone ? (
                       <span
                         style={{
                           marginTop: 5,
                           color: "#465A72",
-                          fontSize: isPhone ? 12.5 : 15,
+                          fontSize: 15,
                           fontWeight: 700,
-                          lineHeight: isPhone ? 1.22 : 1.25,
+                          lineHeight: 1.25,
                           overflow: "hidden",
                           display: "-webkit-box",
-                          WebkitLineClamp: isPhone ? 4 : 2,
+                          WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
                         }}
                       >
                         {bucketDescription(bucket)}
                       </span>
+                      ) : null}
                     </span>
                     <span
                       style={{
@@ -2151,9 +2157,6 @@ export default function NotificationsPage() {
       {selectedBucket ? (
         <section style={pageCard("#FFFFFF")}>
           <div style={sectionLabel()}>Open items in {bucketTitle(selectedBucket)}</div>
-          <div style={{ marginTop: 8, ...helperText() }}>
-            Review each waiting item and choose the right next action.
-          </div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {selectedBucketRows.length === 0 ? (

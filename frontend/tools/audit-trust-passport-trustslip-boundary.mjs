@@ -262,7 +262,7 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipSetupControlsTouchedRef = useRef\(false\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\([\s\S]*?trustSlipCode && shortVerifyPath && shortVerifyUrl[\s\S]*?\);[\s\S]*?const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_community_id:[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(false\);[\s\S]*?const trustSlipSetupControlsTouchedRef = useRef\(false\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\([\s\S]*?trustSlipCode && shortVerifyPath && shortVerifyUrl[\s\S]*?\);[\s\S]*?const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_community_id:[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
   "TrustSlip holder document visibility must require backend-confirmed code/link state while Share/Open wait for a persisted purpose-bound invitation."
 );
 assertContains(
@@ -299,8 +299,8 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
-  "TrustSlip setup Share/Open-current actions must remain blocked until the selected context has a persisted short invitation."
+  /const canCreateShareInvitation =[\s\S]*?hasUsableTrustSlipShare &&[\s\S]*?!trustSlipNeedsSelectedCommunityRefresh &&[\s\S]*?!trustSlipShareBlockedByCurrentness;[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*canCreateShareInvitation && Boolean\(shareInvitationPath && shareInvitationUrl\);[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
+  "TrustSlip setup Open-current action must remain blocked until the selected context has a persisted short invitation."
 );
 assertNotContains(
   "trustSlip",

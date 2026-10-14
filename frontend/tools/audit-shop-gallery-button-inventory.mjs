@@ -259,8 +259,8 @@ assertContains(
 );
 
 assertContains(
-  /Public shop page\. Check seller evidence before trade\./,
-  "Public Shop brand bar must keep the public-page guidance short and user-facing."
+  /!isCompact \? \([\s\S]*?Public shop page\. Check seller evidence before trade\.[\s\S]*?\) : null/,
+  "Public Shop phone brand bar must keep the repeated public-page guidance off the first surface."
 );
 
 assertContains(
@@ -308,7 +308,7 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?Back to Marketplace/,
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? "Marketplace" : "Back to Marketplace"\}/,
   "Public Shop visitors must have a fixed-height Back to Marketplace action that returns to the member shops section without exposing owner shortcuts."
 );
 
@@ -407,8 +407,13 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?buttonLabel="Share"[\s\S]*?triggerIcon=\{inlineShareGlyph\("#FFFFFF", isCompact \? 18 : 21\)\}[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 100%\)[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
-  "Public Shop signboard Share, Verify, and WhatsApp controls must keep fixed phone geometry with a visible navy Share icon button."
+  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?buttonLabel="Share"[\s\S]*?buttonKind="secondary"[\s\S]*?triggerIcon=\{inlineShareGlyph\("#8C6829", isCompact \? 18 : 21\)\}[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?linear-gradient\(180deg, #FFFFFF 0%, #F7FAFF 100%\)[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
+  "Public Shop phone actions must keep fixed geometry while Share and Verify stay secondary to the primary WhatsApp action."
+);
+
+assertContains(
+  /!isCompact \? \([\s\S]*?className="public-shop-status-strip"[\s\S]*?Community Record[\s\S]*?Public Shelf[\s\S]*?Private Vault[\s\S]*?Trust Identity[\s\S]*?\) : null/,
+  "Public Shop phone first surface must hide the repeated four-part status strip."
 );
 
 assertContains(

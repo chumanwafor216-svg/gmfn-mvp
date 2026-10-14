@@ -92,6 +92,30 @@ assertContains(
 
 assertContains(
   "community",
+  /className="community-verify-page"[\s\S]*?@media \(max-width: 640px\)[\s\S]*?\.gsn-trust-document-masthead-brand,[\s\S]*?\.community-verify-authority-strip[\s\S]*?display: none !important/,
+  "Community Verify must remove duplicate masthead-brand and authority-strip layers from the phone first surface."
+);
+
+assertContains(
+  "community",
+  /Community ID[\s\S]*?\{communityAnchor\}[\s\S]*?\{communityName\}[\s\S]*?This is the community record\. Member, shop, group, and payment claims need separate proof\./,
+  "Community Verify phone hierarchy must lead with the Community ID and keep the display name secondary."
+);
+
+assertContains(
+  "community",
+  /data-gsn-community-verify-decision-summary="true"[\s\S]*?What this means[\s\S]*?Use the Community ID, not the name\.[\s\S]*?does not prove every member, shop, group, or transaction[\s\S]*?requestConfirmationAvailable \? \([\s\S]*?Ask community[\s\S]*?Private member details stay hidden\.[\s\S]*?title="Verification snapshot"[\s\S]*?debugId="community-verify\.copy-link"[\s\S]*?stableHeight=\{44\}/,
+  "Community Verify must keep one plain reading and one conditional primary action on the first surface, with Copy inside the snapshot drawer."
+);
+
+assertNotContains(
+  "community",
+  /<DecisionSummaryCard|Decision Summary|Request scoped confirmation/,
+  "Community Verify must not restore the old three-card decision block or its competing long confirmation label."
+);
+
+assertContains(
+  "community",
   /const confirmsList = \[[\s\S]*?Community identity anchor[\s\S]*?GSN public registry status[\s\S]*?Community ID[\s\S]*?Record currentness signal[\s\S]*?Controlled relay availability[\s\S]*?\];/,
   "Community Verify must keep a clear 'this confirms' boundary list."
 );

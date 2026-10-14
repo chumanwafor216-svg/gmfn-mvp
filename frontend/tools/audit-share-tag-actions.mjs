@@ -190,7 +190,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
   ],
   [
@@ -200,7 +200,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 2;/,
+    /showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
     "Shop Diary blocks must reserve the block social share slot for owners only.",
   ],
   [

@@ -41,11 +41,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 93;
+const expectedStableActionCount = 94;
 const expectedNativeFieldCount = 38;
 const expectedSourceBreakdown = {
   front: 5,
-  body: 88,
+  body: 89,
 };
 const expectedVisibleIntentActionCount = 6;
 const expectedMobileShellBreakdown = {
@@ -845,6 +845,7 @@ const expectedOrder = [
   ),
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
+  exactDebugId("marketplace.front.invite-someone"),
   exactDebugId("marketplace.job.ask-for-something"),
   exactDebugId("marketplace.job.find-people-services"),
   dynamicDebugId(
@@ -999,6 +1000,21 @@ assertNotContains(
 assertContains(
   /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?money: "marketplace-money-routes"[\s\S]*?rosca: "marketplace-rosca"[\s\S]*?tools: "marketplace-owned-links"[\s\S]*?members: "marketplace-members-shops"[\s\S]*?support: "marketplace-loans-support"/,
   "Marketplace section anchors must stay aligned to money, ROSCA, links, members, and support sections."
+);
+
+assertContains(
+  /!isCompact \? \([\s\S]*?One community\. Choose one job at a time\.[\s\S]*?\) : null/,
+  "Marketplace phone identity must not repeat the selected-community instruction."
+);
+
+assertContains(
+  /\{isCompact \? "Needs" : "What people here need"\}[\s\S]*?!isCompact \? \([\s\S]*?Live DemandBox requests[\s\S]*?\) : null/,
+  "Marketplace phone Needs card must keep one heading and hide its repeated explanation."
+);
+
+assertContains(
+  /\{isCompact \? "Shops & services" : "Who can provide something"\}[\s\S]*?!isCompact \? \([\s\S]*?Visible shop faces[\s\S]*?\) : null[\s\S]*?\{isCompact \? "See all shops" : "Shops & Services"\}/,
+  "Marketplace phone Shops card must keep one heading, one clear action, and no repeated explanation."
 );
 
 assertContains(

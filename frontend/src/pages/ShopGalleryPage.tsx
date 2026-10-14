@@ -3757,17 +3757,19 @@ export default function ShopGalleryPage() {
             >
               GSN
             </div>
-            <div
-              style={{
-                marginTop: 3,
-                color: "rgba(255,255,255,0.78)",
-                fontSize: isCompact ? 10.6 : 14,
-                fontWeight: 760,
-                lineHeight: 1.25,
-              }}
-            >
-              Public shop page. Check seller evidence before trade.
-            </div>
+            {!isCompact ? (
+              <div
+                style={{
+                  marginTop: 3,
+                  color: "rgba(255,255,255,0.78)",
+                  fontSize: 14,
+                  fontWeight: 760,
+                  lineHeight: 1.25,
+                }}
+              >
+                Public shop page. Check seller evidence before trade.
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -3793,7 +3795,7 @@ export default function ShopGalleryPage() {
           }}
         >
           {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
-          <span>Back to Marketplace</span>
+          <span>{isCompact ? "Marketplace" : "Back to Marketplace"}</span>
         </StableCtaLink>
 
         <section
@@ -4349,25 +4351,25 @@ export default function ShopGalleryPage() {
               }}
               disabled={shopLoadFailed || !absoluteShopShareLink}
               buttonLabel="Share"
-              buttonKind="primary"
-              triggerIcon={inlineShareGlyph("#FFFFFF", isCompact ? 18 : 21)}
+              buttonKind="secondary"
+              triggerIcon={inlineShareGlyph("#8C6829", isCompact ? 18 : 21)}
               minWidth={0}
               fullWidth
               stableHeight={isCompact ? 46 : 54}
               debugId="shop-gallery.share-shop"
               style={{
-                ...primaryBtn(shopLoadFailed),
+                ...secondaryBtn(shopLoadFailed || !absoluteShopShareLink),
                 minHeight: isCompact ? 46 : 54,
                 borderRadius: isCompact ? 14 : 18,
                 fontSize: isCompact ? 11.2 : 14,
                 padding: isCompact ? "5px 3px" : "10px 12px",
                 gap: isCompact ? 4 : 7,
-                color: "#FFFFFF",
+                color: "#07172C",
                 background:
-                  "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)",
-                border: "1px solid rgba(214,170,69,0.34)",
+                  "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+                border: "1px solid rgba(214,170,69,0.28)",
                 boxShadow:
-                  "0 12px 24px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.16)",
+                  "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
               }}
               onResult={(tone, text) => {
                 if (tone === "success") {
@@ -4431,9 +4433,10 @@ export default function ShopGalleryPage() {
           </div>
         </section>
 
-        <div
-          className="public-shop-status-strip"
-          style={{
+        {!isCompact ? (
+          <div
+            className="public-shop-status-strip"
+            style={{
             display: "grid",
             gridTemplateColumns: isCompact
               ? "repeat(4, minmax(0, 1fr))"
@@ -4446,8 +4449,8 @@ export default function ShopGalleryPage() {
               "linear-gradient(135deg, #FFFFFF 0%, #FFFCF4 54%, #F7FBFF 100%)",
             boxShadow:
               "0 18px 36px rgba(8,38,67,0.10), 0 0 0 1px rgba(13,95,168,0.04), inset 0 1px 0 rgba(255,255,255,0.96)",
-          }}
-        >
+            }}
+          >
           {[
             {
               icon: "shield" as ShopIconName,
@@ -4533,7 +4536,8 @@ export default function ShopGalleryPage() {
               </div>
             );
           })}
-        </div>
+          </div>
+        ) : null}
 
         {shopVerificationOpen ? (
           <section

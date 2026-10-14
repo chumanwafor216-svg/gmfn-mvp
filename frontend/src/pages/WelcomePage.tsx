@@ -275,10 +275,10 @@ export default function WelcomePage() {
       : entryMode === "approved"
       ? "Your approval has already been confirmed. Open activation below."
       : entryMode === "existing"
-      ? "Choose this only if you already have an active account and want to reopen it now."
+      ? "For active accounts."
       : step === "choose_new_lane"
-      ? "Choose your starting path."
-      : "Choose how you want to continue.";
+      ? "Choose one."
+      : "Choose one.";
 
   return (
     <div style={pageShell()}>
@@ -514,7 +514,7 @@ export default function WelcomePage() {
                 alignItems: "stretch",
               }}
             >
-              <div style={choiceCard()}>
+              <div style={{ ...choiceCard(), minHeight: isCompact ? 132 : 150 }}>
                 <div style={iconBadge()} aria-hidden="true">
                   <WelcomeIcon name="identity-card" />
                 </div>
@@ -530,17 +530,15 @@ export default function WelcomePage() {
                   >
                     Sign in
                   </div>
-                  <div style={supportText()}>
-                    Continue from your active GSN account.
-                  </div>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
                   <EntryActionButton
                     type="button"
                     onClick={openExisting}
+                    variant="secondary"
                     debugId="welcome.identity.sign-in"
-                    style={{ width: "100%" }}
+                    style={{ width: isCompact ? "min(100%, 180px)" : 180 }}
                   >
                     Sign in
                   </EntryActionButton>
@@ -562,9 +560,6 @@ export default function WelcomePage() {
                     }}
                   >
                     Sign up
-                  </div>
-                  <div style={supportText()}>
-                    Create a community or request to join one.
                   </div>
                 </div>
 

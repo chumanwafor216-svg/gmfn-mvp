@@ -2825,7 +2825,7 @@ export default function TrustSlipPage() {
     useState<TrustSlipVisibilityScope>("community_specific");
   const [selectedIssuingCommunityOptionId, setSelectedIssuingCommunityOptionId] =
     useState("");
-  const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(true);
+  const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(false);
   const trustSlipSetupControlsTouchedRef = useRef(false);
   const trustSlipPurposeQueryRef = useRef("");
   const shareInvitationSeqRef = useRef(0);
@@ -2866,7 +2866,7 @@ export default function TrustSlipPage() {
     decisionPackHistorySeqRef.current += 1;
     setConfirmationOutcome(null);
     setMerchantRailLink(null);
-    setTrustSlipSetupSubmitted(true);
+    setTrustSlipSetupSubmitted(false);
   }, []);
 
   const applyTrustSlipPageData = useCallback((data: TrustSlipPageData) => {
@@ -3429,6 +3429,12 @@ export default function TrustSlipPage() {
       : issuingCommunityId
         ? `All visible context can travel with the link, but this TrustSlip is still issued from ${selectedVerificationCommunityName}. It is not proof that every community gives the same judgement.`
         : "Choose an active community before using all visible community context.";
+  const verificationScopeCompactBoundary =
+    visibilityScope === "community_specific"
+      ? `Only ${selectedVerificationCommunityName} speaks for this TrustSlip.`
+      : issuingCommunityId
+        ? `${selectedVerificationCommunityName} still issues this TrustSlip.`
+        : "Choose an active community first.";
   const trustSlipNeedsSelectedCommunityRefresh = Boolean(
     visibilityScope === "community_specific" &&
       issuingCommunityId &&
@@ -5220,16 +5226,18 @@ export default function TrustSlipPage() {
                 >
                   Choose purpose and community first.
                 </div>
-                <div
-                  style={{
-                    color: "#526579",
-                    fontSize: isCompact ? 13 : 14,
-                    fontWeight: 850,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  The full TrustSlip opens after GSN refreshes it for this exact choice.
-                </div>
+                {!isCompact ? (
+                  <div
+                    style={{
+                      color: "#526579",
+                      fontSize: 14,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    The full TrustSlip opens after GSN refreshes it for this exact choice.
+                  </div>
+                ) : null}
               </div>
               {trustSlipHasSetupBlocker ? (
                 <div
@@ -5322,17 +5330,19 @@ export default function TrustSlipPage() {
                     ))}
                   </select>
                 </label>
-                <div
-                  style={{
-                    color: "#254E77",
-                    fontSize: isCompact ? 12 : 13,
-                    fontWeight: 900,
-                    lineHeight: 1.3,
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {selectedPurposeOption.label}
-                </div>
+                {!isCompact ? (
+                  <div
+                    style={{
+                      color: "#254E77",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {selectedPurposeOption.label}
+                  </div>
+                ) : null}
               </div>
               <div
                 data-gsn-trustslip-verification-scope="setup"
@@ -5394,7 +5404,7 @@ export default function TrustSlipPage() {
                     overflowWrap: "anywhere",
                   }}
                 >
-                  {verificationScopeBoundary}
+                  {isCompact ? verificationScopeCompactBoundary : verificationScopeBoundary}
                 </div>
               </div>
               <div
@@ -5444,29 +5454,22 @@ export default function TrustSlipPage() {
                 {hasUsableCurrentTrustSlipShare ? (
                   <SecondaryButton
                     type="button"
-                    onClick={() => void sharePublicDecisionPack()}
-                    fullWidth
-                    stableHeight={isCompact ? 54 : 52}
-                    debugId="trust-slip.setup.share-current"
-                    style={trustSlipActionButtonStyle(isCompact)}
-                  >
-                    {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
-                    Share TrustSlip
-                  </SecondaryButton>
-                ) : null}
-                {hasUsableCurrentTrustSlipShare ? (
-                  <SecondaryButton
-                    type="button"
                     onClick={() => {
                       setTrustSlipSetupSubmitted(true);
                     }}
-                    fullWidth
-                    stableHeight={isCompact ? 54 : 52}
+                    fullWidth={!isCompact}
+                    stableHeight={isCompact ? 42 : 52}
                     debugId="trust-slip.setup.open-current"
-                    style={trustSlipActionButtonStyle(isCompact)}
+                    style={{
+                      ...trustSlipActionButtonStyle(isCompact),
+                      justifySelf: isCompact ? "center" : "stretch",
+                      width: isCompact ? "auto" : "100%",
+                      minWidth: isCompact ? 164 : undefined,
+                      paddingInline: isCompact ? 16 : undefined,
+                    }}
                   >
-                    {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
-                    Open current TrustSlip
+                    {trustSlipIconBadge("document", isCompact ? 22 : 28, "navy")}
+                    {isCompact ? "Open current" : "Open current TrustSlip"}
                   </SecondaryButton>
                 ) : null}
               </div>

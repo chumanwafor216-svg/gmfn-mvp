@@ -6724,12 +6724,6 @@ export default function DashboardPage() {
     lineHeight: 1.05,
     whiteSpace: "nowrap",
   });
-  const attentionConnectionText = isPhone
-    ? "Focus shows follow-through. Local evidence is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later evidence."
-    : trustAttentionCore.connectionText;
-  const attentionConsequenceText = isPhone
-    ? "Leaving it waiting weakens the evidence reading now. If it stays open, it can affect wider consistency and make your TrustSlip evidence look less steady."
-    : attentionDisplaySignal.consequenceText;
   const attentionPopupLabelStyle = (
     color = DASHBOARD_BRAND.label
   ): React.CSSProperties => ({
@@ -6928,30 +6922,6 @@ export default function DashboardPage() {
                       justifyItems: isPhone ? "end" : isCompact ? "start" : "end",
                     }}
                   >
-                    {!isPhone ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          minHeight: 28,
-                          padding: "5px 9px",
-                          borderRadius: 999,
-                          background: attentionPopupChrome.stageBg,
-                          border: attentionPopupChrome.stageBorder,
-                          color: attentionPopupChrome.stageText,
-                          fontSize: 11,
-                          fontWeight: 900,
-                          letterSpacing: 0.12,
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 20px rgba(7,16,28,0.10)",
-                        }}
-                      >
-                        Every {attentionDisplaySignal.intervalHours} hour
-                        {attentionDisplaySignal.intervalHours === 1 ? "" : "s"}
-                      </span>
-                    ) : null}
-
                     <StableButton
                       debugId="dashboard.attention-popup.dismiss"
                       type="button"
@@ -6978,172 +6948,17 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {!isPhone && attentionDisplaySignal.sourceLine ? (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: isPhone ? 6 : 8,
-                      minHeight: isPhone ? 24 : 28,
-                      maxWidth: "100%",
-                      padding: isPhone ? "4px 8px" : "5px 9px",
-                      borderRadius: 12,
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      color: attentionPopupChrome.heroBody,
-                      fontSize: isPhone ? 10.8 : 12,
-                      fontWeight: 800,
-                      lineHeight: isPhone ? 1.24 : 1.42,
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: 999,
-                        background: attentionStageDot,
-                        flexShrink: 0,
-                      }}
-                    />
-                    {attentionDisplaySignal.sourceLine}
-                  </div>
-                ) : null}
               </div>
 
               <div
                 style={{
-                  padding: isPhone ? 9 : isCompact ? 12 : 14,
+                  padding: isPhone ? 9 : 10,
                   background: attentionPopupChrome.bodyBg,
                 }}
               >
-                {!isPhone ? (
-                  <>
-                    <div
-                      style={{
-                        ...innerCard(attentionPopupChrome.connectBg),
-                        ...attentionPhoneCardTight,
-                        padding: isCompact ? 10 : 11,
-                        border: attentionPopupChrome.connectBorder,
-                        marginTop: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          ...attentionPopupLabelStyle(
-                            attentionPopupTone.labelColor
-                          ),
-                        }}
-                      >
-                        How it connects
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 7,
-                          color: DASHBOARD_BRAND.ink,
-                          fontSize: 12.5,
-                          fontWeight: 800,
-                          lineHeight: 1.54,
-                        }}
-                      >
-                        {attentionConnectionText}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "grid",
-                        gridTemplateColumns: isCompact
-                          ? "1fr"
-                          : "minmax(0, 1fr) minmax(0, 1fr)",
-                        gap: 8,
-                      }}
-                    >
-                  <div
-                    style={{
-                      ...innerCard(attentionPopupChrome.panelBg),
-                      border: attentionPopupChrome.panelBorder,
-                      ...attentionPhoneCardTight,
-                      padding: isCompact ? 10 : 11,
-                    }}
-                  >
-                    <div style={attentionPopupLabelStyle()}>Problem</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: DASHBOARD_BRAND.ink,
-                        fontSize: 13.5,
-                        fontWeight: 800,
-                        lineHeight: 1.52,
-                      }}
-                    >
-                      {attentionDisplaySignal.problemText}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      ...innerCard(attentionPopupChrome.panelBg),
-                      border: attentionPopupChrome.panelBorder,
-                      ...attentionPhoneCardTight,
-                      padding: isCompact ? 10 : 11,
-                    }}
-                  >
-                    <div style={attentionPopupLabelStyle()}>Why it matters</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: DASHBOARD_BRAND.subInk,
-                        fontSize: 13,
-                        fontWeight: 800,
-                        lineHeight: 1.54,
-                      }}
-                    >
-                      {attentionConsequenceText}
-                    </div>
-                  </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        ...innerCard(attentionPopupChrome.actionBg),
-                        border: attentionPopupChrome.panelBorder,
-                        ...attentionPhoneCardTight,
-                        padding: isCompact ? 10 : 11,
-                      }}
-                    >
-                      <div
-                        style={{
-                          ...attentionPopupLabelStyle(
-                            attentionPopupTone.labelColor
-                          ),
-                        }}
-                      >
-                        Do this now
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#1D4ED8",
-                          fontSize: 13.5,
-                          fontWeight: 900,
-                          lineHeight: 1.54,
-                        }}
-                      >
-                        {attentionDisplaySignal.actionText}
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-
                 <div
                   style={{
-                    marginTop: isPhone ? 0 : 10,
+                    marginTop: 0,
                     ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)"),
                     ...attentionPhoneCardTight,
                     padding: isPhone ? 6 : 8,

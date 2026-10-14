@@ -177,8 +177,8 @@ Rules:
 - Outside-tool links may point to WhatsApp, spreadsheets, or a CRM already used by the community. GSN remains the commitment organiser and trust reflection layer, not the owner of every external conversation.
 - Market Wisdom may use Focus Commitment pressure as a `Now` reading so the user sees execution risk before acting, but the actual commitment work must remain inside Focus Commitments and the Action Inbox; do not create a second task manager from Market Wisdom.
 - Dashboard may show a compact `My Pulse` strip inside `What needs your attention`. My Pulse reads server-owned Attention Spine signals from `/attention-spine/me` first, then local Focus Commitments and Market Wisdom context where those engines are not yet server-persisted. It must reveal the current signal list in place when tapped, while any deeper action routes back to the existing owner screen. It must not become a separate dashboard card, inbox, posting area, approval queue, or commitment manager.
-- On phones, the Attention Guide popup must stay compact: show the urgency, the issue title, one short consequence, one primary action, and `Not now`. Hide cadence/source metadata, explanatory evidence cards, Notifications, and Trust Journey from the phone popup; those deeper routes remain available from their canonical screens and may remain in the wider desktop guide.
-- On phones, Notifications must open with one current item and one primary action. Hide the four-stat summary, duplicate `Open page`, `Not now` / `Mark as read`, Dashboard return, current-item collapse control, decorative trust message, history, and label glossary from the first surface. Keep one closed `More notifications` row; opening it may reveal the existing grouped items and terse past-notification access. Dashboard remains available through the fixed authenticated bottom navigation.
+- The Attention Guide popup must stay compact at every width: show the urgency, issue title, one short consequence, dismissal, and actions. Do not restore cadence/source metadata or repeated explanation cards.
+- On phones, Notifications must open with one current item and one primary action. Hide the four-stat summary, duplicate `Open page`, `Not now` / `Mark as read`, Dashboard return, current-item collapse control, decorative trust message, history, and label glossary from the first surface. Keep one closed `Other items` row; opening it reveals compact label-and-count rows without explanatory sentences. Dashboard remains available through the fixed authenticated bottom navigation.
 
 
 ## MyGMFNAndIPage / Profile
@@ -209,6 +209,7 @@ Rules:
 - Community Home owns one selected community. My GSN owns the cross-community personal portfolio.
 - Profile tab must open the canonical member home, not the historical guide-first branch.
 - Do not revive the old standalone `ProfilePage.tsx`; treat it as deprecated/unmounted source until a later deletion audit.
+- On phones, keep the default member home factual and compact: show identity facts, selected community, conditional attention, and short handoff labels; hide duplicate hero/helper explanations and keep secondary copy/actions visually smaller. Guide mode may retain its explanatory copy.
 ## Mobile Task Page Rule
 
 All authenticated mobile task pages must follow
@@ -231,7 +232,7 @@ Choose existing member or new member.
 Must show:
 - GSN
 - Welcome
-- Choose how you want to continue.
+- Choose one.
 - Existing member card
 - Sign in button
 - New member card
@@ -254,12 +255,11 @@ Existing member login.
 Must show:
 - GSN
 - Welcome back
-- Sign in to continue where you left off.
 - Phone number or email field
 - Verification code field
 - Send code action
 - Continue button
-- one compact `More sign-in options` disclosure containing sign-in support,
+- one compact `Help` disclosure containing sign-in support,
   password recovery, membership activation, and starting a new community
 - privacy note
 - blocked password recovery must expose an owner/support review packet without revealing or requesting any password
@@ -272,7 +272,7 @@ Must not show:
 Rules:
 - Sign in stays the only primary action in the default view.
 - Sign in appears immediately after the identity and password fields.
-- `More sign-in options` remains a small, borderless, text-level disclosure
+- `Help` remains a small, borderless, text-level disclosure
   after Sign in; all secondary actions stay hidden until it is opened.
 - Membership activation and new-community setup stay secondary inside the
   compact disclosure instead of competing with the sign-in form.
@@ -448,6 +448,7 @@ Must show, in phone-first order:
   - Finance
   - Support
   - Trust
+  - on phone, show only the destination labels; keep explanatory destination sentences off the first surface
 - compact community switcher
   - collapsed by default
   - ordinary member communities only dominate the opened switcher
@@ -466,6 +467,7 @@ Rules:
 - Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
 - Secondary details stay collapsed, grouped, or represented as compact rows.
 - Every selected community must expose the shared compact invite card. Invite personalization may exist only as an optional collapsed control.
+- On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
@@ -726,7 +728,8 @@ Rules:
   context`, not `verified community context`, unless the selected community has
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
-- Marketplace search must expose "Invite people". Its first invite surface must be the shared compact Copy/Share card; receiver and relationship personalization must remain optional and collapsed.
+- Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More marketplace tools`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
+- On phone, the Marketplace identity uses the selected community name and status without a repeated instruction sentence. The first market cards use one short heading (`Needs`, `Shops & services`), one clear action, and compact counts; explanatory paragraphs and decorative category tags stay off the first surface.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
@@ -790,6 +793,7 @@ Rules:
 - Trust Passport must guide one trust lane at a time.
 - Do not expose the whole evidence universe, every document route, every trust
   event, and every explanation layer at once.
+- On phones, the lane chooser uses short labels and no repeated active-lane explanation. The cross-community portfolio stays behind one compact `Communities` disclosure so the selected trust lane reaches the surface sooner.
 - TrustSlip is the portable current-evidence layer. Trust Passport is the fuller story.
   Keep those responsibilities distinct.
 - Trust Passport may summarize community-scoped activity evidence from the
@@ -968,6 +972,8 @@ Must show:
 - clear limitations
 
 Rules:
+- On phones, show the Community ID before the display name, reduce the public reading to one plain summary, and expose only one primary Ask community action when controlled confirmation is available.
+- Keep Copy record link inside the Verification snapshot drawer so it does not compete with the first safe action. Hide repeated masthead-brand and authority-strip layers on the phone first surface.
 - This is a public verification screen and must not show bottom navigation.
 - The route must be anchored by the public confirmation token.
 - The QR must reopen the same public outcome page. It must not create a new
@@ -1088,6 +1094,7 @@ Must show:
 Rules:
 - The default first view must not expose the full TrustSlip document.
 - Use the sequence: choose purpose, choose community, generate or refresh TrustSlip, then copy/share.
+- On phones, hide repeated selected-purpose/helper sentences. Keep Generate as the only dominant setup action; when a usable paper already exists, show one small `Open current` secondary action and keep sharing inside the opened paper.
 - Do not expose private Trust Passport evidence on the public TrustSlip flow.
 - Opening the current paper is allowed when a TrustSlip code already exists, but generating after changing purpose/community remains the clean path.
 - Once the paper opens, show the official summary plus one active pack; do not expose holder, community, evidence, confirmation, limits, and action panels as one long stack.
@@ -1103,6 +1110,8 @@ Must show:
   evidence, and next safe reader action
 
 Rules:
+- On phones, lead with one decision answer, no more than two short reasons, and one recommended next action. Hide the duplicate evidence snapshot and behaviour-pattern stack inside Full evidence and record details.
+- Public links that already contain a code must open directly into the paper. The code-entry route must expose one code field and one primary check action without unrelated welcome/guide buttons.
 - When the TrustSlip carries both a Community ID/key and member GSN ID/key, the
   public evidence paper may link to `CommunityMemberVerifyPage` as `Open member
   credential`.
@@ -1213,6 +1222,10 @@ Rules:
   `.local` identity fallbacks as the shop/owner name. If the member has not
   saved a public shop name or display name yet, use a neutral public fallback
   such as `Public GSN Shop` or `GSN member`.
+- On phone, Public Shop keeps the shop identity, category, follow state, GSN ID,
+  community, Share, Verify, and WhatsApp controls. The brand-bar explanation
+  and repeated four-part status strip stay off the first surface. Share and
+  Verify are secondary; WhatsApp is the single primary contact action.
 - Marketplace member rows must follow the same public identity rule. If a
   member has a real visible shop name, represent that member by the shop name
   first. Do not use phone numbers, emails, internal `.local` names, or generated

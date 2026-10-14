@@ -1007,20 +1007,6 @@ export default function LoginPage() {
             Welcome back
           </div>
 
-          <div
-            style={{
-              width: innerRailWidth,
-              margin: "8px auto 0",
-              color: "rgba(226,232,240,0.78)",
-              fontSize: isCompact ? 14 : 16,
-              fontWeight: 750,
-              lineHeight: 1.5,
-              textAlign: "center",
-            }}
-          >
-            Sign in to continue where you left off.
-          </div>
-
           {guideOpen ? (
             <div
               style={{
@@ -1083,7 +1069,7 @@ export default function LoginPage() {
                       "0 1px 0 rgba(255,255,255,0.92), 0 10px 24px rgba(10,24,49,0.12)",
                   }}
                 >
-                  Existing member path
+                  Already have an account?
                 </div>
               </div>
 
@@ -1175,8 +1161,8 @@ export default function LoginPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>1. Reopen your workspace.</strong>{" "}
-                    Use this path only if your account already exists and has already completed activation.
+                    <strong style={{ color: "#10253B" }}>1. Active account.</strong>{" "}
+                    Use this page only after activation.
                   </div>
                   <div
                     style={{
@@ -1189,8 +1175,8 @@ export default function LoginPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>2. Confirm your details.</strong>{" "}
-                    Sign in with the right email and password so the app can reopen the correct member record and community context.
+                    <strong style={{ color: "#10253B" }}>2. Sign in.</strong>{" "}
+                    Enter your email or phone and password.
                   </div>
                   <div
                     style={{
@@ -1203,8 +1189,8 @@ export default function LoginPage() {
                       padding: "13px 14px",
                     }}
                   >
-                    <strong style={{ color: "#10253B" }}>3. Use activation first if needed.</strong>{" "}
-                    If your account is not yet active, use Activate Membership first instead of forcing sign-in through the wrong page.
+                    <strong style={{ color: "#10253B" }}>3. Not active?</strong>{" "}
+                    Open Help, then choose Activate membership.
                   </div>
                 </div>
               </div>
@@ -1463,7 +1449,7 @@ export default function LoginPage() {
                 debugId="login.secondary-options.toggle"
                 style={quietDisclosureSummaryStyle()}
               >
-                ⋯ More sign-in options
+                Help
               </StableDisclosureSummary>
               <div
                 style={{
@@ -1532,9 +1518,8 @@ export default function LoginPage() {
                     Sign-in help
                   </div>
                   <div style={{ ...helperText(), fontSize: 13.5 }}>
-                    Use this when recovery is blocked or the account says it
-                    is not active. Send your GSN ID, phone, community, and a
-                    screenshot. Do not send any password.
+                    Send your GSN ID, phone number, community, and a screenshot.
+                    Never send your password.
                   </div>
                 </div>
                 <div
@@ -1606,9 +1591,7 @@ export default function LoginPage() {
                     Recover your password
                   </div>
                   <div style={{ color: "#526579", fontSize: 13.5, lineHeight: 1.55 }}>
-                    Use your GSN ID, the phone number recorded on the account, and
-                    your private recovery answers. If those are not ready, an owner
-                    or GSN support must review the account.
+                    Enter your GSN ID, account phone number, and recovery answers.
                   </div>
                 </div>
 

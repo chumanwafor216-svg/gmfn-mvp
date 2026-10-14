@@ -5,7 +5,6 @@ import { copyToClipboard } from "../lib/share";
 import {
   brandInnerCard,
   brandPageCard,
-  brandSectionLabel,
   gmfnBrand,
 } from "../styles/gmfnBrand";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
@@ -179,17 +178,15 @@ export default function SimpleCommunityInviteCard({
         </span>
 
         <div style={{ minWidth: 0 }}>
-          <div style={brandSectionLabel()}>Invite people</div>
           <div
             style={{
-              marginTop: 3,
               color: gmfnBrand.colors.ink,
               fontSize: compact ? 18 : 21,
               fontWeight: 950,
               lineHeight: 1.15,
             }}
           >
-            Invite to this community
+            Invite someone
           </div>
         </div>
       </div>
@@ -203,20 +200,20 @@ export default function SimpleCommunityInviteCard({
           lineHeight: 1.45,
         }}
       >
-        Send the link. They open it and ask to join. The community still approves them.
+        Copy and send the link. They tap it to ask to join. You approve them before they join.
       </div>
 
       <div
         aria-live="polite"
         style={{
-          marginTop: 10,
-          minHeight: 22,
+          marginTop: feedback || loading ? 10 : 0,
+          minHeight: feedback || loading ? 22 : 0,
           color: feedback?.tone === "error" ? "#991B1B" : gmfnBrand.colors.accent,
           fontSize: 13,
           fontWeight: 900,
         }}
       >
-        {feedback?.text || (loading ? "Preparing invite link..." : inviteLink ? "Invite link ready." : "Invite link needs preparing.")}
+        {feedback?.text || (loading ? "Preparing link..." : "")}
       </div>
 
       <div
@@ -233,7 +230,7 @@ export default function SimpleCommunityInviteCard({
           debugId="simple-community-invite.copy"
           onClick={copyInviteLink}
           busy={loading}
-          busyLabel="Preparing link..."
+          busyLabel="Preparing..."
           disabled={!communityId}
           fullWidth
           stableHeight={52}

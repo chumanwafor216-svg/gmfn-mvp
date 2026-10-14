@@ -194,13 +194,18 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isPhone[\s\S]*?\? "1fr"[\s\S]*?!isPhone \? \([\s\S]*?Every \{attentionDisplaySignal\.intervalHours\} hour[\s\S]*?\{isPhone \? "Not now" : "Hide for now"\}[\s\S]*?!isPhone && attentionDisplaySignal\.sourceLine/,
-  "Dashboard phone Attention Guide must hide cadence and source metadata while keeping a simple Not now dismissal."
+  /gridTemplateColumns: isPhone[\s\S]*?\? "1fr"[\s\S]*?\{isPhone \? "Not now" : "Hide for now"\}[\s\S]*?debugId="dashboard\.attention-popup\.primary"/,
+  "Dashboard Attention Guide must keep a simple dismissal and one obvious primary action."
+);
+
+assertNotContains(
+  /How it connects|>Problem<|Why it matters|Do this now|Every \{attentionDisplaySignal\.intervalHours\} hour|attentionDisplaySignal\.sourceLine/,
+  "Dashboard Attention Guide must not restore repeated explanation cards, cadence, or source metadata."
 );
 
 assertContains(
-  /!isPhone \? \([\s\S]*?How it connects[\s\S]*?Problem[\s\S]*?Why it matters[\s\S]*?Do this now[\s\S]*?\) : null\}[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?debugId="dashboard\.attention-popup\.primary"[\s\S]*?!isPhone &&[\s\S]*?debugId="dashboard\.attention-popup\.secondary"[\s\S]*?!isPhone \? \([\s\S]*?debugId="dashboard\.attention-popup\.trust-journey"/,
-  "Dashboard phone Attention Guide must show one primary action while keeping explanatory cards and secondary destinations off the phone popup."
+  /debugId="dashboard\.attention-popup\.primary"[\s\S]*?!isPhone &&[\s\S]*?debugId="dashboard\.attention-popup\.secondary"[\s\S]*?!isPhone \? \([\s\S]*?debugId="dashboard\.attention-popup\.trust-journey"/,
+  "Dashboard Attention Guide must keep one phone action and the existing desktop secondary destinations."
 );
 
 assertContains(
@@ -307,7 +312,7 @@ assertNotContains(
 );
 
 assertContains(
-  /Your visible community evidence is steady[\s\S]*?Fix evidence first[\s\S]*?current evidence reading is under pressure[\s\S]*?Open Trust Passport[\s\S]*?evidence pressure in your community[\s\S]*?Evidence pressure should be handled before new exposure[\s\S]*?GSN evidence signal[\s\S]*?Evidence warning[\s\S]*?Evidence pressure is shaping the current reading[\s\S]*?Local evidence is how[\s\S]*?weakens the evidence reading now[\s\S]*?TrustSlip evidence look less steady/,
+  /Your visible community evidence is steady[\s\S]*?Fix evidence first[\s\S]*?current evidence reading is under pressure[\s\S]*?Open Trust Passport[\s\S]*?evidence pressure in your community[\s\S]*?Evidence pressure should be handled before new exposure[\s\S]*?GSN evidence signal[\s\S]*?Evidence warning[\s\S]*?Evidence pressure is shaping the current reading/,
   "Dashboard must keep evidence-reading language across CCI fallback, repair notice, demand, and warning cards."
 );
 

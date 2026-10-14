@@ -211,6 +211,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.front\.invite-someone"[\s\S]*?aria-label=\{`Invite someone to \$\{activeCommunityName\}`\}[\s\S]*?marketplaceIntentItems\.find\(\(item\) => item\.id === "invite"\)[\s\S]*?>[\s\S]*?Invite someone/,
+  "Selected-community Marketplace must expose a direct Invite someone action that opens the shared invite lane."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /From \(sender\)[\s\S]*?<input[\s\S]*?value=\{joinSenderName\}[\s\S]*?onChange=\{\(event\) => setJoinSenderName\(event\.target\.value\)\}[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?Receiver name[\s\S]*?Message to receiver \(optional\)[\s\S]*?Private GSN relationship note \(optional\)/,
   "Marketplace Join invite form must visibly distinguish and edit sender, receiver, receiver-facing note, and private GSN relationship note."
 );

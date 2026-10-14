@@ -114,8 +114,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?fontSize: compact \? 28 : 58[\s\S]*?fontSize: compact \? 12\.5 : 20[\s\S]*?Public Decision Pack for a safer next decision\./,
-  "Public verify hero must keep compact mobile headline/body sizing and a short Decision Pack framing."
+  /Public Decision Pack[\s\S]*?fontSize: compact \? 26 : 58[\s\S]*?display: compact \? "none" : "block"[\s\S]*?Public Decision Pack for a safer next decision\./,
+  "Public verify hero must keep the phone title compact and hide the redundant subtitle while preserving desktop framing."
 );
 
 assertContains(
@@ -238,6 +238,30 @@ assertContains(
   "publicPaper",
   /data-gsn-public-reader-confirmation-options="membership-community-witness"[\s\S]*?Choose what to confirm next[\s\S]*?Confirm membership[\s\S]*?debugId="trust-slip-verify\.public\.confirm-membership-first-view"[\s\S]*?debugId="trust-slip-verify\.public\.confirm-membership-unavailable"[\s\S]*?Ask community[\s\S]*?debugId="trust-slip-verify\.public\.request-confirmation-first-view"[\s\S]*?Review witnesses[\s\S]*?debugId="trust-slip-verify\.public\.review-witness-evidence-first-view"[\s\S]*?id="trust-slip-verify-community-known-as"/,
   "Public TrustSlip first viewport must protect the three reader confirmation choices: membership credential, scoped community answer, and witness/activity evidence review."
+);
+
+assertContains(
+  "publicPaper",
+  /data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?\{!compact \? \([\s\S]*?<TrustSlipEvidencePatternStack[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?<TrustSlipEvidencePatternStack/,
+  "Public TrustSlip phone view must hide the duplicate evidence snapshot and move the behaviour pattern into Full evidence."
+);
+
+assertContains(
+  "publicPaper",
+  /\{compact \? "Next step" : "Choose what to confirm next"\}[\s\S]*?display: compact \? "none" : "block"[\s\S]*?data-gsn-public-phone-primary-action="one-next-step"[\s\S]*?communityPulseAvailable && canRequestCommunityPulse[\s\S]*?Ask community[\s\S]*?memberCredentialPath[\s\S]*?Check membership[\s\S]*?Read evidence/,
+  "Public TrustSlip phone view must hide the long action explanation and choose one useful next action."
+);
+
+assertNotContains(
+  "routePage",
+  /trust-slip-verify\.hero\.(welcome|guide)/,
+  "The public code-entry surface must not expose unrelated Welcome or guide buttons."
+);
+
+assertContains(
+  "routePage",
+  /Enter the code to check this TrustSlip\.[\s\S]*?Check a TrustSlip[\s\S]*?Type the code shown on the TrustSlip\.[\s\S]*?Verify code[\s\S]*?Private Trust Passport details stay hidden\./,
+  "The public code-entry surface must keep one field, one primary action, and one short privacy boundary."
 );
 
 

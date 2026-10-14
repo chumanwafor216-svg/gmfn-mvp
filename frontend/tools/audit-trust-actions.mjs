@@ -682,7 +682,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
+  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : publicVerifyEndpointErrorCopy \? \([\s\S]*?<TrustSlipVerifyResultCard[\s\S]*?\) : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
   "TrustSlip Verify public links with a code must open directly into the paper instead of showing a duplicate intro hero above it."
 );
 
@@ -916,8 +916,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Audit Details[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details/,
-  "CommunityVerifyPage must present an official record card, fast decision summary, collapsed registry/snapshot/details sections, and a privacy boundary."
+  /Community Verification[\s\S]*?Community ID[\s\S]*?\{communityAnchor\}[\s\S]*?\{communityName\}[\s\S]*?This is the community record[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?What this means[\s\S]*?Use the Community ID, not the name[\s\S]*?does not prove every member, shop, group, or transaction[\s\S]*?community-verify\.request-confirmation[\s\S]*?Ask community[\s\S]*?Private member details stay hidden[\s\S]*?Audit Details[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?Community following[\s\S]*?Verification details/,
+  "CommunityVerifyPage must present an ID-first official record, one plain reading, one conditional primary action, and collapsed supporting sections."
 );
 
 assertContains(
@@ -952,13 +952,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?check the Community ID before relying on the name[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and private review records are not shown on this public page[\s\S]*?Private by design[\s\S]*?Member lists, contacts, disputes, and private review notes stay hidden/,
+  /title: "Trust anchor"[\s\S]*?check the Community ID before relying on the name[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and private review records are not shown on this public page[\s\S]*?Private member details stay hidden\./,
   "CommunityVerifyPage must implement the Community Public Face anchor rule and public/member/admin privacy boundary using existing data only."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Public community record[\s\S]*?\{communityName\}[\s\S]*?\{communityAnchor\}[\s\S]*?This confirms the community identity in GSN/,
+  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Community ID[\s\S]*?\{communityAnchor\}[\s\S]*?\{communityName\}[\s\S]*?This is the community record\. Member, shop, group, and payment claims need separate proof\./,
   "CommunityVerifyPage hero must surface the Community ID as the visible trust anchor before treating the community name as display text."
 );
 
@@ -2609,7 +2609,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /buildDecisionPackDecisionReading\(decisionPackDefinition[\s\S]*?decisionDisplayAnswer = purposeDecisionReading\.headline[\s\S]*?decisionReasonLine = purposeDecisionReading\.conclusion[\s\S]*?decisionBecauseRows[\s\S]*?\.\.\.decisionBecauseRows/,
+  /buildDecisionPackDecisionReading\(decisionPackDefinition[\s\S]*?decisionDisplayAnswer = tradePurpose \? tradeEvidenceReading\.headline : purposeDecisionReading\.headline \|\| decisionFirstAnswer[\s\S]*?decisionReasonLine = tradePurpose \? tradeEvidenceReading\.summary : purposeDecisionReading\.conclusion[\s\S]*?decisionBecauseRows[\s\S]*?\.\.\.decisionBecauseRows/,
   "Public TrustSlip Verify must use the shared purpose-specific Decision Pack reading and show because rows."
 );
 if (findings.length > 0) {

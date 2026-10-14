@@ -1549,35 +1549,7 @@ export default function TrustSlipVerifyPage() {
               color: "#D7E3F1",
             }}
           >
-            Public check for holder, status, QR code, and safe limits.
-          </div>
-
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <StableCtaLink
-              to="/welcome"
-              kind="secondary"
-              stableHeight={48}
-              minWidth={isCompact ? undefined : 116}
-              debugId="trust-slip-verify.hero.welcome"
-            >
-              Welcome
-            </StableCtaLink>
-            <StableCtaLink
-              to="/guide"
-              kind="secondary"
-              stableHeight={48}
-              minWidth={isCompact ? undefined : 132}
-              debugId="trust-slip-verify.hero.guide"
-            >
-              My GSN and I
-            </StableCtaLink>
+            Enter the code to check this TrustSlip.
           </div>
         </section>
       ) : null}
@@ -1593,7 +1565,6 @@ export default function TrustSlipVerifyPage() {
             gap: 14,
           }}
         >
-          <div style={sectionLabel()}>Code checker</div>
           <div
             style={{
               color: "#07172C",
@@ -1602,11 +1573,10 @@ export default function TrustSlipVerifyPage() {
               lineHeight: 1.08,
             }}
           >
-            Verify a TrustSlip code
+            Check a TrustSlip
           </div>
           <p style={{ margin: 0, ...helperText(), color: "#475569", maxWidth: 760 }}>
-            Use this when both sides already know the GSN code. For far-away checks,
-            ask for the full verify link. For face-to-face checks, scan the QR.
+            Type the code shown on the TrustSlip.
           </p>
           <form
             onSubmit={submitCodeEntry}
@@ -1646,20 +1616,8 @@ export default function TrustSlipVerifyPage() {
               Verify code
             </PrimaryButton>
           </form>
-          <div
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(214,170,69,0.28)",
-              background: "#FFF7E6",
-              color: "#5F4100",
-              padding: "12px 14px",
-              fontSize: 13,
-              fontWeight: 850,
-              lineHeight: 1.45,
-            }}
-          >
-            The code opens the same public TrustSlip Verify paper as the link or
-            QR. It does not expose the holder's private Trust Passport.
+          <div style={{ color: "#64748B", fontSize: 12.5, fontWeight: 800 }}>
+            Private Trust Passport details stay hidden.
           </div>
         </section>
       ) : null}

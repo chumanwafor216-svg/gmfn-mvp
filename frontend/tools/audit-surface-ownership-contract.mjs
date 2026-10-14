@@ -189,6 +189,20 @@ assertContains(
   "Default My GSN compact sections must keep Notifications, DemandBox, Community Home, Shop Control, Trust Passport, TrustSlip, and Settings reachable."
 );
 
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /!isCompact \|\| !hasGsnId[\s\S]*?!isCompact[\s\S]*?Your community list stays covered[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Notifications owns the full queue[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
+  "Phone My GSN must hide repeated helper explanations and use short section labels while preserving the desktop guidance."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /function memberHomePointerLink\(compact = false, primary = false\)[\s\S]*?minHeight: compact \? 52 : 98[\s\S]*?justifyContent: compact \? "center" : "flex-start"/,
+  "Phone My GSN attention handoffs must stay compact instead of rendering as oversized secondary tiles."
+);
+
 assertNotContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,

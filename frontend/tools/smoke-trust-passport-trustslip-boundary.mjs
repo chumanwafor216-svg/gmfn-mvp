@@ -906,12 +906,20 @@ async function openTrustSlipHolderFromSetup(page, options = {}) {
     return false;
   }
 
-  if (await setupPanel.count()) {
+  const setupVisible = await setupPanel
+    .waitFor({ state: "visible", timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  if (setupVisible) {
     await expect(setupPanel).toBeVisible({ timeout: 30000 });
     await expect(page.getByText("Choose purpose and community first.", { exact: true })).toBeVisible();
 
     const openCurrent = page.locator('[data-cta-id="trust-slip.setup.open-current"]');
-    if (await openCurrent.count()) {
+    const openCurrentReady = await openCurrent
+      .waitFor({ state: "visible", timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+    if (openCurrentReady) {
       await openCurrent.first().click();
     } else {
       await page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
@@ -1070,8 +1078,8 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(
     state.page.getByRole("heading", { name: "Identity & Community Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(state.page.getByText("Active passport lane", { exact: true })).toBeVisible();
-  await expect(state.page.getByText("Identity & Evidence Reading", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("Choose a section", { exact: true })).toBeVisible();
+  await expect(state.page.getByRole("button", { name: "Overview", exact: true })).toBeVisible();
   await expect(state.page.getByText("2. Current evidence reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Decision support details", { exact: true })).toBeVisible();
   await expect(state.page.getByText("3. What this evidence helps you decide", { exact: true })).toHaveCount(0);
@@ -1094,7 +1102,10 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Record state note", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("2. Current trust verdict", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("3. What this reading says", { exact: true })).toHaveCount(0);
-  await expect(state.page.getByText("Community Portfolio", { exact: true })).toBeVisible();
+  const compactCommunityPortfolio = state.page.locator('[data-trust-passport-community-footprint="compact-collapsed"]');
+  await expect(compactCommunityPortfolio).toBeVisible();
+  await expect(compactCommunityPortfolio.getByText("Communities (5)", { exact: true })).toBeVisible();
+  await compactCommunityPortfolio.locator("summary").click();
   await expect(state.page.getByText("Active Communities: 5", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Recorded communities", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Current roles", { exact: true })).toBeVisible();
@@ -1133,7 +1144,7 @@ async function runTrustPassportScenario(browser, baseURL) {
     );
   }
 
-  await state.page.getByText("Evidence Story", { exact: true }).first().click();
+  await state.page.locator('[data-cta-id="trust-score.lane.evidence"]').click();
   await expect(state.page.getByText("4. Why the evidence reads this way", { exact: true })).toBeVisible();
   await expect(state.page.getByText("What supports this reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("6. What changed in the evidence?", { exact: true })).toBeVisible();
@@ -1145,7 +1156,7 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("What helps trust", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("6. Why did my trust change?", { exact: true })).toHaveCount(0);
 
-  await state.page.getByText("Community Confirmation", { exact: true }).first().click();
+  await state.page.locator('[data-cta-id="trust-score.lane.community"]').click();
   await expect(state.page.getByText("Can this evidence be tied to a real community?", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Community evidence details", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Community evidence before relying", { exact: true })).toHaveCount(0);
@@ -1156,14 +1167,14 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Community evidence before trust reading", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("5. Trust surfaces", { exact: true })).toHaveCount(0);
 
-  await state.page.getByText("Finance Discipline", { exact: true }).first().click();
+  await state.page.locator('[data-cta-id="trust-score.lane.finance"]').click();
   await expect(state.page.getByText("What money discipline adds to the evidence", { exact: true })).toBeVisible();
   await expect(state.page.getByText("This lane explains money-related evidence signals. It does not move money, create a bank guarantee, or start auto-debit. Finance remains the place for the fuller money story.", { exact: true })).toBeVisible();
   await expect(state.page.getByText("GSN is showing whether the record carries enough financial-discipline evidence for careful decisions. It is not promising repayment, collecting money, or replacing the Finance page.", { exact: true })).toBeVisible();
   await expect(state.page.getByText("What money discipline says about trust", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("This lane explains the trust-facing money signals", { exact: false })).toHaveCount(0);
 
-  await state.page.getByText("Documents / TrustSlip", { exact: true }).first().click();
+  await state.page.locator('[data-cta-id="trust-score.lane.documents"]').click();
   await expect(state.page.getByText("7. Shareable trust tools", { exact: true })).toBeVisible();
   await state.page.locator('[data-cta-id="trust-score.documents-lane.preview-details.toggle"]').click();
   const snapshotTitle = state.page
@@ -1254,7 +1265,7 @@ async function runTrustSlipScenario(browser, baseURL) {
     timeout: 60000,
   });
 
-  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toHaveCount(0);
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible();
   await openTrustSlipHolderFromSetup(state.page);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
@@ -1487,6 +1498,8 @@ async function runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL) {
 
   await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
   await expect(holderCertificate).toBeHidden();
+  await expect(setupPanel).toBeVisible();
+  await setupPanel.locator('[data-cta-id="trust-slip.setup.open-current"]').click();
   await expect(setupPanel).toHaveCount(0);
   await expect(scopeSelect).toHaveValue(`community:${selectedClanId}`);
   await expect(state.page.getByText(recoveredTrustSlipCode, { exact: false }).first()).toBeVisible();

@@ -3040,7 +3040,7 @@ export default function TrustSlipVerifyPublicPaper({
             style={{
               margin: compact ? "7px 0 0" : "12px 0 0",
               color: "#FFFFFF",
-              fontSize: compact ? 28 : 58,
+              fontSize: compact ? 26 : 58,
               lineHeight: 1,
               fontWeight: 1000,
               fontFamily: "Georgia, 'Times New Roman', serif",
@@ -3053,6 +3053,7 @@ export default function TrustSlipVerifyPublicPaper({
           <p
             style={{
               margin: compact ? "6px 0 0" : "12px 0 0",
+              display: compact ? "none" : "block",
               maxWidth: 520,
               color: "#DCE8F4",
               fontSize: compact ? 12.5 : 20,
@@ -3177,11 +3178,13 @@ export default function TrustSlipVerifyPublicPaper({
               gap: compact ? 7 : 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this reading?</div>
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+              {compact ? "Why" : "Why this reading?"}
+            </div>
             <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2") : decisionTranslationRows} compact={compact} />
             <div
               data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"
-              style={{ display: "grid", gap: 7 }}
+              style={{ display: compact ? "none" : "grid", gap: 7 }}
             >
               <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
                 Visible evidence for this decision
@@ -3189,14 +3192,16 @@ export default function TrustSlipVerifyPublicPaper({
               <DecisionFactorTable rows={publicDecisionEvidenceSnapshotDisplayRows} compact={compact} />
             </div>
           </div>
-          <TrustSlipEvidencePatternStack
-            compact={compact}
-            title="Behaviour evidence pattern"
-            reading={trustSlipPattern.reading}
-            items={trustSlipPattern.items}
-            nextStep={trustSlipPattern.nextStep}
-            boundary={trustSlipPattern.boundary}
-          />
+          {!compact ? (
+            <TrustSlipEvidencePatternStack
+              compact={compact}
+              title="Behaviour evidence pattern"
+              reading={trustSlipPattern.reading}
+              items={trustSlipPattern.items}
+              nextStep={trustSlipPattern.nextStep}
+              boundary={trustSlipPattern.boundary}
+            />
+          ) : null}
 
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"
@@ -3253,6 +3258,14 @@ export default function TrustSlipVerifyPublicPaper({
                 title="Limitations"
                 rows={limitationRows}
                 compact={compact}
+              />
+              <TrustSlipEvidencePatternStack
+                compact={compact}
+                title="Behaviour evidence pattern"
+                reading={trustSlipPattern.reading}
+                items={trustSlipPattern.items}
+                nextStep={trustSlipPattern.nextStep}
+                boundary={trustSlipPattern.boundary}
               />
             </div>
           </TrustDocumentDisclosureSection>
@@ -3320,18 +3333,60 @@ export default function TrustSlipVerifyPublicPaper({
                 {paperIconBadge("community-building", validNow ? "neutral" : "warning", compact ? 36 : 42)}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...readableText(), color: "#07172C", fontSize: compact ? 16 : 18, fontWeight: 1000, lineHeight: 1.12 }}>
-                    Choose what to confirm next
+                    {compact ? "Next step" : "Choose what to confirm next"}
                   </div>
-                  <p style={{ ...readableText(), margin: "5px 0 0", color: "#526579", fontSize: compact ? 12 : 12.5, fontWeight: 820, lineHeight: 1.36 }}>
+                  <p style={{ ...readableText(), display: compact ? "none" : "block", margin: "5px 0 0", color: "#526579", fontSize: compact ? 12 : 12.5, fontWeight: 820, lineHeight: 1.36 }}>
                     {readerConfirmationIntro}
                   </p>
                 </div>
               </div>
 
+              {compact ? (
+                <div
+                  data-gsn-public-phone-primary-action="one-next-step"
+                  style={{ display: "grid" }}
+                >
+                {communityPulseAvailable && canRequestCommunityPulse ? (
+                  <PrimaryButton
+                    debugId="trust-slip-verify.public.request-confirmation-first-view"
+                    stableHeight={48}
+                    busy={confirmationBusy}
+                    busyLabel="Requesting..."
+                    disabled={Boolean(requestLockedReason)}
+                    onClick={() => onRequestCommunityPulse()}
+                    fullWidth
+                    style={{ justifyContent: "center", borderRadius: 12 }}
+                  >
+                    Ask community
+                  </PrimaryButton>
+                ) : memberCredentialPath ? (
+                  <StableCtaLink
+                    to={memberCredentialPath}
+                    kind="primary"
+                    stableHeight={48}
+                    debugId="trust-slip-verify.public.confirm-membership-first-view"
+                    style={{ width: "100%", borderRadius: 12, fontWeight: 1000 }}
+                  >
+                    Check membership
+                  </StableCtaLink>
+                ) : (
+                  <SubtleButton
+                    type="button"
+                    debugId="trust-slip-verify.public.review-witness-evidence-first-view"
+                    stableHeight={48}
+                    fullWidth
+                    onClick={reviewPublicEvidence}
+                    style={{ borderRadius: 12 }}
+                  >
+                    Read evidence
+                  </SubtleButton>
+                )}
+                </div>
+              ) : (
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                   gap: 8,
                 }}
               >
@@ -3406,6 +3461,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </SubtleButton>
                 </div>
               </div>
+              )}
             </div>
           </div>
           <div

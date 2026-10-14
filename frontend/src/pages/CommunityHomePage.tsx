@@ -4105,7 +4105,7 @@ export default function CommunityHomePage() {
         <PageTopNav
           sectionLabel="Community Home"
           title={selectedClanName || "Community Home"}
-          subtitle="One selected community at a time."
+          subtitle={isCompact ? undefined : "One selected community at a time."}
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.dashboard}
@@ -4148,9 +4148,11 @@ export default function CommunityHomePage() {
             </div>
 
             <div style={{ display: "grid", gap: 9 }}>
-              <div style={{ color: "#D4E1EE", fontSize: isCompact ? 13 : 15, fontWeight: 760, lineHeight: 1.5 }}>
-                You are inside one selected community. Marketplace, shop, support, trust, and notices open from this community context.
-              </div>
+              {!isCompact ? (
+                <div style={{ color: "#D4E1EE", fontSize: 15, fontWeight: 760, lineHeight: 1.5 }}>
+                  You are inside one selected community. Marketplace, shop, support, trust, and notices open from this community context.
+                </div>
+              ) : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={badge(Boolean(selectedClan))}>{selectedCommunityReference}</span>
                 <span style={badge(Boolean(selectedClan))}>{selectedCommunityRoleLabel}</span>
@@ -4263,27 +4265,27 @@ export default function CommunityHomePage() {
           <div style={{ marginTop: 10, display: "grid", gap: 9 }}>
             <StableButton type="button" debugId="community-home.goto.marketplace" onClick={(event) => void openSelectedMarketplace(event)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(true)}>{communityIconGlyph("shop", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Open listings and community exchange for this selected community.</span></span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open listings and community exchange for this selected community.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.shop-control" onClick={(event) => openCommunityShopControl(event)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(true)}>{communityIconGlyph("marketplace", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Manage shop</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Your shop tools, public shop, and Spotlight management live in Shop Control.</span></span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Manage shop</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Your shop tools, public shop, and Spotlight management live in Shop Control.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.finance" onClick={(event) => openCommunityRoute(event, routes.finance)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("financeInstitution", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Finance</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Open the full money record outside Community Home.</span></span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Finance</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open the full money record outside Community Home.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.support" onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("wallet", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Support</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Open borrowing and support activity for this community.</span></span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Support</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open borrowing and support activity for this community.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.trust" onClick={(event) => openCommunityRoute(event, routes.trust)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Open your trust evidence and member standing.</span></span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open your trust evidence and member standing.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
           </div>

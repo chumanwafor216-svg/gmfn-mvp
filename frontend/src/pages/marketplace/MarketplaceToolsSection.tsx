@@ -674,8 +674,9 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     padding: isCompact ? 12 : 14,
                   }}
                 >
-                  <summary
-                    data-debug-id="marketplace.links.join.personalise"
+                  <StableDisclosureSummary
+                    debugId="marketplace.links.join.personalise"
+                    stableHeight={42}
                     style={{
                       cursor: "pointer",
                       color: "#42556A",
@@ -685,7 +686,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     }}
                   >
                     Personalise invite (optional)
-                  </summary>
+                  </StableDisclosureSummary>
                 <div
                   {...marketplaceSurfaceTouchProps("marketplace.links.join.surface")}
                   style={marketplaceLinkRowStyle(isCompact, true)}

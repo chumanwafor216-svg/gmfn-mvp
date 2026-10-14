@@ -482,12 +482,12 @@ function memberHomeSectionKicker(
 
 function memberHomePointerLink(compact = false, primary = false): React.CSSProperties {
   return {
-    minHeight: compact ? 88 : 98,
-    borderRadius: 18,
-    justifyContent: "flex-start",
+    minHeight: compact ? 52 : 98,
+    borderRadius: compact ? 16 : 18,
+    justifyContent: compact ? "center" : "flex-start",
     alignItems: "center",
-    textAlign: "left",
-    padding: compact ? "12px" : "14px",
+    textAlign: compact ? "center" : "left",
+    padding: compact ? "10px 12px" : "14px",
     fontSize: compact ? 13 : 14,
     lineHeight: 1.3,
     overflow: "hidden",
@@ -2791,17 +2791,19 @@ export default function MyGMFNAndIPage() {
               />
             </span>
             <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  color: "#C8A85C",
-                  fontSize: 11,
-                  fontWeight: 1000,
-                  letterSpacing: 1.8,
-                  textTransform: "uppercase",
-                }}
-              >
-                {showIdentityGuideSurface ? "Personal command centre" : "My GSN"}
-              </div>
+              {!isCompact ? (
+                <div
+                  style={{
+                    color: "#C8A85C",
+                    fontSize: 11,
+                    fontWeight: 1000,
+                    letterSpacing: 1.8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {showIdentityGuideSurface ? "Personal command centre" : "My GSN"}
+                </div>
+              ) : null}
               <h1
                 style={{
                   margin: "5px 0 0",
@@ -2815,20 +2817,22 @@ export default function MyGMFNAndIPage() {
                   ? "My GSN Identity"
                   : "My GSN"}
               </h1>
-              <div
-                style={{
-                  marginTop: 7,
-                  color: "#DCEBFA",
-                  fontSize: isCompact ? 13 : 15,
-                  lineHeight: 1.4,
-                  fontWeight: 750,
-                  maxWidth: 780,
-                }}
-              >
-                {showIdentityGuideSurface
-                  ? "Your identity, trust records, communities, shops, and opportunities in one place."
-                  : "Your identity, communities, attention, shop, evidence and account handoffs across GSN."}
-              </div>
+              {!isCompact || showIdentityGuideSurface ? (
+                <div
+                  style={{
+                    marginTop: 7,
+                    color: "#DCEBFA",
+                    fontSize: isCompact ? 13 : 15,
+                    lineHeight: 1.4,
+                    fontWeight: 750,
+                    maxWidth: 780,
+                  }}
+                >
+                  {showIdentityGuideSurface
+                    ? "Your identity, trust records, communities, shops, and opportunities in one place."
+                    : "Your identity, communities, attention, shop, evidence and account handoffs across GSN."}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -2855,9 +2859,11 @@ export default function MyGMFNAndIPage() {
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     {displayName}
                   </h2>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {hasGsnId ? "Your stable GSN identity follows you across communities." : "Your GSN ID is still being prepared."}
-                  </div>
+                  {!isCompact || !hasGsnId ? (
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      {hasGsnId ? "Your stable GSN identity follows you across communities." : "Your GSN ID is still being prepared."}
+                    </div>
+                  ) : null}
                   <div
                     style={{
                       marginTop: 12,
@@ -2901,7 +2907,7 @@ export default function MyGMFNAndIPage() {
                       void navigator.clipboard?.writeText(`@${gsnHandle}`);
                       setNotice({ tone: "success", text: "GSN handle copied." });
                     }}
-                    style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
+                    style={{ marginTop: 10, width: isCompact ? "fit-content" : "100%", justifyContent: "center", paddingInline: isCompact ? 16 : undefined }}
                   >
                     <GsnLegacyIcon name="copy" size={20} decorative />
                     Copy handle
@@ -2913,9 +2919,11 @@ export default function MyGMFNAndIPage() {
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                     {communityStatus}
                   </h2>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    Your community list stays covered until you open it. Community Home owns the selected community work.
-                  </div>
+                  {!isCompact ? (
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      Your community list stays covered until you open it. Community Home owns the selected community work.
+                    </div>
+                  ) : null}
                   {selectedCommunityForShop ? (
                     <div style={{ ...memberHomeCard(true), marginTop: 12, minHeight: isCompact ? 82 : 92 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -2943,7 +2951,11 @@ export default function MyGMFNAndIPage() {
                     aria-expanded={communitiesOpen}
                   >
                     <GsnLegacyIcon name="community" size={20} decorative />
-                    {communitiesOpen ? "Hide communities" : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
+                    {communitiesOpen
+                      ? isCompact ? "Hide list" : "Hide communities"
+                      : isCompact
+                        ? `Communities (${memberCommunityRows.length || memberCommunityCount || 0})`
+                        : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
                   </SecondaryButton>
                   {communitiesOpen ? (
                     <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
@@ -3006,13 +3018,15 @@ export default function MyGMFNAndIPage() {
               >
                 {shouldShowAttentionSummary ? (
                   <div style={memberHomeSectionShell()} data-my-gsn-attention-summary="true">
-                    {memberHomeSectionKicker("alert", "What needs my attention", isCompact)}
+                    {memberHomeSectionKicker("alert", isCompact ? "Attention" : "What needs my attention", isCompact)}
                     <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                       {attentionStatus}
                     </h2>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                      My GSN shows the signal only. Notifications owns the full queue.
-                    </div>
+                    {!isCompact ? (
+                      <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                        My GSN shows the signal only. Notifications owns the full queue.
+                      </div>
+                    ) : null}
                     <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                       {([
                         ["megaphone", "DemandBox", demandStatus],
@@ -3032,33 +3046,35 @@ export default function MyGMFNAndIPage() {
                     <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                       <StableCtaLink to={APP_ROUTES.NOTIFICATIONS} kind="primary" debugId="my-gmfn.attention.notifications" style={memberHomePointerLink(isCompact, true)}>
                         <GsnLegacyIcon name="alert" size={20} decorative />
-                        Open Notifications
+                        {isCompact ? "Notifications" : "Open Notifications"}
                       </StableCtaLink>
                       <StableCtaLink to={demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community")} kind="secondary" debugId="my-gmfn.attention.demand-box" style={memberHomePointerLink(isCompact, false)}>
                         <GsnLegacyIcon name="megaphone" size={20} decorative />
-                        Open DemandBox
+                        {isCompact ? "DemandBox" : "Open DemandBox"}
                       </StableCtaLink>
                     </div>
                   </div>
                 ) : null}
 
                 <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
-                  {memberHomeSectionKicker("shop", "Shop / TrustSlip", isCompact)}
+                  {memberHomeSectionKicker("shop", isCompact ? "Shop & trust" : "Shop / TrustSlip", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {hasOwnShop ? ownShopName : "Shop and evidence handoffs"}
+                    {hasOwnShop ? ownShopName : isCompact ? "Shop and trust" : "Shop and evidence handoffs"}
                   </h2>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {hasOwnShop
-                      ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.`
-                      : "Open Shop Control when you are ready to set up or manage your shop."}
-                  </div>
+                  {!isCompact ? (
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      {hasOwnShop
+                        ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.`
+                        : "Open Shop Control when you are ready to set up or manage your shop."}
+                    </div>
+                  ) : null}
                   <div data-my-gsn-trust-evidence="true" style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {trustEvidenceStatus}. Trust Passport owns private review. TrustSlip owns portable public checks.
+                    {trustEvidenceStatus}{isCompact ? "" : ". Trust Passport owns private review. TrustSlip owns portable public checks."}
                   </div>
                   <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={memberHomeCompactActionLink(false)}>
                       <GsnLegacyIcon name="shop" size={20} decorative />
-                      Manage shop
+                      {isCompact ? "Shop" : "Manage shop"}
                     </StableCtaLink>
                     <StableCtaLink to={APP_ROUTES.TRUST_SLIP} kind="secondary" debugId="my-gmfn.evidence.trustslip" style={memberHomeCompactActionLink(false)}>
                       <GsnLegacyIcon name="certificate" size={20} decorative />
@@ -3072,17 +3088,19 @@ export default function MyGMFNAndIPage() {
                 </div>
 
                 <div style={memberHomeSectionShell()} data-my-gsn-settings-account="true">
-                  {memberHomeSectionKicker("shield", "Settings / Official GSN", isCompact)}
+                  {memberHomeSectionKicker("shield", isCompact ? "Account" : "Settings / Official GSN", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Account and confirmed channels
+                    {isCompact ? "Settings and links" : "Account and confirmed channels"}
                   </h2>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {settingsScopeStatus}
-                  </div>
+                  {!isCompact ? (
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      {settingsScopeStatus}
+                    </div>
+                  ) : null}
                   <div data-my-gsn-official-links="true" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={memberHomeCompactActionLink(false)}>
                       <GsnLegacyIcon name="pen" size={20} decorative />
-                      Open settings
+                      {isCompact ? "Settings" : "Open settings"}
                     </StableCtaLink>
                     <SecondaryButton
                       type="button"
@@ -3093,7 +3111,7 @@ export default function MyGMFNAndIPage() {
                       aria-expanded={officialLinksOpen}
                     >
                       <GsnLegacyIcon name="globe" size={20} decorative />
-                      {officialLinksOpen ? "Hide channels" : "Confirmed channels"}
+                      {officialLinksOpen ? (isCompact ? "Hide links" : "Hide channels") : (isCompact ? "GSN links" : "Confirmed channels")}
                     </SecondaryButton>
                   </div>
                   {officialLinksOpen ? (

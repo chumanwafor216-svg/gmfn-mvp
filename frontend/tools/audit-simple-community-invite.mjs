@@ -36,8 +36,13 @@ assertContains(
 );
 assertContains(
   "component",
-  /Send the link\. They open it and ask to join\. The community still approves them\./,
+  /Copy and send the link\. They tap it to ask to join\. You approve them before they join\./,
   "The simple invite card must explain the three-step invite outcome in plain language."
+);
+assertNotContains(
+  "component",
+  /Invite to this community|Invite link ready|Invite link needs preparing/,
+  "The simple invite card must not repeat its title or show passive ready-state explanation."
 );
 assertContains(
   "component",

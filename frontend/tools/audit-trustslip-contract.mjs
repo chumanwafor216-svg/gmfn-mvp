@@ -40,6 +40,11 @@ assertContains(
 );
 assertContains(
   trustSlipPage,
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(false\);[\s\S]*?setTrustSlipSetupSubmitted\(false\);[\s\S]*?data-gsn-trustslip-setup-only="true"/,
+  "TrustSlip must open on the setup surface instead of exposing the current full paper by default."
+);
+assertContains(
+  trustSlipPage,
   /const issuingCommunityId = positiveNumberId\(selectedVerificationCommunityId\);/,
   "TrustSlip must derive a numeric issuingCommunityId from the selected real community."
 );
@@ -97,6 +102,16 @@ assertContains(
   trustSlipPage,
   /createTrustSlipShareInvitation\([\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?verification_scope: visibilityScope[\s\S]*?verification_community_id:/,
   "TrustSlip holder must create server-side purpose-bound share invitations instead of query-packed links."
+);
+assertContains(
+  trustSlipPage,
+  /!isCompact \? \([\s\S]*?The full TrustSlip opens after GSN refreshes it for this exact choice\.[\s\S]*?!isCompact \? \([\s\S]*?\{selectedPurposeOption\.label\}[\s\S]*?isCompact \? verificationScopeCompactBoundary : verificationScopeBoundary[\s\S]*?debugId="trust-slip\.setup\.submit"[\s\S]*?stableHeight=\{isCompact \? 42 : 52\}[\s\S]*?debugId="trust-slip\.setup\.open-current"[\s\S]*?isCompact \? "Open current" : "Open current TrustSlip"/,
+  "Phone TrustSlip setup must hide repeated helper copy and keep Open current smaller than Generate."
+);
+assertNotContains(
+  trustSlipPage,
+  /debugId="trust-slip\.setup\.share-current"/,
+  "TrustSlip setup must keep sharing inside the opened paper instead of adding a competing setup action."
 );
 assertContains(
   apiClient,

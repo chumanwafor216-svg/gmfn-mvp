@@ -3268,42 +3268,49 @@ export default function TrustScorePage() {
     key: TrustPassportLaneKey;
     icon: GsnIconName;
     label: string;
+    compactLabel: string;
     detail: string;
   }> = [
     {
       key: "standing",
       icon: "shield",
       label: "Identity & Evidence Reading",
+      compactLabel: "Overview",
       detail: "Identity, evidence state, and what this reading says.",
     },
     {
       key: "evidence",
       icon: "evidence",
       label: "Evidence Story",
+      compactLabel: "Evidence",
       detail: "What supports the reading, what creates pressure, and what changed.",
     },
     {
       key: "community",
       icon: "community",
       label: "Community Confirmation",
+      compactLabel: "Community",
       detail: "Community-scoped evidence and live confirmation.",
     },
     {
       key: "finance",
       icon: "financeInstitution",
       label: "Finance Discipline",
+      compactLabel: "Finance",
       detail: "Limit signal, capacity, locked support, and risk context.",
     },
     {
       key: "documents",
       icon: "evidence",
       label: "Documents / TrustSlip",
+      compactLabel: "TrustSlip",
       detail: "Open, verify, copy, refresh, or export the reading.",
     },
     {
       key: "repair",
       icon: "alert",
       label: "Repair or Next Step",
+      compactLabel: "Next step",
       detail: "Review pressure notes before opening the next action.",
     },
   ];
@@ -3583,63 +3590,134 @@ export default function TrustScorePage() {
             padding: isCompact ? 12 : 16,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: isCompact ? "flex-start" : "center",
-              flexDirection: isCompact ? "column" : "row",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  color: "#617085",
-                  fontSize: 12,
-                  letterSpacing: 0,
-                  textTransform: "uppercase",
-                  fontWeight: 1000,
-                }}
-              >
-                Active passport lane
-              </div>
-              <div
-                style={{
-                  color: "#07172C",
-                  fontSize: isCompact ? 21 : 25,
-                  lineHeight: 1.08,
-                  fontWeight: 1000,
-                  marginTop: 4,
-                }}
-              >
-                {activeLane.label}
-              </div>
-              <p style={{ ...helperText(), margin: "6px 0 0" }}>
-                {activeLane.detail}
-              </p>
+          {isCompact ? (
+            <div style={{ color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
+              Choose a section
             </div>
-            <span
+          ) : (
+            <div
               style={{
-                display: "inline-flex",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
                 alignItems: "center",
-                gap: 8,
-                color: "#0B63D1",
-                background: "#EEF6FF",
-                border: "1px solid rgba(11,99,209,0.16)",
-                borderRadius: 999,
-                padding: "8px 12px",
-                fontSize: 13,
-                fontWeight: 1000,
-                whiteSpace: "nowrap",
               }}
             >
-              {trustIconBadge(activeLane.icon, 26, "blue")}
-              One lane open
-            </span>
-          </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    color: "#617085",
+                    fontSize: 12,
+                    letterSpacing: 0,
+                    textTransform: "uppercase",
+                    fontWeight: 1000,
+                  }}
+                >
+                  Active passport lane
+                </div>
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: 25,
+                    lineHeight: 1.08,
+                    fontWeight: 1000,
+                    marginTop: 4,
+                  }}
+                >
+                  {activeLane.label}
+                </div>
+                <p style={{ ...helperText(), margin: "6px 0 0" }}>
+                  {activeLane.detail}
+                </p>
+              </div>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  color: "#0B63D1",
+                  background: "#EEF6FF",
+                  border: "1px solid rgba(11,99,209,0.16)",
+                  borderRadius: 999,
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  fontWeight: 1000,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {trustIconBadge(activeLane.icon, 26, "blue")}
+                One lane open
+              </span>
+            </div>
+          )}
 
-          {communityFootprint.length > 0 ? (
+          {isCompact && communityFootprint.length > 0 ? (
+            <details
+              data-trust-passport-community-footprint="compact-collapsed"
+              style={{
+                marginTop: 10,
+                borderRadius: 14,
+                border: "1px solid rgba(216,227,238,0.78)",
+                background: "#FFFFFF",
+                overflow: "hidden",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="trust-score.community-portfolio.toggle"
+                stableHeight={42}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "0 10px",
+                  color: "#07172C",
+                  background: "#FFFFFF",
+                  fontSize: 12,
+                  fontWeight: 1000,
+                }}
+              >
+                <span>Communities ({communityFootprint.length})</span>
+                <span style={{ color: "#0B63D1", fontSize: 11 }}>Open</span>
+              </StableDisclosureSummary>
+              <div style={{ borderTop: "1px solid rgba(216,227,238,0.78)", padding: 8, display: "grid", gap: 7 }}>
+                {communityFootprint.map((item) => (
+                  <div
+                    key={`${item.code}-${item.name}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 8,
+                      alignItems: "center",
+                      minHeight: 40,
+                      borderRadius: 11,
+                      border: "1px solid rgba(216,227,238,0.68)",
+                      background: "#F8FBFF",
+                      padding: "6px 8px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: "block", color: "#07172C", fontWeight: 1000, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.name}
+                      </span>
+                      <span style={{ display: "block", marginTop: 2, color: "#617085", fontWeight: 900, fontSize: 10.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.code}
+                      </span>
+                    </span>
+                    <span style={{ color: "#073E83", fontWeight: 1000, fontSize: 10.5, whiteSpace: "nowrap" }}>
+                      {roleLabel(item.role)}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ ...helperText(), fontSize: 11, margin: 0, color: "#5F4100", fontWeight: 850 }}>
+                  {passportVm.evidenceScope.boundary}
+                </div>
+              </div>
+            </details>
+          ) : null}
+
+          {!isCompact && communityFootprint.length > 0 ? (
             <div
               data-trust-passport-community-footprint="true"
               style={{
@@ -3788,7 +3866,7 @@ export default function TrustScorePage() {
                   key={lane.key}
                   onClick={() => setActiveTrustPassportLane(lane.key)}
                   fullWidth
-                  stableHeight={isCompact ? 58 : 66}
+                  stableHeight={isCompact ? 52 : 66}
                   debugId={`trust-score.lane.${lane.key}`}
                   style={{
                     justifyContent: "flex-start",
@@ -3802,14 +3880,14 @@ export default function TrustScorePage() {
                       ? "0 8px 20px rgba(11,99,209,0.12)"
                       : "none",
                     color: "#07172C",
-                    fontSize: isCompact ? 11.5 : 14,
+                    fontSize: isCompact ? 12 : 14,
                     fontWeight: 1000,
                     lineHeight: isCompact ? 1.05 : 1.15,
                     paddingInline: isCompact ? 8 : 12,
                   }}
                 >
-                  <GsnLegacyIcon name={lane.icon} size={isCompact ? 24 : 32} decorative />
-                  {lane.label}
+                  <GsnLegacyIcon name={lane.icon} size={isCompact ? 22 : 32} decorative />
+                  {isCompact ? lane.compactLabel : lane.label}
                 </SecondaryButton>
               );
             })}

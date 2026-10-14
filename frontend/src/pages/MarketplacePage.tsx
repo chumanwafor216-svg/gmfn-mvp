@@ -8981,17 +8981,19 @@ export default function MarketplacePage() {
                   Active
                 </span>
               </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "rgba(244,249,255,0.88)",
-                  fontSize: isCompact ? 12.5 : 14,
-                  fontWeight: 850,
-                  lineHeight: 1.35,
-                }}
-              >
-                One community. Choose one job at a time.
-              </div>
+              {!isCompact ? (
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "rgba(244,249,255,0.88)",
+                    fontSize: 14,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  One community. Choose one job at a time.
+                </div>
+              ) : null}
             </div>
 
             {!isCompact ? (
@@ -9067,6 +9069,26 @@ export default function MarketplacePage() {
           ) : null}
         </div>
 
+        <StableButton
+          type="button"
+          debugId="marketplace.front.invite-someone"
+          aria-label={`Invite someone to ${activeCommunityName}`}
+          onClick={(event) =>
+            openMarketplaceIntent(
+              event,
+              marketplaceIntentItems.find((item) => item.id === "invite") || null
+            )
+          }
+          stableHeight={isCompact ? 54 : 58}
+          style={{
+            ...marketplaceInlineActionStyle("secondary", false, isCompact),
+            marginTop: 10,
+            width: "100%",
+          }}
+        >
+          Invite someone
+        </StableButton>
+
         <div
           data-gmfn-debug-id="marketplace.live-market-front"
           style={marketplaceLiveMarketGridStyle(isCompact)}
@@ -9081,13 +9103,15 @@ export default function MarketplacePage() {
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>Needs</div>
-                <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
-                  What people here need
+                {!isCompact ? <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>Needs</div> : null}
+                <div style={{ marginTop: isCompact ? 0 : 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                  {isCompact ? "Needs" : "What people here need"}
                 </div>
-                <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                  Live DemandBox requests from this marketplace. The request lifecycle stays in DemandBox.
-                </div>
+                {!isCompact ? (
+                  <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                    Live DemandBox requests from this marketplace. The request lifecycle stays in DemandBox.
+                  </div>
+                ) : null}
               </div>
               <StableButton
                 type="button"
@@ -9112,12 +9136,16 @@ export default function MarketplacePage() {
                 alignItems: "center",
               }}
             >
-              <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
-                DemandBox
-              </span>
-              <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                Request lifecycle
-              </span>
+              {!isCompact ? (
+                <>
+                  <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
+                    DemandBox
+                  </span>
+                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
+                    Request lifecycle
+                  </span>
+                </>
+              ) : null}
               <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
                 {marketplaceNeedsLoading ? "Loading" : `${marketplaceNeedRows.length} open`}
               </span>
@@ -9176,9 +9204,11 @@ export default function MarketplacePage() {
                         }}
                       >
                         <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
-                          <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
-                            Community need
-                          </div>
+                          {!isCompact ? (
+                            <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
+                              Community need
+                            </div>
+                          ) : null}
                           <div
                             style={{
                               color: "#07172C",
@@ -9288,13 +9318,15 @@ export default function MarketplacePage() {
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={{ ...sectionLabel(), color: "#805A0F" }}>Shops & Services</div>
-                <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
-                  Who can provide something
+                {!isCompact ? <div style={{ ...sectionLabel(), color: "#805A0F" }}>Shops & Services</div> : null}
+                <div style={{ marginTop: isCompact ? 0 : 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                  {isCompact ? "Shops & services" : "Who can provide something"}
                 </div>
-                <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                  Visible shop faces in this community. Public Shop owns the details.
-                </div>
+                {!isCompact ? (
+                  <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                    Visible shop faces in this community. Public Shop owns the details.
+                  </div>
+                ) : null}
               </div>
               <StableButton
                 type="button"
@@ -9308,7 +9340,7 @@ export default function MarketplacePage() {
                   width: isCompact ? "100%" : 176,
                 }}
               >
-                Shops & Services
+                {isCompact ? "See all shops" : "Shops & Services"}
               </StableButton>
             </div>
 
@@ -9321,9 +9353,11 @@ export default function MarketplacePage() {
                 alignItems: "center",
               }}
             >
-              <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                Public shops
-              </span>
+              {!isCompact ? (
+                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
+                  Public shops
+                </span>
+              ) : null}
               <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
                 {shopDirectoryRows.length} visible
               </span>
@@ -9420,15 +9454,19 @@ export default function MarketplacePage() {
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
-                    More provider connections
+                  {!isCompact ? (
+                    <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
+                      More provider connections
+                    </div>
+                  ) : null}
+                  <div style={{ marginTop: isCompact ? 0 : 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
+                    {isCompact ? "More providers" : "Providers for other needs"}
                   </div>
-                  <div style={{ marginTop: 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
-                    Providers for other needs
-                  </div>
-                  <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                    These are relevant providers for needs not shown above.
-                  </div>
+                  {!isCompact ? (
+                    <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
+                      These are relevant providers for needs not shown above.
+                    </div>
+                  ) : null}
                 </div>
                 <span style={stableStatusPillStyle(true)}>
                   {hiddenNeedProviderMatches.length} more

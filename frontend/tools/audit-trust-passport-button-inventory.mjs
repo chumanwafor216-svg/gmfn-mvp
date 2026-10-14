@@ -109,6 +109,7 @@ for (const action of actions) {
 
 const expectedOrder = [
   "trust-score.decision-primary-next-step",
+  "trust-score.community-portfolio.toggle",
   "trust-score.lane.${lane.key}",
   "trust-score.complete-identification",
   "trust-score.open-public-community-record",
@@ -183,7 +184,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gap: isCompact \? 8 : 10[\s\S]*?trustPassportLanes\.map\(\(lane\) =>[\s\S]*?stableHeight=\{isCompact \? 58 : 66\}[\s\S]*?debugId=\{`trust-score\.lane\.\$\{lane\.key\}`\}[\s\S]*?fontSize: isCompact \? 11\.5 : 14[\s\S]*?<GsnLegacyIcon name=\{lane\.icon\} size=\{isCompact \? 24 : 32\} decorative/,
+  /compactLabel: "Overview"[\s\S]*?compactLabel: "Evidence"[\s\S]*?compactLabel: "Community"[\s\S]*?compactLabel: "Finance"[\s\S]*?compactLabel: "TrustSlip"[\s\S]*?compactLabel: "Next step"[\s\S]*?Choose a section[\s\S]*?data-trust-passport-community-footprint="compact-collapsed"[\s\S]*?debugId="trust-score\.community-portfolio\.toggle"[\s\S]*?Communities \(\{communityFootprint\.length\}\)[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gap: isCompact \? 8 : 10[\s\S]*?trustPassportLanes\.map\(\(lane\) =>[\s\S]*?stableHeight=\{isCompact \? 52 : 66\}[\s\S]*?debugId=\{`trust-score\.lane\.\$\{lane\.key\}`\}[\s\S]*?fontSize: isCompact \? 12 : 14[\s\S]*?<GsnLegacyIcon name=\{lane\.icon\} size=\{isCompact \? 22 : 32\} decorative[\s\S]*?isCompact \? lane\.compactLabel : lane\.label/,
   "Trust Passport lane selector must stay compact enough on phone for all six lanes to clear the bottom rail."
 );
 

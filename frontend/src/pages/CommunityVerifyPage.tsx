@@ -975,11 +975,26 @@ export default function CommunityVerifyPage() {
 
   return (
     <div
+      className="community-verify-page"
       style={{
         minHeight: "100vh",
         background: "linear-gradient(180deg, #F7FAFF 0%, #EEF5FF 50%, #F8FAFC 100%)",
       }}
     >
+      <style>{`
+        @media (max-width: 640px) {
+          .community-verify-page .gsn-trust-document-masthead {
+            min-height: 0 !important;
+            padding: 12px 14px !important;
+            gap: 0 !important;
+          }
+
+          .community-verify-page .gsn-trust-document-masthead-brand,
+          .community-verify-authority-strip {
+            display: none !important;
+          }
+        }
+      `}</style>
       <div style={pageShell()}>
         <article style={paperCard()}>
           <TrustDocumentRegistryMasthead
@@ -993,12 +1008,14 @@ export default function CommunityVerifyPage() {
             opacity={0.025}
           />
           <div style={{ position: "relative", zIndex: 1, padding: 16, display: "grid", gap: 12 }}>
-            <TrustPaperAuthorityStrip
-              title="GSN Community Verification Paper"
-              reference={communityAnchor}
-              classification="Public community record"
-              compact
-            />
+            <div className="community-verify-authority-strip">
+              <TrustPaperAuthorityStrip
+                title="GSN Community Verification Paper"
+                reference={communityAnchor}
+                classification="Public community record"
+                compact
+              />
+            </div>
 
             {notice ? (
               <div
@@ -1078,7 +1095,7 @@ export default function CommunityVerifyPage() {
                             textTransform: "uppercase",
                           }}
                         >
-                          Public community record
+                          Community ID
                         </span>
                         <h2
                           style={{
@@ -1094,7 +1111,7 @@ export default function CommunityVerifyPage() {
                             maxWidth: "100%",
                           }}
                         >
-                          {communityName}
+                          {communityAnchor}
                         </h2>
                       </div>
                       <div
@@ -1122,36 +1139,19 @@ export default function CommunityVerifyPage() {
                         <strong
                           style={{
                             color: "#EAF3FF",
-                            fontSize: "clamp(18px, 5vw, 26px)",
+                            fontSize: "clamp(17px, 4.6vw, 24px)",
                             lineHeight: 1.08,
                             fontWeight: 1000,
                             overflowWrap: "break-word",
                             wordBreak: "normal",
                           }}
                         >
-                          {communityAnchor}
+                          {communityName}
                         </strong>
-                        <span
-                          style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 12,
-                            display: "grid",
-                            placeItems: "center",
-                            background: "rgba(255,255,255,0.10)",
-                            color: "#EAF3FF",
-                            fontSize: 20,
-                            fontWeight: 900,
-                          }}
-                          aria-hidden="true"
-                        >
-                          ID
-                        </span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                         <HeroChip color="#2E9B62" label={active ? "Active" : labelize(record.status)} />
                         <HeroChip color="#0B63D1" label={publicRecord} />
-                        <HeroChip color="#64748B" label={`Relay ${relayAvailability.toLowerCase()}`} />
                       </div>
                       <p
                         style={{
@@ -1162,7 +1162,7 @@ export default function CommunityVerifyPage() {
                           fontWeight: 760,
                         }}
                       >
-                        This confirms the community identity in GSN. It does not verify every member, shop, line, or subgroup.
+                        This is the community record. Member, shop, group, and payment claims need separate proof.
                       </p>
                     </div>
                   </div>
@@ -1187,60 +1187,28 @@ export default function CommunityVerifyPage() {
                       {communityVerifyIconBadge("certificate-seal", 40, "blue")}
                       <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
                         <h2 style={{ ...sectionTitle(), fontSize: 21 }}>
-                          Decision Summary
+                          What this means
                         </h2>
-                        <p style={{ ...helperText(), lineHeight: 1.36 }}>
-                          Use this as the community anchor. Open the registry
-                          sections only when you need the full proof trail.
-                        </p>
                       </div>
                     </div>
                     <div
                       style={{
+                        borderRadius: 16,
+                        border: "1px solid rgba(11,99,209,0.14)",
+                        background: "#F8FBFF",
+                        padding: 12,
                         display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
-                        gap: 8,
+                        gap: 6,
                       }}
                     >
-                      <DecisionSummaryCard
-                        tone="good"
-                        icon="trust-shield"
-                        title="What this shows"
-                        body={`${publicRecord}. Check the Community ID first.`}
-                      />
-                      <DecisionSummaryCard
-                        tone="warn"
-                        icon="certificate-seal"
-                        title="What it does not prove"
-                        body="It does not verify every member, shop, subgroup, line, or transaction."
-                      />
-                      <DecisionSummaryCard
-                        tone="info"
-                        icon="records-folder"
-                        title="Ask for next evidence"
-                        body={requestConfirmationAvailable
-                          ? "Request scoped confirmation before relying on a narrower claim."
-                          : "Ask for a member credential, TrustSlip, or fresh community confirmation."}
-                      />
+                      <strong style={{ color: "#07172C", fontSize: 15, lineHeight: 1.3 }}>
+                        {publicRecord}. Use the Community ID, not the name.
+                      </strong>
+                      <p style={{ ...helperText(), fontSize: 13, lineHeight: 1.4 }}>
+                        This does not prove every member, shop, group, or transaction.
+                      </p>
                     </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      <SecondaryButton
-                        debugId="community-verify.copy-link"
-                        stableHeight={52}
-                        onClick={() => void copyLink()}
-                        style={{ borderRadius: 15, fontSize: 13.5 }}
-                      >
-                        {communityVerifyIconBadge("public-globe", 32, "navy")}
-                        Copy record link
-                      </SecondaryButton>
+                    {requestConfirmationAvailable ? (
                       <PrimaryButton
                         debugId="community-verify.request-confirmation"
                         stableHeight={52}
@@ -1250,9 +1218,13 @@ export default function CommunityVerifyPage() {
                         onClick={() => void requestConfirmation()}
                         style={{ borderRadius: 15, fontSize: 13.5 }}
                       >
-                        Request scoped confirmation
+                        Ask community
                       </PrimaryButton>
-                    </div>
+                    ) : (
+                      <p style={{ ...helperText(), fontSize: 13, lineHeight: 1.4 }}>
+                        Next: ask for a member credential, TrustSlip, or fresh community confirmation.
+                      </p>
+                    )}
                     <div
                       style={{
                         borderRadius: 16,
@@ -1274,8 +1246,7 @@ export default function CommunityVerifyPage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        <strong style={{ color: "#07172C" }}>Private by design.</strong>{" "}
-                        Member lists, contacts, disputes, and private review notes stay hidden.
+                        Private member details stay hidden.
                       </p>
                     </div>
                   </div>
@@ -1516,6 +1487,15 @@ export default function CommunityVerifyPage() {
                         gap: 9,
                       }}
                     >
+                      <SecondaryButton
+                        debugId="community-verify.copy-link"
+                        stableHeight={44}
+                        onClick={() => void copyLink()}
+                        style={{ borderRadius: 13, fontSize: 13 }}
+                      >
+                        {communityVerifyIconBadge("public-globe", 28, "navy")}
+                        Copy record link
+                      </SecondaryButton>
                       <div
                         style={{
                           display: "grid",
@@ -1766,74 +1746,6 @@ function SnapshotFact({
           {value}
         </strong>
       </span>
-    </div>
-  );
-}
-
-function DecisionSummaryCard({
-  tone,
-  icon,
-  title,
-  body,
-}: {
-  tone: "good" | "warn" | "info";
-  icon: Gsn3DIconKey;
-  title: string;
-  body: string;
-}) {
-  const styles = {
-    good: {
-      background: "#ECFDF3",
-      border: "rgba(46,155,98,0.18)",
-      title: "#166534",
-    },
-    warn: {
-      background: "#FFF7E6",
-      border: "rgba(245,158,11,0.22)",
-      title: "#92400E",
-    },
-    info: {
-      background: "#EAF3FF",
-      border: "rgba(11,99,209,0.16)",
-      title: "#073E83",
-    },
-  }[tone];
-
-  return (
-    <div
-      style={{
-        minHeight: 92,
-        borderRadius: 16,
-        background: styles.background,
-        border: `1px solid ${styles.border}`,
-        padding: 11,
-        display: "grid",
-        gridTemplateColumns: "34px minmax(0, 1fr)",
-        gap: 9,
-        alignItems: "start",
-      }}
-    >
-      {communityVerifyIconBadge(
-        icon,
-        32,
-        tone === "good" ? "green" : tone === "warn" ? "amber" : "blue"
-      )}
-      <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
-        <span
-          style={{
-            margin: 0,
-            color: styles.title,
-            fontSize: 14,
-            fontWeight: 1000,
-            lineHeight: 1.14,
-          }}
-        >
-          {title}
-        </span>
-        <p style={{ ...helperText(), color: "#1F3145", fontSize: 12.5, lineHeight: 1.35 }}>
-          {body}
-        </p>
-      </div>
     </div>
   );
 }

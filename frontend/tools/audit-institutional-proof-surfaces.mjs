@@ -881,7 +881,7 @@ assertContains(
 );
 assertContains(
   "trustSlipVerify",
-  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
+  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : publicVerifyEndpointErrorCopy \? \([\s\S]*?<TrustSlipVerifyResultCard[\s\S]*?\) : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
   "Public TrustSlip links with a code must open directly into the paper instead of showing a duplicate intro hero above it."
 );
 assertContains(

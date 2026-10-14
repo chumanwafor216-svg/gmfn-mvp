@@ -78,13 +78,13 @@ assertContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /New member sign up[\s\S]*?Choose how you want to continue[\s\S]*?Sign in[\s\S]*?New member[\s\S]*?Create a new community[\s\S]*?Join an existing community[\s\S]*?Request to join[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
+  /New member sign up[\s\S]*?Choose one\.[\s\S]*?Sign in[\s\S]*?New member[\s\S]*?Create a new community[\s\S]*?Join an existing community[\s\S]*?Request to join[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
   "Welcome must speak in simple user choices first, with institutional setup kept secondary."
 );
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /setMsg\("Sign-in successful\. Opening your workspace\.\.\."\)[\s\S]*?Sign in to continue where you left off[\s\S]*?noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)/,
+  /setMsg\("Sign-in successful\. Opening your workspace\.\.\."\)[\s\S]*?Welcome back[\s\S]*?placeholder="Enter phone, email, or GSN ID"[\s\S]*?placeholder="Enter your password"[\s\S]*?noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)/,
   "Sign In must show direct purpose plus visible success and error responses."
 );
 

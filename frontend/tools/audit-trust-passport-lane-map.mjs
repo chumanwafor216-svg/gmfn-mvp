@@ -125,6 +125,12 @@ assertContains(
 
 assertContains(
   "trust",
+  /compactLabel: "Overview"[\s\S]*?compactLabel: "Evidence"[\s\S]*?compactLabel: "Community"[\s\S]*?compactLabel: "Finance"[\s\S]*?compactLabel: "TrustSlip"[\s\S]*?compactLabel: "Next step"[\s\S]*?Choose a section[\s\S]*?data-trust-passport-community-footprint="compact-collapsed"[\s\S]*?debugId="trust-score\.community-portfolio\.toggle"/,
+  "Phone Trust Passport must keep short lane labels and collapse the community portfolio before the six-lane chooser."
+);
+
+assertContains(
+  "trust",
   /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current evidence reading[\s\S]*?data-trust-passport-standing-decision-details="collapsed"[\s\S]*?Decision support details[\s\S]*?What this evidence helps you decide/,
   "Identity & Evidence Reading must be the only default open work lane and keep decision-use evidence behind the stable details disclosure."
 );

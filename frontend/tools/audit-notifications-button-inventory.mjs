@@ -311,12 +311,16 @@ assertContains(
   "Notifications phone must hide the current-item housekeeping action and keep one primary action on the surface."
 );
 assertContains(
+  /truncateText\(focusNotice\.detail, isPhone \? 72 : 150\)/,
+  "Notifications phone must keep the current-item explanation to one short reading line."
+);
+assertContains(
   /\{!isPhone \? \([\s\S]*?<section[\s\S]*?Stay consistent\. Build trust\.[\s\S]*?<\/section>[\s\S]*?\) : null\}/,
   "Notifications phone must hide the decorative trust message."
 );
 assertContains(
   /\{!isPhone \|\| !collapsed\.buckets \? \([\s\S]*?isPhone \? "Past notifications" : "Recent notifications"[\s\S]*?\{!isPhone \? \([\s\S]*?What the labels mean/,
-  "Notifications phone must hide history until More notifications opens and keep the label glossary off phone."
+  "Notifications phone must hide history until Other items opens and keep the label glossary off phone."
 );
 assertContains(
   /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v2"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,
@@ -344,8 +348,13 @@ assertContains(
 );
 
 assertContains(
-  /const bucketRowHeight = isPhone \? 124 : 86/,
-  "Notifications bucket rows must keep taller phone rows so labels do not fight the tap target."
+  /const bucketRowHeight = isPhone \? 76 : 86/,
+  "Notifications phone bucket rows must stay compact while preserving a stable tap target."
+);
+
+assertContains(
+  /\{!isPhone \? \([\s\S]*?\{bucketDescription\(bucket\)\}[\s\S]*?\) : null\}/,
+  "Notifications phone bucket rows must hide explanatory sentences and show only label, count, and open affordance."
 );
 
 assertContains(
