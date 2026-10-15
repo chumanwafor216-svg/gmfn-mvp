@@ -107,8 +107,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /const backendWisdom = marketWisdomPairFromDailyInsight\(insight\);[\s\S]*?setActiveWisdom\(\(prev\) =>[\s\S]*?backendWisdom \|\|[\s\S]*?getSmartMarketWisdomPair\(\{[\s\S]*?hour,[\s\S]*?unread: notices\.filter\(\(n\) => !n\?\.is_read\)\.length,[\s\S]*?pendingRequests: pendingRequests\.length,[\s\S]*?hasSpotlight: Boolean\(activeSpotlight\),[\s\S]*?hasGmfnId: Boolean\(me\?\.gmfn_id\),[\s\S]*?trustTone: cci\.tone,[\s\S]*?previousId: \(prev as any\)\?\.id/,
-  "Dashboard must prefer backend-governed Market Wisdom while keeping smart local fallback."
+  /const backendWisdom = marketWisdomPairFromDailyInsight\(insight\);[\s\S]*?setActiveWisdom\(\(prev\) =>[\s\S]*?backendWisdom \|\|[\s\S]*?getSmartMarketWisdomPair\(\{[\s\S]*?hour,[\s\S]*?unread: notices\.filter\(\(n\) => !n\?\.is_read\)\.length,[\s\S]*?pendingRequests: pendingRequests\.length,[\s\S]*?hasGmfnId: Boolean\(me\?\.gmfn_id\),[\s\S]*?trustTone: cci\.tone,[\s\S]*?previousId: \(prev as any\)\?\.id/,
+  "Dashboard must prefer backend-governed Market Wisdom while keeping the current smart local fallback signals. Spotlight remains owned by Shop Control."
 );
 
 assertContains(

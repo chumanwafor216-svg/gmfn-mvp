@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   component: "src/components/SimpleCommunityInviteCard.tsx",
+  messaging: "src/lib/joinInviteMessaging.ts",
   community: "src/pages/CommunityHomePage.tsx",
   marketplace: "src/pages/MarketplacePage.tsx",
   marketplaceTools: "src/pages/marketplace/MarketplaceToolsSection.tsx",
@@ -37,7 +38,22 @@ assertContains(
 assertContains(
   "component",
   /personalizedJoinInviteUrl\(link,[\s\S]*?inviterName: safeInviterName[\s\S]*?recipientName: safeRecipientName[\s\S]*?communityCode[\s\S]*?communityName/,
-  "The simple invite must attach the signed-in inviter and typed recipient to the shared join link."
+  "The simple invite must keep the signed-in inviter and typed recipient available for the human-readable message while the shared URL stays canonical."
+);
+assertContains(
+  "messaging",
+  /export function buildSimpleJoinInviteMessage[\s\S]*?Hi \$\{receiver\}, \$\{intro\}[\s\S]*?Open to join\.[\s\S]*?Open to request access\. Approval is required\.[\s\S]*?inviteLink[\s\S]*?\.join\("\\n"\)/,
+  "All ordinary invite surfaces must share the same short greeting, next step, and link message contract."
+);
+assertContains(
+  "component",
+  /const message = buildSimpleJoinInviteMessage\([\s\S]*?inviteLink: linkToShare[\s\S]*?const shareText = buildSimpleJoinInviteMessage\([\s\S]*?text: shareText,[\s\S]*?url: linkToShare/,
+  "Community Home native and clipboard sharing must both use the shared short invite copy."
+);
+assertNotContains(
+  "component",
+  /Membership does not mean identity or financial verification|Community members will vote|A community admin will decide/,
+  "The outbound invite must leave detailed verification and decision explanations on the join page."
 );
 assertNotContains(
   "component",

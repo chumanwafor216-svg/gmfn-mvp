@@ -226,42 +226,12 @@ def _vault_request_card_url(request: Request, gmfn_id: str) -> str:
     return f"{base}{path}"
 
 
-def _join_invite_query(
-    code: str,
-    *,
-    clan: Optional[Clan],
-    community_code: str = "",
-    qr_policy: str = "",
-) -> str:
-    resolved_community_code = _safe_str(community_code) or _safe_str(getattr(clan, "community_code", None))
-    resolved_community_name = _safe_str(getattr(clan, "name", None))
-    resolved_marketplace_name = _safe_str(getattr(clan, "marketplace_name", None)) or resolved_community_name
-    params = {
-        "invite": _safe_str(code),
-        "community_code": resolved_community_code,
-        "community_name": resolved_community_name,
-        "marketplace_name": resolved_marketplace_name,
-        "qr_policy": _safe_str(qr_policy),
-    }
-    return urlencode({key: value for key, value in params.items() if _safe_str(value)})
-
-
 def _join_frontend_url(
     code: str,
-    *,
-    clan: Optional[Clan],
-    community_code: str = "",
-    qr_policy: str = "",
 ) -> str:
     base = _public_frontend_origin()
     safe_code = quote(_safe_str(code), safe="")
-    query = _join_invite_query(
-        code,
-        clan=clan,
-        community_code=community_code,
-        qr_policy=qr_policy,
-    )
-    return f"{base}/start/join/{safe_code}{'?' + query if query else ''}"
+    return f"{base}/start/join/{safe_code}"
 
 
 def _join_share_page_url(
@@ -564,9 +534,8 @@ def _join_invite_preview_payload(
     *,
     code: str,
     community_code: str = "",
-    qr_policy: str = "",
 ) -> dict[str, str]:
-    clan, invite_row = _get_join_invite_context(
+    clan, _invite_row = _get_join_invite_context(
         db,
         code=code,
         community_code=community_code,
@@ -604,13 +573,7 @@ def _join_invite_preview_payload(
         else f"{marketplace_name} | GSN invite"
     )
     description = "GSN invite pack. Tap to request access. Approval required."
-    policy = _safe_str(qr_policy) or _safe_str(getattr(invite_row, "qr_policy_key", None))
-    target_url = _join_frontend_url(
-        code,
-        clan=clan,
-        community_code=resolved_community_code,
-        qr_policy=policy,
-    )
+    target_url = _join_frontend_url(code)
 
     return {
         "gmfn_id": resolved_community_code,
@@ -1166,7 +1129,6 @@ def public_join_invite_share_preview(
         db,
         code=code,
         community_code=_safe_str(community_code),
-        qr_policy=policy,
     )
     target_url = payload["target_url"]
     share_url = _join_share_page_url(
@@ -1237,12 +1199,10 @@ def public_join_invite_share_card_png(
     entry_policy: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> Response:
-    policy = _safe_str(qr_policy) or _safe_str(entry_policy)
     payload = _join_invite_preview_payload(
         db,
         code=code,
         community_code=_safe_str(community_code),
-        qr_policy=policy,
     )
     png = _draw_share_card_png(
         payload,

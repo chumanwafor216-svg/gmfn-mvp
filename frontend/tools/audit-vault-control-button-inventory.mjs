@@ -345,6 +345,11 @@ assertVaultContains(
   "Vault Control must keep media frames for selected private block playback and editor preview playback."
 );
 
+assertVaultContains(
+  /<label style=\{fieldLabelStyle\(\)\}>[\s\S]*?Picture \(optional\)[\s\S]*?Image link \(optional\)[\s\S]*?Video \(optional\)[\s\S]*?Video link \(optional\)[\s\S]*?Offer name[\s\S]*?Price[\s\S]*?Currency[\s\S]*?Short description/,
+  "Vault Control editor must keep visible labels for every upload, link, offer, price, currency, and description field."
+);
+
 assertLayoutContains(
   /if \(pathname === "\/app\/vault-control"\) \{[\s\S]*?title: "Vault Control"[\s\S]*?actions: \[[\s\S]*?makeShopControlItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?\]/,
   "Vault Control task mode must keep Shop Control, Community, Marketplace, and Dashboard as its focused escape actions."

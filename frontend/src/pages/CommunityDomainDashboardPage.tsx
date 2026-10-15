@@ -9065,6 +9065,18 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.42 }}>
                     Finish the current step first. GSN then opens the next step and explains what is missing when the order is wrong.
                   </div>
+                  <StableButton
+                    type="button"
+                    kind="primary"
+                    fullWidth
+                    stableHeight={48}
+                    debugId="community-domain-dashboard.guided-setup.next"
+                    onClick={() => runGuidedSetupStep(guidedCurrentStep)}
+                    style={{ justifyContent: "center", fontSize: 14, textTransform: "none" }}
+                  >
+                    {guidedCurrentStepBlocked ? "Fix current step" : guidedCurrentStep.actionLabel}
+                  </StableButton>
+
 
                   <div
                     style={{
@@ -9113,18 +9125,6 @@ export default function CommunityDomainDashboardPage() {
                       );
                     })}
                   </div>
-
-                  <StableButton
-                    type="button"
-                    kind="primary"
-                    fullWidth
-                    stableHeight={48}
-                    debugId="community-domain-dashboard.guided-setup.next"
-                    onClick={() => runGuidedSetupStep(guidedCurrentStep)}
-                    style={{ justifyContent: "center", fontSize: 14, textTransform: "none" }}
-                  >
-                    {guidedCurrentStepBlocked ? "Fix current step" : guidedCurrentStep.actionLabel}
-                  </StableButton>
                 </div>
                 <StableButton
                   type="button"

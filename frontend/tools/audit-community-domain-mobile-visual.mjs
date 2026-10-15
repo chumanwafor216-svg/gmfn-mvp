@@ -1235,8 +1235,8 @@ try {
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
   audit = await page.evaluate(pageAudit);
   let commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Open institution setup, then choose one setup stage at a time.")) {
-    findings.push("Draft Community Domain command does not show the one-gateway setup guidance.");
+  if (!commandText.includes("Follow the guided setup path. Open more tools only when a specific setup area is needed.")) {
+    findings.push("Draft Community Domain command does not explain the guided setup-first path.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.institution-gateway"))) {
     findings.push("Draft Community Domain command does not expose the one institution setup gateway.");
@@ -1255,7 +1255,7 @@ try {
   }
   const draftFirstAction = await firstViewportActionFinding(
     page,
-    "community-domain-dashboard.institution-gateway",
+    "community-domain-dashboard.guided-setup.next",
     "Draft Community Domain dashboard"
   );
   if (draftFirstAction) findings.push(draftFirstAction);
@@ -1361,15 +1361,15 @@ try {
 
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Open institution setup, then choose one governance stage at a time.")) {
-    findings.push("Active Community Domain command does not show the one-gateway governance guidance.");
+  if (!commandText.includes("Follow the guided setup path. Open more tools only when a specific governance area is needed.")) {
+    findings.push("Active Community Domain command does not explain the guided setup-first path.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.institution-gateway"))) {
     findings.push("Active Community Domain dashboard does not expose the institution setup gateway.");
   }
   const dashboardFirstAction = await firstViewportActionFinding(
     page,
-    "community-domain-dashboard.institution-gateway",
+    "community-domain-dashboard.guided-setup.next",
     "Community Domain dashboard"
   );
   if (dashboardFirstAction) findings.push(dashboardFirstAction);

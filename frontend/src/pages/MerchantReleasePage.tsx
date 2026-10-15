@@ -509,7 +509,7 @@ export default function MerchantReleasePage() {
   return (
     <main style={pageShell()}>
       <section style={paper()} aria-label="GSN Merchant Release evidence desk">
-        <div style={watermark()}>GSN</div>
+        <div aria-hidden="true" data-gsn-visual-decor="true" style={watermark()}>GSN</div>
         <TrustPaperWatermarkField
           names={["shield", "shop", "document", "qr"]}
           opacity={0.022}

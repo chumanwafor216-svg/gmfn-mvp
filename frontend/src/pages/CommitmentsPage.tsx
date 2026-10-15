@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
-import { StableButton, StableCtaLink } from "../components/StableButton";
+import {
+  StableButton,
+  StableCtaLink,
+  StableDisclosureSummary,
+} from "../components/StableButton";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
   acceptParticipantRoscaInvitation,
@@ -264,6 +268,10 @@ export default function CommitmentsPage() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
   const [focusCount, setFocusCount] = useState(0);
+  const [isCompact, setIsCompact] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 980 : false
+  );
+  const [sharedOpen, setSharedOpen] = useState(Boolean(requestedRunId));
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState("");
@@ -281,6 +289,16 @@ export default function CommitmentsPage() {
   const [contributionDraft, setContributionDraft] = useState<Record<number, string>>({});
 
   const userId = me?.id ? Number(me.id) : null;
+
+  useEffect(() => {
+    const handleResize = () => setIsCompact(window.innerWidth <= 980);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (requestedRunId) setSharedOpen(true);
+  }, [requestedRunId]);
 
   async function refreshRuns(preferredRunId?: number | null) {
     const payload = await listMyParticipantRoscaRuns();
@@ -459,17 +477,19 @@ export default function CommitmentsPage() {
   return (
     <main style={shell()} data-commitments-home="true">
       <div style={page()}>
-        <header style={{ display: "grid", gap: 12 }}>
-          <Link to={APP_ROUTES.DASHBOARD} style={{ color: "#C8DCF6", fontSize: 13, fontWeight: 850, textDecoration: "none" }}>
-            Back to Dashboard
-          </Link>
-          <div>
-            <div style={{ color: "#D6AA45", fontSize: 12, fontWeight: 950, letterSpacing: 1, textTransform: "uppercase" }}>
-              Commitments
+        {!isCompact ? (
+          <header style={{ display: "grid", gap: 12 }}>
+            <StableCtaLink debugId="commitments.back-dashboard" to={APP_ROUTES.DASHBOARD} kind="soft" stableHeight={40} style={{ color: "#C8DCF6", justifySelf: "start" }}>
+              Back to Dashboard
+            </StableCtaLink>
+            <div>
+              <div style={{ color: "#D6AA45", fontSize: 12, fontWeight: 950, letterSpacing: 1, textTransform: "uppercase" }}>
+                Commitments
+              </div>
+              <h1 style={title()}>Personal and shared follow-through</h1>
             </div>
-            <h1 style={title()}>Personal and shared follow-through</h1>
-          </div>
-        </header>
+          </header>
+        ) : null}
 
         {notice ? (
           <div
@@ -485,7 +505,8 @@ export default function CommitmentsPage() {
           </div>
         ) : null}
 
-        <section style={grid(260)} aria-label="Commitments first view">
+        {!isCompact || !sharedOpen ? (
+        <section style={isCompact ? { display: "grid", gap: 10 } : grid(260)} aria-label="Commitments first view">
           <div style={card()}>
             <div style={label()}>Personal</div>
             <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
@@ -513,18 +534,41 @@ export default function CommitmentsPage() {
               </div>
               <span style={chip(invitations.length ? "amber" : activeRuns.length ? "green" : "plain")}>{loading ? "Checking" : primarySharedState}</span>
             </div>
-            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <StableButton debugId="commitments.shared.open" kind="secondary" stableHeight={50} onClick={() => selectedRun && setSelectedRunId(selectedRun.id)}>
-                Open
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 8 }}>
+              <StableButton debugId="commitments.shared.open" kind={isCompact ? "primary" : "secondary"} stableHeight={50} onClick={() => {
+                setSharedOpen(true);
+                if (selectedRun) setSelectedRunId(selectedRun.id);
+              }}>
+                {isCompact ? "Open shared ROSCA" : "Open"}
               </StableButton>
-              <StableButton debugId="commitments.shared.start-create" kind="primary" stableHeight={50} onClick={() => setCreateOpen((prev) => !prev)}>
-                Start
-              </StableButton>
+              {!isCompact ? (
+                <StableButton debugId="commitments.shared.start-create" kind="primary" stableHeight={50} onClick={() => {
+                  setSharedOpen(true);
+                  setCreateOpen((prev) => !prev);
+                }}>
+                  Start
+                </StableButton>
+              ) : null}
             </div>
           </div>
         </section>
+        ) : null}
 
+        {!isCompact || sharedOpen ? (
         <section style={card()} aria-label="Shared ROSCA workspace">
+          {isCompact ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <StableButton debugId="commitments.shared.back" kind="secondary" stableHeight={48} onClick={() => {
+                setSharedOpen(false);
+                setCreateOpen(false);
+              }}>
+                Back
+              </StableButton>
+              <StableButton debugId="commitments.shared.create-toggle" kind="primary" stableHeight={48} onClick={() => setCreateOpen((prev) => !prev)}>
+                {createOpen ? "Close form" : "Start new"}
+              </StableButton>
+            </div>
+          ) : null}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div>
               <div style={label()}>My ROSCAs</div>
@@ -535,7 +579,7 @@ export default function CommitmentsPage() {
 
           {createOpen ? (
             <div style={{ marginTop: 14, ...softCard() }} data-commitments-create-flow="true">
-              <div style={grid(160)}>
+              <div style={isCompact ? { display: "grid", gap: 10 } : grid(160)}>
                 <input style={field()} value={draft.name} placeholder="Name" onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))} />
                 <input style={field()} value={draft.amount} inputMode="decimal" placeholder="Contribution amount" onChange={(event) => setDraft((prev) => ({ ...prev, amount: event.target.value }))} />
                 <input style={field()} value={draft.currency} placeholder="Currency" onChange={(event) => setDraft((prev) => ({ ...prev, currency: event.target.value.toUpperCase() }))} />
@@ -569,7 +613,7 @@ export default function CommitmentsPage() {
           ) : null}
 
           {runs.length ? (
-            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "minmax(180px, 0.75fr) minmax(0, 1.4fr)", gap: 12 }}>
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(180px, 0.75fr) minmax(0, 1.4fr)", gap: 12 }}>
               <div style={{ display: "grid", gap: 8, alignSelf: "start" }}>
                 {runs.map((run) => {
                   const mine = participantForMe(run, userId);
@@ -594,6 +638,7 @@ export default function CommitmentsPage() {
               {selectedRun ? (
                 <RunDetail
                   run={selectedRun}
+                  isCompact={isCompact}
                   userId={userId}
                   busyKey={busyKey}
                   invite={invite}
@@ -612,7 +657,13 @@ export default function CommitmentsPage() {
 
           {pastRuns.length ? (
             <details style={{ marginTop: 14 }}>
-              <summary style={{ cursor: "pointer", fontWeight: 900, color: "#334155" }}>Completed or cancelled</summary>
+              <StableDisclosureSummary
+                debugId="commitments.shared.past.toggle"
+                stableHeight={44}
+                style={{ fontWeight: 900, color: "#334155" }}
+              >
+                Completed or cancelled
+              </StableDisclosureSummary>
               <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                 {pastRuns.map((run) => (
                   <div key={`commitments-past-${run.id}`} style={softCard()}>
@@ -623,6 +674,7 @@ export default function CommitmentsPage() {
             </details>
           ) : null}
         </section>
+        ) : null}
       </div>
     </main>
   );
@@ -631,6 +683,7 @@ export default function CommitmentsPage() {
 type RunDetailProps = {
   run: ParticipantRoscaRunOut;
   userId: number | null;
+  isCompact: boolean;
   busyKey: string;
   invite: { gsnId: string; rotation: string };
   setInvite: React.Dispatch<React.SetStateAction<{ gsnId: string; rotation: string }>>;
@@ -646,6 +699,7 @@ type RunDetailProps = {
 function RunDetail({
   run,
   userId,
+  isCompact,
   busyKey,
   invite,
   setInvite,
@@ -713,7 +767,7 @@ function RunDetail({
             {nextContribution.due_at ? ` - due ${dateLabel(nextContribution.due_at)}` : ""}
           </div>
           {nextContribution.state === "scheduled" ? (
-            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8 }}>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto", gap: 8 }}>
               <input
                 style={field()}
                 value={contributionDraft[nextContribution.id] || String(nextContribution.amount)}
@@ -735,7 +789,7 @@ function RunDetail({
         <div style={{ marginTop: 12, ...softCard() }} data-commitments-add-people="exact-gsn-id">
           <div style={{ fontWeight: 950, color: "#07172C" }}>Add people</div>
           <div style={{ marginTop: 6, ...muted() }}>Use exact GSN ID. This is not a directory search.</div>
-          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "minmax(0, 1fr) 96px auto", gap: 8 }}>
+          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 96px auto", gap: 8 }}>
             <input style={field()} value={invite.gsnId} placeholder="Exact GSN ID" onChange={(event) => setInvite((prev) => ({ ...prev, gsnId: event.target.value }))} />
             <input style={field()} value={invite.rotation} inputMode="numeric" placeholder="Turn" onChange={(event) => setInvite((prev) => ({ ...prev, rotation: event.target.value }))} />
             <StableButton debugId="commitments.shared.invite" kind="primary" disabled={!safeText(invite.gsnId)} busy={busyKey === `invite-${run.id}`} onClick={onInvite}>
@@ -746,9 +800,15 @@ function RunDetail({
       ) : null}
 
       <details style={{ marginTop: 12 }}>
-        <summary style={{ cursor: "pointer", fontWeight: 900, color: "#334155" }}>View terms and people</summary>
+        <StableDisclosureSummary
+          debugId="commitments.shared.terms.toggle"
+          stableHeight={44}
+          style={{ fontWeight: 900, color: "#334155" }}
+        >
+          View terms and people
+        </StableDisclosureSummary>
         <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-          <div style={grid(150)}>
+          <div style={isCompact ? { display: "grid", gap: 8 } : grid(150)}>
             <div style={softCard()}><strong>Start</strong><br />{dateLabel(run.start_at)}</div>
             <div style={softCard()}><strong>Accepted</strong><br />{acceptedCount} of {run.participant_count_required}</div>
             <div style={softCard()}><strong>Money</strong><br />External to GSN</div>

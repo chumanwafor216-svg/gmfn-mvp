@@ -58,6 +58,10 @@ assertContains(supportPageFile, supportPage, "data-debug-id=\"support-page.threa
 assertContains(supportPageFile, supportPage, "setSelectedId((current) => current || queryCaseId || null);", "Help Desk must not auto-open an old case when users arrive to ask for help.");
 assertContains(supportPageFile, supportPage, "setThreadsOpen(true);", "Help Desk must open the drawer after creating or selecting a support case.");
 assertContains(supportPageFile, supportPage, "data-cta-id=\"support-page.create-attachment\"", "Help Desk create flow must allow picture/PDF evidence.");
+assertContains(supportPageFile, supportPage, "data-gsn-support-surface=\"state\"", "Help Desk must expose one named compact state surface.");
+assertContains(supportPageFile, supportPage, "data-gsn-support-facts=\"compact\"", "Help Desk must keep case facts in a compact phone-aware block.");
+assertMatches(supportPageFile, supportPage, /isCompact \? "What do you need help with\?"[\s\S]*?!isCompact \? \([\s\S]*?Loan support, announcements, and governance reviews/, "Help Desk must remove its long scope paragraph from the phone first surface.");
+assertMatches(supportPageFile, supportPage, /isCompact \? "New request" : "Ask for help"[\s\S]*?>\s*Ask for help\s*</, "Help Desk phone form must use one Ask for help heading instead of repeating two support-request titles.");
 assertContains(supportPageFile, supportPage, "data-cta-id=\"support-page.reply-attachment\"", "Help Desk reply flow must allow picture/PDF evidence.");
 assertNotContains(supportPageFile, supportPage, "items[0]?.id || null", "Help Desk must not make thread history the default first surface.");
 
@@ -67,6 +71,12 @@ assertContains(adminSupportFile, adminSupport, "uploadSupportCaseAttachment", "A
 assertContains(adminSupportFile, adminSupport, "const [replyAttachment, setReplyAttachment] = useState<File | null>(null);", "Admin Support must track reply attachments.");
 assertContains(adminSupportFile, adminSupport, "data-cta-id=\"admin-support.reply-attachment\"", "Admin Support reply form must expose picture/PDF upload.");
 assertContains(adminSupportFile, adminSupport, "Write a reply or attach a picture/PDF first.", "Admin Support must permit attachment-only replies and explain empty submissions.");
+assertContains(adminSupportFile, adminSupport, "data-gsn-admin-support-surface=\"state\"", "Admin Support must expose one named compact queue state.");
+assertContains(adminSupportFile, adminSupport, "debugId=\"admin-support.queue-toggle\"", "Admin Support phone flow must expose one stable queue/case switch.");
+assertMatches(adminSupportFile, adminSupport, /data-gsn-admin-support-panel="queue"[\s\S]*?display: !isCompact \|\| queueOpen \? "grid" : "none"/, "Admin Support must hide the queue while a selected phone case is open.");
+assertMatches(adminSupportFile, adminSupport, /data-gsn-admin-support-panel="case"[\s\S]*?display: !isCompact \|\| !queueOpen \? "grid" : "none"/, "Admin Support must hide selected-case detail while the phone queue is open.");
+assertMatches(adminSupportFile, adminSupport, /setSelectedId\(item\.id\);[\s\S]*?setQueueOpen\(false\);[\s\S]*?navigate\(/, "Choosing an Admin Support case must move phone focus from queue to case detail.");
+assertMatches(adminSupportFile, adminSupport, /isCompact \? "Who needs help\?"[\s\S]*?!isCompact \? \([\s\S]*?This queue is practical support only/, "Admin Support must remove its long governance boundary paragraph from the phone first surface.");
 assertContains(adminSupportFile, adminSupport, "debugId=\"admin-support.status-toggle\"", "Admin Support status controls must be behind a stable secondary toggle.");
 assertContains(adminSupportFile, adminSupport, "const [statusControlsOpen, setStatusControlsOpen] = useState(false);", "Admin Support must keep status controls collapsed by default.");
 assertContains(adminSupportFile, adminSupport, "setStatusControlsOpen(false);", "Admin Support must collapse status controls after update.");

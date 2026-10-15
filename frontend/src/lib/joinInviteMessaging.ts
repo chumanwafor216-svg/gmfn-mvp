@@ -9,6 +9,7 @@ type JoinInviteTextParams = {
 
 type JoinInviteDoorwayParams = JoinInviteTextParams & {
   inviteLink?: string;
+  admissionMode?: string;
 };
 
 const JOIN_INVITE_EVIDENCE_LINES = [
@@ -86,35 +87,42 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   return lines;
 }
 
+export function buildSimpleJoinInviteMessage(
+  args: JoinInviteDoorwayParams
+): string {
+  const receiver = cleanText(args.receiver);
+  const inviter = cleanText(args.inviter);
+  const communityName =
+    cleanText(args.communityName) ||
+    cleanText(args.marketplaceName) ||
+    "this GSN community";
+  const inviteLink = cleanText(args.inviteLink);
+  const customMessage = cleanText(args.customMessage);
+  const isDefaultNote = /^open this (invite|link) to request access\.?$/i.test(
+    customMessage
+  );
+  const admissionMode = cleanText(args.admissionMode).toLowerCase();
+  const intro = inviter
+    ? `${inviter} invited you to join ${communityName} on GSN.`
+    : `You are invited to join ${communityName} on GSN.`;
+  const firstLine = receiver ? `Hi ${receiver}, ${intro}` : intro;
+  const nextStep =
+    admissionMode === "instant_invite"
+      ? "Open to join."
+      : "Open to request access. Approval is required.";
+
+  return [
+    firstLine,
+    customMessage && !isDefaultNote ? customMessage : "",
+    nextStep,
+    inviteLink,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function buildJoinInviteDoorwayMessage(
   args: JoinInviteDoorwayParams
 ): string {
-  const inviter = cleanText(args.inviter);
-  const communityName = cleanText(args.communityName) || "this GSN community";
-  const marketplaceName =
-    cleanText(args.marketplaceName) ||
-    (cleanText(args.communityName) ? `${communityName} Marketplace` : "");
-  const inviteTarget = marketplaceName || communityName;
-  const inviteLink = cleanText(args.inviteLink);
-  const customMessage = cleanText(args.customMessage);
-  const expiresAt = cleanText(args.expiresAt);
-
-  const lines: Array<string | null> = [
-    inviteLink || null,
-    "",
-    `GSN invite: ${inviteTarget}`,
-    inviter ? `From: ${inviter}` : null,
-  ];
-
-  if (customMessage) {
-    lines.push(`Note: ${customMessage}`);
-  }
-
-  if (expiresAt) {
-    lines.push(`Open until: ${safeDateTime(expiresAt)}.`);
-  }
-
-  lines.push("Request access. Approval required.");
-
-  return lines.filter((line) => line !== null).join("\n");
+  return buildSimpleJoinInviteMessage(args);
 }

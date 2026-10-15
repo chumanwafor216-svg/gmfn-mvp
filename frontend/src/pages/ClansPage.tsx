@@ -390,24 +390,6 @@ function routeTarget(
   return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
 }
 
-function addInviteSearchParams(
-  rawLink: string,
-  params: Record<string, string | null | undefined>
-): string {
-  const direct = safeStr(rawLink);
-  if (!direct) return "";
-
-  try {
-    const url = new URL(direct, publicFrontendUrl("/"));
-    Object.entries(params).forEach(([key, value]) => {
-      const cleanValue = safeStr(value);
-      if (cleanValue) url.searchParams.set(key, cleanValue);
-    });
-    return publicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
-  } catch {
-    return direct;
-  }
-}
 function buildInviteState(
   raw: any,
   senderName: string,
@@ -428,7 +410,7 @@ function buildInviteState(
       marketplaceName: selectedCommunityName,
       message: shortMessage,
     }) || baseLink;
-  const link = addInviteSearchParams(personalizedLink, extraSearchParams);
+  const link = compactJoinInviteUrl(personalizedLink) || baseLink;
   const expiresAt = safeStr(raw?.invite_expires_at || raw?.expires_at || raw?.expiry || "");
   const rawQrPolicyKey = safeStr(raw?.qr_policy_key || extraSearchParams.qr_policy);
   const qrPolicyKey = isCommunityQrPolicyKey(rawQrPolicyKey)
@@ -440,9 +422,7 @@ function buildInviteState(
   );
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
-  const hasExtraSearchParams = Object.values(extraSearchParams).some((value) => safeStr(value));
-  const compactShareLink = hasExtraSearchParams ? link : compactJoinInviteUrl(link) || link;
-  const shareLink = joinInviteSocialPreviewUrl(compactShareLink) || compactShareLink;
+  const shareLink = joinInviteSocialPreviewUrl(link) || link;
 
   const personalNote = safeStr(shortMessage);
   const receiver = safeStr(receiverField);

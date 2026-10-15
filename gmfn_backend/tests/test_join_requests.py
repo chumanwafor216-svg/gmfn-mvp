@@ -4121,7 +4121,8 @@ def test_member_can_read_existing_marketplace_join_link_without_refresh_power(
 
         assert data["invite_status"] == "ready"
         assert data["invite_code"] == "admin-prepared-code"
-        assert "admin-prepared-code" in data["invite_link"]
+        assert data["invite_link"].endswith("/start/join/admin-prepared-code")
+        assert "?" not in data["invite_link"]
         assert data["can_refresh_invite"] is True
         assert data["requires_admin_refresh"] is False
         assert data["invited_by_user_id"] == 1
@@ -4171,15 +4172,14 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         assert "Any active member may share it" in data["message"]
         assert data["invite_link"]
         assert data["qr_policy_key"] == "market_access"
-        assert "qr_policy=market_access" in data["invite_link"]
+        assert data["invite_link"].endswith(f"/start/join/{data['invite_code']}")
+        assert "?" not in data["invite_link"]
         assert data["retired_qr_policy_invites"] == 0
-        assert (
-            "QR entry policy: Marketplace dues / permit access" in data["invite_text"]
-        )
-        assert (
-            "Community approval and later verification can still apply"
-            in data["invite_text"]
-        )
+        invite_lines = data["invite_text"].splitlines()
+        assert len(invite_lines) == 3
+        assert invite_lines[0].endswith("invited you to join Aberdeen City ICA on GSN.")
+        assert invite_lines[1] == "Open to request access. Approval is required."
+        assert invite_lines[2] == data["invite_link"]
         assert data["invited_by_user_id"] == 2
 
         with SessionLocal() as db:
@@ -4262,12 +4262,15 @@ def test_member_get_invite_link_retires_old_qr_policy_invites(client):
 
         assert data["invite_status"] == "ready"
         assert data["qr_policy_key"] == "strict_entry"
-        assert "qr_policy=strict_entry" in data["invite_link"]
+        assert data["invite_link"].endswith(f"/start/join/{new_code}")
+        assert "?" not in data["invite_link"]
         assert data["retired_qr_policy_invites"] == 1
         assert new_code != "old-open-qr-code"
-        assert (
-            "QR entry policy: Strict school / professional body" in data["invite_text"]
-        )
+        invite_lines = data["invite_text"].splitlines()
+        assert len(invite_lines) == 3
+        assert invite_lines[0].endswith("invited you to join Aberdeen City ICA on GSN.")
+        assert invite_lines[1] == "Open to request access. Approval is required."
+        assert invite_lines[2] == data["invite_link"]
 
         with SessionLocal() as db:
             invites = (
@@ -4413,6 +4416,8 @@ def test_instant_invite_acceptance_creates_membership_and_closes_single_use_link
     assert invite_res.status_code == 200, invite_res.text
     invite = invite_res.json()
     assert invite["admission_mode"] == "instant_invite"
+    assert invite["invite_text"].splitlines()[1] == "Open to join."
+    assert len(invite["invite_text"].splitlines()) == 3
     assert invite["max_uses"] == 1
 
     join_res = client.post(

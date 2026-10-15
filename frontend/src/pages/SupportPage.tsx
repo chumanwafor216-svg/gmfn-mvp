@@ -191,6 +191,9 @@ function sectionLabel(): React.CSSProperties {
 function SupportPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isCompact, setIsCompact] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 760 : false
+  );
   const queryCaseId = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return Number(params.get("case_id") || "") || null;
@@ -202,6 +205,15 @@ function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 760px)");
+    const sync = () => setIsCompact(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [issueType, setIssueType] = useState<SupportCaseIssueType>("technical");
@@ -344,7 +356,7 @@ function SupportPage() {
   const messages = Array.isArray(selectedCase?.messages) ? selectedCase?.messages || [] : [];
 
   return (
-    <main style={pageShell()}>
+    <main data-gsn-support-page="true" style={pageShell()}>
       <div style={contentWrap()}>
         <PageTopNav
           sectionLabel="Identity & settings"
@@ -355,27 +367,39 @@ function SupportPage() {
           nextLinks={[{ label: "Action Inbox", to: "/app/notifications" }]}
         />
 
-        <section style={card("#0B1F33")}> 
+        <section
+          data-gsn-support-surface="state"
+          style={{ ...card("#0B1F33"), padding: isCompact ? 16 : 18 }}
+        >
           <div style={{ display: "grid", gap: 16 }}>
             <div>
-              <div style={{ ...sectionLabel(), color: "#C9D7E5" }}>Support state</div>
-              <h1 style={{ margin: "6px 0 0", color: "#FFFFFF", fontSize: "clamp(28px, 5vw, 44px)", lineHeight: 1.05 }}>
-                Tell admin what is difficult.
+              <div style={{ ...sectionLabel(), color: "#C9D7E5" }}>Help desk</div>
+              <h1 style={{ margin: "6px 0 0", color: "#FFFFFF", fontSize: isCompact ? 24 : "clamp(28px, 5vw, 44px)", lineHeight: 1.08 }}>
+                {isCompact ? "What do you need help with?" : "Tell admin what is difficult."}
               </h1>
-              <p style={{ margin: "10px 0 0", color: "#D9E4EF", maxWidth: 760, lineHeight: 1.7 }}>
-                This is for app problems and user help. Loan support, announcements, and governance reviews still stay in their own places.
-              </p>
+              {!isCompact ? (
+                <p style={{ margin: "10px 0 0", color: "#D9E4EF", maxWidth: 760, lineHeight: 1.7 }}>
+                  This is for app problems and user help. Loan support, announcements, and governance reviews still stay in their own places.
+                </p>
+              ) : null}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))", gap: 10 }}>
+            <div
+              data-gsn-support-facts="compact"
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(132px, 1fr))",
+                gap: isCompact ? 8 : 10,
+              }}
+            >
               {[
                 ["Open", stats.open],
                 ["Waiting admin", stats.waitingAdmin],
                 ["Waiting you", stats.waitingUser],
                 ["Resolved", stats.resolved],
               ].map(([label, value]) => (
-                <div key={String(label)} style={{ ...statTile(), background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.14)" }}>
-                  <div style={{ color: "#AFC3D7", fontSize: 12, fontWeight: 900 }}>{label}</div>
-                  <div style={{ color: "#FFFFFF", fontSize: 26, fontWeight: 1000 }}>{value}</div>
+                <div key={String(label)} style={{ ...statTile(), padding: isCompact ? "9px 10px" : 14, background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.14)" }}>
+                  <div style={{ color: "#AFC3D7", fontSize: isCompact ? 11 : 12, fontWeight: 900 }}>{label}</div>
+                  <div style={{ color: "#FFFFFF", fontSize: isCompact ? 20 : 26, fontWeight: 1000 }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -388,8 +412,10 @@ function SupportPage() {
         <section style={{ display: "grid", gap: 14 }}>
           <form onSubmit={handleCreate} style={{ ...card(), display: "grid", gap: 14 }}>
             <div>
-              <div style={sectionLabel()}>Ask for help</div>
-              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 24 }}>New support request</h2>
+              <div style={sectionLabel()}>{isCompact ? "New request" : "Ask for help"}</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: isCompact ? 22 : 24 }}>
+                Ask for help
+              </h2>
             </div>
             <RealLifeMeaningGuide guidance={getRealLifeTrustGuidance("support-request")} />
             <label style={labelStyle()}>

@@ -254,6 +254,13 @@ assertContains(
   /data-companion-settings-controls="true"[\s\S]*?\{!compact \? \([\s\S]*?data-companion-expanded-intro="desktop-only"[\s\S]*?\) : null\}[\s\S]*?\{statusText \|\| !compact \? \([\s\S]*?data-companion-sound-permission="desktop-only"[\s\S]*?data-companion-control-label="reminder-level"[\s\S]*?"Reminder level"[\s\S]*?data-companion-control-label="sound"[\s\S]*?"Sound"[\s\S]*?"All reminders"[\s\S]*?data-companion-control-label="spoken-reminders"[\s\S]*?"Spoken reminders"[\s\S]*?data-companion-help="spoken-reminders"[\s\S]*?"Spoken reminders for important alerts\."[\s\S]*?data-companion-help="system-notifications"[\s\S]*?"Get reminders when GSN is not open\."[\s\S]*?data-companion-control-label="daily-limit"[\s\S]*?"Daily reminder limit"[\s\S]*?data-companion-control-label="repeat-after"[\s\S]*?"Repeat after \(minutes\)"/,
   "Expanded phone Companion Mode must skip the duplicate preamble and use plain-language labels while desktop retains its fuller guidance."
 );
+assertContains(
+  "frontend/src/components/CompanionSettingsPanel.tsx",
+  companionSettings,
+  /activeCompactSection[\s\S]*?toggleCompactSection[\s\S]*?data-companion-compact-secondary-sections="true"[\s\S]*?Sound & notifications[\s\S]*?Timing & limits[\s\S]*?data-companion-compact-section-controls="alerts"[\s\S]*?activeCompactSection === "alerts"[\s\S]*?data-companion-compact-section-controls="timing"[\s\S]*?activeCompactSection === "timing"/,
+  "Expanded phone Companion Mode must keep reminder level visible while sound/notification and timing/limit controls wait behind two mutually exclusive summary rows."
+);
+
 
 
 

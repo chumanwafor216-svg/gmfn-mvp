@@ -1,3 +1,96 @@
+## 2026-10-15 - Owner approved current simplification batch for production
+- Status: The owner explicitly lifted the local batch freeze with `deploy`. This release entry supersedes the local-only publication status in the immediately following 2026-10-15 simplification entries.
+- Release scope: compact phone Companion alerts; pruned invite messages and path-only invite links; deep task-state simplification for Support, Admin Support, Vault, and Loan Suggestions; the app-wide novice-surface finish pass; guided Companion settings; associated UX/freeze contracts; and focused regression/browser checks.
+- Deployment scope: both `gmfn-frontend` and `gmfn-api` are required because canonical invite generation and social-preview redirects include backend changes.
+- Excluded from this release: local Codex configuration, regenerated self-service guide screenshots, campaign renderer/deliverables, business documents, and unrelated Render status experiments.
+
+## 2026-10-15 - Shared phone Companion alert collapsed locally
+- Status: Implemented and verified locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Confirmed problem: the shared Companion card could cover much of a phone task surface, including the Loan Summary identity and first decision, before the member asked for help.
+- Phone behavior: the newest waiting alert now appears as one 60px bar above the bottom navigation with urgency, a one-line title, `View`, and dismiss. Older alerts remain in the existing queue and can appear next if their unchanged auto-close window has not expired.
+- Progressive detail: tapping `View` reveals the existing full explanation plus Open and Dismiss actions. The complete desktop toast remains unchanged.
+- Preserved behavior: polling, notice kinds, urgency, sounds, speech, Web Push synchronization, navigation targets, auto-close timing, persistent dismissal memory, and the mobile tap-guard exception are unchanged.
+- Geometry proof: the focused browser smoke passes at 390x844 and 360x780, verifies the compact bar stays above bottom navigation, does not overlap the Loan Summary primary action, is no taller than 64px including browser rounding, expands its detail/actions, dismisses, and creates no horizontal overflow.
+- Verification passed: production frontend build; mobile tap stability; Loan Summary/Repayment phone contract; Trust actions; notice-board phone notifications; completed-activation filtering; focused smoke; and diff check.
+- Files materially changed: `frontend/src/components/CompanionLayer.tsx`, `frontend/tools/audit-mobile-tap-stability.mjs`, `frontend/tools/smoke-loan-summary-repayment-simple-phone.mjs`, `docs/SCREEN_SPECS.md`, and this handoff.
+- Route impact: the shared authenticated Companion layer on routes where it is enabled, with explicit browser proof on `/app/loan-summary/42`; routes already excluded by `WorkspaceCompanionBridge` remain excluded.
+- Devil truth: this is less obstructive, not literally non-overlaying. While visible it still occupies a 60px strip near the bottom; removing all overlay would require converting urgent Companion notices into in-flow content or notification-inbox-only behavior, which would weaken immediate visibility.
+
+## 2026-10-15 - Ordinary invite messages pruned locally
+- Status: Implemented locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Outcome: ordinary community invite messages now contain one personal invitation line, one accurate next step, and one canonical `/start/join/{code}` link. A genuine personal note may add one short line.
+- Approval mode example: `Hi Aku, Chuma invited you to join Blessed Satch family on GSN.` then `Open to request access. Approval is required.` then the clean link.
+- Instant mode example: the same invitation line followed by `Open to join.` and the clean link.
+- Shared frontend contract: Community Home native sharing, clipboard fallback, and GSN snapshot invite sharing now use `buildSimpleJoinInviteMessage` instead of maintaining different wordy messages.
+- Duplicate-link prevention: native Web Share sends the two-line message as `text` and the clean target separately as `url`; clipboard fallback includes the link once as the last line.
+- Backend contract: create/get invite `invite_text` now follows the same three-line admission-aware format. Community/market IDs, QR-policy labels, promotional paragraphs, and detailed verification explanations remain available from the authoritative invite record and Join Entry page instead of being copied into chats.
+- Privacy and simplicity effect: the message preserves who invited whom and which community, but no longer forwards internal IDs or policy labels.
+- Route impact: Community Home Invite, Marketplace/GSN invite forwarding, `/clans/{id}/invite`, `/clans/{id}/invite-link`, and the canonical `/start/join/{code}` destination.
+- Verification passed: production frontend build; focused simple-invite, existing-community-invite, and share/tag audits; three focused backend admission/invite tests; scoped diff check; and the real 390x844 Community Home native-share smoke with a two-line text payload and separate path-only URL.
+- Audit truth: the invite assertions in the broader link/proof audits pass. Those aggregate scripts remain red only for pre-existing unrelated Public Shop, Trust Evidence Pack, and Loan Suggestions expectations.
+- Limitation truth: WhatsApp controls its own link-preview card and may still show the Render hostname, page title, and description. GSN can simplify the sent text and URL, but cannot suppress or restyle WhatsApp's preview card from the share payload.
+
+## 2026-10-15 - Canonical path-only invite sharing verified locally
+- Status: Implemented and verified locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Owner report: WhatsApp displayed an unreadable join URL containing duplicated invite code plus recipient, inviter, community, marketplace, and note query fields.
+- Outcome: every shared/copied community invite now normalizes to one clean URL shape: `/start/join/{code}`. Personal names and notes stay in the readable message rather than the URL.
+- Shared frontend logic: `joinLinks.ts` now strips all join query strings/fragments from normalized, compact, personalised, and social-share URLs. Community Home, Marketplace, Build First Circle, and other callers inherit this behavior.
+- Community QR flow: Clans/Community management no longer re-adds policy or community query fields after normalization. QR/admission policy remains stored on the backend invite row and is returned by the invite preview, so path-only links keep the same authoritative behavior.
+- Backend contract: create/get invite responses and the social-preview redirect now emit the same canonical path-only frontend target. Invite code lookup still resolves community, inviter, marketplace, expiry, admission mode, and QR policy server-side.
+- Privacy effect: copied links no longer expose recipient names, inviter names, community names, marketplace names, or personal notes in WhatsApp-visible query strings.
+- Verification passed: production frontend build; `audit:simple-community-invite`; `audit:existing-community-invite-line`; focused 390x844 Community Home Playwright share test; all 21 share-preview backend tests; and focused member invite-link backend tests.
+- Audit truth: the join-link assertions inside `audit:link-contracts` pass. The aggregate script remains red only for three pre-existing Public Shop expectations unrelated to this invite change.
+- Files materially changed: `frontend/src/lib/joinLinks.ts`, `frontend/src/pages/ClansPage.tsx`, focused invite audits/smoke, `gmfn_backend/app/api/routes/clans.py`, `gmfn_backend/app/api/routes/share_preview.py`, focused backend tests, `docs/SCREEN_SPECS.md`, and this handoff.
+- Route impact: `/start/join/{code}`, Community Home Invite, Marketplace Invite Someone/Copy Join Link, community invite/QR packages, `/clans/{id}/invite`, `/clans/{id}/invite-link`, and `/share/join/{code}`.
+- Limitation truth: WhatsApp cannot hide a plain URL behind custom link text. The long query is gone, but `gmfn-frontend.onrender.com` remains visible until a branded GSN custom domain or owned short-link redirect is configured.
+- Security truth: this is URL minimisation, not secrecy. Anyone holding a live invite code can still open that invite, subject to the existing expiry, usage, admission, review, and permission rules.
+
+## 2026-10-15 - Deep task-state phone simplification verified locally
+- Status: Implemented and verified locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Member Help Desk: `/app/help` now uses one short phone question, compact two-column case facts, and one `Ask for help` form heading. The long scope paragraph remains desktop-only. Previous requests stay closed until tapped, then preserve case selection, attachments, replies, and status.
+- Admin Support: `/app/command-center/support` now shows the queue or one selected case on phone instead of both. Selecting a case moves focus to its thread; `Choose another case` returns to the queue. Reply, attachment, and collapsed status controls remain intact.
+- Vault editor: `/app/vault-control` now gives every deep editor field a visible label: picture, image link, video, video link, offer name, price, currency, and description. Existing inputs, upload actions, media preparation, save behavior, and private-link rules are unchanged.
+- Loan Suggestions: expanded pale reading/supporter cards now use dark readable headings, helper text, and badges. Recommendation, supporter-fit, money, approval, and release-authority behavior did not change.
+- Audit truth: two loan checks were stale rather than product failures. They now protect the current safer `Possible support` and `Planning reading` wording while retaining the non-approval/non-payout boundary.
+- New browser proof: `smoke:support-helpdesk-simple-phone` covers member Help Desk at 390x844 and 360x780, opens prior history, opens a thread, submits a new request, checks local response feedback, and verifies no page overflow. It also covers the admin queue/case switch at 390x844.
+- Focused verification passed: TypeScript build, Support Helpdesk audit, Loans action audit, Finance/loan evidence boundary, Vault Control inventory, action-response protocol, phone-surface simplicity, surface ownership, visible language, and icon protocol.
+- App-wide verification passed: production frontend build, full protected-button-freeze suite outside the restricted sandbox, and the expanded 390x844 mobile visual sweep.
+- Files added: `frontend/tools/smoke-support-helpdesk-simple-phone.mjs`.
+- Files materially changed in this slice: `frontend/src/pages/SupportPage.tsx`, `AdminSupportPage.tsx`, `VaultControlPage.tsx`, `LoanSuggestionsPage.tsx`, matching audits/package script, `docs/SCREEN_SPECS.md`, and this handoff.
+- Contract truth: no backend route, API payload, schema, auth, permission, support-case visibility rule, money rule, loan decision rule, Vault payment/link rule, or frozen Market Wisdom behavior changed.
+- Deployment truth: this deeper slice remains local only. The active batch-freeze instruction still requires an explicit owner publication request before commit, push, main promotion, or Render verification.
+- Devil truth: the browser proof covers representative mocked member/admin support states and registered route geometry, not every live case attachment, slow network, role permutation, physical keyboard, or screen-reader path. Physical-phone and pilot observation are still required before claiming universal ease.
+
+## 2026-10-15 - App-wide novice-surface finish pass verified locally
+- Status: Implemented and verified locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Outcome: the representative phone route sweep now covers the pre-auth funnel, all 57 authenticated route keys, and the previously omitted public Community Domain purchase, TrustSlip card, Merchant Release, collection, attendance, response, notice, beneficiary confirmation, community-member verification, Public Shop, and Vault-access paths. The expanded sweep passes at 390x844 across first viewport and scroll positions.
+- Commitments: `/app/commitments` now starts with Personal and Shared ROSCA lanes on phone. Shared work replaces the chooser after opening, provides Back/Start new, uses one-column phone forms, and keeps past/terms detail behind stable disclosures. Existing ROSCA APIs, actions, route contracts, and money boundaries are unchanged.
+- Community Bulletin: the red/amber/green `Now`/`72h`/`Clear` strip remains. The already-loaded last 10 expired announcements are reachable through one closed `Previous announcements` disclosure instead of being silently discarded from the surface.
+- Community Domain: the existing guided current-step action now appears before the six progress tiles, so the next required action is fully visible in the first 390x844 viewport in both draft and active states. More setup tools, all stages, blockers, work areas, settings, and governance behavior remain available.
+- Public Merchant Release: the off-edge GSN watermark is explicitly marked as visual decoration, removing the false/off-screen interactive geometry signal without changing evidence content.
+- Stable controls: raw summaries/links found on Commitments, Shop Assets, and TrustSlip were replaced with the existing stable action/disclosure primitives; behavior and content remain unchanged.
+- Guard repairs: stale expectations were aligned with intentional product history: Spotlight remains owned by Shop Control rather than Dashboard; Merchant Release remains mapped under canonical owner-shop handles; Notifications direct-open mode navigates without an extra confirmation; current TrustSlip refresh/reconcile helpers remain required; current public verification/TrustSlip privacy wording remains required.
+- Positive-data browser proof passed: Community Home simple phone, Public Shop slot replacement/no-overflow, anonymous/signed community confirmation, active/no-relay/inactive/unknown community and member verification states, and the full public TrustSlip state matrix.
+- Deep browser proof passed: Community Domain draft/active interactive mobile visual audit and the enlarged app-wide mobile visual sweep.
+- Static/freeze proof passed: protected-button-freeze aggregate, Community Domain product contracts, Community Home inventory/phone/billboard, Notice Board phone notifications, action surfaces/responses, Trust actions, Market Wisdom, visible language, Commitments, Shop Diary phases 1/2, public TrustSlip boundaries, public verification boundaries, Public Shop inventory, and route coverage.
+- Build proof: production TypeScript/Vite build passes after all product-code changes.
+- Files materially changed in this finish pass: `frontend/src/pages/CommitmentsPage.tsx`, `CommunityHomePage.tsx`, `CommunityDomainDashboardPage.tsx`, `MerchantReleasePage.tsx`, `ShopAssetsPage.tsx`, `TrustSlipPage.tsx`, the existing Companion settings component, matching audits/smokes, and the UX/freeze/handoff docs.
+- Route/contract truth: no backend route, schema, auth, permission, payment rule, ROSCA rule, Shop Diary ownership boundary, TrustSlip evidence boundary, or public/private data contract changed.
+- Legacy-audit truth: standalone `audit:button-stability` still contains broad source-order expectations for several already-refactored pages and remains red; the newer protected-button-freeze aggregate, focused page inventories, and real-browser geometry tests pass. Do not cite the legacy script as green.
+- Devil truth: this is strong automated evidence that the registered/representative phone surfaces render simply and keep required actions reachable. It is not proof that every live-data permutation, role combination, physical device, language length, or first-time human will find every deep workflow effortless. Pilot observation and physical-phone testing remain necessary.
+
+## 2026-10-15 - Expanded phone Companion Mode guided locally
+- Status: Implemented and verified locally after deployed baseline `b950ce33`; not committed, pushed, or deployed because the owner is still batching simplification work.
+- Confirmed problem: after the first wording cleanup, opening Companion Mode still exposed a 1,232px stack of eight control groups at once.
+- Phone behavior: `Reminder level` remains immediately visible. `Sound & notifications` and `Timing & limits` are now two compact, value-bearing rows; opening one closes the other.
+- Preserved behavior: all original setting values, buttons, quiet-hour and limit inputs, notification permission/test action, status feedback, local/server persistence, API use, and desktop presentation remain intact.
+- Visual truth: the initial expanded overview is 356px instead of 1,232px, an 876px reduction. The focused alerts task is 918px and the timing task is 621px; all states have no horizontal overflow.
+- Reachability truth: the long alerts task scrolls correctly, and the last `Test phone notification` control was browser-verified fully above the bottom navigation.
+- Regression cages: the surface-ownership audit locks the two-group phone boundary, while the first-paint browser audit verifies summaries, mutual exclusion, preserved controls, a 400px maximum overview, scrolling reachability, and desktop/phone containment.
+- Verification passed: production TypeScript/Vite build; surface-ownership, member-entry-action, and capability-mirror audits; focused 390x844 Profile/My GSN browser audit; and manual inspection of the overview, alerts, and timing screenshots.
+- Files changed for this slice: `frontend/src/components/CompanionSettingsPanel.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: `Sound & notifications` is still a 918px focused task because it contains four sound choices, spoken-reminder controls, phone-notification controls, guidance, and a test action. Making it materially shorter without another internal split would hide or remove real capability.
+
 ## 2026-10-15 - Phone Community Bulletin traffic-light indicators restored locally
 - Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
 - Owner correction: the recent phone simplification hid the full Community Pulse and accidentally removed the visible red/amber/green timing meaning whenever the Bulletin had only one notice. The coloured numbered notice selector still existed, but it only appears for multiple notices.

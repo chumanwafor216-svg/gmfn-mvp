@@ -1,3 +1,5 @@
+import { buildSimpleJoinInviteMessage } from "./joinInviteMessaging";
+
 type PaperFact = {
   label: string;
   value?: unknown;
@@ -160,21 +162,15 @@ export function buildGsnInviteLinkMessage(params: {
   inviteLink: string;
   note?: string;
 }): string {
-  const communityName = safeText(params.communityName) || "this GSN community";
-  const senderName = safeText(params.senderName);
   const note = safeText(params.note);
   const isDefaultNote = /^open this (invite|link) to request access\.?$/i.test(note);
 
-  return [
-    safeText(params.inviteLink),
-    "",
-    `GSN invite: ${communityName}`,
-    senderName ? `From: ${senderName}` : "",
-    note && !isDefaultNote ? `Note: ${note}` : "",
-    "Request access. Approval required.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return buildSimpleJoinInviteMessage({
+    inviter: params.senderName,
+    communityName: params.communityName,
+    inviteLink: params.inviteLink,
+    customMessage: note && !isDefaultNote ? note : "",
+  });
 }
 
 export function buildGsnPublicShopLinkMessage(params: {

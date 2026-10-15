@@ -7,6 +7,7 @@ import {
   SecondaryButton,
   StableButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -3000,9 +3001,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
               </div>
               <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
-                <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+                <StableDisclosureSummary debugId="shop-assets.diary.more-options" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
                   More options
-                </summary>
+                </StableDisclosureSummary>
                 <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
                     <div>
@@ -3044,9 +3045,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           </div>
           <details open={!isCompact} style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
-            <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+            <StableDisclosureSummary debugId="shop-assets.diary.recent.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
               Recent updates ({diaryEntries.length})
-            </summary>
+            </StableDisclosureSummary>
             <div style={{ marginTop: 8, ...helperText() }}>Owner updates stay separate from product offers. Evidence links remain inside the opened history.</div>
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {diaryEntries.length > 0 ? diaryEntries.slice(0, 4).map((entry) => (
@@ -3151,9 +3152,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           ) : null}
 
           <details open={!isCompact} style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}>
-            <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
+            <StableDisclosureSummary debugId="shop-assets.products.blocks.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
               Manage numbered blocks
-            </summary>
+            </StableDisclosureSummary>
             <div
             style={{
               marginTop: 16,
@@ -3654,9 +3655,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   </StableButton>
                 </div>
                 <details style={{ marginTop: 12 }}>
-                  <summary style={{ cursor: "pointer", color: "#31506D", fontWeight: 950, fontSize: 13 }}>
+                  <StableDisclosureSummary debugId="shop-assets.product.media-options.toggle" stableHeight={42} style={{ color: "#31506D", fontWeight: 950, fontSize: 13 }}>
                     More media options
-                  </summary>
+                  </StableDisclosureSummary>
                   <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                     <input
                       value={productImageUrlInput}

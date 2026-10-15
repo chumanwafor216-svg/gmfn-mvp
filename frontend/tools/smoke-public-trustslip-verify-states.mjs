@@ -618,7 +618,7 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
     await expect(decisionReading).toContainText("149 public-safe records");
     await expect(decisionReading).toContainText("Private review");
     await expect(decisionReading).toContainText("sensitive evidence category");
-    await expect(decisionReading).toContainText("does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations");
+    await expect(decisionReading).toContainText("Raw TrustEvents, private notes, contacts, payment records, addresses, and full Trust Passport pages are not exposed.");
     await expect(decisionReading).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
     await expect(decisionReading).not.toContainText("Delivered to private address");
   }

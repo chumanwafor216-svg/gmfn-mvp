@@ -82,14 +82,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?From: \$\{inviter\}/,
+  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildSimpleJoinInviteMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?\$\{inviter\} invited you to join/,
   "Existing-community invite message must keep the sender name on the visible invitation paper and the compact copied doorway message."
 );
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?GSN invite: \$\{inviteTarget\}[\s\S]*?From: \$\{inviter\}[\s\S]*?Request access\. Approval required\./,
-  "Copied existing-community invite messages must stay short: top link, GSN invite target, sender, optional context, and approval boundary."
+  /export function buildSimpleJoinInviteMessage[\s\S]*?Hi \$\{receiver\}, \$\{intro\}[\s\S]*?Open to join\.[\s\S]*?Open to request access\. Approval is required\.[\s\S]*?inviteLink[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?return buildSimpleJoinInviteMessage\(args\);/,
+  "Copied existing-community invite messages must stay to one greeting, one accurate next step, and one link."
 );
 
 assertContains(
@@ -215,7 +215,7 @@ assertContains(
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
   /personalizedJoinInviteUrl\(inviteLink,[\s\S]*?inviterName: joinSenderDisplayName[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?communityName: activeJoinCommunityName[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote/,
-  "Marketplace invite sharing must keep the personalized existing-community join URL context needed by JoinEntryPage."
+  "Marketplace invite sharing must provide personalization inputs for the message while the shared join helper removes them from the URL."
 );
 
 assertContains(
@@ -227,7 +227,7 @@ assertContains(
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
   /copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."/,
-  "Marketplace Copy Join Link must still preserve the personalized existing-community join URL context for direct link copying."
+  "Marketplace Copy Join Link must copy the canonical join target produced by the shared invite helper."
 );
 
 assertContains(

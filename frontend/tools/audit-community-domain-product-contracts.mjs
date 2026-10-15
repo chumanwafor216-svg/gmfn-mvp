@@ -180,7 +180,7 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /community-domain-dashboard\.guided-setup-path[\s\S]*Guided setup[\s\S]*Step \{guidedCurrentStep\.number\}: \{guidedCurrentStep\.title\}[\s\S]*Finish the current step first[\s\S]*guidedSetupSteps\.map[\s\S]*Done[\s\S]*Fix first[\s\S]*Do now[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*runGuidedSetupStep\(guidedCurrentStep\)/,
+  /community-domain-dashboard\.guided-setup-path[\s\S]*Guided setup[\s\S]*Step \{guidedCurrentStep\.number\}: \{guidedCurrentStep\.title\}[\s\S]*Finish the current step first[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*runGuidedSetupStep\(guidedCurrentStep\)[\s\S]*guidedSetupSteps\.map[\s\S]*Done[\s\S]*Fix first[\s\S]*Do now/,
   "Community Domain dashboard must keep the guided setup path that shows the current numbered step, done/fix/next states, a primary continue action, and in-place blocker guidance before exposing deeper governance stages.",
   { frontend: true }
 );

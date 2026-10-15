@@ -600,6 +600,24 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function lightHelperText(): React.CSSProperties {
+  return {
+    ...helperText(),
+    color: "#385773",
+  };
+}
+
+function lightBadge(primary = false): React.CSSProperties {
+  return {
+    ...badge(primary),
+    background: primary ? "#E8F1FF" : "#EEF4FA",
+    border: primary
+      ? "1px solid rgba(11,99,209,0.22)"
+      : "1px solid rgba(56,87,115,0.16)",
+    color: primary ? "#0B63D1" : "#24415C",
+  };
+}
+
 function communityName(currentClan: any, clanId: number): string {
   return (
     firstTruthy(
@@ -1713,7 +1731,7 @@ export default function LoanSuggestionsPage() {
             <div style={innerCard("#F8FBFF")}>
               <div
                 style={{
-                  color: "#F8FBFF",
+                  color: "#0B1F33",
                   fontWeight: 900,
                   fontSize: 15,
                 }}
@@ -1721,7 +1739,7 @@ export default function LoanSuggestionsPage() {
                 What the fit check is saying
               </div>
 
-              <div style={{ marginTop: 10, ...helperText() }}>
+              <div style={{ marginTop: 10, ...lightHelperText() }}>
                 {safeStr(
                   suggestionMessage ||
                     (activeBorrowerLoan
@@ -1752,7 +1770,7 @@ export default function LoanSuggestionsPage() {
               <div style={innerCard("#FFFBEF")}>
                 <div
                   style={{
-                    color: "#F8FBFF",
+                    color: "#7A4A00",
                     fontWeight: 900,
                     fontSize: 15,
                   }}
@@ -1761,14 +1779,14 @@ export default function LoanSuggestionsPage() {
                 </div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                  <div style={helperText()}>
+                  <div style={{ ...lightHelperText(), color: "#6B4E16" }}>
                     Requested withdrawal amount: {withdrawalAmount || "No withdrawal amount yet"}
                   </div>
-                  <div style={helperText()}>
+                  <div style={{ ...lightHelperText(), color: "#6B4E16" }}>
                     Support gap: {safeStr(supportGap || "Not calculated yet")}
                   </div>
                   {withdrawalNote ? (
-                    <div style={helperText()}>
+                    <div style={{ ...lightHelperText(), color: "#6B4E16" }}>
                       Note: {withdrawalNote}
                     </div>
                   ) : null}
@@ -1854,7 +1872,7 @@ export default function LoanSuggestionsPage() {
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 8,
-                          color: "#F8FBFF",
+                          color: "#0B1F33",
                           fontWeight: 900,
                           fontSize: 16,
                           lineHeight: 1.35,
@@ -1873,24 +1891,24 @@ export default function LoanSuggestionsPage() {
                         }}
                       >
                         {safeStr(item.reason) ? (
-                          <span style={badge(false)}>{safeStr(item.reason)}</span>
+                          <span style={lightBadge(false)}>{safeStr(item.reason)}</span>
                         ) : null}
 
                         {safeStr(item.recommendedPledge) ? (
-                          <span style={badge(true)}>
+                          <span style={lightBadge(true)}>
                             Possible support: {safeStr(item.recommendedPledge)}
                           </span>
                         ) : null}
 
                         {safeStr(item.trustScore) ? (
-                          <span style={badge(false)}>
+                          <span style={lightBadge(false)}>
                             Evidence: {supportEvidencePosture(item.trustScore, item.trustBand)}
                           </span>
                         ) : null}
                       </div>
 
                       {safeStr(item.gmfnId) ? (
-                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                        <div style={{ marginTop: 8, ...lightHelperText(), fontSize: 13 }}>
                           GSN ID: {safeStr(item.gmfnId)}
                         </div>
                       ) : null}
@@ -1899,7 +1917,7 @@ export default function LoanSuggestionsPage() {
                     <div
                       style={{
                         marginTop: 10,
-                        ...helperText(),
+                        ...lightHelperText(),
                         fontSize: 13,
                       }}
                     >

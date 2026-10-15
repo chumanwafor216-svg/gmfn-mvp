@@ -2987,23 +2987,11 @@ def _frontend_origin(request: Request) -> str:
 def _frontend_community_join_link(
     request: Request,
     *,
-    clan: Clan,
     invite_code: str,
-    inviter: Optional[User] = None,
-    qr_policy_key: Optional[str] = None,
 ) -> str:
     origin = _frontend_origin(request)
     safe_invite_code = quote(str(invite_code or "").strip(), safe="")
-    query_params = {
-        "invite": str(invite_code or "").strip(),
-        "community_code": _community_code(clan.id, clan=clan),
-        "community_name": _safe_str(getattr(clan, "name", None)),
-        "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)),
-        "inviter_name": _member_display(inviter),
-        "qr_policy": _safe_str(qr_policy_key),
-    }
-    query = urlencode({k: v for k, v in query_params.items() if _safe_str(v)})
-    return f"{origin}/start/join/{safe_invite_code}?{query}" if query else f"{origin}/start/join/{safe_invite_code}"
+    return f"{origin}/start/join/{safe_invite_code}"
 
 
 def _ready_join_preview_for_clan(
@@ -3081,49 +3069,22 @@ def _build_invite_text(
     clan: Clan,
     invite_link: str,
     inviter: Optional[User],
-    qr_policy_key: Optional[str] = None,
+    instant_join: bool = False,
 ) -> str:
     inviter_name = _member_display(inviter)
     clan_name = _safe_str(clan.name, "our GSN community")
-    community_code = _community_code(clan.id)
-    marketplace_name = _safe_str(getattr(clan, "marketplace_name", None))
-
-    lines = [
-        "Hello,",
-        "",
-        f"{inviter_name} is inviting you to begin the GSN join request for {clan_name}.",
-        "This link lets you send your request back to the community for review. It is not automatic entry.",
-        f"Invited by: {inviter_name}",
-        f"Community ID: {community_code}",
-    ]
-
-    if marketplace_name:
-        lines.append(f"Community / Market: {marketplace_name}")
-
-    policy_label = _qr_policy_label(qr_policy_key)
-    if policy_label:
-        lines.append(f"QR entry policy: {policy_label}")
-        lines.append(
-            "This starts an access request only. Community approval and later "
-            "verification can still apply."
-        )
-
-    lines.extend(
+    next_step = (
+        "Open to join."
+        if instant_join
+        else "Open to request access. Approval is required."
+    )
+    return "\n".join(
         [
-            "",
-            "We have already built trust by knowing, helping, lending, supporting, and standing for one another.",
-            "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become a trust record for tomorrow.",
-            "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability.",
-            "Over time, those records can help members carry their good name further, even beyond the people who already know them.",
-            "",
-            "Open secure join link:",
+            f"{inviter_name} invited you to join {clan_name} on GSN.",
+            next_step,
             invite_link,
-            "",
-            "Sent through GSN",
         ]
     )
-
-    return "\n".join(lines)
 
 
 def _build_activation_package(
@@ -4120,10 +4081,7 @@ def create_invite(
 
     share_link = _frontend_community_join_link(
         request,
-        clan=policy_clan,
         invite_code=inv.code,
-        inviter=current_user,
-        qr_policy_key=getattr(inv, "qr_policy_key", None),
     )
 
     return {
@@ -4158,7 +4116,7 @@ def create_invite(
             clan=policy_clan,
             invite_link=share_link,
             inviter=current_user,
-            qr_policy_key=getattr(inv, "qr_policy_key", None),
+            instant_join=bool(admission_policy["instant_join"]),
         ),
     }
 
@@ -4235,10 +4193,7 @@ def get_invite_link(
         invite_creator = invite_creator or current_user
         share_link = _frontend_community_join_link(
             request,
-            clan=clan,
             invite_code=latest_invite.code,
-            inviter=invite_creator,
-            qr_policy_key=getattr(latest_invite, "qr_policy_key", None),
         )
 
         return {
@@ -4283,7 +4238,7 @@ def get_invite_link(
                 clan=clan,
                 invite_link=share_link,
                 inviter=invite_creator,
-                qr_policy_key=getattr(latest_invite, "qr_policy_key", None),
+                instant_join=bool(admission_policy["instant_join"]),
             ),
         }
 

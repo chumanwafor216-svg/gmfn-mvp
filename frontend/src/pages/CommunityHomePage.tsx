@@ -4460,6 +4460,81 @@ export default function CommunityHomePage() {
               </div>
             )}
           </div>
+          {communityPreviousAnnouncementItems.length > 0 ? (
+            <details
+              data-debug-id="community-home.bulletin.previous"
+              style={{
+                margin: isCompact ? "0 10px 10px" : "0 14px 14px",
+                borderRadius: 16,
+                border: "1px solid rgba(123,161,204,0.18)",
+                background: "rgba(255,255,255,0.94)",
+                overflow: "hidden",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="community-home.bulletin.previous.toggle"
+                stableHeight={48}
+                aria-label={`Bulletin history (${communityPreviousAnnouncementItems.length})`}
+                style={{
+                  listStyle: "none",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "center",
+                  padding: "9px 12px",
+                  color: "#07172C",
+                  fontSize: isCompact ? 13 : 14,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                <span>Previous announcements</span>
+                <span
+                  style={{
+                    color: "#617085",
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Last {communityPreviousAnnouncementItems.length}/10
+                </span>
+              </StableDisclosureSummary>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  padding: "0 10px 10px",
+                }}
+              >
+                {communityPreviousAnnouncementItems.map((item, index) => {
+                  const itemKey = firstTruthy(
+                    item?.notice_id,
+                    item?.event_id,
+                    item?.meeting_id,
+                    `previous-${index}`
+                  );
+                  const title = wordLimit(
+                    firstTruthy(item?.title, item?.body, item?.purpose, "Community announcement"),
+                    isCompact ? 12 : 18
+                  );
+                  const dateLabel = compactDateLabel(
+                    firstTruthy(item?.created_at, item?.scheduled_at, item?.expires_at)
+                  );
+                  return (
+                    <div key={itemKey} style={innerCard("#F8FBFF")}>
+                      <div style={{ color: "#07172C", fontSize: 13, fontWeight: 900, lineHeight: 1.35 }}>
+                        {title}
+                      </div>
+                      <div style={{ marginTop: 4, color: "#617085", fontSize: 11.5, fontWeight: 720 }}>
+                        {[noticeSourceLine(item, selectedClanName), dateLabel].filter(Boolean).join(" - ")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          ) : null}
         </section>
 
         {communityAttentionItems.length > 0 ? (

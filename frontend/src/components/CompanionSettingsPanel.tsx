@@ -163,6 +163,9 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
   );
   const [testingPush, setTestingPush] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [activeCompactSection, setActiveCompactSection] = useState<
+    "alerts" | "timing" | null
+  >(null);
 
   useEffect(() => {
     let alive = true;
@@ -328,6 +331,80 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
     }
   }
 
+  const compactSoundLabel =
+    settings.audibleNudgeLevel === "urgent-only"
+      ? "Urgent sound"
+      : settings.audibleNudgeLevel === "important-only"
+      ? "Important sound"
+      : settings.audibleNudgeLevel === "all"
+      ? "All sounds"
+      : "Sound off";
+  const compactAlertsSummary = `${compactSoundLabel} / Voice ${
+    settings.voicePromptsEnabled ? "on" : "off"
+  } / Phone ${settings.systemPushEnabled ? "on" : "off"}`;
+  const compactTimingSummary = `${settings.quietHoursStart}-${settings.quietHoursEnd} / ${
+    settings.maxDailyNudges
+  }/day / every ${settings.repeatReminderMinutes}m`;
+
+  function toggleCompactSection(section: "alerts" | "timing") {
+    markCompanionUserInteraction();
+    setActiveCompactSection((current) => (current === section ? null : section));
+  }
+
+  function renderCompactSectionToggle(
+    section: "alerts" | "timing",
+    title: string,
+    summary: string
+  ) {
+    const open = activeCompactSection === section;
+
+    return (
+      <SecondaryButton
+        type="button"
+        onClick={() => toggleCompactSection(section)}
+        stableHeight={64}
+        debugId={`companion-settings.section.${section}`}
+        data-companion-compact-section-toggle={section}
+        aria-expanded={open}
+        aria-controls={`companion-settings-${section}-controls`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          width: "100%",
+          minHeight: 64,
+          padding: "10px 12px",
+          borderRadius: 16,
+          background: open ? "#F1F7FF" : "#FFFFFF",
+          textAlign: "left",
+        }}
+      >
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: "block", color: "#0B1F33", fontSize: 14, fontWeight: 900 }}>
+            {title}
+          </span>
+          <span
+            data-companion-compact-section-summary={section}
+            style={{
+              display: "block",
+              marginTop: 3,
+              color: "#5F7287",
+              fontSize: 12,
+              fontWeight: 750,
+              lineHeight: 1.25,
+            }}
+          >
+            {summary}
+          </span>
+        </span>
+        <span style={{ flex: "0 0 auto", color: "#0B63D1", fontSize: 13, fontWeight: 900 }}>
+          {open ? "Close" : "Open"}
+        </span>
+      </SecondaryButton>
+    );
+  }
+
   return (
     <section
       data-companion-settings-panel={compact ? "compact" : "full"}
@@ -337,7 +414,11 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
         data-companion-settings-disclosure="true"
         open={!compact || controlsOpen}
         onToggle={(event) => {
-          if (compact) setControlsOpen(event.currentTarget.open);
+          if (compact) {
+            const nextOpen = event.currentTarget.open;
+            setControlsOpen(nextOpen);
+            if (!nextOpen) setActiveCompactSection(null);
+          }
         }}
       >
         <StableDisclosureSummary
@@ -463,8 +544,27 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
             </SecondaryButton>
           </div>
         </div>
+        {compact ? (
+          <div data-companion-compact-secondary-sections="true" style={{ display: "grid", gap: 10 }}>
+            {renderCompactSectionToggle("alerts", "Sound & notifications", compactAlertsSummary)}
+            {renderCompactSectionToggle("timing", "Timing & limits", compactTimingSummary)}
+          </div>
+        ) : null}
 
-        <div style={softCard("#FFFFFF")}>
+        <div
+          id="companion-settings-alerts-controls"
+          data-companion-compact-section-controls="alerts"
+          aria-hidden={compact ? activeCompactSection !== "alerts" : undefined}
+          style={{
+            display: !compact
+              ? "contents"
+              : activeCompactSection === "alerts"
+              ? "grid"
+              : "none",
+            gap: compact ? 14 : undefined,
+          }}
+        >
+          <div style={softCard("#FFFFFF")}>
           <div data-companion-control-label="sound" style={sectionLabel()}>
             {compact ? "Sound" : "Audible nudge level"}
           </div>
@@ -634,14 +734,30 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
             </div>
           </div>
         </div>
+          </div>
 
         <div
+          id="companion-settings-timing-controls"
+          data-companion-compact-section-controls="timing"
+          aria-hidden={compact ? activeCompactSection !== "timing" : undefined}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 14,
+            display: !compact
+              ? "contents"
+              : activeCompactSection === "timing"
+              ? "grid"
+              : "none",
+            gap: compact ? 14 : undefined,
           }}
         >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 14,
+            }}
+          >
           <div style={softCard("#F8FBFF")}>
             <div style={sectionLabel()}>Quiet hours start</div>
             <input
@@ -700,7 +816,8 @@ export default function CompanionSettingsPanel({ compact = false }: CompanionSet
             />
           </div>
         </div>
-      </div>
+        </div>
+          </div>
         </div>
       </details>
     </section>

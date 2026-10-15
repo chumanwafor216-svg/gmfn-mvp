@@ -9,6 +9,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -6754,8 +6755,9 @@ export default function TrustSlipPage() {
               gap: 12,
             }}
           >
-            <summary
-              data-cta-id="trust-slip.full-document.toggle"
+            <StableDisclosureSummary
+              debugId="trust-slip.full-document.toggle"
+              stableHeight={isCompact ? 52 : 50}
               style={{
                 ...trustSlipActionButtonStyle(isCompact),
                 minHeight: isCompact ? 52 : 50,
@@ -6794,7 +6796,7 @@ export default function TrustSlipPage() {
                   Official holder document, evidence map, limits, QR and secondary controls.
                 </span>
               </span>
-            </summary>
+            </StableDisclosureSummary>
 
             {trustSlipDetailsPending ? (
               <div

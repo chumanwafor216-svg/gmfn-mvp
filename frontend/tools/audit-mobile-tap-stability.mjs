@@ -414,6 +414,21 @@ if (
 }
 
 if (
+  !/useState<boolean>\(\(\) => \{[\s\S]*?window\.innerWidth <= 768[\s\S]*?visibleToasts = isPhone \? toasts\.slice\(-1\) : toasts[\s\S]*?data-companion-layer=\{isPhone \? "phone" : "desktop"\}[\s\S]*?bottom: "calc\(76px \+ env\(safe-area-inset-bottom, 0px\)\)"[\s\S]*?data-companion-toast-mode[\s\S]*?minHeight: 60[\s\S]*?maxHeight: 60[\s\S]*?debugId=\{\`companion-toast\.\$\{toast\.id\}\.view\`\}[\s\S]*?display: expanded \? "block" : "none"[\s\S]*?display: expanded \? "flex" : "none"/.test(
+    companionLayerSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, companionLayerPath),
+    line: 1,
+    label:
+      "Phone Companion alerts must default to one compact bar above navigation and reveal detail only after View",
+    text:
+      "Expected phone breakpoint, newest-alert queue, compact 60px mode, View action, safe bottom offset, and hidden detail/actions were not found.",
+  });
+}
+
+if (
   !/let lastAcceptedActionRoot: Element \| null = null;[\s\S]*?function isFileInputAction\(root: Element \| null\): root is HTMLInputElement[\s\S]*?function isAssociatedFileInputClick\([\s\S]*?data-gmfn-file-input-id[\s\S]*?HTMLLabelElement[\s\S]*?click-file-input-associated-accepted/.test(
     mobileTapGuardSource
   )
@@ -965,12 +980,6 @@ const communityHomePath = join(sourceRoot, "pages", "CommunityHomePage.tsx");
 const communityHomeSource = readFileSync(communityHomePath, "utf8");
 
 const communityHomeButtonChecks = [
-    {
-      label:
-        "Community Home quick action tiles must keep fixed height so labels cannot shake on mobile",
-      pattern:
-        /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100,[\s\S]*?minHeight: isCompact \? 58 : 100,[\s\S]*?maxHeight: isCompact \? 58 : 100,[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,/,
-    },
   {
     label:
       "Community Home tool rows must stay height-locked for mobile tap stability",

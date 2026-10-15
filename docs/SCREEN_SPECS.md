@@ -221,8 +221,25 @@ Rules:
 - On the explicit phone Settings surface, keep Companion Mode closed by default as one compact row showing its current mode and one `Open` action. Expanding it must preserve intensity, sound, voice, system-notification, quiet-hours, daily-limit, and repeat-reminder controls. Desktop keeps Companion Mode expanded.
 - On the explicit phone Settings surface, start directly with `Profile display name`: omit the repeated page introduction, reduce the display-name explanation to one sentence, omit explanatory copy where the control label is sufficient, and use the concise checkbox labels `Show unread items first` and `Open the destination directly`. Keep every field and action. Desktop retains the fuller guidance.
 - When Companion Mode is expanded on a phone, start with the first usable control instead of repeating a headline, behavior paragraph, and passive browser-permission chip. Use the phone labels `Reminder level`, `Sound`, `Spoken reminders`, `Daily reminder limit`, and `Repeat after (minutes)`, with the short helpers `Spoken reminders for important alerts.` and `Get reminders when GSN is not open.` Keep every control and use status text when a save or permission event actually occurs. Desktop retains the fuller introduction and technical labels.
+- Inside expanded phone Companion Mode, keep `Reminder level` immediately visible and place the six secondary settings behind two value-bearing rows: `Sound & notifications` and `Timing & limits`. Opening one row must close the other. The rows must summarize the current saved choices before a tap, every original control must remain reachable, status feedback must stay visible, and desktop must retain the fully expanded presentation.
 - When a phone member has multiple communities, keep the full portfolio reachable from one compact `Switch community (N)` row; opening it must not replace the selected-community primary action. When the member has exactly one community, place its name, role, and stable ID directly in the `My communities` section: omit the nested selected-community card, duplicate `Selected community` label, repeated `1 active` heading, and duplicate switch/list control. Keep the section-level community icon for wayfinding. Desktop retains the fuller count, selected-card label, and icon treatment.
 ## Mobile Task Page Rule
+## CommitmentsPage
+
+Purpose:
+Let a member choose between personal follow-through and a shared ROSCA without exposing both workspaces at once.
+
+Phone first surface:
+- one Personal row with the real active count and one handoff to Focus commitments;
+- one Shared ROSCA row with its real invitation/active/draft state and one open action;
+- no repeated route heading beneath the authenticated app shell.
+
+Rules:
+- opening Shared ROSCA replaces the two-lane chooser and exposes one Back action plus one Start new action;
+- the creation form, run list, selected run, contribution record, participant invitation, past runs, and terms remain available inside the Shared workspace;
+- Shared form/action grids use one phone column while desktop retains the wider two-lane/workspace layout;
+- GSN must continue to state that it records the arrangement but does not hold the money, and a self-recorded contribution must not be described as independent payment confirmation;
+- a direct `rosca_run_id` link must open the Shared workspace and selected record.
 
 All authenticated mobile task pages must follow
 `docs/GSN_MOBILE_UI_PROTOCOL.md`.
@@ -240,6 +257,8 @@ Rules:
 - raw URLs, logs, policy text, repeated explanation, and admin-only controls
   should be collapsed by default;
 - long processes should show only the current step expanded.
+- Shared Companion notices on authenticated phones must default to one compact bar no taller than 60px, positioned above the bottom navigation. The bar must show urgency, one-line title, `View`, and dismiss without covering the page primary action or navigation.
+- Show only the newest waiting Companion notice on phone; older notices remain in the existing queue while their current auto-close window is live. `View` may expand the complete detail plus Open and Dismiss actions. Desktop retains the existing full toast cards.
 
 ## Loan Support Page
 
@@ -308,7 +327,7 @@ Rules:
   reconciliation, closure, or release of supporter exposure;
 - after declaration, say that the support item remains open and supporter
   exposure remains in place until reconciliation;
-- keep proof upload under a compact payment-status disclosure;
+- keep payment evidence upload under a compact payment-status disclosure;
 - opening payment status or other pages must not recreate a stack of competing
   tasks;
 - do not change payment-instruction, repayment-claim, evidence, permission, or
@@ -549,6 +568,7 @@ Must show, in phone-first order:
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
   - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
   - on phone, keep one compact red/amber/green timing strip showing `Now`, `72h`, and `Clear` counts inside Bulletin; keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
+  - keep up to the last 10 expired items reachable through one closed `Previous announcements` disclosure; do not expose the history by default and do not silently discard it from the member surface
   - no Ask Community / market-need records in the Bulletin by default
 - Needs your attention only when a real selected-community action exists
   - notice response required
@@ -618,6 +638,7 @@ Must show:
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
 - for an owner with no linked domain, a Community Domain dashboard start that first shows a guided setup path; name reservation, local community anchor, payment, and verification must wait inside that guided sequence or the quieter More setup tools drawer, not before it
+- inside the guided setup card, place the one current-step primary action before the six progress tiles so the required next action remains inside the first phone viewport
 - identity setup starts with the responsible signed-in GSN identity/personal page, then a domain-code availability check and Save checked name action, then a plain category package choice such as School, Church, Charity / NGO, Association, or Other
 - category packages stay gated until the GSN identity and available domain name are ready; once selected, the package collapses to a summary with an Edit package action instead of exposing every category permanently
 - prepared categories hide raw type/template fields, and only Other asks for manual description or support help
@@ -1291,7 +1312,7 @@ Shop Diary contract:
 - Shop Control owns owner-side Shop Diary creation as short text updates, latest activity, safe same-shop confirmed Trade Evidence selection, and the optional `Promote this update` handoff to the canonical Spotlight publisher. Diary pictures/videos are disabled for now; product media belongs in Products & Services until a governed preset media workflow exists.
 - Public Shop owns visitor-facing Shop Update presentation: one current live text message only, automatically cleared from the public shop face after 24 hours, then distinct Products & Services. Historical diary/audit records remain preserved in owner/evidence trails, not replayed on the public shop face.
 - Every owner-created update that is still public and inside the 24-hour live window may expose one `Share update` action. It must share that exact diary entry, open WhatsApp/phone/social handoffs for owner review, preserve the chosen channel in attribution, and never auto-post or claim delivery. Private, inactive, expired, and `GSN insight` entries must not expose this public share action.
-- Diary entries are chronological shop activity history, not products/services, paid placement, Spotlight ranking, TrustSlip proof, analytics inference, or formal transaction workflow.
+- Diary entries are chronological shop activity history, not products/services, paid placement, Spotlight ranking, TrustSlip evidence, analytics inference, or formal transaction workflow.
 - Ordinary owner-created entries default to `Owner update`; owner-requested `system_recorded` must not self-assert system truth; stronger confirmation requires a same-shop confirmed Protected Trade.
 - Unscoped, cross-shop, unauthorized, unconfirmed, malformed, and missing evidence links must fail server-side, not only in the frontend.
 - Promotion from a diary entry may prefill the Spotlight publisher for owner review, but must not auto-publish, bypass quota/payment rules, change evidence class, change chronology, or alter Spotlight ranking.
@@ -1319,6 +1340,11 @@ Rules:
 - Ordinary public shop link surfaces must show and copy the complete canonical public shop root URL, including the public domain and `/shop/{GSN_ID}`. Do not add `#shop-diaries`, product, block, focus, or community query hints to ordinary public share links.
 - Explicit legacy/deep-link handling may still reveal a shelf or product after the full public shop loads, but it must be separate from default ordinary public sharing. Vault/private access links remain exact private targets such as `/vault/{token}`.
 - Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
+- Recipient, inviter, community, marketplace, note, and duplicate invite metadata belong in the human-readable share message or the server-resolved invite record, never in the copied URL query string. The invite code remains the only public URL credential; Join Entry must resolve authoritative context from the backend preview.
+- Ordinary outbound invite copy must contain only one personal invitation line, one accurate next-step line, and the canonical link. Native share payloads must send the text and URL separately so the receiving app does not get a duplicated URL.
+- Preserve the recipient, inviter, and community names when known. A genuine personal note may add one short line; default instructions must not be repeated as a note.
+- Keep identity disclaimers, community IDs, marketplace IDs, QR-policy labels, admission explanations, and promotional GSN paragraphs on the authoritative Join Entry surface rather than in the forwarded message.
+- Plain WhatsApp messages cannot hide a URL behind custom anchor text. A branded hostname requires a separately configured GSN custom domain; until then, the canonical host remains visible even though the path is short.
 - Marketplace link action buttons must keep fixed-height rows and avoid transition-driven layout movement.
 - Marketplace `Open Shop Face` must not await a fresh public-shop-link request
   and then call a new-tab/window open action. Mobile and in-app browsers can
@@ -1443,6 +1469,7 @@ Rules:
 - Picture attachment is evidence for support review only; it must not become a public record, Trust Passport evidence, payment evidence, or identity verification.
 - Keep WhatsApp/email support as a fallback only.
 - Action Inbox may notify users about replies or resolution, but the case thread remains the source of support conversation truth.
+- On phone, show one short Help desk question, the four case facts in one compact two-column block, and then the Ask for help form. Keep the longer scope explanation off the first phone surface and do not repeat `Ask for help` plus `New support request` as two competing headings.
 
 Primary action:
 
@@ -1471,6 +1498,7 @@ Rules:
 - Do not use Community Domain action-review policy/node machinery for ordinary support.
 - Admin replies should notify the requester through Action Inbox.
 - Resolution should not delete the case or message history.
+- On phone, keep the queue and selected case as one-at-a-time task states. Choosing a case opens its thread; Choose another case returns to the queue. Show one short queue question and compact counts before the active state, while the longer governance boundary remains desktop-only.
 - Admin can see all support cases; normal users can see only their own cases.
 
 Primary action:

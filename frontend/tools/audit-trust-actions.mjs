@@ -401,13 +401,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /await api\.reissueMyTrustSlip\(\{[\s\S]*?reason: "holder_requested_fresh_public_trustslip"[\s\S]*?force: true[\s\S]*?community_id: activeIssuingCommunityId[\s\S]*?const issuedCode = firstTruthy[\s\S]*?setTrustSlipSetupSubmitted\(true\);[\s\S]*?setActiveTrustSlipPaperPack\("share"\);/,
+  /await api\.reissueMyTrustSlip\(\{[\s\S]*?reason: "holder_requested_fresh_public_trustslip"[\s\S]*?force: true[\s\S]*?community_id: activeIssuingCommunityId[\s\S]*?buildConfirmedTrustSlipIssueSummary\([\s\S]*?const issuedCode = trustSlipCodeFromResult\([\s\S]*?setTrustSlipSetupSubmitted\(true\);[\s\S]*?setActiveTrustSlipPaperPack\("share"\);/,
   "TrustSlip page refresh must force a fresh public TrustSlip so the QR, issued date, and expiry update for a new sharing session."
 );
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /fetchTrustSlipPageData\(selectedClanId, \{[\s\S]*?networkFirst: true[\s\S]*?\}\)[\s\S]*?mergeFreshTrustSlipSummary\(data\.summary, reissueResult\)/,
+  /fetchTrustSlipPageData\(activeIssuingCommunityId, \{[\s\S]*?forceFresh: true,[\s\S]*?networkFirst: true[\s\S]*?\}\)[\s\S]*?reconcileSecondaryTrustSlipSummary\([\s\S]*?data\.summary,[\s\S]*?confirmedSummary,[\s\S]*?reissueResult/,
   "TrustSlip refresh must reload the current slip network-first and seed the visible code/date from the reissue response so stale helper responses cannot keep an old QR/date on screen."
 );
 
@@ -2391,9 +2391,9 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?routes\.merchantRelease/,
-  "Community Home must domicile Merchant Release under the owner-shop tool rows."
+  "src/lib/ownerShopHandles.ts",
+  /id: "merchant-release"[\s\S]*?route: "shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.merchantRelease/,
+  "Merchant Release must remain domiciled under the canonical owner-shop tool map."
 );
 
 assertContains(

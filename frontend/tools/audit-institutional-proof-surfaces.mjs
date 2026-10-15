@@ -979,7 +979,7 @@ assertContains(
 );
 assertContains(
   "snapshotPaper",
-  /buildGsnCompactPublicLinkPackage[\s\S]*?buildGsnCommunityVerifyLinkMessage[\s\S]*?GSN Community Record[\s\S]*?buildGsnInviteLinkMessage[\s\S]*?Request access\. Approval required[\s\S]*?buildGsnPublicShopLinkMessage[\s\S]*?GSN Public Shop/,
+  /buildGsnCompactPublicLinkPackage[\s\S]*?buildGsnCommunityVerifyLinkMessage[\s\S]*?GSN Community Record[\s\S]*?buildGsnInviteLinkMessage[\s\S]*?buildSimpleJoinInviteMessage[\s\S]*?buildGsnPublicShopLinkMessage[\s\S]*?GSN Public Shop/,
   "Shared snapshot helpers must keep formal paper packages and compact public forwarding messages separate."
 );
 assertContains(
@@ -1446,18 +1446,18 @@ assertNotContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?From: \$\{inviter\}/,
+  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildSimpleJoinInviteMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?\$\{inviter\} invited you to join/,
   "Shared join invite messaging must keep the sender name in both the visible invitation paper and copied doorway message."
 );
 assertContains(
   "joinInviteMessaging",
-  /export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?GSN invite: \$\{inviteTarget\}[\s\S]*?From: \$\{inviter\}[\s\S]*?Request access\. Approval required\./,
-  "Shared join invite messaging must keep copied doorway messages compact: top link, invite target, sender, optional context, and approval boundary."
+  /export function buildSimpleJoinInviteMessage[\s\S]*?Hi \$\{receiver\}, \$\{intro\}[\s\S]*?Open to join\.[\s\S]*?Open to request access\. Approval is required\.[\s\S]*?inviteLink[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?return buildSimpleJoinInviteMessage\(args\);/,
+  "Shared join invite messaging must keep copied doorway messages to one greeting, one accurate next step, and one link."
 );
 assertContains(
   "marketplace",
   /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?buildGsnInviteLinkMessage[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?compactInviteLink[\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\)[\s\S]*?buildGsnInviteLinkMessage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink[\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
-  "Marketplace join sharing must use compact GSN invite text while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
+  "Marketplace join sharing must use compact GSN invite text while the actual Join URL stays canonical and path-only."
 );
 assertContains(
   "joinEntry",
@@ -1466,7 +1466,7 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Request access with your GSN identity and community context[\s\S]*?Keep useful community, trade, and TrustSlip evidence connected[\s\S]*?Use the link to send a reviewed membership request[\s\S]*?export function buildJoinInviteLetter[\s\S]*?This helps you:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?GSN invite: \$\{inviteTarget\}[\s\S]*?From: \$\{inviter\}[\s\S]*?Request access\. Approval required\./,
+  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Request access with your GSN identity and community context[\s\S]*?Keep useful community, trade, and TrustSlip evidence connected[\s\S]*?Use the link to send a reviewed membership request[\s\S]*?export function buildJoinInviteLetter[\s\S]*?This helps you:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?export function buildSimpleJoinInviteMessage[\s\S]*?Open to request access\. Approval is required\./,
   "Shared join invite messaging must keep the evidence-only form-page invite and outbound doorway message sender-aware and review-aware."
 );
 assertContains(

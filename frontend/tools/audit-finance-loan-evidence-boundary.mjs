@@ -147,13 +147,13 @@ assertContains(
 
 assertContains(
   "loanDecisionPanel",
-  /Decision intelligence is support evidence for review\. It is not loan[\s\S]*?approval, bank approval, payment movement, auto-debit authority, payout[\s\S]*?authority, or release authority\./,
+  /This is planning evidence for review\. It is not GSN loan approval, rejection,[\s\S]*?bank approval, payment movement, auto-debit authority, payout authority,[\s\S]*?release authority, or endorsement of any person\./,
   "Loan Decision Panel must visibly limit decision intelligence so recommendation/confidence cannot read as approval."
 );
 
 assertContains(
   "loanDecisionPanel",
-  /<div className="text-slate-500">Support reading<\/div>[\s\S]*?\{data\.decision\.recommendation\}/,
+  /<div className="text-slate-500">Planning reading<\/div>[\s\S]*?\{data\.decision\.recommendation\}/,
   "Loan Decision Panel must label the recommendation as a support reading."
 );
 

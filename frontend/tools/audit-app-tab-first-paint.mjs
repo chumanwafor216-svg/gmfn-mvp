@@ -486,6 +486,13 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
         ])
       ),
       controlsVisible: isVisible(controls),
+      compactSectionSummaries: Object.fromEntries(
+        Array.from(controls?.querySelectorAll("[data-companion-compact-section-summary]") ?? []).map((node) => [node.getAttribute("data-companion-compact-section-summary"), node.textContent?.trim() ?? ""])
+      ),
+      compactSectionToggleCount: controls?.querySelectorAll("[data-companion-compact-section-toggle]").length ?? 0,
+      alertsControlsVisible: isVisible(document.querySelector('[data-companion-compact-section-controls="alerts"]')),
+      timingControlsVisible: isVisible(document.querySelector('[data-companion-compact-section-controls="timing"]')),
+      visibleScheduleInputCount: Array.from(controls?.querySelectorAll('input[type="time"], input[type="number"]') ?? []).filter(isVisible).length,
       hasIntensityChoices: ["off", "light", "active"].every((mode) =>
         Boolean(document.querySelector(`[data-cta-id="companion-settings.mode.${mode}"]`))
       ),
@@ -502,6 +509,52 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       path: companionExpandedScreenshotPath,
     });
   }
+  const measureCompanionSecondarySections = async () =>
+    page.evaluate(() => {
+      const isVisible = (node) => node instanceof HTMLElement && !node.closest("details:not([open])") && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden";
+      const panel = document.querySelector('[data-companion-settings-panel]');
+      const alertsToggle = document.querySelector('[data-companion-compact-section-toggle="alerts"]');
+      const timingToggle = document.querySelector('[data-companion-compact-section-toggle="timing"]');
+      const controls = document.querySelector('[data-companion-settings-controls="true"]');
+      return {
+        alertsExpanded: alertsToggle?.getAttribute("aria-expanded") === "true",
+        timingExpanded: timingToggle?.getAttribute("aria-expanded") === "true",
+        alertsControlsVisible: isVisible(document.querySelector('[data-companion-compact-section-controls="alerts"]')),
+        timingControlsVisible: isVisible(document.querySelector('[data-companion-compact-section-controls="timing"]')),
+        visibleSoundControl: isVisible(document.querySelector('[data-cta-id="companion-settings.audible.off"]')),
+        visibleNotificationControl: isVisible(document.querySelector('[data-cta-id="companion-settings.push.on"]')),
+        visibleScheduleInputCount: Array.from(controls?.querySelectorAll('input[type="time"], input[type="number"]') ?? []).filter(isVisible).length,
+        panelHeight: panel instanceof HTMLElement ? Math.round(panel.getBoundingClientRect().height) : null,
+        noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+      };
+    });
+
+  await page.locator('[data-cta-id="companion-settings.section.alerts"]').click();
+  await delay(200);
+  result.companionAlertsOpen = await measureCompanionSecondarySections();
+  const companionAlertsScreenshotPath = process.env.GSN_COMPANION_ALERTS_SCREENSHOT_PATH?.trim();
+  if (companionAlertsScreenshotPath) {
+    await page.locator('[data-companion-settings-panel="compact"]').screenshot({ path: companionAlertsScreenshotPath });
+  }
+
+  await page.locator('[data-cta-id="companion-settings.push.test"]').scrollIntoViewIfNeeded();
+  await delay(100);
+  result.companionAlertsBottomReachable = await page.evaluate(() => {
+    const testButton = document.querySelector('[data-cta-id="companion-settings.push.test"]');
+    const bottomNav = document.querySelector('[data-gmfn-bottom-nav="true"]');
+    if (!(testButton instanceof HTMLElement) || !(bottomNav instanceof HTMLElement)) return false;
+    const buttonRect = testButton.getBoundingClientRect();
+    const navRect = bottomNav.getBoundingClientRect();
+    return buttonRect.top >= 0 && buttonRect.bottom <= navRect.top;
+  });
+  await page.locator('[data-cta-id="companion-settings.section.timing"]').click();
+  await delay(200);
+  result.companionTimingOpen = await measureCompanionSecondarySections();
+  const companionTimingScreenshotPath = process.env.GSN_COMPANION_TIMING_SCREENSHOT_PATH?.trim();
+  if (companionTimingScreenshotPath) {
+    await page.locator('[data-companion-settings-panel="compact"]').screenshot({ path: companionTimingScreenshotPath });
+  }
+
 
   const settingsScreenshotPath = process.env.GSN_SETTINGS_SCREENSHOT_PATH?.trim();
   if (settingsScreenshotPath) {
@@ -611,7 +664,13 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.settingsRoute.hasCompanionSummary &&
       result.companionExpanded.disclosureOpen === true &&
       result.companionExpanded.panelHeight !== null &&
-      result.companionExpanded.panelHeight < 1477 &&
+      result.companionExpanded.panelHeight <= 400 &&
+      result.companionExpanded.compactSectionToggleCount === 2 &&
+      Boolean(result.companionExpanded.compactSectionSummaries.alerts) &&
+      Boolean(result.companionExpanded.compactSectionSummaries.timing) &&
+      !result.companionExpanded.alertsControlsVisible &&
+      !result.companionExpanded.timingControlsVisible &&
+      result.companionExpanded.visibleScheduleInputCount === 0 &&
       !result.companionExpanded.hasIntroHeadline &&
       !result.companionExpanded.hasIntroParagraph &&
       !result.companionExpanded.hasSoundPermissionChip &&
@@ -627,6 +686,23 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.companionExpanded.hasAllRemindersChoice &&
       result.companionExpanded.hasNotificationControl &&
       result.companionExpanded.scheduleInputCount === 4 &&
+      result.companionAlertsOpen.alertsExpanded &&
+      !result.companionAlertsOpen.timingExpanded &&
+      result.companionAlertsOpen.alertsControlsVisible &&
+      !result.companionAlertsOpen.timingControlsVisible &&
+      result.companionAlertsOpen.visibleSoundControl &&
+      result.companionAlertsOpen.visibleNotificationControl &&
+      result.companionAlertsOpen.visibleScheduleInputCount === 0 &&
+      result.companionAlertsOpen.noHorizontalOverflow &&
+      result.companionAlertsBottomReachable &&
+      !result.companionTimingOpen.alertsExpanded &&
+      result.companionTimingOpen.timingExpanded &&
+      !result.companionTimingOpen.alertsControlsVisible &&
+      result.companionTimingOpen.timingControlsVisible &&
+      !result.companionTimingOpen.visibleSoundControl &&
+      !result.companionTimingOpen.visibleNotificationControl &&
+      result.companionTimingOpen.visibleScheduleInputCount === 4 &&
+      result.companionTimingOpen.noHorizontalOverflow &&
       !result.hasMemberHomeHeadline,
     result,
   };

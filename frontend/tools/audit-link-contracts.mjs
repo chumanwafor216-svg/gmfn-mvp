@@ -585,8 +585,14 @@ assertContains(
 
 assertContains(
   "src/lib/joinLinks.ts",
-  /export function personalizedJoinInviteUrl\([\s\S]*?communityCode\?: unknown;[\s\S]*?const communityCode = safeText\(opts\.communityCode\);[\s\S]*?if \(inviterName\) url\.searchParams\.set\("inviter_name", inviterName\);[\s\S]*?if \(recipientName\) url\.searchParams\.set\("receiver_name", recipientName\);[\s\S]*?if \(communityCode\) url\.searchParams\.set\("community_code", communityCode\);[\s\S]*?if \(communityName\) url\.searchParams\.set\("community_name", communityName\);[\s\S]*?if \(marketplaceName\) url\.searchParams\.set\("marketplace_name", marketplaceName\);[\s\S]*?if \(message\) url\.searchParams\.set\("message", message\);[\s\S]*?return shareablePublicFrontendUrl\(`\$\{url\.pathname\}\$\{url\.search\}\$\{url\.hash\}`\);/,
-  "Join invite sharing must keep form-safe personalized URL context, including community_code, and use the dev-aware shareable origin so phone testing opens the same frontend build."
+  /export function personalizedJoinInviteUrl\([\s\S]*?_opts:[\s\S]*?communityCode\?: unknown;[\s\S]*?return compactJoinInviteUrl\(direct\);/,
+  "Personalized invite messages must keep names and notes in the message while returning the clean canonical join URL."
+);
+
+assertNotContains(
+  "src/lib/joinLinks.ts",
+  /searchParams\.set\("(?:inviter_name|receiver_name|community_name|marketplace_name|message|community_code)"/,
+  "Shared join URLs must not expose recipient, inviter, community, marketplace, note, or duplicate community context in their query string."
 );
 
 assertContains(
@@ -644,20 +650,20 @@ assertContains(
 );
 assertContains(
   "src/lib/joinLinks.ts",
-  /export function normalizedJoinInviteUrl\(payload: any\): string \{[\s\S]*?const qrPolicyKey = firstTruthy\([\s\S]*?payload\?\.qr_policy_key,[\s\S]*?payload\?\.qr_policy,[\s\S]*?payload\?\.entry_policy[\s\S]*?if \(qrPolicyKey\) params\.set\("qr_policy", qrPolicyKey\);/,
-  "Normalized join invite links must preserve backend QR entry policy context as qr_policy so QR packages do not lose their approval model."
+  /export function normalizedJoinInviteUrl\(payload: any\): string \{[\s\S]*?inviteCodeFromLink\(direct\)[\s\S]*?if \(code\) \{[\s\S]*?return canonicalJoinInviteUrl\(code\);[\s\S]*?if \(isJoinInviteLink\(direct\)\) return compactJoinInviteUrl\(direct\);/,
+  "Normalized invite responses must reduce every valid invite to the canonical path-only join URL."
 );
 assertContains(
   "src/lib/joinLinks.ts",
-  /function compactJoinInviteContextQuery\(rawLink: string\): string \{[\s\S]*?\["community_code", "qr_policy", "entry_policy"\][\s\S]*?params\.set\(key, value\)[\s\S]*?if \(code\) return `\$\{canonicalJoinInviteUrl\(code\)\}\$\{contextQuery\}`;/,
-  "Compact join invite links must strip personal invite clutter while preserving community_code and QR policy context."
+  /export function compactJoinInviteUrl\(rawLink: string\): string \{[\s\S]*?const code = inviteCodeFromLink\(direct\);[\s\S]*?if \(code\) return canonicalJoinInviteUrl\(code\);[\s\S]*?if \(!isJoinInviteLink\(direct\)\) return "";[\s\S]*?return canonicalPublicFrontendUrl\(url\.pathname\);/,
+  "Compact join invite links must strip query strings and fragments while rejecting unrelated app routes."
 );
 
 
 assertContains(
   "src/lib/joinLinks.ts",
-  /if \(!isJoinInviteLink\(direct\)\) return "";[\s\S]*?return canonicalPublicFrontendUrl\(`\$\{url\.pathname\}\$\{contextQuery\}`\);/,
-  "Invite normalization must reject unrelated fallback links such as Finance or Marketplace routes while preserving allowed invite context."
+  /export function joinInviteSocialPreviewUrl\(rawLink: string\): string \{[\s\S]*?return compactJoinInviteUrl\(rawLink\);/,
+  "Ordinary social sharing must expose the same canonical join URL instead of an API preview redirect or metadata-heavy link."
 );
 
 assertContains(

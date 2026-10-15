@@ -214,6 +214,134 @@ async function installApiMocks(page) {
   });
 }
 
+async function assertCompactCompanion(page, viewport) {
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent("gmfn:companion-toast", {
+        detail: {
+          id: "phone-surface-test",
+          title: "Support record needs attention",
+          detail: "Review the next step before you continue.",
+          priority: "important",
+          ctaLabel: "Open",
+          ctaTo: "/app/notifications",
+          autoCloseMs: 60000,
+        },
+      })
+    );
+  });
+
+  const compactSelector =
+    '[data-companion-toast-mode="compact"][data-companion-toast-priority="important"]';
+  await page.waitForSelector(compactSelector, { timeout: 10000 });
+
+  const compact = await page.evaluate(() => {
+    const toast = document.querySelector('[data-companion-toast-mode="compact"]');
+    const detail = toast?.querySelector('[data-companion-toast-detail="true"]');
+    const bottomNav = document.querySelector('[data-gmfn-bottom-nav="true"]');
+    const primary = document.querySelector(
+      '[data-cta-id="loan-summary.phone.primary.continue-repayment"]'
+    );
+    const toastRect = toast?.getBoundingClientRect();
+    const navRect = bottomNav?.getBoundingClientRect();
+    const primaryRect = primary?.getBoundingClientRect();
+    const overlapsPrimary = Boolean(
+      toastRect &&
+        primaryRect &&
+        toastRect.left < primaryRect.right &&
+        toastRect.right > primaryRect.left &&
+        toastRect.top < primaryRect.bottom &&
+        toastRect.bottom > primaryRect.top
+    );
+
+    return {
+      height: toastRect?.height ?? null,
+      aboveBottomNav: Boolean(toastRect && navRect && toastRect.bottom <= navRect.top + 2),
+      overlapsPrimary,
+      detailHidden: Boolean(
+        detail && getComputedStyle(detail).display === "none"
+      ),
+      viewVisible: Boolean(
+        toast?.querySelector('[data-cta-id="companion-toast.phone-surface-test.view"]')
+      ),
+      horizontalOverflow:
+        document.documentElement.scrollWidth > window.innerWidth + 2,
+    };
+  });
+
+  if (
+    compact.height === null ||
+    compact.height > 64 ||
+    !compact.aboveBottomNav ||
+    compact.overlapsPrimary ||
+    !compact.detailHidden ||
+    !compact.viewVisible ||
+    compact.horizontalOverflow
+  ) {
+    throw new Error(
+      "Compact Companion obstructed the Loan Summary at " +
+        viewport.width +
+        "x" +
+        viewport.height +
+        ": " +
+        JSON.stringify(compact)
+    );
+  }
+
+  await page
+    .locator('[data-cta-id="companion-toast.phone-surface-test.view"]')
+    .click();
+  await page.waitForSelector('[data-companion-toast-mode="expanded"]', {
+    timeout: 10000,
+  });
+
+  const expanded = await page.evaluate(() => {
+    const toast = document.querySelector('[data-companion-toast-mode="expanded"]');
+    const rect = toast?.getBoundingClientRect();
+    const visible = (node) => {
+      if (!node) return false;
+      const nodeRect = node.getBoundingClientRect();
+      return getComputedStyle(node).display !== "none" && nodeRect.height > 0;
+    };
+    return {
+      detailVisible: Boolean(
+        toast?.textContent?.includes("Review the next step before you continue.")
+      ),
+      openVisible: visible(
+        toast?.querySelector('[data-cta-id="companion-toast.phone-surface-test.open"]')
+      ),
+      dismissVisible: visible(
+        toast?.querySelector('[data-cta-id="companion-toast.phone-surface-test.dismiss"]')
+      ),
+      insideViewport: Boolean(
+        rect && rect.left >= 0 && rect.right <= window.innerWidth && rect.top >= 0
+      ),
+      horizontalOverflow:
+        document.documentElement.scrollWidth > window.innerWidth + 2,
+    };
+  });
+
+  if (
+    !expanded.detailVisible ||
+    !expanded.openVisible ||
+    !expanded.dismissVisible ||
+    !expanded.insideViewport ||
+    expanded.horizontalOverflow
+  ) {
+    throw new Error(
+      "Expanded Companion did not preserve its actions: " + JSON.stringify(expanded)
+    );
+  }
+
+  await page
+    .locator('[data-cta-id="companion-toast.phone-surface-test.dismiss"]')
+    .click();
+  await page.waitForSelector(
+    '[data-cta-id="companion-toast.phone-surface-test.dismiss"]',
+    { state: "detached", timeout: 10000 }
+  );
+}
+
 
 async function testLoanSummary(page, baseURL, viewport) {
   await page.goto(baseURL + "/app/loan-summary/42?community_id=8", {
@@ -299,6 +427,8 @@ async function testLoanSummary(page, baseURL, viewport) {
         JSON.stringify(initial)
     );
   }
+
+  await assertCompactCompanion(page, viewport);
 
   await page.screenshot({
     path: join(

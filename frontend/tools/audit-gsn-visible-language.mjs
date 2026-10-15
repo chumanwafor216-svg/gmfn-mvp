@@ -215,7 +215,7 @@ const required = [
   ["gmfn_backend/app/api/routes/reports.py", "Community admin or platform admin only"],
   ["gmfn_backend/app/api/routes/trust_evidence_pack.py", "GSN-EvidencePack-"],
   ["gmfn_backend/app/api/routes/trust_timeline_pdf.py", "gsn-trust-timeline-u{user_id}-{visibility_level}.pdf"],
-  ["gmfn_backend/app/api/routes/trust_score.py", "community-scoped using X-Clan-Id"],
+  ["gmfn_backend/app/api/routes/trust_score.py", "community-scoped for evidence listing using X-Clan-Id"],
   ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "GSN Merchant Verification Record"],
   ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "GSN does not guarantee delivery, receipt, repayment, or release of goods, credit, or money."],
   ["gmfn_backend/app/api/routes/analytics_liquidity.py", "No custodial funds are held by GSN"],

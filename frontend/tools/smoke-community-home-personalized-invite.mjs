@@ -170,10 +170,11 @@ async function run() {
         .querySelector('[data-cta-id="simple-community-invite.send"]')
         ?.getBoundingClientRect();
       return {
-        receiverName: url.searchParams.get("receiver_name"),
-        inviterName: url.searchParams.get("inviter_name"),
-        communityName: url.searchParams.get("community_name"),
+        pathname: url.pathname,
+        search: url.search,
+        hash: url.hash,
         text: String(share.text || ""),
+        messageLines: String(share.text || "").split("\n").filter(Boolean).length,
         horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 2,
         sendVisible: Boolean(sendRect && sendRect.top >= 0 && sendRect.bottom <= window.innerHeight),
       };
@@ -185,11 +186,13 @@ async function run() {
 
     if (
       controls.inviteCreateCalls !== 1 ||
-      personalizedState.receiverName !== "Ada" ||
-      personalizedState.inviterName !== "Nwafor Chuma" ||
-      personalizedState.communityName !== "Blessed Satch family" ||
+      personalizedState.pathname !== "/start/join/invite-by-current-member" ||
+      personalizedState.search !== "" ||
+      personalizedState.hash !== "" ||
       !personalizedState.text.includes("Nwafor Chuma") ||
       !personalizedState.text.includes("Ada") ||
+      !personalizedState.text.includes("Open to request access. Approval is required.") ||
+      personalizedState.messageLines !== 2 ||
       personalizedState.horizontalOverflow ||
       !personalizedState.sendVisible
     ) {
@@ -201,7 +204,7 @@ async function run() {
     }
 
     console.log(
-      "Community Home personalised invite smoke passed: inviter automatic, recipient required, personalised URL shared."
+      "Community Home invite smoke passed: recipient required, message personalised, canonical path-only URL shared."
     );
   } finally {
     if (browser) await browser.close();

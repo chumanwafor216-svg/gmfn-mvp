@@ -5,6 +5,7 @@ import {
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
 import { copyToClipboard } from "../lib/share";
+import { buildSimpleJoinInviteMessage } from "../lib/joinInviteMessaging";
 import {
   brandInnerCard,
   brandPageCard,
@@ -29,24 +30,6 @@ type InviteFeedback = {
   text: string;
 } | null;
 
-function inviteMessage(
-  communityName: string,
-  inviteLink: string,
-  inviterName = "",
-  recipientName = "",
-  admissionMode = "community_vote"
-): string {
-  const destination = communityName || "this GSN community";
-  const sender = inviterName || "A GSN member";
-  const greeting = recipientName ? `Hi ${recipientName},\n\n` : "";
-  const nextStep =
-    admissionMode === "instant_invite"
-      ? "Open the link, accept the invitation, set your password, and you’re in."
-      : admissionMode === "admin_approval"
-        ? "Open the link and send your details. A community admin will decide."
-        : "Open the link and send your details. Community members will vote.";
-  return `${greeting}${sender} invited you to join ${destination} on GSN.\n\n${nextStep}\n${inviteLink}\n\nMembership does not mean identity or financial verification.`;
-}
 
 function inviterNameFromLink(inviteLink: string): string {
   try {
@@ -198,19 +181,25 @@ export default function SimpleCommunityInviteCard({
       communityName,
     });
     const linkToShare = personalizedLink || link;
-    const message = inviteMessage(
+    const message = buildSimpleJoinInviteMessage({
       communityName,
-      linkToShare,
-      safeInviterName,
-      safeRecipientName,
-      admissionModeRef.current
-    );
+      inviteLink: linkToShare,
+      inviter: safeInviterName,
+      receiver: safeRecipientName,
+      admissionMode: admissionModeRef.current,
+    });
+    const shareText = buildSimpleJoinInviteMessage({
+      communityName,
+      inviter: safeInviterName,
+      receiver: safeRecipientName,
+      admissionMode: admissionModeRef.current,
+    });
 
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
           title: communityName ? `Join ${communityName}` : "Join this GSN community",
-          text: `${safeRecipientName ? `Hi ${safeRecipientName}, ` : ""}${safeInviterName || "A GSN member"} invited you to join ${communityName || "this GSN community"} on GSN.`,
+          text: shareText,
           url: linkToShare,
         });
         setFeedback({ tone: "success", text: "Invite opened for sharing." });

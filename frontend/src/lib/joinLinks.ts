@@ -1,7 +1,6 @@
 import {
   canonicalPublicFrontendUrl,
   publicFrontendOrigin,
-  publicApiUrl,
   shareablePublicFrontendUrl,
 } from "./publicLinks";
 
@@ -59,45 +58,22 @@ export function canonicalJoinInviteUrl(code: string): string {
   return shareablePublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
 }
 
-function compactJoinInviteContextQuery(rawLink: string): string {
-  try {
-    const url = new URL(rawLink, publicFrontendOrigin());
-    const params = new URLSearchParams();
-    ["community_code", "qr_policy", "entry_policy"].forEach((key) => {
-      const value = safeText(url.searchParams.get(key));
-      if (value) params.set(key, value);
-    });
-    const query = params.toString();
-    return query ? `?${query}` : "";
-  } catch {
-    return "";
-  }
-}
-
 export function joinInviteSocialPreviewUrl(rawLink: string): string {
-  const direct = safeText(rawLink);
-  if (!direct) return "";
-
-  const code = inviteCodeFromLink(direct);
-  if (!code) return "";
-
-  const query = compactJoinInviteContextQuery(direct);
-  return publicApiUrl(`/share/join/${encodeURIComponent(code)}${query}`);
+  return compactJoinInviteUrl(rawLink);
 }
 
 export function compactJoinInviteUrl(rawLink: string): string {
   const direct = safeText(rawLink);
   if (!direct) return "";
 
-  const contextQuery = compactJoinInviteContextQuery(direct);
   const code = inviteCodeFromLink(direct);
-  if (code) return `${canonicalJoinInviteUrl(code)}${contextQuery}`;
+  if (code) return canonicalJoinInviteUrl(code);
 
   if (!isJoinInviteLink(direct)) return "";
 
   try {
     const url = new URL(direct, publicFrontendOrigin());
-    return canonicalPublicFrontendUrl(`${url.pathname}${contextQuery}`);
+    return canonicalPublicFrontendUrl(url.pathname);
   } catch {
     return "";
   }
@@ -145,18 +121,6 @@ function isJoinInviteLink(rawLink: string): boolean {
   }
 }
 
-function searchParamsFromLink(rawLink: string): URLSearchParams {
-  const direct = safeText(rawLink);
-  if (!direct) return new URLSearchParams();
-
-  try {
-    const url = new URL(direct, publicFrontendOrigin());
-    return new URLSearchParams(url.search);
-  } catch {
-    return new URLSearchParams();
-  }
-}
-
 export function normalizedJoinInviteUrl(payload: any): string {
   const direct = firstTruthy(
     payload?.share_link,
@@ -173,42 +137,15 @@ export function normalizedJoinInviteUrl(payload: any): string {
   );
 
   if (code) {
-    const base = canonicalJoinInviteUrl(code);
-    if (!base) return "";
-
-    const params = searchParamsFromLink(direct);
-    params.set("invite", code);
-
-    const communityCode = firstTruthy(payload?.community_code);
-    const communityName = firstTruthy(payload?.community_name);
-    const marketplaceName = firstTruthy(payload?.marketplace_name);
-    const qrPolicyKey = firstTruthy(
-      payload?.qr_policy_key,
-      payload?.qr_policy,
-      payload?.entry_policy
-    );
-    const inviterName = firstTruthy(
-      payload?.inviter_name,
-      payload?.invited_by_display,
-      payload?.invited_by_email
-    );
-
-    if (communityCode) params.set("community_code", communityCode);
-    if (communityName) params.set("community_name", communityName);
-    if (marketplaceName) params.set("marketplace_name", marketplaceName);
-    if (qrPolicyKey) params.set("qr_policy", qrPolicyKey);
-    if (inviterName) params.set("inviter_name", inviterName);
-
-    const query = params.toString();
-    return query ? `${base}?${query}` : base;
+    return canonicalJoinInviteUrl(code);
   }
-  if (isJoinInviteLink(direct)) return canonicalPublicFrontendUrl(direct);
+  if (isJoinInviteLink(direct)) return compactJoinInviteUrl(direct);
   return "";
 }
 
 export function personalizedJoinInviteUrl(
   rawLink: string,
-  opts: {
+  _opts: {
     inviterName?: unknown;
     recipientName?: unknown;
     communityCode?: unknown;
@@ -221,22 +158,7 @@ export function personalizedJoinInviteUrl(
   if (!direct) return "";
 
   try {
-    const url = new URL(direct, publicFrontendOrigin());
-    const inviterName = safeText(opts.inviterName);
-    const recipientName = safeText(opts.recipientName);
-    const communityCode = safeText(opts.communityCode);
-    const communityName = safeText(opts.communityName);
-    const marketplaceName = safeText(opts.marketplaceName);
-    const message = safeText(opts.message);
-
-    if (inviterName) url.searchParams.set("inviter_name", inviterName);
-    if (recipientName) url.searchParams.set("receiver_name", recipientName);
-    if (communityCode) url.searchParams.set("community_code", communityCode);
-    if (communityName) url.searchParams.set("community_name", communityName);
-    if (marketplaceName) url.searchParams.set("marketplace_name", marketplaceName);
-    if (message) url.searchParams.set("message", message);
-
-    return shareablePublicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
+    return compactJoinInviteUrl(direct);
   } catch {
     return "";
   }

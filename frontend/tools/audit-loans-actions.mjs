@@ -380,8 +380,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
-  /suggested support amount for each supporter[\s\S]*?Suggested support: \{safeStr\(item\.recommendedPledge\)\}/,
+  /possible support amount for each person[\s\S]*?Possible support: \{safeStr\(item\.recommendedPledge\)\}/,
   "Loan Suggestions must use support wording for suggested supporter amounts."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /function lightHelperText\(\)[\s\S]*?color: "#385773"[\s\S]*?function lightBadge\(primary = false\)[\s\S]*?color: primary \? "#0B63D1" : "#24415C"[\s\S]*?innerCard\("#F8FBFF"\)[\s\S]*?color: "#0B1F33"[\s\S]*?lightHelperText\(\)[\s\S]*?innerCard\("#FFFBEF"\)[\s\S]*?color: "#7A4A00"[\s\S]*?innerCard\("#FCFEFF"\)[\s\S]*?color: "#0B1F33"[\s\S]*?lightBadge\(false\)/,
+  "Loan Suggestions expanded light cards must keep readable dark headings, helper text, and evidence badges."
 );
 
 assertNotContains(

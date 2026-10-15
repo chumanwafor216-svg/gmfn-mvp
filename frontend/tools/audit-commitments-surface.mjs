@@ -140,6 +140,25 @@ assertPattern(
   assertPattern(commitmentsFile, commitments, pattern, "Commitments surface is missing a required COM-3 invariant.");
 });
 
+assertPattern(
+  commitmentsFile,
+  commitments,
+  /const \[isCompact, setIsCompact\][\s\S]*?window\.innerWidth <= 980[\s\S]*?const \[sharedOpen, setSharedOpen\][\s\S]*?!isCompact \|\| !sharedOpen[\s\S]*?debugId="commitments\.shared\.open"[\s\S]*?setSharedOpen\(true\)[\s\S]*?!isCompact \|\| sharedOpen[\s\S]*?debugId="commitments\.shared\.back"[\s\S]*?debugId="commitments\.shared\.create-toggle"/,
+  "Phone Commitments must start with its two existing lanes and replace the chooser with one focused Shared ROSCA workspace."
+);
+assertPattern(
+  commitmentsFile,
+  commitments,
+  /StableDisclosureSummary[\s\S]*?debugId="commitments\.shared\.past\.toggle"[\s\S]*?debugId="commitments\.shared\.terms\.toggle"/,
+  "Commitments secondary history and terms must use stable disclosures."
+);
+assertNotPattern(
+  commitmentsFile,
+  commitments,
+  /<Link\b|<summary\b/,
+  "Commitments must not reintroduce raw links or disclosure controls outside stable action primitives."
+);
+
 assertNotPattern(
   commitmentsFile,
   commitments,

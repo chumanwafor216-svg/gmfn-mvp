@@ -452,7 +452,7 @@ async function runCommunityRecordScenario(browser, baseURL) {
   });
 
   await expect(
-    state.page.getByRole("heading", { name: "Boundary Community Union", exact: true })
+    state.page.getByText("Boundary Community Union", { exact: true })
   ).toBeVisible({ timeout: 30000 });
   await expect(state.page.getByText("Community Verification", { exact: true })).toBeVisible();
   await expect(state.page.getByText("This page confirms", { exact: true })).toHaveCount(1);
@@ -460,11 +460,8 @@ async function runCommunityRecordScenario(browser, baseURL) {
   await expect(
     state.page.locator('[data-gsn-trust-document-certificate="community-verification"]')
   ).toHaveCount(1);
-  await expect(
-    state.page.getByText("Member lists, contacts, disputes, and private review notes stay hidden.", {
-      exact: false,
-    })
-  ).toBeVisible();
+  await expect(state.page.getByText("Private member details stay hidden.", { exact: true }))
+    .toBeVisible();
   await openDisclosure(state.page, "Audit Details");
   await openDisclosure(state.page, "More confirmed details");
   await openDisclosure(state.page, "More limits");
@@ -499,20 +496,13 @@ async function runNoRelayCommunityScenario(browser, baseURL) {
   });
 
   await expect(
-    state.page.getByRole("heading", { name: "No Relay Boundary Community", exact: true })
+    state.page.getByText("No Relay Boundary Community", { exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(state.page.getByText("Relay not available", { exact: false }).first()).toBeVisible();
   await expect(
-    state.page.getByText("Ask for a member credential, TrustSlip, or fresh community confirmation.", {
-      exact: false,
-    })
+    state.page.getByText("Next: ask for a member credential, TrustSlip, or fresh community confirmation.", { exact: false })
   ).toBeVisible();
-  await state.page.locator('[data-cta-id="community-verify.request-confirmation"]').click();
-  await expect(
-    state.page.getByText("Controlled confirmation is not available for this community yet.", {
-      exact: true,
-    })
-  ).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="community-verify.request-confirmation"]'))
+    .toHaveCount(0);
   await openDisclosure(state.page, "Verification details");
   await expectVisibleText(
     state.page,
@@ -533,12 +523,11 @@ async function runInactiveCommunityScenario(browser, baseURL) {
   });
 
   await expect(
-    state.page.getByRole("heading", { name: "Inactive Boundary Community", exact: true })
+    state.page.getByText("Inactive Boundary Community", { exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(state.page.getByText("Inactive", { exact: false }).first()).toBeVisible();
-  await expect(state.page.getByText("Relay not available", { exact: false }).first()).toBeVisible();
+  await expect(state.page.getByLabel("Public community record").getByText("Inactive", { exact: true }).first()).toBeVisible();
   await expect(
-    state.page.getByText("Ask for a member credential, TrustSlip, or fresh community confirmation.", {
+    state.page.getByText("Next: ask for a member credential, TrustSlip, or fresh community confirmation.", {
       exact: false,
     })
   ).toBeVisible();

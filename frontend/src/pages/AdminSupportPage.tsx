@@ -179,6 +179,9 @@ function badgeStyle(status: unknown): React.CSSProperties {
 function AdminSupportPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isCompact, setIsCompact] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 760 : false
+  );
   const queryCaseId = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return Number(params.get("case_id") || "") || null;
@@ -200,6 +203,17 @@ function AdminSupportPage() {
   const [statusNote, setStatusNote] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [queueOpen, setQueueOpen] = useState(!queryCaseId);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 760px)");
+    const sync = () => setIsCompact(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -315,7 +329,7 @@ function AdminSupportPage() {
   const attachments = Array.isArray(selectedCase?.attachments) ? selectedCase?.attachments || [] : [];
 
   return (
-    <main style={pageShell()}>
+    <main data-gsn-admin-support-page="true" style={pageShell()}>
       <div style={contentWrap()}>
         <PageTopNav
           sectionLabel="Command Centre"
@@ -326,26 +340,31 @@ function AdminSupportPage() {
           nextLinks={[{ label: "Action Inbox", to: "/app/notifications" }]}
         />
 
-        <section style={card("#0B1F33")}> 
+        <section
+          data-gsn-admin-support-surface="state"
+          style={{ ...card("#0B1F33"), padding: isCompact ? 16 : 18 }}
+        >
           <div style={{ display: "grid", gap: 14 }}>
             <div>
-              <div style={{ ...sectionLabel(), color: "#C9D7E5" }}>Open support queue</div>
-              <h1 style={{ margin: "6px 0 0", color: "#FFFFFF", fontSize: "clamp(28px, 5vw, 44px)", lineHeight: 1.05 }}>
-                Help people finish what blocked them.
+              <div style={{ ...sectionLabel(), color: "#C9D7E5" }}>Support queue</div>
+              <h1 style={{ margin: "6px 0 0", color: "#FFFFFF", fontSize: isCompact ? 24 : "clamp(28px, 5vw, 44px)", lineHeight: 1.08 }}>
+                {isCompact ? "Who needs help?" : "Help people finish what blocked them."}
               </h1>
-              <p style={{ margin: "10px 0 0", color: "#D9E4EF", maxWidth: 780, lineHeight: 1.7 }}>
-                This queue is practical support only. Keep policy decisions, lineage checks, and review evidence in their governance screens.
-              </p>
+              {!isCompact ? (
+                <p style={{ margin: "10px 0 0", color: "#D9E4EF", maxWidth: 780, lineHeight: 1.7 }}>
+                  This queue is practical support only. Keep policy decisions, lineage checks, and review evidence in their governance screens.
+                </p>
+              ) : null}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(auto-fit, minmax(140px, 1fr))", gap: isCompact ? 8 : 10 }}>
               {[
                 ["Waiting admin", counts.waiting_admin],
                 ["Waiting user", counts.waiting_user],
                 ["Resolved", counts.resolved],
               ].map(([label, value]) => (
-                <div key={String(label)} style={{ ...card("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.14)", boxShadow: "none" }}>
-                  <div style={{ color: "#AFC3D7", fontSize: 12, fontWeight: 900 }}>{label}</div>
-                  <div style={{ color: "#FFFFFF", fontSize: 26, fontWeight: 1000 }}>{value}</div>
+                <div key={String(label)} style={{ ...card("rgba(255,255,255,0.08)"), padding: isCompact ? "9px 7px" : 18, borderColor: "rgba(255,255,255,0.14)", boxShadow: "none" }}>
+                  <div style={{ color: "#AFC3D7", fontSize: isCompact ? 10.5 : 12, fontWeight: 900 }}>{label}</div>
+                  <div style={{ color: "#FFFFFF", fontSize: isCompact ? 20 : 26, fontWeight: 1000 }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -355,8 +374,22 @@ function AdminSupportPage() {
         {error ? <div style={{ ...card("#FEF2F2"), color: "#991B1B", fontWeight: 800 }}>{error}</div> : null}
         {notice ? <div style={{ ...card("#ECFDF3"), color: "#167447", fontWeight: 800 }}>{notice}</div> : null}
 
+        {isCompact && selectedCase ? (
+          <StableButton
+            type="button"
+            kind="secondary"
+            debugId="admin-support.queue-toggle"
+            aria-expanded={queueOpen}
+            stableHeight={48}
+            fullWidth
+            onClick={() => setQueueOpen((current) => !current)}
+          >
+            {queueOpen ? "Open selected case" : "Choose another case"}
+          </StableButton>
+        ) : null}
+
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
-          <div style={{ ...card(), display: "grid", gap: 14, alignContent: "start" }}>
+          <div data-gsn-admin-support-panel="queue" style={{ ...card(), display: !isCompact || queueOpen ? "grid" : "none", gap: 14, alignContent: "start" }}>
             <div>
               <div style={sectionLabel()}>Queue</div>
               <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 24 }}>Cases</h2>
@@ -385,6 +418,7 @@ function AdminSupportPage() {
                   fullWidth
                   onClick={() => {
                     setSelectedId(item.id);
+                    setQueueOpen(false);
                     navigate(`/app/command-center/support?case_id=${item.id}`, { replace: true });
                   }}
                   style={{
@@ -413,7 +447,7 @@ function AdminSupportPage() {
             </div>
           </div>
 
-          <div style={{ ...card(), display: "grid", gap: 14, alignContent: "start" }}>
+          <div data-gsn-admin-support-panel="case" style={{ ...card(), display: !isCompact || !queueOpen ? "grid" : "none", gap: 14, alignContent: "start" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={sectionLabel()}>Selected case</div>

@@ -155,8 +155,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /showNotice\("error"[\s\S]*?noticeCard\(notice\.tone\)[\s\S]*?showNotice\("success", "Opening this community now\."\)|showNotice\("success", "Opening this community now\."[\s\S]*?showNotice\("error"[\s\S]*?noticeCard\(notice\.tone\)/,
-  "Community Home actions must keep visible success/error notice responses, including repeated marketplace open feedback."
+  /async function openSelectedMarketplace[\s\S]*?showNotice\("error", "Select a community first\."\)[\s\S]*?navigateWithOrigin\([\s\S]*?routes\.marketplace[\s\S]*?showNotice\([\s\S]*?"Selected community could not be opened\."[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Community Home marketplace actions must explain missing or failed community selection and navigate directly after a valid selection."
 );
 
 assertNotContains(
@@ -210,8 +210,8 @@ assertContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /actionNotice[\s\S]*?setActionNotice[\s\S]*?Notice marked as read\.[\s\S]*?Opening \$\{normalizedNotice\.ctaLabel \|\| "the next page"\} now\.[\s\S]*?actionNoticeCard\(actionNotice\.tone\)/,
-  "Notifications actions must answer when marking read, reviewing, or opening the next route."
+  /actionNotice[\s\S]*?setActionNotice[\s\S]*?Notice marked as read\.[\s\S]*?settings\.openActionsDirectly[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\)[\s\S]*?Notice opened here first\. Review it, then choose the next action\.[\s\S]*?actionNoticeCard\(actionNotice\.tone\)/,
+  "Notifications actions must answer when marking read or reviewing, while direct-open mode must navigate to the next route without an extra confirmation step."
 );
 
 if (findings.length > 0) {

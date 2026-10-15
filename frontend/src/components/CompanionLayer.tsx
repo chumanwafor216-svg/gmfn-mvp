@@ -207,6 +207,11 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   const [settings, setSettings] = useState<CompanionSettings>(
     normalizeCompanionSettings()
   );
+  const [isPhone, setIsPhone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 768;
+  });
+  const [expandedToastId, setExpandedToastId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<CompanionToastPayload[]>([]);
 
   const timerMapRef = useRef<Record<string, number>>({});
@@ -243,6 +248,27 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       navigate(toast.ctaTo);
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function syncPhoneLayout() {
+      setIsPhone(window.innerWidth <= 768);
+    }
+
+    syncPhoneLayout();
+    window.addEventListener("resize", syncPhoneLayout);
+    return () => window.removeEventListener("resize", syncPhoneLayout);
+  }, []);
+
+  useEffect(() => {
+    if (
+      expandedToastId &&
+      !toasts.some((toast) => toast.id === expandedToastId)
+    ) {
+      setExpandedToastId(null);
+    }
+  }, [expandedToastId, toasts]);
 
   useEffect(() => {
     installCompanionInteractionCapture();
@@ -451,76 +477,129 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   }, [settings]);
 
   if (toasts.length === 0) return null;
+  const visibleToasts = isPhone ? toasts.slice(-1) : toasts;
+
 
   return (
     <div
+      data-companion-layer={isPhone ? "phone" : "desktop"}
       style={{
         position: "fixed",
-        top: 12,
-        right: 12,
         zIndex: 2200,
-        width: "min(88vw, 350px)",
+        ...(isPhone
+          ? {
+              left: 10,
+              right: 10,
+              bottom: "calc(76px + env(safe-area-inset-bottom, 0px))",
+              width: "auto",
+            }
+          : {
+              top: 12,
+              right: 12,
+              width: "min(88vw, 350px)",
+            }),
         display: "grid",
         gap: 10,
         pointerEvents: "none",
       }}
     >
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          style={{
-            ...toastCard(toast.priority),
-            pointerEvents: "auto",
-          }}
-        >
+      {visibleToasts.map((toast) => {
+        const expanded = !isPhone || expandedToastId === toast.id;
+        return (
           <div
+            key={toast.id}
+            data-companion-toast-mode={
+              isPhone ? (expanded ? "expanded" : "compact") : "desktop"
+            }
+            data-companion-toast-priority={toast.priority}
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              alignItems: "start",
+              ...toastCard(toast.priority),
+              pointerEvents: "auto",
+              ...(expanded
+                ? {}
+                : { minHeight: 60, maxHeight: 60, padding: "8px 8px 8px 12px", overflow: "hidden" }),
             }}
           >
-            <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: expanded ? 10 : 6,
+                alignItems: expanded ? "start" : "center",
+                minHeight: expanded ? undefined : 44,
+              }}
+            >
+            <div style={{ minWidth: 0, flex: "1 1 auto" }}>
               <div
                 style={{
-                  fontSize: 12,
+                  fontSize: expanded ? 12 : 11,
                   fontWeight: 900,
                   letterSpacing: 0.28,
                   textTransform: "uppercase",
                   color: toneText(toast.priority),
                 }}
               >
-                Companion
+                {expanded
+                  ? "Companion"
+                  : toast.priority === "urgent"
+                    ? "Urgent"
+                    : toast.priority === "important"
+                      ? "Needs attention"
+                      : "Reminder"}
               </div>
 
               <div
                 style={{
-                  marginTop: 6,
+                  marginTop: expanded ? 6 : 3,
                   color: "#0B1F33",
-                  fontSize: 15,
+                  fontSize: expanded ? 15 : 13,
                   fontWeight: 900,
-                  lineHeight: 1.35,
+                  lineHeight: expanded ? 1.35 : 1.2,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: expanded ? "normal" : "nowrap",
                 }}
               >
                 {toast.title}
               </div>
             </div>
 
+            {!expanded ? (
+              <SubtleButton
+                onClick={() => setExpandedToastId(toast.id)}
+                stableHeight={44}
+                minWidth={58}
+                debugId={`companion-toast.${toast.id}.view`}
+                style={{
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                View
+              </SubtleButton>
+            ) : null}
+
             <SubtleButton
               aria-label="Dismiss companion message"
               onClick={() => dismissToast(toast)}
-              stableHeight={52}
-              minWidth={32}
+              stableHeight={expanded ? 52 : 44}
+              minWidth={expanded ? 32 : 44}
               debugId={`companion-toast.${toast.id}.dismiss-icon`}
-              style={dismissButton()}
+              style={{
+                ...dismissButton(),
+                ...(expanded ? {} : { width: 44, height: 44, minWidth: 44 }),
+              }}
             >
               ×
             </SubtleButton>
           </div>
 
           <div
+            data-companion-toast-detail="true"
             style={{
+              display: expanded ? "block" : "none",
               marginTop: 8,
               color: "#5F7287",
               fontSize: 14,
@@ -531,9 +610,10 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
           </div>
 
           <div
+            data-companion-toast-actions="true"
             style={{
               marginTop: 12,
-              display: "flex",
+              display: expanded ? "flex" : "none",
               gap: 8,
               flexWrap: "wrap",
             }}
@@ -568,7 +648,8 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
             </SecondaryButton>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

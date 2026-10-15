@@ -334,7 +334,9 @@ def test_share_join_preview_exposes_open_graph_card(client, monkeypatch):
     assert "GSN invite pack. Tap to request access. Approval required." in res.text
     assert "https://api.gsn.example/share/join/share-invite/card.png?community_code=GMFN-C-SHARE&amp;qr_policy=market_access" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
-    assert "https://pilot.gsn.example/start/join/share-invite?invite=share-invite&amp;community_code=GMFN-C-SHARE&amp;community_name=Share+Clan&amp;marketplace_name=Share+Clan&amp;qr_policy=market_access" in res.text
+    assert "https://pilot.gsn.example/start/join/share-invite" in res.text
+    assert "start/join/share-invite?invite=" not in res.text
+    assert "community_name=Share+Clan" not in res.text
 
 
 def test_share_join_card_png_uses_invite_branding(client, monkeypatch):
