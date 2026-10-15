@@ -394,8 +394,8 @@ export default function ActivateMembershipPage() {
         );
       }
 
-      setMsg("Activation successful. Entering workspace...");
-      navigate(routeTarget("dashboard", clanId, "activate-membership.route.dashboard"), {
+      setMsg("You’re in. Opening your community...");
+      navigate(routeTarget("communityHome", clanId, "activate-membership.route.community"), {
         replace: true,
       });
     } catch (e: any) {

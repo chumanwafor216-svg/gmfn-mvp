@@ -417,26 +417,42 @@ Rules:
 ## JoinRequestMembershipPage
 
 Purpose:
-Request membership in an existing community.
+Accept an invitation to an existing community using that community's saved
+admission rule.
 
 Must show:
 - invite code or community code input
 - requester details
 - reason / short note
 - recorded community setup/governance note when the invite preview provides one
-- rules/admin-review acknowledgement before submit when the governance profile requires it
-- submit request button
-- privacy and approval note
+- rules/admin-review acknowledgement before submit only when the selected
+  reviewed mode requires it
+- a mode-aware primary action: Accept invite for instant admission or
+  Request access for reviewed admission
+- privacy, membership, and verification boundary
 
 Phone-first rule:
-- Show community, inviter, expiry where known, one short approval boundary, and the next action.
-- A fresh invite must show `Sign in` and `Request access` before the requester fields. Tapping `Request access` must visibly open and move to the `Full name`, `Phone number`, and `Country` fields; it must not appear to do nothing while the form sits off-screen.
+- Show community, inviter, expiry where known, the saved joining rule, one
+  short membership/verification boundary, and the next action.
+- A fresh invite must show Sign in and the mode-aware action before the
+  requester fields. Tapping it must visibly open and move to the Full name,
+  Phone number, and Country fields; it must not appear to do nothing while the
+  form sits off-screen.
 - Resume the form automatically only when the phone holds real requester input, not merely because the invite link was opened before.
 - Keep the full invite note collapsed. Hide promotional invite artwork, repeated evidence chips, and the official footer from the first phone surface.
 
 After submission:
-- show JoinRequestSubmittedPage
-- tell user they must sign in as existing member after approval or completion
+- instant_invite: create active membership immediately. Existing identities
+  enter Community Home; new identities receive a GSN ID, set a password on
+  Activate Membership, are signed in, and enter Community Home.
+- admin_approval: keep the request pending until an admin accepts or rejects it.
+- community_vote: keep the request pending until the required member vote;
+  admin override is available only when the saved community setting allows it.
+- Membership confirms belonging only. It must not be presented as identity
+  verification, financial approval, endorsement, or a trust decision.
+- Each newly generated invite snapshots the joining rule. Changing the
+  community rule retires active links so recipients cannot receive a silently
+  changed contract.
 
 ## CommunityHomePage
 

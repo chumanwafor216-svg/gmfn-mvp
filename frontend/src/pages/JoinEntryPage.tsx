@@ -1666,6 +1666,12 @@ export default function JoinEntryPage() {
     return raw && typeof raw === "object" ? raw : null;
   }, [invitePreview]);
 
+  const inviteAdmissionMode = cleanText(
+    invitePreview?.admission_mode || "community_vote"
+  ).toLowerCase();
+  const isInstantJoin = inviteAdmissionMode === "instant_invite";
+  const joinActionLabel = isInstantJoin ? "Accept invite" : "Request access";
+
   const inviteGovernanceTitle = useMemo(() => {
     if (!inviteGovernanceProfile) return "";
     const preset = cleanText(inviteGovernanceProfile.preset_label);
@@ -1680,7 +1686,7 @@ export default function JoinEntryPage() {
     [inviteGovernanceProfile]
   );
 
-  const joinRequiresRulesAcceptance = Boolean(
+  const joinRequiresRulesAcceptance = !isInstantJoin && Boolean(
     inviteGovernanceProfile?.requirements?.rules_acceptance_required
   );
   const [busy, setBusy] = useState(false);
@@ -2849,8 +2855,12 @@ export default function JoinEntryPage() {
                   }}
                 >
                   {isCompact
-                    ? "This starts a request. The community still approves access."
-                    : "A QR code or invite link starts a request. It does not confirm membership, and it does not verify identity."}
+                    ? isInstantJoin
+                      ? "Accepting this invite makes you a member."
+                      : "This starts a request. The community still decides."
+                    : isInstantJoin
+                      ? "Accepting this invitation confirms membership. It does not verify identity, money, conduct, or trust."
+                      : "This invitation starts a request. The saved community approval rule still applies, and identity verification remains separate."}
                 </div>
                 {!isCompact ? (
                   <>
@@ -2863,19 +2873,23 @@ export default function JoinEntryPage() {
                       }}
                     >
                       <span style={badge(true)}>
-                        {joinEntryIconText("navigation", "Request access", 18)}
+                        {joinEntryIconText("navigation", joinActionLabel, 18)}
                       </span>
                       <span style={badge(false)}>
-                        {joinEntryIconText("check", "Approval required", 18)}
+                        {joinEntryIconText(
+                          "check",
+                          isInstantJoin ? "No approval wait" : "Approval required",
+                          18
+                        )}
                       </span>
                       <span style={badge(false)}>
                         {joinEntryIconText("id", "Verification later", 18)}
                       </span>
                     </div>
                     <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                      The community reviews who enters. Stronger evidence can be
-                      requested later before verified status, sensitive benefits,
-                      marketplace trust, or official community decisions.
+                      {isInstantJoin
+                        ? "You enter after account setup. Stronger evidence can still be requested later for verified status, money, sensitive benefits, or official decisions."
+                        : "The community reviews who enters. Stronger evidence can be requested later before verified status, sensitive benefits, marketplace trust, or official decisions."}
                     </div>
                   </>
                 ) : null}
@@ -3078,7 +3092,11 @@ export default function JoinEntryPage() {
             }}
           >
             <div style={labelText()}>
-              {joinEntryIconText("join-person-plus", "Join request form", 22)}
+              {joinEntryIconText(
+                "join-person-plus",
+                isInstantJoin ? "Accept invitation" : "Join request form",
+                22
+              )}
             </div>
 
             <div
@@ -3089,11 +3107,13 @@ export default function JoinEntryPage() {
                 color: "#0B1F33",
               }}
             >
-              {joinEntryIconText("pen", "Request to join", 24)}
+              {joinEntryIconText("pen", joinActionLabel, 24)}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Choose one next step. The community can still review the request before membership opens.
+              {isInstantJoin
+                ? "Add your details once. GSN will create your membership and take you to password setup."
+                : "Add your details once. The community’s saved approval rule applies next."}
             </div>
 
             <details style={{ marginTop: 14 }}>
@@ -3294,7 +3314,9 @@ export default function JoinEntryPage() {
                       fontWeight: 1000,
                     }}
                   >
-                    Already on GSN? Sign in. New here? Request access.
+                    {isInstantJoin
+                      ? "Already on GSN? Sign in. New here? Accept the invite."
+                      : "Already on GSN? Sign in. New here? Request access."}
                   </div>
                   {inviteReady ? (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -3333,7 +3355,7 @@ export default function JoinEntryPage() {
                   >
                     {joinEntryIconText(
                       "join-person-plus",
-                      inviteChecking ? "Checking" : "Request access"
+                      inviteChecking ? "Checking" : joinActionLabel
                     )}
                   </SecondaryButton>
                 </div>
@@ -3578,13 +3600,19 @@ export default function JoinEntryPage() {
             {success ? (
               <div style={{ marginTop: 18, ...noticeStyle("success") }}>
                 <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-                  Join request submitted successfully.
+                  {isInstantJoin
+                    ? "Invitation accepted."
+                    : "Join request submitted successfully."}
                 </div>
 
                 <div>
                   {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
                   "already_member"
                     ? "You already belong to this community. Your current GSN identity stays the same."
+                    : isInstantJoin
+                    ? success?.existing_identity || success?.identity_reused
+                      ? "You are now a member using your existing GSN identity."
+                      : "You are now a member. Set your password to finish account setup and enter the community."
                     : success?.existing_identity || success?.identity_reused
                     ? "Your request has been sent for community review using your existing GSN identity. Admission is not automatic, and no new GSN ID will be created."
                     : "Your request has been sent for community review. Admission is not automatic. After approval, activation will set your password, phone check, and private recovery before community growth."}

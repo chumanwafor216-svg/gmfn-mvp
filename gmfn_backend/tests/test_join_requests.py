@@ -4396,3 +4396,159 @@ def test_member_can_refresh_marketplace_join_link_without_usage_quota(
         assert policy_res.json()["invite_max_uses"] is None
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_instant_invite_acceptance_creates_membership_and_closes_single_use_link(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    with SessionLocal() as db:
+        clan = db.get(Clan, 1)
+        clan.admission_mode = "instant_invite"
+        clan.voting_admin_override = False
+        db.commit()
+
+    invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    assert invite_res.status_code == 200, invite_res.text
+    invite = invite_res.json()
+    assert invite["admission_mode"] == "instant_invite"
+    assert invite["max_uses"] == 1
+
+    join_res = client.post(
+        "/clans/join-requests",
+        json=_join_payload(invite["invite_code"]),
+    )
+    assert join_res.status_code == 201, join_res.text
+    joined = join_res.json()
+    assert joined["result_status"] == "instant_invite_accepted"
+    assert joined["status"] == "approved"
+    assert joined["admission_mode"] == "instant_invite"
+    assert joined["activation_required"] is True
+    assert joined["activation_path"]
+    assert "membership only" in joined["membership_truth_boundary"].lower()
+
+    with SessionLocal() as db:
+        request_row = db.get(ClanJoinRequest, int(joined["request_id"]))
+        link_row = db.query(ClanInvite).filter_by(code=invite["invite_code"]).one()
+        membership = (
+            db.query(ClanMembership)
+            .filter_by(clan_id=1, user_id=int(joined["user_id"]))
+            .one()
+        )
+        assert request_row.status == "approved"
+        assert membership.left_at is None
+        assert link_row.uses == 1
+        assert link_row.is_active is False
+
+    second_payload = _join_payload(invite["invite_code"])
+    second_payload["phone_e164"] = "+2348077000099"
+    reuse_res = client.post("/clans/join-requests", json=second_payload)
+    assert reuse_res.status_code == 400
+    assert "no longer active" in reuse_res.text.lower()
+
+    fresh_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    assert fresh_res.status_code == 200, fresh_res.text
+    preview_old_res = client.get(
+        f"/clans/join-invite/preview?code={invite['invite_code']}"
+    )
+    assert preview_old_res.status_code == 200, preview_old_res.text
+    preview_old = preview_old_res.json()
+    assert preview_old["valid"] is False
+    assert preview_old["status"] == "inactive"
+    assert preview_old["invite_code"] == invite["invite_code"]
+
+
+def test_admin_can_change_admission_policy_and_old_links_are_retired(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                clan_id=1,
+                created_by_user_id=1,
+                code="old-reviewed-link",
+                is_active=True,
+                max_uses=0,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    change_res = client.patch(
+        "/clans/1/admission-policy",
+        json={
+            "admission_mode": "admin_approval",
+            "voting_admin_override": True,
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert change_res.status_code == 200, change_res.text
+    changed = change_res.json()
+    assert changed["admission_mode"] == "admin_approval"
+    assert changed["voting_admin_override"] is False
+    assert changed["retired_invites"] == 1
+
+    policy_res = client.get(
+        "/clans/1/admission-policy",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert policy_res.status_code == 200, policy_res.text
+    assert policy_res.json()["admission_mode"] == "admin_approval"
+
+    invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    assert invite_res.status_code == 200, invite_res.text
+    invite = invite_res.json()
+    assert invite["admission_mode"] == "admin_approval"
+    assert invite["max_uses"] is None
+
+    join_res = client.post(
+        "/clans/join-requests",
+        json=_join_payload(invite["invite_code"]),
+    )
+    assert join_res.status_code == 201, join_res.text
+    request_id = int(join_res.json()["request"]["id"])
+    assert join_res.json()["result_status"] == "pending_request_created"
+
+    approve_res = client.post(
+        f"/clans/1/join-requests/{request_id}/admin-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert approve_res.status_code == 200, approve_res.text
+    assert approve_res.json()["approved_now"] is True
+    assert approve_res.json()["admin_approval"] is True
+
+
+def test_community_vote_admin_override_must_be_explicit(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    change_res = client.patch(
+        "/clans/1/admission-policy",
+        json={
+            "admission_mode": "community_vote",
+            "voting_admin_override": False,
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert change_res.status_code == 200, change_res.text
+
+    invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    invite_code = invite_res.json()["invite_code"]
+    join_res = client.post("/clans/join-requests", json=_join_payload(invite_code))
+    request_id = int(join_res.json()["request"]["id"])
+
+    blocked_res = client.post(
+        f"/clans/1/join-requests/{request_id}/admin-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert blocked_res.status_code == 409
+    assert (
+        blocked_res.json()["detail"]["code"]
+        == "community_vote_admin_override_disabled"
+    )

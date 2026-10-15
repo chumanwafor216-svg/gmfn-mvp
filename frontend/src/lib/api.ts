@@ -8369,6 +8369,35 @@ export async function getCommunityJoinRequests(clanId: number): Promise<any> {
   );
 }
 
+export type CommunityAdmissionMode =
+  | "instant_invite"
+  | "admin_approval"
+  | "community_vote";
+
+export async function getCommunityAdmissionPolicy(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/admission-policy`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function updateCommunityAdmissionPolicy(
+  clanId: number,
+  payload: {
+    admission_mode: CommunityAdmissionMode;
+    voting_admin_override?: boolean;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/admission-policy`,
+    "PATCH",
+    payload,
+    { header_clan_id: clanId }
+  );
+}
+
 export async function voteOnJoinRequest(
   id: number,
   vote: "approve" | "reject" | "neutral",
@@ -8405,6 +8434,23 @@ export async function pilotApproveJoinRequest(id: number): Promise<any> {
     `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
       String(id)
     )}/pilot-approve`,
+    "POST",
+    undefined,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function adminApproveJoinRequest(id: number): Promise<any> {
+  const clanId = getSelectedClanId();
+
+  if (!clanId) {
+    throw new Error("No selected community");
+  }
+
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
+      String(id)
+    )}/admin-approve`,
     "POST",
     undefined,
     { header_clan_id: clanId }

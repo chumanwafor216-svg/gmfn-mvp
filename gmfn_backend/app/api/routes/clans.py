@@ -74,6 +74,15 @@ COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES = "member_invites"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
+ADMISSION_MODE_INSTANT = "instant_invite"
+ADMISSION_MODE_ADMIN = "admin_approval"
+ADMISSION_MODE_VOTE = "community_vote"
+COMMUNITY_ADMISSION_MODES = {
+    ADMISSION_MODE_INSTANT,
+    ADMISSION_MODE_ADMIN,
+    ADMISSION_MODE_VOTE,
+}
+LEGACY_ADMISSION_MODE = ADMISSION_MODE_VOTE
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
@@ -177,6 +186,8 @@ def dev_bootstrap_clan(
         invite_expires_at=now + timedelta(days=7),
         invite_max_uses=None,
         invite_uses=0,
+        admission_mode=ADMISSION_MODE_INSTANT,
+        voting_admin_override=False,
     )
     db.add(clan)
     db.commit()
@@ -224,6 +235,9 @@ class ClanOut(BaseModel):
     official_contact_ready: bool = False
     notice_posting_policy: str = "members"
     governance_profile: Optional[dict[str, Any]] = None
+    admission_mode: str = LEGACY_ADMISSION_MODE
+    admission_mode_label: str = "Community vote"
+    voting_admin_override: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -284,6 +298,19 @@ class InviteSettingsUpdateIn(BaseModel):
 class ClanInviteCreateBody(BaseModel):
     relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
     qr_policy_key: Optional[str] = Field(default=None, max_length=32)
+
+
+class CommunityAdmissionPolicyIn(BaseModel):
+    admission_mode: str = Field(..., max_length=32)
+    voting_admin_override: bool = False
+
+    @field_validator("admission_mode", mode="before")
+    @classmethod
+    def _validate_admission_mode(cls, value: Any) -> str:
+        mode = _safe_str(value).lower()
+        if mode not in COMMUNITY_ADMISSION_MODES:
+            raise ValueError("Choose instant invite, admin approval, or community vote.")
+        return mode
 
 
 def _reject_non_text_body_value(value: Any, field_name: str) -> Any:
@@ -603,6 +630,7 @@ def _invite_preview_payload(
     invite_id = None
     invite_code = None
     qr_policy_key = None
+    admission_policy: dict[str, Any] = {}
 
     governance_profile = None
     invited_by_display = None
@@ -615,6 +643,11 @@ def _invite_preview_payload(
                 clan_id=int(clan.id),
             )
             visual_payload = _join_invite_visual_payload(db, clan)
+            admission_policy = _community_admission_policy(
+                db,
+                clan=clan,
+                invite=invite_row,
+            )
             if invited_by_user_id is not None:
                 inviter = db.get(User, int(invited_by_user_id))
                 invited_by_display = _public_inviter_display(inviter) or None
@@ -628,7 +661,12 @@ def _invite_preview_payload(
             expires_at=getattr(invite_row, "expires_at", None),
         )
         uses = int(getattr(invite_row, "uses", 0) or 0)
-        max_uses = None
+        raw_max_uses = getattr(invite_row, "max_uses", None)
+        max_uses = (
+            int(raw_max_uses)
+            if raw_max_uses is not None and int(raw_max_uses) > 0
+            else None
+        )
     elif clan is not None:
         invite_code = getattr(clan, "invite_code", None)
         expires_at = _effective_invite_expires_at(
@@ -656,6 +694,7 @@ def _invite_preview_payload(
         "expires_at": expires_at,
         "uses": uses,
         "max_uses": max_uses,
+        **admission_policy,
         **visual_payload,
     }
 
@@ -717,6 +756,78 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _normalized_admission_mode(value: Any) -> str:
+    mode = _safe_str(value).lower()
+    return mode if mode in COMMUNITY_ADMISSION_MODES else LEGACY_ADMISSION_MODE
+
+
+def _admission_mode_label(mode: str) -> str:
+    return {
+        ADMISSION_MODE_INSTANT: "Instant join",
+        ADMISSION_MODE_ADMIN: "Admin approval",
+        ADMISSION_MODE_VOTE: "Community vote",
+    }.get(_normalized_admission_mode(mode), "Community vote")
+
+
+def _community_admission_policy(
+    db: Session,
+    *,
+    clan: Clan,
+    invite: Optional[ClanInvite] = None,
+) -> dict[str, Any]:
+    invite_mode = _safe_str(getattr(invite, "admission_mode", None)).lower()
+    if invite is not None and invite_mode in COMMUNITY_ADMISSION_MODES:
+        mode = invite_mode
+        allow_override = bool(getattr(invite, "voting_admin_override", False))
+        source = "invite_snapshot"
+    else:
+        saved_mode = _safe_str(getattr(clan, "admission_mode", None)).lower()
+        if saved_mode in COMMUNITY_ADMISSION_MODES:
+            mode = saved_mode
+            allow_override = bool(getattr(clan, "voting_admin_override", False))
+            source = "community_setting"
+        else:
+            mode = LEGACY_ADMISSION_MODE
+            source = "legacy_reviewed_default"
+            allow_override = False
+
+    return {
+        "admission_mode": mode,
+        "admission_mode_label": _admission_mode_label(mode),
+        "voting_admin_override": bool(
+            allow_override if mode == ADMISSION_MODE_VOTE else False
+        ),
+        "source": source,
+        "instant_join": mode == ADMISSION_MODE_INSTANT,
+        "requires_admin_approval": mode == ADMISSION_MODE_ADMIN,
+        "requires_community_vote": mode == ADMISSION_MODE_VOTE,
+        "membership_truth_boundary": (
+            "Admission confirms community membership only. It does not create "
+            "identity-document verification, financial approval, endorsement, or trust."
+        ),
+    }
+
+
+def _join_request_admission_policy(
+    db: Session,
+    *,
+    join_request: ClanJoinRequest,
+) -> dict[str, Any]:
+    clan = db.get(Clan, int(join_request.clan_id))
+    if clan is None:
+        return {
+            "admission_mode": LEGACY_ADMISSION_MODE,
+            "admission_mode_label": _admission_mode_label(LEGACY_ADMISSION_MODE),
+            "voting_admin_override": False,
+            "source": "missing_community_fallback",
+            "instant_join": False,
+            "requires_admin_approval": False,
+            "requires_community_vote": True,
+        }
+    invite = db.get(ClanInvite, int(join_request.invite_id)) if join_request.invite_id else None
+    return _community_admission_policy(db, clan=clan, invite=invite)
 
 
 def _json_load(value: Optional[str]) -> dict[str, Any]:
@@ -926,6 +1037,7 @@ def _public_inviter_display(user: Optional[User]) -> str:
 def _member_row(db: Session, m: ClanMembership) -> dict[str, Any]:
     u = db.get(User, m.user_id)
     clan = db.get(Clan, m.clan_id)
+    account_setup_complete = bool(u is not None and not is_user_activation_pending(u))
     return {
         "id": int(m.id),
         "clan_id": int(m.clan_id),
@@ -933,8 +1045,14 @@ def _member_row(db: Session, m: ClanMembership) -> dict[str, Any]:
         "clan_name": (clan.name if clan else None),
         "user_id": int(m.user_id),
         "email": (u.email if u else None),
+        "display_name": (getattr(u, "display_name", None) if u else None),
         "gmfn_id": (getattr(u, "gmfn_id", None) if u else None),
         "role": m.role,
+        "membership_status": "active" if m.left_at is None else "inactive",
+        "account_setup_complete": account_setup_complete,
+        "account_setup_status": (
+            "complete" if account_setup_complete else "password_setup_needed"
+        ),
         "personal_pool_balance": str(m.personal_pool_balance or Decimal("0")),
         "created_at": m.created_at,
     }
@@ -1665,7 +1783,8 @@ def _is_clan_invite_expired(invite: ClanInvite) -> bool:
 
 
 def _is_clan_invite_used_up(invite: ClanInvite) -> bool:
-    return False
+    max_uses = int(getattr(invite, "max_uses", 0) or 0)
+    return max_uses > 0 and int(getattr(invite, "uses", 0) or 0) >= max_uses
 
 
 def _latest_usable_clan_invite(
@@ -1673,6 +1792,8 @@ def _latest_usable_clan_invite(
     *,
     clan_id: int,
     desired_qr_policy_key: Optional[str] = None,
+    desired_admission_mode: Optional[str] = None,
+    desired_voting_admin_override: bool = False,
 ) -> Optional[ClanInvite]:
     desired = _safe_str(desired_qr_policy_key)
     fallback: Optional[ClanInvite] = None
@@ -1695,6 +1816,14 @@ def _latest_usable_clan_invite(
         if desired and _safe_str(getattr(invite, "qr_policy_key", None)) != desired:
             if fallback is None:
                 fallback = invite
+            continue
+        if desired_admission_mode and not _invite_matches_share_policy(
+            invite,
+            desired_max_uses=None,
+            strict=False,
+            desired_admission_mode=desired_admission_mode,
+            desired_voting_admin_override=desired_voting_admin_override,
+        ):
             continue
         return invite
 
@@ -1770,11 +1899,40 @@ def _invite_matches_share_policy(
     desired_max_uses: Optional[int],
     strict: bool,
     desired_qr_policy_key: Optional[str] = None,
+    desired_admission_mode: Optional[str] = None,
+    desired_voting_admin_override: bool = False,
 ) -> bool:
     if (
         desired_qr_policy_key
         and _safe_str(getattr(invite, "qr_policy_key", None)) != desired_qr_policy_key
     ):
+        return False
+    if desired_admission_mode:
+        invite_mode = _safe_str(getattr(invite, "admission_mode", None)).lower()
+        legacy_vote_snapshot = (
+            not invite_mode
+            and _normalized_admission_mode(desired_admission_mode)
+            == LEGACY_ADMISSION_MODE
+        )
+        if (
+            not legacy_vote_snapshot
+            and invite_mode != _normalized_admission_mode(desired_admission_mode)
+        ):
+            return False
+        expected_override = bool(
+            desired_voting_admin_override
+            and _normalized_admission_mode(desired_admission_mode) == ADMISSION_MODE_VOTE
+        )
+        if bool(getattr(invite, "voting_admin_override", False)) != expected_override:
+            return False
+    expected_max_uses = int(desired_max_uses) if desired_max_uses is not None else None
+    saved_max_uses = getattr(invite, "max_uses", None)
+    saved_max_uses = (
+        int(saved_max_uses)
+        if saved_max_uses is not None and int(saved_max_uses) > 0
+        else None
+    )
+    if strict and saved_max_uses != expected_max_uses:
         return False
     return True
 
@@ -1974,6 +2132,10 @@ def _current_join_status(
     *,
     join_request: ClanJoinRequest,
 ) -> dict[str, Any]:
+    admission_policy = _join_request_admission_policy(
+        db,
+        join_request=join_request,
+    )
     active_membership_count = _active_clan_member_count(
         db,
         clan_id=int(join_request.clan_id),
@@ -1999,15 +2161,25 @@ def _current_join_status(
     )
     total_votes = len(votes)
 
+    if admission_policy["requires_admin_approval"]:
+        reviewer_rows = [
+            (membership, user)
+            for membership, user in reviewer_rows
+            if _safe_str(getattr(membership, "role", None)).lower() == "admin"
+        ]
     active_reviewers = len(reviewer_rows)
     qr_policy_key = _join_request_qr_policy_key(db, join_request)
-    base_required = max(
-        1,
-        int(
-            (Decimal(active_reviewers) * JOIN_APPROVAL_RATIO).to_integral_value(
-                rounding="ROUND_CEILING"
-            )
-        ),
+    base_required = (
+        1
+        if admission_policy["requires_admin_approval"]
+        else max(
+            1,
+            int(
+                (Decimal(active_reviewers) * JOIN_APPROVAL_RATIO).to_integral_value(
+                    rounding="ROUND_CEILING"
+                )
+            ),
+        )
     )
     required_floor = _qr_policy_required_approval_floor(
         qr_policy_key,
@@ -2040,6 +2212,7 @@ def _current_join_status(
             }
             for membership, user in reviewer_rows
         ],
+        **admission_policy,
     }
 
 
@@ -2303,6 +2476,9 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "qr_policy_review_guardrail": stats["qr_policy_review_guardrail"],
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
+        "admission_mode": stats["admission_mode"],
+        "admission_mode_label": stats["admission_mode_label"],
+        "voting_admin_override": stats["voting_admin_override"],
     }
 
 
@@ -2580,6 +2756,10 @@ def _join_request_status_payload(
         "community_name": (getattr(clan, "name", None) if clan else None),
         "marketplace_name": (getattr(clan, "marketplace_name", None) if clan else None),
         "governance_profile": governance_profile,
+        "admission_mode": stats["admission_mode"],
+        "admission_mode_label": stats["admission_mode_label"],
+        "voting_admin_override": stats["voting_admin_override"],
+        "membership_truth_boundary": stats.get("membership_truth_boundary"),
         "invite_id": int(req.invite_id) if req.invite_id else None,
         "invite_code": getattr(invite, "code", None) if invite else None,
         "qr_policy_key": qr_policy_key or None,
@@ -3380,6 +3560,15 @@ def _clan_out(
         if db is not None
         else 0
     )
+    admission_policy = (
+        _community_admission_policy(db, clan=clan)
+        if db is not None
+        else {
+            "admission_mode": LEGACY_ADMISSION_MODE,
+            "admission_mode_label": _admission_mode_label(LEGACY_ADMISSION_MODE),
+            "voting_admin_override": False,
+        }
+    )
     return {
         "id": int(clan.id),
         "name": clan.name,
@@ -3396,6 +3585,9 @@ def _clan_out(
         "membership_role": membership_role,
         "notice_posting_policy": getattr(clan, "notice_posting_policy", None) or "members",
         "governance_profile": governance_profile,
+        "admission_mode": admission_policy["admission_mode"],
+        "admission_mode_label": admission_policy["admission_mode_label"],
+        "voting_admin_override": admission_policy["voting_admin_override"],
         **contact,
     }
 
@@ -3433,6 +3625,8 @@ def create_clan(
         invite_expires_at=now + timedelta(days=7),
         invite_max_uses=None,
         invite_uses=0,
+        admission_mode=ADMISSION_MODE_INSTANT,
+        voting_admin_override=False,
     )
     db.add(clan)
     db.commit()
@@ -3451,6 +3645,89 @@ def list_my_clans(
     clans = list_visible_user_clans(db=db, user=current_user)
     items = [_clan_out(clan, db, int(current_user.id)) for clan in clans]
     return {"items": items, "total": len(items)}
+
+
+@router.get("/{clan_id}/admission-policy", response_model=dict[str, Any])
+def get_community_admission_policy(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, membership, _current_user = clan_ctx
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    stored_clan = db.get(Clan, int(clan_id)) or clan
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(stored_clan.id, clan=stored_clan),
+        "community_name": stored_clan.name,
+        "viewer_role": _safe_str(getattr(membership, "role", None), "user"),
+        "can_manage": _safe_str(getattr(membership, "role", None)).lower() == "admin",
+        **_community_admission_policy(db, clan=stored_clan),
+    }
+
+
+@router.patch("/{clan_id}/admission-policy", response_model=dict[str, Any])
+def update_community_admission_policy(
+    clan_id: int,
+    payload: CommunityAdmissionPolicyIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    clan = db.get(Clan, int(clan_id)) or clan
+
+    mode = _normalized_admission_mode(payload.admission_mode)
+    allow_override = bool(
+        payload.voting_admin_override and mode == ADMISSION_MODE_VOTE
+    )
+    previous = _community_admission_policy(db, clan=clan)
+    changed = (
+        previous["admission_mode"] != mode
+        or bool(previous["voting_admin_override"]) != allow_override
+        or _safe_str(getattr(clan, "admission_mode", None)).lower() not in COMMUNITY_ADMISSION_MODES
+    )
+
+    clan.admission_mode = mode
+    clan.voting_admin_override = allow_override
+    db.add(clan)
+    retired_invites = (
+        _retire_active_clan_invites(db, clan_id=int(clan.id))
+        if changed
+        else 0
+    )
+    if not changed:
+        db.commit()
+    db.refresh(clan)
+
+    policy = _community_admission_policy(db, clan=clan)
+    log_trust_event(
+        db,
+        event_type="community.membership_admission_policy_changed",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "community_membership_admission_policy_changed",
+            "previous_admission_mode": previous["admission_mode"],
+            "admission_mode": policy["admission_mode"],
+            "voting_admin_override": policy["voting_admin_override"],
+            "retired_invites": int(retired_invites),
+        },
+    )
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "community_name": clan.name,
+        "changed": changed,
+        "retired_invites": int(retired_invites),
+        "can_manage": True,
+        **policy,
+    }
 
 
 def _followable_clan_or_404(db: Session, clan_id: int) -> Clan:
@@ -3814,6 +4091,13 @@ def create_invite(
     _require_domain_member_invites_enabled(db, clan=clan)
 
     days_n = _normalize_invite_days(days)
+    policy_clan = db.get(Clan, int(clan_id)) or clan
+    admission_policy = _community_admission_policy(db, clan=policy_clan)
+    invite_max_uses = (
+        1
+        if admission_policy["instant_join"]
+        else None
+    )
 
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=days_n)
@@ -3823,7 +4107,9 @@ def create_invite(
         clan_id=int(clan_id),
         created_by_user=current_user,
         expires_at=expires_at,
-        max_uses=None,
+        max_uses=invite_max_uses,
+        admission_mode=admission_policy["admission_mode"],
+        voting_admin_override=admission_policy["voting_admin_override"],
         relationship_evidence=(
             payload.relationship_evidence.model_dump(exclude_none=True)
             if payload and payload.relationship_evidence
@@ -3834,7 +4120,7 @@ def create_invite(
 
     share_link = _frontend_community_join_link(
         request,
-        clan=clan,
+        clan=policy_clan,
         invite_code=inv.code,
         inviter=current_user,
         qr_policy_key=getattr(inv, "qr_policy_key", None),
@@ -3843,8 +4129,8 @@ def create_invite(
     return {
         "clan_id": int(clan_id),
         "community_code": _community_code(clan_id),
-        "community_name": clan.name,
-        "marketplace_name": getattr(clan, "marketplace_name", None),
+        "community_name": policy_clan.name,
+        "marketplace_name": getattr(policy_clan, "marketplace_name", None),
         "invited_by_user_id": int(current_user.id),
         "invited_by_email": getattr(current_user, "email", None),
         "invited_by_display": _member_display(current_user),
@@ -3855,7 +4141,12 @@ def create_invite(
         "expires_at": inv.expires_at,
         "is_active": bool(inv.is_active),
         "uses": int(inv.uses or 0),
-        "max_uses": None,
+        "max_uses": (
+            int(inv.max_uses)
+            if inv.max_uses is not None and int(inv.max_uses) > 0
+            else None
+        ),
+        **admission_policy,
         "retired_live_invites": 0,
         "share_link": share_link,
         "invite_link": share_link,
@@ -3864,7 +4155,7 @@ def create_invite(
         "link": share_link,
         "api_link": api_join_link(request, inv.code),
         "invite_text": _build_invite_text(
-            clan=clan,
+            clan=policy_clan,
             invite_link=share_link,
             inviter=current_user,
             qr_policy_key=getattr(inv, "qr_policy_key", None),
@@ -3888,11 +4179,22 @@ def get_invite_link(
     _require_domain_member_invites_enabled(db, clan=clan)
 
     can_refresh_invite = True
-    max_uses_norm = None
-    strict_max_uses = False
+    policy_clan = db.get(Clan, int(clan_id)) or clan
+    admission_policy = _community_admission_policy(db, clan=policy_clan)
+    max_uses_norm = (
+        1
+        if admission_policy["instant_join"]
+        else None
+    )
+    strict_max_uses = bool(admission_policy["instant_join"])
     desired_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
 
-    latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
+    latest_invite = _latest_usable_clan_invite(
+        db,
+        clan_id=int(clan.id),
+        desired_admission_mode=admission_policy["admission_mode"],
+        desired_voting_admin_override=admission_policy["voting_admin_override"],
+    )
     retired_qr_policy_invites = 0
 
     if can_refresh_invite and latest_invite is not None and not _invite_matches_share_policy(
@@ -3900,6 +4202,8 @@ def get_invite_link(
         desired_max_uses=max_uses_norm,
         strict=strict_max_uses,
         desired_qr_policy_key=desired_qr_policy_key,
+        desired_admission_mode=admission_policy["admission_mode"],
+        desired_voting_admin_override=admission_policy["voting_admin_override"],
     ):
         retired_qr_policy_invites = _retire_active_clan_qr_policy_invites(
             db,
@@ -3916,8 +4220,10 @@ def get_invite_link(
             clan_id=int(clan.id),
             created_by_user=current_user,
             expires_at=expires_at,
-            max_uses=None,
+            max_uses=max_uses_norm,
             qr_policy_key=desired_qr_policy_key,
+            admission_mode=admission_policy["admission_mode"],
+            voting_admin_override=admission_policy["voting_admin_override"],
         )
 
     if latest_invite is not None:
@@ -3947,16 +4253,25 @@ def get_invite_link(
             "qr_policy_key": getattr(latest_invite, "qr_policy_key", None),
             "invite_created_at": latest_invite.created_at,
             "invite_expires_at": latest_invite.expires_at,
-            "invite_max_uses": None,
+            "invite_max_uses": (
+                int(latest_invite.max_uses)
+                if latest_invite.max_uses is not None
+                and int(latest_invite.max_uses) > 0
+                else None
+            ),
             "invite_uses": int(getattr(latest_invite, "uses", 0) or 0),
             "invite_status": "ready",
             "invite_source": "clan_invite",
             "can_refresh_invite": bool(can_refresh_invite),
             "requires_admin_refresh": False,
             "retired_qr_policy_invites": int(retired_qr_policy_invites),
+            **admission_policy,
             "message": (
-                "Official join link ready. Any active member may share it, and "
-                "every join request still goes through community review."
+                "Official join link ready. The recipient joins immediately after "
+                "accepting and completing account setup."
+                if admission_policy["instant_join"]
+                else "Official join link ready. Any active member may share it. "
+                "The recipient still goes through community review after submitting it."
             ),
             "invite_link": share_link,
             "invite_url": share_link,
@@ -4010,8 +4325,23 @@ def preview_join_invite(
         disabled, domain = _domain_member_invites_disabled(db, clan=clan)
         if disabled:
             return _disabled_domain_invite_preview(clan=clan, domain=domain)
+        invite_admission_policy = _community_admission_policy(
+            db,
+            clan=clan,
+            invite=invite_row,
+        )
+        allow_recovery_to_newer_link = not invite_admission_policy["instant_join"]
 
         if not bool(invite_row.is_active) or invite_row.revoked_at is not None:
+            if not allow_recovery_to_newer_link:
+                return _invite_preview_payload(
+                    valid=False,
+                    status="inactive",
+                    message="This invitation is no longer active. Ask for a fresh GSN invite link.",
+                    clan=clan,
+                    invite_row=invite_row,
+                    invited_by_user_id=int(invite_row.created_by_user_id),
+                )
             recovered = _ready_join_preview_for_clan(
                 db,
                 clan=clan,
@@ -4030,6 +4360,15 @@ def preview_join_invite(
             )
 
         if _is_clan_invite_expired(invite_row):
+            if not allow_recovery_to_newer_link:
+                return _invite_preview_payload(
+                    valid=False,
+                    status="expired",
+                    message="This invitation has expired. Ask for a fresh GSN invite link.",
+                    clan=clan,
+                    invite_row=invite_row,
+                    invited_by_user_id=int(invite_row.created_by_user_id),
+                )
             recovered = _ready_join_preview_for_clan(
                 db,
                 clan=clan,
@@ -4050,7 +4389,11 @@ def preview_join_invite(
         return _invite_preview_payload(
             valid=True,
             status="ready",
-            message="Invite is ready. You can send your join request for community review.",
+            message=(
+                "Invite is ready. Accept it to become a member."
+                if invite_admission_policy["instant_join"]
+                else "Invite is ready. You can send your join request for community review."
+            ),
             clan=clan,
             invite_row=invite_row,
             invited_by_user_id=int(invite_row.created_by_user_id),
@@ -4313,7 +4656,15 @@ def create_join_request(
         if _is_clan_invite_expired(invite_row):
             raise HTTPException(status_code=400, detail="Invitation has expired")
 
-        invite_max_uses = None
+        if _is_clan_invite_used_up(invite_row):
+            raise HTTPException(status_code=400, detail="Invitation usage limit reached")
+
+        raw_invite_max_uses = getattr(invite_row, "max_uses", None)
+        invite_max_uses = (
+            int(raw_invite_max_uses)
+            if raw_invite_max_uses is not None and int(raw_invite_max_uses) > 0
+            else None
+        )
         invite_uses = int(getattr(invite_row, "uses", 0) or 0)
 
         invited_by_user_id = int(invite_row.created_by_user_id)
@@ -4345,6 +4696,11 @@ def create_join_request(
 
     qr_policy_key = _safe_str(getattr(invite_row, 'qr_policy_key', None)) if invite_row else None
     qr_policy_key = qr_policy_key or None
+    admission_policy = _community_admission_policy(
+        db,
+        clan=clan,
+        invite=invite_row,
+    )
 
     governance_profile = _community_governance_profile_for_clan(
         db,
@@ -4359,7 +4715,11 @@ def create_join_request(
         isinstance(governance_requirements, dict)
         and governance_requirements.get("rules_acceptance_required")
     )
-    if requires_rules_acceptance and payload.rules_accepted is not True:
+    if (
+        requires_rules_acceptance
+        and not admission_policy["instant_join"]
+        and payload.rules_accepted is not True
+    ):
         raise HTTPException(
             status_code=422,
             detail={
@@ -4736,6 +5096,61 @@ def create_join_request(
                 },
             }
 
+    if admission_policy["instant_join"]:
+        log_trust_event(
+            db,
+            event_type=TrustEventType.INVITE_ACCEPTED,
+            clan_id=int(clan.id),
+            actor_user_id=int(applicant_user.id),
+            subject_user_id=int(applicant_user.id),
+            meta={
+                "reason": "instant_invite_accepted",
+                "invite_code": invite_code,
+                "invite_id": int(invite_row.id) if invite_row else None,
+                "join_request_id": int(join_request.id),
+                "user_id": int(applicant_user.id),
+                "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+                "identity_reused": existing_identity_join,
+                "community_admission_status": "approved_by_instant_invite",
+                "membership_truth_boundary": admission_policy["membership_truth_boundary"],
+            },
+            dedupe_key=f"join-request-created:{int(join_request.id)}",
+        )
+        approval_result = _approve_join_request(
+            db,
+            join_request=join_request,
+            request=request,
+        )
+        join_request = (
+            db.query(ClanJoinRequest)
+            .filter(ClanJoinRequest.id == int(join_request.id))
+            .first()
+        )
+        status_payload = _join_request_status_payload(db, request, join_request)
+        return {
+            "ok": True,
+            "result_status": "instant_invite_accepted",
+            "message": (
+                "You are now a member of this community. Finish account setup "
+                "to open the community."
+                if status_payload.get("activation_required")
+                else "You are now a member of this community."
+            ),
+            **status_payload,
+            "user_id": int(applicant_user.id),
+            "existing_identity": status_payload.get(
+                "existing_identity",
+                existing_identity_join,
+            ),
+            "identity_reused": status_payload.get(
+                "identity_reused",
+                existing_identity_join,
+            ),
+            "approval_result": approval_result,
+            "request": _join_request_out(db, join_request),
+            "membership_truth_boundary": admission_policy["membership_truth_boundary"],
+        }
+
     reviewers = _active_reviewer_memberships(db, clan_id=int(clan.id))
     applicant_label = (
         _member_display(applicant_user)
@@ -4823,6 +5238,7 @@ def create_join_request(
         "community_name": clan.name,
         "marketplace_name": getattr(clan, "marketplace_name", None),
         "qr_policy_key": qr_policy_key,
+        **admission_policy,
         "user_id": int(applicant_user.id),
         "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
         "existing_identity": existing_identity_join,
@@ -5127,6 +5543,11 @@ def list_join_requests(
     )
 
     items = [_join_request_out(db, row) for row in rows]
+    policy_clan = db.get(Clan, int(clan_id)) or clan
+    admission_policy = _community_admission_policy(db, clan=policy_clan)
+    reviewer_is_admin = (
+        _safe_str(getattr(membership, "role", None)).lower() == "admin"
+    )
     return {
         "items": items,
         "total": len(items),
@@ -5134,7 +5555,15 @@ def list_join_requests(
         "community_code": _community_code(clan.id),
         "community_name": _safe_str(getattr(clan, "name", None)),
         "reviewer_role": _safe_str(getattr(membership, "role", None), "user"),
-        "reviewer_can_pilot_approve": (_safe_str(getattr(membership, "role", None)).lower() == "admin"),
+        "reviewer_can_admin_approve": bool(
+            reviewer_is_admin
+            and (
+                admission_policy["requires_admin_approval"]
+                or admission_policy["voting_admin_override"]
+            )
+        ),
+        "reviewer_can_pilot_approve": reviewer_is_admin,
+        **admission_policy,
     }
 
 
@@ -5172,6 +5601,21 @@ def vote_join_request(
     )
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
+
+    admission_policy = _join_request_admission_policy(db, join_request=req)
+    if admission_policy["instant_join"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Instant invitation requests do not require a member vote.",
+        )
+    if (
+        admission_policy["requires_admin_approval"]
+        and _safe_str(getattr(membership, "role", None)).lower() != "admin"
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="This community requires an admin decision for membership requests.",
+        )
 
     if str(req.status).lower() != "pending":
         status = _safe_str(req.status, "completed").lower()
@@ -5287,6 +5731,10 @@ def vote_join_request(
 
 
 @router.post(
+    "/{clan_id}/join-requests/{join_request_id}/admin-approve",
+    response_model=dict[str, Any],
+)
+@router.post(
     "/{clan_id}/join-requests/{join_request_id}/pilot-approve",
     response_model=dict[str, Any],
 )
@@ -5312,11 +5760,37 @@ def pilot_approve_join_request(
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
 
+    admission_policy = _join_request_admission_policy(db, join_request=req)
+    is_legacy_override = admission_policy.get("source") == "legacy_reviewed_default"
+    if admission_policy["instant_join"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Instant invitation requests are admitted automatically.",
+        )
+    if (
+        admission_policy["requires_community_vote"]
+        and not admission_policy["voting_admin_override"]
+        and not is_legacy_override
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_vote_admin_override_disabled",
+                "message": (
+                    "This community requires member voting and admin override is off."
+                ),
+                "community_id": int(clan_id),
+                "community_code": _community_code(clan_id),
+                "request_id": int(req.id),
+            },
+        )
+
     if str(req.status).lower() != "pending":
         status = _safe_str(req.status, "completed").lower()
         return {
             "ok": True,
-            "pilot_override": True,
+            "admin_approval": True,
+            "pilot_override": bool(is_legacy_override),
             "status_already_final": True,
             "approved_now": False,
             "rejected_now": False,
@@ -5334,7 +5808,8 @@ def pilot_approve_join_request(
     guardrail = stats.get("qr_policy_review_guardrail") or {}
     qr_policy_key = _join_request_qr_policy_key(db, req)
     pilot_override_blocked = bool(
-        guardrail.get("pilot_override_blocked")
+        admission_policy["requires_community_vote"]
+        and guardrail.get("pilot_override_blocked")
         and (
             qr_policy_key == "market_access"
             or stats["active_reviewer_count"] > 1
@@ -5397,7 +5872,8 @@ def pilot_approve_join_request(
 
     return {
         "ok": True,
-        "pilot_override": True,
+        "admin_approval": True,
+        "pilot_override": bool(is_legacy_override),
         "approved_now": True,
         "message": "Admin review approved this join request.",
         "community_id": int(clan_id),

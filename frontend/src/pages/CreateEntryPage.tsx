@@ -324,7 +324,7 @@ function defaultGovernanceToggles(
   const fullVerification = weight === "high";
   return {
     allow_public_invite_link: true,
-    require_admin_approval_after_invite: true,
+    require_admin_approval_after_invite: false,
     enable_member_service_listings: serviceListings,
     require_admin_approval_for_listings: true,
     enable_community_records: true,

@@ -209,6 +209,8 @@ def create_clan_invite(
     max_uses: Optional[int] = None,
     relationship_evidence: Optional[dict[str, Any]] = None,
     qr_policy_key: Optional[str] = None,
+    admission_mode: Optional[str] = None,
+    voting_admin_override: bool = False,
 ) -> ClanInvite:
     clan = db.get(Clan, clan_id)
     if not clan:
@@ -219,14 +221,20 @@ def create_clan_invite(
 
     safe_expires_at = _utc_aware(expires_at)
     safe_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
+    safe_admission_mode = str(admission_mode or "").strip() or None
+    # The persisted legacy contract uses 0 for an unlimited reviewed link.
+    # Positive values are real use limits; instant invitations pass 1.
+    safe_max_uses = 0 if max_uses is None else max(1, min(int(max_uses), 100))
 
     invite = ClanInvite(
         clan_id=clan_id,
         created_by_user_id=created_by_user.id,
         code=secrets.token_urlsafe(10),
         qr_policy_key=safe_qr_policy_key,
+        admission_mode=safe_admission_mode,
+        voting_admin_override=bool(voting_admin_override),
         expires_at=safe_expires_at,
-        max_uses=0,
+        max_uses=safe_max_uses,
         uses=0,
         is_active=True,
         revoked_at=None,
@@ -241,7 +249,9 @@ def create_clan_invite(
         "reason": "invite_created",
         "invite_code": invite.code,
         "qr_policy_key": safe_qr_policy_key,
-        "max_uses": None,
+        "admission_mode": safe_admission_mode,
+        "voting_admin_override": bool(voting_admin_override),
+        "max_uses": safe_max_uses,
         "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
     }
     clean_relationship_evidence = _clean_invite_relationship_evidence(
@@ -295,11 +305,13 @@ def preview_invite(db: Session, *, code: str) -> dict:
     return {
         "code": invite.code,
         "qr_policy_key": getattr(invite, "qr_policy_key", None),
+        "admission_mode": getattr(invite, "admission_mode", None),
+        "voting_admin_override": bool(getattr(invite, "voting_admin_override", False)),
         "clan_id": clan.id,
         "clan_name": clan.name,
         "is_active": invite.is_active,
         "uses": invite.uses or 0,
-        "max_uses": None,
+        "max_uses": int(invite.max_uses) if int(invite.max_uses or 0) > 0 else None,
         "expires_at": invite.expires_at,
         "revoked_at": invite.revoked_at,
     }

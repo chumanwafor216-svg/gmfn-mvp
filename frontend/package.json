@@ -93,6 +93,7 @@
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
     "audit:community-home-billboard": "node tools/audit-community-home-billboard.mjs",
     "audit:community-join-requests-layout": "node tools/audit-community-join-requests-layout.mjs",
+    "audit:membership-admission-policy": "node tools/audit-membership-admission-policy.mjs",
     "audit:notifications-button-inventory": "node tools/audit-notifications-button-inventory.mjs",
     "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",

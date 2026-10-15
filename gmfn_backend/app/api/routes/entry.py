@@ -176,7 +176,7 @@ def _entry_governance_profile_payload(payload: "CreateEntryIn") -> dict[str, Any
         "allow_public_invite_link": _bool_or_default(payload.allow_public_invite_link, True),
         "require_admin_approval_after_invite": _bool_or_default(
             payload.require_admin_approval_after_invite,
-            True,
+            False,
         ),
         "enable_member_service_listings": _bool_or_default(
             payload.enable_member_service_listings,
@@ -217,7 +217,9 @@ def _entry_governance_profile_payload(payload: "CreateEntryIn") -> dict[str, Any
             "creator_admin_verification_required": True,
             "member_name_required": True,
             "member_phone_required": True,
-            "rules_acceptance_required": True,
+            "rules_acceptance_required": bool(
+                policies["require_admin_approval_after_invite"]
+            ),
             "passport_required_by_default": require_full_member_verification,
             "brp_or_evisa_required_by_default": False,
             "proof_of_address_required_by_default": require_full_member_verification,
@@ -2073,6 +2075,15 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     )
 
     governance_profile = _entry_governance_profile_payload(payload)
+    clan.admission_mode = (
+        "admin_approval"
+        if governance_profile["policies"]["require_admin_approval_after_invite"]
+        else "instant_invite"
+    )
+    clan.voting_admin_override = False
+    db.add(clan)
+    db.commit()
+    db.refresh(clan)
     requested_preset_key = _clean_text(payload.governance_preset_key)
     if requested_preset_key and requested_preset_key != governance_profile["preset_key"]:
         governance_profile["requested_preset_key"] = requested_preset_key

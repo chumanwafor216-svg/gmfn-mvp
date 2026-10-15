@@ -192,8 +192,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /Already on GSN\? Sign in\. New here\? Request access\.[\s\S]*debugId="join-entry\.sign-in-existing"[\s\S]*Sign in[\s\S]*debugId="join-entry\.toggle-new-member-request-form"[\s\S]*Request access[\s\S]*Already have a GSN ID\?[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*Full name[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
-  "Logged-out invite entry must show the simple Sign in / Request access decision first, while keeping existing-GSN-ID reuse behind help before the new-person form."
+  /const joinActionLabel = isInstantJoin \? "Accept invite" : "Request access";[\s\S]*debugId="join-entry\.sign-in-existing"[\s\S]*Sign in[\s\S]*debugId="join-entry\.toggle-new-member-request-form"[\s\S]*joinActionLabel[\s\S]*Already have a GSN ID\?[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*Full name[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
+  "Logged-out invite entry must show the simple Sign in and mode-aware Accept invite / Request access decision first, while keeping existing-GSN-ID reuse behind help before the new-person form."
 );
 
 assertContains(

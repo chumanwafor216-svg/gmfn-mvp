@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClanInvite, getClanInviteLink } from "../lib/api";
 import {
   normalizedJoinInviteUrl,
@@ -33,12 +33,19 @@ function inviteMessage(
   communityName: string,
   inviteLink: string,
   inviterName = "",
-  recipientName = ""
+  recipientName = "",
+  admissionMode = "community_vote"
 ): string {
   const destination = communityName || "this GSN community";
   const sender = inviterName || "A GSN member";
   const greeting = recipientName ? `Hi ${recipientName},\n\n` : "";
-  return `${greeting}${sender} invited you to join ${destination} on GSN.\n\nOpen this link to request access:\n${inviteLink}\n\nCommunity approval is required.`;
+  const nextStep =
+    admissionMode === "instant_invite"
+      ? "Open the link, accept the invitation, set your password, and you’re in."
+      : admissionMode === "admin_approval"
+        ? "Open the link and send your details. A community admin will decide."
+        : "Open the link and send your details. Community members will vote.";
+  return `${greeting}${sender} invited you to join ${destination} on GSN.\n\n${nextStep}\n${inviteLink}\n\nMembership does not mean identity or financial verification.`;
 }
 
 function inviterNameFromLink(inviteLink: string): string {
@@ -68,6 +75,8 @@ export default function SimpleCommunityInviteCard({
     Boolean(!hero && communityId && !normalizedInitialLink)
   );
   const [preparedInviterName, setPreparedInviterName] = useState("");
+  const [admissionMode, setAdmissionMode] = useState("community_vote");
+  const admissionModeRef = useRef("community_vote");
   const [recipientName, setRecipientName] = useState("");
   const [feedback, setFeedback] = useState<InviteFeedback>(null);
 
@@ -90,6 +99,9 @@ export default function SimpleCommunityInviteCard({
             ""
         ).trim()
       );
+      const nextAdmissionMode = String(response?.admission_mode || "community_vote");
+      admissionModeRef.current = nextAdmissionMode;
+      setAdmissionMode(nextAdmissionMode);
       return nextLink;
     } catch {
       setFeedback({
@@ -107,6 +119,8 @@ export default function SimpleCommunityInviteCard({
     setFeedback(null);
     setInviteLink(normalizedInitialLink);
     setPreparedInviterName("");
+    admissionModeRef.current = "community_vote";
+    setAdmissionMode("community_vote");
     setRecipientName("");
 
     if (!communityId || normalizedInitialLink || hero) {
@@ -129,6 +143,9 @@ export default function SimpleCommunityInviteCard({
               ""
           ).trim()
         );
+        const nextAdmissionMode = String(response?.admission_mode || "community_vote");
+        admissionModeRef.current = nextAdmissionMode;
+        setAdmissionMode(nextAdmissionMode);
       })
       .catch(() => {
         if (!alive) return;
@@ -185,7 +202,8 @@ export default function SimpleCommunityInviteCard({
       communityName,
       linkToShare,
       safeInviterName,
-      safeRecipientName
+      safeRecipientName,
+      admissionModeRef.current
     );
 
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -389,7 +407,11 @@ export default function SimpleCommunityInviteCard({
           lineHeight: 1.45,
         }}
       >
-        Copy and send the link. They tap it to ask to join. You approve them before they join.
+        {admissionMode === "instant_invite"
+          ? "Copy and send the link. They accept, set a password, and enter. Each link is for one person."
+          : admissionMode === "admin_approval"
+            ? "Copy and send the link. They submit their details, then an admin decides."
+            : "Copy and send the link. They submit their details, then members vote."}
       </div>
 
       <div

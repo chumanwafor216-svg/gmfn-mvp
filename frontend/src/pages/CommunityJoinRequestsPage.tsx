@@ -9,10 +9,13 @@ import {
   StableCtaLink,
 } from "../components/StableButton";
 import {
+  adminApproveJoinRequest,
+  type CommunityAdmissionMode,
+  getCommunityAdmissionPolicy,
   getCommunityJoinRequests,
-  pilotApproveJoinRequest,
   safeCopy,
   selectClan,
+  updateCommunityAdmissionPolicy,
   voteOnJoinRequest,
 } from "../lib/api";
 import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
@@ -645,6 +648,12 @@ export default function CommunityJoinRequestsPage() {
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
+  const [loadedCommunityName, setLoadedCommunityName] = useState("");
+  const [admissionMode, setAdmissionMode] =
+    useState<CommunityAdmissionMode>("community_vote");
+  const [votingAdminOverride, setVotingAdminOverride] = useState(false);
+  const [canManageAdmission, setCanManageAdmission] = useState(false);
+  const [admissionSaving, setAdmissionSaving] = useState(false);
   const [voteDecisions, setVoteDecisions] = useState<Record<number, JoinVoteDecision>>({});
   const [voteReasonCodes, setVoteReasonCodes] = useState<Record<number, string>>({});
   const [showCompletedRequests, setShowCompletedRequests] = useState(false);
@@ -673,16 +682,43 @@ export default function CommunityJoinRequestsPage() {
         throw new Error("Invalid community ID.");
       }
 
-      const data = await getCommunityJoinRequests(clanNum);
+      const [data, policy] = await Promise.all([
+        getCommunityJoinRequests(clanNum),
+        getCommunityAdmissionPolicy(clanNum),
+      ]);
       const rows = Array.isArray(data) ? data : data?.items || [];
       setItems(rows);
       setReviewerRole(safeStr(data?.reviewer_role || "user", "user"));
-      setReviewerCanPilotApprove(Boolean(data?.reviewer_can_pilot_approve));
+      setLoadedCommunityName(
+        safeStr(policy?.community_name || data?.community_name || "")
+      );
+      setReviewerCanPilotApprove(
+        Boolean(
+          data?.reviewer_can_admin_approve ??
+            data?.reviewer_can_pilot_approve
+        )
+      );
+      setAdmissionMode(
+        (safeStr(
+          policy?.admission_mode || data?.admission_mode || "community_vote"
+        ) as CommunityAdmissionMode)
+      );
+      setVotingAdminOverride(
+        Boolean(policy?.voting_admin_override ?? data?.voting_admin_override)
+      );
+      setCanManageAdmission(
+        Boolean(
+          policy?.can_manage ??
+            (safeStr(data?.reviewer_role || "user").toLowerCase() === "admin")
+        )
+      );
     } catch (err: any) {
       setError(err?.message || "Failed to load join requests.");
       setItems([]);
       setReviewerRole("user");
       setReviewerCanPilotApprove(false);
+      setLoadedCommunityName("");
+      setCanManageAdmission(false);
     } finally {
       setLoading(false);
     }
@@ -704,9 +740,12 @@ export default function CommunityJoinRequestsPage() {
   const selectedCommunityName = useMemo(() => {
     const first = items[0];
     return safeStr(
-      first?.clan_name || first?.marketplace_name || `Community ${clanNum}`
+      first?.clan_name ||
+        first?.marketplace_name ||
+        loadedCommunityName ||
+        `Community ${clanNum}`
     );
-  }, [items, clanNum]);
+  }, [items, loadedCommunityName, clanNum]);
 
   const summary = useMemo(() => {
     const pending = items.filter(
@@ -846,7 +885,7 @@ export default function CommunityJoinRequestsPage() {
 
       await selectClan(clanNum).catch(() => null);
 
-      const res = (await pilotApproveJoinRequest(requestId)) as VoteResponse;
+      const res = (await adminApproveJoinRequest(requestId)) as VoteResponse;
 
       if (res?.approval_result?.gmfn_id) {
         setSuccess(
@@ -865,6 +904,33 @@ export default function CommunityJoinRequestsPage() {
       setError(err?.message || "Admin approval failed.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function saveAdmissionPolicy() {
+    try {
+      setAdmissionSaving(true);
+      setError("");
+      setSuccess("");
+      const result = await updateCommunityAdmissionPolicy(clanNum, {
+        admission_mode: admissionMode,
+        voting_admin_override:
+          admissionMode === "community_vote" && votingAdminOverride,
+      });
+      setAdmissionMode(
+        safeStr(result?.admission_mode || admissionMode) as CommunityAdmissionMode
+      );
+      setVotingAdminOverride(Boolean(result?.voting_admin_override));
+      setSuccess(
+        Number(result?.retired_invites || 0) > 0
+          ? "Joining rule saved. Old live links were closed; create a fresh invite."
+          : "Joining rule saved."
+      );
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Could not save how people join.");
+    } finally {
+      setAdmissionSaving(false);
     }
   }
 
@@ -917,7 +983,7 @@ export default function CommunityJoinRequestsPage() {
                 overflowWrap: "break-word",
               }}
             >
-              Review Join Requests
+              Membership Joining
             </h1>
             <p
               style={{
@@ -927,7 +993,7 @@ export default function CommunityJoinRequestsPage() {
                 lineHeight: 1.5,
               }}
             >
-              Approve or reject new members for your current community.
+              Set one joining rule, then handle only the requests that need you.
             </p>
           </div>
           <div
@@ -980,7 +1046,11 @@ export default function CommunityJoinRequestsPage() {
                   fontSize: isCompact ? 15 : 18,
                 }}
               >
-                Community review is active.
+                {admissionMode === "instant_invite"
+                  ? "Invite acceptance is automatic."
+                  : admissionMode === "admin_approval"
+                    ? "An admin decides each request."
+                    : "Eligible members vote on each request."}
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
                 <span style={reviewerBadge(false)}>
@@ -1056,6 +1126,136 @@ export default function CommunityJoinRequestsPage() {
               {iconText("refresh", "Refresh")}
             </PrimaryButton>
           </CardActionRow>
+        </section>
+
+        <section style={{ ...whitePanel(16), display: "grid", gap: 14 }}>
+          <div>
+            <div style={sectionLabel("#64748B")}>How people join</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#0B1F33",
+                fontSize: isCompact ? 20 : 24,
+                fontWeight: 1000,
+              }}
+            >
+              Choose one clear rule
+            </div>
+            <div style={{ marginTop: 6, color: "#52667C", lineHeight: 1.5 }}>
+              Membership only confirms that a person belongs here. It does not
+              verify their identity, money, conduct, or trust.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "minmax(0, 1fr)"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {[
+              {
+                value: "instant_invite",
+                title: "Instant join",
+                note: "Accept link, set password, enter. Each link admits one person.",
+              },
+              {
+                value: "admin_approval",
+                title: "Admin approval",
+                note: "An admin accepts or rejects each request.",
+              },
+              {
+                value: "community_vote",
+                title: "Community vote",
+                note: "Eligible members vote before entry.",
+              },
+            ].map((option) => {
+              const selected = admissionMode === option.value;
+              return (
+                <label
+                  key={option.value}
+                  style={{
+                    border: selected ? "2px solid #C9A136" : "1px solid #D7E1EC",
+                    borderRadius: 16,
+                    padding: 14,
+                    background: selected ? "#FFF8E3" : "#FFFFFF",
+                    display: "grid",
+                    gridTemplateColumns: "22px minmax(0, 1fr)",
+                    gap: 10,
+                    cursor: canManageAdmission ? "pointer" : "default",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="community-admission-mode"
+                    value={option.value}
+                    checked={selected}
+                    disabled={!canManageAdmission}
+                    onChange={() =>
+                      setAdmissionMode(option.value as CommunityAdmissionMode)
+                    }
+                    style={{ width: 18, height: 18, marginTop: 2 }}
+                  />
+                  <span>
+                    <span style={{ display: "block", color: "#0B1F33", fontWeight: 1000 }}>
+                      {option.title}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 4,
+                        color: "#52667C",
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {option.note}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {admissionMode === "community_vote" ? (
+            <label
+              style={{
+                display: "grid",
+                gridTemplateColumns: "22px minmax(0, 1fr)",
+                gap: 10,
+                alignItems: "start",
+                color: "#334155",
+                fontWeight: 800,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={votingAdminOverride}
+                disabled={!canManageAdmission}
+                onChange={(event) => setVotingAdminOverride(event.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>Allow an admin to approve without waiting for all votes.</span>
+            </label>
+          ) : null}
+
+          {canManageAdmission ? (
+            <PrimaryButton
+              type="button"
+              onClick={() => void saveAdmissionPolicy()}
+              disabled={admissionSaving}
+              busy={admissionSaving}
+              busyLabel="Saving..."
+              stableHeight={54}
+              fullWidth
+              debugId="community-join-requests.save-admission-policy"
+            >
+              Save joining rule
+            </PrimaryButton>
+          ) : null}
         </section>
 
         {error ? (
@@ -1144,7 +1344,11 @@ export default function CommunityJoinRequestsPage() {
               overflowWrap: "break-word",
             }}
           >
-            Some communities need more than one approval. Check Active members and Required approvals on each request.
+            {admissionMode === "instant_invite"
+              ? "No review is needed. A fresh invite link admits one person, then closes."
+              : admissionMode === "admin_approval"
+                ? "One community admin accepts or rejects each request."
+                : "Members vote. Check Required approvals on each request."}
           </div>
         </section>
 
@@ -1743,7 +1947,7 @@ export default function CommunityJoinRequestsPage() {
                     )}
                   </div>
 
-                  {reviewerCanPilotApprove ? (
+                  {reviewerCanPilotApprove && admissionMode === "community_vote" ? (
                     <div
                       style={{
                         marginTop: 12,
@@ -1753,7 +1957,7 @@ export default function CommunityJoinRequestsPage() {
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel("#8A5A08")}>Admin override option</div>
+                      <div style={sectionLabel("#8A5A08")}>Admin approval option</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -1766,12 +1970,12 @@ export default function CommunityJoinRequestsPage() {
                           ? qrGuardrail?.approval_posture === "market_access"
                             ? "Marketplace QR entry requires standard voting with a market, dues, stall, shop, permit, or organiser check; admin override is disabled."
                             : "Strict QR entry requires standard multi-reviewer approval here; admin override is disabled."
-                          : "This bypasses the normal approval count. Use it only when pilot testing or community admin judgement must move the member journey forward."}
+                          : "The community has explicitly allowed an admin to approve without waiting for the remaining votes."}
                       </div>
                     </div>
                   ) : null}
 
-                  <div
+                  {admissionMode === "community_vote" ? <div
                     style={{
                       marginTop: 14,
                       display: "grid",
@@ -1845,14 +2049,14 @@ export default function CommunityJoinRequestsPage() {
                         ))}
                       </select>
                     </div>
-                  </div>
+                  </div> : null}
 
                   <CardActionRow
                     align="stretch"
                     style={{
                       marginTop: 14,
                       display: "grid",
-                      gridTemplateColumns: reviewerCanPilotApprove
+                      gridTemplateColumns: reviewerCanPilotApprove && admissionMode === "community_vote"
                         ? isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))"
                         : isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
                       gap: 12,
@@ -1862,7 +2066,11 @@ export default function CommunityJoinRequestsPage() {
                   >
                     <PrimaryButton
                       type="button"
-                      onClick={() => handleVote(item.id, "approve")}
+                      onClick={() =>
+                        admissionMode === "admin_approval"
+                          ? handlePilotApprove(item.id)
+                          : handleVote(item.id, "approve")
+                      }
                       disabled={isBusy}
                       busy={isBusy}
                       busyLabel="Working..."
@@ -1874,7 +2082,7 @@ export default function CommunityJoinRequestsPage() {
                       {iconText("approve", "Approve")}
                     </PrimaryButton>
 
-                    <SecondaryButton
+                    {admissionMode === "community_vote" ? <SecondaryButton
                       type="button"
                       onClick={() => handleVote(item.id, "neutral")}
                       disabled={isBusy}
@@ -1886,7 +2094,7 @@ export default function CommunityJoinRequestsPage() {
                       fullWidth
                     >
                       {iconText("neutral", "Neutral")}
-                    </SecondaryButton>
+                    </SecondaryButton> : null}
 
                     <SecondaryButton
                       type="button"
@@ -1902,7 +2110,7 @@ export default function CommunityJoinRequestsPage() {
                       {iconText("reject", "Reject")}
                     </SecondaryButton>
 
-                    {reviewerCanPilotApprove ? (
+                    {reviewerCanPilotApprove && admissionMode === "community_vote" ? (
                       <SecondaryButton
                         type="button"
                         onClick={() => handlePilotApprove(item.id)}
@@ -1910,11 +2118,11 @@ export default function CommunityJoinRequestsPage() {
                         busy={isBusy}
                         busyLabel="Working..."
                         stableHeight={58}
-                        debugId="community-join-requests.pilot-approve"
+                        debugId="community-join-requests.admin-approve"
                         style={decisionButtonStyle("reject")}
                         fullWidth
                       >
-                        {iconText("shield", pilotOverrideBlocked ? "Standard review" : "Admin override")}
+                        {iconText("shield", pilotOverrideBlocked ? "Standard review" : "Admin approve")}
                       </SecondaryButton>
                     ) : null}
                   </CardActionRow>

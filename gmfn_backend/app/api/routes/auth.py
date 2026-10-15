@@ -388,6 +388,8 @@ def _create_founder_clan(
         invite_expires_at=now + timedelta(days=7),
         invite_max_uses=None,
         invite_uses=0,
+        admission_mode="instant_invite",
+        voting_admin_override=False,
     )
     db.add(clan)
     db.commit()
@@ -877,6 +879,44 @@ def activate_membership(
             },
         )
 
+    destination_membership = None
+    request_id = str(payload.request_id or "").strip()
+    if request_id.isdigit():
+        join_request = (
+            db.query(ClanJoinRequest)
+            .filter(
+                ClanJoinRequest.id == int(request_id),
+                ClanJoinRequest.applicant_user_id == int(user.id),
+                ClanJoinRequest.status == "approved",
+            )
+            .first()
+        )
+        if join_request is not None:
+            destination_membership = (
+                db.query(ClanMembership)
+                .filter(
+                    ClanMembership.clan_id == int(join_request.clan_id),
+                    ClanMembership.user_id == int(user.id),
+                    ClanMembership.left_at.is_(None),
+                )
+                .first()
+            )
+    if destination_membership is None:
+        destination_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == int(user.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .order_by(ClanMembership.created_at.desc(), ClanMembership.id.desc())
+            .first()
+        )
+    destination_clan = (
+        db.get(Clan, int(destination_membership.clan_id))
+        if destination_membership is not None
+        else None
+    )
+
     user = _recover_missing_display_name_from_join_evidence(db, user)
     user.hashed_password = get_password_hash(password)
     db.add(user)
@@ -893,6 +933,9 @@ def activate_membership(
         **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
+        "clan_id": int(destination_clan.id) if destination_clan is not None else None,
+        "community_id": int(destination_clan.id) if destination_clan is not None else None,
+        "community_name": getattr(destination_clan, "name", None),
     }
 
 

@@ -137,6 +137,11 @@ class Clan(Base):
         default="members",
         server_default="members",
     )
+    # Membership admission is a community policy, not an identity or trust claim.
+    # NULL is reserved for legacy communities and resolves to the historical
+    # community-vote behaviour so old links never become instant-entry links.
+    admission_mode = Column(String(32), nullable=True, index=True)
+    voting_admin_override = Column(Boolean, nullable=False, default=False, server_default="0")
 
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
@@ -1550,6 +1555,17 @@ class ClanInvite(Base):
     )
 
     qr_policy_key: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
+    # Snapshot the community admission decision when the link is created. This
+    # prevents a later settings change from silently changing an already-shared
+    # invitation. NULL means legacy reviewed/community-vote behaviour.
+    admission_mode: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+    voting_admin_override: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="0",
+        nullable=False,
+    )
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,

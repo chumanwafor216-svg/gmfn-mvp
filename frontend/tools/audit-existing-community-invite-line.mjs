@@ -118,8 +118,8 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showJoinPathLauncher[\s\S]*?Already on GSN\? Sign in\. New here\? Request access\.[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?Request access[\s\S]*?Already have a GSN ID\?[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
-  "A ready existing-community invite must first present Sign in / Request access, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
+  /const inviteAdmissionMode[\s\S]*?const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin \? "Accept invite" : "Request access";[\s\S]*?showJoinPathLauncher[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinActionLabel[\s\S]*?Already have a GSN ID\?[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  "A ready existing-community invite must first present Sign in and the mode-aware Accept invite / Request access action, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
 );
 
 assertContains(
