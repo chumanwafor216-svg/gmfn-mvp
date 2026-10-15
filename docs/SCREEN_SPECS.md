@@ -467,6 +467,7 @@ Must show, in phone-first order:
   - sending opens the device share sheet; clipboard fallback copies the full personalised message
 - Community Bulletin immediately after the identity hero
   - one compact live announcement presentation
+  - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
   - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
   - keep the Bulletin pulse dashboard and large calendar tile off the default phone surface
   - no Ask Community / market-need records in the Bulletin by default
@@ -483,6 +484,7 @@ Must show, in phone-first order:
   - on phone, keep all five destinations behind one `Community actions` disclosure; after opening, show only the destination labels and keep explanatory destination sentences off the surface
 - compact community switcher
   - collapsed by default
+  - hide the switcher when the member has only one accessible community; show it for multiple communities or inaccessible route recovery
   - ordinary member communities only dominate the opened switcher
   - route changes/select changes must reconcile against `listMyClans`
 - one collapsed Admin area only for verified authority
@@ -501,6 +503,7 @@ Rules:
 - Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - On phone, the authenticated app shell owns the page title/navigation; Community Home must not add another route-level Back/title strip or repeat the `Community Home` label inside the identity hero.
+- On phone, destination, switcher, and Admin disclosures use their action row as the card; do not wrap each row in another visible card.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount is the only approved conditional money fact in the hero.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 

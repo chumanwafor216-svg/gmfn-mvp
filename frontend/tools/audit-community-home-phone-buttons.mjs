@@ -127,12 +127,24 @@ assertContains(
   "Community Home phone Bulletin must remove the large date tile and pulse dashboard from the default surface."
 );
 assertContains(
+  /minHeight: isCompact \? 52 : 82[\s\S]*?!isCompact \? <span>Community <\/span> : null[\s\S]*?!isCompact \? \(\s*<span style=\{announcementBoardPillStyle\(\)\}>/,
+  "Community Home phone Bulletin must keep one short Bulletin header without a repeated kind pill."
+);
+assertContains(
   /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,
   "Community Home phone Bulletin must use one Open notice control for the full notice and response actions."
 );
 assertContains(
   /<details[\s\S]*?open=\{isCompact \? communityActionsOpen : true\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="community-home\.goto\.toggle"[\s\S]*?Community actions[\s\S]*?id="community-home-actions-panel"/,
   "Community Home phone destinations must remain behind one protected Community actions disclosure."
+);
+assertContains(
+  /function communityDisclosureSectionStyle\(isCompact: boolean\)[\s\S]*?if \(!isCompact\) return communityBlockCard\("quiet"\);[\s\S]*?style=\{communityDisclosureSectionStyle\(isCompact\)\}[\s\S]*?communityCountFromSummary > 1 \|\| requestedCommunityError/,
+  "Community Home phone disclosures must avoid card-inside-card framing and hide the switcher when there is only one accessible community."
+);
+assertContains(
+  /minHeight: isCompact \? 54 : 64[\s\S]*?compact=\{isCompact\}/,
+  "Community Home phone identity facts must stay compact while preserving the truthful billboard values."
 );
 assertContains(
   /debugId="community-home\.goto\.marketplace"[\s\S]*?Marketplace<\/span>\{!isCompact \? <span[\s\S]*?debugId="community-home\.goto\.trust"[\s\S]*?Trust<\/span>\{!isCompact \? <span/,

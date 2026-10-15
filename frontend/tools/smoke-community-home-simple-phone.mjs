@@ -13,7 +13,7 @@ function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
 }
 
-async function installApiMocks(page) {
+async function installApiMocks(page, { includeSecondClan = false } = {}) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
@@ -28,7 +28,7 @@ async function installApiMocks(page) {
       }));
     }
     if (path === "/clans/me") {
-      return route.fulfill(json([
+      const clans = [
         {
           id: 8,
           clan_id: 8,
@@ -44,7 +44,25 @@ async function installApiMocks(page) {
           active_member_count: 7,
           notice_posting_policy: "members",
         },
-      ]));
+      ];
+      if (includeSecondClan) {
+        clans.push({
+          id: 9,
+          clan_id: 9,
+          name: "Sachimo",
+          display_name: "Sachimo",
+          marketplace_name: "Sachimo",
+          community_code: "GMFN-C-000009",
+          gmfn_id: "GMFN-C-000009",
+          role: "user",
+          status: "active",
+          membership_status: "active",
+          member_count: 12,
+          active_member_count: 12,
+          notice_posting_policy: "members",
+        });
+      }
+      return route.fulfill(json(clans));
     }
     if (path === "/community-domains/my") {
       return route.fulfill(json({ items: [] }));
@@ -139,6 +157,8 @@ async function run() {
     const defaultState = await page.evaluate(() => {
       const text = document.body.textContent || "";
       const identityText = document.querySelector('[data-debug-id="community-home.identity-card"]')?.textContent || "";
+      const bulletinHeaderText = document.querySelector('[aria-label="Community announcements"]')?.textContent?.trim() || "";
+      const actionSectionStyle = document.querySelector('[data-debug-id="community-home.go-to"]')?.getAttribute("style") || "";
       return {
         hasName: identityText.includes("Homeland isa"),
         hasMemberCount: identityText.includes("7") && identityText.includes("Members"),
@@ -147,6 +167,9 @@ async function run() {
         hasMembership: identityText.includes("Active"),
         hasOpenNotice: text.includes("Open notice"),
         hasCommunityActions: text.includes("Community actions"),
+        bulletinHeaderText,
+        switcherCount: document.querySelectorAll('[data-debug-id="community-home.switch-community"]').length,
+        actionSectionHasExtraCard: /background|border|box-shadow/.test(actionSectionStyle),
         duplicatePhoneNavCount: document.querySelectorAll('[data-cta-id^="page-top-nav."]').length,
         pulseCount: document.querySelectorAll('[data-debug-id="community-home.bulletin.pulse"]').length,
         calendarTileCount: document.querySelectorAll('[aria-label="Announcement date"]').length,
@@ -164,6 +187,9 @@ async function run() {
       !defaultState.hasMembership ||
       !defaultState.hasOpenNotice ||
       !defaultState.hasCommunityActions ||
+      defaultState.bulletinHeaderText !== "Bulletin" ||
+      defaultState.switcherCount !== 0 ||
+      defaultState.actionSectionHasExtraCard ||
       defaultState.duplicatePhoneNavCount !== 0 ||
       defaultState.pulseCount !== 0 ||
       defaultState.calendarTileCount !== 0 ||
@@ -204,6 +230,29 @@ async function run() {
       process.exitCode = 1;
       return;
     }
+
+    const multiCommunityPage = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+    });
+    await installApiMocks(multiCommunityPage, { includeSecondClan: true });
+    await multiCommunityPage.addInitScript(() => {
+      localStorage.setItem("access_token", "local-community-home-simple-token");
+      localStorage.setItem("gmfn_selected_clan_id", "8");
+      localStorage.setItem(
+        "gmfn.communityHome.sections.v6",
+        JSON.stringify({ communities: true, marketplaceTools: true, subscriptions: true, trustFinance: true })
+      );
+    });
+    await multiCommunityPage.goto(`http://127.0.0.1:${port}/app/community/8`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await multiCommunityPage.waitForSelector('[data-cta-id="community-home.switch.toggle"]', { timeout: 30000 });
+    await multiCommunityPage.locator('[data-cta-id="community-home.switch.toggle"]').click();
+    await multiCommunityPage.waitForSelector('[data-cta-id="community-home.switch.select.9"]', { state: "visible", timeout: 30000 });
+    await multiCommunityPage.close();
 
     console.log(`Community Home simple phone smoke passed. Screenshots: ${screenshotDir}`);
   } finally {

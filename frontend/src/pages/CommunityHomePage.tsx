@@ -670,12 +670,13 @@ function communityIdentityFactsStyle(): React.CSSProperties {
 
 function communityIdentityFactStyle(
   emphasis = false,
-  fullWidth = false
+  fullWidth = false,
+  isCompact = false
 ): React.CSSProperties {
   return {
     minWidth: 0,
-    minHeight: 64,
-    padding: "9px 10px",
+    minHeight: isCompact ? 54 : 64,
+    padding: isCompact ? "7px 9px" : "9px 10px",
     borderRadius: 15,
     border: emphasis
       ? "1px solid rgba(242,199,102,0.46)"
@@ -692,14 +693,16 @@ function CommunityIdentityFact({
   value,
   emphasis = false,
   fullWidth = false,
+  compact = false,
 }: {
   label: string;
   value: string;
   emphasis?: boolean;
   fullWidth?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <div style={communityIdentityFactStyle(emphasis, fullWidth)}>
+    <div style={communityIdentityFactStyle(emphasis, fullWidth, compact)}>
       <div style={{ color: "#BFD0E2", fontSize: 10.5, fontWeight: 850, lineHeight: 1.2 }}>
         {label}
       </div>
@@ -743,6 +746,14 @@ function communityBlockCard(tone: CommunitySurfaceTone): React.CSSProperties {
     boxShadow: stronger
       ? "0 16px 32px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)"
       : "0 12px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+  };
+}
+
+function communityDisclosureSectionStyle(isCompact: boolean): React.CSSProperties {
+  if (!isCompact) return communityBlockCard("quiet");
+  return {
+    minWidth: 0,
+    overflow: "visible",
   };
 }
 
@@ -1151,8 +1162,8 @@ function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
     gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: isCompact ? 6 : 12,
     alignItems: "center",
-    minHeight: isCompact ? 62 : 82,
-    padding: isCompact ? "10px 12px" : "16px 22px",
+    minHeight: isCompact ? 52 : 82,
+    padding: isCompact ? "8px 10px" : "16px 22px",
     background:
       "linear-gradient(135deg, #08233A 0%, #0B2D4A 56%, #061827 100%)",
     color: "#FFFFFF",
@@ -4296,24 +4307,28 @@ export default function CommunityHomePage() {
                   <CommunityIdentityFact
                     label="Members"
                     value={selectedCommunityMemberCountLabel}
+                    compact={isCompact}
                   />
                 </div>
                 <div data-debug-id="community-home.identity.community-id">
                   <CommunityIdentityFact
                     label="Community ID"
                     value={selectedCommunityReference}
+                    compact={isCompact}
                   />
                 </div>
                 <div data-debug-id="community-home.identity.position">
                   <CommunityIdentityFact
                     label="Your position"
                     value={selectedCommunityRoleLabel}
+                    compact={isCompact}
                   />
                 </div>
                 <div data-debug-id="community-home.identity.membership">
                   <CommunityIdentityFact
                     label="Membership"
                     value={selectedCommunityStatusLabel}
+                    compact={isCompact}
                   />
                 </div>
                 {selectedCommunityBalance ? (
@@ -4326,6 +4341,7 @@ export default function CommunityHomePage() {
                       value={formatCommunityBalance(selectedCommunityBalance)}
                       emphasis
                       fullWidth
+                      compact={isCompact}
                     />
                   </div>
                 ) : null}
@@ -4356,16 +4372,26 @@ export default function CommunityHomePage() {
         <section id="community-home-bulletin" style={announcementBoardShellStyle()} data-debug-id="community-home.bulletin">
           <div style={announcementBoardHeaderStyle(isCompact)} aria-label="Community announcements">
             <div style={announcementBoardTitleRowStyle()}>
-              <span style={announcementBoardIconStyle()} aria-hidden="true">
-                <GsnLegacyIcon name="megaphone" size={24} />
+              <span
+                style={{
+                  ...announcementBoardIconStyle(),
+                  width: isCompact ? 38 : 46,
+                  height: isCompact ? 38 : 46,
+                  borderRadius: isCompact ? 13 : 16,
+                }}
+                aria-hidden="true"
+              >
+                <GsnLegacyIcon name="megaphone" size={isCompact ? 20 : 24} />
               </span>
               <span style={{ color: "#FFFFFF", fontSize: isCompact ? 14 : 16, fontWeight: 950, lineHeight: 1.08, textTransform: "uppercase" }}>
-                <span>Community </span><span style={{ color: "#F2C766" }}>Bulletin</span>
+                {!isCompact ? <span>Community </span> : null}<span style={{ color: "#F2C766" }}>Bulletin</span>
               </span>
             </div>
-            <span style={announcementBoardPillStyle()}>
-              {communityNoticesLoading ? "Checking board" : primaryCommunityNotice ? noticeKindLabel(primaryCommunityNotice) : "Official notice"}
-            </span>
+            {!isCompact ? (
+              <span style={announcementBoardPillStyle()}>
+                {communityNoticesLoading ? "Checking board" : primaryCommunityNotice ? noticeKindLabel(primaryCommunityNotice) : "Official notice"}
+              </span>
+            ) : null}
           </div>
 
           <div style={announcementListPanelStyle(isCompact)}>
@@ -4432,7 +4458,7 @@ export default function CommunityHomePage() {
           </section>
         ) : null}
 
-        <section style={communityBlockCard("quiet")} data-debug-id="community-home.go-to">
+        <section style={communityDisclosureSectionStyle(isCompact)} data-debug-id="community-home.go-to">
           <details
             open={isCompact ? communityActionsOpen : true}
             onToggle={(event) => {
@@ -4486,7 +4512,8 @@ export default function CommunityHomePage() {
           </details>
         </section>
 
-        <section id="community-home-community-list" style={communityBlockCard("quiet")} data-debug-id="community-home.switch-community">
+        {communityCountFromSummary > 1 || requestedCommunityError ? (
+        <section id="community-home-community-list" style={communityDisclosureSectionStyle(isCompact)} data-debug-id="community-home.switch-community">
           <StableButton
             type="button"
             debugId="community-home.switch.toggle"
@@ -4533,9 +4560,10 @@ export default function CommunityHomePage() {
             </div>
           ) : null}
         </section>
+        ) : null}
 
         {canManageCommunity ? (
-          <section style={communityBlockCard("quiet")} data-debug-id="community-home.admin-area">
+          <section style={communityDisclosureSectionStyle(isCompact)} data-debug-id="community-home.admin-area">
             <StableButton
               type="button"
               debugId="community-home.admin.toggle"
@@ -4552,7 +4580,7 @@ export default function CommunityHomePage() {
               <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
               <span style={{ minWidth: 0 }}>
                 <span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Admin area</span>
-                <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Bulletin settings, review queue, join requests, and Community Domain controls.</span>
+                <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>{isCompact ? "Manage this community." : "Bulletin settings, review queue, join requests, and Community Domain controls."}</span>
               </span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>{communityAdminOpen ? "^" : "v"}</span>
             </StableButton>
