@@ -455,9 +455,11 @@ Canonical rule:
 Must show, in phone-first order:
 - selected community identity hero
   - community name
-  - compact member count directly after the name
-  - stable community reference / global ID where available
-  - member role/status
+  - a compact two-column fact grid directly after the name
+  - real active-member count from the membership record; missing count data must say `Count unavailable` and must never be converted into zero
+  - stable community reference / global ID labelled `Community ID`
+  - signed-in member role labelled `Your position` and active membership labelled `Membership`
+  - selected-community `Available now` balance only when the connected effective balance is greater than zero
   - one small `Invite` action inside the hero
 - tapping `Invite` opens one recipient-name field and one `Send invite` action
   - the signed-in member is attached automatically as inviter
@@ -491,13 +493,13 @@ Rules:
 - `/app/community/:clanId` must not silently render a different stored selected community. It must verify the route param against `listMyClans`, select/reconcile when accessible, and show a truthful inaccessible-community state otherwise.
 - Community Home must not fetch, rotate, synthesize, or render live Spotlight media/feed.
 - Community Home must not expose Free Spotlight, Subscription Spotlight, Paid Repost, Vault controls, Merchant Release, Shop Gallery Tools, guided Spotlight chooser, or shop-readiness routing as first-screen controls. Use `Manage shop` as the Shop Control handoff.
-- Community Home must not fetch `getPoolMeSummary` or present cumulative finance in the identity/status area. Finance is a simple handoff.
+- Community Home must not fetch `getPoolMeSummary` or present cumulative finance in the identity/status area. It may fetch `/pool/me` for the selected community and show one conditional `Available now` fact when that effective balance is greater than zero. Finance remains the owner of the full money record.
 - Community Home must not expose a full cross-community portfolio; My GSN owns cross-GSN/community identity orientation later.
 - Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
 - Secondary details stay collapsed, grouped, or represented as compact rows.
 - Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
-- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home.
+- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount is the only approved conditional money fact in the hero.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
 Role states to support:

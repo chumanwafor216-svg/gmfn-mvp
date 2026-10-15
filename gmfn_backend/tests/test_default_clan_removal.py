@@ -54,6 +54,12 @@ def test_list_my_clans_returns_multiple_active_non_default_memberships(client, o
             hashed_password="hashed",
             role="admin",
         )
+        second_user = User(
+            id=2,
+            email="member@example.com",
+            hashed_password="hashed",
+            role="member",
+        )
         first_clan = Clan(
             id=2,
             name="Active Clan One",
@@ -70,7 +76,7 @@ def test_list_my_clans_returns_multiple_active_non_default_memberships(client, o
             status="active",
             invite_created_at=now,
         )
-        db.add_all([user, first_clan, second_clan])
+        db.add_all([user, second_user, first_clan, second_clan])
         db.flush()
         db.add_all(
             [
@@ -88,6 +94,13 @@ def test_list_my_clans_returns_multiple_active_non_default_memberships(client, o
                     role="member",
                     personal_pool_balance=0,
                 ),
+                ClanMembership(
+                    id=4,
+                    clan_id=3,
+                    user_id=2,
+                    role="member",
+                    personal_pool_balance=0,
+                ),
             ]
         )
         db.commit()
@@ -98,6 +111,11 @@ def test_list_my_clans_returns_multiple_active_non_default_memberships(client, o
     data = res.json()
     assert data["total"] == 2
     assert [item["id"] for item in data["items"]] == [3, 2]
+    assert data["items"][0]["status"] == "active"
+    assert data["items"][0]["membership_status"] == "active"
+    assert data["items"][0]["member_count"] == 2
+    assert data["items"][0]["active_member_count"] == 2
+    assert data["items"][1]["member_count"] == 1
 
 
 def test_list_my_clans_hides_inactive_left_or_default_communities(client, override_current_user):

@@ -212,6 +212,10 @@ class ClanOut(BaseModel):
     marketplace_name: Optional[str] = None
     marketplace_description: Optional[str] = None
     community_code: Optional[str] = None
+    status: str = "active"
+    member_count: int = 0
+    active_member_count: int = 0
+    membership_status: str = "active"
     role: Optional[str] = None
     member_role: Optional[str] = None
     membership_role: Optional[str] = None
@@ -3371,6 +3375,11 @@ def _clan_out(
         if db is not None
         else None
     )
+    active_member_count = (
+        _active_clan_member_count(db, clan_id=int(clan.id))
+        if db is not None
+        else 0
+    )
     return {
         "id": int(clan.id),
         "name": clan.name,
@@ -3378,6 +3387,10 @@ def _clan_out(
         "marketplace_name": getattr(clan, "marketplace_name", None),
         "marketplace_description": getattr(clan, "marketplace_description", None),
         "community_code": _community_code(clan.id),
+        "status": _safe_str(getattr(clan, "status", None), "active"),
+        "member_count": active_member_count,
+        "active_member_count": active_member_count,
+        "membership_status": "active" if membership_role else "unknown",
         "role": membership_role,
         "member_role": membership_role,
         "membership_role": membership_role,

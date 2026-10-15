@@ -19,6 +19,7 @@ import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import {
+  getPoolMe,
   getMe,
   getSelectedClanId,
   createCommunityNotice,
@@ -85,8 +86,11 @@ type ClanItem = {
   spotlight_subscribers_count?: number | null;
   vault_subscription_count?: number | null;
   vault_subscribers_count?: number | null;
+  active_member_count?: number | null;
   member_count?: number | null;
   members_count?: number | null;
+  status?: string | null;
+  membership_status?: string | null;
   role?: string | null;
   member_role?: string | null;
   membership_role?: string | null;
@@ -111,6 +115,11 @@ type CommunityDomainListRow = {
   clanId: number;
   canAdmin: boolean;
   dashboardPath: string;
+};
+
+type SelectedCommunityBalance = {
+  amount: number;
+  currency: string;
 };
 
 type NoticeTone = "success" | "error";
@@ -335,6 +344,26 @@ function positiveNumber(value: any): number {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
 }
 
+function nonNegativeNumberOrNull(value: any): number | null {
+  if (value === null || value === undefined || safeStr(value) === "") return null;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue >= 0
+    ? Math.floor(numberValue)
+    : null;
+}
+
+function identityValueLabel(value: any, fallback: string): string {
+  const text = firstTruthy(value).replace(/[_-]+/g, " ").trim();
+  if (!text) return fallback;
+  return text.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function communityPositionLabel(value: any, fallback: string): string {
+  const normalized = safeStr(value).toLowerCase();
+  if (normalized === "user" || normalized === "member") return "Member";
+  return identityValueLabel(value, fallback);
+}
+
 const COMMUNITY_NOTICE_SETTINGS_PANEL_ID = "community-home-notice-settings-panel";
 const COMMUNITY_NOTICE_SETTINGS_PANEL_HASH = `#${COMMUNITY_NOTICE_SETTINGS_PANEL_ID}`;
 const COMMUNITY_NOTICE_ACTIVE_LIMIT = 10;
@@ -409,12 +438,20 @@ function getCommunityReference(clan: ClanItem | null | undefined): string {
     clan?.community_code,
     clan?.clan_code,
     clan?.code,
-    clan ? `Community ${getClanId(clan) || "reference pending"}` : "Community reference pending"
+    clan ? "No community ID yet" : "No community selected"
   );
 }
 
-function getCommunityMemberCount(clan: ClanItem | null | undefined): number {
-  return positiveNumber(clan?.member_count || clan?.members_count);
+function getCommunityMemberCount(clan: ClanItem | null | undefined): number | null {
+  for (const value of [
+    clan?.active_member_count,
+    clan?.member_count,
+    clan?.members_count,
+  ]) {
+    const count = nonNegativeNumberOrNull(value);
+    if (count !== null) return count;
+  }
+  return null;
 }
 
 function routeClanIdFromParam(value: unknown): number {
@@ -621,6 +658,56 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
       "0 18px 34px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
     overflow: "hidden",
   };
+}
+
+function communityIdentityFactsStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+  };
+}
+
+function communityIdentityFactStyle(
+  emphasis = false,
+  fullWidth = false
+): React.CSSProperties {
+  return {
+    minWidth: 0,
+    minHeight: 64,
+    padding: "9px 10px",
+    borderRadius: 15,
+    border: emphasis
+      ? "1px solid rgba(242,199,102,0.46)"
+      : "1px solid rgba(255,255,255,0.16)",
+    background: emphasis
+      ? "linear-gradient(135deg, rgba(242,199,102,0.24), rgba(255,255,255,0.11))"
+      : "rgba(255,255,255,0.09)",
+    gridColumn: fullWidth ? "1 / -1" : undefined,
+  };
+}
+
+function CommunityIdentityFact({
+  label,
+  value,
+  emphasis = false,
+  fullWidth = false,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+  fullWidth?: boolean;
+}) {
+  return (
+    <div style={communityIdentityFactStyle(emphasis, fullWidth)}>
+      <div style={{ color: "#BFD0E2", fontSize: 10.5, fontWeight: 850, lineHeight: 1.2 }}>
+        {label}
+      </div>
+      <div style={{ marginTop: 4, color: emphasis ? "#FFF1BE" : "#FFFFFF", fontSize: 14, fontWeight: 950, lineHeight: 1.2, overflowWrap: "break-word" }}>
+        {value}
+      </div>
+    </div>
+  );
 }
 
 type CommunitySurfaceTone = "summary" | "blue" | "gold" | "raised" | "quiet";
@@ -1306,6 +1393,20 @@ function formatSignedGlobalAmount(value: any): string {
   return `${sign}${formatGlobalAmount(Math.abs(amount))}`;
 }
 
+function formatCommunityBalance(balance: SelectedCommunityBalance): string {
+  const currency = safeStr(balance.currency).toUpperCase() || "NGN";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: balance.amount % 1 === 0 ? 0 : 2,
+    }).format(balance.amount);
+  } catch {
+    return `${formatGlobalAmount(balance.amount)} ${currency}`;
+  }
+}
+
 function wordLimit(text: string, maxWords: number): string {
   const words = safeStr(text).split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return words.join(" ");
@@ -1787,6 +1888,8 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [communityDomainRows, setCommunityDomainRows] = useState<CommunityDomainListRow[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
+  const [selectedCommunityBalance, setSelectedCommunityBalance] =
+    useState<SelectedCommunityBalance | null>(null);
   const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
   const [communityPreviousAnnouncements, setCommunityPreviousAnnouncements] =
     useState<CommunityNoticeItem[]>([]);
@@ -2110,6 +2213,40 @@ export default function CommunityHomePage() {
 
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
+
+  useEffect(() => {
+    let alive = true;
+    setSelectedCommunityBalance(null);
+
+    if (!selectedClanId) {
+      return () => {
+        alive = false;
+      };
+    }
+
+    void getPoolMe("NGN", 1, { clan_id: selectedClanId })
+      .then((response) => {
+        if (!alive || positiveNumber(response?.clan_id) !== selectedClanId) return;
+
+        const amount = moneyNumber(
+          firstTruthy(response?.effective_available, response?.available_balance)
+        );
+        if (amount <= 0) return;
+
+        setSelectedCommunityBalance({
+          amount,
+          currency: firstTruthy(response?.currency, "NGN").toUpperCase(),
+        });
+      })
+      .catch(() => {
+        if (alive) setSelectedCommunityBalance(null);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
+
   const isCommunityNoticeOfficer = isCommunityOfficer(selectedClan, me);
   const activeNoticePostingPolicy = normalizeNoticePostingPolicy(
     firstTruthy(communityNoticePostingPolicy, selectedClan?.notice_posting_policy)
@@ -2510,20 +2647,27 @@ export default function CommunityHomePage() {
       ) || null
     );
   }, [selectedClanId, sortedCommunityDomainRows]);
-  const selectedCommunityRoleLabel = firstTruthy(
-    selectedClan?.membership_role,
-    selectedClan?.member_role,
-    selectedClan?.participant_role,
-    selectedClan?.role,
+  const selectedCommunityRoleLabel = communityPositionLabel(
+    firstTruthy(
+      selectedClan?.membership_role,
+      selectedClan?.member_role,
+      selectedClan?.participant_role,
+      selectedClan?.role
+    ),
     selectedClan ? "Member" : "No community selected"
   );
-  const selectedCommunityStatusLabel = firstTruthy(
-    (selectedClan as any)?.status,
-    selectedCommunityDomainRow?.status,
+  const selectedCommunityStatusLabel = identityValueLabel(
+    selectedClan?.membership_status,
     selectedClan ? "Active" : "Choose a community"
   );
   const selectedCommunityReference = getCommunityReference(selectedClan);
   const selectedCommunityMemberCount = getCommunityMemberCount(selectedClan);
+  const selectedCommunityMemberCountLabel =
+    selectedCommunityMemberCount === null
+      ? "Count unavailable"
+      : `${selectedCommunityMemberCount} ${
+          selectedCommunityMemberCount === 1 ? "member" : "members"
+        }`;
   const canManageCommunityDomain = Boolean(selectedCommunityDomainRow?.canAdmin);
   const canManageCommunity = Boolean(isCommunityNoticeOfficer || canManageCommunityDomain);
 
@@ -4153,13 +4297,47 @@ export default function CommunityHomePage() {
                   You are inside one selected community. Marketplace, shop, support, trust, and notices open from this community context.
                 </div>
               ) : null}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={badge(false)}>
-                  {selectedCommunityMemberCount} {selectedCommunityMemberCount === 1 ? "member" : "members"}
-                </span>
-              </div>
-              <div style={{ color: "#C8D8E8", fontSize: 12, fontWeight: 780, lineHeight: 1.35 }}>
-                {selectedCommunityReference} · {selectedCommunityRoleLabel} · {selectedCommunityStatusLabel}
+              <div
+                style={communityIdentityFactsStyle()}
+                data-community-home-billboard-facts="true"
+              >
+                <div data-debug-id="community-home.identity.members">
+                  <CommunityIdentityFact
+                    label="Members"
+                    value={selectedCommunityMemberCountLabel}
+                  />
+                </div>
+                <div data-debug-id="community-home.identity.community-id">
+                  <CommunityIdentityFact
+                    label="Community ID"
+                    value={selectedCommunityReference}
+                  />
+                </div>
+                <div data-debug-id="community-home.identity.position">
+                  <CommunityIdentityFact
+                    label="Your position"
+                    value={selectedCommunityRoleLabel}
+                  />
+                </div>
+                <div data-debug-id="community-home.identity.membership">
+                  <CommunityIdentityFact
+                    label="Membership"
+                    value={selectedCommunityStatusLabel}
+                  />
+                </div>
+                {selectedCommunityBalance ? (
+                  <div
+                    style={{ gridColumn: "1 / -1" }}
+                    data-debug-id="community-home.identity.balance"
+                  >
+                    <CommunityIdentityFact
+                      label="Available now"
+                      value={formatCommunityBalance(selectedCommunityBalance)}
+                      emphasis
+                      fullWidth
+                    />
+                  </div>
+                ) : null}
               </div>
               {communityHomeNeedsDisplayName ? (
                 <StableButton

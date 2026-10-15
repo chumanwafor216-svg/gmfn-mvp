@@ -60,6 +60,10 @@ const protectedAudits = [
     script: "audit-community-home-phone-buttons.mjs",
   },
   {
+    label: "community home truthful billboard",
+    script: "audit-community-home-billboard.mjs",
+  },
+  {
     label: "community join requests layout",
     script: "audit-community-join-requests-layout.mjs",
   },

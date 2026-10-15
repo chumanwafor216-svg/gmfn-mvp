@@ -91,6 +91,7 @@
     "audit:shop-assets-slots": "node tools/audit-shop-assets-slots.mjs",
     "audit:community-home-button-inventory": "node tools/audit-community-home-button-inventory.mjs",
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
+    "audit:community-home-billboard": "node tools/audit-community-home-billboard.mjs",
     "audit:community-join-requests-layout": "node tools/audit-community-join-requests-layout.mjs",
     "audit:notifications-button-inventory": "node tools/audit-notifications-button-inventory.mjs",
     "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
