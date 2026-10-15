@@ -2396,6 +2396,8 @@ export default function MyGMFNAndIPage() {
     firstPositiveNumber(currentClan?.id, currentClan?.clan_id, memberCommunities[0]?.id, memberCommunities[0]?.clan_id);
   const selectedCommunityForShop =
     memberCommunityRows.find((community) => community.isSelected) || memberCommunityRows[0];
+  const flattenCompactSingleCommunity =
+    isCompact && Boolean(selectedCommunityForShop) && !memberHomeHasMultipleCommunities;
   const selectedCommunityName =
     firstTruthy(
       selectedCommunityForShop?.name,
@@ -2914,8 +2916,16 @@ export default function MyGMFNAndIPage() {
                 }}
               >
                 <div style={memberHomeSectionShell(true)} data-my-gsn-identity-first="true">
-                  {memberHomeSectionKicker("id", "My identity", isCompact, true)}
-                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                  {isCompact ? (
+                    <div data-my-gsn-identity-heading="text-only" style={sectionLabel()}>
+                      My identity
+                    </div>
+                  ) : (
+                    <div data-my-gsn-identity-heading="full">
+                      {memberHomeSectionKicker("id", "My identity", false, true)}
+                    </div>
+                  )}
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: isCompact ? 6 : 8 }}>
                     {displayName}
                   </h2>
                   {!isCompact || !hasGsnId ? (
@@ -2966,15 +2976,28 @@ export default function MyGMFNAndIPage() {
                     <>
                       <div
                         data-my-gsn-selected-community-card="true"
-                        style={{ ...memberHomeCard(true), marginTop: isCompact ? 10 : 12, minHeight: isCompact ? 72 : 92 }}
+                        data-my-gsn-selected-community-mode={
+                          flattenCompactSingleCommunity ? "flat-single" : "card"
+                        }
+                        style={
+                          flattenCompactSingleCommunity
+                            ? { marginTop: 10, minWidth: 0 }
+                            : {
+                                ...memberHomeCard(true),
+                                marginTop: isCompact ? 10 : 12,
+                                minHeight: isCompact ? 72 : 92,
+                              }
+                        }
                       >
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         {!isCompact ? memberHomeIconBadge("community", true, true) : null}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
-                            Selected community
-                          </div>
-                          <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                          {!flattenCompactSingleCommunity ? (
+                            <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                              Selected community
+                            </div>
+                          ) : null}
+                          <div style={{ marginTop: flattenCompactSingleCommunity ? 0 : 4, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
                             {selectedCommunityForShop.name}
                           </div>
                           <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
@@ -4333,18 +4356,21 @@ export default function MyGMFNAndIPage() {
             </details>
           </section>
         </>
-      ) : (
+      ) : activeTab === "settings" || !isCompact ? (
         <>
-          <section style={pageCard()}>
-            <div style={sectionLabel()}>Device preferences and account name</div>
-
-            <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-              These reading preferences are saved on this device and may not follow you to another phone. Your display name saves to your GSN account.
-            </div>
+          <section data-my-gsn-settings-editor="true" style={pageCard()}>
+            {!isCompact ? (
+              <div data-my-gsn-settings-intro="desktop-only">
+                <div style={sectionLabel()}>Device preferences and account name</div>
+                <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+                  These reading preferences are saved on this device and may not follow you to another phone. Your display name saves to your GSN account.
+                </div>
+              </div>
+            ) : null}
 
             <div
               style={{
-                marginTop: 16,
+                marginTop: isCompact ? 0 : 16,
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.05fr) 320px",
                 gap: 16,
@@ -4355,10 +4381,13 @@ export default function MyGMFNAndIPage() {
                 <div style={innerCard()}>
                   <div style={sectionLabel()}>Profile display name</div>
 
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    This is the name GSN should show on account, Admin Tools,
-                    TrustSlip, and profile surfaces instead of your login
-                    identifier.
+                  <div
+                    data-my-gsn-profile-name-help={isCompact ? "compact" : "full"}
+                    style={{ marginTop: 8, ...helperText() }}
+                  >
+                    {isCompact
+                      ? "The name people see across GSN."
+                      : "This is the name GSN should show on account, Admin Tools, TrustSlip, and profile surfaces instead of your login identifier."}
                   </div>
 
                   <div style={{ marginTop: 12 }}>
@@ -4386,9 +4415,11 @@ export default function MyGMFNAndIPage() {
                 <div style={innerCard()}>
                   <div style={sectionLabel()}>Notification reading mode</div>
 
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    Choose whether the inbox and related pages should feel shorter or fuller.
-                  </div>
+                  {!isCompact ? (
+                    <div data-my-gsn-reading-mode-help="desktop-only" style={{ marginTop: 8, ...helperText() }}>
+                      Choose whether the inbox and related pages should feel shorter or fuller.
+                    </div>
+                  ) : null}
 
                   <div style={{ marginTop: 12 }}>
                     <select
@@ -4418,8 +4449,10 @@ export default function MyGMFNAndIPage() {
                           }))
                         }
                       />
-                      <span>
-                        Put unread items first so the most unread work rises to the top.
+                      <span data-my-gsn-unread-label={isCompact ? "compact" : "full"}>
+                        {isCompact
+                          ? "Show unread items first"
+                          : "Put unread items first so the most unread work rises to the top."}
                       </span>
                     </label>
 
@@ -4434,17 +4467,21 @@ export default function MyGMFNAndIPage() {
                           }))
                         }
                       />
-                      <span>
-                        Open the destination page directly from the primary action instead of reviewing it here first.
+                      <span data-my-gsn-direct-action-label={isCompact ? "compact" : "full"}>
+                        {isCompact
+                          ? "Open the destination directly"
+                          : "Open the destination page directly from the primary action instead of reviewing it here first."}
                       </span>
                     </label>
                   </div>
 
                   <div style={{ marginTop: 18 }}>
                     <div style={sectionLabel()}>Tone preset</div>
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      Choose how the guidance language should sound.
-                    </div>
+                    {!isCompact ? (
+                      <div data-my-gsn-tone-help="desktop-only" style={{ marginTop: 8, ...helperText() }}>
+                        Choose how the guidance language should sound.
+                      </div>
+                    ) : null}
 
                     <div style={{ marginTop: 12 }}>
                       <select
@@ -4491,7 +4528,8 @@ export default function MyGMFNAndIPage() {
                 </div>
               </div>
 
-              <div style={softCard()}>
+              {!isCompact ? (
+              <div data-my-gsn-current-reading="desktop-summary" style={softCard()}>
                 <div style={sectionLabel()}>Current reading</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -4558,14 +4596,15 @@ export default function MyGMFNAndIPage() {
                   </div>
                 </div>
               </div>
+              ) : null}
             </div>
           </section>
 
           <Suspense fallback={null}>
-            <CompanionSettingsPanel />
+            <CompanionSettingsPanel compact={isCompact} />
           </Suspense>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

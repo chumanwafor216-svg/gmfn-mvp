@@ -343,7 +343,10 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
     const communityToggle = document.querySelector('[data-cta-id="my-gmfn.communities.toggle"]');
     const communityCount = document.querySelector('[data-my-gsn-community-count="true"]');
     const selectedCommunityCard = document.querySelector('[data-my-gsn-selected-community-card="true"]');
+    const settingsEditor = document.querySelector('[data-my-gsn-settings-editor="true"]');
+    const selectedCommunityCardStyle = selectedCommunityCard instanceof HTMLElement ? getComputedStyle(selectedCommunityCard) : null;
     const identityFacts = Array.from(document.querySelectorAll('[data-my-gsn-identity-fact]'));
+    const identityHeading = document.querySelector('[data-my-gsn-identity-heading]');
     const identityValues = Array.from(document.querySelectorAll('[data-my-gsn-identity-value]'));
     return {
       pathname: window.location.pathname,
@@ -367,16 +370,24 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       hasCommunityPortfolio: Boolean(document.querySelector('[data-my-gsn-community-portfolio="true"]')),
       hasCommunityToggle: Boolean(communityToggle),
       hasCommunityCount: Boolean(communityCount),
+      selectedCommunityMode: selectedCommunityCard?.getAttribute("data-my-gsn-selected-community-mode") ?? null,
+      selectedCommunityHasSelectionLabel: Boolean(selectedCommunityCard?.textContent?.includes("Selected community")),
+      selectedCommunityCardBorderWidth: selectedCommunityCardStyle ? Math.round(parseFloat(selectedCommunityCardStyle.borderLeftWidth)) : null,
+      selectedCommunityCardPadding: selectedCommunityCardStyle ? Math.round(parseFloat(selectedCommunityCardStyle.paddingLeft)) : null,
       selectedCommunityCardHeight: selectedCommunityCard instanceof HTMLElement ? Math.round(selectedCommunityCard.getBoundingClientRect().height) : null,
       selectedCommunityCardImageCount: selectedCommunityCard?.querySelectorAll("img").length ?? null,
       hasShopBusiness: Boolean(document.querySelector('[data-my-gsn-shop-business="true"]')),
       hasTrustEvidence: Boolean(document.querySelector('[data-my-gsn-trust-evidence="true"]')),
       hasSettingsAccount: Boolean(document.querySelector('[data-my-gsn-settings-account="true"]')),
+      hasSettingsEditor: Boolean(settingsEditor),
       identityHasGsnId: Boolean(identity?.textContent?.includes("GSN ID")),
       identityHasPhone: Boolean(identity?.textContent?.includes("Phone")),
       identityHasHandle: Boolean(identity?.textContent?.includes("Handle")),
       handleUtilityPresent: Boolean(handleUtility),
       identityFactCount: identityFacts.length,
+      identityHeadingMode: identityHeading?.getAttribute("data-my-gsn-identity-heading") ?? null,
+      identitySectionHeight: identity instanceof HTMLElement ? Math.round(identity.getBoundingClientRect().height) : null,
+      identitySectionImageCount: identity?.querySelectorAll("img").length ?? null,
       identityFactMaxHeight: Math.round(Math.max(0, ...identityFacts.map((node) => node.getBoundingClientRect().height))),
       identityValueMaxHeight: Math.round(Math.max(0, ...identityValues.map((node) => node.getBoundingClientRect().height))),
       identityFactImageCount: identityFacts.reduce((count, node) => count + node.querySelectorAll("img").length, 0),
@@ -386,6 +397,7 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       moreBottom: more instanceof HTMLElement ? Math.round(more.getBoundingClientRect().bottom) : null,
       openCommunityTop: openCommunity instanceof HTMLElement ? Math.round(openCommunity.getBoundingClientRect().top) : null,
       openCommunityBottom: openCommunity instanceof HTMLElement ? Math.round(openCommunity.getBoundingClientRect().bottom) : null,
+      documentHeight: document.documentElement.scrollHeight,
       noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
     };
   });
@@ -400,14 +412,118 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
     const more = document.querySelector('[data-my-gsn-more="secondary"]');
     const handleUtility = document.querySelector('[data-my-gsn-handle-utility="secondary"]');
     const copyHandle = document.querySelector('[data-cta-id="my-gmfn.identity.copy-handle"]');
+    const settingsLink = document.querySelector('[data-cta-id="my-gmfn.settings.open"]');
     return {
       moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
       handleUtilityVisible: isVisible(handleUtility),
       handleTextPresent: Boolean(handleUtility?.textContent?.includes("GSN handle")),
       copyHandleVisible: isVisible(copyHandle),
+      settingsLinkVisible: isVisible(settingsLink),
       noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
     };
   });
+
+  await page.locator('[data-cta-id="my-gmfn.settings.open"]').click();
+  await page.waitForFunction(() => new URLSearchParams(window.location.search).get("tab") === "settings");
+  await page.waitForSelector('[data-companion-settings-panel="compact"]', { timeout: MAX_FIRST_SURFACE_MS });
+  await delay(300);
+  result.settingsRoute = await page.evaluate(() => {
+    const isVisible = (node) => node instanceof HTMLElement && !node.closest("details:not([open])") && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden";
+    const editor = document.querySelector('[data-my-gsn-settings-editor="true"]');
+    const companionPanel = document.querySelector('[data-companion-settings-panel]');
+    const companionDisclosure = document.querySelector('[data-companion-settings-disclosure="true"]');
+    const companionControls = document.querySelector('[data-companion-settings-controls="true"]');
+    return {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hasEditor: Boolean(editor),
+      hasDisplayNameField: Boolean(editor?.textContent?.includes("Profile display name")),
+      hasPreferenceSave: Boolean(document.querySelector('[data-cta-id="my-gmfn.settings.save"]')),
+      hasPreferenceReset: Boolean(document.querySelector('[data-cta-id="my-gmfn.settings.reset"]')),
+      hasCurrentReading: Boolean(document.querySelector('[data-my-gsn-current-reading]')),
+      hasSettingsIntro: Boolean(document.querySelector('[data-my-gsn-settings-intro]')),
+      profileNameHelp: document.querySelector('[data-my-gsn-profile-name-help]')?.textContent?.trim() ?? null,
+      profileNameHelpMode: document.querySelector('[data-my-gsn-profile-name-help]')?.getAttribute("data-my-gsn-profile-name-help") ?? null,
+      hasReadingModeHelp: Boolean(document.querySelector('[data-my-gsn-reading-mode-help]')),
+      unreadLabel: document.querySelector('[data-my-gsn-unread-label]')?.textContent?.trim() ?? null,
+      directActionLabel: document.querySelector('[data-my-gsn-direct-action-label]')?.textContent?.trim() ?? null,
+      hasToneHelp: Boolean(document.querySelector('[data-my-gsn-tone-help]')),
+      selectCount: editor?.querySelectorAll("select").length ?? 0,
+      checkboxCount: editor?.querySelectorAll('input[type="checkbox"]').length ?? 0,
+      editorHeight: editor instanceof HTMLElement ? Math.round(editor.getBoundingClientRect().height) : null,
+      companionPanelMode: companionPanel?.getAttribute("data-companion-settings-panel") ?? null,
+      companionDisclosureOpen: companionDisclosure instanceof HTMLDetailsElement ? companionDisclosure.open : null,
+      companionControlsVisible: isVisible(companionControls),
+      companionClosedHeight: companionPanel instanceof HTMLElement ? Math.round(companionPanel.getBoundingClientRect().height) : null,
+      hasCompanionSummary: Boolean(companionPanel?.textContent?.includes("Companion mode")),
+      noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+
+  await page.locator('[data-cta-id="companion-settings.toggle"]').click();
+  await delay(300);
+  result.companionExpanded = await page.evaluate(() => {
+    const isVisible = (node) => node instanceof HTMLElement && !node.closest("details:not([open])") && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden";
+    const disclosure = document.querySelector('[data-companion-settings-disclosure="true"]');
+    const panel = document.querySelector('[data-companion-settings-panel]');
+    const controls = document.querySelector('[data-companion-settings-controls="true"]');
+    return {
+      disclosureOpen: disclosure instanceof HTMLDetailsElement ? disclosure.open : null,
+      panelHeight: panel instanceof HTMLElement ? Math.round(panel.getBoundingClientRect().height) : null,
+      hasIntroHeadline: Boolean(controls?.textContent?.includes("Let the app gently call attention back")),
+      hasIntroParagraph: Boolean(controls?.textContent?.includes("This controls the companion behavior")),
+      hasSoundPermissionChip: Boolean(controls?.textContent?.includes("Sound uses your existing browser audio permission")),
+      controlLabels: Object.fromEntries(
+        Array.from(controls?.querySelectorAll("[data-companion-control-label]") ?? []).map((node) => [
+          node.getAttribute("data-companion-control-label"),
+          node.textContent?.trim() ?? "",
+        ])
+      ),
+      controlHelpers: Object.fromEntries(
+        Array.from(controls?.querySelectorAll("[data-companion-help]") ?? []).map((node) => [
+          node.getAttribute("data-companion-help"),
+          node.textContent?.trim() ?? "",
+        ])
+      ),
+      controlsVisible: isVisible(controls),
+      hasIntensityChoices: ["off", "light", "active"].every((mode) =>
+        Boolean(document.querySelector(`[data-cta-id="companion-settings.mode.${mode}"]`))
+      ),
+      hasAllRemindersChoice: Boolean(controls?.textContent?.includes("All reminders")),
+      hasNotificationControl: Boolean(document.querySelector('[data-cta-id="companion-settings.push.on"]')),
+      scheduleInputCount: controls?.querySelectorAll('input[type="time"], input[type="number"]').length ?? 0,
+      noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+
+  const companionExpandedScreenshotPath = process.env.GSN_COMPANION_EXPANDED_SCREENSHOT_PATH?.trim();
+  if (companionExpandedScreenshotPath) {
+    await page.locator('[data-companion-settings-panel="compact"]').screenshot({
+      path: companionExpandedScreenshotPath,
+    });
+  }
+
+  const settingsScreenshotPath = process.env.GSN_SETTINGS_SCREENSHOT_PATH?.trim();
+  if (settingsScreenshotPath) {
+    await page.goto(`${baseURL}/app/my-gmfn-and-i?tab=settings`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+    await page.waitForSelector('[data-my-gsn-settings-editor="true"]', { timeout: MAX_FIRST_SURFACE_MS });
+    await delay(300);
+    await page.locator('[data-my-gsn-settings-editor="true"]').screenshot({ path: settingsScreenshotPath });
+  }
+
+  const companionScreenshotPath = process.env.GSN_COMPANION_SCREENSHOT_PATH?.trim();
+  if (companionScreenshotPath) {
+    await page.goto(`${baseURL}/app/my-gmfn-and-i?tab=settings`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+    await page.waitForSelector('[data-companion-settings-panel="compact"]', { timeout: MAX_FIRST_SURFACE_MS });
+    await delay(300);
+    await page.locator('[data-companion-settings-panel="compact"]').screenshot({ path: companionScreenshotPath });
+  }
 
   await context.close();
 
@@ -433,11 +549,16 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       !result.hasCommunityToggle &&
       result.hasShopBusiness &&
       !result.hasCommunityCount &&
+      result.selectedCommunityMode === "flat-single" &&
+      !result.selectedCommunityHasSelectionLabel &&
+      result.selectedCommunityCardBorderWidth === 0 &&
+      result.selectedCommunityCardPadding === 0 &&
       result.selectedCommunityCardHeight !== null &&
       result.selectedCommunityCardHeight <= 90 &&
       result.selectedCommunityCardImageCount === 0 &&
       result.hasTrustEvidence &&
       result.hasSettingsAccount &&
+      !result.hasSettingsEditor &&
       result.identityHasGsnId &&
       result.identityHasPhone &&
       !result.identityHasHandle &&
@@ -445,6 +566,10 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       !result.handleUtilityVisible &&
       result.identityFactCount === 2 &&
       result.identityFactMaxHeight <= 90 &&
+      result.identityHeadingMode === "text-only" &&
+      result.identitySectionHeight !== null && result.identitySectionHeight <= 180 &&
+      result.identitySectionImageCount === 0 &&
+
       result.identityValueMaxHeight <= 36 &&
       result.identityFactImageCount === 0 &&
       !result.copyHandleVisible &&
@@ -453,12 +578,55 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.moreBottom <= 844 &&
       result.openCommunityBottom !== null &&
       result.openCommunityBottom <= 844 &&
+      result.documentHeight <= 844 &&
       result.noHorizontalOverflow &&
       result.expanded.moreOpen === true &&
       result.expanded.handleUtilityVisible &&
       result.expanded.handleTextPresent &&
       result.expanded.copyHandleVisible &&
+      result.expanded.settingsLinkVisible &&
       result.expanded.noHorizontalOverflow &&
+      result.settingsRoute.pathname === "/app/my-gmfn-and-i" &&
+      new URLSearchParams(result.settingsRoute.search).get("tab") === "settings" &&
+      result.settingsRoute.hasEditor &&
+      result.settingsRoute.hasDisplayNameField &&
+      result.settingsRoute.hasPreferenceSave &&
+      result.settingsRoute.hasPreferenceReset &&
+      !result.settingsRoute.hasCurrentReading &&
+      !result.settingsRoute.hasSettingsIntro &&
+      result.settingsRoute.profileNameHelp === "The name people see across GSN." &&
+      result.settingsRoute.profileNameHelpMode === "compact" &&
+      !result.settingsRoute.hasReadingModeHelp &&
+      result.settingsRoute.unreadLabel === "Show unread items first" &&
+      result.settingsRoute.directActionLabel === "Open the destination directly" &&
+      !result.settingsRoute.hasToneHelp &&
+      result.settingsRoute.selectCount === 2 &&
+      result.settingsRoute.checkboxCount === 2 &&
+      result.settingsRoute.noHorizontalOverflow &&
+      result.settingsRoute.companionPanelMode === "compact" &&
+      result.settingsRoute.companionDisclosureOpen === false &&
+      !result.settingsRoute.companionControlsVisible &&
+      result.settingsRoute.companionClosedHeight !== null &&
+      result.settingsRoute.companionClosedHeight <= 100 &&
+      result.settingsRoute.hasCompanionSummary &&
+      result.companionExpanded.disclosureOpen === true &&
+      result.companionExpanded.panelHeight !== null &&
+      result.companionExpanded.panelHeight < 1477 &&
+      !result.companionExpanded.hasIntroHeadline &&
+      !result.companionExpanded.hasIntroParagraph &&
+      !result.companionExpanded.hasSoundPermissionChip &&
+      result.companionExpanded.controlLabels["reminder-level"] === "Reminder level" &&
+      result.companionExpanded.controlLabels.sound === "Sound" &&
+      result.companionExpanded.controlLabels["spoken-reminders"] === "Spoken reminders" &&
+      result.companionExpanded.controlLabels["daily-limit"] === "Daily reminder limit" &&
+      result.companionExpanded.controlLabels["repeat-after"] === "Repeat after (minutes)" &&
+      result.companionExpanded.controlHelpers["spoken-reminders"] === "Spoken reminders for important alerts." &&
+      result.companionExpanded.controlHelpers["system-notifications"] === "Get reminders when GSN is not open." &&
+      result.companionExpanded.controlsVisible &&
+      result.companionExpanded.hasIntensityChoices &&
+      result.companionExpanded.hasAllRemindersChoice &&
+      result.companionExpanded.hasNotificationControl &&
+      result.companionExpanded.scheduleInputCount === 4 &&
       !result.hasMemberHomeHeadline,
     result,
   };

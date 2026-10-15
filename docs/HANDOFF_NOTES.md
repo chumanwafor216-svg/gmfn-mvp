@@ -1,3 +1,109 @@
+## 2026-10-15 - Phone Community Bulletin traffic-light indicators restored locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Owner correction: the recent phone simplification hid the full Community Pulse and accidentally removed the visible red/amber/green timing meaning whenever the Bulletin had only one notice. The coloured numbered notice selector still existed, but it only appears for multiple notices.
+- Phone behavior: when the Bulletin has active notices, it now shows one compact 34px count strip directly below the Bulletin heading: red `Now`, amber `72h`, and green `Clear`.
+- Preserved behavior: the full desktop Community Pulse explanation/actions, multi-notice selector, notice body, `Open notice`, reactions, calendar tile boundary, urgency helper, API data, routes, permissions, and Community Home action count are unchanged.
+- Space decision: no useful hero fact or action was removed. The 34px strip fits without horizontal overflow and the `Community actions` row remains visible in the 390x844 verification viewport.
+- Contracts updated: `docs/SCREEN_SPECS.md` and `docs/FREEZE_POLICY.md` now record the owner-corrected compact-phone/full-desktop boundary. The Community Home inventory and phone-button audits cage the three timing labels/tones and keep the full Pulse/calendar off phone.
+- Verification passed: production TypeScript/Vite build; focused Community Home button-inventory, phone-button, and truthful-billboard audits; focused 390x844 Community Home smoke; source syntax check; scoped diff check; and manual screenshot inspection of `C:\tmp\gmfn-community-home\community-home-simple-390x844.png`.
+- Broad-audit truth: the repository-wide protected-button-freeze audit is not green. Its Community Home Bulletin audits pass, but it also reports unrelated existing contract drift in Community Home quick-action fixed-height matching, a raw Commitments link, Dashboard Market Wisdom matching, mobile route coverage, and several sandbox `spawn EPERM` visual checks. None was caused or concealed by this strip restoration.
+- Files changed for this slice: `frontend/src/pages/CommunityHomePage.tsx`, `frontend/tools/smoke-community-home-simple-phone.mjs`, `frontend/tools/audit-community-home-button-inventory.mjs`, `frontend/tools/audit-community-home-phone-buttons.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the restored colours reuse the existing urgency calculation. That calculation can fall back to a notice's publication/creation date when no explicit schedule date exists, so a newly published unscheduled notice may appear red as `Now`. This slice restores visibility; it does not silently redefine the timing model.
+
+## 2026-10-15 - Expanded phone Companion wording simplified locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: opening Companion Mode revealed a 1,477px phone panel whose first usable control was delayed by a repeated headline, a three-line behavior explanation, and an always-visible browser-audio permission chip. Several labels still used internal words such as `companion intensity` and `nudge`.
+- Phone behavior: the expanded panel now starts directly with `Reminder level`. It uses `Sound`, `Spoken reminders`, `All reminders`, `Daily reminder limit`, and `Repeat after (minutes)`, plus the short helpers `Spoken reminders for important alerts.` and `Get reminders when GSN is not open.`
+- Preserved behavior: Off/Light/Active, all four sound choices, spoken-reminder On/Off, system-notification On/Off and test, both quiet-hour inputs, daily limit, repeat interval, save status, permission requests, local/server persistence, and the closed 60px phone summary remain. Desktop retains the original introduction, permission chip, technical labels, and fuller helpers.
+- Contracts unchanged: no companion setting key, value, default, local-storage key, API payload, notification permission flow, push registration/test, action id, route, auth, or persistence behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone/desktop copy boundary; `frontend/tools/audit-app-tab-first-paint.mjs` verifies the missing phone preamble/chip, exact plain-language labels/helpers, every control family, panel-height reduction, and horizontal containment.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, capability-mirror, and phone-surface-simplicity audits; focused My GSN Playwright checks at 390x844; and manual inspection of `C:\tmp\gsn-my-gsn-phone-companion-expanded-plain.png`.
+- Visual truth: expanded phone Companion Mode measures 1,232px instead of 1,477px, a 245px reduction. The first viewport now begins with real choices rather than explanation, and there is no horizontal overflow.
+- Files changed for this slice: `frontend/src/components/CompanionSettingsPanel.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: 1,232px is still a long advanced panel because it genuinely contains eight setting categories. The next safe reduction would group timing/limit fields into a compact disclosure; deleting them or pretending they are simple toggles would remove real control.
+
+## 2026-10-15 - Phone Settings wording reduced locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: the explicit phone Settings surface repeated its purpose in a large `Device preferences and account name` introduction, then explained straightforward controls in several more sentences and used two long checkbox labels.
+- Phone behavior: Settings now starts directly with `Profile display name`; its only retained helper is `The name people see across GSN.` Notification reading mode and Tone preset no longer carry duplicate explanatory sentences. The checkbox labels are now `Show unread items first` and `Open the destination directly`.
+- Preserved behavior: the display-name field and save action, both preference selects, both checkboxes, Save Preferences, Reset Preferences, the collapsed Companion Mode row, and every advanced Companion control remain. Desktop retains the complete introduction and fuller helper/checkbox wording.
+- Contracts unchanged: no setting value, default, local-storage key, API, auth, permission, route, input, action id, or persistence behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone/desktop wording boundary; `frontend/tools/audit-app-tab-first-paint.mjs` verifies the missing phone introduction/helpers, exact concise labels, all original controls, collapsed Companion row, and horizontal containment.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, capability-mirror, and phone-surface-simplicity audits; focused Profile/My GSN Playwright checks at 390x844; and manual inspection of `C:\tmp\gsn-my-gsn-phone-settings-concise.png`.
+- Visual truth: the phone editor measures 657px instead of the preceding 999px baseline, a 342px reduction. It has no horizontal overflow; Companion Mode remains a separate closed 60px row.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: 657px is still a real settings form with two separately persisted groups and a Reset action. Combining or deleting those controls would be a behavior change, not honest surface cleanup, so this slice stops at eliminating redundant words.
+
+## 2026-10-15 - Phone Companion Mode collapsed locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: after the basic phone Settings editor, Companion Mode exposed a second long surface containing intensity, sound, voice, system-notification, quiet-hours, daily-limit, and repeat-reminder controls regardless of whether the member wanted them.
+- Phone behavior: Companion Mode is now closed by default as one 60px row showing the current mode, such as `Light reminders`, and one `Open` action. The action changes to `Close` while expanded.
+- Preserved behavior: expansion restores every original Companion control and its existing immediate persistence, notification-permission, web-push registration/test, local fallback, and status behavior. Desktop remains expanded.
+- Contracts unchanged: no companion setting, default, local-storage key, backend settings API, notification permission, push subscription, test-notification, auth, or route behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the compact prop/disclosure and desktop-expanded boundary; `frontend/tools/audit-app-tab-first-paint.mjs` verifies the 60px closed state and hidden controls, then expands it and verifies intensity, notification, four schedule/limit inputs, and horizontal containment.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile/My GSN Playwright checks at 390x844; and manual inspection of the collapsed Companion row screenshot.
+- Visual truth: the closed phone panel measures 60px, says `Light reminders`, exposes one `Open` action, and has no horizontal overflow. Expanded controls remain available without overflow.
+- Files changed for this slice: `frontend/src/components/CompanionSettingsPanel.tsx`, `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: opening Companion Mode still reveals a long, technical control set. That complexity is real and should not be deleted blindly; the default phone surface is now simple because advanced controls wait behind an intentional tap.
+
+## 2026-10-15 - Duplicate phone Settings summary removed locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: the explicit phone Settings surface repeated the chosen notification mode, unread ordering, primary-action style, and tone in four `Current reading` cards immediately after controls that already showed those values.
+- Phone behavior: the redundant `Current reading` card stack is absent. The editable controls remain the single source of truth on the task surface.
+- Preserved behavior: profile display name, two preference selects, both checkboxes, Save Display Name, Save Preferences, Reset Preferences, persistence/API behavior, Companion Mode, and the desktop `Current reading` summary are unchanged.
+- Contracts unchanged: no settings value, default, local-storage key, backend settings API, display-name API, auth, permission, route, or action id changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone/desktop summary split; `frontend/tools/audit-app-tab-first-paint.mjs` verifies the summary is absent while both selects, both checkboxes, Save, Reset, display-name field, and horizontal containment remain.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile/My GSN Playwright checks at 390x844; and manual inspection of the Settings editor captures.
+- Visual truth: the phone editor contains no `Current reading` stack, retains two selects and two checkboxes, measures 999px, and has no horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: 999px is still a long phone task surface, and Companion Mode follows it. This slice removes four repeated cards; it does not yet make the remaining settings wording or companion controls minimal.
+
+## 2026-10-15 - Full settings editor removed from default phone Profile locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: the default phone member-home ended with a closed `More` row but then rendered the complete device-preferences/account-name editor underneath it, even though `More` already contained a dedicated `Settings` handoff.
+- Phone behavior: the default Profile/My GSN surface now stops after the closed `More` row. The full editor is absent until the member opens `More` and chooses `Settings`.
+- Preserved behavior: `More` -> `Settings` still opens `/app/my-gmfn-and-i?tab=settings`; the display-name field, reading preferences, save/reset actions, companion settings, and desktop editor remain unchanged.
+- Contracts unchanged: no settings value, local-storage key, backend settings API, display-name save API, auth, permission, route, or navigation target changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the compact-home/explicit-settings/desktop boundary; `frontend/tools/audit-app-tab-first-paint.mjs` proves the editor is absent on home, the Settings link is visible after expanding More, and the explicit settings route still renders its field and save action.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered default phone screenshot.
+- Visual truth: the default document now fits exactly within the 844px test viewport, the closed More row ends at 532px, the settings editor is absent, and there is no horizontal overflow. The explicit settings route still renders without horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the settings form itself remains long and detailed on its dedicated route. That is acceptable for now because it no longer ambushes the default Profile surface; simplifying that task page should be a separate review so saving behavior and accessibility are not damaged casually.
+
+## 2026-10-15 - One-community Profile card flattened locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: the one-community phone state placed its only community inside a second bordered card and labelled it `Selected community`, even though the enclosing section already says `My communities` and no alternative selection exists.
+- Phone behavior: when exactly one selected community is available, its name, role, and stable ID now sit directly inside the `My communities` section. The nested card decoration and duplicate `Selected community` label are absent.
+- Preserved behavior: the section-level community icon, community facts, primary `Open community` route, multi-community phone selected-card treatment, no-community guidance, desktop presentation, and explicit Identity Guide are unchanged.
+- Contracts unchanged: no backend, API, auth, permission, membership, community-selection, stable-ID, or route behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the exact one-community phone condition and richer multi-community/desktop fallback; `frontend/tools/audit-app-tab-first-paint.mjs` requires rendered `flat-single` mode with no duplicate label, border, padding, or image.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: the community identity block reduced from 80px to 36px; `Open community` moved from 423-471px to 379-427px; the closed More row bottom moved from 576px to 532px; and there is no horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the duplicate selection chrome was waste, but the enclosing `My communities` section card and its section-level icon still provide useful grouping and wayfinding. Removing them now would risk turning identity, community, and More into an undifferentiated text stream; the next review should target the oversized closed More row or the exposed device-preferences block instead.
+
+## 2026-10-15 - Profile identity heading made text-first locally
+- Status: Implemented and verified after deployment baseline `15b9e22a`; included in the current main deployment batch.
+- Confirmed problem: the default phone identity section still spent a full 44px row on a decorative identity-card badge even though the shell already identifies the page as My GSN and the section label already says My identity.
+- Phone behavior: `My identity` is now a text-only section label immediately followed by the member name and the existing GSN ID/Phone facts.
+- Preserved behavior: identity values, two-column facts, missing-ID guidance, Handle/Copy under More, desktop identity badge, and the explicit Identity Guide are unchanged.
+- Contracts unchanged: no backend, API, auth, permission, membership, route, identity-value, phone-status, or clipboard behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the compact text-only/full desktop split; `frontend/tools/audit-app-tab-first-paint.mjs` requires the rendered phone heading mode, zero identity-section images, and an identity section no taller than 180px.
+- Verification passed: production TypeScript/Vite build; surface ownership audit; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: the identity section renders at 159px with zero images; `Open community` moved from 453-501px to 423-471px; the closed More row moved from 606px to 576px; and there is no horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the top-level Profile surface is now substantially calmer, but the community section still uses a large section badge and nested selected-community card. Removing every icon would damage wayfinding; the next review should test whether its padding, not its meaning-bearing community icon, is the remaining waste.
+
+## 2026-10-15 - Shop Update sharing and Profile simplification batch deployed
+- Release commit: `15b9e22adff4d0e1c2e8a818ed99e82d41f9c67d` (`Simplify Profile and share Shop Diary updates`) was committed directly on `main` and pushed to `origin/main`.
+- Release boundary: exactly 22 tracked files covering exact Shop Update sharing/focused visitor presentation, My GSN/Profile simplification, focused backend/frontend tests, audits, and freeze/spec/handoff records.
+- Excluded from release: `.codex/config.toml`, regenerated user-guide screenshots/manifest, untracked `.github/workflows/render-status.yml`, campaign files, deliverables, and other unrelated untracked artifacts.
+- Verification before push: production frontend build; 101 focused backend tests; Share/Shop Diary/Public Shop/Profile ownership/member-entry/capability audits; focused Profile Playwright geometry; and staged diff check.
+- Deployment: GitHub Actions `Trigger Render Deploy` run `38714488248` targeted exact commit `15b9e22a` with `deploy_api=true`.
+- Confirmed live: frontend exact Render API deploy completed, the public frontend URL marker check passed, API exact Render deploy completed, and live API identity contracts passed.
+- Workflow evidence: `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/38714488248` concluded `success` at `2026-10-15T09:43:20Z`.
+- Devil truth: this confirms deployment machinery and live contract checks, not every user journey on a physical phone. Shop Update sharing still hands control to external social apps, and real-device owner/visitor checks remain necessary.
+
 ## 2026-10-15 - Default phone Profile frame flattened locally
 - Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
 - Confirmed problem: after the duplicate route heading was removed, the default phone member-home still reserved 14px above its content and wrapped the navy orientation surface inside a second decorative white frame with another 14px of padding.

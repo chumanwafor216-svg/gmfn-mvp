@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SecondaryButton } from "./StableButton";
+import { SecondaryButton, StableDisclosureSummary } from "./StableButton";
 import {
   getMySettings,
   sendWebPushTestNotification,
@@ -149,7 +149,11 @@ function statusChip(tone: "success" | "error" | "info"): React.CSSProperties {
   };
 }
 
-export default function CompanionSettingsPanel() {
+type CompanionSettingsPanelProps = {
+  compact?: boolean;
+};
+
+export default function CompanionSettingsPanel({ compact = false }: CompanionSettingsPanelProps) {
   const [settings, setSettings] = useState<CompanionSettings>(
     normalizeCompanionSettings({})
   );
@@ -158,6 +162,7 @@ export default function CompanionSettingsPanel() {
     "info"
   );
   const [testingPush, setTestingPush] = useState(false);
+  const [controlsOpen, setControlsOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -324,51 +329,93 @@ export default function CompanionSettingsPanel() {
   }
 
   return (
-    <section style={pageCard()}>
-      <div style={sectionLabel()}>Companion mode</div>
-
-      <div
-        style={{
-          marginTop: 12,
-          color: "#0B1F33",
-          fontSize: 26,
-          fontWeight: 900,
-          lineHeight: 1.16,
+    <section
+      data-companion-settings-panel={compact ? "compact" : "full"}
+      style={compact ? { ...pageCard(), padding: 0, overflow: "hidden" } : pageCard()}
+    >
+      <details
+        data-companion-settings-disclosure="true"
+        open={!compact || controlsOpen}
+        onToggle={(event) => {
+          if (compact) setControlsOpen(event.currentTarget.open);
         }}
       >
-        Let the app gently call attention back
-      </div>
+        <StableDisclosureSummary
+          debugId="companion-settings.toggle"
+          stableHeight={56}
+          style={{
+            display: compact ? "flex" : "none",
+            minHeight: 56,
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "12px 16px",
+            color: "#0B1F33",
+            fontWeight: 900,
+            listStyle: "none",
+          }}
+        >
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 14 }}>Companion mode</span>
+            <span style={{ display: "block", marginTop: 3, color: "#5F7287", fontSize: 12.5, fontWeight: 750 }}>
+              {settings.companionMode === "active" ? "Active" : settings.companionMode === "off" ? "Off" : "Light"} reminders
+            </span>
+          </span>
+          <span style={{ color: "#0B63D1", fontSize: 13 }}>{controlsOpen ? "Close" : "Open"}</span>
+        </StableDisclosureSummary>
 
-      <div
-        style={{
-          marginTop: 10,
-          color: "#5F7287",
-          fontSize: 15,
-          lineHeight: 1.8,
-          maxWidth: 860,
-        }}
-      >
-        This controls the companion behavior: soft reminder toasts, optional
-        system notifications, optional sound, and optional voice prompts. Keep
-        it calm and disciplined.
-      </div>
+        <div data-companion-settings-controls="true" style={compact ? { padding: "0 14px 14px" } : undefined}>
+      {!compact ? (
+        <div data-companion-expanded-intro="desktop-only">
+          <div style={sectionLabel()}>Companion mode</div>
+          <div
+            style={{
+              marginTop: 12,
+              color: "#0B1F33",
+              fontSize: 26,
+              fontWeight: 900,
+              lineHeight: 1.16,
+            }}
+          >
+            Let the app gently call attention back
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#5F7287",
+              fontSize: 15,
+              lineHeight: 1.8,
+              maxWidth: 860,
+            }}
+          >
+            This controls the companion behavior: soft reminder toasts, optional
+            system notifications, optional sound, and optional voice prompts. Keep
+            it calm and disciplined.
+          </div>
+        </div>
+      ) : null}
 
-      <div
-        style={{
-          marginTop: 14,
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-        }}
-      >
-        {statusText ? (
-          <span style={statusChip(statusTone)}>{statusText}</span>
-        ) : null}
+      {statusText || !compact ? (
+        <div
+          data-companion-status-row="true"
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          {statusText ? (
+            <span style={statusChip(statusTone)}>{statusText}</span>
+          ) : null}
 
-        <span style={statusChip("info")}>
-          Sound uses your existing browser audio permission
-        </span>
-      </div>
+          {!compact ? (
+            <span data-companion-sound-permission="desktop-only" style={statusChip("info")}>
+              Sound uses your existing browser audio permission
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -378,7 +425,9 @@ export default function CompanionSettingsPanel() {
         }}
       >
         <div style={softCard("#F8FBFF")}>
-          <div style={sectionLabel()}>Companion intensity</div>
+          <div data-companion-control-label="reminder-level" style={sectionLabel()}>
+            {compact ? "Reminder level" : "Companion intensity"}
+          </div>
 
           <div
             style={{
@@ -416,7 +465,9 @@ export default function CompanionSettingsPanel() {
         </div>
 
         <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Audible nudge level</div>
+          <div data-companion-control-label="sound" style={sectionLabel()}>
+            {compact ? "Sound" : "Audible nudge level"}
+          </div>
 
           <div
             style={{
@@ -460,7 +511,7 @@ export default function CompanionSettingsPanel() {
               debugId="companion-settings.audible.all"
               style={optionButton(settings.audibleNudgeLevel === "all")}
             >
-              All nudges
+              {compact ? "All reminders" : "All nudges"}
             </SecondaryButton>
           </div>
         </div>
@@ -473,7 +524,9 @@ export default function CompanionSettingsPanel() {
           }}
         >
           <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Voice prompts</div>
+            <div data-companion-control-label="spoken-reminders" style={sectionLabel()}>
+              {compact ? "Spoken reminders" : "Voice prompts"}
+            </div>
 
             <div
               style={{
@@ -504,6 +557,7 @@ export default function CompanionSettingsPanel() {
             </div>
 
             <div
+              data-companion-help="spoken-reminders"
               style={{
                 marginTop: 10,
                 color: "#5F7287",
@@ -511,7 +565,9 @@ export default function CompanionSettingsPanel() {
                 lineHeight: 1.7,
               }}
             >
-              Short spoken reminders for important or urgent companion nudges.
+              {compact
+                ? "Spoken reminders for important alerts."
+                : "Short spoken reminders for important or urgent companion nudges."}
             </div>
           </div>
 
@@ -547,6 +603,7 @@ export default function CompanionSettingsPanel() {
             </div>
 
             <div
+              data-companion-help="system-notifications"
               style={{
                 marginTop: 10,
                 color: "#5F7287",
@@ -554,7 +611,9 @@ export default function CompanionSettingsPanel() {
                 lineHeight: 1.7,
               }}
             >
-              Use browser notifications when the page is not in the foreground.
+              {compact
+                ? "Get reminders when GSN is not open."
+                : "Use browser notifications when the page is not in the foreground."}
             </div>
 
             <div style={{ marginTop: 12 }}>
@@ -604,7 +663,9 @@ export default function CompanionSettingsPanel() {
           </div>
 
           <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Max daily nudges</div>
+            <div data-companion-control-label="daily-limit" style={sectionLabel()}>
+              {compact ? "Daily reminder limit" : "Max daily nudges"}
+            </div>
             <input
               type="number"
               min={1}
@@ -621,7 +682,9 @@ export default function CompanionSettingsPanel() {
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Repeat reminder minutes</div>
+            <div data-companion-control-label="repeat-after" style={sectionLabel()}>
+              {compact ? "Repeat after (minutes)" : "Repeat reminder minutes"}
+            </div>
             <input
               type="number"
               min={5}
@@ -638,6 +701,8 @@ export default function CompanionSettingsPanel() {
           </div>
         </div>
       </div>
+        </div>
+      </details>
     </section>
   );
 }

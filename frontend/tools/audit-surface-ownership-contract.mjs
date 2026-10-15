@@ -61,6 +61,7 @@ const appRoutes = readFrontend("src/lib/appRoutes.ts");
 const app = readFrontend("src/App.tsx");
 const appLayout = readFrontend("src/layout/AppLayout.tsx");
 const myGsn = readFrontend("src/pages/MyGMFNAndIPage.tsx");
+const companionSettings = readFrontend("src/components/CompanionSettingsPanel.tsx");
 
 assertContains(
   "docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md",
@@ -216,6 +217,46 @@ assertContains(
   /debugId="my-gmfn\.selected-community\.open"[\s\S]*?Open community[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?open=\{!isCompact \|\| memberHomeMoreOpen\}[\s\S]*?debugId="my-gmfn\.guide\.open"[\s\S]*?data-my-gsn-activity-note="quiet"/,
   "Phone My GSN must keep one selected-community continuation and collapse shop, trust, settings, help, links, and quiet activity behind More."
 );
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /\{activeTab === "guide" \? \([\s\S]*?\) : activeTab === "settings" \|\| !isCompact \? \([\s\S]*?data-my-gsn-settings-editor="true"[\s\S]*?<CompanionSettingsPanel compact=\{isCompact\} \/>[\s\S]*?\) : null\}/,
+  "Default phone My GSN must omit the full settings editor while More > Settings, the explicit settings route, and desktop access remain intact."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /data-my-gsn-settings-editor="true"[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1\.05fr\) 320px"[\s\S]*?\{!isCompact \? \([\s\S]*?data-my-gsn-current-reading="desktop-summary"[\s\S]*?Current reading[\s\S]*?\) : null\}/,
+  "Phone Settings must omit the duplicate Current reading summary while desktop retains it and every editable control remains on the primary form."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /data-my-gsn-settings-editor="true"[\s\S]*?\{!isCompact \? \([\s\S]*?data-my-gsn-settings-intro="desktop-only"[\s\S]*?\) : null\}[\s\S]*?data-my-gsn-profile-name-help=\{isCompact \? "compact" : "full"\}[\s\S]*?"The name people see across GSN\."[\s\S]*?data-my-gsn-reading-mode-help="desktop-only"[\s\S]*?data-my-gsn-unread-label=\{isCompact \? "compact" : "full"\}[\s\S]*?"Show unread items first"[\s\S]*?data-my-gsn-direct-action-label=\{isCompact \? "compact" : "full"\}[\s\S]*?"Open the destination directly"[\s\S]*?data-my-gsn-tone-help="desktop-only"/,
+  "Phone Settings must skip duplicate introductions, keep one short display-name explanation, and use concise checkbox labels while desktop keeps the fuller guidance."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /<CompanionSettingsPanel compact=\{isCompact\} \/>/,
+  "My GSN Settings must pass the existing phone breakpoint into Companion Mode."
+);
+assertContains(
+  "frontend/src/components/CompanionSettingsPanel.tsx",
+  companionSettings,
+  /type CompanionSettingsPanelProps = \{[\s\S]*?compact\?: boolean;[\s\S]*?data-companion-settings-panel=\{compact \? "compact" : "full"\}[\s\S]*?open=\{!compact \|\| controlsOpen\}[\s\S]*?debugId="companion-settings\.toggle"[\s\S]*?display: compact \? "flex" : "none"[\s\S]*?data-companion-settings-controls="true"/,
+  "Phone Companion Mode must default to one compact disclosure while desktop remains expanded and the original controls stay mounted."
+);
+
+assertContains(
+  "frontend/src/components/CompanionSettingsPanel.tsx",
+  companionSettings,
+  /data-companion-settings-controls="true"[\s\S]*?\{!compact \? \([\s\S]*?data-companion-expanded-intro="desktop-only"[\s\S]*?\) : null\}[\s\S]*?\{statusText \|\| !compact \? \([\s\S]*?data-companion-sound-permission="desktop-only"[\s\S]*?data-companion-control-label="reminder-level"[\s\S]*?"Reminder level"[\s\S]*?data-companion-control-label="sound"[\s\S]*?"Sound"[\s\S]*?"All reminders"[\s\S]*?data-companion-control-label="spoken-reminders"[\s\S]*?"Spoken reminders"[\s\S]*?data-companion-help="spoken-reminders"[\s\S]*?"Spoken reminders for important alerts\."[\s\S]*?data-companion-help="system-notifications"[\s\S]*?"Get reminders when GSN is not open\."[\s\S]*?data-companion-control-label="daily-limit"[\s\S]*?"Daily reminder limit"[\s\S]*?data-companion-control-label="repeat-after"[\s\S]*?"Repeat after \(minutes\)"/,
+  "Expanded phone Companion Mode must skip the duplicate preamble and use plain-language labels while desktop retains its fuller guidance."
+);
+
+
+
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
@@ -227,7 +268,13 @@ assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
   /\{!isCompact \|\| memberHomeHasMultipleCommunities \|\| !selectedCommunityForShop \? \([\s\S]*?data-my-gsn-community-count="true"[\s\S]*?data-my-gsn-selected-community-card="true"[\s\S]*?minHeight: isCompact \? 72 : 92[\s\S]*?\{!isCompact \? memberHomeIconBadge\("community", true, true\) : null\}/,
-  "One-community phone My GSN must omit the repeated active count and render its selected-community card text-first while desktop keeps the richer treatment."
+  "One-community phone My GSN must omit the repeated active count while multi-community phone and desktop keep the richer selected-community treatment."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /const flattenCompactSingleCommunity =[\s\S]*?isCompact && Boolean\(selectedCommunityForShop\) && !memberHomeHasMultipleCommunities;[\s\S]*?data-my-gsn-selected-community-mode=\{[\s\S]*?flattenCompactSingleCommunity \? "flat-single" : "card"[\s\S]*?flattenCompactSingleCommunity[\s\S]*?\? \{ marginTop: 10, minWidth: 0 \}[\s\S]*?\.\.\.memberHomeCard\(true\)[\s\S]*?\{!flattenCompactSingleCommunity \? \([\s\S]*?Selected community/,
+  "One-community phone My GSN must remove the nested selected-community card and duplicate label without changing multi-community or desktop presentation."
 );
 
 
@@ -243,6 +290,13 @@ assertContains(
   memberHomeBranch,
   /data-my-gsn-identity-fact=\{label\}[\s\S]*?minHeight: isCompact \? 60 : 90[\s\S]*?\{!isCompact \? memberHomeIconBadge\(icon, true, label === "GSN ID"\) : null\}/,
   "Phone My GSN identity facts must use text-first compact cards while desktop retains the richer fact icons."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /\{isCompact \? \([\s\S]*?data-my-gsn-identity-heading="text-only"[\s\S]*?My identity[\s\S]*?: \([\s\S]*?data-my-gsn-identity-heading="full"[\s\S]*?memberHomeSectionKicker\("id", "My identity", false, true\)[\s\S]*?marginTop: isCompact \? 6 : 8/,
+  "Default phone My GSN identity heading must be text-first while desktop retains the richer identity badge."
 );
 
 assertContains(

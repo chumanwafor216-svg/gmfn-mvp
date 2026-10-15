@@ -123,8 +123,8 @@ assertContains(
   "Community Home phone identity must not repeat the page name above the selected community name."
 );
 assertContains(
-  /minHeight: isCompact \? 0 : 250[\s\S]*?!isCompact \? \(\s*<div style=\{announcementDateTileStyle\(false\)\}[\s\S]*?\{!isCompact \? renderCommunityBulletinPulse\(\) : null\}/,
-  "Community Home phone Bulletin must remove the large date tile and pulse dashboard from the default surface."
+  /minHeight: isCompact \? 0 : 250[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-indicators"[\s\S]*?data-bulletin-urgency-tone=\{tone\}[\s\S]*?!isCompact \? \(\s*<div style=\{announcementDateTileStyle\(false\)\}[\s\S]*?\{renderCommunityBulletinPulse\(\)\}/,
+  "Community Home phone Bulletin must restore its compact red, amber, and green timing indicators while keeping the large pulse dashboard and date tile off the default surface."
 );
 assertContains(
   /minHeight: isCompact \? 52 : 82[\s\S]*?!isCompact \? <span>Community <\/span> : null[\s\S]*?!isCompact \? \(\s*<span style=\{announcementBoardPillStyle\(\)\}>/,

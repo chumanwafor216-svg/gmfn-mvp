@@ -154,11 +154,19 @@ async function run() {
     await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
     await page.waitForSelector('[data-cta-id^="community-home.bulletin.reactions."]', { timeout: 30000 });
 
+    const companionDismiss = page.getByRole("button", { name: "Dismiss", exact: true });
+    if (await companionDismiss.isVisible().catch(() => false)) {
+      await companionDismiss.click();
+      await page.waitForTimeout(120);
+    }
+
     const defaultState = await page.evaluate(() => {
       const text = document.body.textContent || "";
       const identityText = document.querySelector('[data-debug-id="community-home.identity-card"]')?.textContent || "";
       const bulletinHeaderText = document.querySelector('[aria-label="Community announcements"]')?.textContent?.trim() || "";
       const actionSectionStyle = document.querySelector('[data-debug-id="community-home.go-to"]')?.getAttribute("style") || "";
+      const phoneIndicators = document.querySelector('[data-debug-id="community-home.bulletin.phone-indicators"]');
+      const urgencyTones = Array.from(document.querySelectorAll("[data-bulletin-urgency-tone]")).map((node) => node.getAttribute("data-bulletin-urgency-tone"));
       return {
         hasName: identityText.includes("Homeland isa"),
         hasMemberCount: identityText.includes("7") && identityText.includes("Members"),
@@ -173,6 +181,10 @@ async function run() {
         duplicatePhoneNavCount: document.querySelectorAll('[data-cta-id^="page-top-nav."]').length,
         pulseCount: document.querySelectorAll('[data-debug-id="community-home.bulletin.pulse"]').length,
         calendarTileCount: document.querySelectorAll('[aria-label="Announcement date"]').length,
+        phoneIndicatorCount: phoneIndicators ? 1 : 0,
+        phoneIndicatorText: phoneIndicators?.textContent?.replace(/\s+/g, " ").trim() || "",
+        phoneIndicatorHeight: phoneIndicators instanceof HTMLElement ? Math.round(phoneIndicators.getBoundingClientRect().height) : null,
+        urgencyTones,
       };
     });
     const marketplaceVisibleBeforeOpen = await page.locator('[data-cta-id="community-home.goto.marketplace"]').isVisible();
@@ -193,6 +205,11 @@ async function run() {
       defaultState.duplicatePhoneNavCount !== 0 ||
       defaultState.pulseCount !== 0 ||
       defaultState.calendarTileCount !== 0 ||
+      defaultState.phoneIndicatorCount !== 1 ||
+      defaultState.phoneIndicatorText !== "1Now072h0Clear" ||
+      defaultState.phoneIndicatorHeight === null ||
+      defaultState.phoneIndicatorHeight > 40 ||
+      defaultState.urgencyTones.join(",") !== "red,yellow,green" ||
       marketplaceVisibleBeforeOpen ||
       overflow390.length > 0
     ) {

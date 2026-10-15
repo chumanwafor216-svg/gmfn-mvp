@@ -3129,6 +3129,48 @@ export default function CommunityHomePage() {
   function renderCommunityBulletinPulse() {
     if (activeCommunityNotices.length === 0) return null;
 
+    if (isCompact) {
+      return (
+        <div
+          data-debug-id="community-home.bulletin.phone-indicators"
+          aria-label={`Bulletin timing: ${communityBulletinPulse.counts.red} now, ${communityBulletinPulse.counts.yellow} within 72 hours, ${communityBulletinPulse.counts.green} clear`}
+          style={{
+            ...communityBulletinPulseGridStyle(true),
+            marginBottom: 7,
+          }}
+        >
+          {(["red", "yellow", "green"] as CommunityBulletinNoticeUrgencyTone[]).map((tone) => (
+            <span
+              key={tone}
+              data-bulletin-urgency-tone={tone}
+              style={{
+                ...communityBulletinPulseChipStyle(tone),
+                display: "flex",
+                minHeight: 34,
+                gap: 5,
+                padding: "4px 6px",
+                borderRadius: 12,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 950, lineHeight: 1 }}>
+                {communityBulletinPulse.counts[tone]}
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textTransform: "uppercase",
+                }}
+              >
+                {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
+              </span>
+            </span>
+          ))}
+        </div>
+      );
+    }
+
     const nextPulseSignal = communityBulletinPulse.nextSignal;
     const nextPulseNoticeIndex = Number(nextPulseSignal?.meta?.noticeIndex ?? communityBulletinPulse.nextIndex);
     const canOpenRecommendedNotice = Boolean(nextPulseSignal?.actionTo) || nextPulseNoticeIndex >= 0;
@@ -4401,7 +4443,7 @@ export default function CommunityHomePage() {
               </div>
             ) : primaryCommunityNotice ? (
               <>
-                {!isCompact ? renderCommunityBulletinPulse() : null}
+                {renderCommunityBulletinPulse()}
                 {renderCommunityBulletinNoticeSelector(activeCommunityNotices)}
                 {renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)}
               </>
