@@ -124,8 +124,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /Boolean\(inviteCode\) \|\| Boolean\(restoredJoinDraft\?\.inviteAcknowledged\)[\s\S]*?return Boolean\(inviteCode\);[\s\S]*?if \(inviteCode\) return "new";[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?order: isCompact \? 1 : 2[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters/,
-  "Existing-community invite links must attach the new-request form immediately on phone, keep invitation details second, and collapse extra review explanation."
+  /const restoredJoinDraftHasInput = useMemo[\s\S]*?if \(!restoredJoinDraftHasInput\) return false;[\s\S]*?return restoredJoinDraft\?\.formOpen !== false;[\s\S]*?if \(restoredJoinDraftHasInput && restoredJoinDraft\?\.formOpen !== false\) return "new";[\s\S]*?return null;[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?order: isCompact \? 1 : 2[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters/,
+  "Fresh existing-community invite links must show the path choice before opening the form, while real saved input may resume and invitation details stay second on phone."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?function chooseNewRequesterPath\(\)[\s\S]*?shouldRevealNewRequestFormRef\.current = true;[\s\S]*?setJoinPathChoice\("new"\);[\s\S]*?setFormOpen\(true\);[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "join-entry"[\s\S]*?reason: "request-access"[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?aria-controls="join-entry-new-request-form"[\s\S]*?aria-expanded=\{formOpen && joinPathChoice === "new"\}[\s\S]*?<form[\s\S]*?id="join-entry-new-request-form"[\s\S]*?ref=\{newRequestFormRef\}[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country/,
+  "Request access must visibly open and reveal the recipient form instead of behaving like a no-op above off-screen fields."
 );
 
 assertContains(

@@ -430,6 +430,8 @@ Must show:
 
 Phone-first rule:
 - Show community, inviter, expiry where known, one short approval boundary, and the next action.
+- A fresh invite must show `Sign in` and `Request access` before the requester fields. Tapping `Request access` must visibly open and move to the `Full name`, `Phone number`, and `Country` fields; it must not appear to do nothing while the form sits off-screen.
+- Resume the form automatically only when the phone holds real requester input, not merely because the invite link was opened before.
 - Keep the full invite note collapsed. Hide promotional invite artwork, repeated evidence chips, and the official footer from the first phone surface.
 
 After submission:

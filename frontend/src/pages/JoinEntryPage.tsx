@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMark from "../components/GSNBrandMark";
@@ -43,6 +43,7 @@ import {
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
 import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { publicApiUrl } from "../lib/publicLinks";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { structuredErrorDetail } from "../lib/structuredErrors";
@@ -1460,6 +1461,25 @@ export default function JoinEntryPage() {
     return readJoinEntryDraft(inviteCode, communityCode);
   }, [inviteCode, communityCode]);
 
+  const restoredJoinDraftHasInput = useMemo(() => {
+    if (!restoredJoinDraft) return false;
+    return Boolean(
+      cleanText(restoredJoinDraft.existingGsnId) ||
+        cleanText(restoredJoinDraft.firstName) ||
+        cleanText(restoredJoinDraft.surname) ||
+        cleanText(restoredJoinDraft.phone) ||
+        cleanText(restoredJoinDraft.country) ||
+        cleanText(restoredJoinDraft.dateOfBirth) ||
+        cleanText(restoredJoinDraft.birthCountry) ||
+        cleanText(restoredJoinDraft.birthPlace) ||
+        cleanText(restoredJoinDraft.countryOfOrigin) ||
+        cleanText(restoredJoinDraft.residentialArea) ||
+        cleanText(restoredJoinDraft.workCategory) ||
+        cleanText(restoredJoinDraft.workDetail) ||
+        cleanText(restoredJoinDraft.note)
+    );
+  }, [restoredJoinDraft]);
+
   const marketplaceName = useMemo(() => {
     return decodeFriendly(searchParams.get("marketplace_name") || "");
   }, [searchParams]);
@@ -1533,15 +1553,16 @@ export default function JoinEntryPage() {
     Boolean(inviteCode) || Boolean(restoredJoinDraft?.inviteAcknowledged)
   );
   const [formOpen, setFormOpen] = useState<boolean>(() => {
-    if (typeof restoredJoinDraft?.formOpen === "boolean") return restoredJoinDraft.formOpen;
-    return Boolean(inviteCode);
+    if (!restoredJoinDraftHasInput) return false;
+    return restoredJoinDraft?.formOpen !== false;
   });
   const [joinPathChoice, setJoinPathChoice] = useState<JoinPathChoice>(() => {
     if (cleanText(restoredJoinDraft?.existingGsnId || "")) return "existing";
-    if (restoredJoinDraft?.formOpen) return "new";
-    if (inviteCode) return "new";
+    if (restoredJoinDraftHasInput && restoredJoinDraft?.formOpen !== false) return "new";
     return null;
   });
+  const newRequestFormRef = useRef<HTMLFormElement>(null);
+  const shouldRevealNewRequestFormRef = useRef(false);
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
 
@@ -1668,7 +1689,7 @@ export default function JoinEntryPage() {
   const [storedRequest, setStoredRequest] = useState<any>(null);
   const [resumeBusy, setResumeBusy] = useState(false);
   const [joinResumeNotice, setJoinResumeNotice] = useState<string | null>(() =>
-    restoredJoinDraft
+    restoredJoinDraftHasInput
       ? "A saved join form was found on this phone."
       : null
   );
@@ -2135,6 +2156,7 @@ export default function JoinEntryPage() {
   }
 
   function chooseNewRequesterPath() {
+    shouldRevealNewRequestFormRef.current = true;
     setJoinPathChoice("new");
     setExistingGsnId("");
     setIdentityNoteOpen(false);
@@ -2143,6 +2165,25 @@ export default function JoinEntryPage() {
     setErr(null);
     setSuccess(null);
   }
+
+  useEffect(() => {
+    if (!formOpen || joinPathChoice !== "new") return;
+    if (!shouldRevealNewRequestFormRef.current) return;
+    if (typeof window === "undefined") return;
+
+    shouldRevealNewRequestFormRef.current = false;
+    const frameId = window.requestAnimationFrame(() => {
+      const target = newRequestFormRef.current;
+      if (!target) return;
+      revealElementWithoutJump(target, {
+        surface: "join-entry",
+        targetId: "join-entry-new-request-form",
+        reason: "request-access",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [formOpen, joinPathChoice]);
 
   function handleApplicantFullNameChange(value: string) {
     const parts = splitFullNameForState(value);
@@ -3279,6 +3320,8 @@ export default function JoinEntryPage() {
                     disabled={!canOpenForm}
                     onClick={chooseNewRequesterPath}
                     debugId="join-entry.toggle-new-member-request-form"
+                    aria-controls="join-entry-new-request-form"
+                    aria-expanded={formOpen && joinPathChoice === "new"}
                     stableHeight={52}
                     style={{
                       ...entryChoiceActionStyle(
@@ -3604,7 +3647,13 @@ export default function JoinEntryPage() {
             canOpenForm &&
             canUseNewMemberForm &&
             !hasExistingGsnClaim ? (
-            <form onSubmit={onSubmit}>
+            <form
+              id="join-entry-new-request-form"
+              ref={newRequestFormRef}
+              data-debug-id="join-entry-new-request-form"
+              onSubmit={onSubmit}
+              style={{ scrollMarginTop: 16 }}
+            >
               <div style={{ marginTop: 18 }}>
                 <div style={labelText()}>Full name</div>
                 <input
