@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from html import escape
 from textwrap import wrap
@@ -14,13 +15,23 @@ from fastapi.responses import HTMLResponse, Response
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from sqlalchemy.orm import Session
 
-from app.db.models import Clan, ClanInvite, ClanMembership, MarketplaceProduct, MarketplaceShop, TrustSlip, User
+from app.db.models import Clan, ClanInvite, ClanMembership, MarketplaceProduct, MarketplaceShop, ShopDiaryEntry, TrustSlip, User
 from app.deps import get_db
 from app.services.trust_slip_decision_packs import DECISION_PACKS, DecisionPackDefinition
 
 router = APIRouter(prefix="/share", tags=["share-preview"])
 
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
+SHOP_DIARY_ACTIVITY_LABELS = {
+    "work_completed": "Work completed",
+    "sale_order": "Sale/order",
+    "product_update": "New stock/product update",
+    "business_milestone": "Business milestone",
+    "event_activity": "Event/activity",
+    "customer_delivery": "Customer delivery",
+    "other_update": "Other update",
+}
+PUBLIC_SHOP_DIARY_LIVE_HOURS = 24
 PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com"
 PUBLIC_VISIBILITY_MODES = ("community_visible", "public", "community")
 CARD_WIDTH = 1200
@@ -160,11 +171,23 @@ def _shop_frontend_url(
     *,
     product_id: Optional[int] = None,
     block: Optional[int] = None,
+    diary_entry_id: Optional[int] = None,
+    gsn_share: str = "",
+    gsn_channel: str = "",
+    utm_source: str = "",
 ) -> str:
     base = _public_frontend_origin()
     path = f"/shop/{quote(_safe_str(gmfn_id), safe='')}"
-    if product_id:
-        path += f"?product_id={quote(str(product_id), safe='')}"
+    query = {
+        "product_id": str(product_id) if product_id else "",
+        "diary_entry_id": str(diary_entry_id) if diary_entry_id else "",
+        "gsn_share": _safe_str(gsn_share)[:80],
+        "gsn_channel": _safe_str(gsn_channel)[:80],
+        "utm_source": _safe_str(utm_source)[:80],
+    }
+    encoded_query = urlencode({key: value for key, value in query.items() if value})
+    if encoded_query:
+        path += f"?{encoded_query}"
     if block:
         path += f"#shop-block-{int(block)}"
     elif product_id:
@@ -691,6 +714,77 @@ def _preview_payload(
         "price": _money_text(product),
     }
 
+
+
+def _shop_update_payload(db: Session, *, entry_id: int) -> dict[str, Any]:
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=PUBLIC_SHOP_DIARY_LIVE_HOURS)
+    entry = (
+        db.query(ShopDiaryEntry)
+        .filter(ShopDiaryEntry.id == int(entry_id))
+        .filter(ShopDiaryEntry.is_public.is_(True))
+        .filter(ShopDiaryEntry.is_active.is_(True))
+        .filter(ShopDiaryEntry.evidence_class != "gsn_insight")
+        .filter(ShopDiaryEntry.occurred_at >= cutoff)
+        .first()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Live shop update not found")
+
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(entry.shop_id))
+        .filter(MarketplaceShop.owner_user_id == int(entry.owner_user_id))
+        .filter(MarketplaceShop.is_active.is_(True))
+        .first()
+    )
+    owner = db.query(User).filter(User.id == int(entry.owner_user_id)).first()
+    if shop is None or owner is None:
+        raise HTTPException(status_code=404, detail="Live shop update not found")
+
+    shop_name = _safe_str(getattr(shop, "name", None), "GSN public shop")
+    owner_id = _safe_str(getattr(owner, "gmfn_id", None))
+    if not owner_id:
+        raise HTTPException(status_code=404, detail="Live shop update not found")
+
+    activity_label = SHOP_DIARY_ACTIVITY_LABELS.get(
+        _safe_str(getattr(entry, "activity_type", None)).lower(),
+        "Other update",
+    )
+    note = _safe_str(getattr(entry, "note", None), "Live shop update")[:220]
+    return {
+        "entry_id": int(entry.id),
+        "gmfn_id": owner_id,
+        "owner_name": _safe_str(getattr(owner, "display_name", None), "GSN member"),
+        "shop_name": shop_name,
+        "product_line": note,
+        "trust_line": f"{activity_label} - Live for 24 hours",
+        "title": f"{activity_label} | {shop_name}",
+        "description": "GSN Shop Update. Tap to open this live public update.",
+        "price": "",
+    }
+
+
+def _shop_update_page_url(
+    request: Request,
+    entry_id: int,
+    *,
+    gsn_share: str = "",
+    gsn_channel: str = "",
+    utm_source: str = "",
+) -> str:
+    base = _public_api_origin(request)
+    path = f"/share/shop-update/{int(entry_id)}"
+    query = {
+        "gsn_share": _safe_str(gsn_share)[:80],
+        "gsn_channel": _safe_str(gsn_channel)[:80],
+        "utm_source": _safe_str(utm_source)[:80],
+    }
+    encoded_query = urlencode({key: value for key, value in query.items() if value})
+    return f"{base}{path}{'?' + encoded_query if encoded_query else ''}"
+
+
+def _shop_update_card_url(request: Request, entry_id: int) -> str:
+    return f"{_public_api_origin(request)}/share/shop-update/{int(entry_id)}/card.png"
 
 def _vault_request_payload(db: Session, *, gmfn_id: str) -> dict[str, str]:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=None)
@@ -1242,6 +1336,105 @@ def public_vault_request_share_card_png(
     )
 
 
+
+@router.get("/shop-update/{entry_id}", response_class=HTMLResponse)
+def public_shop_update_share_preview(
+    entry_id: int,
+    request: Request,
+    gsn_share: str = Query(default="share_shop_update", max_length=80),
+    gsn_channel: str = Query(default="", max_length=80),
+    utm_source: str = Query(default="gsn_shop_diary", max_length=80),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    payload = _shop_update_payload(db, entry_id=entry_id)
+    target_url = _shop_frontend_url(
+        payload["gmfn_id"],
+        diary_entry_id=entry_id,
+        gsn_share=gsn_share or "share_shop_update",
+        gsn_channel=gsn_channel,
+        utm_source=utm_source or "gsn_shop_diary",
+    )
+    share_url = _shop_update_page_url(
+        request,
+        entry_id,
+        gsn_share=gsn_share,
+        gsn_channel=gsn_channel,
+        utm_source=utm_source,
+    )
+    image_url = _shop_update_card_url(request, entry_id)
+    title = escape(payload["title"])
+    description = escape(payload["description"])
+    target = escape(target_url, quote=True)
+
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{escape(share_url, quote=True)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Global Support Network" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{escape(share_url, quote=True)}" />
+    <meta property="og:image" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN Shop Update poster" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
+    <meta http-equiv="refresh" content="1;url={target}" />
+    <style>
+      body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
+      main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
+      a {{ color: #0B4EA2; font-weight: 800; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Opening this live GSN Shop Update...</p>
+      <p><a href="{target}">Open update now</a></p>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=60"},
+    )
+
+
+@router.get("/shop-update/{entry_id}/card.png")
+def public_shop_update_share_card_png(
+    entry_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Response:
+    payload = _shop_update_payload(db, entry_id=entry_id)
+    target_url = _shop_frontend_url(
+        payload["gmfn_id"],
+        diary_entry_id=entry_id,
+        gsn_share="share_shop_update",
+        utm_source="gsn_shop_diary",
+    )
+    png = _draw_share_card_png(
+        payload,
+        target_url=target_url,
+        block=None,
+        eyebrow="SHOP UPDATE",
+        block_label_override="Live update",
+    )
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=60"},
+    )
+
 @router.get("/shop/{gmfn_id}", response_class=HTMLResponse)
 def public_shop_share_preview(
     gmfn_id: str,
@@ -1249,9 +1442,19 @@ def public_shop_share_preview(
     product_id: Optional[int] = Query(default=None),
     block: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
+    gsn_share: str = Query(default="", max_length=80),
+    gsn_channel: str = Query(default="", max_length=80),
+    utm_source: str = Query(default="", max_length=80),
 ) -> HTMLResponse:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
-    target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
+    target_url = _shop_frontend_url(
+        payload["gmfn_id"],
+        product_id=product_id,
+        block=block,
+        gsn_share=gsn_share,
+        gsn_channel=gsn_channel,
+        utm_source=utm_source,
+    )
     share_url = _share_page_url(request, payload["gmfn_id"], product_id=product_id, block=block)
     image_url = _share_card_url(request, payload["gmfn_id"], product_id=product_id, block=block)
     title = escape(payload["title"])

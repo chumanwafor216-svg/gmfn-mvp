@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -31,6 +32,7 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getMyShopDiaryEntries,
   createShopDiaryEntry,
+  recordMarketplaceAttentionEvent,
   listProtectedTrades,
   getSelectedClanId,
   listMyCommunityDomains,
@@ -48,8 +50,11 @@ import {
 } from "../lib/communityDomainFeaturePolicy";
 import {
   publicShopShareUrl,
+  publicShopUpdateSocialPreviewUrl,
+  publicShopUpdateUrl,
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
+import type { ShareResultChannel, ShareTarget } from "../lib/share";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
@@ -706,6 +711,46 @@ function buildShopLink(gmfnId: string): string {
   return publicShopShareUrl({ gmfnId });
 }
 
+
+function appendShopUpdateShareAttribution(
+  url: string,
+  channel?: ShareResultChannel
+): string {
+  const rawUrl = safeStr(url);
+  if (!rawUrl) return "";
+
+  try {
+    const parsed = new URL(
+      rawUrl,
+      typeof window !== "undefined" ? window.location.origin : "https://gsn.local"
+    );
+    parsed.searchParams.set("gsn_share", "share_shop_update");
+    parsed.searchParams.set("utm_source", "gsn_shop_diary");
+    if (channel) parsed.searchParams.set("gsn_channel", channel);
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+function isLivePublicDiaryEntry(entry: ShopDiaryEntryRecord | null | undefined): boolean {
+  if (!entry || entry.is_public === false || entry.is_active === false) return false;
+  if (safeStr(entry.evidence_class).toLowerCase() === "gsn_insight") return false;
+  const timestamp = new Date(entry.occurred_at || entry.created_at || "").getTime();
+  return Number.isFinite(timestamp) && timestamp >= Date.now() - 24 * 60 * 60 * 1000;
+}
+
+function createShopUpdateShareEventId(
+  entryId: number,
+  channel?: ShareResultChannel
+): string {
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+  return `shop-update-share-${entryId}-${channel || "unknown"}-${randomPart}`;
+}
+
 function buildProductDeepLink(
   gmfnId: string,
   productId: number,
@@ -1066,6 +1111,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     tone: NoticeTone;
     text: string;
   } | null>(null);
+  const [recentlyPublishedDiaryEntry, setRecentlyPublishedDiaryEntry] =
+    useState<ShopDiaryEntryRecord | null>(null);
 
   const selectedClanId = Number(props.preferredClanId || getSelectedClanId() || 0);
   const routes = useMemo(
@@ -1419,6 +1466,68 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   );
   const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet"), [gmfnIdValue]);
   const shopLink = useMemo(() => buildShopLink(gmfnIdValue), [gmfnIdValue]);
+  function buildShopDiaryShareTarget(entry: ShopDiaryEntryRecord): ShareTarget {
+    const entryId = Number(entry.id || 0);
+    const shopTitle = firstTruthy(shop?.name, shop?.owner_name, "GSN public shop");
+    const publicUrl = appendShopUpdateShareAttribution(
+      publicShopUpdateUrl({
+        gmfnId: gmfnIdValue,
+        entryId,
+        clanId: Number(entry.clan_id || shop?.clan_id || selectedClanId || 0) || null,
+      })
+    );
+    const socialUrl = appendShopUpdateShareAttribution(
+      publicShopUpdateSocialPreviewUrl(entryId)
+    );
+    const activityLabel = firstTruthy(entry.activity_label, "Shop Update");
+    const note = safeStr(entry.note);
+
+    return {
+      title: `${activityLabel} - ${shopTitle}`,
+      message: [note, "Open this live Shop Update on GSN."].filter(Boolean).join("\n\n"),
+      socialMessage: [note, `Live Shop Update from ${shopTitle}. Open it on GSN.`]
+        .filter(Boolean)
+        .join(" "),
+      socialUrl,
+      url: publicUrl,
+    };
+  }
+
+  function recordShopDiaryShare(
+    entry: ShopDiaryEntryRecord,
+    channel?: ShareResultChannel
+  ) {
+    const entryId = Number(entry.id || 0);
+    if (!entryId || !shop?.id) return;
+    const sourcePath = appendShopUpdateShareAttribution(
+      publicShopUpdateUrl({
+        gmfnId: gmfnIdValue,
+        entryId,
+        clanId: Number(entry.clan_id || shop?.clan_id || selectedClanId || 0) || null,
+      }),
+      channel
+    );
+    void recordMarketplaceAttentionEvent({
+      event_type: "share_action",
+      shop_id: Number(shop.id),
+      product_id: Number(entry.product_id || 0) || null,
+      clan_id: Number(entry.clan_id || shop?.clan_id || selectedClanId || 0) || null,
+      source: "shop_diary_update",
+      source_path: sourcePath,
+      client_event_id: createShopUpdateShareEventId(entryId, channel),
+    }).catch(() => null);
+  }
+
+  function handleShopDiaryShareResult(
+    entry: ShopDiaryEntryRecord,
+    tone: "success" | "error",
+    text: string,
+    channel?: ShareResultChannel
+  ) {
+    if (tone === "success") recordShopDiaryShare(entry, channel);
+    setDiaryNotice({ tone, text });
+  }
+
   const marketplaceBasePath = useMemo(
     () =>
       routeTarget(
@@ -1551,13 +1660,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     }
 
     setSavingDiaryEntry(true);
+    setRecentlyPublishedDiaryEntry(null);
     setDiaryNotice(null);
     try {
       const diaryClanId = Number(shop?.clan_id || selectedClanId || 0) || null;
       const occurred = safeStr(diaryOccurredAt)
         ? new Date(`${diaryOccurredAt}T12:00:00`).toISOString()
         : new Date().toISOString();
-      await createShopDiaryEntry({
+      const createdEntry = await createShopDiaryEntry({
         clan_id: diaryClanId,
         shop_id: Number(shop.id),
         activity_type: diaryActivityType,
@@ -1572,8 +1682,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       });
       const diaryRes = await getMyShopDiaryEntries({ shop_id: Number(shop.id), limit: 30 }).catch(() => ({ items: [] }));
       setDiaryEntries(Array.isArray(diaryRes?.items) ? diaryRes.items : []);
+      setRecentlyPublishedDiaryEntry(isLivePublicDiaryEntry(createdEntry) ? createdEntry : null);
       resetDiaryForm();
-      setDiaryNotice({ tone: "success", text: "Shop update published. Visitors can see the message while it is live." });
+      setDiaryNotice({
+        tone: "success",
+        text: isLivePublicDiaryEntry(createdEntry)
+          ? "Shop update published. Share it now while it is live."
+          : "Shop update saved in your history. It is not public because Shop Updates stay live for 24 hours.",
+      });
     } catch (err: any) {
       setDiaryNotice({ tone: "error", text: shopAssetsRequestErrorMessage(err) });
     } finally {
@@ -2827,6 +2943,42 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           </div>
         ) : null}
 
+        {recentlyPublishedDiaryEntry ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...innerCard("linear-gradient(180deg, #FFFDF7 0%, #FFFFFF 100%)"),
+              display: "flex",
+              alignItems: isCompact ? "stretch" : "center",
+              justifyContent: "space-between",
+              flexDirection: isCompact ? "column" : "row",
+              gap: 10,
+            }}
+          >
+            <div>
+              <div style={{ color: "#07172C", fontSize: 15, fontWeight: 950 }}>
+                Ready to share
+              </div>
+              <div style={{ marginTop: 4, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                Choose WhatsApp, phone share, or a social channel. You review before sending.
+              </div>
+            </div>
+            <SocialTagShareButton
+              target={buildShopDiaryShareTarget(recentlyPublishedDiaryEntry)}
+              buttonLabel="Share update"
+              buttonKind="primary"
+              minWidth={isCompact ? "100%" : 170}
+              fullWidth={isCompact}
+              stableHeight={isCompact ? 52 : 46}
+              debugId={`shop-assets.diary.${recentlyPublishedDiaryEntry.id}.share-now`}
+              onResult={(tone, text, channel) =>
+                handleShopDiaryShareResult(recentlyPublishedDiaryEntry, tone, text, channel)
+              }
+            />
+          </div>
+        ) : null}
+
+
         <div
           style={{
             marginTop: 14,
@@ -2905,11 +3057,25 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   </div>
                   <div style={{ marginTop: 6, color: "#526C84", fontSize: 12.5, lineHeight: 1.35 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` - ${entry.product_name}` : ""}{entry.protected_trade_code ? ` - Trade Evidence ${entry.protected_trade_code}` : ""}</div>
                   <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{entry.note}</div>
-                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                  <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                    {isLivePublicDiaryEntry(entry) ? (
+                      <SocialTagShareButton
+                        target={buildShopDiaryShareTarget(entry)}
+                        buttonLabel="Share update"
+                        buttonKind="secondary"
+                        fullWidth
+                        stableHeight={isCompact ? 46 : 42}
+                        debugId={`shop-assets.diary.${entry.id}.share`}
+                        onResult={(tone, text, channel) =>
+                          handleShopDiaryShareResult(entry, tone, text, channel)
+                        }
+                      />
+                    ) : null}
                     <StableCtaLink
                       to={appendShopDiarySpotlightHandoff(routes.shop, Number(entry.id))}
                       onClick={() => writeShopDiarySpotlightHandoff(entry, firstTruthy(shopName, shop?.name))}
                       fullWidth
+                      kind="soft"
                       stableHeight={isCompact ? 46 : 42}
                       debugId={`shop-assets.diary.${entry.id}.promote`}
                     >

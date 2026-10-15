@@ -44,7 +44,7 @@ Bottom navigation is allowed here.
 3. OwnerShopControlPage
 4. MarketplacePage
 5. ShopPage
-6. MyGMFNAndIPage (CLOSED/FROZEN canonical My GSN / Profile; `/app/profile` redirects here; `ProfilePage.tsx` is deprecated/unmounted source retained for later deletion audit)
+6. MyGMFNAndIPage (CLOSED/FROZEN canonical My GSN / Profile, novice-first phone surface reviewed 2026-10-15; `/app/profile` redirects here; `ProfilePage.tsx` is deprecated/unmounted source retained for later deletion audit)
 7. TrustPassportPage
 8. TrustEventsPage
 9. NotificationsPage
@@ -70,7 +70,7 @@ Known current aliases:
 - SignInPage may currently be represented by `LoginPage`.
 - AuthGatewayPage / SignUpChoicePage may currently be represented by entry or welcome pages.
 - OwnerShopControlPage may currently be represented by `ShopControlPage`.
-- Shop Diary is not a standalone registered screen in the current app. Its owner lane lives inside OwnerShopControlPage / `ShopControlPage`, and its visitor presentation lives inside ShopPage / `ShopGalleryPage`; this Shop Diary split is CLOSED/FROZEN as of 2026-10-08.
+- Shop Diary is not a standalone registered screen in the current app. Its owner lane lives inside OwnerShopControlPage / `ShopControlPage`, and its visitor presentation lives inside ShopPage / `ShopGalleryPage`; this Shop Diary split is CLOSED/FROZEN as of 2026-10-08, with the exact live-update sharing bridge reviewed and re-frozen on 2026-10-15.
 - TrustPassportPage may currently be represented by trust/identity pages.
 
 Alias notes are migration aids, not permission to invent new screens.

@@ -360,6 +360,7 @@ def test_shop_diary_public_list_returns_only_public_active_non_insight_entries(
     now = datetime.now(timezone.utc)
     visible_at = now - timedelta(hours=1)
     expired_at = now - timedelta(hours=25)
+    newer_at = now - timedelta(minutes=30)
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -373,19 +374,29 @@ def test_shop_diary_public_list_returns_only_public_active_non_insight_entries(
                     (302, 1, 101, 1, 'work_completed', 'owner_update', 'Private update', :visible_at, 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
                     (303, 1, 101, 1, 'work_completed', 'owner_update', 'Inactive update', :visible_at, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
                     (304, 1, 101, 1, 'work_completed', 'gsn_insight', 'Hidden insight update', :visible_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                    (305, 1, 101, 1, 'work_completed', 'owner_update', 'Expired public update', :expired_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    (305, 1, 101, 1, 'work_completed', 'owner_update', 'Expired public update', :expired_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (306, 1, 101, 1, 'product_update', 'owner_update', 'Newest live update', :newer_at, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
             ),
-            {"visible_at": visible_at, "expired_at": expired_at},
+            {"visible_at": visible_at, "expired_at": expired_at, "newer_at": newer_at},
         )
 
     res = client.get("/shop-diaries/public/GMFN-DIARY-OWNER")
 
     assert res.status_code == 200, res.text
     items = res.json()["items"]
-    assert [item["id"] for item in items] == [301]
-    assert items[0]["note"] == "Visible current update"
+    assert [item["id"] for item in items] == [306, 301]
+    assert items[0]["note"] == "Newest live update"
     assert items[0]["evidence_class"] == "owner_update"
+
+    exact = client.get("/shop-diaries/public/GMFN-DIARY-OWNER?entry_id=301")
+    assert exact.status_code == 200, exact.text
+    assert [item["id"] for item in exact.json()["items"]] == [301]
+    assert exact.json()["items"][0]["note"] == "Visible current update"
+
+    expired = client.get("/shop-diaries/public/GMFN-DIARY-OWNER?entry_id=305")
+    assert expired.status_code == 200, expired.text
+    assert expired.json()["items"] == []
 
 
 def test_shop_diary_admin_can_create_for_shop_when_explicitly_allowed(

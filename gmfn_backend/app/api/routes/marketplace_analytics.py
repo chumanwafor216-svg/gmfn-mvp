@@ -290,6 +290,9 @@ def _share_source_label(value: str) -> str:
         "copy_shop_link": "Copied shop link",
         "share_shop": "Shared shop",
         "share_product": "Shared product",
+        "share_shop_update": "Shared Shop Update",
+        "whatsapp": "WhatsApp",
+        "native": "Phone share",
         "product_owner_share": "Shared product",
         "x": "X",
         "linkedin": "LinkedIn",
@@ -311,7 +314,7 @@ def _share_source_from_path(source_path: Optional[str]) -> str:
         params = parse_qs(parsed.query)
     except Exception:
         return "direct"
-    for key in ("gsn_share", "gsn_channel", "utm_source"):
+    for key in ("gsn_channel", "gsn_share", "utm_source"):
         value = _safe_str((params.get(key) or [""])[0], max_length=80)
         if value:
             return value

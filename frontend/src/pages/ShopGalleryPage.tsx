@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
-import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import GSNBrandMark from "../components/GSNBrandMark";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
-import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import {
   createMarketplaceShop,
   followMarketplaceShop,
@@ -390,8 +389,7 @@ async function loadPublicShopSpotlightPresentationCycle(
   }
 
   const requestStartedAtMs = Date.now();
-  let requestPromise: Promise<any[] | null>;
-  requestPromise = getPublicShopSpotlightOpportunity(cleanedGmfnId)
+  const requestPromise: Promise<any[] | null> = getPublicShopSpotlightOpportunity(cleanedGmfnId)
     .then((opportunityRes) => {
       const opportunityItems = publicShopSpotlightResponseItems(opportunityRes);
       const requestFinishedAtMs = Date.now();
@@ -1694,6 +1692,10 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("block") || query.get("slot"));
   }, [location.search]);
+  const routeDiaryEntryId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(query.get("diary_entry_id") || query.get("update_id"));
+  }, [location.search]);
   const ownerSpotlightPreviewRequested = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return query.get("owner_spotlight_preview") === "1";
@@ -1739,7 +1741,6 @@ export default function ShopGalleryPage() {
   const galleryRevealFrameRef = useRef<number | null>(null);
   const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
-  const autoRevealDiariesKeyRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
@@ -1768,6 +1769,8 @@ export default function ShopGalleryPage() {
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
+  const [shopOptionsOpen, setShopOptionsOpen] = useState(false);
+  const [shopMoreOpen, setShopMoreOpen] = useState(false);
   const gallerySlotsTotal = clampGallerySlotsTotal(shop?.publicSlotsTotal);
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
@@ -2052,6 +2055,7 @@ export default function ShopGalleryPage() {
         : 0;
       const scopedRes = await getPublicShopDiaryEntries(diaryGmfnId, {
         clan_id: scopedClanId > 0 ? scopedClanId : undefined,
+        entry_id: routeDiaryEntryId > 0 ? routeDiaryEntryId : undefined,
         limit: 12,
       }).catch(() => null);
       const scopedRows = Array.isArray(scopedRes?.items) ? scopedRes.items : null;
@@ -2061,6 +2065,7 @@ export default function ShopGalleryPage() {
       }
 
       const unscopedRes = await getPublicShopDiaryEntries(diaryGmfnId, {
+        entry_id: routeDiaryEntryId > 0 ? routeDiaryEntryId : undefined,
         limit: 12,
       }).catch(() => null);
       return Array.isArray(unscopedRes?.items) ? unscopedRes.items : scopedRows;
@@ -2303,7 +2308,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [explicitRouteClanId, gmfnId, ownerSpotlightPreviewRequested, routeClanId, routeProductId, shopReconnectRetryKey]);
+  }, [explicitRouteClanId, gmfnId, ownerSpotlightPreviewRequested, routeClanId, routeDiaryEntryId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -2331,7 +2336,10 @@ export default function ShopGalleryPage() {
       const target = document.getElementById(targetId);
       if (!target) return;
 
-      if (targetId === PUBLIC_SHOP_SPOTLIGHT_ANCHOR) {
+      if (
+        targetId === PUBLIC_SHOP_SPOTLIGHT_ANCHOR ||
+        (targetId === PUBLIC_SHOP_DIARIES_ANCHOR && routeDiaryEntryId > 0)
+      ) {
         target.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
         return;
       }
@@ -2342,7 +2350,7 @@ export default function ShopGalleryPage() {
         reason: "hash-landing",
       });
     },
-    []
+    [routeDiaryEntryId]
   );
 
   const revealGalleryTarget = useCallback(function revealGalleryTarget(
@@ -2715,32 +2723,6 @@ export default function ShopGalleryPage() {
       });
     }
   }, [effectiveShop?.id]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (loading || error) return;
-    if (location.hash) return;
-    if (communitySpotlights.length > 0) return;
-
-    const revealKey = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    if (!revealKey || autoRevealDiariesKeyRef.current === revealKey) return;
-
-    autoRevealDiariesKeyRef.current = revealKey;
-    revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
-
-    return () => {
-      cancelPendingGalleryReveal();
-    };
-  }, [
-    cancelPendingGalleryReveal,
-    effectiveShop?.gmfnId,
-    error,
-    gmfnId,
-    communitySpotlights.length,
-    loading,
-    location.hash,
-    revealGalleryTarget,
-  ]);
 
   useEffect(() => {
     if (products.length <= gallerySlotsTotal && showAllProducts) {
@@ -3697,12 +3679,6 @@ export default function ShopGalleryPage() {
         collapseOnCompact={true}
       />
 
-      <GsnInstallPrompt
-        tone="light"
-        compact={isCompact}
-        surface="public-shop"
-      />
-
       <section
         className="public-shop-stack"
         style={{
@@ -3714,7 +3690,7 @@ export default function ShopGalleryPage() {
         <div
           className="public-shop-brandbar"
           style={{
-            display: "grid",
+            display: isCompact ? "none" : "grid",
             gridTemplateColumns: "auto minmax(0, 1fr)",
             alignItems: "center",
             gap: isCompact ? 10 : 16,
@@ -3781,6 +3757,7 @@ export default function ShopGalleryPage() {
           aria-label="Back to Marketplace member shops"
           style={{
             ...secondaryBtn(false),
+            order: isCompact ? 3 : 0,
             minHeight: isCompact ? 44 : 50,
             borderRadius: isCompact ? 14 : 18,
             fontSize: isCompact ? 12 : 14,
@@ -3993,7 +3970,8 @@ export default function ShopGalleryPage() {
                   </div>
                 ) : null}
               </div>
-              <div
+              <details
+                data-public-shop-options="secondary"
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
@@ -4006,8 +3984,35 @@ export default function ShopGalleryPage() {
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
                 }}
+                open={!isCompact || shopOptionsOpen}
+                onToggle={(event) => {
+                  if (isCompact) setShopOptionsOpen(event.currentTarget.open);
+                }}
                 aria-label="Shop follow controls"
               >
+                <StableDisclosureSummary
+                  debugId="shop-gallery.options.toggle"
+                  stableHeight={40}
+                  style={{
+                    display: isCompact ? "flex" : "none",
+                    gridColumn: "1 / -1",
+                    minHeight: 40,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    padding: "5px 8px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.82)",
+                    color: "#07172C",
+                    cursor: "pointer",
+                    fontSize: 11.5,
+                    fontWeight: 900,
+                    listStyle: "none",
+                  }}
+                >
+                  <span>{shopFollowState.isOwner ? "Shop options" : "Follow shop"}</span>
+                  <span aria-hidden="true">{shopOptionsOpen ? "-" : "+"}</span>
+                </StableDisclosureSummary>
                 <div
                   style={{
                     minHeight: isCompact ? 30 : 44,
@@ -4201,7 +4206,7 @@ export default function ShopGalleryPage() {
                   </span>
                 </StableCtaLink>
               ) : null}
-              </div>
+              </details>
               <div
                 style={{
                   display: "grid",
@@ -4371,11 +4376,15 @@ export default function ShopGalleryPage() {
                 boxShadow:
                   "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
               }}
-              onResult={(tone, text) => {
+              onResult={(tone, text, channel) => {
                 if (tone === "success") {
                   trackShopShareAction(
                     "share_shop",
-                    attributedShopShareLink || absoluteShopShareLink
+                    appendShopShareAttribution(
+                      absoluteShopShareLink,
+                      "share_shop",
+                      channel
+                    )
                   );
                 }
                 setNotice({ tone, text });
@@ -5334,9 +5343,55 @@ export default function ShopGalleryPage() {
           </section>
         ) : null}
 
-        <div
+        <details
+          data-public-shop-more="secondary"
+          data-public-shop-exact-update={routeDiaryEntryId > 0 ? "true" : "false"}
+          open={
+            !isCompact ||
+            shopMoreOpen ||
+            [
+              `#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
+              `#${PUBLIC_SHOP_VAULT_ANCHOR}`,
+              `#${PUBLIC_SHOP_DIARIES_ANCHOR}`,
+            ].includes(location.hash)
+          }
+          onToggle={(event) => {
+            if (isCompact) setShopMoreOpen(event.currentTarget.open);
+          }}
           style={{
-            display: focusedBlockLinkActive ? "none" : "grid",
+            order: routeDiaryEntryId > 0 ? 1 : 2,
+            display: focusedBlockLinkActive ? "none" : "block",
+          }}
+        >
+          <StableDisclosureSummary
+            debugId="shop-gallery.more.toggle"
+            stableHeight={50}
+            style={{
+              display: isCompact ? "flex" : "none",
+              minHeight: 50,
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              padding: "0 14px",
+              borderRadius: 16,
+              border: "1px solid rgba(214,170,69,0.28)",
+              background: "#FFFFFF",
+              color: "#07172C",
+              cursor: "pointer",
+              fontSize: 13.5,
+              fontWeight: 950,
+              listStyle: "none",
+            }}
+          >
+            <span>{routeDiaryEntryId > 0 ? "Shared shop update" : "More from this shop"}</span>
+            <span aria-hidden="true">{routeDiaryEntryId > 0 || shopMoreOpen ? "-" : "+"}</span>
+          </StableDisclosureSummary>
+          <div style={{ display: "grid", gap: isCompact ? 10 : 14, marginTop: isCompact ? 9 : 0 }}>
+        <div
+          data-public-shop-secondary-features="spotlight-vault"
+          style={{
+            display:
+              focusedBlockLinkActive || routeDiaryEntryId > 0 ? "none" : "grid",
             gridTemplateColumns: "1fr",
             gap: isCompact ? 10 : 14,
           }}
@@ -5754,8 +5809,8 @@ export default function ShopGalleryPage() {
             </div>
           ) : (
             <div style={{ ...innerCard("#F8FBFF") }}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>No live update right now.</div>
-              <div style={{ marginTop: 8, ...helperText() }}>Browse the products and services below, or contact the owner to ask what is available today.</div>
+              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>{routeDiaryEntryId > 0 ? "This update is no longer available." : "No live update right now."}</div>
+              <div style={{ marginTop: 8, ...helperText() }}>{routeDiaryEntryId > 0 ? "It may have expired or been made private. You can still browse this shop." : "Browse the products and services above, or contact the owner to ask what is available today."}</div>
               {signedInOwnsShop ? (
                 <StableCtaLink
                   to={ownerShopDiaryPath}
@@ -5771,9 +5826,12 @@ export default function ShopGalleryPage() {
             </div>
           )}
         </section>
+          </div>
+        </details>
         <section
           className="public-shop-section"
           style={{
+            order: routeDiaryEntryId > 0 ? 2 : 1,
             borderRadius: isCompact ? 24 : 28,
             padding: isCompact ? 9 : 18,
             border: "1px solid rgba(255,255,255,0.92)",
@@ -6323,11 +6381,19 @@ export default function ShopGalleryPage() {
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.owner-share`}
-                            onResult={(tone, text) => {
+                            onResult={(tone, text, channel) => {
                               if (tone === "success") {
                                 trackShopShareAction(
                                   "share_product",
-                                  buildProductSocialShareTarget(product).url,
+                                  appendShopShareAttribution(
+                                    publicShopShareUrl({
+                                      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+                                      productId: product.id,
+                                      block: product.slotNumber,
+                                    }),
+                                    "share_product",
+                                    channel
+                                  ),
                                   product
                                 );
                               }

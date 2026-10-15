@@ -22,6 +22,35 @@ export type SocialSharePlatform =
   | "tiktok"
   | "copy";
 
+export type ShareResultChannel = SocialSharePlatform | "whatsapp" | "native";
+
+function withQueryValue(url: string, key: string, value: string): string {
+  const normalized = normalizeUrl(url);
+  if (!normalized || !value) return normalized;
+
+  try {
+    const parsed = new URL(normalized);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  } catch {
+    const joiner = normalized.includes("?") ? "&" : "?";
+    return `${normalized}${joiner}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  }
+}
+
+export function shareTargetForChannel(
+  target: ShareTarget,
+  channel: ShareResultChannel
+): ShareTarget {
+  return {
+    ...target,
+    url: withQueryValue(target.url, "gsn_channel", channel),
+    socialUrl: target.socialUrl
+      ? withQueryValue(target.socialUrl, "gsn_channel", channel)
+      : undefined,
+  };
+}
+
 export function normalizeUrl(url: string): string {
   const s = String(url || "").trim();
   if (!s) return "";

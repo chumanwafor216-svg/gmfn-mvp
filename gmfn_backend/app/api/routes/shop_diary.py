@@ -204,6 +204,7 @@ def list_public_shop_diary_entries(
     gmfn_id: str,
     clan_id: Optional[int] = Query(default=None, ge=1),
     limit: int = Query(default=12, ge=1, le=50),
+    entry_id: Optional[int] = Query(default=None, ge=1),
     db: Session = Depends(get_db),
 ):
     owner = db.query(User).filter(User.gmfn_id == gmfn_id).first()
@@ -216,15 +217,19 @@ def list_public_shop_diary_entries(
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
     live_cutoff = _now_utc() - timedelta(hours=PUBLIC_SHOP_DIARY_LIVE_HOURS)
-    rows = (
+    entry_query = (
         db.query(ShopDiaryEntry)
         .filter(ShopDiaryEntry.shop_id == int(shop.id))
         .filter(ShopDiaryEntry.is_public.is_(True))
         .filter(ShopDiaryEntry.is_active.is_(True))
         .filter(ShopDiaryEntry.evidence_class != "gsn_insight")
         .filter(ShopDiaryEntry.occurred_at >= live_cutoff)
-        .order_by(ShopDiaryEntry.occurred_at.desc(), ShopDiaryEntry.id.desc())
-        .limit(min(int(limit), 1))
+    )
+    if entry_id is not None:
+        entry_query = entry_query.filter(ShopDiaryEntry.id == int(entry_id))
+    rows = (
+        entry_query.order_by(ShopDiaryEntry.occurred_at.desc(), ShopDiaryEntry.id.desc())
+        .limit(1 if entry_id is not None else int(limit))
         .all()
     )
     return {"items": [_entry_out(db, row) for row in rows]}

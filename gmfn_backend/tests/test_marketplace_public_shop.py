@@ -6585,8 +6585,8 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
         )
 
     event_payloads = [
-        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link", "session_key": "visitor-a"},
-        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&product_id=1", "session_key": "visitor-a"},
+        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy", "session_key": "visitor-a"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy&product_id=1", "session_key": "visitor-a"},
         {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop_gallery", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
         {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop_product", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
         {"event_type": "spotlight_impression", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
@@ -6684,7 +6684,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     share_actions = body["share_actions"]
     assert share_actions["last_7_days"] == 1
     assert share_actions["by_channel"] == [
-        {"source": "copy_shop_link", "label": "Copied shop link", "count": 1}
+        {"source": "copy", "label": "Copied message", "count": 1}
     ]
     assert "not proof" in share_actions["boundary_label"]
     assert "attention events" in share_actions["count_method"]
@@ -6696,8 +6696,8 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert share_response["contact_taps"] == 0
     assert share_response["by_channel"] == [
         {
-            "source": "copy_shop_link",
-            "label": "Copied shop link",
+            "source": "copy",
+            "label": "Copied message",
             "shop_visits": 1,
             "unique_visitors": 1,
             "product_opens": 1,

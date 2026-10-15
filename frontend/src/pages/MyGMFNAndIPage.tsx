@@ -1720,6 +1720,7 @@ export default function MyGMFNAndIPage() {
   const [memberOpportunityLoading, setMemberOpportunityLoading] = useState(false);
   const [communitiesOpen, setCommunitiesOpen] = useState(false);
   const [officialLinksOpen, setOfficialLinksOpen] = useState(false);
+  const [memberHomeMoreOpen, setMemberHomeMoreOpen] = useState(false);
 
   const requestedTab = useMemo(() => {
     if (!isAppRoute) return "guide";
@@ -1731,6 +1732,8 @@ export default function MyGMFNAndIPage() {
     isAppRoute && activeTab === "home";
   const showIdentityGuideSurface =
     isAppRoute && activeTab === "guide";
+  const flattenCompactMemberHomeFrame = isCompact && showMemberHomeSummary;
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2387,6 +2390,7 @@ export default function MyGMFNAndIPage() {
     });
   }, [currentClan, memberCommunities, selectedClanId]);
   const memberCommunityCount = memberCommunities.length || activeCommunityCount;
+  const memberHomeHasMultipleCommunities = Math.max(memberCommunityRows.length, memberCommunityCount) > 1;
   const selectedOrFirstCommunityId =
     selectedClanId ||
     firstPositiveNumber(currentClan?.id, currentClan?.clan_id, memberCommunities[0]?.id, memberCommunities[0]?.clan_id);
@@ -2439,9 +2443,6 @@ export default function MyGMFNAndIPage() {
     );
   }
 
-  function marketplaceRouteFor(communityId = selectedOrFirstCommunityId): string {
-    return routeTarget("marketplace", communityId || selectedClanId, "my-gmfn.member-home.marketplace");
-  }
 
   function shopRouteFor(communityId = selectedOrFirstCommunityId): string {
     return routeTarget("shop", communityId || selectedClanId, "my-gmfn.member-home.shop");
@@ -2487,6 +2488,16 @@ export default function MyGMFNAndIPage() {
   const trustSlipStatus = firstTruthy(passportVm.outputs.trustSlipStatus, "Not issued yet");
   const trustEvidenceStatus = `${trustPassportStatus} / TrustSlip ${trustSlipStatus}`;
   const settingsScopeStatus = "Device preferences stay on this device; display name saves to account";
+  const memberHomeIdentityFacts: Array<[GsnIconName, string, string]> = isCompact
+    ? [
+        ["id", "GSN ID", gmfnId || "Not issued yet"],
+        ["phone", "Phone", accountPhoneStatus],
+      ]
+    : [
+        ["id", "GSN ID", gmfnId || "Not issued yet"],
+        ["copy", "Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
+        ["phone", "Phone", accountPhoneStatus],
+      ];
 
   function communityRouteFor(communityId = selectedOrFirstCommunityId): string {
     return routeTarget("communityHome", communityId || selectedClanId, "my-gmfn.member-home.community-row");
@@ -2601,6 +2612,36 @@ export default function MyGMFNAndIPage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function copyGsnHandle() {
+    if (!gsnHandle) {
+      showNotice("error", "Your GSN ID is not issued yet.");
+      return;
+    }
+    void navigator.clipboard?.writeText(`@${gsnHandle}`);
+    showNotice("success", "GSN handle copied.");
+  }
+
+  function renderCopyHandleAction(compact = false) {
+    return (
+      <SecondaryButton
+        type="button"
+        stableHeight={44}
+        disabled={!gsnHandle}
+        debugId="my-gmfn.identity.copy-handle"
+        onClick={copyGsnHandle}
+        style={{
+          width: compact ? "auto" : "100%",
+          minWidth: compact ? 86 : undefined,
+          justifyContent: "center",
+          paddingInline: compact ? 12 : undefined,
+        }}
+      >
+        <GsnLegacyIcon name="copy" size={20} decorative />
+        {compact ? "Copy" : "Copy handle"}
+      </SecondaryButton>
+    );
   }
 
   async function saveSettings() {
@@ -2769,13 +2810,30 @@ export default function MyGMFNAndIPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
+        data-my-gsn-member-frame={flattenCompactMemberHomeFrame ? "flat-phone" : "full"}
         style={{
           ...appGuidePanel(isCompact),
+          ...(flattenCompactMemberHomeFrame
+            ? {
+                padding: 0,
+                border: "none",
+                background: "transparent",
+                boxShadow: "none",
+              }
+            : {}),
           display: showMemberHomeSummary || showIdentityGuideSurface ? "grid" : "none",
         }}
       >
-        <div style={appNavyCard(isCompact)}>
+        <div
+          data-my-gsn-navy-frame={flattenCompactMemberHomeFrame ? "compact" : "full"}
+          style={{
+            ...appNavyCard(isCompact),
+            ...(flattenCompactMemberHomeFrame ? { padding: 12 } : {}),
+          }}
+        >
+          {!isCompact || showIdentityGuideSurface ? (
           <div
+            data-my-gsn-route-heading="true"
             style={{
               display: "grid",
               gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "60px minmax(0, 1fr)",
@@ -2835,13 +2893,14 @@ export default function MyGMFNAndIPage() {
               ) : null}
             </div>
           </div>
+          ) : null}
 
           {showMemberHomeSummary ? (
             <div
               data-my-gsn-member-home="true"
               data-my-gsn-member-home-mode="personal-orientation"
               style={{
-                marginTop: isCompact ? 14 : 18,
+                marginTop: isCompact ? 0 : 18,
                 display: "grid",
                 gap: isCompact ? 12 : 14,
               }}
@@ -2868,25 +2927,19 @@ export default function MyGMFNAndIPage() {
                     style={{
                       marginTop: 12,
                       display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "1fr"
-                        : "repeat(2, minmax(0, 1fr))",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                       gap: 8,
                     }}
                   >
-                    {([
-                      ["id", "GSN ID", gmfnId || "Not issued yet"],
-                      ["copy", "Handle", gsnHandle ? `@${gsnHandle}` : "Not issued yet"],
-                      ["phone", "Phone", accountPhoneStatus],
-                    ] as Array<[GsnIconName, string, string]>).map(([icon, label, value]) => (
-                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 68 : 90 }}>
+                    {memberHomeIdentityFacts.map(([icon, label, value]) => (
+                      <div key={label} data-my-gsn-identity-fact={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 60 : 90 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                          {memberHomeIconBadge(icon, true, label === "GSN ID")}
+                          {!isCompact ? memberHomeIconBadge(icon, true, label === "GSN ID") : null}
                           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                             <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
                               {label}
                             </div>
-                            <div style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 13.5 : 14, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "break-word", wordBreak: "normal" }}>
+                            <div data-my-gsn-identity-value={label} style={{ marginTop: 4, color: "#07172C", fontSize: isCompact ? 13.5 : 14, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "break-word", wordBreak: "normal" }}>
                               {value}
                             </div>
                           </div>
@@ -2894,40 +2947,29 @@ export default function MyGMFNAndIPage() {
                       </div>
                     ))}
                   </div>
-                  <SecondaryButton
-                    type="button"
-                    stableHeight={44}
-                    disabled={!gsnHandle}
-                    debugId="my-gmfn.identity.copy-handle"
-                    onClick={() => {
-                      if (!gsnHandle) {
-                        setNotice({ tone: "error", text: "Your GSN ID is not issued yet." });
-                        return;
-                      }
-                      void navigator.clipboard?.writeText(`@${gsnHandle}`);
-                      setNotice({ tone: "success", text: "GSN handle copied." });
-                    }}
-                    style={{ marginTop: 10, width: isCompact ? "fit-content" : "100%", justifyContent: "center", paddingInline: isCompact ? 16 : undefined }}
-                  >
-                    <GsnLegacyIcon name="copy" size={20} decorative />
-                    Copy handle
-                  </SecondaryButton>
+                  {!isCompact ? <div style={{ marginTop: 10 }}>{renderCopyHandleAction()}</div> : null}
                 </div>
 
                 <div style={memberHomeSectionShell()} data-my-gsn-community-portfolio="true">
                   {memberHomeSectionKicker("community", "My communities", isCompact)}
-                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {communityStatus}
-                  </h2>
+                  {!isCompact || memberHomeHasMultipleCommunities || !selectedCommunityForShop ? (
+                    <h2 data-my-gsn-community-count="true" style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                      {communityStatus}
+                    </h2>
+                  ) : null}
                   {!isCompact ? (
                     <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
                       Your community list stays covered until you open it. Community Home owns the selected community work.
                     </div>
                   ) : null}
                   {selectedCommunityForShop ? (
-                    <div style={{ ...memberHomeCard(true), marginTop: 12, minHeight: isCompact ? 82 : 92 }}>
+                    <>
+                      <div
+                        data-my-gsn-selected-community-card="true"
+                        style={{ ...memberHomeCard(true), marginTop: isCompact ? 10 : 12, minHeight: isCompact ? 72 : 92 }}
+                      >
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        {memberHomeIconBadge("community", true, true)}
+                        {!isCompact ? memberHomeIconBadge("community", true, true) : null}
                         <div style={{ minWidth: 0 }}>
                           <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
                             Selected community
@@ -2940,24 +2982,35 @@ export default function MyGMFNAndIPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                      </div>
+                    <StableCtaLink
+                      to={communityRouteFor(selectedCommunityForShop.id)}
+                      kind="primary"
+                      debugId="my-gmfn.selected-community.open"
+                      style={{ marginTop: 10, minHeight: 48, borderRadius: 999, justifyContent: "center" }}
+                    >
+                      Open community
+                    </StableCtaLink>
+                    </>
                   ) : null}
-                  <SecondaryButton
-                    type="button"
-                    stableHeight={44}
-                    debugId="my-gmfn.communities.toggle"
-                    onClick={() => setCommunitiesOpen((value) => !value)}
-                    style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
-                    aria-expanded={communitiesOpen}
-                  >
-                    <GsnLegacyIcon name="community" size={20} decorative />
-                    {communitiesOpen
-                      ? isCompact ? "Hide list" : "Hide communities"
-                      : isCompact
-                        ? `Communities (${memberCommunityRows.length || memberCommunityCount || 0})`
-                        : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
-                  </SecondaryButton>
-                  {communitiesOpen ? (
+                  {!isCompact || memberHomeHasMultipleCommunities ? (
+                    <SecondaryButton
+                      type="button"
+                      stableHeight={44}
+                      debugId="my-gmfn.communities.toggle"
+                      onClick={() => setCommunitiesOpen((value) => !value)}
+                      style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
+                      aria-expanded={communitiesOpen}
+                    >
+                      <GsnLegacyIcon name="community" size={20} decorative />
+                      {communitiesOpen
+                        ? isCompact ? "Hide list" : "Hide communities"
+                        : isCompact
+                          ? `Switch community (${memberCommunityRows.length || memberCommunityCount || 0})`
+                          : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
+                    </SecondaryButton>
+                  ) : null}
+                  {communitiesOpen && (!isCompact || memberHomeHasMultipleCommunities) ? (
                     <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
                       {memberCommunityRows.length ? (
                         memberCommunityRows.map((community) => (
@@ -3056,6 +3109,43 @@ export default function MyGMFNAndIPage() {
                   </div>
                 ) : null}
 
+                <details
+                  data-my-gsn-more="secondary"
+                  open={!isCompact || memberHomeMoreOpen}
+                  onToggle={(event) => {
+                    if (isCompact) setMemberHomeMoreOpen(event.currentTarget.open);
+                  }}
+                  style={isCompact ? memberHomeSectionShell() : { display: "contents" }}
+                >
+                  <StableDisclosureSummary
+                    debugId="my-gmfn.more.toggle"
+                    stableHeight={48}
+                    style={{
+                      display: isCompact ? "flex" : "none",
+                      minHeight: 48,
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      cursor: "pointer",
+                      color: "#07172C",
+                      fontSize: 14,
+                      fontWeight: 1000,
+                      listStyle: "none",
+                    }}
+                  >
+                    <span>More</span>
+                    <span aria-hidden="true">{memberHomeMoreOpen ? "-" : "+"}</span>
+                  </StableDisclosureSummary>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "repeat(2, minmax(0, 1fr))",
+                      gap: 12,
+                      marginTop: isCompact ? 10 : 0,
+                    }}
+                  >
                 <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
                   {memberHomeSectionKicker("shop", isCompact ? "Shop & trust" : "Shop / TrustSlip", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
@@ -3097,17 +3187,45 @@ export default function MyGMFNAndIPage() {
                       {settingsScopeStatus}
                     </div>
                   ) : null}
+                  {isCompact ? (
+                    <div
+                      data-my-gsn-handle-utility="secondary"
+                      style={{
+                        ...memberHomeCard(true),
+                        marginTop: 10,
+                        minHeight: 64,
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                          GSN handle
+                        </div>
+                        <div style={{ marginTop: 4, color: "#07172C", fontSize: 13.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "break-word" }}>
+                          {gsnHandle ? `@${gsnHandle}` : "Not issued yet"}
+                        </div>
+                      </div>
+                      {renderCopyHandleAction(true)}
+                    </div>
+                  ) : null}
                   <div data-my-gsn-official-links="true" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={routes.settings} kind="secondary" debugId="my-gmfn.settings.open" style={memberHomeCompactActionLink(false)}>
                       <GsnLegacyIcon name="pen" size={20} decorative />
                       {isCompact ? "Settings" : "Open settings"}
+                    </StableCtaLink>
+                    <StableCtaLink to={routes.guide} kind="secondary" debugId="my-gmfn.guide.open" style={memberHomeCompactActionLink(false)}>
+                      <GsnLegacyIcon name="spark" size={20} decorative />
+                      Help
                     </StableCtaLink>
                     <SecondaryButton
                       type="button"
                       stableHeight={52}
                       debugId="my-gmfn.official-links.toggle"
                       onClick={() => setOfficialLinksOpen((value) => !value)}
-                      style={{ justifyContent: "center", borderRadius: 16, fontSize: 13 }}
+                      style={{ gridColumn: "1 / -1", justifyContent: "center", borderRadius: 16, fontSize: 13 }}
                       aria-expanded={officialLinksOpen}
                     >
                       <GsnLegacyIcon name="globe" size={20} decorative />
@@ -3132,6 +3250,8 @@ export default function MyGMFNAndIPage() {
                     </div>
                   ) : null}
                 </div>
+                  </div>
+                </details>
               </div>
 
               {memberOpportunityPartialUnavailable ? (
@@ -3152,7 +3272,7 @@ export default function MyGMFNAndIPage() {
                 </div>
               ) : null}
 
-              <div style={memberHomeSectionShell()} data-my-gsn-activity-note="quiet">
+              <div style={{ ...memberHomeSectionShell(), display: isCompact ? "none" : "block" }} data-my-gsn-activity-note="quiet">
                 {memberHomeSectionKicker("document", "My activity", isCompact)}
                 <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
                   {closedActivityStatus}
@@ -3334,7 +3454,7 @@ export default function MyGMFNAndIPage() {
         <div
           style={{
             marginTop: isCompact ? 12 : 16,
-            display: "grid",
+            display: isCompact ? "none" : "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "180px 180px minmax(0, 1fr)",
             gap: 10,
             alignItems: "stretch",

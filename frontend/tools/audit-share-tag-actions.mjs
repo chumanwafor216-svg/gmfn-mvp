@@ -164,6 +164,31 @@ function assertNotContains(file, pattern, message) {
     "ShareButtons must keep copy, WhatsApp, social tag, and QR fallbacks together.",
   ],
   [
+    "src/lib/share.ts",
+    /export type ShareResultChannel[\s\S]*shareTargetForChannel[\s\S]*withQueryValue\(target\.url, "gsn_channel", channel\)/,
+    "Every share handoff must carry its chosen channel into the public URL.",
+  ],
+  [
+    "src/components/SocialTagShareButton.tsx",
+    /function openWhatsApp[\s\S]*WhatsApp opened\. Choose a person or group, then send\.[\s\S]*function openNativeShare[\s\S]*Phone share completed\.[\s\S]*debugId="social-tag-share\.whatsapp"[\s\S]*debugId="social-tag-share\.native"/,
+    "The chooser must offer direct WhatsApp and supported phone share handoffs without claiming automatic delivery.",
+  ],
+  [
+    "src/pages/ShopAssetsPage.tsx",
+    /publicShopUpdateSocialPreviewUrl[\s\S]*publicShopUpdateUrl[\s\S]*function buildShopDiaryShareTarget[\s\S]*buttonLabel="Share update"[\s\S]*debugId=\{`shop-assets\.diary\./,
+    "Live owner Shop Diary updates must expose one exact Share update handoff.",
+  ],
+  [
+    "src/pages/ShopAssetsPage.tsx",
+    /isLivePublicDiaryEntry[\s\S]*Date\.now\(\) - 24 \* 60 \* 60 \* 1000[\s\S]*isLivePublicDiaryEntry\(entry\) \? \(/,
+    "Expired, private, inactive, and system-insight diary rows must not expose a public share action.",
+  ],
+  [
+    "src/lib/publicLinks.ts",
+    /publicShopUpdatePath[\s\S]*diary_entry_id[\s\S]*PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*publicShopUpdateSocialPreviewPath[\s\S]*\/share\/shop-update\//,
+    "Shop Update links must identify the exact diary row and its social-preview route.",
+  ],
+  [
     "src/pages/BuildFirstCirclePage.tsx",
     /debugId="build-first-circle\.tag-invite"/,
     "Build First Circle invite surface is missing social tag sharing.",

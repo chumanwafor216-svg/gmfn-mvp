@@ -326,10 +326,37 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
 
   const result = await page.evaluate(() => {
     const text = document.body.textContent || "";
+    const isVisible = (node) => node instanceof HTMLElement && !node.closest("details:not([open])") && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden";
+    const identity = document.querySelector('[data-my-gsn-identity-first="true"]');
+    const memberHome = document.querySelector('[data-my-gsn-member-home="true"]');
+    const memberFrame = document.querySelector('[data-my-gsn-member-frame]');
+    const navyFrame = document.querySelector('[data-my-gsn-navy-frame]');
+    const memberFrameStyle = memberFrame instanceof HTMLElement ? getComputedStyle(memberFrame) : null;
+    const navyFrameStyle = navyFrame instanceof HTMLElement ? getComputedStyle(navyFrame) : null;
+    const navyFrameRect = navyFrame instanceof HTMLElement ? navyFrame.getBoundingClientRect() : null;
+    const memberHomeRect = memberHome instanceof HTMLElement ? memberHome.getBoundingClientRect() : null;
+    const memberHomeTopGap = navyFrameRect && memberHomeRect && navyFrameStyle ? Math.round(memberHomeRect.top - navyFrameRect.top - parseFloat(navyFrameStyle.borderTopWidth) - parseFloat(navyFrameStyle.paddingTop)) : null;
+    const openCommunity = document.querySelector('[data-cta-id="my-gmfn.selected-community.open"]');
+    const handleUtility = document.querySelector('[data-my-gsn-handle-utility="secondary"]');
+    const copyHandle = document.querySelector('[data-cta-id="my-gmfn.identity.copy-handle"]');
+    const more = document.querySelector('[data-my-gsn-more="secondary"]');
+    const communityToggle = document.querySelector('[data-cta-id="my-gmfn.communities.toggle"]');
+    const communityCount = document.querySelector('[data-my-gsn-community-count="true"]');
+    const selectedCommunityCard = document.querySelector('[data-my-gsn-selected-community-card="true"]');
+    const identityFacts = Array.from(document.querySelectorAll('[data-my-gsn-identity-fact]'));
+    const identityValues = Array.from(document.querySelectorAll('[data-my-gsn-identity-value]'));
     return {
       pathname: window.location.pathname,
       search: window.location.search,
-      hasMemberHome: Boolean(document.querySelector('[data-my-gsn-member-home="true"]')),
+      hasMemberHome: Boolean(memberHome),
+      memberFrameMode: memberFrame?.getAttribute("data-my-gsn-member-frame") ?? null,
+      memberFramePadding: memberFrameStyle ? Math.round(parseFloat(memberFrameStyle.paddingLeft)) : null,
+      memberFrameBorderWidth: memberFrameStyle ? Math.round(parseFloat(memberFrameStyle.borderLeftWidth)) : null,
+      memberFrameBackgroundColor: memberFrameStyle?.backgroundColor ?? null,
+      navyFrameMode: navyFrame?.getAttribute("data-my-gsn-navy-frame") ?? null,
+      navyFramePadding: navyFrameStyle ? Math.round(parseFloat(navyFrameStyle.paddingLeft)) : null,
+      memberHomeTopGap,
+      hasRouteHeading: Boolean(document.querySelector('[data-my-gsn-route-heading="true"]')),
       hasPersonalOrientation: Boolean(document.querySelector('[data-my-gsn-personal-orientation="true"]')),
       hasCanonicalPointers: Boolean(document.querySelector('[data-my-gsn-canonical-pointers="true"]')),
       hasAttentionSummary: Boolean(document.querySelector('[data-my-gsn-attention-summary="true"]')),
@@ -338,9 +365,47 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       hasNotificationsPointer: text.includes("Open Notifications"),
       hasDemandBoxPointer: text.includes("Open DemandBox"),
       hasCommunityPortfolio: Boolean(document.querySelector('[data-my-gsn-community-portfolio="true"]')),
+      hasCommunityToggle: Boolean(communityToggle),
+      hasCommunityCount: Boolean(communityCount),
+      selectedCommunityCardHeight: selectedCommunityCard instanceof HTMLElement ? Math.round(selectedCommunityCard.getBoundingClientRect().height) : null,
+      selectedCommunityCardImageCount: selectedCommunityCard?.querySelectorAll("img").length ?? null,
       hasShopBusiness: Boolean(document.querySelector('[data-my-gsn-shop-business="true"]')),
       hasTrustEvidence: Boolean(document.querySelector('[data-my-gsn-trust-evidence="true"]')),
       hasSettingsAccount: Boolean(document.querySelector('[data-my-gsn-settings-account="true"]')),
+      identityHasGsnId: Boolean(identity?.textContent?.includes("GSN ID")),
+      identityHasPhone: Boolean(identity?.textContent?.includes("Phone")),
+      identityHasHandle: Boolean(identity?.textContent?.includes("Handle")),
+      handleUtilityPresent: Boolean(handleUtility),
+      identityFactCount: identityFacts.length,
+      identityFactMaxHeight: Math.round(Math.max(0, ...identityFacts.map((node) => node.getBoundingClientRect().height))),
+      identityValueMaxHeight: Math.round(Math.max(0, ...identityValues.map((node) => node.getBoundingClientRect().height))),
+      identityFactImageCount: identityFacts.reduce((count, node) => count + node.querySelectorAll("img").length, 0),
+      handleUtilityVisible: isVisible(handleUtility),
+      copyHandleVisible: isVisible(copyHandle),
+      moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
+      moreBottom: more instanceof HTMLElement ? Math.round(more.getBoundingClientRect().bottom) : null,
+      openCommunityTop: openCommunity instanceof HTMLElement ? Math.round(openCommunity.getBoundingClientRect().top) : null,
+      openCommunityBottom: openCommunity instanceof HTMLElement ? Math.round(openCommunity.getBoundingClientRect().bottom) : null,
+      noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+
+  const screenshotPath = process.env.GSN_FIRST_PAINT_SCREENSHOT_PATH?.trim();
+  if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true });
+
+  await page.locator('[data-cta-id="my-gmfn.more.toggle"]').click();
+  await delay(300);
+  result.expanded = await page.evaluate(() => {
+    const isVisible = (node) => node instanceof HTMLElement && !node.closest("details:not([open])") && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden";
+    const more = document.querySelector('[data-my-gsn-more="secondary"]');
+    const handleUtility = document.querySelector('[data-my-gsn-handle-utility="secondary"]');
+    const copyHandle = document.querySelector('[data-cta-id="my-gmfn.identity.copy-handle"]');
+    return {
+      moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
+      handleUtilityVisible: isVisible(handleUtility),
+      handleTextPresent: Boolean(handleUtility?.textContent?.includes("GSN handle")),
+      copyHandleVisible: isVisible(copyHandle),
+      noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
     };
   });
 
@@ -352,14 +417,48 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.pathname === "/app/my-gmfn-and-i" &&
       new URLSearchParams(result.search).get("tab") !== "guide" &&
       result.hasMemberHome &&
+      !result.hasRouteHeading &&
+      result.memberFrameMode === "flat-phone" &&
+      result.memberFramePadding === 0 &&
+      result.memberFrameBorderWidth === 0 &&
+      result.memberFrameBackgroundColor === "rgba(0, 0, 0, 0)" &&
+      result.navyFrameMode === "compact" &&
+      result.navyFramePadding === 12 &&
+      result.memberHomeTopGap !== null && result.memberHomeTopGap <= 1 &&
       result.hasPersonalOrientation &&
       result.hasCanonicalPointers &&
       !result.hasAttentionSummary &&
       result.hasNoEmptyAttentionCopy &&
       result.hasCommunityPortfolio &&
+      !result.hasCommunityToggle &&
       result.hasShopBusiness &&
+      !result.hasCommunityCount &&
+      result.selectedCommunityCardHeight !== null &&
+      result.selectedCommunityCardHeight <= 90 &&
+      result.selectedCommunityCardImageCount === 0 &&
       result.hasTrustEvidence &&
       result.hasSettingsAccount &&
+      result.identityHasGsnId &&
+      result.identityHasPhone &&
+      !result.identityHasHandle &&
+      result.handleUtilityPresent &&
+      !result.handleUtilityVisible &&
+      result.identityFactCount === 2 &&
+      result.identityFactMaxHeight <= 90 &&
+      result.identityValueMaxHeight <= 36 &&
+      result.identityFactImageCount === 0 &&
+      !result.copyHandleVisible &&
+      result.moreOpen === false &&
+      result.moreBottom !== null &&
+      result.moreBottom <= 844 &&
+      result.openCommunityBottom !== null &&
+      result.openCommunityBottom <= 844 &&
+      result.noHorizontalOverflow &&
+      result.expanded.moreOpen === true &&
+      result.expanded.handleUtilityVisible &&
+      result.expanded.handleTextPresent &&
+      result.expanded.copyHandleVisible &&
+      result.expanded.noHorizontalOverflow &&
       !result.hasMemberHomeHeadline,
     result,
   };
@@ -423,6 +522,13 @@ async function run() {
       expectDelayedPaths: ["/trust-slips/me/summary"],
     },
   ];
+  const requestedNames = String(process.env.GSN_FIRST_PAINT_ROUTES || "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  const testsToMeasure = requestedNames.length
+    ? tests.filter((test) => requestedNames.includes(test.name.toLowerCase()))
+    : tests;
 
   try {
     server = await createServer({
@@ -438,8 +544,14 @@ async function run() {
     browser = await chromium.launch({ headless: true });
     const results = [];
 
-    for (const test of tests) {
-      results.push(await measureRoute(browser, baseURL, test));
+    for (const test of testsToMeasure) {
+      try {
+        results.push(await measureRoute(browser, baseURL, test));
+      } catch (error) {
+        throw new Error(`First-paint measurement failed for ${test.name}: ${error?.message || error}`, {
+          cause: error,
+        });
+      }
     }
 
     const settledResults = [
@@ -452,7 +564,7 @@ async function run() {
         result.firstSurfaceMs > MAX_FIRST_SURFACE_MS ||
         result.loadingTextStillVisible ||
         delayedCallExpectationFailed(
-          tests.find((test) => test.name === result.name),
+          testsToMeasure.find((test) => test.name === result.name),
           result.delayed
         )
     );
@@ -460,7 +572,7 @@ async function run() {
     const settledFailures = settledResults.filter((result) => !result.passed);
 
     if (failures.length || settledFailures.length) {
-      console.error("App tab first-paint audit failed:", { results, failures, settledResults, settledFailures });
+      console.error(`App tab first-paint audit failed: ${JSON.stringify({ results, failures, settledResults, settledFailures })}`);
       process.exit(1);
     }
 

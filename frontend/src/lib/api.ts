@@ -6605,11 +6605,12 @@ export async function getMyShopDiaryEntries(params: {
 
 export async function getPublicShopDiaryEntries(
   gmfnId: string,
-  params?: { clan_id?: number | null; limit?: number }
+  params?: { clan_id?: number | null; entry_id?: number | null; limit?: number }
 ): Promise<{ items: ShopDiaryEntryRecord[] }> {
   return httpJson(
     `/shop-diaries/public/${encodeURIComponent(String(gmfnId))}${buildQuery({
       clan_id: params?.clan_id ?? undefined,
+      entry_id: params?.entry_id ?? undefined,
       limit: params?.limit ?? 12,
     })}`,
     "GET"

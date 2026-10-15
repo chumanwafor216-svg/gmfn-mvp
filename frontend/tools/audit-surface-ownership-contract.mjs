@@ -199,6 +199,62 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   myGsn,
+  /\{!isCompact \|\| showIdentityGuideSurface \? \([\s\S]*?data-my-gsn-route-heading="true"/,
+  "Phone My GSN member-home must rely on the authenticated shell title while desktop and Identity Guide keep the route heading."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /const flattenCompactMemberHomeFrame = isCompact && showMemberHomeSummary[\s\S]*?data-my-gsn-member-frame=\{flattenCompactMemberHomeFrame \? "flat-phone" : "full"\}[\s\S]*?padding: 0[\s\S]*?background: "transparent"[\s\S]*?data-my-gsn-navy-frame=\{flattenCompactMemberHomeFrame \? "compact" : "full"\}[\s\S]*?flattenCompactMemberHomeFrame \? \{ padding: 12 \}[\s\S]*?marginTop: isCompact \? 0 : 18/,
+  "Default phone My GSN must flatten the redundant outer frame and orphaned heading gap while desktop and Identity Guide retain the full frame."
+);
+
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /debugId="my-gmfn\.selected-community\.open"[\s\S]*?Open community[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?open=\{!isCompact \|\| memberHomeMoreOpen\}[\s\S]*?debugId="my-gmfn\.guide\.open"[\s\S]*?data-my-gsn-activity-note="quiet"/,
+  "Phone My GSN must keep one selected-community continuation and collapse shop, trust, settings, help, links, and quiet activity behind More."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /const memberHomeHasMultipleCommunities = Math\.max\(memberCommunityRows\.length, memberCommunityCount\) > 1[\s\S]*?\{!isCompact \|\| memberHomeHasMultipleCommunities \? \([\s\S]*?debugId="my-gmfn\.communities\.toggle"[\s\S]*?Switch community[\s\S]*?\{communitiesOpen && \(!isCompact \|\| memberHomeHasMultipleCommunities\) \? \(/,
+  "Phone My GSN must omit the redundant portfolio control for one community while preserving multi-community switching and desktop access."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /\{!isCompact \|\| memberHomeHasMultipleCommunities \|\| !selectedCommunityForShop \? \([\s\S]*?data-my-gsn-community-count="true"[\s\S]*?data-my-gsn-selected-community-card="true"[\s\S]*?minHeight: isCompact \? 72 : 92[\s\S]*?\{!isCompact \? memberHomeIconBadge\("community", true, true\) : null\}/,
+  "One-community phone My GSN must omit the repeated active count and render its selected-community card text-first while desktop keeps the richer treatment."
+);
+
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /const memberHomeIdentityFacts:[\s\S]*?isCompact\s*\?[\s\S]*?\["id", "GSN ID"[\s\S]*?\["phone", "Phone"[\s\S]*?:[\s\S]*?\["id", "GSN ID"[\s\S]*?\["copy", "Handle"[\s\S]*?\["phone", "Phone"/,
+  "Phone My GSN identity must expose only GSN ID and Phone while desktop keeps Handle visible."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /data-my-gsn-identity-fact=\{label\}[\s\S]*?minHeight: isCompact \? 60 : 90[\s\S]*?\{!isCompact \? memberHomeIconBadge\(icon, true, label === "GSN ID"\) : null\}/,
+  "Phone My GSN identity facts must use text-first compact cards while desktop retains the richer fact icons."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?memberHomeIdentityFacts\.map[\s\S]*?!isCompact \? <div[\s\S]*?renderCopyHandleAction\(\)[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?data-my-gsn-handle-utility="secondary"[\s\S]*?renderCopyHandleAction\(true\)/,
+  "Phone My GSN must move the handle and its copy action into More > Account without removing the desktop utility."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
   /function memberHomePointerLink\(compact = false, primary = false\)[\s\S]*?minHeight: compact \? 52 : 98[\s\S]*?justifyContent: compact \? "center" : "flex-start"/,
   "Phone My GSN attention handoffs must stay compact instead of rendering as oversized secondary tiles."
 );

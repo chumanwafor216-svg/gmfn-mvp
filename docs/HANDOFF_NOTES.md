@@ -1,3 +1,116 @@
+## 2026-10-15 - Default phone Profile frame flattened locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Confirmed problem: after the duplicate route heading was removed, the default phone member-home still reserved 14px above its content and wrapped the navy orientation surface inside a second decorative white frame with another 14px of padding.
+- Phone behavior: the default member-home now starts at the navy frame's content edge, the redundant outer white panel treatment is transparent and padding-free, and navy padding is 12px instead of 16px.
+- Preserved behavior: desktop and `/app/my-gmfn-and-i?tab=guide` retain the full white/navy frame, route heading, spacing, and richer explanatory presentation.
+- Contracts unchanged: identity facts, community data, actions, routes, backend APIs, auth, permissions, membership, and selection behavior are unchanged.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone-only flat-frame condition and desktop/Guide boundary; `frontend/tools/audit-app-tab-first-paint.mjs` verifies zero outer padding/border/background, 12px navy padding, and zero orphaned member-home top gap in the rendered phone view.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: `Open community` moved from 486-534px to 453-501px; the closed More row moved from 639px to 606px; the flattened frame has zero padding and the member-home top gap is zero; there is no horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the redundant outer frame is gone, but the identity section itself still spends a full 44px row on a decorative identity-card icon. That is now the clearest remaining Profile density target.
+
+## 2026-10-15 - One-community Profile presentation made text-first locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Confirmed problem: the one-community phone surface repeated the same state as `My communities`, `1 active`, and `Selected community`, while a second community-building image consumed useful card width.
+- Phone behavior: when exactly one selected community is available, the redundant active-count heading is absent and the selected-community card is text-first. The section-level `My communities` identity, community name, role, stable ID, and primary `Open community` action remain.
+- Preserved behavior: multi-community phone states retain their portfolio count and `Switch community (N)` control; no-community phone states retain status guidance; desktop retains the count, explanatory copy, and internal community icon.
+- Contracts unchanged: community data still comes from `listMyClans`; no backend, API, auth, permission, membership, selection, route, or Community Home behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the count-aware heading condition, 72px compact minimum, and desktop-only internal icon; `frontend/tools/audit-app-tab-first-paint.mjs` verifies the rendered one-community state has no count heading, no selected-card image, and a card no taller than 90px.
+- Verification passed: production TypeScript/Vite build; surface ownership, member-entry action, and capability-mirror audits; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: the selected card renders at 80px with zero images; `Open community` moved from 517-565px to 486-534px; the closed More row ends at 639px instead of 670px; and there is no horizontal overflow.
+- Files changed for this slice: `frontend/src/pages/MyGMFNAndIPage.tsx`, `frontend/tools/audit-surface-ownership-contract.mjs`, `frontend/tools/audit-app-tab-first-paint.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: this removes 31px and one repeated icon, but the phone profile still uses large nested white/navy containers and the identity block remains visually dominant. That is the next honest simplification target, not evidence that this page is fully simple yet.
+
+## 2026-10-15 - Redundant one-community Profile action removed locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Confirmed problem: a member with one community saw the selected community, `Open community`, and a second `Communities (1)` control that could only reveal the same community again.
+- Phone behavior: exactly one community now shows the selected-community card and one primary `Open community` action only. The redundant portfolio toggle and duplicate one-row list are absent.
+- Preserved multi-community behavior: two or more communities retain one `Switch community (N)` control and the complete portfolio list. Desktop retains its existing Show communities control regardless of count.
+- Contracts unchanged: community data still comes from `listMyClans`; no backend, API, auth, permission, membership, selection, route, or Community Home behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the count-aware phone condition and multi-community label/list; `frontend/tools/audit-app-tab-first-paint.mjs` requires the one-community fixture to have no portfolio toggle and keeps the closed More row inside the first viewport.
+- Verification passed: production TypeScript/Vite build; surface ownership audit; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: the one-community screenshot has one community action, no `Communities (1)` button, no overflow, and the closed More row ends at 670px inside the first 844px viewport.
+- Devil truth: the selected-community card still uses a large decorative community icon and repeats the visible count as `1 active`; those remain visual weight, but neither is a duplicate action or broken journey.
+
+## 2026-10-15 - Profile identity facts made text-first locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Confirmed problem: repeated decorative icons consumed nearly half of each narrow phone identity fact card, forcing the GSN ID and phone status into four-line text stacks.
+- Phone behavior: the two default identity facts retain the same GSN ID and Phone values in the same two-column grid, but the fact cards are text-first and omit their repeated internal icons.
+- Desktop behavior: unchanged; identity fact icons, all three facts, and the visible Copy handle utility remain.
+- Contracts unchanged: no identity value, backend, API, auth, permission, membership, route, phone status, or clipboard behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone-only icon omission and 60px minimum; `frontend/tools/audit-app-tab-first-paint.mjs` requires two facts, zero fact images, cards no taller than 90px, values no taller than two rendered lines, and no overflow.
+- Verification passed: production TypeScript/Vite build; surface ownership audit; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: both values now render in two lines; fact cards measure 76px; value blocks measure 32px; `Open community` moved from 550-598px to 517-565px; More remains closed; document width equals viewport.
+- Devil truth: the selected-community card still repeats a large community icon and the separate `Communities (1)` row is redundant for a one-community member. Those are the next honest Profile simplification candidates, but changing portfolio reachability needs its own intentional frozen review.
+
+## 2026-10-15 - Duplicate Profile phone heading removed locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Confirmed problem: the authenticated phone shell labelled the page `My GSN`, then the route card repeated `My GSN` before showing the member's identity.
+- Phone behavior: the default `/app/my-gmfn-and-i` member-home now begins directly with `My identity`; the shared shell remains the single page heading.
+- Preserved behavior: desktop keeps the full route heading and supporting copy, while `/app/my-gmfn-and-i?tab=guide` keeps the `My GSN Identity` heading on phone and desktop.
+- Contracts unchanged: no backend, API, auth, permission, membership, navigation, route, identity, or community behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the desktop/Guide preservation condition; `frontend/tools/audit-app-tab-first-paint.mjs` requires the compact default route heading to be absent.
+- Verification passed: production TypeScript/Vite build; surface ownership audit; focused Profile redirect and canonical My GSN Playwright checks at 390x844; and manual inspection of the rendered phone screenshot.
+- Visual truth: `Open community` moved from 594-642px to 550-598px in the first 844px viewport; the default Handle/Copy controls remain hidden; More remains closed; document width equals viewport.
+- Devil truth: removing this duplicate saves only 44px in the measured layout. The large identity and community cards still dominate the phone surface and remain the next honest simplification candidates.
+
+## 2026-10-15 - Profile identity utilities reduced locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Route affected: canonical authenticated Profile/My GSN at `/app/my-gmfn-and-i`, including the `/app/profile` compatibility redirect, in `frontend/src/pages/MyGMFNAndIPage.tsx`.
+- Default phone behavior: the identity grid now exposes only the two facts needed at a glance, `GSN ID` and `Phone`. The duplicate Handle fact and separate Copy handle button no longer take space before the primary community action.
+- Secondary behavior: Handle and Copy remain available under the existing closed `More` -> `Account` lane; the copy behavior and stable action id are unchanged.
+- Desktop behavior: unchanged; GSN ID, Handle, Phone, and Copy handle remain visible.
+- Contracts unchanged: no backend, API, auth, permission, membership, route, or clipboard behavior changed.
+- Regression cages: `frontend/tools/audit-surface-ownership-contract.mjs` locks the phone/desktop identity split and Account placement; `frontend/tools/audit-app-tab-first-paint.mjs` verifies default-hidden and expanded-visible states, first-viewport primary action geometry, and horizontal overflow.
+- Verification passed: production TypeScript/Vite build; surface ownership; member-entry actions; capability mirror; and focused Playwright phone checks for Profile redirect plus canonical My GSN at 390x844.
+- Visual truth: the captured default phone view shows no Handle or Copy utility; `Open community` measures 594-642px within the first 844px viewport; `More` is closed; document width equals viewport. Expanding More exposes Handle and Copy without overflow.
+- Devil truth: this removes one duplicated identity fact and one premature utility from the front door. It does not simplify the deeper Settings, Shop, Trust, Help, or community-detail screens.
+
+## 2026-10-15 - Exact shared Shop Update visitor view simplified locally
+- Status: Implemented locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Owner direction: continue making GSN simple enough for a first-time non-technical user, starting with the Shop Diary share path.
+- Route affected: public `/shop/:gmfnId?diary_entry_id=:entryId#shop-diaries` in `frontend/src/pages/ShopGalleryPage.tsx`.
+- Behavior: an exact shared-update visit now labels the open lane `Shared shop update`, moves the requested Shop Update before Products & Services, and hides unrelated Spotlight and Private Vault cards for that focused visit.
+- Ordinary Public Shop visits remain unchanged: identity and Products & Services stay first, while Spotlight, Vault, and Shop Update remain behind the closed `More from this shop` row.
+- Missing/expired truth: if the exact row no longer resolves, the visitor is told that it may have expired or been made private and can still browse the shop.
+- Contract unchanged: no backend, API, auth, permission, evidence, chronology, social-posting, or ordinary shop-layout rule changed.
+- Regression cage: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now locks the focused exact-update contract; case 16 in `frontend/tools/smoke-shop-diary-phase1-visual.mjs` checks that Spotlight/Vault are hidden and the requested update is near the top of a 390x844 viewport.
+- Verification passed: production TypeScript/Vite build; Public Shop button inventory; Shop Diary Phase 1/2 audits; scoped diff check; and focused Playwright phone checks for ordinary Public Shop at 430x844 plus exact Shop Update at 390x844. The exact view measured Shop Update at 12px, Products at 257px, Spotlight/Vault display `none`, and no horizontal overflow; both screenshots were manually inspected.
+- Devil truth: this removes competing visitor content after a shared-update click; it does not make Instagram/TikTok direct-post APIs available or bypass the external app's final send/post step.
+
+## 2026-10-15 - Exact live Shop Update sharing bridge completed locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Owner decision: finish the earlier plan for one-touch outward sharing from Shop Diary while keeping the surface simple and the final post under the shop owner's control.
+- Owner flow: after `Publish update`, a live update now shows one immediate `Share update` action. The same action remains on recent owner diary rows only while the row is public, active, non-insight, and inside the existing 24-hour window.
+- Channels: the shared chooser now puts WhatsApp first, offers the phone share sheet when the browser supports it, and retains X, LinkedIn, Facebook, Instagram caption copy, TikTok caption copy, and copy-message fallbacks. GSN prepares the handoff; the owner still reviews, chooses a recipient where applicable, and sends/posts manually.
+- Exact public target: `publicShopUpdateUrl` creates `/shop/{GSN_ID}?diary_entry_id={entry_id}#shop-diaries`. Public Shop asks `/shop-diaries/public/{GSN_ID}?entry_id={entry_id}` for that exact live row, so a newer update cannot silently replace the shared one.
+- Social preview: backend `/share/shop-update/{entry_id}` and `/card.png` routes create the update-specific Open Graph handoff. Expired, private, inactive, and `gsn_insight` rows return 404 and do not expose their text through the preview.
+- Attribution: chooser handoffs carry `gsn_channel`; Shop, product, and Shop Update preview redirects preserve share/channel/UTM parameters; Marketplace analytics now reports the chosen channel before the broader share campaign.
+- Files changed for this slice: `frontend/src/components/SocialTagShareButton.tsx`, `frontend/src/lib/share.ts`, `frontend/src/lib/publicLinks.ts`, `frontend/src/lib/api.ts`, `frontend/src/pages/ShopAssetsPage.tsx`, `frontend/src/pages/ShopGalleryPage.tsx`, `gmfn_backend/app/api/routes/shop_diary.py`, `gmfn_backend/app/api/routes/share_preview.py`, `gmfn_backend/app/api/routes/marketplace_analytics.py`, focused tests/audits, and Shop Diary spec/freeze records.
+- Verification passed: production frontend TypeScript/Vite build; focused ESLint; Python compile; 34 focused backend tests covering share preview, Shop Diary, and Marketplace attribution; Share, Shop Diary Phase 1/2, and Public Shop button audits; git diff check; and focused Playwright phone checks at 390x844 for the owner chooser and exact public update. Both screenshots were manually inspected and had no horizontal overflow.
+- Protected aggregate truth: `audit:protected-button-freeze` reaches and passes this slice's Shop Control, entry/auth, share, and trust checks, but still fails on four unrelated pre-existing repository issues: stale Community Home tap-height matching, one raw Commitments `Link`, the Dashboard Market Wisdom source expectation, and missing Commitments visual-route coverage.
+- Devil truth: this is a user-controlled sharing bridge, not server-side cross-posting. Instagram and TikTok still require copied captions, Facebook/LinkedIn/X open their own composer, WhatsApp requires choosing a person/group and tapping send, and the phone share option depends on browser support. That limitation is deliberate and safer than storing social-media credentials.
+- Privacy/lifecycle truth: an exact update link stops resolving after the existing 24-hour public window. Social networks may cache a preview they already fetched; GSN can stop serving the source but cannot force an external platform to erase its cache instantly.
+
+## 2026-10-15 - Public Shop and canonical Profile phone surfaces simplified locally
+- Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
+- Owner trigger: people have complained that GSN still exposes too much. The owner explicitly requested a novice-first reduction of Shop Gallery and Profile, with secondary material closed until requested.
+- Routes/screens affected: public `/shop/:gmfnId` in `frontend/src/pages/ShopGalleryPage.tsx`; canonical authenticated Profile/My GSN at `/app/my-gmfn-and-i` plus the `/app/profile` compatibility redirect in `frontend/src/pages/MyGMFNAndIPage.tsx`. No backend, schema, auth, permission, API payload, commerce, evidence, or route contract changed.
+- Public Shop phone order is now shop identity -> Share/Verify/WhatsApp -> Products & Services. The duplicate GSN brand bar, installation prompt, and automatic no-Spotlight jump to Shop Update were removed from the phone journey.
+- Public Shop follow/owner controls now sit behind one closed `Shop options` row. Spotlight, Private Vault, and Shop Update remain intact behind one closed `More from this shop` row after Products & Services. Explicit Spotlight/Vault/Diary and focused product/block deep links still reveal their exact destination.
+- My GSN now shows identity facts in a two-column phone grid, selected community, one primary `Open community` action, the compact Communities row, and attention only when real/loading/failed. Shop/Trust, Settings, Help, official links, and quiet activity sit behind one closed `More` row; the duplicated lower phone action rail is hidden.
+- Preserved ownership: My GSN still owns cross-GSN identity and community portfolio; Community Home owns selected-community work; Shop Control owns owner operations; Trust Passport/TrustSlip own evidence detail; Public Shop still owns supply and contact; Shop Diary remains chronological and separate from products.
+- Freeze/spec records updated: `docs/FREEZE_POLICY.md`, `docs/SCREEN_REGISTRY.md`, and `docs/SCREEN_SPECS.md` record the intentional 2026-10-15 review and re-freeze.
+- Regression cages updated: `audit-surface-ownership-contract.mjs` requires the selected-community action, two-column identity facts, and closed More lane; `audit-shop-gallery-button-inventory.mjs` requires products-before-more, closed shop options, no automatic Diary jump, hidden phone brand bar, and no Public Shop install prompt.
+- Test tooling repaired without weakening product truth: the first-paint audit now identifies the failing route and accepts an explicit focused route list; the Shop Diary visual smoke uses rolling recent fixture timestamps, current `Shop Update` public wording, focused case selection, and novice-surface geometry assertions.
+- Verification passed: production TypeScript/Vite build; surface ownership; Public Shop button inventory; Shop Diary Phase 1/2; Spotlight system feed; member-entry actions; capability mirror; focused Profile/My GSN direct-entry and bottom-nav first-paint browser audit; full uninterrupted 14-scenario Public Shop/Shop Diary mobile visual smoke; and scoped git diff check.
+- Phone evidence for ordinary Public Shop at 430x844: Products & Services top 379px; closed More row top 1282px; Shop options closed; More closed; brand bar hidden; install prompt absent; document width equals viewport. Diary deep links force More open, while focused logged-in and logged-out product links keep secondary Diary presentation hidden.
+- Unrelated audit truth: the unfiltered app-tab first-paint suite stops on Marketplace because its existing `Shops & Services` text expectation does not appear within seven seconds. Community Home completes first, and the focused Profile/My GSN run passes; no Marketplace source was changed in this slice.
+- Visual-review truth: Chromium captured all 14 screenshots and geometry assertions passed. The direct Windows image-viewer tool remains blocked by the sandbox wrapper, so final aesthetic inspection on the owner's physical phone remains necessary.
+- Devil truth: these front doors are materially simpler, but the expanded Shop/Trust/Settings pages, individual product cards, Verify panel, and owner contact chooser still carry substantial detail. This slice hides legitimate depth; it does not prove every downstream task is novice-proof.
+- Next safe step: owner-check the ordinary Public Shop and Profile tabs on a real phone. If accepted, publish this batch explicitly; otherwise adjust only the first-screen wording/spacing without reopening frozen business contracts.
+
 ## 2026-10-15 - Loan Summary and Repayment phone processes simplified locally
 - Status: Implemented and verified locally; not committed, pushed, or deployed. The active pilot batch-publish freeze remains in force.
 - Owner trigger: continue simplifying GSN surfaces until a non-technical first-time user can act without decoding the system; the owner approved this downstream Loan Summary / Repayment slice.

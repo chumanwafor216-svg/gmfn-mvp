@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const shopGalleryFile = "src/pages/ShopGalleryPage.tsx";
 const ownerSurfaceNavFile = "src/components/OwnerOnlySurfaceNav.tsx";
-const installPromptFile = "src/components/GsnInstallPrompt.tsx";
 const mediaFrameFile = "src/components/SpotlightMediaFrame.tsx";
 const shopDiaryVisualSmokeFile = "tools/smoke-shop-diary-phase1-visual.mjs";
 const shopGallerySource = readFileSync(
@@ -16,10 +15,6 @@ const shopGallerySource = readFileSync(
 );
 const ownerSurfaceNavSource = readFileSync(
   join(frontendRoot, ownerSurfaceNavFile),
-  "utf8"
-);
-const installPromptSource = readFileSync(
-  join(frontendRoot, installPromptFile),
   "utf8"
 );
 const mediaFrameSource = readFileSync(join(frontendRoot, mediaFrameFile), "utf8");
@@ -37,7 +32,7 @@ const expectedPageSourceActions = {
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
-const expectedInstallPromptActions = 1;
+const expectedInstallPromptActions = 0;
 const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
 const expectedSocialTagActionTemplates = 2;
@@ -319,10 +314,6 @@ assertFileContains(
   "OwnerOnlySurfaceNav links must keep fixed-height stable route buttons."
 );
 
-assertContains(
-  /<GsnInstallPrompt[\s\S]*?tone="light"[\s\S]*?compact=\{isCompact\}[\s\S]*?surface="public-shop"/,
-  "Public Shop must keep the phone-screen install prompt for WhatsApp/shared-link visitors."
-);
 
 assertContains(
   /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?name=\{isProductOpen \? "public-globe" : "shopping-cart"\}/,
@@ -361,12 +352,6 @@ assertFileContains(
   "Public Shop visual smoke must keep the logged-out opened-product screenshot without restoring duplicate product contact controls."
 );
 
-assertFileContains(
-  installPromptFile,
-  installPromptSource,
-  /<PrimaryButton[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`gsn-install\.\$\{surface\}\.setup`\}/,
-  "GsnInstallPrompt must keep one fixed-height install/setup action."
-);
 
 const mediaFrameInvocationCount =
   (shopGallerySource.match(/<SpotlightMediaFrame\b/g) || []).length;
@@ -424,6 +409,41 @@ assertContains(
 assertNotContains(
   /<span>WhatsApp chat<\/span>|<span>Call phone<\/span>|Pick chat or a direct call\./,
   "Public Shop must not expose the old busy contact-panel labels; the main surface stays one WhatsApp button and the opened chooser stays Chat/Call."
+);
+
+assertContains(
+  /open=\{!isCompact \|\| shopOptionsOpen\}[\s\S]*?debugId="shop-gallery\.options\.toggle"[\s\S]*?shopFollowState\.isOwner \? "Shop options" : "Follow shop"/,
+  "Public Shop phone follow and owner controls must stay collapsed behind one Shop options row."
+);
+
+assertContains(
+  /data-public-shop-more="secondary"[\s\S]*?order: routeDiaryEntryId > 0 \? 1 : 2[\s\S]*?More from this shop[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?className="public-shop-section"[\s\S]*?order: routeDiaryEntryId > 0 \? 2 : 1/,
+  "Public Shop must stay Products-first ordinarily and move only an exact shared Shop Update ahead of Products."
+);
+
+assertContains(
+  /data-public-shop-exact-update=\{routeDiaryEntryId > 0 \? "true" : "false"\}[\s\S]*?Shared shop update[\s\S]*?data-public-shop-secondary-features="spotlight-vault"[\s\S]*?focusedBlockLinkActive \|\| routeDiaryEntryId > 0 \? "none" : "grid"[\s\S]*?className="public-shop-section public-shop-diary"/,
+  "An exact shared Shop Update must hide unrelated Spotlight and Vault content while keeping the requested update visible."
+);
+
+assertContains(
+  /routeDiaryEntryId > 0 \? "This update is no longer available\."[\s\S]*?It may have expired or been made private\. You can still browse this shop\./,
+  "An unavailable exact Shop Update link must explain the expiry or privacy boundary without pretending the row still exists."
+);
+
+assertContains(
+  /targetId === PUBLIC_SHOP_DIARIES_ANCHOR && routeDiaryEntryId > 0[\s\S]*?target\.scrollIntoView\(\{ block: "start", inline: "nearest", behavior: "auto" \}\)/,
+  "An exact shared Shop Update must force the requested update to the landing position instead of accepting a merely visible lower-page card."
+);
+
+assertContains(
+  /display: isCompact \? "none" : "grid"[\s\S]*?className="public-shop-brandbar"|className="public-shop-brandbar"[\s\S]*?display: isCompact \? "none" : "grid"/,
+  "Public Shop phone must keep the duplicate GSN brand bar off the first surface."
+);
+
+assertNotContains(
+  /autoRevealDiariesKeyRef|revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\)/,
+  "Public Shop must not skip identity and products by automatically jumping ordinary visits to Shop Update."
 );
 
 assertContains(

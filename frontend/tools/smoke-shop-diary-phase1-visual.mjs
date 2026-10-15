@@ -1,4 +1,4 @@
-/* global console, process, localStorage, document, window, URL */
+/* global console, process, localStorage, document, window, URL, getComputedStyle, HTMLDetailsElement */
 
 import { chromium } from "@playwright/test";
 import { createReadStream, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
@@ -92,6 +92,9 @@ const shop = {
   is_active: true,
   shop_product_slots_total: 6,
 };
+function recentIso(hoursAgo) {
+  return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
+}
 
 const imageDiary = {
   id: 701,
@@ -106,14 +109,14 @@ const imageDiary = {
   note: "Delivered a weekend food tray order for a community family gathering.",
   image_url: imageDataUrl,
   video_url: null,
-  occurred_at: "2026-10-08T12:00:00Z",
+  occurred_at: recentIso(2),
   product_id: 2,
   product_name: "Event catering",
   protected_trade_id: null,
   protected_trade_code: null,
   is_public: true,
   is_active: true,
-  created_at: "2026-10-08T12:00:00Z",
+  created_at: recentIso(2),
 };
 
 const confirmedDiary = {
@@ -127,7 +130,7 @@ const confirmedDiary = {
   note: "Completed a prepaid catering order and linked it to a confirmed Trade Evidence record.",
   protected_trade_id: 88,
   protected_trade_code: "TE-88",
-  occurred_at: "2026-10-07T12:00:00Z",
+  occurred_at: recentIso(1),
 };
 
 const videoDiary = {
@@ -138,7 +141,7 @@ const videoDiary = {
   note: "Shared a short video update from a community food prep session.",
   image_url: portraitDataUrl,
   video_url: videoDataUrl,
-  occurred_at: "2026-10-06T12:00:00Z",
+  occurred_at: recentIso(1),
 };
 
 const textOnlyDiary = {
@@ -151,7 +154,7 @@ const textOnlyDiary = {
   video_url: null,
   product_id: null,
   product_name: null,
-  occurred_at: "2026-10-09T12:00:00Z",
+  occurred_at: recentIso(1),
 };
 
 const weakDataDiary = {
@@ -166,7 +169,7 @@ const weakDataDiary = {
   product_name: null,
   protected_trade_id: null,
   protected_trade_code: null,
-  occurred_at: "2026-10-10T12:00:00Z",
+  occurred_at: recentIso(1),
 };
 
 const scenarios = {
@@ -257,7 +260,11 @@ async function installApiMocks(page) {
       return;
     }
     if (path === "/shop-diaries/public/GMFN-U-DIARY") {
-      await route.fulfill(json({ items: scenarios[activeScenario] || [] }));
+      const rows = scenarios[activeScenario] || [];
+      const entryId = Number(url.searchParams.get("entry_id") || 0);
+      await route.fulfill(json({
+        items: entryId > 0 ? rows.filter((entry) => Number(entry.id) === entryId) : rows,
+      }));
       return;
     }
     await route.fulfill(json({ ok: true, items: [], products: [], records: [] }));
@@ -294,6 +301,14 @@ async function collectMetrics(page) {
     const frame = document.querySelector(".public-shop-diary-featured video, .public-shop-diary-featured img");
     const section = document.querySelector(".public-shop-diary-featured");
     const diaryRect = diary?.getBoundingClientRect();
+    const more = document.querySelector('[data-public-shop-more="secondary"]');
+    const options = document.querySelector('[data-public-shop-options="secondary"]');
+    const brandbar = document.querySelector('.public-shop-brandbar');
+    const installPrompt = document.querySelector('[data-gsn-install-surface="public-shop"]');
+    const secondaryFeatures = document.querySelector('[data-public-shop-secondary-features="spotlight-vault"]');
+    const moreRect = more?.getBoundingClientRect();
+    const optionsRect = options?.getBoundingClientRect();
+    const brandDisplay = brandbar ? getComputedStyle(brandbar).display : null;
     const productRect = productHeading?.getBoundingClientRect();
     const frameRect = frame?.getBoundingClientRect();
     const sectionRect = section?.getBoundingClientRect();
@@ -310,6 +325,13 @@ async function collectMetrics(page) {
       hasVideo: Boolean(document.querySelector(".public-shop-diary-featured video")),
       hasImage: Boolean(document.querySelector(".public-shop-diary-featured img")),
       diaryDisplay: diary ? getComputedStyle(diary).display : null,
+      moreTop: moreRect ? Math.round(moreRect.top) : null,
+      moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
+      optionsTop: optionsRect ? Math.round(optionsRect.top) : null,
+      optionsOpen: options instanceof HTMLDetailsElement ? options.open : null,
+      brandDisplay,
+      hasPublicShopInstallPrompt: Boolean(installPrompt),
+      secondaryFeaturesDisplay: secondaryFeatures ? getComputedStyle(secondaryFeatures).display : null,
     };
   });
 }
@@ -328,7 +350,7 @@ async function run() {
     const cases = [
       { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-control-gallery-tools", width: 360, expect: "No business activity updates yet" },
       { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Delivered a weekend food tray" },
-      { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Diary" },
+      { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
       { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
       { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services" },
       { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "This shared link opens only this public product/service block" },
@@ -337,12 +359,21 @@ async function run() {
       { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Promote this update" },
       { name: "10-public-shop-text-only-diary-360", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "without adding media" },
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
-      { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Confirmed activity" },
+      { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Work completed" },
       { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
       { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Contact the owner to request or confirm stock", authenticated: false },
+      { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Choose channel", openShare: true },
+      { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
     ];
+    const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const casesToRun = requestedCases.length
+      ? cases.filter((item) => requestedCases.includes(item.name))
+      : cases;
 
-    for (const item of cases) {
+    for (const item of casesToRun) {
       activeScenario = item.scenario;
       const page = await preparePage(browser, item.width, 844, item.authenticated !== false);
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
@@ -350,6 +381,19 @@ async function run() {
       if (item.route.startsWith("/app/shop-control")) {
         await page.getByText("Latest activity").first().scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => undefined);
         await page.waitForTimeout(300);
+      }
+      if (item.openShare) {
+        const recentUpdates = page.getByText(/Recent updates \(/).first();
+        await recentUpdates.click();
+        const shareUpdate = page.getByRole("button", { name: "Share update" }).first();
+        await shareUpdate.scrollIntoViewIfNeeded();
+        await shareUpdate.click();
+        await page.getByRole("dialog", { name: "Choose share channel" }).waitFor();
+        for (const channel of ["WhatsApp", "X", "LinkedIn", "Facebook", "Copy message"]) {
+          if (!(await page.getByRole("button", { name: channel, exact: true }).isVisible())) {
+            throw new Error(`${item.name} did not expose ${channel} in the one-touch share chooser.`);
+          }
+        }
       }
       const metrics = await collectMetrics(page);
       const screenshot = await capture(page, item.name);
@@ -360,8 +404,40 @@ async function run() {
       if (metrics.scrollWidth > metrics.innerWidth) {
         throw new Error(`${item.name} widened horizontally: ${metrics.scrollWidth} > ${metrics.innerWidth}`);
       }
-      if (item.name.includes("public-shop") && !item.name.includes("focused") && metrics.productTop !== null && metrics.diaryTop !== null && metrics.productTop <= metrics.diaryTop) {
-        throw new Error(`${item.name} rendered Products & Services before Shop Diary.`);
+      if (item.name.includes("public-shop")) {
+        if (metrics.hasPublicShopInstallPrompt) {
+          throw new Error(`${item.name} restored the unrelated Public Shop install prompt.`);
+        }
+        if (metrics.brandDisplay !== "none") {
+          throw new Error(`${item.name} restored the duplicate Public Shop phone brand bar.`);
+        }
+      }
+      if (item.name === "05-public-shop-normal-visitor-430") {
+        if (metrics.moreOpen || metrics.optionsOpen) {
+          throw new Error(`${item.name} did not keep secondary shop lanes closed by default.`);
+        }
+        if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
+          throw new Error(`${item.name} did not place Products & Services before More from this shop.`);
+        }
+      }
+      if (item.name === "16-public-shop-exact-update-390") {
+        if (metrics.secondaryFeaturesDisplay !== "none") {
+          throw new Error(`${item.name} exposed unrelated Spotlight or Vault content beside the shared update.`);
+        }
+        if (metrics.diaryTop === null || metrics.diaryTop < 0 || metrics.diaryTop > 180) {
+          throw new Error(`${item.name} did not focus the exact shared Shop Update near the top of the phone viewport (top=${metrics.diaryTop}).`);
+        }
+        if (metrics.moreTop === null || metrics.productTop === null || metrics.moreTop >= metrics.productTop) {
+          throw new Error(`${item.name} did not place the exact shared Shop Update before Products & Services.`);
+        }
+      }
+      if (item.route.includes("#shop-diaries") && !item.route.includes("diary_entry_id=")) {
+        if (!metrics.moreOpen) {
+          throw new Error(`${item.name} did not open More from this shop for the Shop Update deep link.`);
+        }
+        if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
+          throw new Error(`${item.name} did not keep Products & Services before the expanded secondary lane.`);
+        }
       }
       if (item.name.includes("focused") && metrics.diaryDisplay !== "none") {
         throw new Error(`${item.name} did not hide Shop Diary during focused product mode.`);

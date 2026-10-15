@@ -1,6 +1,7 @@
 import base64
 import json
 from io import BytesIO
+from datetime import datetime, timedelta, timezone
 
 from PIL import Image
 from sqlalchemy import text
@@ -73,6 +74,7 @@ def _seed_public_shop():
                 INSERT INTO marketplace_products (
                     id, clan_id, shop_id, seller_user_id, title, description,
                     price, currency, visibility_mode, is_active, created_at
+
                 )
                 VALUES (
                     3, 1, 1, 1, 'Fresh rice bag', 'Clean rice ready for pickup.',
@@ -81,6 +83,31 @@ def _seed_public_shop():
                 """
             )
         )
+
+def _seed_shop_update(*, entry_id=7, hours_ago=0, is_public=1, evidence_class="owner_update"):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO shop_diary_entries (
+                    id, clan_id, shop_id, owner_user_id, activity_type, evidence_class,
+                    note, occurred_at, is_public, is_active, created_at, updated_at
+                )
+                VALUES (
+                    :entry_id, 1, 1, 1, 'product_update', :evidence_class,
+                    'Fresh rice is available for pickup today.', :occurred_at,
+                    :is_public, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "entry_id": entry_id,
+                "evidence_class": evidence_class,
+                "occurred_at": datetime.now(timezone.utc) - timedelta(hours=hours_ago),
+                "is_public": is_public,
+            },
+        )
+
 
 
 def _seed_trustslip_share_context(
@@ -181,7 +208,7 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
     _seed_public_shop()
 
-    res = client.get("/share/shop/GMFN-U-SHARE?product_id=3&block=1")
+    res = client.get("/share/shop/GMFN-U-SHARE?product_id=3&block=1&gsn_share=share_product&gsn_channel=facebook&utm_source=gsn_shop_gallery")
 
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
@@ -191,8 +218,53 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert "GSN public shop item. Tap to open product." in res.text
     assert "Trusted GSN shop item. Tap to open product." not in res.text
     assert "Trusted GSN shop. Tap to open shop." not in res.text
-    assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3#shop-block-1" in res.text
+    assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3&amp;gsn_share=share_product&amp;gsn_channel=facebook&amp;utm_source=gsn_shop_gallery#shop-block-1" in res.text
 
+
+
+def test_share_shop_update_preview_targets_exact_live_update(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    _seed_public_shop()
+    _seed_shop_update(entry_id=7)
+
+    res = client.get(
+        "/share/shop-update/7?gsn_share=share_shop_update&gsn_channel=whatsapp&utm_source=gsn_shop_diary"
+    )
+
+    assert res.status_code == 200, res.text
+    assert "New stock/product update | Ada Trust Shop" in res.text
+    assert "GSN Shop Update. Tap to open this live public update." in res.text
+    assert "https://api.gsn.example/share/shop-update/7/card.png" in res.text
+    assert (
+        "https://pilot.gsn.example/shop/GMFN-U-SHARE?"
+        "diary_entry_id=7&amp;gsn_share=share_shop_update&amp;"
+        "gsn_channel=whatsapp&amp;utm_source=gsn_shop_diary#shop-diaries"
+    ) in res.text
+
+
+def test_share_shop_update_card_png_is_scraper_friendly(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    _seed_shop_update(entry_id=7)
+
+    res = client.get("/share/shop-update/7/card.png")
+
+    assert res.status_code == 200, res.text
+    assert res.headers["content-type"].startswith("image/png")
+    assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(res.content) > 10_000
+
+
+def test_share_shop_update_rejects_expired_update(client):
+    _seed_public_shop()
+    _seed_shop_update(entry_id=8, hours_ago=25)
+
+    page_res = client.get("/share/shop-update/8")
+    card_res = client.get("/share/shop-update/8/card.png")
+
+    assert page_res.status_code == 404
+    assert card_res.status_code == 404
 
 def test_share_shop_card_png_uses_scraper_friendly_image(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")

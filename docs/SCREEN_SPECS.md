@@ -116,8 +116,8 @@ Rules:
   opens three short manual steps.
 - Do not cache private API responses or uploaded user data in the service
   worker.
-- The prompt may appear on Welcome, Sign In, Public Shop, invite/public access,
-  and other entry surfaces where people commonly arrive from shared links.
+- The prompt may appear on Welcome, Sign In, invite/public access, and other
+  entry surfaces where installation does not compete with the page's main job.
 - The prompt must stay compact, must not replace the main page action, and must
   disappear when GSN is already running from a home-screen install.
 - On iPhone/iPad, do not promise the Android native install prompt. If the user
@@ -183,7 +183,7 @@ Rules:
 
 ## MyGMFNAndIPage / Profile
 
-Status: CLOSED/FROZEN as of 2026-10-08.
+Status: CLOSED/FROZEN as of 2026-10-15 after the approved novice-first phone simplification.
 
 Purpose:
 Member home for `me across the whole GSN network`.
@@ -209,7 +209,13 @@ Rules:
 - Community Home owns one selected community. My GSN owns the cross-community personal portfolio.
 - Profile tab must open the canonical member home, not the historical guide-first branch.
 - Do not revive the old standalone `ProfilePage.tsx`; treat it as deprecated/unmounted source until a later deletion audit.
-- On phones, keep the default member home factual and compact: show identity facts, selected community, conditional attention, and short handoff labels; hide duplicate hero/helper explanations and keep secondary copy/actions visually smaller. Guide mode may retain its explanatory copy.
+- On phones, keep the default member home factual and compact: show identity facts in a two-column grid, the selected community, one primary `Open community` action, and conditional attention only when there is a real signal or loading/source failure.
+- On phones, the default identity grid shows only `GSN ID` and `Phone`; the duplicate `Handle` fact and `Copy handle` utility live under `More` -> `Account`. Desktop keeps all three identity facts and the visible copy utility.
+- On phones, keep those two identity fact cards text-first and no taller than needed for two value lines; do not spend their narrow width on repeated decorative fact icons. Desktop keeps the richer icon treatment.
+- On authenticated phones, the shared app shell owns the `My GSN` page name. Do not repeat that route heading inside the default member-home card; desktop and the explicit Identity Guide branch keep their fuller heading context.
+- On the default phone member-home, do not wrap the navy orientation surface in a second decorative white frame or reserve space for the omitted route heading. Keep that fuller frame on desktop and in the explicit Identity Guide branch.
+- Keep Shop/Trust, Settings, Help, official links, and quiet activity behind one closed `More` row on the default phone surface. Do not duplicate those actions in a second phone action rail. Guide mode may retain its explanatory copy.
+- When a phone member has multiple communities, keep the full portfolio reachable from one compact `Switch community (N)` row; opening it must not replace the selected-community primary action. When the member has exactly one community, the selected-community card is the complete portfolio: keep it text-first, omit the repeated `1 active` heading, and keep the duplicate switch/list control hidden. Desktop retains the fuller count and icon treatment.
 ## Mobile Task Page Rule
 
 All authenticated mobile task pages must follow
@@ -1273,11 +1279,12 @@ Purpose:
 Owner-side shop tools.
 
 Shop Diary status:
-CLOSED/FROZEN as of 2026-10-08 after final Shop Diary verification gate.
+CLOSED/FROZEN as of 2026-10-08, with the owner-approved outward sharing bridge completed and re-frozen on 2026-10-15.
 
 Shop Diary contract:
 - Shop Control owns owner-side Shop Diary creation as short text updates, latest activity, safe same-shop confirmed Trade Evidence selection, and the optional `Promote this update` handoff to the canonical Spotlight publisher. Diary pictures/videos are disabled for now; product media belongs in Products & Services until a governed preset media workflow exists.
 - Public Shop owns visitor-facing Shop Update presentation: one current live text message only, automatically cleared from the public shop face after 24 hours, then distinct Products & Services. Historical diary/audit records remain preserved in owner/evidence trails, not replayed on the public shop face.
+- Every owner-created update that is still public and inside the 24-hour live window may expose one `Share update` action. It must share that exact diary entry, open WhatsApp/phone/social handoffs for owner review, preserve the chosen channel in attribution, and never auto-post or claim delivery. Private, inactive, expired, and `GSN insight` entries must not expose this public share action.
 - Diary entries are chronological shop activity history, not products/services, paid placement, Spotlight ranking, TrustSlip proof, analytics inference, or formal transaction workflow.
 - Ordinary owner-created entries default to `Owner update`; owner-requested `system_recorded` must not self-assert system truth; stronger confirmation requires a same-shop confirmed Protected Trade.
 - Unscoped, cross-shop, unauthorized, unconfirmed, malformed, and missing evidence links must fail server-side, not only in the frontend.
@@ -1294,6 +1301,7 @@ Must show:
 - Pictures & Products
 - Owner Spotlight
 - Paid Spotlight
+- Exact `Share update` links are the explicit exception to the ordinary public-shop-root rule: they must include `diary_entry_id`, open `#shop-diaries`, and resolve only while that same entry remains public and live. An expired or hidden entry must not leak its text through the public API or social-preview card.
 - Private Vault Access
 - Grow Trusted Circle
 - Owner Spotlight Status
@@ -1330,10 +1338,17 @@ Rules:
   `.local` identity fallbacks as the shop/owner name. If the member has not
   saved a public shop name or display name yet, use a neutral public fallback
   such as `Public GSN Shop` or `GSN member`.
-- On phone, Public Shop keeps the shop identity, category, follow state, GSN ID,
-  community, Share, Verify, and WhatsApp controls. The brand-bar explanation
-  and repeated four-part status strip stay off the first surface. Share and
+- On phone, Public Shop shows shop identity, category, GSN ID, community, Share,
+  Verify, WhatsApp, and Products & Services first. The brand bar and repeated
+  status strip, and installation prompt stay off the first surface. Share and
   Verify are secondary; WhatsApp is the single primary contact action.
+- Keep follow/owner controls behind one closed `Shop options` row. Keep Spotlight,
+  Private Vault, and Shop Update behind one closed `More from this shop` row
+  after Products & Services. Explicit deep links must still reveal their target.
+- Ordinary Public Shop visits must not automatically jump past identity and products to Shop Update.
+- An exact shared-update link with `diary_entry_id` is a focused visitor task:
+  reveal that Shop Update before Products & Services and suppress unrelated
+  Spotlight and Private Vault presentation. Ordinary visits remain products-first.
 - Marketplace member rows must follow the same public identity rule. If a
   member has a real visible shop name, represent that member by the shop name
   first. Do not use phone numbers, emails, internal `.local` names, or generated

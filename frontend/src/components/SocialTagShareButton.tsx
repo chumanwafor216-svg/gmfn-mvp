@@ -8,10 +8,14 @@ import {
 import {
   buildFacebookShareUrl,
   buildLinkedInShareUrl,
+  buildPublicShareText,
+  buildWhatsAppUrl,
   buildSocialShareText,
   buildXIntentShareUrl,
   copyToClipboard,
   normalizeUrl,
+  shareTargetForChannel,
+  type ShareResultChannel,
   type ShareTarget,
 } from "../lib/share";
 
@@ -29,7 +33,7 @@ type SocialTagShareButtonProps = {
   minWidth?: number | string;
   style?: React.CSSProperties;
   onBeforeOpen?: () => boolean | Promise<boolean>;
-  onResult?: (tone: NoticeTone, text: string) => void;
+  onResult?: (tone: NoticeTone, text: string, channel?: ShareResultChannel) => void;
 };
 
 const overlayStyle: React.CSSProperties = {
@@ -125,9 +129,9 @@ export default function SocialTagShareButton({
   );
   const canShare = Boolean(cleanTarget.url) && !disabled;
 
-  function report(tone: NoticeTone, text: string) {
+  function report(tone: NoticeTone, text: string, channel?: ShareResultChannel) {
     setLocalNotice({ tone, text });
-    onResult?.(tone, text);
+    onResult?.(tone, text, channel);
   }
 
   const TriggerButton = buttonKind === "primary" ? PrimaryButton : SecondaryButton;
@@ -146,8 +150,9 @@ export default function SocialTagShareButton({
       report("error", "Share link is not ready yet.");
       return;
     }
+    const channelTarget = shareTargetForChannel(cleanTarget, kind);
     const copied = await copyToClipboard(
-      buildSocialShareText(cleanTarget, kind === "copy" ? "" : shareName, kind)
+      buildSocialShareText(channelTarget, kind === "copy" ? "" : shareName, kind)
     );
     report(
       copied ? "success" : "error",
@@ -158,8 +163,9 @@ export default function SocialTagShareButton({
             ? "Caption copied for TikTok."
             : kind === "linkedin"
               ? "LinkedIn text copied."
-          : "Tag text copied."
-        : "Copy did not complete. Select the text and copy it manually."
+              : "Tag text copied."
+        : "Copy did not complete. Select the text and copy it manually.",
+      kind
     );
   }
 
@@ -170,23 +176,24 @@ export default function SocialTagShareButton({
     }
     const text = [
       "X",
-      buildSocialShareText(cleanTarget, shareName, "x"),
+      buildSocialShareText(shareTargetForChannel(cleanTarget, "x"), shareName, "x"),
       "",
       "LinkedIn",
-      buildSocialShareText(cleanTarget, shareName, "linkedin"),
+      buildSocialShareText(shareTargetForChannel(cleanTarget, "linkedin"), shareName, "linkedin"),
       "",
       "Instagram",
-      buildSocialShareText(cleanTarget, shareName, "instagram"),
+      buildSocialShareText(shareTargetForChannel(cleanTarget, "instagram"), shareName, "instagram"),
       "",
       "TikTok",
-      buildSocialShareText(cleanTarget, shareName, "tiktok"),
+      buildSocialShareText(shareTargetForChannel(cleanTarget, "tiktok"), shareName, "tiktok"),
     ].join("\n");
     const copied = await copyToClipboard(text);
     report(
       copied ? "success" : "error",
       copied
         ? "All prepared share captions copied."
-        : "Copy did not complete. Select the text and copy it manually."
+        : "Copy did not complete. Select the text and copy it manually.",
+      "copy"
     );
   }
 
@@ -195,12 +202,14 @@ export default function SocialTagShareButton({
       report("error", "Share link is not ready yet.");
       return;
     }
-    const opened = openExternal(buildXIntentShareUrl(cleanTarget, shareName));
+    const channelTarget = shareTargetForChannel(cleanTarget, "x");
+    const opened = openExternal(buildXIntentShareUrl(channelTarget, shareName));
     report(
       opened ? "success" : "error",
       opened
         ? "X post opened. Review it before posting."
-        : "X could not open. Copy the text instead."
+        : "X could not open. Copy the text instead.",
+      "x"
     );
   }
 
@@ -209,12 +218,14 @@ export default function SocialTagShareButton({
       report("error", "Share link is not ready yet.");
       return;
     }
-    const opened = openExternal(buildFacebookShareUrl(cleanTarget));
+    const channelTarget = shareTargetForChannel(cleanTarget, "facebook");
+    const opened = openExternal(buildFacebookShareUrl(channelTarget));
     report(
       opened ? "success" : "error",
       opened
         ? "Facebook share opened. Add any tag there before posting."
-        : "Facebook could not open. Copy the text instead."
+        : "Facebook could not open. Copy the text instead.",
+      "facebook"
     );
   }
 
@@ -223,9 +234,10 @@ export default function SocialTagShareButton({
       report("error", "Share link is not ready yet.");
       return;
     }
-    const opened = openExternal(buildLinkedInShareUrl(cleanTarget));
+    const channelTarget = shareTargetForChannel(cleanTarget, "linkedin");
+    const opened = openExternal(buildLinkedInShareUrl(channelTarget));
     const copied = opened
-      ? await copyToClipboard(buildSocialShareText(cleanTarget, shareName, "linkedin"))
+      ? await copyToClipboard(buildSocialShareText(channelTarget, shareName, "linkedin"))
       : false;
     report(
       opened ? "success" : "error",
@@ -233,9 +245,52 @@ export default function SocialTagShareButton({
         ? copied
           ? "LinkedIn share opened. Short caption copied; paste it before posting."
           : "LinkedIn share opened. Add a short note there before posting."
-        : "LinkedIn could not open. Copy the text instead."
+        : "LinkedIn could not open. Copy the text instead.",
+      "linkedin"
     );
   }
+
+  function openWhatsApp() {
+    if (!canShare) {
+      report("error", "Share link is not ready yet.");
+      return;
+    }
+    const channelTarget = shareTargetForChannel(cleanTarget, "whatsapp");
+    const opened = openExternal(buildWhatsAppUrl(buildPublicShareText(channelTarget)));
+    report(
+      opened ? "success" : "error",
+      opened
+        ? "WhatsApp opened. Choose a person or group, then send."
+        : "WhatsApp could not open. Copy the message instead.",
+      "whatsapp"
+    );
+  }
+
+  async function openNativeShare() {
+    if (!canShare) {
+      report("error", "Share link is not ready yet.");
+      return;
+    }
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      report("error", "Your browser does not offer the phone share sheet.");
+      return;
+    }
+
+    const channelTarget = shareTargetForChannel(cleanTarget, "native");
+    try {
+      await navigator.share({
+        title: channelTarget.title,
+        text: buildPublicShareText(channelTarget),
+      });
+      report("success", "Phone share completed.", "native");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      report("error", "Phone share did not complete. Choose another option.");
+    }
+  }
+
+  const nativeShareAvailable =
+    typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   return (
     <>
@@ -349,6 +404,28 @@ export default function SocialTagShareButton({
                 gap: 8,
               }}
             >
+              <PrimaryButton
+                type="button"
+                onClick={openWhatsApp}
+                stableHeight={46}
+                debugId="social-tag-share.whatsapp"
+                style={shareButtonStyle}
+              >
+                WhatsApp
+              </PrimaryButton>
+              {nativeShareAvailable ? (
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    void openNativeShare();
+                  }}
+                  stableHeight={46}
+                  debugId="social-tag-share.native"
+                  style={shareButtonStyle}
+                >
+                  Phone share
+                </SecondaryButton>
+              ) : null}
               <SecondaryButton
                 type="button"
                 onClick={openX}

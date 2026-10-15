@@ -285,6 +285,30 @@ export function publicShopDiariesUrl(gmfnId: string): string {
   return path ? shareablePublicFrontendUrl(path) : "";
 }
 
+export function publicShopUpdatePath(params: {
+  gmfnId: string;
+  entryId: string | number;
+  clanId?: string | number | null;
+}): string {
+  const path = publicShopPath(params.gmfnId);
+  const entryId = cleanText(params.entryId);
+  if (!path || !entryId) return "";
+
+  const query = new URLSearchParams({ diary_entry_id: entryId });
+  const clanId = cleanText(params.clanId);
+  if (clanId) query.set("clan_id", clanId);
+  return `${path}?${query.toString()}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
+}
+
+export function publicShopUpdateUrl(params: {
+  gmfnId: string;
+  entryId: string | number;
+  clanId?: string | number | null;
+}): string {
+  const path = publicShopUpdatePath(params);
+  return path ? shareablePublicFrontendUrl(path) : "";
+}
+
 export function publicShopBlockPath(params: {
   gmfnId: string;
   productId?: string | number | null;
@@ -406,6 +430,18 @@ export function publicShopSocialPreviewUrl(params: {
   block?: string | number | null;
 }): string {
   const path = publicShopSocialPreviewPath(params);
+  return path ? publicApiUrl(path) : "";
+}
+
+export function publicShopUpdateSocialPreviewPath(entryId: string | number): string {
+  const cleanEntryId = cleanText(entryId);
+  return cleanEntryId
+    ? `/share/shop-update/${encodeURIComponent(cleanEntryId)}`
+    : "";
+}
+
+export function publicShopUpdateSocialPreviewUrl(entryId: string | number): string {
+  const path = publicShopUpdateSocialPreviewPath(entryId);
   return path ? publicApiUrl(path) : "";
 }
 
