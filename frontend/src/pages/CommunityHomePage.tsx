@@ -8,7 +8,7 @@ import type {
 import PageTopNav from "../components/PageTopNav";
 import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import SimpleCommunityInviteCard from "../components/SimpleCommunityInviteCard";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
@@ -1214,7 +1214,7 @@ function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
 
 function announcementComposerPreviewStyle(isCompact = false): React.CSSProperties {
   return {
-    minHeight: isCompact ? 190 : 250,
+    minHeight: isCompact ? 0 : 250,
     borderRadius: isCompact ? 20 : 24,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
@@ -1235,7 +1235,7 @@ function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSPropertie
     gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "118px minmax(0, 1fr)",
     gap: isCompact ? 8 : 18,
     alignItems: "start",
-    justifyItems: isCompact ? "center" : "stretch",
+    justifyItems: "stretch",
   };
 }
 
@@ -1250,17 +1250,6 @@ function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
     border: "1px solid rgba(214,170,69,0.24)",
     boxShadow: "0 14px 26px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     textAlign: "center",
-  };
-}
-
-function announcementCompactDateTileStyle(): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto auto",
-    gap: 6,
-    alignItems: "center",
-    minHeight: 44,
-    padding: "6px 8px",
   };
 }
 
@@ -1921,6 +1910,7 @@ export default function CommunityHomePage() {
   const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
   const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
   const [communityAdminOpen, setCommunityAdminOpen] = useState(false);
+  const [communityActionsOpen, setCommunityActionsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [clansLoadError, setClansLoadError] = useState("");
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -3339,7 +3329,7 @@ export default function CommunityHomePage() {
     const fullBody = firstTruthy(noticeItem?.full_body);
     const attachmentUrl = communityNoticeAttachmentUrl(noticeItem);
     const attachmentLabel = firstTruthy(noticeItem?.attachment_label, "Open attachment");
-    const titleLineLimit = isCompact ? 4 : 3;
+    const titleLineLimit = isCompact ? 2 : 3;
     const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
     const expiry = noticeExpiryLabel(noticeItem);
     const senderLabel = firstTruthy(noticeItem?.sender_whatsapp_label, "Community contact");
@@ -3353,26 +3343,15 @@ export default function CommunityHomePage() {
     const noticeKey = firstTruthy(noticeItem?.notice_id, eventId, noticeItem?.meeting_id, "active");
     const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
     const detailOpen = noticeDetailOpenId === noticeKey;
+    const phoneNoticeOpen = detailOpen || reactionPanelOpen;
     const canOpenRollCall = canManageCommunityNoticeSettings && noticeClanId(noticeItem, selectedClan) === selectedClanId && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
     const canToggleFullNotice = Boolean(fullBody) || safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
 
     return (
       <div style={announcementComposerPreviewStyle(isCompact)}>
         <div style={announcementLiveNoticeGridStyle(isCompact)}>
-          <div style={announcementDateTileStyle(isCompact)} aria-label="Announcement date">
-            {isCompact ? (
-              <div style={announcementCompactDateTileStyle()}>
-                <span style={{ color: "#B98200", fontSize: 11, fontWeight: 950 }}>
-                  {calendar.month}
-                </span>
-                <span style={{ color: "#07172C", fontSize: 24, fontWeight: 980, lineHeight: 1 }}>
-                  {calendar.day}
-                </span>
-                <span style={{ color: "#617085", fontSize: 11, fontWeight: 900 }}>
-                  {[calendar.year, calendar.weekday].filter(Boolean).join(" - ")}
-                </span>
-              </div>
-            ) : (
+          {!isCompact ? (
+            <div style={announcementDateTileStyle(false)} aria-label="Announcement date">
               <>
                 <div
                   style={{
@@ -3408,9 +3387,9 @@ export default function CommunityHomePage() {
                   </div>
                 </div>
               </>
-            )}
-          </div>
-          <div style={{ display: "grid", gap: 10, minWidth: 0, justifyItems: isCompact ? "center" : "stretch", width: "100%" }}>
+            </div>
+          ) : null}
+          <div style={{ display: "grid", gap: isCompact ? 7 : 10, minWidth: 0, justifyItems: "stretch", width: "100%" }}>
             <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "100%" : undefined, justifySelf: isCompact ? "center" : undefined }}>
               <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999, overflow: "hidden" }} aria-hidden="true">
                 {noticeImageSrc ? (
@@ -3432,10 +3411,10 @@ export default function CommunityHomePage() {
               style={{
                 ...brandClampLines(detailOpen && !fullBody ? 12 : titleLineLimit),
                 color: "#07172C",
-                fontSize: isCompact ? 22 : 28,
+                fontSize: isCompact ? 18 : 28,
                 fontWeight: 980,
-                lineHeight: 1.1,
-                textAlign: isCompact ? "center" : "left",
+                lineHeight: isCompact ? 1.25 : 1.1,
+                textAlign: "left",
               }}
             >
               {rawBody}
@@ -3443,7 +3422,7 @@ export default function CommunityHomePage() {
           </div>
         </div>
 
-        {canToggleFullNotice ? (
+        {canToggleFullNotice && !isCompact ? (
           <StableButton
             type="button"
             debugId={`community-home.bulletin.read-full.${noticeKey}`}
@@ -3492,9 +3471,15 @@ export default function CommunityHomePage() {
         <StableButton
           type="button"
           debugId={`community-home.bulletin.reactions.${noticeKey}`}
-          aria-expanded={reactionPanelOpen}
+          aria-expanded={isCompact ? phoneNoticeOpen : reactionPanelOpen}
           onClick={(event) => {
             consumeCommunityButtonEvent(event);
+            if (isCompact) {
+              const nextOpen = !phoneNoticeOpen;
+              setNoticeDetailOpenId(nextOpen ? noticeKey : "");
+              setNoticeReactionPanelOpenId(nextOpen ? noticeKey : "");
+              return;
+            }
             setNoticeReactionPanelOpenId((current) => (current === noticeKey ? "" : noticeKey));
           }}
           style={{
@@ -3509,7 +3494,7 @@ export default function CommunityHomePage() {
             boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
           }}
         >
-          Details
+          {isCompact ? (phoneNoticeOpen ? "Close notice" : "Open notice") : "Details"}
         </StableButton>
 
         {reactionPanelOpen ? (
@@ -4081,14 +4066,16 @@ export default function CommunityHomePage() {
       >
         <CommunityShellLayers isCompact={isCompact} />
         <div style={communityContentStyle(isCompact)}>
-          <PageTopNav
-            sectionLabel="Community Home"
-            title="Community Home"
-            subtitle="Loading your marketplace communities..."
-            homeTo={routes.dashboard}
-            homeLabel="Dashboard"
-            backTo={routes.dashboard}
-          />
+          {!isCompact ? (
+            <PageTopNav
+              sectionLabel="Community Home"
+              title="Community Home"
+              subtitle="Loading your marketplace communities..."
+              homeTo={routes.dashboard}
+              homeLabel="Dashboard"
+              backTo={routes.dashboard}
+            />
+          ) : null}
 
           <section style={communityBlockCard("quiet")}>
             <div style={{ color: "#64748B", lineHeight: 1.8 }}>
@@ -4105,14 +4092,16 @@ export default function CommunityHomePage() {
       <div style={communityShellStyle(isCompact)}>
         <CommunityShellLayers isCompact={isCompact} />
         <div style={communityContentStyle(isCompact)}>
-          <PageTopNav
-            sectionLabel="Community Home"
-            title="Community Home"
-            subtitle="Choose the marketplace community you want to open."
-            homeTo={routes.dashboard}
-            homeLabel="Dashboard"
-            backTo={routes.dashboard}
-          />
+          {!isCompact ? (
+            <PageTopNav
+              sectionLabel="Community Home"
+              title="Community Home"
+              subtitle="Choose the marketplace community you want to open."
+              homeTo={routes.dashboard}
+              homeLabel="Dashboard"
+              backTo={routes.dashboard}
+            />
+          ) : null}
 
           <React.Suspense fallback={null}>
             <DomainIntroToggle
@@ -4246,14 +4235,16 @@ export default function CommunityHomePage() {
       ) : null}
 
       <div style={communityContentStyle(isCompact)}>
-        <PageTopNav
-          sectionLabel="Community Home"
-          title={selectedClanName || "Community Home"}
-          subtitle={isCompact ? undefined : "One selected community at a time."}
-          homeTo={routes.dashboard}
-          homeLabel="Dashboard"
-          backTo={routes.dashboard}
-        />
+        {!isCompact ? (
+          <PageTopNav
+            sectionLabel="Community Home"
+            title={selectedClanName || "Community Home"}
+            subtitle={isCompact ? undefined : "One selected community at a time."}
+            homeTo={routes.dashboard}
+            homeLabel="Dashboard"
+            backTo={routes.dashboard}
+          />
+        ) : null}
 
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
@@ -4284,8 +4275,8 @@ export default function CommunityHomePage() {
                 <GSNBrandMark width={isCompact ? 34 : 50} height={isCompact ? 40 : 60} />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ ...sectionLabel(), color: "#BFD0E2" }}>Community Home</div>
-                <div style={{ ...brandClampLines(2), marginTop: 5, color: COMMUNITY_BRAND.ink, fontSize: isCompact ? 24 : 34, fontWeight: 950, lineHeight: 1.06 }}>
+                {!isCompact ? <div style={{ ...sectionLabel(), color: "#BFD0E2" }}>Community Home</div> : null}
+                <div style={{ ...brandClampLines(2), marginTop: isCompact ? 0 : 5, color: COMMUNITY_BRAND.ink, fontSize: isCompact ? 24 : 34, fontWeight: 950, lineHeight: 1.06 }}>
                   {selectedClanName || "Choose a community"}
                 </div>
               </div>
@@ -4384,7 +4375,7 @@ export default function CommunityHomePage() {
               </div>
             ) : primaryCommunityNotice ? (
               <>
-                {renderCommunityBulletinPulse()}
+                {!isCompact ? renderCommunityBulletinPulse() : null}
                 {renderCommunityBulletinNoticeSelector(activeCommunityNotices)}
                 {renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)}
               </>
@@ -4442,8 +4433,30 @@ export default function CommunityHomePage() {
         ) : null}
 
         <section style={communityBlockCard("quiet")} data-debug-id="community-home.go-to">
-          <div style={sectionLabel()}>Go to</div>
-          <div style={{ marginTop: 10, display: "grid", gap: 9 }}>
+          <details
+            open={isCompact ? communityActionsOpen : true}
+            onToggle={(event) => {
+              if (isCompact) setCommunityActionsOpen(event.currentTarget.open);
+            }}
+          >
+            {isCompact ? (
+              <StableDisclosureSummary
+                debugId="community-home.goto.toggle"
+                stableHeight={72}
+                aria-controls="community-home-actions-panel"
+                style={{ ...communityToolRowStyle(), listStyle: "none" }}
+              >
+                <span style={communityActionIcon(true)}>{communityIconGlyph("community", 32)}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>Community actions</span>
+                  <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 12, fontWeight: 720 }}>Marketplace, shop, money, support, and trust.</span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>{communityActionsOpen ? "^" : "v"}</span>
+              </StableDisclosureSummary>
+            ) : (
+              <div style={sectionLabel()}>Go to</div>
+            )}
+            <div id="community-home-actions-panel" style={{ marginTop: 10, display: "grid", gap: 9 }}>
             <StableButton type="button" debugId="community-home.goto.marketplace" onClick={(event) => void openSelectedMarketplace(event)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(true)}>{communityIconGlyph("shop", 32)}</span>
               <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open listings and community exchange for this selected community.</span> : null}</span>
@@ -4469,7 +4482,8 @@ export default function CommunityHomePage() {
               <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open your trust evidence and member standing.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
-          </div>
+            </div>
+          </details>
         </section>
 
         <section id="community-home-community-list" style={communityBlockCard("quiet")} data-debug-id="community-home.switch-community">

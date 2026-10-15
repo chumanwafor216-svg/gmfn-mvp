@@ -159,6 +159,7 @@
     "audit:payment-instruction-phone-rows": "node tools/audit-payment-instruction-phone-rows.mjs",
     "smoke:marketplace-boundaries": "node tools/smoke-marketplace-boundaries.mjs",
     "smoke:community-home-domain-list": "node tools/smoke-community-home-domain-list.mjs",
+    "smoke:community-home-simple-phone": "node tools/smoke-community-home-simple-phone.mjs",
     "smoke:community-home-personalized-invite": "node tools/smoke-community-home-personalized-invite.mjs",
     "smoke:loan-support-simple-phone": "node tools/smoke-loan-support-simple-phone.mjs",
     "smoke:shop-assets-slot-replacement": "node tools/smoke-shop-assets-slot-replacement.mjs",

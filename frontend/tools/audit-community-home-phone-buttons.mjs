@@ -103,9 +103,36 @@ assertContains(
   /subtitle=\{isCompact \? undefined : "One selected community at a time\."\}/,
   "Community Home phone top navigation must not repeat selected-community guidance."
 );
+const phoneHiddenPageTopNavCount = (
+  source.match(/\{!isCompact \? \(\s*<PageTopNav/g) || []
+).length;
+if (phoneHiddenPageTopNavCount !== 3) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: "Community Home must leave the authenticated phone shell in charge of navigation in loading, empty, and selected-community states.",
+    text: `Phone-hidden PageTopNav count: ${phoneHiddenPageTopNavCount}`,
+  });
+}
 assertContains(
   /data-debug-id="community-home\.identity-card"[\s\S]*?!isCompact \? \([\s\S]*?You are inside one selected community[\s\S]*?\) : null/,
   "Community Home phone identity must keep the explanatory paragraph off the first surface."
+);
+assertContains(
+  /!isCompact \? <div style=\{\{ \.\.\.sectionLabel\(\), color: "#BFD0E2" \}\}>Community Home<\/div> : null/,
+  "Community Home phone identity must not repeat the page name above the selected community name."
+);
+assertContains(
+  /minHeight: isCompact \? 0 : 250[\s\S]*?!isCompact \? \(\s*<div style=\{announcementDateTileStyle\(false\)\}[\s\S]*?\{!isCompact \? renderCommunityBulletinPulse\(\) : null\}/,
+  "Community Home phone Bulletin must remove the large date tile and pulse dashboard from the default surface."
+);
+assertContains(
+  /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,
+  "Community Home phone Bulletin must use one Open notice control for the full notice and response actions."
+);
+assertContains(
+  /<details[\s\S]*?open=\{isCompact \? communityActionsOpen : true\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="community-home\.goto\.toggle"[\s\S]*?Community actions[\s\S]*?id="community-home-actions-panel"/,
+  "Community Home phone destinations must remain behind one protected Community actions disclosure."
 );
 assertContains(
   /debugId="community-home\.goto\.marketplace"[\s\S]*?Marketplace<\/span>\{!isCompact \? <span[\s\S]*?debugId="community-home\.goto\.trust"[\s\S]*?Trust<\/span>\{!isCompact \? <span/,
@@ -134,6 +161,7 @@ assertNotContains(/display: "none"/g, "Community Home must not keep hidden route
 assertNotContains(/<div\s+style=\{communityToolRowStyle\(\)\}/g, "Community Home must not use plain divs with compact button geometry; button-looking rows must be protected StableButton actions.");
 assertNotContains(/community-home\.(?:owner-actions|circle|lane|spotlight-guided|spotlight-status|summary\.visible|selected\.open-marketplace)\./g, "Community Home must not keep legacy owner-action, grouped lane, or Spotlight debug surfaces.");
 assertNotContains(/letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/g, "Community Home must not restore spaced-out micro-label typography on the phone surface.");
+assertNotContains(/announcementCompactDateTileStyle/g, "Community Home must not restore the large compact date strip to the phone Bulletin.");
 
 if (findings.length > 0) {
   console.error("Community Home phone button audit failed:");

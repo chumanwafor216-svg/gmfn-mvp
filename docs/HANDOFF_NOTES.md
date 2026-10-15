@@ -163509,3 +163509,16 @@ Operational note:
 - Wider audit truth: `audit:loans-actions` accepts all changed Loan Support assertions but remains red on an unrelated pre-existing Loan Suggestions wording assertion. The broad `audit:button-stability` accepts the new shared PageTopNav rule but remains red on pre-existing dirty-worktree expectations for Community Home, Join Entry, My GSN, Notifications, Public Shop, Shop Control, and public TrustSlip Verify.
 - Devil truth: this removes the largest shared repetition across authenticated inner pages and verifies the five main tabs' focused contracts, but it does not prove every expanded specialist drawer is word-light. Deep Marketplace, finance, trust, community-domain, and admin tools still require route-by-route phone review as they are opened.
 - Deployment boundary: local only. Do not commit, push, or deploy until the product owner explicitly asks.
+
+## 2026-10-15 - Community Home novice-first phone simplification (local, not deployed)
+
+- Owner correction: the selected-community home still looked like a small dashboard and required too much interpretation on a phone.
+- Phone first surface: the authenticated app shell is now the only page header. The duplicate route-level Back/title strip and repeated `Community Home` hero label are absent.
+- Bulletin: the phone surface keeps one notice source, a two-line preview, and one `Open notice` action. The pulse statistics and large calendar tile are desktop-only; opening the notice reveals the full notice and response tools together.
+- Destinations: Marketplace, Manage shop, Finance, Support, and Trust remain unchanged but are closed behind one protected `Community actions` disclosure on phone. Desktop keeps the existing open `Go to` group.
+- Truth and authority preserved: selected-community member count, Community ID, role, membership, positive selected-community balance, personalised Invite flow, attention signals, community switching, route-param reconciliation, and authority-gated Admin area are unchanged.
+- Frozen contract: `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and `audit-community-home-phone-buttons.mjs` now protect this simpler default surface.
+- Browser coverage: `smoke-community-home-simple-phone.mjs` checks the collapsed first surface, truthful four identity facts, one-action notice reveal, five-action disclosure reveal, and 390px/360px overflow. The older legacy-encoded domain/admin smoke cannot be patched safely yet and now fails only because it expects Marketplace to be immediately visible.
+- Verification passed: Community Home button inventory, phone-button, truthful-billboard, simple-invite, and app-wide phone-surface-simplicity audits; focused audit/smoke lint; production frontend build; the new 390x844 and 360x780 phone smoke with no horizontal overflow.
+- Wider audit truth: the protected-button aggregate accepts all Community Home focused contracts but remains red on four pre-existing repository issues: the older Community Home fixed-height pattern in `audit-mobile-tap-stability`, a raw Commitments Link, a frozen Market Wisdom source expectation, and missing Commitments visual-route coverage. Page-wide Community Home lint still reports 17 older unused-code errors; this batch added none.
+- Deployment boundary: local batch only. Do not push or deploy until the product owner explicitly approves publishing.

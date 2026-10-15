@@ -443,7 +443,7 @@ After submission:
 Purpose:
 Member view inside one selected community.
 
-Status: CLOSED/FROZEN as of 2026-10-08 after Community Home Rebuild Phase 2.
+Status: CLOSED/FROZEN as of 2026-10-15 after the approved novice-first phone simplification.
 
 Canonical rule:
 - Community Home answers `which community am I inside right now?`
@@ -466,20 +466,21 @@ Must show, in phone-first order:
   - the recipient name is required and attached to the personalised join link
   - sending opens the device share sheet; clipboard fallback copies the full personalised message
 - Community Bulletin immediately after the identity hero
-  - one live announcement presentation
-  - Details for acknowledgement/contact/availability/attachment/QR actions
+  - one compact live announcement presentation
+  - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
+  - keep the Bulletin pulse dashboard and large calendar tile off the default phone surface
   - no Ask Community / market-need records in the Bulletin by default
 - Needs your attention only when a real selected-community action exists
   - notice response required
   - notice acknowledgement required
   - officer bulletin review waiting
-- compact `Go to` handoff group
+- compact destination handoff group
   - Marketplace
   - Manage shop -> Shop Control
   - Finance
   - Support
   - Trust
-  - on phone, show only the destination labels; keep explanatory destination sentences off the first surface
+  - on phone, keep all five destinations behind one `Community actions` disclosure; after opening, show only the destination labels and keep explanatory destination sentences off the surface
 - compact community switcher
   - collapsed by default
   - ordinary member communities only dominate the opened switcher
@@ -499,6 +500,7 @@ Rules:
 - Secondary details stay collapsed, grouped, or represented as compact rows.
 - Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
+- On phone, the authenticated app shell owns the page title/navigation; Community Home must not add another route-level Back/title strip or repeat the `Community Home` label inside the identity hero.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount is the only approved conditional money fact in the hero.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
