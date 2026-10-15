@@ -53,7 +53,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Finance overview[\s\S]*?isCompact[\s\S]*?"Community finance"[\s\S]*?"Your community finances\. Clear\. Secure\. Together\."[\s\S]*?"Money in, money out, checks, and support records\."[\s\S]*?"See money coming in, money going out, payment checks, and support records in one calm place\."[\s\S]*?GSN ID:[\s\S]*?Community code:/,
+  /data-gsn-finance-phone-front=\{isCompact \? "simple" : undefined\}[\s\S]*?financeFileReading\.title[\s\S]*?Your community finances\. Clear\. Secure\. Together\.[\s\S]*?financeFileReading\.detail[\s\S]*?GSN records finance activity; it is not a bank, lender, wallet, or payment processor\.[\s\S]*?data-gsn-finance-primary-facts=\{isCompact \? "compact-four" : undefined\}[\s\S]*?Available now[\s\S]*?Waiting in[\s\S]*?Waiting out[\s\S]*?Communities/,
   "Finance hero must keep a plain cumulative finance summary with phone-safe compact copy and full desktop context."
 );
 
@@ -80,7 +80,7 @@ assertContains(
       financeFile,
       financeSource,
       snippet,
-      `Finance front package must keep ${label} as one of the four main lane choices.`
+      `Finance must keep ${label} in the defined lane catalogue while phone shows only the recommended first action.`
     );
   });
 });
@@ -89,36 +89,43 @@ assertContains(
   financeFile,
   financeSource,
   /debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
-  "Finance front package must keep stable item-based debug ids for the four main lane buttons."
+  "Finance must keep stable item-based debug ids for its mapped front-lane controls."
 );
 
 assertContains(
   financeFile,
   financeSource,
-  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id !== "bank-accounts"\)/,
-  "Finance phone front package must collapse to three major lane buttons, moving Banking Rails into More lanes on compact screens."
+  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id === "reports"\)[\s\S]*?financeToolButtonStyle\(isCompact, isCompact && item\.id === "reports"\)[\s\S]*?Review money/,
+  "Finance phone front package must show only the recommended Review money action before secondary tasks."
 );
 
 assertContains(
   financeFile,
   financeSource,
-  /Other finance lanes[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Pipeline Credits[\s\S]*?Trust Passport/,
-  "Finance secondary lanes must remain grouped below the four main lane choices."
+  /Other finance lanes[\s\S]*?Money In[\s\S]*?Records \/ Events[\s\S]*?Payment checks[\s\S]*?Support record[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Pipeline Credits[\s\S]*?Trust Passport/,
+  "Finance secondary lanes must remain grouped inside the secondary task chooser."
 );
 
 assertContains(
   financeFile,
   financeSource,
-  /Other finance lanes[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?Hide lanes[\s\S]*?More lanes[\s\S]*?\{showOtherFinanceLanes \? \(/,
-  "Finance secondary lanes must be tucked behind a More lanes disclosure on phone instead of appearing as equal first-screen choices."
+  /data-gsn-finance-task-chooser=\{otherFinanceLanesOpen \? "open" : "collapsed"\}[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?Hide tasks[\s\S]*?Choose another task[\s\S]*?\{showOtherFinanceLanes \? \(/,
+  "Finance secondary lanes must be tucked behind the Choose another task disclosure on phone."
 );
 
 assertContains(
   financeFile,
   financeSource,
-  /Finance quick snapshot[\s\S]*?Short reading only\. Open a lane for the full record\.[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?Finance Signals[\s\S]*?debugId="finance\.view-signals"/,
-  "Finance must keep one compact snapshot after the lane chooser instead of exposing separate cash-flow, event, and signal blocks."
+  /<section style=\{\{ \.\.\.pageCard\("#FFFFFF"\), display: isCompact \? "none" : undefined \}\}>[\s\S]*?Finance quick snapshot[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?Finance Signals/,
+  "Finance may keep its richer snapshot on desktop, but it must stay off the default phone front door."
 );
+assertContains(
+  financeFile,
+  financeSource,
+  /const activeFinanceDetailLane[\s\S]*?closeFinanceDetailLane[\s\S]*?revealFinanceSection\("finance-task-chooser"\)[\s\S]*?display: isCompact && activeFinanceDetailLane \? "none" : undefined[\s\S]*?Back to tasks/,
+  "Finance phone tasks must replace the front door one at a time and provide a direct return to the task chooser."
+);
+
 assertContains(
   financeFile,
   financeSource,
@@ -166,7 +173,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?financeToolButtonStyle\(isCompact\)[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?financeMiniToolButtonStyle\(isCompact\)/,
+  /stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?financeToolButtonStyle\(isCompact, isCompact && item\.id === "reports"\)[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?financeMiniToolButtonStyle\(isCompact\)/,
   "Finance front and secondary tool buttons must keep fixed phone-safe geometry."
 );
 

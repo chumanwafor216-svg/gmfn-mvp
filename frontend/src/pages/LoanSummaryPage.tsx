@@ -887,6 +887,10 @@ export default function LoanSummaryPage() {
     tone: FeedbackTone;
     text: string;
   } | null>(null);
+  const [phoneLane, setPhoneLane] = useState<
+    "supporters" | "record" | "tools" | null
+  >(null);
+  const [phoneMoreOpen, setPhoneMoreOpen] = useState(false);
   const activeCommunityId = Number(summary?.clan_id || selectedClanId || 0);
   const routes = useMemo(
     () => ({
@@ -942,6 +946,8 @@ export default function LoanSummaryPage() {
     setRevenuePreview(null);
     setBusyDecisionKey("");
     setFeedback(null);
+    setPhoneLane(null);
+    setPhoneMoreOpen(false);
   }, [numericLoanId]);
 
   const currency = summary?.currency ?? "NGN";
@@ -1413,6 +1419,590 @@ export default function LoanSummaryPage() {
             Support summary could not be loaded.
           </div>
         </section>
+      </div>
+    );
+  }
+  if (isCompact) {
+    const repaymentRoute = routeTarget(
+      "repayment",
+      activeCommunityId,
+      "loan-summary.phone.repayment-target",
+      { loanId: summary.id }
+    );
+    const phonePrimaryIsSupporterReview =
+      canActOnGuarantors && pendingGuarantors.length > 0;
+    const phonePrimaryIsWorkbench =
+      canActOnGuarantors && pendingGuarantors.length === 0;
+
+    return (
+      <div
+        data-gsn-loan-summary-phone="simple"
+        style={{
+          maxWidth: 560,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        {feedback ? (
+          <div style={feedbackCard(feedback.tone)}>{feedback.text}</div>
+        ) : null}
+
+        {phoneLane ? (
+          <SubtleButton
+            type="button"
+            onClick={() => {
+              setPhoneLane(null);
+              setPhoneMoreOpen(true);
+            }}
+            fullWidth
+            stableHeight={52}
+            debugId="loan-summary.phone.back"
+          >
+            {actionText("document", "Back to summary")}
+          </SubtleButton>
+        ) : null}
+
+        {!phoneLane ? (
+          <>
+            <section
+              data-gsn-loan-summary-phone-front="simple"
+              style={{
+                borderRadius: 24,
+                padding: 16,
+                color: "#F8FBFF",
+                background:
+                  "linear-gradient(180deg, #08111F 0%, #0B1F33 58%, #102A43 100%)",
+                border: "1px solid rgba(212,175,55,0.24)",
+                boxShadow: "0 18px 42px rgba(2,12,27,0.24)",
+              }}
+            >
+              <div
+                style={{
+                  color: "#F2C766",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  lineHeight: 1.3,
+                }}
+              >
+                {communityLabel} / Support #{summary.id}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 25,
+                  fontWeight: 1000,
+                  lineHeight: 1.12,
+                }}
+              >
+                {fmtMoney(n(summary.amount), currency)}
+              </div>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "#D7E3F1",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  lineHeight: 1.4,
+                }}
+              >
+                {summaryNextStep}
+              </div>
+
+              <div
+                data-gsn-loan-summary-phone-facts="compact-four"
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  ["State", safeStr(summary.status || "Not recorded")],
+                  ["Remaining", fmtMoney(summary.remaining_amount, currency)],
+                  ["Support recorded", String(approvedCount)],
+                  ["Waiting", String(pendingGuarantors.length)],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      minWidth: 0,
+                      borderRadius: 15,
+                      padding: "9px 10px",
+                      background: "rgba(255,255,255,0.09)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#AFC1D4",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        fontWeight: 900,
+                        lineHeight: 1.3,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 11,
+                  color: "#C8D7E6",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                GSN records support evidence. It does not approve the whole
+                request, move money, or promise repayment.
+              </div>
+            </section>
+
+            {phonePrimaryIsSupporterReview ? (
+              <PrimaryButton
+                type="button"
+                onClick={() => setPhoneLane("supporters")}
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.primary.review-supporters"
+              >
+                {actionText("check", "Review supporters")}
+              </PrimaryButton>
+            ) : phonePrimaryIsWorkbench ? (
+              <StableCtaLink
+                to={routes.workbench}
+                kind="primary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.primary.continue-support"
+              >
+                {actionText("briefcase", "Continue support")}
+              </StableCtaLink>
+            ) : canRepay ? (
+              <StableCtaLink
+                to={repaymentRoute}
+                kind="primary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.primary.continue-repayment"
+              >
+                {actionText("repaymentSchedule", "Continue repayment")}
+              </StableCtaLink>
+            ) : (
+              <PrimaryButton
+                type="button"
+                onClick={() => setPhoneLane("record")}
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.primary.view-record"
+              >
+                {actionText("document", "View record")}
+              </PrimaryButton>
+            )}
+
+            <SubtleButton
+              type="button"
+              onClick={() => setPhoneMoreOpen((open) => !open)}
+              fullWidth
+              stableHeight={52}
+              debugId="loan-summary.phone.more"
+              aria-expanded={phoneMoreOpen}
+            >
+              {actionText(
+                phoneMoreOpen ? "lock" : "document",
+                phoneMoreOpen ? "Hide other tasks" : "More details"
+              )}
+            </SubtleButton>
+
+            {phoneMoreOpen ? (
+              <section
+                data-gsn-loan-summary-phone-chooser="open"
+                style={{
+                  ...pageCard("#FFFFFF"),
+                  padding: 12,
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <SecondaryButton
+                  type="button"
+                  onClick={() => setPhoneLane("record")}
+                  fullWidth
+                  stableHeight={52}
+                  debugId="loan-summary.phone.open-record"
+                >
+                  {actionText("document", "Full support record")}
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => setPhoneLane("tools")}
+                  fullWidth
+                  stableHeight={52}
+                  debugId="loan-summary.phone.open-tools"
+                >
+                  {actionText("briefcase", "Other support tools")}
+                </SecondaryButton>
+                {!phonePrimaryIsSupporterReview && guarantors.length > 0 ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setPhoneLane("supporters")}
+                    fullWidth
+                    stableHeight={52}
+                    debugId="loan-summary.phone.open-supporters"
+                  >
+                    {actionText("check", "Supporter record")}
+                  </SecondaryButton>
+                ) : null}
+              </section>
+            ) : null}
+          </>
+        ) : null}
+
+        {phoneLane === "supporters" ? (
+          <section
+            data-gsn-loan-summary-phone-lane="supporters"
+            style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+          >
+            <div style={sectionLabel()}>Supporter decisions</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 950,
+                lineHeight: 1.3,
+              }}
+            >
+              Review one person at a time
+            </div>
+            <div style={{ marginTop: 7, ...helperText() }}>
+              Recording support here does not approve the whole request or
+              release money.
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              {guarantors.length === 0 ? (
+                <>
+                  <div style={{ ...innerCard("#F8FBFF"), color: "#64748B" }}>
+                    No supporter has been attached yet.
+                  </div>
+                  <StableCtaLink
+                    to={routes.workbench}
+                    kind="primary"
+                    fullWidth
+                    stableHeight={52}
+                    debugId="loan-summary.phone.supporters.workbench"
+                  >
+                    {actionText("briefcase", "Continue support")}
+                  </StableCtaLink>
+                </>
+              ) : (
+                guarantors.map((guarantor, index) => {
+                  const guarantorStatus = lc(guarantor.status);
+                  const canDecide =
+                    canActOnGuarantors &&
+                    guarantor.id != null &&
+                    guarantorStatus === "pending";
+                  const approveKey = `${summary.id}-${guarantor.id}-approved`;
+                  const declineKey = `${summary.id}-${guarantor.id}-declined`;
+                  const busyApprove = busyDecisionKey === approveKey;
+                  const busyDecline = busyDecisionKey === declineKey;
+
+                  return (
+                    <div
+                      key={guarantor.id || index}
+                      style={innerCard("#FCFEFF")}
+                    >
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontSize: 15,
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {firstTruthy(
+                          guarantor.guarantor_name,
+                          guarantor.guarantor_email,
+                          `Supporter ${index + 1}`
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 7,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {guarantorBadge(guarantor.status)}
+                        <span style={badge(true)}>
+                          {fmtMoney(guarantor.pledge_amount, currency)}
+                        </span>
+                      </div>
+
+                      {canDecide ? (
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "grid",
+                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <PrimaryButton
+                            type="button"
+                            onClick={() =>
+                              handleGuarantorDecision(guarantor, "approved")
+                            }
+                            disabled={busyDecline}
+                            busy={busyApprove}
+                            busyLabel="Recording"
+                            fullWidth
+                            stableHeight={52}
+                            debugId={`loan-summary.phone.guarantor.${
+                              guarantor.id || index
+                            }.approve`}
+                          >
+                            {actionText("check", "Record support")}
+                          </PrimaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() =>
+                              handleGuarantorDecision(guarantor, "declined")
+                            }
+                            disabled={busyApprove}
+                            busy={busyDecline}
+                            busyLabel="Declining"
+                            fullWidth
+                            stableHeight={52}
+                            debugId={`loan-summary.phone.guarantor.${
+                              guarantor.id || index
+                            }.decline`}
+                          >
+                            {actionText("alert", "Decline")}
+                          </SecondaryButton>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {phoneLane === "record" ? (
+          <section
+            data-gsn-loan-summary-phone-lane="record"
+            style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+          >
+            <div style={sectionLabel()}>Full support record</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 950,
+              }}
+            >
+              Evidence behind this support item
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {[
+                ["Purpose", supportPurpose || "Not stated"],
+                ["Amount", fmtMoney(summary.amount, currency)],
+                ["Paid", fmtMoney(summary.paid_total, currency)],
+                ["Due", safeDateTime(summary.due_at)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ ...statTile("#F8FBFF"), padding: 10 }}>
+                  <div style={sectionLabel()}>{label}</div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#0B1F33",
+                      fontSize: 14,
+                      fontWeight: 900,
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <GsnSnapshotPaperCard
+              paperText={loanSummaryPaper}
+              compact
+              icon="document"
+              maxBodyLines={8}
+              style={{ marginTop: 12 }}
+            />
+
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              <SecondaryButton
+                type="button"
+                onClick={copyLoanSummary}
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.copy-summary"
+              >
+                {actionText("copy", "Copy summary")}
+              </SecondaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={copyLoanAuditLink}
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.copy-audit"
+              >
+                {actionText("copy", "Copy audit")}
+              </SecondaryButton>
+            </div>
+
+            <div style={{ marginTop: 12, ...innerCard("#F8FBFF") }}>
+              <div style={sectionLabel()}>Repayment evidence</div>
+              <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
+                {latestRepaymentExpectedPayment
+                  ? `${safeStr(
+                      latestRepaymentExpectedPayment.status || "Expected"
+                    )} ? ${firstTruthy(
+                      latestRepaymentExpectedPayment.reference_display,
+                      latestRepaymentExpectedPayment.reference_normalized,
+                      "Reference pending"
+                    )}`
+                  : repayments.length > 0
+                  ? `${repayments.length} repayment record${
+                      repayments.length === 1 ? "" : "s"
+                    } visible.`
+                  : "No repayment record is shown yet."}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 10, ...innerCard("#F8FBFF") }}>
+              <div style={sectionLabel()}>Latest evidence note</div>
+              <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
+                {latestEvent
+                  ? latestNote ||
+                    "A support event is recorded without a public note."
+                  : "No support event note is visible here right now."}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {phoneLane === "tools" ? (
+          <section
+            data-gsn-loan-summary-phone-lane="tools"
+            style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+          >
+            <div style={sectionLabel()}>Other support tools</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 950,
+              }}
+            >
+              Choose one next page
+            </div>
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              <StableCtaLink
+                to={routes.workbench}
+                kind="primary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.route.workbench"
+              >
+                {actionText("briefcase", "Support Workbench")}
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.suggestions}
+                kind="secondary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.route.suggestions"
+              >
+                {actionText("search", "Find supporters")}
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.readiness}
+                kind="secondary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.route.readiness"
+              >
+                {actionText("check", "Support readiness")}
+              </StableCtaLink>
+              <StableCtaLink
+                to={revenueRoute}
+                kind="secondary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.route.finance"
+              >
+                {actionText(
+                  "financeInstitution",
+                  canOpenCommandRevenue ? "Revenue allocation" : "Finance"
+                )}
+              </StableCtaLink>
+              {canRepay ? (
+                <StableCtaLink
+                  to={repaymentRoute}
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={52}
+                  debugId="loan-summary.phone.route.repayment"
+                >
+                  {actionText("repaymentSchedule", "Repayment")}
+                </StableCtaLink>
+              ) : null}
+              <StableCtaLink
+                to={routes.loans}
+                kind="secondary"
+                fullWidth
+                stableHeight={52}
+                debugId="loan-summary.phone.route.loans"
+              >
+                {actionText("community", "Loan Support")}
+              </StableCtaLink>
+            </div>
+          </section>
+        ) : null}
       </div>
     );
   }

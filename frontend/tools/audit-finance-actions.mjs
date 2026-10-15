@@ -80,19 +80,16 @@ for (const file of financeFiles) {
     "Finance actions must not send signed-in users directly to Cover or Welcome."
   );
 }
-
 assertContains(
   "src/pages/FinancePage.tsx",
   /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace\(/,
   "Finance main tool grids must keep item-based debug IDs."
 );
-
 assertContains(
   "src/pages/FinancePage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?type FinanceGlyphName[\s\S]*?FINANCE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<FinanceGlyphName, GsnIconName>[\s\S]*?function FinanceGlyph\([\s\S]*?<GsnLegacyIcon[\s\S]*?function financeToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 48;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 78;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
+  /FINANCE_GLYPH_ICON_MAP[\s\S]*?function FinanceGlyph\([\s\S]*?function financeToolButtonStyle\([\s\S]*?const compactHeight = 48;[\s\S]*?function financeMiniToolButtonStyle\(isCompact: boolean\)[\s\S]*?const compactHeight = 52;[\s\S]*?display: isCompact \? "flex" : "block",[\s\S]*?overflow: "hidden",[\s\S]*?isCompact \? brandSingleLine\(\) : brandClampLines\(2\)[\s\S]*?display: isCompact \? "none" : undefined/,
   "Finance tool and mini-tool cards must keep fixed phone-safe heights, clamped text, and 3D GSN icon marks so labels cannot stretch or overlap action surfaces."
 );
-
 assertNotContains(
   "src/pages/FinancePage.tsx",
   /[\u{1F300}-\u{1FAFF}]|radial-gradient|overflowWrap: "anywhere"|where its route says/u,
@@ -104,7 +101,6 @@ assertContains(
   /to=\{routes\.loans\}[\s\S]*?debugId="finance\.open-loans"/,
   "Finance Loan Support action must stay routed to the Loans surface."
 );
-
 assertContains(
   "src/pages/FinancePage.tsx",
   /\["Support committed", safeStr\(clanLiquidity\?\.pledgedTotal \|\| "0"\)\]/,

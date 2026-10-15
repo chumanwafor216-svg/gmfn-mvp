@@ -384,6 +384,9 @@ export default function RepaymentPage() {
   const [partAmount, setPartAmount] = useState("");
   const [paymentConfirmedAt, setPaymentConfirmedAt] = useState<string | null>(null);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRow[]>([]);
+  const [phonePartPaymentOpen, setPhonePartPaymentOpen] = useState(false);
+  const [phonePaymentDetailsOpen, setPhonePaymentDetailsOpen] = useState(false);
+  const [phoneMoreOpen, setPhoneMoreOpen] = useState(false);
   const selectedClanId = Number(getSelectedClanId() || 0);
   const activeCommunityId = Number(summary?.clan_id || currentClan?.id || currentClan?.clan_id || selectedClanId || 0);
   const routes = useMemo(
@@ -424,6 +427,9 @@ export default function RepaymentPage() {
     setPaymentConfirmedAt(null);
     setRepaymentMode("full");
     setPartAmount("");
+    setPhonePartPaymentOpen(false);
+    setPhonePaymentDetailsOpen(false);
+    setPhoneMoreOpen(false);
     setNotice(null);
   }, [numericLoanId]);
 
@@ -904,6 +910,531 @@ export default function RepaymentPage() {
             Open the support item first, then start repayment from its summary.
           </div>
         </section>
+      </div>
+    );
+  }
+  if (isCompact) {
+    const instructionReference = firstTruthy(
+      instruction?.reference_display,
+      instruction?.reference,
+      instruction?.reference_normalized
+    );
+    const settlement = instruction?.settlement || {};
+    const repaymentDeclared = Boolean(paymentConfirmedAt);
+
+    return (
+      <div
+        data-gsn-repayment-phone="simple"
+        style={{
+          maxWidth: 560,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+        <section
+          data-gsn-repayment-phone-state={
+            repaymentDeclared
+              ? "awaiting-reconciliation"
+              : instruction
+              ? "payment-details"
+              : "choose-amount"
+          }
+          style={{
+            borderRadius: 24,
+            padding: 16,
+            color: "#F8FBFF",
+            background:
+              "linear-gradient(180deg, #08111F 0%, #0B1F33 58%, #102A43 100%)",
+            border: "1px solid rgba(212,175,55,0.24)",
+            boxShadow: "0 18px 42px rgba(2,12,27,0.24)",
+          }}
+        >
+          <div
+            style={{
+              color: "#F2C766",
+              fontSize: 12,
+              fontWeight: 900,
+              lineHeight: 1.3,
+            }}
+          >
+            {communityLabel} / Repayment #{numericLoanId}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#FFFFFF",
+              fontSize: 23,
+              fontWeight: 1000,
+              lineHeight: 1.15,
+            }}
+          >
+            {repaymentDeclared
+              ? "Sent for checking"
+              : instruction
+              ? "Use these payment details"
+              : routeState.title}
+          </div>
+          <div
+            style={{
+              marginTop: 7,
+              color: "#D7E3F1",
+              fontSize: 14,
+              fontWeight: 800,
+              lineHeight: 1.4,
+            }}
+          >
+            {repaymentDeclared
+              ? "Your declaration is recorded. Finance or an admin must still match the money before repayment is confirmed."
+              : instruction
+              ? "Pay the selected amount with the exact reference below."
+              : "Choose the amount, then get the bank details and exact reference."}
+          </div>
+
+          <div
+            data-gsn-repayment-phone-facts="compact-four"
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            {[
+              ["Outstanding", fmtMoney(outstandingAmount, currency)],
+              ["Selected", selectedRepaymentAmountText],
+              ["Paid already", fmtMoney(summary?.paid_total, currency)],
+              ["Due", safeDateTime(summary?.due_at)],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  minWidth: 0,
+                  borderRadius: 15,
+                  padding: "9px 10px",
+                  background: "rgba(255,255,255,0.09)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#AFC1D4",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {label}
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    lineHeight: 1.3,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 11,
+              color: "#C8D7E6",
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}
+          >
+            GSN records the instruction and declaration. It does not hold the
+            money or confirm receipt before reconciliation.
+          </div>
+        </section>
+
+        {!instruction ? (
+          <>
+            {phonePartPaymentOpen ? (
+              <section
+                data-gsn-repayment-phone-part="open"
+                style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+              >
+                <div style={sectionLabel()}>Part payment</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#0B1F33",
+                    fontSize: 17,
+                    fontWeight: 950,
+                  }}
+                >
+                  How much are you paying now?
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={partAmount}
+                  onChange={(event) =>
+                    handlePartAmountChange(event.target.value)
+                  }
+                  placeholder={`Up to ${fmtMoney(outstandingAmount, currency)}`}
+                  style={{ ...amountInput(), marginTop: 10 }}
+                />
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  Expected balance after this payment:{" "}
+                  {fmtMoney(
+                    Math.max(0, outstandingAmount - requestedRepaymentAmount),
+                    currency
+                  )}
+                </div>
+              </section>
+            ) : null}
+
+            <PrimaryButton
+              type="button"
+              onClick={() => void handleGenerateInstruction()}
+              disabled={generatingInstruction || !canRepay}
+              busy={generatingInstruction}
+              busyLabel="Getting details"
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.get-payment-details"
+            >
+              {actionText("repaymentSchedule", "Get payment details")}
+            </PrimaryButton>
+
+            <SubtleButton
+              type="button"
+              onClick={() => {
+                const nextOpen = !phonePartPaymentOpen;
+                setPhonePartPaymentOpen(nextOpen);
+                handleRepaymentModeChange(nextOpen ? "part" : "full");
+              }}
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.toggle-part-payment"
+              aria-expanded={phonePartPaymentOpen}
+            >
+              {actionText(
+                "repaymentSchedule",
+                phonePartPaymentOpen
+                  ? "Pay full balance instead"
+                  : "Pay a different amount"
+              )}
+            </SubtleButton>
+          </>
+        ) : !repaymentDeclared ? (
+          <section
+            data-gsn-repayment-phone-task="payment"
+            style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+          >
+            <div style={sectionLabel()}>Payment details</div>
+            <div
+              style={{
+                marginTop: 8,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {[
+                [
+                  "Pay",
+                  fmtMoney(
+                    instruction.amount || requestedRepaymentAmount,
+                    currency
+                  ),
+                ],
+                ["Reference", instructionReference || "Not returned yet"],
+                ["Bank", firstTruthy(settlement.bankName, "Not returned yet")],
+                [
+                  "Account",
+                  firstTruthy(settlement.accountNumber, "Not returned yet"),
+                ],
+              ].map(([label, value]) => (
+                <div key={label} style={{ ...statTile("#F8FBFF"), padding: 10 }}>
+                  <div style={sectionLabel()}>{label}</div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#0B1F33",
+                      fontSize: 14,
+                      fontWeight: 900,
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 10, ...innerCard("#FFFBEF") }}>
+              <div style={sectionLabel()}>Before continuing</div>
+              <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
+                Only tap <strong>I have paid</strong> after sending the money
+                with this exact reference. Your declaration still needs
+                reconciliation.
+              </div>
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              <SecondaryButton
+                type="button"
+                onClick={handleCopyReference}
+                fullWidth
+                stableHeight={52}
+                debugId="repayment.phone.copy-reference"
+              >
+                {actionText("copy", "Copy reference")}
+              </SecondaryButton>
+              <PrimaryButton
+                type="button"
+                onClick={() => void handleConfirmPaymentMade()}
+                disabled={declaringPayment}
+                busy={declaringPayment}
+                busyLabel="Sending"
+                fullWidth
+                stableHeight={52}
+                debugId="repayment.phone.confirm-paid"
+              >
+                {actionText("check", "I have paid")}
+              </PrimaryButton>
+            </div>
+
+            <SubtleButton
+              type="button"
+              onClick={() => setPhonePaymentDetailsOpen((open) => !open)}
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.payment-options"
+              aria-expanded={phonePaymentDetailsOpen}
+              style={{ marginTop: 8 }}
+            >
+              {actionText(
+                phonePaymentDetailsOpen ? "lock" : "document",
+                phonePaymentDetailsOpen ? "Hide options" : "More payment options"
+              )}
+            </SubtleButton>
+
+            {phonePaymentDetailsOpen ? (
+              <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                <SecondaryButton
+                  type="button"
+                  onClick={handleCopyInstruction}
+                  fullWidth
+                  stableHeight={52}
+                  debugId="repayment.phone.copy-instruction"
+                >
+                  {actionText("document", "Copy full instruction")}
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    clearGeneratedInstruction();
+                    setPhonePartPaymentOpen(repaymentMode === "part");
+                    setPhonePaymentDetailsOpen(false);
+                  }}
+                  fullWidth
+                  stableHeight={52}
+                  debugId="repayment.phone.change-amount"
+                >
+                  {actionText("repaymentSchedule", "Change amount")}
+                </SecondaryButton>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <section
+            data-gsn-repayment-phone-task="awaiting-reconciliation"
+            style={{ ...pageCard("#FFFFFF"), padding: 14 }}
+          >
+            <div style={sectionLabel()}>What happens now</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#0B1F33",
+                fontSize: 18,
+                fontWeight: 950,
+                lineHeight: 1.3,
+              }}
+            >
+              Wait for finance confirmation
+            </div>
+            <div style={{ marginTop: 7, ...helperText() }}>
+              Your declaration is visible, but the support item is not closed
+              and supporter exposure is not released until reconciliation.
+            </div>
+
+            <StableCtaLink
+              to={routes.loanSummary}
+              kind="primary"
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.back-to-summary"
+              style={{ marginTop: 12 }}
+            >
+              {actionText("document", "Back to Support Summary")}
+            </StableCtaLink>
+
+            <SubtleButton
+              type="button"
+              onClick={() => setPhonePaymentDetailsOpen((open) => !open)}
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.toggle-status"
+              aria-expanded={phonePaymentDetailsOpen}
+              style={{ marginTop: 8 }}
+            >
+              {actionText(
+                phonePaymentDetailsOpen ? "lock" : "document",
+                phonePaymentDetailsOpen
+                  ? "Hide payment status"
+                  : "View payment status"
+              )}
+            </SubtleButton>
+
+            {phonePaymentDetailsOpen ? (
+              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                <div style={innerCard("#F8FBFF")}>
+                  <div style={sectionLabel()}>Current status</div>
+                  <div
+                    style={{
+                      marginTop: 7,
+                      color: "#0B1F33",
+                      fontSize: 14,
+                      fontWeight: 900,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {safeStr(
+                      currentExpectedPayment?.status ||
+                        "Declaration sent; reconciliation pending"
+                    )}
+                  </div>
+                  <div style={{ marginTop: 7, ...helperText() }}>
+                    Reference: {instructionReference || "Not returned yet"}
+                  </div>
+                  <div style={{ marginTop: 4, ...helperText() }}>
+                    Declared: {safeDateTime(paymentConfirmedAt)}
+                  </div>
+                  {currentExpectedPayment ? (
+                    <>
+                      <div style={{ marginTop: 4, ...helperText() }}>
+                        Paid so far:{" "}
+                        {fmtMoney(
+                          currentExpectedPayment.paid_amount,
+                          safeStr(currentExpectedPayment.currency || currency)
+                        )}
+                      </div>
+                      <div style={{ marginTop: 4, ...helperText() }}>
+                        Still left:{" "}
+                        {fmtMoney(
+                          currentExpectedPayment.remaining_amount,
+                          safeStr(currentExpectedPayment.currency || currency)
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+
+                {currentExpectedPayment ? (
+                  <PaymentProofSubmissionPanel
+                    payment={currentExpectedPayment}
+                    clanId={activeCommunityId}
+                    title="Repayment proof"
+                    compact
+                    debugIdPrefix="repayment-phone-proof"
+                    onUploaded={(updated) => {
+                      setExpectedPayments((prev) =>
+                        prev.map((item) =>
+                          Number(item.id || 0) === Number(updated.id || 0)
+                            ? ({ ...item, ...updated } as ExpectedPaymentRow)
+                            : item
+                        )
+                      );
+                      setNotice({
+                        tone: "success",
+                        text: "Repayment proof uploaded for finance review. Payment still needs reconciliation.",
+                      });
+                    }}
+                    onNotice={(tone, text) => {
+                      if (tone === "success" || tone === "error") {
+                        setNotice({ tone, text });
+                      }
+                    }}
+                  />
+                ) : (
+                  <div style={{ ...innerCard("#F8FBFF"), ...helperText() }}>
+                    Finance has not shown a matching repayment expectation yet.
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
+        )}
+
+        <SubtleButton
+          type="button"
+          onClick={() => setPhoneMoreOpen((open) => !open)}
+          fullWidth
+          stableHeight={52}
+          debugId="repayment.phone.more"
+          aria-expanded={phoneMoreOpen}
+        >
+          {actionText(
+            phoneMoreOpen ? "lock" : "document",
+            phoneMoreOpen ? "Hide other pages" : "Other pages"
+          )}
+        </SubtleButton>
+
+        {phoneMoreOpen ? (
+          <section
+            data-gsn-repayment-phone-routes="open"
+            style={{
+              ...pageCard("#FFFFFF"),
+              padding: 12,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <StableCtaLink
+              to={routes.loanSummary}
+              kind="secondary"
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.route.summary"
+            >
+              {actionText("document", "Support Summary")}
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.finance}
+              kind="secondary"
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.route.finance"
+            >
+              {actionText("financeInstitution", "Finance")}
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.loans}
+              kind="secondary"
+              fullWidth
+              stableHeight={52}
+              debugId="repayment.phone.route.loans"
+            >
+              {actionText("community", "Loan Support")}
+            </StableCtaLink>
+          </section>
+        ) : null}
       </div>
     );
   }

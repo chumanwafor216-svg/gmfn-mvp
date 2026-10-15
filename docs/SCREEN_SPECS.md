@@ -250,6 +250,57 @@ Rules:
 - do not change support, finance, repayment, approval, or route contracts while
   simplifying the surface.
 
+## Loan Support Summary Page
+
+Route: `/app/loan-summary/:loanId`
+
+Phone first surface:
+- selected community and support record identity;
+- amount and one plain-language next step;
+- four compact facts: State, Remaining, Support recorded, and Waiting;
+- one primary action derived from the real record state;
+- one compact More details disclosure.
+
+Rules:
+- do not repeat the route title beneath the authenticated app-shell header;
+- keep the GSN evidence boundary on the first surface: GSN records support
+  evidence but does not approve the whole request, move money, or promise
+  repayment;
+- the primary action must be Review supporters, Continue support, Continue
+  repayment, or View record according to the loaded state;
+- opening Supporters, Record and evidence, or Other tools must replace the
+  phone front door with that one lane and expose Back to summary;
+- preserve individual supporter record/decline actions, repayment evidence,
+  audit evidence, and destination routes;
+- do not add bulk supporter decisions or imply that support evidence is a
+  lending approval.
+
+## Support Repayment Page
+
+Route: `/app/payment/loans/:loanId`
+
+Phone process:
+- choose the full outstanding amount by default, with part payment available
+  through one quiet disclosure;
+- show four compact facts: Outstanding, Selected, Paid already, and Due;
+- use one primary Get payment details action;
+- replace amount choice with exact payment instructions after generation;
+- use one I have paid declaration action only after the member sends money;
+- replace payment instructions with Sent for checking after declaration.
+
+Rules:
+- keep the GSN money boundary on the first surface: GSN records instructions
+  and declarations but does not hold money or confirm receipt before
+  reconciliation;
+- I have paid records a declaration only; it must not claim settlement,
+  reconciliation, closure, or release of supporter exposure;
+- after declaration, say that the support item remains open and supporter
+  exposure remains in place until reconciliation;
+- keep proof upload under a compact payment-status disclosure;
+- opening payment status or other pages must not recreate a stack of competing
+  tasks;
+- do not change payment-instruction, repayment-claim, evidence, permission, or
+  reconciliation contracts while simplifying the surface.
 ## AuthGatewayPage
 
 Purpose:
@@ -825,6 +876,11 @@ Rules:
   Marketplace-owned.
 - Deep finance records and secondary tools should appear only after the user
   opens the relevant lane.
+- On phone, the default front door shows the current finance state, four compact
+  money facts, one primary `Review money` action, and one collapsed
+  `Choose another task` disclosure. The richer quick snapshot is desktop-only.
+- Opening a phone detail lane replaces the front door until the member uses the
+  visible `Back to tasks` control; closed deep panels must not form a card stack.
 - Pipeline Credits is a pricing/planning lane for base access plus prepaid usage value.
   It must not imply GSN lends money, holds customer funds, approves credit, or
   exposes a real spendable wallet balance before backend entitlement accounting is

@@ -84,18 +84,18 @@ assertContains(
 assertContains(
   "finance",
   /const \[otherFinanceLanesOpen, setOtherFinanceLanesOpen\] = useState\(false\);[\s\S]*?const showOtherFinanceLanes = !isCompact \|\| otherFinanceLanesOpen;[\s\S]*?setOtherFinanceLanesOpen\(\(open\) => !open\)[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?\{showOtherFinanceLanes \? \([\s\S]*?compactOnly: true[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)/,
-  "Finance secondary route tools must be collapsed behind a More lanes disclosure on phone."
+  "Finance secondary route tools must be collapsed behind one task disclosure on phone."
 );
 
 assertContains(
   "finance",
-  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other finance lanes[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
+  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other finance lanes[\s\S]*?Choose another task[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
   "Finance secondary route tools must keep compact two-up phone geometry and fixed-height mini buttons."
 );
 
 assertContains(
   "finance",
-  /function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 78;[\s\S]*?const desktopHeight = 76;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden"[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
+  /function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 52;[\s\S]*?const desktopHeight = 76;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?display: isCompact \? "flex" : "block"[\s\S]*?overflow: "hidden"[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
   "Finance mini-tool style must keep fixed heights, hidden overflow, and clamped labels."
 );
 
@@ -131,7 +131,7 @@ assertContains(
 
 assertContains(
   "specs",
-  /Secondary route tools such as Payout Details and Trust Passport may remain\s+visible only as compact linked tools/,
+  /Secondary route tools such as Payout Details, Pipeline Credits, and Trust Passport\s+may remain visible only as compact linked tools/,
   "Finance screen spec must record that Payout Details and Trust Passport are compact linked tools, not major Finance lanes."
 );
 

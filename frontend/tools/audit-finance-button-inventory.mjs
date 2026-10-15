@@ -55,7 +55,6 @@ while ((match = actionPattern.exec(source))) {
 }
 
 const expectedSourceActions = 14;
-const expectedRenderedActions = 21;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -152,23 +151,21 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id !== "bank-accounts"\)/,
-  "Finance phone front door must show only three major lane buttons, with Banking Rails moved under More lanes on compact screens."
+  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id === "reports"\)[\s\S]*?Review money/,
+  "Finance phone front door must show one primary Review money action before secondary tasks."
 );
 
 assertContains(
-  /const \[otherFinanceLanesOpen, setOtherFinanceLanesOpen\] = useState\(false\);[\s\S]*?const showOtherFinanceLanes = !isCompact \|\| otherFinanceLanesOpen;[\s\S]*?setOtherFinanceLanesOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{46\}[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?\{showOtherFinanceLanes \? \(/,
-  "Finance secondary route tools must stay behind a compact More lanes disclosure on phone."
+  /const \[otherFinanceLanesOpen, setOtherFinanceLanesOpen\] = useState\(false\);[\s\S]*?const showOtherFinanceLanes = !isCompact \|\| otherFinanceLanesOpen;[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?Choose another task[\s\S]*?\{showOtherFinanceLanes \? \(/,
+  "Finance secondary tools must stay behind one compact task disclosure on phone."
 );
-
 assertContains(
-  /label: "Banking Rails"[\s\S]*?compactOnly: true[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
+  /label: "Money In"[\s\S]*?compactOnly: true[\s\S]*?label: "Records \/ Events"[\s\S]*?label: "Payment checks"[\s\S]*?label: "Support record"[\s\S]*?label: "Banking Rails"[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
   "Finance mini tools must keep tightened fixed phone geometry."
 );
-
 assertContains(
   /FinanceSectionLabel icon="down"[\s\S]*?Finance quick snapshot[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?Finance Signals/,
-  "Finance phone-visible snapshot labels must use deterministic glyphs instead of emoji text."
+  "Finance desktop snapshot labels must use deterministic glyphs instead of emoji text."
 );
 assertContains(
   /label: "Pipeline Credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?Pipeline credit programmes[\s\S]*?One pipeline credit means GBP 1 of planned usage value[\s\S]*?Credits fund usage\. They are not loans\./,
@@ -255,5 +252,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Finance button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including mapped tool controls.`
+  `Finance button inventory audit passed: ${actions.length} stable source action templates with state-dependent mapped controls.`
 );
