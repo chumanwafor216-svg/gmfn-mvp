@@ -224,9 +224,10 @@ def test_profile_purchase_uses_server_catalogue_and_idempotent_existing_contract
         assert db.query(MemberCreditPurchaseOrder).count() == 1
 
 
-def test_profile_credit_contracts_require_authentication(client) -> None:
+def test_profile_credit_contracts_require_authentication(client, monkeypatch) -> None:
     _seed_profile_catalogue()
     previous = dict(app.dependency_overrides)
+    monkeypatch.delenv('GMFN_DEV_MODE', raising=False)
     app.dependency_overrides.clear()
     try:
         assert client.get("/member-credits/catalogue").status_code == 401
