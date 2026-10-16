@@ -6886,7 +6886,11 @@ def delete_marketplace_broadcast(
             current_user=current_user,
         )
         try:
-            permanently_withdraw(db, campaign=campaign)
+            permanently_withdraw(
+                db,
+                campaign=campaign,
+                existing_owner_takedown=True,
+            )
             db.commit()
         except SpotlightLifecycleError as exc:
             db.rollback()

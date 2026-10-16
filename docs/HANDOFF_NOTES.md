@@ -1,3 +1,13 @@
+## 2026-10-16 - Spotlight target preflight and staging qualification
+
+- Candidate branch codex/spotlight-controlled-local was packaged and pushed without a production deploy trigger. The production frontend and API remained on baseline 81d3022cd1d96cb864e9d5b0673a4f6801f9812c.
+- Read-only production database preflight found PostgreSQL 18.3 and Alembic revision 20261015_membership_admission. Duplicate entitlement-usage groups, invalid entitlement quantities, missing active activation/expiry values, placement ownership mismatches, and active campaigns without placements were all zero. Two campaign rows and four linked placements remained marked active after stored expiry; status-aware selection excludes them.
+- No isolated hosted staging frontend, API, authentication service, or database exists in the only authorised Render workspace. Creating a stack may be billable and was not authorised, so migration, deployment, and authenticated real-backend staging remain blocked.
+- Qualification found and repaired one flags-off compatibility gap: the prior owner broadcast-removal route now performs a durable soft withdrawal without exposing the new correction/withdrawal writers. Campaign, placement, allowance, delivery, and attribution history remain stored. New lifecycle writers remain disabled by default.
+- Full local backend result after the repair: 1427 passed and 10 skipped. Nine skips are the explicit PostgreSQL tests already qualified separately on disposable PostgreSQL 17.11; one is an unrelated optional TrustSlip PostgreSQL test. Focused final boundary result: 3 passed.
+- Production remains NO-GO until an isolated authenticated staging stack is authorised and passes, actual production gate values and backup/recovery evidence are verified, and a credential-bearing Render deploy hook currently held as a normal GitHub Actions variable is rotated and stored as a secret.
+- No production write, migration, deployment, gate change, real-member action, or payment activation occurred.
+
 ## 2026-10-16 - Spotlight maintenance release qualification (uncommitted)
 
 - Candidate: isolated worktree .codex-worktrees/spotlight-controlled-local, branch codex/spotlight-controlled-local, baseline 81d3022cd1d96cb864e9d5b0673a4f6801f9812c. The final dirty-tree manifest and content fingerprint must accompany review because the baseline alone does not contain this candidate.

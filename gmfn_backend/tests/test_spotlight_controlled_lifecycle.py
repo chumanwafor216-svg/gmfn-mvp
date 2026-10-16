@@ -465,6 +465,9 @@ def test_lifecycle_writers_are_disabled_by_default(monkeypatch) -> None:
         with pytest.raises(SpotlightLifecycleError) as disabled:
             place_correction_hold(db, campaign=campaign, now=now + timedelta(hours=1))
         assert disabled.value.code == 'spotlight_lifecycle_writers_disabled'
+        with pytest.raises(SpotlightLifecycleError) as withdrawal_disabled:
+            permanently_withdraw(db, campaign=campaign, now=now + timedelta(hours=1))
+        assert withdrawal_disabled.value.code == 'spotlight_lifecycle_writers_disabled'
 
 
 def test_publish_ignores_caller_expiry_and_exhausted_paid_retry_consumes_no_credit(

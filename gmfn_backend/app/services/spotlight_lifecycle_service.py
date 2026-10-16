@@ -121,8 +121,15 @@ def place_correction_hold(db: Session, *, campaign: SpotlightCampaign, now: Opti
     invalidate_campaign_leases(db, campaign_id=int(campaign.id), reason='correction_hold', now=current)
 
 
-def permanently_withdraw(db: Session, *, campaign: SpotlightCampaign, now: Optional[datetime] = None) -> None:
-    require_writers_enabled()
+def permanently_withdraw(
+    db: Session,
+    *,
+    campaign: SpotlightCampaign,
+    now: Optional[datetime] = None,
+    existing_owner_takedown: bool = False,
+) -> None:
+    if not existing_owner_takedown:
+        require_writers_enabled()
     current = _utc(now) or now_utc()
     campaign = (
         db.query(SpotlightCampaign)

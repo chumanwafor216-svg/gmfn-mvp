@@ -6084,12 +6084,13 @@ def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
     assert int(used) == 2
 
 
-def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(
+def test_flags_off_marketplace_broadcast_delete_soft_withdraws_only_matching_propagated_siblings(
     client,
     override_current_user_user,
     monkeypatch,
 ):
     monkeypatch.setenv("GSN_SPOTLIGHT_LIFECYCLE_WRITES_ENABLED", "1")
+    monkeypatch.delenv('GSN_SPOTLIGHT_LIFECYCLE_WRITES_ENABLED', raising=False)
     _ensure_marketplace_tables()
 
     with engine.begin() as conn:
