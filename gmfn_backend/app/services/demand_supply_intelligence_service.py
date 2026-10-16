@@ -442,7 +442,7 @@ def _is_visible_live_demand(
     if str(getattr(demand, "status", "") or "").lower() != OPEN_DEMAND_STATUS:
         return False
     expires_at = getattr(demand, "expires_at", None)
-    current_time = _as_aware_utc(now) or _now_utc()
+    current_time = _as_aware_utc(now) if now is not None else _now_utc()
     if expires_at is not None and _as_aware_utc(expires_at) <= current_time:
         return False
     if PROTECTED_TARGET_MARKER in str(getattr(demand, "description", "") or ""):
