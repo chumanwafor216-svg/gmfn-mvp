@@ -22,6 +22,10 @@ from app.services.demand_supply_intelligence_service import (
     find_supply_for_demand,
     resolve_demand_supply_trade_handoff,
 )
+from app.services.marketplace_relay_governance_service import (
+    latest_relay_consent,
+    record_relay_consent,
+)
 from app.schemas.marketplace_requests import (
     DemandSupplyMatchesOut,
     DemandSupplyMatchOut,
@@ -505,6 +509,12 @@ def _to_out(
         whatsapp_number=row.whatsapp_number or _approved_whatsapp_contact(db, owner),
         payment_mode=row.payment_mode,
         allow_trust_credit=bool(row.allow_trust_credit),
+        relay_consent_granted=bool(
+            (relay_consent := latest_relay_consent(db, request_id=int(row.id)))
+            and relay_consent.granted
+        ),
+        relay_consent_version=int(relay_consent.version) if relay_consent else 0,
+        relay_consent_scope=str(relay_consent.scope) if relay_consent else "one_hop",
         status=row.status,
         created_at=row.created_at,
         expires_at=row.expires_at,
@@ -703,6 +713,14 @@ def create_marketplace_request(
             ),
         )
     db.add(row)
+    db.flush()
+    if payload.allow_one_hop_relay:
+        record_relay_consent(
+            db,
+            demand=row,
+            requester_user_id=int(current_user.id),
+            granted=True,
+        )
     db.commit()
     db.refresh(row)
 

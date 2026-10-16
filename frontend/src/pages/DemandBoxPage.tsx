@@ -16,7 +16,10 @@ import {
 } from "../lib/institutionalSurface";
 import {
   createMarketplaceRequest,
+  createMarketplaceRequestRelayRun,
   getDemandSupplyMatches,
+  getMarketplaceRelayPolicy,
+  getMarketplaceRequestRelayCandidates,
   getCurrentClan,
   getMe,
   getSelectedClanId,
@@ -28,7 +31,10 @@ import {
   selectClan,
   setSelectedClanId as persistSelectedClanId,
   safeCopy,
+  setMarketplaceRequestRelayConsent,
   updateMarketplaceRequestStatus,
+  updateMarketplaceRelayPolicy,
+  type MarketplaceRelayPolicy,
   type DemandSupplyMatchItem,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -61,6 +67,9 @@ type DemandRow = {
   whatsapp_number?: string | null;
   payment_mode?: string | null;
   allow_trust_credit?: boolean;
+  relay_consent_granted?: boolean;
+  relay_consent_version?: number;
+  relay_consent_scope?: string | null;
   status?: string | null;
   created_at?: string | null;
   expires_at?: string | null;
@@ -696,6 +705,7 @@ function demandMatchReasonLabels(match: DemandSupplyMatchItem): string[] {
   const category = firstTruthy(match?.demand_category, "Supply");
 
   if (codes.includes("SAME_COMMUNITY")) labels.push("Same community");
+  if (codes.includes("RELAY_BOUNDARY_CROSSED")) labels.push("Via another community");
   if (codes.includes("CATEGORY_MATCH")) labels.push(`${category} match`);
   if (codes.includes("AREA_COMPATIBLE")) labels.push("Area compatible");
   if (!labels.length && codes.includes("LIVE_DEMAND")) labels.push("Live demand");
@@ -820,6 +830,10 @@ export default function DemandBoxPage() {
   const [paymentMode, setPaymentMode] = useState("");
   const [responseEvidence, setResponseEvidence] = useState("");
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
+  const [allowOneHopRelay, setAllowOneHopRelay] = useState(false);
+  const [relayPolicy, setRelayPolicy] = useState<MarketplaceRelayPolicy | null>(null);
+  const [savingRelayPolicy, setSavingRelayPolicy] = useState(false);
+  const [updatingRelayRequestId, setUpdatingRelayRequestId] = useState(0);
 
   const [creating, setCreating] = useState(false);
   const [marketNeedPulseOpen, setMarketNeedPulseOpen] = useState(false);
@@ -962,6 +976,16 @@ export default function DemandBoxPage() {
   useEffect(() => {
     void loadPage(selectedClanId);
   }, [loadPage, selectedClanId]);
+
+  useEffect(() => {
+    if (!selectedClanId) {
+      setRelayPolicy(null);
+      return;
+    }
+    void getMarketplaceRelayPolicy(selectedClanId)
+      .then(setRelayPolicy)
+      .catch(() => setRelayPolicy(null));
+  }, [selectedClanId]);
 
   const showNotice = useCallback((tone: NoticeTone, text: string) => {
     setNotice({ tone, text });
@@ -1251,6 +1275,8 @@ export default function DemandBoxPage() {
         expires_in_hours: Number(expiresInHours || 0) > 0 ? Number(expiresInHours) : undefined,
         payment_mode: safeStr(paymentMode) || undefined,
         allow_trust_credit: allowTrustCredit,
+        allow_one_hop_relay:
+          visibilityScope === DEMAND_VISIBILITY_COMMUNITY && allowOneHopRelay,
         visibility_scope: visibilityScope,
         clan_id: selectedClanId,
       });
@@ -1270,6 +1296,7 @@ export default function DemandBoxPage() {
       setPaymentMode("");
       setResponseEvidence("");
       setAllowTrustCredit(false);
+      setAllowOneHopRelay(false);
 
       await loadPage();
       setCreatePanelOpen(false);
@@ -1327,10 +1354,81 @@ export default function DemandBoxPage() {
     }
   }
 
+  async function handleRelayConsent(row: DemandRow, granted: boolean) {
+    const demandId = positiveNumber(row?.id);
+    if (!demandId) return;
+    setUpdatingRelayRequestId(demandId);
+    try {
+      await setMarketplaceRequestRelayConsent(demandId, granted);
+      await loadPage();
+      showNotice(
+        "success",
+        granted
+          ? "One-hop relay is allowed for this request. Community policies still apply."
+          : "Relay consent withdrawn. New relay serving has stopped."
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Relay consent could not be updated.");
+    } finally {
+      setUpdatingRelayRequestId(0);
+    }
+  }
+
+  async function handleStartRelay(row: DemandRow) {
+    const demandId = positiveNumber(row?.id);
+    if (!demandId) return;
+    setUpdatingRelayRequestId(demandId);
+    try {
+      const candidates = await getMarketplaceRequestRelayCandidates(demandId);
+      if (!candidates?.has_relay_candidate) {
+        showNotice(
+          "error",
+          "No authorised receiving community has a current bridge and plausible supply."
+        );
+        return;
+      }
+      await createMarketplaceRequestRelayRun(demandId);
+      showNotice(
+        "success",
+        "A privacy-limited relay offer was issued. No receiving identity is exposed until a bridge accepts."
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Relay could not be started.");
+    } finally {
+      setUpdatingRelayRequestId(0);
+    }
+  }
+
+  async function handleSaveRelayPolicy(
+    outboundEnabled: boolean,
+    inboundEnabled: boolean
+  ) {
+    if (!selectedClanId) return;
+    setSavingRelayPolicy(true);
+    try {
+      const updated = await updateMarketplaceRelayPolicy(selectedClanId, {
+        outbound_enabled: outboundEnabled,
+        inbound_enabled: inboundEnabled,
+      });
+      setRelayPolicy(updated);
+      showNotice("success", "Community relay policy recorded with a new version.");
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Relay policy could not be updated.");
+    } finally {
+      setSavingRelayPolicy(false);
+    }
+  }
+
   const currentCommunityName = useMemo(
     () => communityName(currentClan, selectedClanId),
     [currentClan, selectedClanId]
   );
+  const currentCommunityRole = safeStr(
+    currentClan?.membership_role || currentClan?.role
+  ).toLowerCase();
+  const canManageRelayPolicy =
+    safeStr(me?.role).toLowerCase() === "admin" ||
+    ["admin", "owner", "founder"].includes(currentCommunityRole);
   const demandBoxDomainFeatureMatch = useMemo(
     () =>
       communityDomainFeatureModeFromPayload(
@@ -1559,7 +1657,7 @@ export default function DemandBoxPage() {
         >
           <div style={{ minWidth: 0 }}>
             <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-              Possible matches · {matchState.count}
+              Possible matches Â· {matchState.count}
             </div>
             <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
               Based on your request and currently available supply.
@@ -1742,6 +1840,13 @@ export default function DemandBoxPage() {
           {row?.allow_trust_credit ? (
             <span style={badge(false)}>Trust-credit openness only</span>
           ) : null}
+          {scope === "owner" ? (
+            <span style={badge(Boolean(row?.relay_consent_granted))}>
+              {row?.relay_consent_granted
+                ? "One-hop relay allowed"
+                : "Relay stays in this community"}
+            </span>
+          ) : null}
           {safeStr(row?.created_at) ? (
             <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
           ) : null}
@@ -1773,6 +1878,34 @@ export default function DemandBoxPage() {
               >
                 {demandIconText("lock", "Cancel", 20)}
               </SubtleButton>
+
+              <SecondaryButton
+                onClick={() => void handleRelayConsent(row, !row?.relay_consent_granted)}
+                disabled={busy || updatingRelayRequestId === rowId || protectedTarget}
+                busy={updatingRelayRequestId === rowId}
+                busyLabel="Updating..."
+                debugId={`${debugBase}.relay-consent`}
+                style={demandActionStyle(54)}
+              >
+                {demandIconText(
+                  "community",
+                  row?.relay_consent_granted ? "Stop relay" : "Allow one-hop relay",
+                  20
+                )}
+              </SecondaryButton>
+
+              {row?.relay_consent_granted ? (
+                <SecondaryButton
+                  onClick={() => void handleStartRelay(row)}
+                  disabled={busy || updatingRelayRequestId === rowId}
+                  busy={updatingRelayRequestId === rowId}
+                  busyLabel="Checking..."
+                  debugId={`${debugBase}.relay-start`}
+                  style={demandActionStyle(54)}
+                >
+                  {demandIconText("community", "Find another community", 20)}
+                </SecondaryButton>
+              ) : null}
             </>
           ) : null}
 
@@ -2514,6 +2647,73 @@ export default function DemandBoxPage() {
       </section>
       ) : null}
 
+      {!showCreateWorkSurface && selectedClanId ? (
+        <details style={detailsShell()}>
+          <StableDisclosureSummary
+            style={detailsSummary()}
+            stableHeight={52}
+            debugId="demand-box.relay-policy.summary"
+          >
+            <span>Another-community relay</span>
+            <span style={{ color: "#64748B", fontSize: 13 }}>
+              {relayPolicy?.outbound_enabled || relayPolicy?.inbound_enabled
+                ? "Configured"
+                : "Off"}
+            </span>
+          </StableDisclosureSummary>
+          <div style={{ padding: "0 18px 18px", display: "grid", gap: 12 }}>
+            <div style={helperText()}>
+              Relay is one hop only. The requester must opt in, this community must
+              allow requests to leave, and the receiving community must allow them in.
+              Private Ask Person requests are never relayed.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(Boolean(relayPolicy?.outbound_enabled))}>
+                Outbound {relayPolicy?.outbound_enabled ? "on" : "off"}
+              </span>
+              <span style={badge(Boolean(relayPolicy?.inbound_enabled))}>
+                Inbound {relayPolicy?.inbound_enabled ? "on" : "off"}
+              </span>
+              <span style={badge(false)}>Policy version {relayPolicy?.version || 0}</span>
+            </div>
+            {canManageRelayPolicy ? (
+              <div style={demandActionRowStyle(isCompact, 52, 180, 0)}>
+                <SecondaryButton
+                  onClick={() =>
+                    void handleSaveRelayPolicy(
+                      !Boolean(relayPolicy?.outbound_enabled),
+                      Boolean(relayPolicy?.inbound_enabled)
+                    )
+                  }
+                  disabled={savingRelayPolicy}
+                  busy={savingRelayPolicy}
+                  busyLabel="Saving..."
+                  debugId="demand-box.relay-policy.outbound"
+                  style={demandActionStyle(52)}
+                >
+                  {relayPolicy?.outbound_enabled ? "Turn outbound off" : "Allow outbound"}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() =>
+                    void handleSaveRelayPolicy(
+                      Boolean(relayPolicy?.outbound_enabled),
+                      !Boolean(relayPolicy?.inbound_enabled)
+                    )
+                  }
+                  disabled={savingRelayPolicy}
+                  busy={savingRelayPolicy}
+                  busyLabel="Saving..."
+                  debugId="demand-box.relay-policy.inbound"
+                  style={demandActionStyle(52)}
+                >
+                  {relayPolicy?.inbound_enabled ? "Turn inbound off" : "Allow inbound"}
+                </SecondaryButton>
+              </div>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
+
       {showCreateWorkSurface ? (
       <section
         id="demand-box-create"
@@ -3034,6 +3234,35 @@ export default function DemandBoxPage() {
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
                     Trust-credit openness is a request preference, not approval to
                     release goods, credit, or money.
+                  </div>
+                </div>
+
+                <div style={innerCard("#F8FBFF")}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      color: "#0B1F33",
+                      fontWeight: 800,
+                      cursor:
+                        visibilityScope === DEMAND_VISIBILITY_COMMUNITY
+                          ? "pointer"
+                          : "not-allowed",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allowOneHopRelay}
+                      disabled={visibilityScope !== DEMAND_VISIBILITY_COMMUNITY}
+                      onChange={(e) => setAllowOneHopRelay(e.target.checked)}
+                    />
+                    Allow one-hop relay through another authorised community
+                  </label>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                    This is explicit consent for this request only. Both communities
+                    must also allow relay. You can withdraw consent later; no private
+                    Ask Person request is eligible.
                   </div>
                 </div>
               </div>

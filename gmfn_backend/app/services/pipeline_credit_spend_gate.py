@@ -15,6 +15,10 @@ from app.services.pipeline_credit_service import (
     pipeline_credit_balance,
     serialize_pipeline_credit_entry,
 )
+from app.services.payment_operations_policy import (
+    PaymentOperationsSuspended,
+    require_payment_operations_enabled,
+)
 
 
 
@@ -171,6 +175,7 @@ def debit_provider_spend(
         )
 
     try:
+        require_payment_operations_enabled()
         entry = debit_pipeline_credits(
             db,
             account_id=selected_account_id,
@@ -184,6 +189,14 @@ def debit_provider_spend(
             clan_id=clan_id,
             owner_user_id=user_id,
             meta=meta,
+        )
+    except PaymentOperationsSuspended as exc:
+        return ProviderSpendGateResult(
+            ok=False,
+            status="blocked_payment_operations_suspended",
+            provider_key=provider,
+            workflow_key=workflow,
+            explanation=str(exc),
         )
     except InsufficientPipelineCreditError as exc:
         return ProviderSpendGateResult(

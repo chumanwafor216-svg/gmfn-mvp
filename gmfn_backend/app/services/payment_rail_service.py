@@ -3,19 +3,21 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from app.services.settlement_config_service import get_settlement_config
+from app.services.payment_operations_policy import payment_operations_enabled
 
 
 def list_payment_rails() -> List[Dict[str, Any]]:
-    settlement = get_settlement_config()
+    enabled = payment_operations_enabled()
+    settlement = get_settlement_config() if enabled else None
 
     return [
         {
             "rail_code": "bank_transfer",
             "label": "Bank Transfer",
             "kind": "push",
-            "status": "active",
-            "supports_inbound": True,
-            "supports_outbound": True,
+            "status": "active" if enabled else "suspended_free_pilot",
+            "supports_inbound": bool(enabled),
+            "supports_outbound": bool(enabled),
             "currencies": ["NGN", "GBP"],
             "settlement": settlement,
         },

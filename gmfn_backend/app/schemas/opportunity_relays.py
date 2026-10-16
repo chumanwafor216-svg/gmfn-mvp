@@ -3,7 +3,49 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+class MarketplaceRelayPolicyIn(BaseModel):
+    outbound_enabled: bool
+    inbound_enabled: bool
+
+    @field_validator("outbound_enabled", "inbound_enabled", mode="before")
+    @classmethod
+    def _strict_bool(cls, value):
+        if not isinstance(value, bool):
+            raise ValueError("relay policy values must be booleans")
+        return value
+
+
+class MarketplaceRelayPolicyOut(BaseModel):
+    clan_id: int
+    version: int
+    outbound_enabled: bool
+    inbound_enabled: bool
+    issued_at: Optional[datetime] = None
+    issued_by_user_id: Optional[int] = None
+    defaulted: bool = False
+
+
+class MarketplaceRelayConsentIn(BaseModel):
+    granted: bool
+
+    @field_validator("granted", mode="before")
+    @classmethod
+    def _strict_bool(cls, value):
+        if not isinstance(value, bool):
+            raise ValueError("granted must be a boolean")
+        return value
+
+
+class MarketplaceRelayConsentOut(BaseModel):
+    request_id: int
+    version: int
+    granted: bool
+    scope: str = "one_hop"
+    recorded_at: Optional[datetime] = None
+    defaulted: bool = False
 
 
 class RelayCandidateSummaryOut(BaseModel):

@@ -8622,6 +8622,7 @@ export async function createMarketplaceRequest(payload: {
   expires_in_hours?: number;
   payment_mode?: string;
   allow_trust_credit?: boolean;
+  allow_one_hop_relay?: boolean;
   visibility_scope?: string;
   clan_id?: number | null;
 }): Promise<MarketplaceRequestItem> {
@@ -8634,6 +8635,64 @@ export async function createMarketplaceRequest(payload: {
   });
   clearStartupSectionCacheByLabel("listMarketplaceRequests");
   return created;
+}
+
+export type MarketplaceRelayPolicy = {
+  clan_id: number;
+  version: number;
+  outbound_enabled: boolean;
+  inbound_enabled: boolean;
+  issued_at?: string | null;
+  issued_by_user_id?: number | null;
+  defaulted?: boolean;
+};
+
+export async function getMarketplaceRelayPolicy(
+  clanId: number
+): Promise<MarketplaceRelayPolicy> {
+  return httpJson(
+    `/opportunity-relays/policies/${encodeURIComponent(String(clanId))}`,
+    "GET"
+  );
+}
+
+export async function updateMarketplaceRelayPolicy(
+  clanId: number,
+  payload: { outbound_enabled: boolean; inbound_enabled: boolean }
+): Promise<MarketplaceRelayPolicy> {
+  return httpJson(
+    `/opportunity-relays/policies/${encodeURIComponent(String(clanId))}`,
+    "PUT",
+    payload
+  );
+}
+
+export async function setMarketplaceRequestRelayConsent(
+  requestId: number,
+  granted: boolean
+): Promise<any> {
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/relay-consent`,
+    "POST",
+    { granted }
+  );
+}
+
+export async function getMarketplaceRequestRelayCandidates(
+  requestId: number
+): Promise<{ request_id: number; has_relay_candidate: boolean; boundary_note?: string }> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/relay-candidates`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceRequestRelayRun(requestId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/relay-runs`,
+    "POST"
+  );
 }
 export async function getMarketplaceRequest(
   requestId: number,

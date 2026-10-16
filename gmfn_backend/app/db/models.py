@@ -4857,6 +4857,40 @@ class MarketplaceRequest(Base):
     user = relationship("User")
 
 
+class MarketplaceRelayPolicy(Base):
+    __tablename__ = "marketplace_relay_policies"
+
+    __table_args__ = (
+        UniqueConstraint("clan_id", "version", name="uq_marketplace_relay_policy_clan_version_v1"),
+        Index("ix_marketplace_relay_policy_clan_version_v1", "clan_id", "version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    clan_id: Mapped[int] = mapped_column(ForeignKey("clans.id", ondelete="CASCADE"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    outbound_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    inbound_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    issued_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now())
+
+
+class MarketplaceRelayConsentEvent(Base):
+    __tablename__ = "marketplace_relay_consent_events"
+
+    __table_args__ = (
+        UniqueConstraint("marketplace_request_id", "version", name="uq_marketplace_relay_consent_request_version_v1"),
+        Index("ix_marketplace_relay_consent_request_version_v1", "marketplace_request_id", "version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    marketplace_request_id: Mapped[int] = mapped_column(ForeignKey("marketplace_requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    requester_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    granted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False, default="one_hop", server_default="one_hop")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now())
+
+
 class OpportunityRelayRun(Base):
     __tablename__ = "opportunity_relay_runs"
 

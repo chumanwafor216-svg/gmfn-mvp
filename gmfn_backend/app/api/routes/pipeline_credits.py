@@ -21,6 +21,10 @@ from app.services.pipeline_credit_service import (
     serialize_pipeline_credit_account,
     serialize_pipeline_credit_entry,
 )
+from app.services.payment_operations_policy import (
+    PaymentOperationsSuspended,
+    require_payment_operations_enabled,
+)
 
 router = APIRouter(prefix="/pipeline-credits", tags=["pipeline-credits"])
 
@@ -289,6 +293,7 @@ def pipeline_credit_allocate(
     if payload.account_id is not None:
         raise HTTPException(status_code=422, detail="Allocate by owner scope, not account_id")
     try:
+        require_payment_operations_enabled()
         entry = allocate_pipeline_credits(
             db,
             owner_type=payload.owner_type,
@@ -305,6 +310,8 @@ def pipeline_credit_allocate(
             created_by_user_id=int(current_user.id),
             meta=payload.meta,
         )
+    except PaymentOperationsSuspended as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except PipelineCreditError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _entry_response(db, entry)
@@ -318,6 +325,7 @@ def pipeline_credit_debit(
 ) -> dict[str, Any]:
     _require_admin(current_user)
     try:
+        require_payment_operations_enabled()
         entry = debit_pipeline_credits(
             db,
             account_id=payload.account_id,
@@ -335,6 +343,8 @@ def pipeline_credit_debit(
             created_by_user_id=int(current_user.id),
             meta=payload.meta,
         )
+    except PaymentOperationsSuspended as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except InsufficientPipelineCreditError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except PipelineCreditError as exc:

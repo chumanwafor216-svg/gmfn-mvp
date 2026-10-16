@@ -22,6 +22,12 @@ from app.db.notification_models import Notification
 from app.services.demand_supply_intelligence_service import (
     find_relay_supply_target_candidates,
 )
+from app.services.marketplace_relay_governance_service import (
+    current_relay_governance_authorizes,
+    inbound_enabled_clan_ids,
+    latest_relay_policy,
+    relay_consent_is_current,
+)
 from app.services.notification_service import create_notification
 
 SOURCE_TYPE_MARKETPLACE_REQUEST = "marketplace_request"
@@ -178,6 +184,9 @@ def discover_relay_target_candidates(
         return []
 
     target_clan_ids = sorted(target_bridge_map)
+    target_clan_ids = sorted(inbound_enabled_clan_ids(db, target_clan_ids))
+    if not target_clan_ids:
+        return []
     supply_counts = find_relay_supply_target_candidates(
         db,
         demand=demand,
@@ -316,6 +325,15 @@ def accept_relay_offer(
     demand = db.get(MarketplaceRequest, int(run.source_id))
     if not _live_public_source_demand(demand):
         raise RelayConflict("The source DemandBox request is no longer open.")
+    if not current_relay_governance_authorizes(
+        db,
+        demand=demand,
+        origin_clan_id=int(run.origin_clan_id),
+        target_clan_id=int(run.target_clan_id),
+    ):
+        raise RelayForbidden(
+            "Relay consent or a community relay policy is no longer active."
+        )
     if not _has_active_membership(db, user_id=int(current_user_id), clan_id=int(run.origin_clan_id)):
         raise RelayForbidden("Bridge membership in the origin community is no longer active.")
     if not _has_active_membership(db, user_id=int(current_user_id), clan_id=int(run.target_clan_id)):
@@ -505,6 +523,17 @@ def _require_source_demand_for_relay(
         clan_id=int(getattr(demand, "clan_id", 0) or 0),
     ):
         raise RelayForbidden("Requester must still belong to the origin community.")
+    origin_policy = latest_relay_policy(
+        db, clan_id=int(getattr(demand, "clan_id", 0) or 0)
+    )
+    if not origin_policy or not origin_policy.outbound_enabled:
+        raise RelayForbidden(
+            "This community has not enabled outbound opportunity relay."
+        )
+    if not relay_consent_is_current(db, demand=demand):
+        raise RelayForbidden(
+            "The requester must explicitly allow one-hop relay for this request."
+        )
     return demand
 
 
@@ -532,7 +561,15 @@ def _relay_authorization_is_current(
         return False
     if not target or target == origin:
         return False
-    return _relay_memberships_are_current(db, requester, bridge, origin, target)
+    return bool(
+        current_relay_governance_authorizes(
+            db,
+            demand=demand,
+            origin_clan_id=origin,
+            target_clan_id=target,
+        )
+        and _relay_memberships_are_current(db, requester, bridge, origin, target)
+    )
 
 
 def _relay_memberships_are_current(

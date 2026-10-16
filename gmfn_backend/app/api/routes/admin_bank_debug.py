@@ -15,6 +15,10 @@ from app.db.database import get_db
 from app.db.models import CommunityDomain, User
 from app.db.bank_models import BankEvent, ExpectedPayment
 from app.services.feature_entitlements_service import grant_or_extend_entitlement
+from app.services.payment_operations_policy import (
+    PaymentOperationsSuspended,
+    require_payment_operations_enabled,
+)
 
 router = APIRouter(prefix="/admin/bank", tags=["admin"])
 
@@ -244,6 +248,11 @@ def admin_expected_payment_finance_review(
                 "activation was triggered."
             ),
         }
+
+    try:
+        require_payment_operations_enabled()
+    except PaymentOperationsSuspended as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     if (row.status or "").lower() in {"confirmed", "applied"} and row.bank_event_id:
         _append_finance_review(

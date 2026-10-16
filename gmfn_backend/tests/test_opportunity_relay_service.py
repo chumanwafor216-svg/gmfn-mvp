@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.auth import get_current_user
@@ -35,6 +35,11 @@ from app.services.opportunity_relay_service import (
     discover_relay_target_candidates,
     expire_due_relay_offers,
 )
+from app.services.marketplace_relay_governance_service import (
+    inbound_enabled_clan_ids,
+    issue_relay_policy,
+    record_relay_consent,
+)
 
 
 PROTECTED_TARGET_MARKER = "[GSN_VISIBILITY_SCOPE:protected_target]"
@@ -60,7 +65,13 @@ def _table_count(table_name: str) -> int:
         return int(conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar_one())
 
 
-def _seed_relay_base(*, demand_status: str = "open", protected: bool = False) -> None:
+def _seed_relay_base(
+    *,
+    demand_status: str = "open",
+    protected: bool = False,
+    with_policies: bool = True,
+    with_consent: bool = True,
+) -> None:
     description = "Kitchen needs painting near Ajah"
     if protected:
         description = f"{PROTECTED_TARGET_MARKER}\n\n{description}"
@@ -126,6 +137,30 @@ def _seed_relay_base(*, demand_status: str = "open", protected: bool = False) ->
             ),
             {"description": description, "status": demand_status, "expires_at": expires_at},
         )
+        if with_policies:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_relay_policies (
+                        id, clan_id, version, outbound_enabled, inbound_enabled,
+                        issued_by_user_id, created_at
+                    ) VALUES
+                        (1, 1, 1, 1, 0, 1, CURRENT_TIMESTAMP),
+                        (2, 2, 1, 0, 1, 1, CURRENT_TIMESTAMP)
+                    """
+                )
+            )
+        if with_consent:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_relay_consent_events (
+                        id, marketplace_request_id, requester_user_id, version,
+                        granted, scope, created_at
+                    ) VALUES (1, 1000, 1, 1, 1, 'one_hop', CURRENT_TIMESTAMP)
+                    """
+                )
+            )
         conn.execute(
             text(
                 """
@@ -172,6 +207,191 @@ def test_relay_discovers_only_overlap_targets_with_plausible_supply():
     assert [candidate.target_clan_id for candidate in candidates] == [2]
     assert candidates[0].bridge_user_ids == (2, 3, 4)
     assert candidates[0].supply_match_count == 1
+
+
+def test_existing_request_without_issued_policies_is_not_silently_authorized():
+    _seed_relay_base(with_policies=False)
+    with SessionLocal() as db:
+        with pytest.raises(RelayForbidden, match="outbound"):
+            discover_relay_target_candidates(db, request_id=1000, current_user_id=1)
+    assert _table_count("opportunity_relay_runs") == 0
+
+
+def test_existing_request_without_explicit_consent_is_not_silently_authorized():
+    _seed_relay_base(with_consent=False)
+    with SessionLocal() as db:
+        with pytest.raises(RelayForbidden, match="explicitly allow"):
+            discover_relay_target_candidates(db, request_id=1000, current_user_id=1)
+    assert _table_count("opportunity_relay_runs") == 0
+
+
+def test_requester_withdrawal_stops_serving_but_preserves_crossed_history():
+    _seed_relay_base()
+    with SessionLocal() as db:
+        run = create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        demand = db.get(relay_service.MarketplaceRequest, 1000)
+        record_relay_consent(
+            db, demand=demand, requester_user_id=1, granted=False
+        )
+        db.commit()
+        assert find_supply_for_demand(db, demand_id=1000, current_user_id=1) == []
+        db.refresh(run)
+        assert run.status == RUN_STATUS_BOUNDARY_CROSSED
+    assert _table_count("marketplace_relay_consent_events") == 2
+
+
+def test_policy_revocation_stops_later_discovery_and_preserves_history():
+    _seed_relay_base()
+    with SessionLocal() as db:
+        run = create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        issue_relay_policy(
+            db,
+            clan_id=2,
+            actor_user_id=1,
+            outbound_enabled=False,
+            inbound_enabled=False,
+        )
+        assert find_supply_for_demand(db, demand_id=1000, current_user_id=1) == []
+        db.refresh(run)
+        assert run.status == RUN_STATUS_BOUNDARY_CROSSED
+    assert _table_count("marketplace_relay_policies") == 3
+
+
+def test_more_than_400_receiving_policies_use_one_bounded_read():
+    _seed_relay_base()
+    clan_rows = [
+        {
+            "id": clan_id,
+            "name": f"Relay capacity {clan_id}",
+            "code": f"RELAY-{clan_id}",
+            "invite": f"relay-{clan_id}",
+        }
+        for clan_id in range(10, 421)
+    ]
+    policy_rows = [
+        {
+            "id": clan_id,
+            "clan_id": clan_id,
+            "inbound": clan_id % 10 != 0,
+        }
+        for clan_id in range(10, 421)
+    ]
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, community_code, status, invite_code, invite_uses, created_at
+                ) VALUES (
+                    :id, :name, :code, 'active', :invite, 0, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            clan_rows,
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_relay_policies (
+                    id, clan_id, version, outbound_enabled, inbound_enabled,
+                    issued_by_user_id, created_at
+                ) VALUES (
+                    :id, :clan_id, 1, 0, :inbound, 1, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            policy_rows,
+        )
+
+    policy_selects = 0
+
+    def count_policy_reads(conn, cursor, statement, parameters, context, executemany):
+        nonlocal policy_selects
+        if statement.lstrip().lower().startswith("select") and "marketplace_relay_policies" in statement:
+            policy_selects += 1
+
+    event.listen(engine, "before_cursor_execute", count_policy_reads)
+    try:
+        with SessionLocal() as db:
+            enabled = inbound_enabled_clan_ids(db, range(10, 421))
+    finally:
+        event.remove(engine, "before_cursor_execute", count_policy_reads)
+
+    assert len(enabled) == 369
+    assert 10 not in enabled
+    assert 419 in enabled
+    assert policy_selects == 1
+
+
+def test_relay_policy_api_defaults_deny_and_requires_community_admin(client):
+    _seed_relay_base(with_policies=False)
+
+    _override_current_user(1)
+    try:
+        defaulted = client.get("/opportunity-relays/policies/1")
+        forbidden = client.put(
+            "/opportunity-relays/policies/1",
+            json={"outbound_enabled": True, "inbound_enabled": False},
+        )
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE clan_memberships SET role='admin' WHERE clan_id=1 AND user_id=1")
+            )
+        updated = client.put(
+            "/opportunity-relays/policies/1",
+            json={"outbound_enabled": True, "inbound_enabled": False},
+        )
+    finally:
+        _clear_current_user_override()
+
+    assert defaulted.status_code == 200, defaulted.text
+    assert defaulted.json() == {
+        "clan_id": 1,
+        "version": 0,
+        "outbound_enabled": False,
+        "inbound_enabled": False,
+        "issued_at": None,
+        "issued_by_user_id": None,
+        "defaulted": True,
+    }
+    assert forbidden.status_code == 403
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["version"] == 1
+    assert updated.json()["outbound_enabled"] is True
+
+
+def test_relay_consent_api_is_requester_only_and_append_only(client):
+    _seed_relay_base(with_consent=False)
+
+    _override_current_user(2)
+    try:
+        hidden = client.post(
+            "/marketplace/requests/1000/relay-consent", json={"granted": True}
+        )
+    finally:
+        _clear_current_user_override()
+
+    _override_current_user(1)
+    try:
+        granted = client.post(
+            "/marketplace/requests/1000/relay-consent", json={"granted": True}
+        )
+        withdrawn = client.post(
+            "/marketplace/requests/1000/relay-consent", json={"granted": False}
+        )
+    finally:
+        _clear_current_user_override()
+
+    assert hidden.status_code == 404
+    assert granted.status_code == 200, granted.text
+    assert granted.json()["version"] == 1
+    assert granted.json()["scope"] == "one_hop"
+    assert withdrawn.status_code == 200, withdrawn.text
+    assert withdrawn.json()["version"] == 2
+    assert withdrawn.json()["granted"] is False
+    assert _table_count("marketplace_relay_consent_events") == 2
 
 
 def test_candidate_api_is_privacy_safe_and_does_not_enumerate_hidden_supply(client, override_current_user_user):

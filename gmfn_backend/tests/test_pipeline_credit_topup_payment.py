@@ -17,6 +17,11 @@ from app.services.bank_application_service import apply_expected_payment_match
 from app.services.payment_instruction_service import create_pipeline_credit_topup_instruction
 from app.services.reconciliation_service import create_bank_event, reconcile_batch
 
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_contracts(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+
 @pytest.fixture()
 def isolated_reconciliation_db():
     local_engine = create_engine(

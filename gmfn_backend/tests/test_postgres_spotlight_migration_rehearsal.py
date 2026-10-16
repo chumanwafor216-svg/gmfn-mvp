@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 ROOT = Path(__file__).resolve().parents[1]
 PREVIOUS = "20261015_membership_admission"
 LIFECYCLE = "20261016_spotlight_lifecycle"
-HEAD = "20261016_member_credit_v1"
+HEAD = "20261016_relay_governance_v1"
 ACTIVATED = datetime(2026, 10, 16, 14, 35, 27, 123456, tzinfo=timezone.utc)
 EXPIRES = ACTIVATED + timedelta(hours=7, minutes=13, seconds=11)
 

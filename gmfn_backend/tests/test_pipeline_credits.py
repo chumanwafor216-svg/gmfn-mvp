@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from sqlalchemy import text
+import pytest
 
 from app.db.database import engine
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_contracts(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 def test_pipeline_credit_status_requires_admin(client, override_current_user_user):

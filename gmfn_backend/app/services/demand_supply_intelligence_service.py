@@ -526,6 +526,17 @@ def _relay_authorization_is_current(
         return False
     if not target or target == origin:
         return False
+    from app.services.marketplace_relay_governance_service import (
+        current_relay_governance_authorizes,
+    )
+
+    if not current_relay_governance_authorizes(
+        db,
+        demand=demand,
+        origin_clan_id=origin,
+        target_clan_id=target,
+    ):
+        return False
     return _relay_memberships_are_current(db, requester, bridge, origin, target)
 
 

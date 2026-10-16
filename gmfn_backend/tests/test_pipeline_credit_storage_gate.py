@@ -3,10 +3,16 @@
 from decimal import Decimal
 
 from sqlalchemy import text
+import pytest
 
 from app.db.database import SessionLocal, engine
 from app.services.pipeline_credit_service import allocate_pipeline_credits
 from app.services.storage_service import StorageServiceError, create_presigned_upload, generate_object_key
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_contracts(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 class FakeS3Client:

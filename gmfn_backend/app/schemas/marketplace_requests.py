@@ -41,6 +41,7 @@ class MarketplaceRequestCreate(BaseModel):
     expires_in_hours: Optional[int] = Field(default=48, ge=1, le=168)
     payment_mode: Optional[str] = Field(default=None, max_length=40)
     allow_trust_credit: bool = False
+    allow_one_hop_relay: bool = False
     visibility_scope: Optional[str] = Field(default="community_visible", max_length=40)
 
     @field_validator("clan_id", "expires_in_hours", mode="before")
@@ -63,7 +64,7 @@ class MarketplaceRequestCreate(BaseModel):
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
-    @field_validator("allow_trust_credit", mode="before")
+    @field_validator("allow_trust_credit", "allow_one_hop_relay", mode="before")
     @classmethod
     def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_bool_value(value, info.field_name)
@@ -94,6 +95,9 @@ class MarketplaceRequestOut(BaseModel):
     whatsapp_number: Optional[str] = None
     payment_mode: Optional[str] = None
     allow_trust_credit: bool = False
+    relay_consent_granted: bool = False
+    relay_consent_version: int = 0
+    relay_consent_scope: str = "one_hop"
 
     status: str
     created_at: datetime

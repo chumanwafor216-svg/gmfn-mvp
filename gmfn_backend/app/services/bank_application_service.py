@@ -11,6 +11,7 @@ from app.db.bank_models import BankEvent, ExpectedPayment
 from app.db.models import PoolEvent, User
 from app.services.feature_entitlements_service import grant_or_extend_entitlement
 from app.services.pipeline_credit_service import allocate_pipeline_credits, serialize_pipeline_credit_entry
+from app.services.payment_operations_policy import require_payment_operations_enabled
 from app.services.repayments_service import create_repayment
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
@@ -387,6 +388,7 @@ def _apply_pipeline_credit_topup(
     currency = _safe_str(meta.get("pipeline_credit_currency"), _safe_str(exp.currency, "GBP")).upper()
     idempotency_key = f"pipeline-credit-topup:expected-payment:{int(exp.id)}"
 
+    require_payment_operations_enabled()
     entry = allocate_pipeline_credits(
         db,
         owner_type=owner_type,
@@ -478,6 +480,7 @@ def _apply_feature_subscription(
     - community_package_subscription
     - community_domain_subscription
     """
+    require_payment_operations_enabled()
     if (exp.status or "").lower() != "confirmed":
         return {
             "ok": True,

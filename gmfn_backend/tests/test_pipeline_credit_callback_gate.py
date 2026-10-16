@@ -4,12 +4,18 @@ from contextlib import contextmanager
 from decimal import Decimal
 
 from sqlalchemy import text
+import pytest
 
 from app.db.database import SessionLocal, engine
 from app.services.community_confirmation_callback_delivery import (
     attempt_confirmation_callback_delivery,
 )
 from app.services.pipeline_credit_service import allocate_pipeline_credits
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_contracts(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 class Obj:

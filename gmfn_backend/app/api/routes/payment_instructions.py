@@ -53,6 +53,12 @@ from app.services.feature_entitlements_service import (
 )
 from app.services.settlement_config_service import get_settlement_config
 from app.services.pipeline_credit_service import PIPELINE_CREDIT_BOUNDARY
+from app.services.payment_operations_policy import (
+    PAYMENT_SUSPENDED_MESSAGE,
+    PaymentOperationsSuspended,
+    payment_operations_enabled,
+    require_payment_operations_enabled,
+)
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
 from app.services.vault_domain_service import (
@@ -72,6 +78,16 @@ PAYMENT_PROOF_CONTENT_TYPES = {
     "application/pdf",
 }
 GENERIC_UPLOAD_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
+
+
+def _require_new_payment_operations() -> None:
+    try:
+        require_payment_operations_enabled()
+    except PaymentOperationsSuspended as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "payment_operations_suspended", "message": str(exc)},
+        ) from exc
 def _safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
@@ -528,6 +544,7 @@ def create_pool_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     require_domain_payments_contributions_enabled(
         db,
         clan_id=int(payload.clan_id),
@@ -634,6 +651,7 @@ def create_vault_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     _require_shop_owner(
         db,
         shop_id=int(payload.shop_id),
@@ -697,6 +715,7 @@ def create_merchant_verify_payment_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     _require_shop_owner(
         db,
         shop_id=int(payload.shop_id),
@@ -732,6 +751,7 @@ def create_spotlight_payment_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     _require_shop_owner(
         db,
         shop_id=int(payload.shop_id),
@@ -951,6 +971,7 @@ def use_community_package_unit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     package_code = str(payload.package_code or "").strip().lower()
     if package_code not in COMMUNITY_PACKAGE_CATALOG:
         raise HTTPException(status_code=400, detail="Unsupported community package code")
@@ -1053,6 +1074,7 @@ def create_community_package_payment_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     package_code = str(payload.package_code or "").strip().lower()
     if package_code not in COMMUNITY_PACKAGE_CATALOG:
         raise HTTPException(status_code=400, detail="Unsupported community package code")
@@ -1110,6 +1132,7 @@ def create_pipeline_credit_topup_payment_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_new_payment_operations()
     _require_clan_admin(
         db,
         clan_id=int(payload.clan_id),
@@ -1159,7 +1182,16 @@ def my_expected_payments(
 def my_instruction_config(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    if not payment_operations_enabled():
+        return {
+            "user_id": int(current_user.id),
+            "payment_operations_enabled": False,
+            "settlement": None,
+            "available_instruction_types": ["loan_repayment_existing_obligation"],
+            "message": PAYMENT_SUSPENDED_MESSAGE,
+        }
     return {
+        "payment_operations_enabled": True,
         "user_id": int(current_user.id),
         "settlement": get_settlement_config(),
         "available_instruction_types": [

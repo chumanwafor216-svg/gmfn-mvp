@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import json
+import pytest
 
 from sqlalchemy import text
 
 from app.db.database import engine
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_contracts(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 def _assert_rejected(client, path: str, payload: dict, expected_text: str) -> None:
