@@ -266,7 +266,7 @@ async function run() {
         "Builders corporation Marketplace",
         "Trust",
         "Shops & Services",
-        "Ask for something",
+        "Needs",
         "Community board",
         "More marketplace tools",
         "One community. Choose one job at a time.",

@@ -842,7 +842,7 @@ export default function DemandBoxPage() {
   const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
-    useState(false);
+    useState(() => routeSelectedClanId > 0);
   const demandCreateRevealRef = useRef<number | null>(null);
   const demandMountedRef = useRef(true);
   const demandLoadSeqRef = useRef(0);
@@ -852,6 +852,7 @@ export default function DemandBoxPage() {
     if (routeSelectedClanId <= 0) return;
     persistSelectedClanId(routeSelectedClanId);
     setSelectedClanIdState(routeSelectedClanId);
+    setCreateCommunityConfirmed(true);
   }, [routeSelectedClanId]);
 
   useEffect(() => {

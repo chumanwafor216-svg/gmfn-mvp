@@ -27,9 +27,10 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 8,
   SecondaryButton: 12,
-  StableCtaLink: 6,
-  total: 26,
+  StableCtaLink: 5,
+  total: 25,
 };
+const expectedExistingWorkflowPlusShortcuts = 2;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
@@ -38,6 +39,7 @@ const expectedSharedMediaAudioActionTemplates = 1;
 const expectedSocialTagActionTemplates = 2;
 const expectedWholeRouteActionFamilies =
   expectedPageSourceActions.total +
+  expectedExistingWorkflowPlusShortcuts +
   expectedSignedInShortcutCount +
   expectedInstallPromptActions +
   expectedSharedMediaAudioActionTemplates +
@@ -122,6 +124,18 @@ for (const [key, value] of Object.entries(expectedPageSourceActions)) {
     line: 1,
     message: `Public Shop ${key} source action inventory changed from ${value} to ${sourceCounts[key]}. Re-audit the new or removed action on phone before accepting this baseline.`,
     text: actions.map((action) => `${action.line}:${action.id || "missing-debugId"}`).join(", "),
+  });
+}
+
+const existingWorkflowPlusShortcuts = Array.from(
+  shopGallerySource.matchAll(/<ExistingWorkflowPlusLink\b[\s\S]*?\/>/g)
+);
+if (existingWorkflowPlusShortcuts.length !== expectedExistingWorkflowPlusShortcuts) {
+  findings.push({
+    file: shopGalleryFile,
+    line: 1,
+    message: `Public Shop existing-workflow plus shortcut inventory changed from ${expectedExistingWorkflowPlusShortcuts} to ${existingWorkflowPlusShortcuts.length}.`,
+    text: existingWorkflowPlusShortcuts.map((item) => debugIdFrom(item[0])).join(", "),
   });
 }
 
@@ -537,7 +551,7 @@ if (findings.length > 0) {
 console.log(
   `Public Shop button inventory audit passed: ${sourceCounts.total} page stable action templates ` +
     `(${sourceCounts.PrimaryButton} PrimaryButton, ${sourceCounts.SecondaryButton} SecondaryButton, ` +
-    `${sourceCounts.StableCtaLink} StableCtaLink), ${nativeFields.length} native fields, ` +
+    `${sourceCounts.StableCtaLink} StableCtaLink), ${existingWorkflowPlusShortcuts.length} existing-workflow plus shortcuts, ${nativeFields.length} native fields, ` +
     `${expectedSignedInShortcutCount} signed-in shortcut route links, ` +
     `${expectedInstallPromptActions} install prompt action, ` +
     `${expectedMediaFrameInvocations} media-frame invocation families, ` +

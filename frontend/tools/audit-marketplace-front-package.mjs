@@ -144,8 +144,8 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?What people here need[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
-  "Marketplace front must lead with live DemandBox needs and route Ask for something to canonical DemandBox."
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?What people here need[\s\S]*?<ExistingWorkflowPlusLink[\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  "Marketplace front must lead with live DemandBox needs and expose one authorised add-request shortcut to canonical DemandBox."
 );
 
 assertContains(
@@ -248,8 +248,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?Ask for something[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
-  "Ask for something must route directly to canonical DemandBox instead of opening a duplicate Marketplace Demand lane."
+  /const canCreateMarketplaceDemand = Boolean\([\s\S]*?activeCommunityId &&[\s\S]*?me &&[\s\S]*?memberCommunityIds\.includes\(activeCommunityId\) &&[\s\S]*?!demandBoxFeatureOff[\s\S]*?<ExistingWorkflowPlusLink[\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?shortcut="demand-box"/,
+  "The add-request shortcut must require an authenticated member, selected community, and enabled DemandBox policy before routing to the existing form."
 );
 
 assertContains(
@@ -276,7 +276,7 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
   "Marketplace front package must keep the live needs, shop directory, match preview, and compact next-step order."
 );
 

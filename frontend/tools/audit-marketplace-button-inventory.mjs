@@ -147,7 +147,7 @@ function marketplaceActionArea(debugId) {
   return "unknown";
 }
 
-const actionPattern = /<(?:Stable(?:Button|CtaLink)|SocialTagShareButton)\b[\s\S]*?(?:\/>|<\/(?:Stable(?:Button|CtaLink)|SocialTagShareButton)>)/g;
+const actionPattern = /<(?:Stable(?:Button|CtaLink)|SocialTagShareButton|ExistingWorkflowPlusLink)\b[\s\S]*?(?:\/>|<\/(?:Stable(?:Button|CtaLink)|SocialTagShareButton|ExistingWorkflowPlusLink)>)/g;
 const actions = [];
 let match;
 
@@ -379,8 +379,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Ask for something[\s\S]*?DemandBox/,
-  "Marketplace Ask for something job must route directly to canonical DemandBox."
+  /demandBoxCreatePath = useMemo\([\s\S]*?params\.set\("mode", "create"\)[\s\S]*?canCreateMarketplaceDemand \? \([\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?DemandBox/,
+  "Marketplace Add request shortcut must route directly to canonical DemandBox create mode."
 );
 
 assertContains(
@@ -389,7 +389,7 @@ assertContains(
 );
 
 assertContains(
-  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
   "Marketplace front door must show live needs, shops, matches, and compact follow-on context."
 );
 
@@ -846,7 +846,7 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.front.invite-someone"),
-  exactDebugId("marketplace.job.ask-for-something"),
+  exactDebugId("marketplace.job.add-request-shortcut"),
   exactDebugId("marketplace.job.find-people-services"),
   dynamicDebugId(
     "marketplace.front.shop.${row.gmfnId || row.userId || \"unknown\"}.open",

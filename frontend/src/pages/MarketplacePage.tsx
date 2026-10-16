@@ -10,6 +10,7 @@ import {
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
+import ExistingWorkflowPlusLink from "../components/ExistingWorkflowPlusLink";
 import {
   navigateToCta,
   resolveCtaTarget,
@@ -4327,6 +4328,7 @@ export default function MarketplacePage() {
   const [selectedCommunity, setSelectedCommunity] = useState<CommunityRow | null>(
     null
   );
+  const [memberCommunityIds, setMemberCommunityIds] = useState<number[]>([]);
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
   const [marketplaceDirectoryProducts, setMarketplaceDirectoryProducts] = useState<
@@ -4798,6 +4800,38 @@ export default function MarketplacePage() {
     spotlightDomainFeatureMatch?.domainName ||
       communityName(selectedCommunity) ||
       "this Community Domain"
+  );
+  const demandBoxDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        activeCommunityId,
+        "demand_box"
+      ),
+    [activeCommunityId, communityDomainPolicyPayload]
+  );
+  const demandBoxFeatureOff = communityDomainFeatureIsOff(
+    demandBoxDomainFeatureMatch
+  );
+  const demandBoxCreatePath = useMemo(() => {
+    const target = resolveCtaTarget("demandBox", {
+      communityId: activeCommunityId,
+      debugId: "marketplace.route.demandBox.create",
+    }).to;
+    const raw = typeof target === "string" ? target : APP_ROUTES.DEMAND_BOX;
+    const [baseAndQuery, hash = ""] = raw.split("#");
+    const params = new URLSearchParams(
+      baseAndQuery.includes("?") ? baseAndQuery.split("?")[1] : ""
+    );
+    params.set("mode", "create");
+    const base = baseAndQuery.split("?")[0];
+    return `${base}?${params.toString()}${hash ? `#${hash}` : ""}`;
+  }, [activeCommunityId]);
+  const canCreateMarketplaceDemand = Boolean(
+    activeCommunityId &&
+      me &&
+      memberCommunityIds.includes(activeCommunityId) &&
+      !demandBoxFeatureOff
   );
   const publicShopActionsLocked =
     !currentGmfnId ||
@@ -5835,6 +5869,9 @@ export default function MarketplacePage() {
 
       setMe(meRes || null);
       setSelectedCommunity(resolvedCommunity);
+      setMemberCommunityIds(
+        clanRows.map((row: any) => getRowId(row)).filter((id: number) => id > 0)
+      );
       setTrustSlip(trustSlipRes || null);
       setLoading(false);
 
@@ -9113,18 +9150,15 @@ export default function MarketplacePage() {
                   </div>
                 ) : null}
               </div>
-              <StableButton
-                type="button"
-                debugId="marketplace.job.ask-for-something"
-                aria-label="Ask for something through DemandBox"
-                onClick={(event) => openMarketplaceCta(event, "demandBox")}
-                style={{
-                  ...marketplaceActionStyle("primary"),
-                  width: isCompact ? "100%" : 168,
-                }}
-              >
-                Ask for something
-              </StableButton>
+              {canCreateMarketplaceDemand ? (
+                <ExistingWorkflowPlusLink
+                  to={demandBoxCreatePath}
+                  label="Add request"
+                  debugId="marketplace.job.add-request-shortcut"
+                  shortcut="demand-box"
+                  style={{ flexShrink: 0 }}
+                />
+              ) : null}
             </div>
 
             <div

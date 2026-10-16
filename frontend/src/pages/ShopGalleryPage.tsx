@@ -8,6 +8,7 @@ import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
+import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
 import {
   createMarketplaceShop,
   followMarketplaceShop,
@@ -3314,6 +3315,12 @@ export default function ShopGalleryPage() {
     `${APP_ROUTES.SHOP_ME}#shop-assets-diary`,
     ownerSurfaceCommunityId
   );
+  const ownerSpotlightShortcutPath = routeWithCommunity(
+    APP_ROUTES.FREE_SPOTLIGHT,
+    ownerSurfaceCommunityId
+  );
+  const ownerSpotlightShortcutMode =
+    ownerSpotlightStatusView?.state === 'none' ? 'create' : 'manage';
   const signedInOwnsShop = Boolean(
     ownerSessionPresent &&
       signedInGmfnId &&
@@ -5781,6 +5788,15 @@ export default function ShopGalleryPage() {
                       ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
                       : "Spotlight"}
                   </span>
+                  {signedInOwnsShop ? (
+                    <ExistingWorkflowPlusLink
+                      to={ownerSpotlightShortcutPath}
+                      label='Add Spotlight'
+                      debugId='shop-gallery.spotlight.owner-shortcut'
+                      shortcut='spotlight'
+                      data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
+                    />
+                  ) : null}
                   <PrimaryButton
                     onClick={contactSpotlightOwnerByWhatsApp}
                     minWidth={0}
@@ -6087,7 +6103,17 @@ export default function ShopGalleryPage() {
               <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Update</div>
               <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>Latest message from this shop.</div>
             </div>
-            <span style={badge(Boolean(featuredDiaryEntry))}>{featuredDiaryEntry ? "Live now" : "No live update"}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              {signedInOwnsShop ? (
+                <ExistingWorkflowPlusLink
+                  to={ownerShopDiaryPath}
+                  label="Add diary entry"
+                  debugId="shop-gallery.diary.owner-shortcut"
+                  shortcut="shop-diary"
+                />
+              ) : null}
+              <span style={badge(Boolean(featuredDiaryEntry))}>{featuredDiaryEntry ? "Live now" : "No live update"}</span>
+            </span>
           </div>
 
           {featuredDiaryEntry ? (
@@ -6110,18 +6136,6 @@ export default function ShopGalleryPage() {
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>{routeDiaryEntryId > 0 ? "This update is no longer available." : "No live update right now."}</div>
               <div style={{ marginTop: 8, ...helperText() }}>{routeDiaryEntryId > 0 ? "It may have expired or been made private. You can still browse this shop." : "Browse the products and services above, or contact the owner to ask what is available today."}</div>
-              {signedInOwnsShop ? (
-                <StableCtaLink
-                  to={ownerShopDiaryPath}
-                  kind="secondary"
-                  fullWidth={isCompact}
-                  stableHeight={isCompact ? 52 : 46}
-                  debugId="shop-gallery.empty-diary.write-update"
-                  style={{ marginTop: 12, maxWidth: isCompact ? undefined : 260 }}
-                >
-                  Write diary update
-                </StableCtaLink>
-              ) : null}
             </div>
           )}
         </section>

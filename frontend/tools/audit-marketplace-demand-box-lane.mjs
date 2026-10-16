@@ -62,8 +62,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplacePageSource,
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?onClick=\{\(event\) => openMarketplaceCta\(event, "demandBox"\)\}[\s\S]*?Ask for something[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
-  "Marketplace Ask for something must route directly to canonical DemandBox with selected-community CTA context."
+  /demandBoxCreatePath = useMemo\([\s\S]*?params\.set\("mode", "create"\)[\s\S]*?canCreateMarketplaceDemand = Boolean\([\s\S]*?canCreateMarketplaceDemand \? \([\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  "Marketplace Add request shortcut must route to canonical DemandBox create mode with authenticated selected-community context."
 );
 
 assertContains(

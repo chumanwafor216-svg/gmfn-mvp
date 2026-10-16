@@ -870,6 +870,7 @@ Rules:
 - Open only one major lane as the main visible work area at a time.
 - Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More marketplace tools`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
 - On phone, the Marketplace identity uses the selected community name and status without a repeated instruction sentence. The first market cards use one short heading (`Needs`, `Shops & services`), one clear action, and compact counts; explanatory paragraphs and decorative category tags stay off the first surface.
+- The Needs heading may expose one compact 48px `Add request` plus only when the authenticated member's community list contains the selected community and community policy permits DemandBox. A route parameter alone is not authorization. It opens and focuses the existing DemandBox request form with the selected community and an explicit origin/back path. Opening the shortcut creates nothing and must not enable relay consent, cross-community reach, paid capacity, or any other governed option.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
@@ -1321,6 +1322,7 @@ Shop Diary contract:
 - Unscoped, cross-shop, unauthorized, unconfirmed, malformed, and missing evidence links must fail server-side, not only in the frontend.
 - Promotion from a diary entry may prefill the Spotlight publisher for owner review, but must not auto-publish, bypass quota/payment rules, change evidence class, change chronology, or alter Spotlight ranking.
 - Entries are create-only in the frozen contract. Edit, hide/archive, delete, and downstream Spotlight mutation after a diary entry changes remain explicit future lifecycle debt.
+- On Public Shop, the exact authenticated owner may see one compact 48px `Add diary entry` plus beside the Shop Diary/Shop Update heading. It opens the existing Shop Assets Diary form with the current community and origin/back path, performs no write on open, and replaces the redundant empty-state add action. Visitors and non-owners do not see it. Delegated editor exposure remains unavailable until a shop-scoped editor authorization contract exists.
 
 Must show:
 - GSN ID status
@@ -1381,6 +1383,7 @@ Rules:
 - Keep follow/owner controls behind one closed `Shop options` row. Keep Spotlight,
   Private Vault, and Shop Update behind one closed `More from this shop` row
   after Products & Services. Explicit deep links must still reveal their target.
+- Inside that existing owner-only secondary surface, one compact 48px `Add Spotlight` plus may sit beside Spotlight. Authoritative state `none` hands off to the existing creation workflow; every existing campaign state hands off to the existing manage/correction workflow. Community and origin/back context must survive. Opening it cannot publish, replace, pause, debit, reset expiry, consume allowance, issue a promotional opportunity, or count exposure.
 - Ordinary Public Shop visits must not automatically jump past identity and products to Shop Update.
 - An exact shared-update link with `diary_entry_id` is a focused visitor task:
   reveal that Shop Update before Products & Services and suppress unrelated
