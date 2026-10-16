@@ -10,6 +10,7 @@ from app.db.member_credit_models import (
     FinancialNotificationOutbox,
     MemberCreditAwardObligation,
     MemberCreditPackVersion,
+    MemberCreditPaymentAllocation,
     MemberCreditProviderPayment,
     MemberServiceCreditAccount,
     MemberServiceCreditLedgerEntry,
@@ -298,3 +299,61 @@ def test_purchase_order_idempotency_key_rejects_changed_payload() -> None:
                 now=NOW,
                 commit=True,
             )
+
+
+def test_recovery_recreates_missing_obligation_and_awards_once() -> None:
+    pack_id = _seed_members_and_pack(units=4)
+    with SessionLocal() as db:
+        order = service.create_purchase_order(
+            db, member_user_id=1, pack_version_id=pack_id,
+            idempotency_key="recovery-order", now=NOW, commit=False,
+        )
+        payment = _payment(db, transaction_id="recovery-payment", amount_minor=1000)
+        service.allocate_verified_payment(
+            db, provider_payment_id=int(payment.id), purchase_order_id=int(order.id),
+            amount_minor=1000, policy_key="synthetic-exact-payment",
+            allow_partial_contributions=False, now=NOW, commit=True,
+        )
+        obligation = db.query(MemberCreditAwardObligation).filter_by(purchase_order_id=int(order.id)).one()
+        db.delete(obligation)
+        db.commit()
+        result = service.recover_funded_purchase_awards(db, now=NOW)
+        replay = service.recover_funded_purchase_awards(db, now=NOW)
+        assert result.to_dict() == {
+            "selected": 1, "obligations_created": 1, "awards_applied": 1,
+            "skipped": 0, "failures": [],
+        }
+        assert replay.selected == 0
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 1
+
+
+def test_recovery_never_awards_unverified_or_insufficient_funding() -> None:
+    pack_id = _seed_members_and_pack(units=5)
+    with SessionLocal() as db:
+        forged = service.create_purchase_order(
+            db, member_user_id=1, pack_version_id=pack_id,
+            idempotency_key="forged-unverified", now=NOW, commit=False,
+        )
+        payment = _payment(db, transaction_id="unverified", amount_minor=1000)
+        payment.verification_status = "received_unverified"
+        payment.allocated_minor = 1000
+        forged.funded_minor = 1000
+        forged.status = "funded_award_pending"
+        db.add(MemberCreditPaymentAllocation(
+            provider_payment_id=payment.id, purchase_order_id=forged.id,
+            amount_minor=1000, status="allocated", policy_key="forged", created_at=NOW,
+        ))
+        service._ensure_award_obligation(db, order=forged, now=NOW)
+        insufficient = service.create_purchase_order(
+            db, member_user_id=2, pack_version_id=pack_id,
+            idempotency_key="insufficient", now=NOW, commit=False,
+        )
+        insufficient.funded_minor = 999
+        insufficient.status = "funded_award_pending"
+        db.commit()
+        result = service.recover_funded_purchase_awards(db, now=NOW)
+        assert result.failures == ({
+            "order_id": int(forged.id),
+            "error": "purchase_order_verified_funding_invariant_failed",
+        },)
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 0

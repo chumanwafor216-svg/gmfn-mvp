@@ -55,6 +55,7 @@ class MemberCreditPurchaseOrder(Base):
     quoted_amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(8), nullable=False)
     credit_units: Mapped[int] = mapped_column(Integer, nullable=False)
+    terms_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="awaiting_payment")
     funded_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -69,12 +70,67 @@ class MemberCreditPurchaseOrder(Base):
     )
 
 
+class MemberCreditPurchaseQuote(Base):
+    __tablename__ = "member_credit_purchase_quotes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    quote_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    member_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    pack_version_id: Mapped[int] = mapped_column(ForeignKey("member_credit_pack_versions.id", ondelete="RESTRICT"), nullable=False)
+    pack_code: Mapped[str] = mapped_column(String(80), nullable=False)
+    catalog_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    credit_units: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False)
+    terms_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="issued")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    confirmed_purchase_order_id: Mapped[Optional[int]] = mapped_column(ForeignKey("member_credit_purchase_orders.id", ondelete="RESTRICT"), nullable=True)
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    __table_args__ = (
+        UniqueConstraint("quote_key", name="uq_member_credit_purchase_quote_key_v1"),
+        UniqueConstraint("member_user_id", "idempotency_key", name="uq_member_credit_quote_member_idem_v1"),
+        UniqueConstraint("confirmed_purchase_order_id", name="uq_member_credit_quote_confirmed_order_v1"),
+        Index("ix_member_credit_quote_member_created_v1", "member_user_id", "created_at"),
+    )
+
+
+class MemberCreditCollectionAttempt(Base):
+    __tablename__ = "member_credit_collection_attempts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attempt_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    purchase_order_id: Mapped[int] = mapped_column(ForeignKey("member_credit_purchase_orders.id", ondelete="RESTRICT"), nullable=False)
+    provider_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    merchant_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    collection_reference: Mapped[str] = mapped_column(String(160), nullable=False)
+    provider_session_id: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    provider_payload_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="creating")
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    __table_args__ = (
+        UniqueConstraint("attempt_key", name="uq_member_credit_collection_attempt_key_v1"),
+        UniqueConstraint("purchase_order_id", name="uq_member_credit_collection_order_v1"),
+        UniqueConstraint("provider_key", "merchant_key", "collection_reference", name="uq_member_credit_collection_reference_v1"),
+        UniqueConstraint("purchase_order_id", "idempotency_key", name="uq_member_credit_collection_order_idem_v1"),
+    )
+
+
 class MemberCreditProviderPayment(Base):
     __tablename__ = "member_credit_provider_payments"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     provider_key: Mapped[str] = mapped_column(String(64), nullable=False)
     merchant_key: Mapped[str] = mapped_column(String(96), nullable=False)
     provider_transaction_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    # The additive migration owns the database FK. Keeping the ORM column free
+    # of a metadata-level dependency prevents the historical foundation
+    # migration from referencing a table that did not exist in that revision.
+    collection_attempt_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     allocated_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(8), nullable=False)

@@ -3,9 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db.member_credit_models import (
@@ -15,6 +16,7 @@ from app.db.member_credit_models import (
     MemberCreditPaymentAllocation,
     MemberCreditProviderPayment,
     MemberCreditPurchaseOrder,
+    MemberCreditServiceVersion,
     MemberServiceCreditAccount,
     MemberServiceCreditLedgerEntry,
 )
@@ -35,9 +37,67 @@ class MemberCreditAwardResult:
     deduped: bool
 
 
+@dataclass(frozen=True)
+class MemberCreditRecoveryResult:
+    selected: int
+    obligations_created: int
+    awards_applied: int
+    skipped: int
+    failures: tuple[dict[str, Any], ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "selected": self.selected, "obligations_created": self.obligations_created,
+            "awards_applied": self.awards_applied, "skipped": self.skipped,
+            "failures": list(self.failures),
+        }
+
+
 def request_fingerprint(payload: dict[str, Any]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def get_member_credit_self(db: Session, *, member_user_id: int, limit: int = 50) -> dict[str, Any]:
+    account = db.query(MemberServiceCreditAccount).filter_by(member_user_id=int(member_user_id)).one_or_none()
+    if account is None:
+        return {"member_user_id": int(member_user_id), "account_status": "not_opened", "balance_units": 0, "entries": []}
+    rows = db.query(MemberServiceCreditLedgerEntry).filter_by(account_id=int(account.id)).order_by(
+        MemberServiceCreditLedgerEntry.created_at.desc(), MemberServiceCreditLedgerEntry.id.desc()
+    ).limit(int(limit)).all()
+    return {
+        "member_user_id": int(member_user_id), "account_status": str(account.status),
+        "balance_units": int(account.balance_units),
+        "entries": [{
+            "id": int(row.id), "units_delta": int(row.units_delta),
+            "balance_after": int(row.balance_after), "entry_type": str(row.entry_type),
+            "reference_type": str(row.reference_type), "reference_id": str(row.reference_id),
+            "created_at": row.created_at,
+        } for row in rows],
+    }
+
+
+def create_service_quote(
+    db: Session, *, member_user_id: int, service_version_id: int,
+    now: Optional[datetime] = None,
+) -> dict[str, Any]:
+    service = db.get(MemberCreditServiceVersion, int(service_version_id))
+    if service is None or str(service.status) != "test_active":
+        raise MemberCreditError("service_version_not_test_active")
+    quoted_at = _aware(now)
+    valid_until = quoted_at + timedelta(minutes=15)
+    payload = {
+        "member_user_id": int(member_user_id), "service_version_id": int(service.id),
+        "service_code": str(service.service_code), "catalog_version": int(service.version),
+        "credit_cost": int(service.credit_cost), "duration_seconds": int(service.duration_seconds),
+        "terms_json": service.terms_json, "quoted_at": quoted_at, "valid_until": valid_until,
+    }
+    payload["quote_key"] = f"test-service-{request_fingerprint(payload)[:24]}"
+    payload["commercial_status"] = "test_only_not_for_activation"
+    payload["funding_source_required"] = True
+    payload["selected_funding_source"] = None
+    payload["activation_performed"] = False
+    return payload
 
 
 def create_purchase_order(
@@ -71,6 +131,7 @@ def create_purchase_order(
         quoted_amount_minor=int(pack.quoted_amount_minor),
         currency=str(pack.currency),
         credit_units=int(pack.credit_units),
+        terms_json=pack.terms_json,
         status="awaiting_payment",
         funded_minor=0,
         idempotency_key=key,
@@ -256,6 +317,8 @@ def _apply_pending_award(
     )
     if int(order.funded_minor) != int(order.quoted_amount_minor):
         raise MemberCreditError("purchase_order_not_fully_funded")
+    if _verified_allocated_total(db, order=order) != int(order.quoted_amount_minor):
+        raise MemberCreditError("purchase_order_verified_funding_invariant_failed")
     account = _locked_or_created_account(db, member_user_id=int(obligation.member_user_id), now=now)
     before = int(account.balance_units)
     version = int(account.version)
@@ -314,6 +377,76 @@ def _apply_pending_award(
     return MemberCreditAwardResult(
         int(obligation.id), int(account.id), int(ledger.id), after, False
     )
+
+
+def recover_funded_purchase_awards(
+    db: Session, *, limit: int = 100, now: Optional[datetime] = None
+) -> MemberCreditRecoveryResult:
+    if int(limit) < 1 or int(limit) > 1000:
+        raise MemberCreditError("recovery_limit_out_of_range")
+    bind = db.get_bind()
+    with Session(bind=bind) as scan_db:
+        ids = [int(row[0]) for row in scan_db.query(MemberCreditPurchaseOrder.id).filter(
+            MemberCreditPurchaseOrder.status == "funded_award_pending",
+            MemberCreditPurchaseOrder.funded_minor == MemberCreditPurchaseOrder.quoted_amount_minor,
+        ).order_by(MemberCreditPurchaseOrder.id.asc()).limit(int(limit)).all()]
+    created = applied = skipped = 0
+    failures: list[dict[str, Any]] = []
+    for order_id in ids:
+        with Session(bind=bind) as recovery_db:
+            outcome = _recover_one_purchase_award(recovery_db, order_id=order_id, now=now)
+        created += int(outcome["created"])
+        applied += int(outcome["applied"])
+        skipped += int(outcome["skipped"])
+        if outcome["failure"]:
+            failures.append(outcome["failure"])
+    return MemberCreditRecoveryResult(len(ids), created, applied, skipped, tuple(failures))
+
+
+def _recover_one_purchase_award(db: Session, *, order_id: int, now: Optional[datetime]) -> dict[str, Any]:
+    created = False
+    try:
+        if db.get_bind().dialect.name == "postgresql":
+            db.execute(text("SET LOCAL lock_timeout = '250ms'"))
+        order = db.query(MemberCreditPurchaseOrder).filter_by(id=int(order_id)).with_for_update(skip_locked=True).one_or_none()
+        if order is None or str(order.status) != "funded_award_pending":
+            db.rollback()
+            return {"created": False, "applied": False, "skipped": True, "failure": None}
+        obligation = db.query(MemberCreditAwardObligation).filter_by(
+            purchase_order_id=int(order.id)
+        ).with_for_update().one_or_none()
+        if obligation is None:
+            obligation = _ensure_award_obligation(db, order=order, now=now)
+            created = True
+        apply_award_obligation(db, obligation_id=int(obligation.id), now=now, commit=False)
+        db.commit()
+        return {"created": created, "applied": True, "skipped": False, "failure": None}
+    except Exception as exc:
+        db.rollback()
+        obligation = db.query(MemberCreditAwardObligation).filter_by(purchase_order_id=int(order_id)).one_or_none()
+        if obligation is not None and str(obligation.status) != "applied":
+            obligation.last_error = str(getattr(exc, "code", type(exc).__name__))[:1000]
+            obligation.updated_at = _aware(now)
+            db.commit()
+        return {
+            "created": False, "applied": False, "skipped": False,
+            "failure": {"order_id": int(order_id), "error": getattr(exc, "code", type(exc).__name__)},
+        }
+
+
+def _verified_allocated_total(db: Session, *, order: MemberCreditPurchaseOrder) -> int:
+    rows = db.query(MemberCreditPaymentAllocation, MemberCreditProviderPayment).join(
+        MemberCreditProviderPayment,
+        MemberCreditProviderPayment.id == MemberCreditPaymentAllocation.provider_payment_id,
+    ).filter(MemberCreditPaymentAllocation.purchase_order_id == int(order.id)).all()
+    total = 0
+    for allocation, payment in rows:
+        if str(allocation.status) != "allocated" or str(payment.verification_status) not in {"verified", "test_verified"}:
+            return -1
+        if str(payment.currency) != str(order.currency):
+            return -1
+        total += int(allocation.amount_minor)
+    return total
 
 
 def reconcile_member_credit_account(db: Session, *, account_id: int) -> dict[str, Any]:
