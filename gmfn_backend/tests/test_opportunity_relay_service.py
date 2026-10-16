@@ -9,8 +9,11 @@ from sqlalchemy.exc import IntegrityError
 from app.core.auth import get_current_user
 from app.db.database import SessionLocal, engine
 from app.main import app
+from app.services import demand_supply_intelligence_service as intelligence
+from app.services import opportunity_relay_service as relay_service
 from app.services.demand_supply_intelligence_service import (
     REASON_RELAY_BOUNDARY_CROSSED,
+    REASON_SAME_COMMUNITY,
     find_demands_for_supply,
     find_supply_for_demand,
 )
@@ -246,6 +249,7 @@ def test_o1_cannot_return_b_supply_before_crossing_but_can_after_accept(monkeypa
     assert accepted.status == RUN_STATUS_BOUNDARY_CROSSED
     assert [match["product_id"] for match in after] == [2000]
     assert REASON_RELAY_BOUNDARY_CROSSED in after[0]["reason_codes"]
+    assert REASON_SAME_COMMUNITY not in after[0]["reason_codes"]
     assert [match["demand_id"] for match in reciprocal] == [1000]
 
 
@@ -448,3 +452,62 @@ def test_protected_target_demand_cannot_be_used_for_relay_probe():
     assert _table_count("opportunity_relay_runs") == 0
     assert _table_count("notifications") == 0
     assert _table_count("trust_events") == 0
+
+
+def test_relay_expiry_equality_is_expired_in_both_discovery_directions(monkeypatch):
+    fixed_now = datetime(2026, 10, 16, 15, 0, tzinfo=timezone.utc)
+    _seed_relay_base()
+    with SessionLocal() as db:
+        create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        db.execute(
+            text("UPDATE marketplace_requests SET expires_at=:expiry WHERE id=1000"),
+            {"expiry": fixed_now},
+        )
+        db.commit()
+        monkeypatch.setattr(intelligence, "_now_utc", lambda: fixed_now)
+        monkeypatch.setattr(relay_service, "now_utc", lambda: fixed_now)
+        assert find_supply_for_demand(db, demand_id=1000, current_user_id=1) == []
+        assert find_demands_for_supply(db, product_id=2000, current_user_id=5) == []
+        assert relay_service.relay_authorized_target_clan_ids_for_demand(
+            db, demand_id=1000, current_user_id=1
+        ) == []
+        assert relay_service.relay_authorized_source_demands_for_target_clan(
+            db, target_clan_id=2
+        ) == []
+
+
+@pytest.mark.parametrize(
+    "membership_id",
+    [1, 2, 3],
+    ids=["requester-origin", "bridge-origin", "bridge-target"],
+)
+def test_crossed_relay_stops_authorizing_after_required_membership_ends(membership_id):
+    _seed_relay_base()
+    with SessionLocal() as db:
+        create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        db.execute(
+            text("UPDATE clan_memberships SET left_at=CURRENT_TIMESTAMP WHERE id=:id"),
+            {"id": membership_id},
+        )
+        db.commit()
+        assert find_supply_for_demand(db, demand_id=1000, current_user_id=1) == []
+        assert find_demands_for_supply(db, product_id=2000, current_user_id=5) == []
+        assert relay_service.relay_authorized_target_clan_ids_for_demand(
+            db, demand_id=1000, current_user_id=1
+        ) == []
+        assert relay_service.relay_authorized_source_demands_for_target_clan(
+            db, target_clan_id=2
+        ) == []
+
+
+def test_crossed_relay_stops_authorizing_after_community_deactivation():
+    _seed_relay_base()
+    with SessionLocal() as db:
+        create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        db.execute(text("UPDATE clans SET status='inactive' WHERE id=2"))
+        db.commit()
+        assert find_supply_for_demand(db, demand_id=1000, current_user_id=1) == []
+        assert find_demands_for_supply(db, product_id=2000, current_user_id=5) == []

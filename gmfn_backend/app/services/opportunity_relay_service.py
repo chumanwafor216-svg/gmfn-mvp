@@ -99,10 +99,13 @@ def relay_authorized_target_clan_ids_for_demand(
     current_user_id: int,
 ) -> list[int]:
     demand = db.get(MarketplaceRequest, int(demand_id))
-    if not demand or int(getattr(demand, "user_id", 0) or 0) != int(current_user_id):
+    if (
+        not _live_public_source_demand(demand)
+        or int(getattr(demand, "user_id", 0) or 0) != int(current_user_id)
+    ):
         return []
     rows = (
-        db.query(OpportunityRelayRun.target_clan_id)
+        db.query(OpportunityRelayRun)
         .filter(
             OpportunityRelayRun.source_type == SOURCE_TYPE_MARKETPLACE_REQUEST,
             OpportunityRelayRun.source_id == int(demand_id),
@@ -113,7 +116,11 @@ def relay_authorized_target_clan_ids_for_demand(
         .distinct()
         .all()
     )
-    return [int(row[0]) for row in rows]
+    return [
+        int(run.target_clan_id)
+        for run in rows
+        if _relay_authorization_is_current(db, run=run, demand=demand)
+    ]
 
 
 def relay_authorized_source_demands_for_target_clan(
@@ -122,8 +129,8 @@ def relay_authorized_source_demands_for_target_clan(
     target_clan_id: int,
 ) -> list[MarketplaceRequest]:
     now = now_utc()
-    return (
-        db.query(MarketplaceRequest)
+    rows = (
+        db.query(MarketplaceRequest, OpportunityRelayRun)
         .join(
             OpportunityRelayRun,
             and_(
@@ -136,11 +143,17 @@ def relay_authorized_source_demands_for_target_clan(
             OpportunityRelayRun.status == RUN_STATUS_BOUNDARY_CROSSED,
             OpportunityRelayRun.boundary_crossed_at.isnot(None),
             MarketplaceRequest.status == "open",
-            (MarketplaceRequest.expires_at.is_(None)) | (MarketplaceRequest.expires_at >= now),
+            (MarketplaceRequest.expires_at.is_(None)) | (MarketplaceRequest.expires_at > now),
         )
         .order_by(MarketplaceRequest.created_at.desc(), MarketplaceRequest.id.desc())
         .all()
     )
+    return [
+        demand
+        for demand, run in rows
+        if _live_public_source_demand(demand)
+        and _relay_authorization_is_current(db, run=run, demand=demand)
+    ]
 
 
 def discover_relay_target_candidates(
@@ -467,7 +480,7 @@ def _live_public_source_demand(demand: MarketplaceRequest | None) -> bool:
     if _safe_str(getattr(demand, "status", None)).lower() != "open":
         return False
     expires_at = getattr(demand, "expires_at", None)
-    if expires_at is not None and _as_aware_utc(expires_at) < now_utc():
+    if expires_at is not None and _as_aware_utc(expires_at) <= now_utc():
         return False
     description = _safe_str(getattr(demand, "description", None))
     if PROTECTED_TARGET_MARKER in description:
@@ -505,6 +518,34 @@ def _has_active_membership(db: Session, *, user_id: int, clan_id: int) -> bool:
         )
         .first()
         is not None
+    )
+
+
+def _relay_authorization_is_current(
+    db: Session, *, run: OpportunityRelayRun, demand: MarketplaceRequest
+) -> bool:
+    requester = int(getattr(demand, "user_id", 0) or 0)
+    origin = int(getattr(run, "origin_clan_id", 0) or 0)
+    target = int(getattr(run, "target_clan_id", 0) or 0)
+    bridge = int(getattr(run, "boundary_crossed_by_user_id", 0) or 0)
+    if not requester or not bridge or origin != int(demand.clan_id or 0):
+        return False
+    if not target or target == origin:
+        return False
+    return _relay_memberships_are_current(db, requester, bridge, origin, target)
+
+
+def _relay_memberships_are_current(
+    db: Session, requester: int, bridge: int, origin: int, target: int
+) -> bool:
+    active_clans = db.query(Clan.id).filter(
+        Clan.id.in_([origin, target]), Clan.status == "active"
+    ).count()
+    if active_clans != 2:
+        return False
+    return all(
+        _has_active_membership(db, user_id=user, clan_id=clan)
+        for user, clan in ((requester, origin), (bridge, origin), (bridge, target))
     )
 
 
