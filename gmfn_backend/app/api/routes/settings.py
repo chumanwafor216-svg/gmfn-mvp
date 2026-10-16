@@ -161,6 +161,7 @@ def _apply_defaults(row: UserSettings) -> UserSettings:
     row.unread_first = True
     row.open_actions_directly = True
     row.spotlight_interests_json = serialize_spotlight_interests([])
+    row.member_credit_service_permissions_json = '{}'
     return row
 
 

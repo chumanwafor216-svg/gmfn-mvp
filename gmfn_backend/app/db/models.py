@@ -5587,6 +5587,10 @@ class UserSettings(Base):
         server_default="1",
     )
     spotlight_interests_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    member_credit_service_permissions_json: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

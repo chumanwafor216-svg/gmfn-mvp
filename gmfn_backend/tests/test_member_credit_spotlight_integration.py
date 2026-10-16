@@ -24,6 +24,7 @@ from app.db.models import (
     SpotlightCampaign,
     SpotlightCampaignPacingState,
     TrustEvent,
+    UserSettings,
 )
 from app.services import member_credit_spotlight_service as spotlight_spend
 from app.services.member_credit_service import (
@@ -32,6 +33,8 @@ from app.services.member_credit_service import (
     apply_award_obligation,
     create_purchase_order,
 )
+from app.services.member_credit_permissions import set_member_credit_service_permission
+from app.services.payment_operations_policy import PaymentOperationsSuspended
 from app.services.spotlight_lifecycle_service import (
     permanently_withdraw,
     place_correction_hold,
@@ -40,6 +43,11 @@ from app.services.spotlight_lifecycle_service import (
 
 
 ACTIVATED_AT = datetime(2026, 10, 16, 14, 35, tzinfo=timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def _enable_isolated_member_credit_spending(monkeypatch) -> None:
+    monkeypatch.setenv('GSN_PAYMENT_OPERATIONS_ENABLED', '1')
 
 
 def _seed_spotlight_foundation() -> tuple[int, int]:
@@ -90,6 +98,12 @@ def _seed_spotlight_foundation() -> tuple[int, int]:
             )
         )
     with SessionLocal() as db:
+        db.add(
+            UserSettings(
+                user_id=1,
+                member_credit_service_permissions_json='{"spotlight.single_day":true}',
+            )
+        )
         pack = MemberCreditPackVersion(
             pack_code="synthetic.integration.pack",
             version=1,
@@ -255,6 +269,111 @@ def test_internal_synthetic_accounting_to_spotlight_journey(monkeypatch) -> None
         assert len(provider_cost_entries) == 1
         assert provider_cost_entries[0].credit_amount == Decimal("9.00")
         assert provider_cost_entries[0].balance_after == Decimal("9.00")
+
+
+def test_permission_and_payment_suspension_are_rechecked_before_member_credit_debit(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("GSN_MEMBER_CREDIT_SPOTLIGHT_WRITES_ENABLED", "1")
+    pack_id, service_id = _seed_spotlight_foundation()
+    with SessionLocal() as db:
+        account_id = _award_one_credit(db, pack_id=pack_id)
+        set_member_credit_service_permission(
+            db,
+            member_user_id=1,
+            service_code="spotlight.single_day",
+            enabled=False,
+        )
+        with pytest.raises(MemberCreditError, match="member_credit_service_permission_required"):
+            spotlight_spend.activate_single_day_spotlight(
+                db,
+                member_user_id=1,
+                service_version_id=service_id,
+                funding_source="member_credit",
+                shop_id=1,
+                product_id=1,
+                placement_clan_ids=[1],
+                message="Permission recheck",
+                image_url=None,
+                video_url=None,
+                idempotency_key="permission-gated-spend",
+                now=ACTIVATED_AT,
+                commit=True,
+            )
+        assert db.get(MemberServiceCreditAccount, account_id).balance_units == 1
+        assert db.query(MemberCreditServiceSpendOrder).count() == 0
+
+        set_member_credit_service_permission(
+            db,
+            member_user_id=1,
+            service_code="spotlight.single_day",
+            enabled=True,
+        )
+        monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "0")
+        with pytest.raises(PaymentOperationsSuspended):
+            spotlight_spend.activate_single_day_spotlight(
+                db,
+                member_user_id=1,
+                service_version_id=service_id,
+                funding_source="member_credit",
+                shop_id=1,
+                product_id=1,
+                placement_clan_ids=[1],
+                message="Permission recheck",
+                image_url=None,
+                video_url=None,
+                idempotency_key="permission-gated-spend",
+                now=ACTIVATED_AT,
+                commit=True,
+            )
+        assert db.get(MemberServiceCreditAccount, account_id).balance_units == 1
+        assert db.query(MemberCreditServiceSpendOrder).count() == 0
+
+        monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+        result = spotlight_spend.activate_single_day_spotlight(
+            db,
+            member_user_id=1,
+            service_version_id=service_id,
+            funding_source="member_credit",
+            shop_id=1,
+            product_id=1,
+            placement_clan_ids=[1],
+            message="Permission recheck",
+            image_url=None,
+            video_url=None,
+            idempotency_key="permission-gated-spend",
+            now=ACTIVATED_AT,
+            commit=True,
+        )
+        assert result.deduped is False
+        assert db.get(MemberServiceCreditAccount, account_id).balance_units == 0
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 2
+
+        set_member_credit_service_permission(
+            db,
+            member_user_id=1,
+            service_code="spotlight.single_day",
+            enabled=False,
+        )
+        replay = spotlight_spend.activate_single_day_spotlight(
+            db,
+            member_user_id=1,
+            service_version_id=service_id,
+            funding_source="member_credit",
+            shop_id=1,
+            product_id=1,
+            placement_clan_ids=[1],
+            message="Permission recheck",
+            image_url=None,
+            video_url=None,
+            idempotency_key="permission-gated-spend",
+            now=ACTIVATED_AT + timedelta(minutes=1),
+            commit=True,
+        )
+        assert replay.deduped is True
+        assert replay.campaign_id == result.campaign_id
+        assert db.get(MemberServiceCreditAccount, account_id).balance_units == 0
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 2
 
 
 def test_member_credit_spotlight_writer_is_disabled_by_default(monkeypatch) -> None:

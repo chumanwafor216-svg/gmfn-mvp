@@ -6092,6 +6092,162 @@ export async function resetMySettings(): Promise<MySettingsPayload> {
   return next;
 }
 
+export type MemberCreditLedgerEntry = {
+  id: number;
+  units_delta: number;
+  balance_after: number;
+  entry_type: string;
+  reference_type: string;
+  reference_id: string;
+  created_at: string;
+};
+
+export type MemberCreditSelf = {
+  member_user_id: number;
+  account_status: string;
+  balance_units: number;
+  entries: MemberCreditLedgerEntry[];
+};
+
+export type MemberCreditPackCatalogueItem = {
+  pack_version_id: number;
+  pack_code: string;
+  catalog_version: number;
+  credit_units: number;
+  amount_minor: number;
+  currency: string;
+  terms_json?: string | null;
+};
+
+export type MemberCreditServiceCatalogueItem = {
+  service_version_id: number;
+  service_code: string;
+  catalog_version: number;
+  service_name: string;
+  scope: string;
+  workflow_url: string;
+  credit_cost: number;
+  duration_seconds: number;
+  permission_enabled: boolean;
+  spending_enabled: boolean;
+  balance_units: number;
+  resulting_balance_units: number;
+  has_sufficient_balance: boolean;
+};
+
+export type MemberCreditCatalogue = {
+  member_user_id: number;
+  balance_units: number;
+  purchase_operations_enabled: boolean;
+  spending_operations_enabled: boolean;
+  catalogue_mode: string;
+  packs: MemberCreditPackCatalogueItem[];
+  services: MemberCreditServiceCatalogueItem[];
+};
+
+export type MemberCreditPurchaseQuote = {
+  quote_key: string;
+  pack_code: string;
+  catalog_version: number;
+  credit_units: number;
+  amount_minor: number;
+  currency: string;
+  terms_json?: string | null;
+  status: string;
+  expires_at: string;
+  created_at: string;
+};
+
+export type MemberCreditPaymentReceipt = {
+  provider_transaction_id: string;
+  amount_minor: number;
+  currency: string;
+  verification_status: string;
+  exception_code?: string | null;
+  received_at: string;
+  settled_at?: string | null;
+};
+
+export type MemberCreditPurchaseStatus = {
+  order_key: string;
+  status: string;
+  amount_minor: number;
+  currency: string;
+  credit_units: number;
+  funded_minor: number;
+  collection_reference?: string | null;
+  provider_session_id?: string | null;
+  collection_action_url?: string | null;
+  award_error?: string | null;
+  balance_units: number;
+  receipts: MemberCreditPaymentReceipt[];
+};
+
+export async function getMyMemberCredits(limit: number = 20): Promise<MemberCreditSelf> {
+  return httpJson(`/member-credits/me${buildQuery({ limit })}`, "GET", undefined, {
+    header_clan_id: null,
+  });
+}
+
+export async function getMyMemberCreditCatalogue(): Promise<MemberCreditCatalogue> {
+  return httpJson("/member-credits/catalogue", "GET", undefined, {
+    header_clan_id: null,
+  });
+}
+
+export async function listMyMemberCreditPurchases(): Promise<MemberCreditPurchaseStatus[]> {
+  return httpJson("/member-credits/me/purchases", "GET", undefined, {
+    header_clan_id: null,
+  });
+}
+
+export async function createMyMemberCreditPurchaseQuote(
+  packVersionId: number,
+  idempotencyKey: string
+): Promise<MemberCreditPurchaseQuote> {
+  return httpJson(
+    "/member-credits/purchase-quotes",
+    "POST",
+    { pack_version_id: packVersionId, idempotency_key: idempotencyKey },
+    { header_clan_id: null }
+  );
+}
+
+export async function confirmMyMemberCreditPurchase(
+  quoteKey: string,
+  idempotencyKey: string
+): Promise<MemberCreditPurchaseStatus> {
+  return httpJson(
+    "/member-credits/purchases",
+    "POST",
+    { quote_key: quoteKey, idempotency_key: idempotencyKey },
+    { header_clan_id: null }
+  );
+}
+
+export async function checkMyMemberCreditPurchase(
+  orderKey: string
+): Promise<MemberCreditPurchaseStatus> {
+  return httpJson(
+    `/member-credits/purchases/${encodeURIComponent(orderKey)}/check-payment`,
+    "POST",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function setMyMemberCreditServicePermission(
+  serviceCode: string,
+  enabled: boolean
+): Promise<{ service_code: string; enabled: boolean }> {
+  return httpJson(
+    `/member-credits/service-permissions/${encodeURIComponent(serviceCode)}`,
+    "PATCH",
+    { enabled },
+    { header_clan_id: null }
+  );
+}
+
 export async function markNotificationRead(notificationId: number): Promise<any> {
   return httpJson(
     `/notifications/me/${encodeURIComponent(String(notificationId))}/read`,

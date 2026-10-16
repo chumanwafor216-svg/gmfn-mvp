@@ -4,6 +4,7 @@ import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
+import MyPipelineCreditsSection from "../components/MyPipelineCreditsSection";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -3131,6 +3132,11 @@ export default function MyGMFNAndIPage() {
                     </div>
                   </div>
                 ) : null}
+
+                <MyPipelineCreditsSection
+                  isCompact={isCompact}
+                  selectedCommunityId={selectedOrFirstCommunityId || null}
+                />
 
                 <details
                   data-my-gsn-more="secondary"

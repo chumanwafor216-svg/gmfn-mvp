@@ -198,6 +198,7 @@ First-screen order:
 - identity first;
 - community portfolio from `listMyClans`, including community name, stable/global id, role/status, selected indicator, and Community Home handoff;
 - compact attention summary only when there is a real attention signal, source failure, or loading state, with Notifications/DemandBox handoffs for full queues;
+- one closed `My Pipeline Credits` disclosure showing the authenticated member's personal balance in its summary; opening it reveals only server-catalogued packs and supported services, one explicit purchase confirmation, saved future-use permissions, and personal purchase/activity status;
 - compact selected-community shop/business handoff only, with Shop Control owning products, diary, Spotlight, Vault, and analytics;
 - compact trust/evidence handoff only, with Trust Passport and TrustSlip owning detail;
 - settings/account entry, with current frontend settings labelled as device preferences unless they are intentionally connected to backend `/settings/me`;
@@ -209,6 +210,9 @@ Rules:
 - Community Home owns one selected community. My GSN owns the cross-community personal portfolio.
 - Profile tab must open the canonical member home, not the historical guide-first branch.
 - Do not revive the old standalone `ProfilePage.tsx`; treat it as deprecated/unmounted source until a later deletion audit.
+- The approved Pipeline Credit disclosure must stay in-place and collapsed by default. It must not become a page, navigation item, community/provider-cost balance, automatic renewal surface, or substitute for Shop Control. Service names may hand off only to server-authorised existing workflows with selected-community context.
+- Service ON/OFF means permission for a future personal-credit-funded purchase only. New permissions default OFF; toggling has no financial effect; the server rechecks the saved choice when a debit commits; and global payment suspension overrides ON without restricting an existing free action.
+- Pack identifiers, service identifiers, prices, scope, duration, cost, balance, projected balance, purchase state, and Checkout destination are server-owned. A Checkout return or client action must never claim payment or award completion.
 - On phones, keep the default member home factual and compact: show identity facts in a two-column grid, the selected community, one primary `Open community` action, and conditional attention only when there is a real signal or loading/source failure.
 - On phones, the default identity grid shows only `GSN ID` and `Phone`; the duplicate `Handle` fact and `Copy handle` utility live under `More` -> `Account`. Desktop keeps all three identity facts and the visible copy utility.
 - On phones, keep those two identity fact cards text-first and no taller than needed for two value lines; do not spend their narrow width on repeated decorative fact icons. Desktop keeps the richer icon treatment.

@@ -57,6 +57,14 @@ class ServiceQuoteOut(BaseModel):
     funding_source_required: bool
     selected_funding_source: Optional[str] = None
     activation_performed: bool
+    service_name: str
+    scope: str
+    workflow_url: str
+    balance_units: int
+    resulting_balance_units: int
+    permission_enabled: bool
+    spending_enabled: bool
+    has_sufficient_balance: bool
 
 
 class PurchaseConfirmIn(BaseModel):
@@ -88,3 +96,49 @@ class PurchaseStatusOut(BaseModel):
     award_error: Optional[str] = None
     balance_units: int
     receipts: list[PaymentReceiptOut] = Field(default_factory=list)
+
+
+class MemberCreditPackCatalogueItemOut(BaseModel):
+    pack_version_id: int
+    pack_code: str
+    catalog_version: int
+    credit_units: int
+    amount_minor: int
+    currency: str
+    terms_json: Optional[str] = None
+
+
+class MemberCreditServiceCatalogueItemOut(BaseModel):
+    service_version_id: int
+    service_code: str
+    catalog_version: int
+    service_name: str
+    scope: str
+    workflow_url: str
+    credit_cost: int
+    duration_seconds: int
+    permission_enabled: bool
+    spending_enabled: bool
+    balance_units: int
+    resulting_balance_units: int
+    has_sufficient_balance: bool
+
+
+class MemberCreditCatalogueOut(BaseModel):
+    member_user_id: int
+    balance_units: int
+    purchase_operations_enabled: bool
+    spending_operations_enabled: bool
+    catalogue_mode: str
+    packs: list[MemberCreditPackCatalogueItemOut] = Field(default_factory=list)
+    services: list[MemberCreditServiceCatalogueItemOut] = Field(default_factory=list)
+
+
+class MemberCreditServicePermissionIn(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    enabled: bool
+
+
+class MemberCreditServicePermissionOut(BaseModel):
+    service_code: str
+    enabled: bool

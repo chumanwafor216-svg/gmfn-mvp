@@ -9,13 +9,18 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import User
 from app.schemas.member_credits import (
+    MemberCreditCatalogueOut,
     MemberCreditSelfOut,
+    MemberCreditServicePermissionIn,
+    MemberCreditServicePermissionOut,
     PurchaseConfirmIn,
     PurchaseQuoteCreateIn,
     PurchaseQuoteOut,
     PurchaseStatusOut,
     ServiceQuoteOut,
 )
+from app.services.member_credit_catalogue_service import get_member_credit_catalogue
+from app.services.member_credit_permissions import set_member_credit_service_permission
 from app.services.member_credit_service import MemberCreditError, create_service_quote, get_member_credit_self
 from app.services.member_credit_purchase_service import (
     CollectionAdapter,
@@ -63,7 +68,12 @@ def _raise_api_error(exc: Exception) -> None:
     code = str(getattr(exc, "code", type(exc).__name__))
     if code in {"purchase_quote_not_found", "purchase_order_not_found"}:
         raise HTTPException(status_code=404, detail=code) from exc
-    if code in {"synthetic_member_credit_runtime_not_enabled", "pack_version_not_available"}:
+    if code in {
+        "synthetic_member_credit_runtime_not_enabled",
+        "pack_version_not_available",
+        "member_credit_service_not_available",
+        "member_credit_service_not_supported",
+    }:
         raise HTTPException(status_code=404, detail=code) from exc
     if code == "member_credit_collection_provider_not_configured" or code.endswith("_required"):
         raise HTTPException(status_code=503, detail=code) from exc
@@ -76,6 +86,40 @@ def read_my_member_credits(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
     return get_member_credit_self(db, member_user_id=int(current_user.id), limit=limit)
+
+
+@router.get('/catalogue', response_model=MemberCreditCatalogueOut)
+def read_my_member_credit_catalogue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_member_credit_catalogue(db, member_user_id=int(current_user.id))
+
+
+@router.patch(
+    '/service-permissions/{service_code}',
+    response_model=MemberCreditServicePermissionOut,
+)
+def update_my_member_credit_service_permission(
+    payload: MemberCreditServicePermissionIn,
+    service_code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    catalogue = get_member_credit_catalogue(db, member_user_id=int(current_user.id))
+    available_codes = {str(row['service_code']) for row in catalogue['services']}
+    if str(service_code) not in available_codes:
+        _raise_api_error(MemberCreditError('member_credit_service_not_available'))
+    try:
+        permissions = set_member_credit_service_permission(
+            db,
+            member_user_id=int(current_user.id),
+            service_code=str(service_code),
+            enabled=bool(payload.enabled),
+        )
+        return {'service_code': str(service_code), 'enabled': permissions[str(service_code)]}
+    except MemberCreditError as exc:
+        _raise_api_error(exc)
 
 
 @router.post("/purchase-quotes", response_model=PurchaseQuoteOut)

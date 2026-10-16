@@ -25,7 +25,9 @@ from app.db.models import (
     SpotlightContentVersion,
 )
 from app.services.feature_entitlements_service import consume_feature_units
+from app.services.member_credit_permissions import require_member_credit_service_permission
 from app.services.member_credit_service import MemberCreditError, request_fingerprint
+from app.services.payment_operations_policy import require_payment_operations_enabled
 from app.services.spotlight_lifecycle_service import activation_expiry, authorized_expiry
 from app.services.spotlight_pacing_state_service import get_or_create_spotlight_campaign_pacing_state
 
@@ -185,6 +187,13 @@ def activate_single_day_spotlight(
     expires = activation_expiry(current, authorized_days=1)
     try:
         with db.begin_nested():
+            if source == 'member_credit':
+                require_payment_operations_enabled()
+                require_member_credit_service_permission(
+                    db,
+                    member_user_id=int(member_user_id),
+                    service_code=str(service.service_code),
+                )
             db.add(spend)
             db.flush()
             if source == "member_credit":

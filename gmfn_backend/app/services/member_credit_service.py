@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
@@ -20,6 +21,11 @@ from app.db.member_credit_models import (
     MemberServiceCreditAccount,
     MemberServiceCreditLedgerEntry,
 )
+from app.services.member_credit_permissions import (
+    MEMBER_CREDIT_SERVICE_CONTRACTS,
+    get_member_credit_service_permissions,
+)
+from app.services.payment_operations_policy import payment_operations_enabled
 
 
 class MemberCreditError(RuntimeError):
@@ -84,6 +90,29 @@ def create_service_quote(
     service = db.get(MemberCreditServiceVersion, int(service_version_id))
     if service is None or str(service.status) != "test_active":
         raise MemberCreditError("service_version_not_test_active")
+    contract = MEMBER_CREDIT_SERVICE_CONTRACTS.get(str(service.service_code)) or {
+        'service_name': str(service.service_code),
+        'scope': 'Test-only quote contract. No service activation is attached.',
+        'workflow_url': '/app/my-gmfn-and-i',
+    }
+    account = (
+        db.query(MemberServiceCreditAccount)
+        .filter(MemberServiceCreditAccount.member_user_id == int(member_user_id))
+        .one_or_none()
+    )
+    balance = int(account.balance_units) if account is not None else 0
+    permissions = get_member_credit_service_permissions(
+        db,
+        member_user_id=int(member_user_id),
+        service_codes=[str(service.service_code)],
+    )
+    writer_enabled = bool(
+        str(service.service_code) in MEMBER_CREDIT_SERVICE_CONTRACTS
+        and str(os.getenv('GSN_MEMBER_CREDIT_SPOTLIGHT_WRITES_ENABLED', ''))
+        .strip()
+        .lower()
+        in {'1', 'true', 'yes', 'on'}
+    )
     quoted_at = _aware(now)
     valid_until = quoted_at + timedelta(minutes=15)
     payload = {
@@ -97,6 +126,21 @@ def create_service_quote(
     payload["funding_source_required"] = True
     payload["selected_funding_source"] = None
     payload["activation_performed"] = False
+    payload['service_name'] = str(contract['service_name'])
+    payload['scope'] = str(contract['scope'])
+    payload['workflow_url'] = str(contract['workflow_url'])
+    payload['balance_units'] = balance
+    payload['resulting_balance_units'] = max(0, balance - int(service.credit_cost))
+    payload['permission_enabled'] = bool(
+        permissions.get(str(service.service_code), False)
+    )
+    payload['spending_enabled'] = bool(
+        payment_operations_enabled()
+        and writer_enabled
+        and payload['permission_enabled']
+        and balance >= int(service.credit_cost)
+    )
+    payload['has_sufficient_balance'] = balance >= int(service.credit_cost)
     return payload
 
 
