@@ -15,6 +15,7 @@ import {
   getCurrentClan,
   getMarketplaceBroadcasts,
   getMarketplaceShopFollowStatus,
+  getMarketplaceShopSpotlightStatus,
   getPublicShopSpotlightOpportunity,
   listMyClans,
   getMe,
@@ -87,6 +88,22 @@ type ShopFollowState = {
   followerCount: number;
   loading: boolean;
   busy: boolean;
+};
+
+type OwnerSpotlightInspection = {
+  state: string;
+  campaign: {
+    campaign_id?: number;
+    status?: string;
+    serving_status?: string;
+    content_version?: number;
+    activated_at?: string | null;
+    authorized_expires_at?: string | null;
+  } | null;
+  item: any | null;
+  counts_as_delivery?: boolean;
+  counts_as_exposure?: boolean;
+  delivery_exhausted?: boolean;
 };
 
 type ShopProduct = {
@@ -1249,6 +1266,15 @@ function spotlightBroadcastSortValue(item: ShopBroadcast | null): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function formatSpotlightInspectionTime(value: unknown): string {
+  const timestamp = new Date(String(value || "")).getTime();
+  if (!Number.isFinite(timestamp)) return "";
+  return new Date(timestamp).toLocaleString([], {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 function splitSpotlightMessage(raw: any): {
   summary: string;
   tagLabel: string;
@@ -1825,7 +1851,19 @@ export default function ShopGalleryPage() {
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
   );
+  const [ownerSpotlightInspection, setOwnerSpotlightInspection] =
+    useState<OwnerSpotlightInspection | null>(null);
   const autoRefreshAttemptedRef = useRef("");
+  const signedInRouteIsOwner = Boolean(
+    getAccessToken() &&
+      signedInGmfnId &&
+      gmfnId &&
+      ownerSurfaceIdentityMatches(signedInGmfnId, gmfnId)
+  );
+  const ownerSpotlightInspectionMode = signedInRouteIsOwner;
+  const ownerSpotlightPreviewAuthorized = Boolean(
+    ownerSpotlightPreviewRequested && signedInRouteIsOwner
+  );
 
   const forceOwnerReconnect = useCallback(() => {
     autoRefreshAttemptedRef.current = "";
@@ -1860,26 +1898,48 @@ export default function ShopGalleryPage() {
   }, [notice]);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      setSignedInGmfnId("");
-      return;
+    if (typeof window === "undefined") return;
+    let alive = true;
+    let refreshFrame: number | null = null;
+
+    async function refreshSignedInIdentity() {
+      if (!getAccessToken()) {
+        if (alive) setSignedInGmfnId("");
+        return;
+      }
+
+      const meRes = await getMe().catch(() => null);
+      if (!alive) return;
+      setSignedInGmfnId(
+        firstMeaningful(meRes?.gmfn_id, meRes?.gmfnId, getStoredGmfnId())
+      );
     }
 
-    let alive = true;
-
-    getMe()
-      .then((meRes) => {
-        if (!alive) return;
-        setSignedInGmfnId(
-          firstMeaningful(meRes?.gmfn_id, meRes?.gmfnId, getStoredGmfnId())
-        );
-      })
-      .catch(() => {
-        if (alive) setSignedInGmfnId(getStoredGmfnId() || "");
+    function scheduleIdentityRefresh() {
+      if (refreshFrame !== null) return;
+      refreshFrame = window.requestAnimationFrame(() => {
+        refreshFrame = null;
+        void refreshSignedInIdentity();
       });
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") scheduleIdentityRefresh();
+    }
+
+    scheduleIdentityRefresh();
+    window.addEventListener("focus", scheduleIdentityRefresh);
+    window.addEventListener("storage", scheduleIdentityRefresh);
+    window.addEventListener("GSN_AUTH_SESSION_CHANGED", scheduleIdentityRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       alive = false;
+      window.removeEventListener("focus", scheduleIdentityRefresh);
+      window.removeEventListener("storage", scheduleIdentityRefresh);
+      window.removeEventListener("GSN_AUTH_SESSION_CHANGED", scheduleIdentityRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (refreshFrame !== null) window.cancelAnimationFrame(refreshFrame);
     };
   }, [shopReconnectRetryKey]);
 
@@ -1935,7 +1995,8 @@ export default function ShopGalleryPage() {
       clanRes: any,
       cleanedGmfnId: string,
       viewerSpotlightRows?: any[] | null,
-      publicDiaryRows?: ShopDiaryEntryRecord[] | null
+      publicDiaryRows?: ShopDiaryEntryRecord[] | null,
+      ownerInspection?: OwnerSpotlightInspection | null
     ) {
       const normalizedShop = normalizeShop(
         publicShopRes?.item || publicShopRes,
@@ -1988,16 +2049,17 @@ export default function ShopGalleryPage() {
         publicShopRes?.primaryBroadcast,
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
+      const ownerInspectionBroadcast = normalizeBroadcast(ownerInspection?.item);
       const spotlightBroadcasts =
-        Array.isArray(viewerSpotlightRows)
+        ownerSpotlightInspectionMode
+          ? ownerInspectionBroadcast
+            ? [ownerInspectionBroadcast]
+            : []
+          : Array.isArray(viewerSpotlightRows)
           ? viewerSpotlightRows
           : publicBroadcasts;
 
-      const relevantBroadcast =
-        (publicShopRes?.primary_broadcast
-          ? normalizeBroadcast(publicShopRes?.primary_broadcast)
-          : null) ||
-        publicBroadcasts
+      const publicOwnerBroadcast = publicBroadcasts
           .map((row) => normalizeBroadcast(row))
           .filter(Boolean)
           .filter(broadcastIsActive)
@@ -2009,6 +2071,9 @@ export default function ShopGalleryPage() {
                 authorGmfnId.toUpperCase() === relevantGmfnId.toUpperCase()
             );
           }) || null;
+      const relevantBroadcast = ownerSpotlightInspectionMode
+        ? ownerInspectionBroadcast
+        : publicOwnerBroadcast;
 
       if (!alive) return;
       const normalizedBroadcasts = spotlightBroadcasts
@@ -2024,27 +2089,20 @@ export default function ShopGalleryPage() {
           if (timeDelta !== 0) return timeDelta;
           return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
         }) as ShopBroadcast[];
-      const ownerPreviewSpotlight = ownerSpotlightPreviewRequested && relevantBroadcast
+      const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast
         ? normalizedBroadcasts.find(
             (item) => spotlightBroadcastKey(item) === spotlightBroadcastKey(relevantBroadcast)
           ) || relevantBroadcast
         : null;
-      const rotationBroadcasts = ownerPreviewSpotlight
-        ? [
-            ownerPreviewSpotlight,
-            ...buildSpotlightRotationQueue(
-              normalizedBroadcasts.filter(
-                (item) => spotlightBroadcastKey(item) !== spotlightBroadcastKey(ownerPreviewSpotlight)
-              )
-            ),
-          ]
+      const rotationBroadcasts = ownerInspectionSpotlight
+        ? [ownerInspectionSpotlight]
         : buildSpotlightRotationQueue(normalizedBroadcasts);
       const currentSpotlight =
         communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
         communitySpotlightsRef.current[0] ||
         null;
       const currentKey = spotlightBroadcastKey(currentSpotlight);
-      const matchedSpotlightIndex = ownerPreviewSpotlight
+      const matchedSpotlightIndex = ownerInspectionSpotlight
         ? 0
         : currentKey
         ? normalizedBroadcasts.findIndex(
@@ -2064,6 +2122,9 @@ export default function ShopGalleryPage() {
           : []
       );
       setBroadcast(relevantBroadcast);
+      setOwnerSpotlightInspection(
+        ownerSpotlightInspectionMode ? ownerInspection || null : null
+      );
       setCommunitySpotlights(rotationBroadcasts);
       setMiniSpotlightIndex(
         rotationBroadcasts.length <= 0
@@ -2126,7 +2187,7 @@ export default function ShopGalleryPage() {
 
       const canRequestCanonicalPresentation =
         safeStr(cleanedGmfnId) &&
-        !ownerSpotlightPreviewRequested &&
+        !ownerSpotlightInspectionMode &&
         (typeof document === "undefined" || document.visibilityState === "visible");
 
       if (canRequestCanonicalPresentation) {
@@ -2149,6 +2210,40 @@ export default function ShopGalleryPage() {
         : [];
 
       return items.length > 0 ? items : null;
+    }
+
+    async function loadOwnerSpotlightInspection(
+      publicShopRes: any
+    ): Promise<OwnerSpotlightInspection | null> {
+      if (!ownerSpotlightInspectionMode) return null;
+
+      const shopId = positiveNumber(
+        publicShopRes?.item?.id || publicShopRes?.shop?.id || publicShopRes?.shop_id
+      );
+      if (!shopId) {
+        return {
+          state: "unavailable",
+          campaign: null,
+          item: null,
+          counts_as_delivery: false,
+          counts_as_exposure: false,
+        };
+      }
+
+      const statusRes = await getMarketplaceShopSpotlightStatus(shopId).catch(
+        () => null
+      );
+      const inspection = statusRes?.owner_spotlight_inspection;
+      if (inspection && typeof inspection === "object") {
+        return inspection as OwnerSpotlightInspection;
+      }
+      return {
+        state: "unavailable",
+        campaign: null,
+        item: null,
+        counts_as_delivery: false,
+        counts_as_exposure: false,
+      };
     }
 
     async function refreshOwnerShop(cleanedGmfnId: string, clanRes: any) {
@@ -2233,10 +2328,16 @@ export default function ShopGalleryPage() {
         let publicShopRes: any = null;
         let viewerSpotlightRows: any[] | null = null;
         let publicDiaryRows: ShopDiaryEntryRecord[] | null = null;
+        let ownerInspection: OwnerSpotlightInspection | null = null;
 
         try {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
-          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          if (ownerSpotlightInspectionMode) {
+            ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
+            viewerSpotlightRows = [];
+          } else {
+            viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          }
           publicDiaryRows = await loadPublicShopDiaryRows(cleanedGmfnId, publicShopRes);
         } catch (err: any) {
           const message = safeStr(err?.message);
@@ -2249,7 +2350,12 @@ export default function ShopGalleryPage() {
               useCommunityScope: false,
             }).catch(() => null);
             if (publicShopRes) {
-              viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+              if (ownerSpotlightInspectionMode) {
+                ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
+                viewerSpotlightRows = [];
+              } else {
+                viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+              }
               publicDiaryRows = await loadPublicShopDiaryRows(
                 cleanedGmfnId,
                 publicShopRes,
@@ -2260,7 +2366,8 @@ export default function ShopGalleryPage() {
                 clanRes,
                 effectiveGmfnId,
                 viewerSpotlightRows,
-                publicDiaryRows
+                publicDiaryRows,
+                ownerInspection
               );
               return;
             }
@@ -2290,7 +2397,12 @@ export default function ShopGalleryPage() {
           effectiveGmfnId = refreshedGmfnId;
           replacePublicShopAddress(refreshedGmfnId);
           publicShopRes = await loadPublicShop(effectiveGmfnId);
-          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          if (ownerSpotlightInspectionMode) {
+            ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
+            viewerSpotlightRows = [];
+          } else {
+            viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          }
           publicDiaryRows = await loadPublicShopDiaryRows(effectiveGmfnId, publicShopRes);
           if (alive) {
             setNotice({
@@ -2307,7 +2419,8 @@ export default function ShopGalleryPage() {
           clanRes,
           effectiveGmfnId,
           viewerSpotlightRows,
-          publicDiaryRows
+          publicDiaryRows,
+          ownerInspection
         );
       } catch (err: any) {
         if (!alive) return;
@@ -2358,7 +2471,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [explicitRouteClanId, gmfnId, ownerSpotlightPreviewRequested, routeClanId, routeDiaryEntryId, routeProductId, shopReconnectRetryKey]);
+  }, [explicitRouteClanId, gmfnId, ownerSpotlightInspectionMode, routeClanId, routeDiaryEntryId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -2891,8 +3004,91 @@ export default function ShopGalleryPage() {
     };
   }, [miniSpotlight]);
 
+  const ownerSpotlightStatusView = useMemo(() => {
+    if (!ownerSpotlightInspectionMode) return null;
+
+    const state = safeStr(ownerSpotlightInspection?.state || "unavailable").toLowerCase();
+    const campaign = ownerSpotlightInspection?.campaign || null;
+    const activatedAt = formatSpotlightInspectionTime(campaign?.activated_at);
+    const expiresAt = formatSpotlightInspectionTime(campaign?.authorized_expires_at);
+    const entryLabel = ownerSpotlightPreviewAuthorized ? "Owner preview" : "Your Spotlight";
+
+    if (state === "live" && miniSpotlight) {
+      return {
+        state,
+        label: `${entryLabel} · Live`,
+        title: miniSpotlightView.title,
+        detail: [
+          activatedAt ? `Started ${activatedAt}.` : "",
+          expiresAt ? `Expires ${expiresAt}.` : "",
+          "Owner inspection does not count as delivery or exposure.",
+        ].filter(Boolean).join(" "),
+      };
+    }
+    if (state === "delivery_exhausted" && miniSpotlight) {
+      return {
+        state,
+        label: `${entryLabel} · Delivery complete`,
+        title: miniSpotlightView.title,
+        detail: `${expiresAt ? `Saved until ${expiresAt}. ` : ""}The current delivery-opportunity counter is exhausted, so GSN is not issuing new Spotlight presentations. This is not an impression guarantee.`,
+      };
+    }
+    if (state === "correction_hold") {
+      return {
+        state,
+        label: `${entryLabel} · Off-air`,
+        title: "Spotlight is on correction hold",
+        detail: `${expiresAt ? `Original expiry remains ${expiresAt}. ` : ""}Time continues while the campaign is off-air.`,
+      };
+    }
+    if (state === "withdrawn") {
+      return {
+        state,
+        label: `${entryLabel} · Withdrawn`,
+        title: "Spotlight was permanently removed",
+        detail: "It is no longer delivered. This owner view has not republished or reactivated it.",
+      };
+    }
+    if (state === "expired") {
+      return {
+        state,
+        label: `${entryLabel} · Expired`,
+        title: "Spotlight has expired",
+        detail: `${expiresAt ? `Expired ${expiresAt}. ` : ""}Opening Preview cannot restart its clock.`,
+      };
+    }
+    if (state === "none") {
+      return {
+        state,
+        label: `${entryLabel} · None saved`,
+        title: "No saved Spotlight campaign",
+        detail: "No campaign is attached to this shop. Shop Diary entries remain separate.",
+      };
+    }
+    if (state === "not_serving") {
+      return {
+        state,
+        label: `${entryLabel} · Not serving`,
+        title: "Spotlight is not currently being shown",
+        detail: "The saved campaign remains recorded, but no eligible placement is serving. This owner view has not reactivated it.",
+      };
+    }
+    return {
+      state: "unavailable",
+      label: `${entryLabel} · Status unavailable`,
+      title: "Spotlight status could not be confirmed",
+      detail: "GSN is not showing cached campaign content. Refresh or use Shop Control when the connection returns.",
+    };
+  }, [
+    miniSpotlight,
+    miniSpotlightView.title,
+    ownerSpotlightInspection,
+    ownerSpotlightInspectionMode,
+    ownerSpotlightPreviewAuthorized,
+  ]);
+
   useEffect(() => {
-    if (loading || error || !miniSpotlight || ownerSpotlightPreviewRequested) return;
+    if (loading || error || !miniSpotlight || ownerSpotlightInspectionMode) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
 
@@ -3062,7 +3258,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
     };
-  }, [error, gmfnId, loading, miniSpotlight, ownerSpotlightPreviewRequested, trackMarketplaceAttention]);
+  }, [error, gmfnId, loading, miniSpotlight, ownerSpotlightInspectionMode, trackMarketplaceAttention]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 
@@ -5458,7 +5654,13 @@ export default function ShopGalleryPage() {
               listStyle: "none",
             }}
           >
-            <span>{routeDiaryEntryId > 0 ? "Shared shop update" : "More from this shop"}</span>
+            <span>
+              {routeDiaryEntryId > 0
+                ? "Shared shop update"
+                : ownerSpotlightStatusView
+                ? ownerSpotlightStatusView.label
+                : "More from this shop"}
+            </span>
             <span aria-hidden="true">{routeDiaryEntryId > 0 || shopMoreOpen ? "-" : "+"}</span>
           </StableDisclosureSummary>
           <div style={{ display: "grid", gap: isCompact ? 10 : 14, marginTop: isCompact ? 9 : 0 }}>
@@ -5476,6 +5678,9 @@ export default function ShopGalleryPage() {
             ref={spotlightRailRef}
             className="public-shop-section public-shop-spotlight"
             data-spotlight-canonical={miniSpotlight?.isCanonicalOpportunity ? "true" : "false"}
+            data-owner-spotlight-inspection={
+              ownerSpotlightStatusView?.state || "visitor"
+            }
             onPointerEnter={pauseSpotlightPresentationRotation}
             onPointerDown={pauseSpotlightPresentationRotation}
             onFocusCapture={() => {
@@ -5570,7 +5775,9 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
-                    {publicShopSpotlightActive
+                    {ownerSpotlightStatusView
+                      ? ownerSpotlightStatusView.label
+                      : publicShopSpotlightActive
                       ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
                       : "Spotlight"}
                   </span>
@@ -5621,10 +5828,25 @@ export default function ShopGalleryPage() {
                     wordBreak: "normal",
                   }}
                 >
-                  {publicShopSpotlightActive
+                  {ownerSpotlightStatusView
+                    ? ownerSpotlightStatusView.title
+                    : publicShopSpotlightActive
                     ? miniSpotlightView.title
                     : "Discover what's new"}
                 </div>
+                {isCompact && ownerSpotlightStatusView ? (
+                  <div
+                    data-owner-spotlight-status-detail="true"
+                    style={{
+                      color: "#425E78",
+                      fontSize: 11.5,
+                      lineHeight: 1.35,
+                      fontWeight: 720,
+                    }}
+                  >
+                    {ownerSpotlightStatusView.detail}
+                  </div>
+                ) : null}
                 {!isCompact ? (
                   <div
                     style={{
@@ -5640,7 +5862,9 @@ export default function ShopGalleryPage() {
                       WebkitBoxOrient: "vertical" as any,
                     }}
                   >
-                    {publicShopSpotlightActive
+                    {ownerSpotlightStatusView
+                      ? ownerSpotlightStatusView.detail
+                      : publicShopSpotlightActive
                       ? miniSpotlightView.detail
                       : "Fresh items, hot deals, and public shop updates."}
                   </div>

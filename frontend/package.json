@@ -169,6 +169,7 @@
     "smoke:finance-simple-phone": "node tools/smoke-finance-simple-phone.mjs",
     "smoke:shop-assets-slot-replacement": "node tools/smoke-shop-assets-slot-replacement.mjs",
     "smoke:shop-gallery-slot-replacement": "node tools/smoke-shop-gallery-slot-replacement.mjs",
+    "smoke:spotlight-owner-visibility": "node tools/smoke-spotlight-owner-visibility.mjs",
     "smoke:evidence-display-boundary-batch": "node tools/smoke-evidence-display-boundary-batch.mjs",
     "smoke:community-confirmation-outcome-boundary": "node tools/smoke-community-confirmation-outcome-boundary.mjs",
     "smoke:community-verification-boundary": "node tools/smoke-community-verification-boundary.mjs",

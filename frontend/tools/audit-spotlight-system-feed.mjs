@@ -89,7 +89,7 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /const currentLiveSpotlightIsPaid =[\s\S]*?currentActiveSpotlight\?\.priority_mode[\s\S]*?spotlightPriorityMode !== "paid" && currentActiveSpotlight && !currentLiveSpotlightIsPaid[\s\S]*?take down the live Spotlight first[\s\S]*?return;/,
+  /const currentLiveSpotlightIsPaid =[\s\S]*?currentActiveSpotlight\?\.priority_mode[\s\S]*?const replacingHeldContent =[\s\S]*?!replacingHeldContent[\s\S]*?spotlightPriorityMode !== "paid"[\s\S]*?currentActiveSpotlight[\s\S]*?!currentLiveSpotlightIsPaid[\s\S]*?take down the live Spotlight first[\s\S]*?return;/,
   "Shop Control must stop free Spotlight replacement attempts before uploading media when a free Spotlight is already live."
 );
 assertLineNotContains(
@@ -100,8 +100,8 @@ assertLineNotContains(
 
 assertContains(
   "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
-  /const liveImageUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.image_url[\s\S]*?currentActiveSpotlight\?\.source_product_image_url[\s\S]*?const liveVideoUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.video_url[\s\S]*?currentActiveSpotlight\?\.source_product_video_url[\s\S]*?data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?imageUrl=\{liveImageUrl\}[\s\S]*?videoUrl=\{liveVideoUrl\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
-  "Shop Control must own the rich owner-facing live Spotlight frame with media, sound control, public shop preview, publisher access, and take-down."
+  /const liveImageUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.image_url[\s\S]*?currentActiveSpotlight\?\.source_product_image_url[\s\S]*?const liveVideoUrl = resolveSpotlightMediaSrc\([\s\S]*?currentActiveSpotlight\?\.video_url[\s\S]*?currentActiveSpotlight\?\.source_product_video_url[\s\S]*?data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?imageUrl=\{liveImageUrl\}[\s\S]*?videoUrl=\{liveVideoUrl\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.correct"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
+  "Shop Control must own the rich owner-facing live Spotlight frame with media, sound control, public shop preview, correction, and take-down."
 );
 
 assertContains(
@@ -123,19 +123,19 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /import \{[\s\S]*?getMarketplaceBroadcasts,[\s\S]*?\} from "\.\.\/lib\/api";/,
-  "Public Shop must import the shared Marketplace broadcast feed for signed-in Spotlight parity."
+  /import \{[\s\S]*?getMarketplaceBroadcasts,[\s\S]*?getMarketplaceShopSpotlightStatus,[\s\S]*?\} from "\.\.\/lib\/api";/,
+  "Public Shop must import both the visitor feed and the authenticated owner status read."
 );
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function applyPublicShop\([\s\S]*?viewerSpotlightRows\?: any\[\] \| null[\s\S]*?const spotlightBroadcasts =[\s\S]*?Array\.isArray\(viewerSpotlightRows\) && viewerSpotlightRows\.length > 0[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts/,
-  "Public Shop must prefer the signed-in viewer Spotlight feed while retaining the public endpoint fallback for external links."
+  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const spotlightBroadcasts =[\s\S]*?ownerSpotlightInspectionMode[\s\S]*?ownerInspectionBroadcast[\s\S]*?: Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts/,
+  "Public Shop must separate the authenticated owner inspection item from the visitor delivery feed and public fallback."
 );
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function loadPublicShopSpotlightPresentationCycle\([\s\S]*?existingCycle\?\.promise[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?publicShopSpotlightCycleIsAuthoritative/,
+  /function loadPublicShopSpotlightPresentationCycle\([\s\S]*?existingCycle\?\.promise[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId, requestId\)[\s\S]*?publicShopSpotlightCycleIsAuthoritative/,
   "Signed-in Public Shop Spotlight must use one guarded canonical presentation selector per request cycle."
 );
 
@@ -143,6 +143,12 @@ assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
   /async function loadViewerSpotlightRows\(cleanedGmfnId: string\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?loadPublicShopSpotlightPresentationCycle\(\s*cleanedGmfnId\s*\)[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
   "Signed-in Public Shop Spotlight must request the guarded canonical opportunity selector first and keep the all-active-communities broadcast feed as the legacy fallback."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /def get_shop_spotlight_status\([\s\S]*?Only the shop owner can view Spotlight status[\s\S]*?owner_campaign = \([\s\S]*?SpotlightCampaign\.owner_user_id == int\(shop\.owner_user_id\)[\s\S]*?owner_spotlight_item = _broadcast_out[\s\S]*?"counts_as_delivery": False[\s\S]*?"counts_as_exposure": False/,
+  "Owner Spotlight inspection must remain owner-authenticated, direct, status-aware, and explicitly outside delivery/exposure accounting."
 );
 
 assertContains(
@@ -603,8 +609,8 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewRequested[\s\S]*?const ownerPreviewSpotlight = ownerSpotlightPreviewRequested && relevantBroadcast[\s\S]*?const rotationBroadcasts = ownerPreviewSpotlight[\s\S]*?buildSpotlightRotationQueue\(\s*normalizedBroadcasts\.filter[\s\S]*?: buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
-  "Public Shop Spotlight rotation must use the shared paid rotation queue while pinning the owner's own live Spotlight only for owner preview."
+  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const rotationBroadcasts = ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  "Public Shop must keep visitor rotation on the shared queue while rendering one non-rotating owner inspection item only after owner authentication."
 );
 
 assertContains(

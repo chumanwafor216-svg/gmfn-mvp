@@ -139,6 +139,250 @@ def _scalar(sql: str) -> int:
         return int(conn.execute(text(sql)).scalar() or 0)
 
 
+def test_owner_spotlight_status_is_direct_truthful_and_never_a_delivery(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    activated_at = now - timedelta(hours=1)
+    authorized_expires_at = activated_at + timedelta(hours=24)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id)
+                VALUES
+                    (1, 'owner@example.invalid', 'hashed', 'Spotlight Owner', 'user', 'GMFN-U-OWNERSTATUS'),
+                    (2, 'other@example.invalid', 'hashed', 'Other Owner', 'user', 'GMFN-U-OTHERSTATUS')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Owner Status Community', 'Owner Status Market', 'OWNERSTAT')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0), (2, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES
+                    (1, 1, 1, 'Owner Spotlight Shop', 'Owner inspection shop', 1),
+                    (2, 1, 2, 'Other Spotlight Shop', 'Other shop', 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, content_kind,
+                    content_fingerprint, status, source_kind, commercial_mode,
+                    distribution_scope, serving_status, content_version,
+                    created_at, activated_at, expires_at, authorized_expires_at,
+                    serving_status_changed_at
+                ) VALUES (
+                    1, 1, 1, 1, 'broadcast_snapshot', 'owner-status-fingerprint',
+                    'active', 'direct_broadcast', 'free', 'direct_communities',
+                    'serving', 1, :activated_at, :activated_at,
+                    :authorized_expires_at, :authorized_expires_at, :activated_at
+                )
+                """
+            ),
+            {
+                "activated_at": activated_at,
+                "authorized_expires_at": authorized_expires_at,
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, spotlight_campaign_id,
+                    message, image_url, priority_mode, visibility_scope,
+                    serving_status, content_version, created_at, expires_at,
+                    authorized_expires_at, serving_status_changed_at
+                ) VALUES (
+                    1, 1, 1, 1, 1, 'Owner saved Spotlight',
+                    '/uploads/marketplace/images/owner-status.jpg', 'free',
+                    'direct_communities', 'serving', 1, :activated_at,
+                    :authorized_expires_at, :authorized_expires_at, :activated_at
+                )
+                """
+            ),
+            {
+                "activated_at": activated_at,
+                "authorized_expires_at": authorized_expires_at,
+            },
+        )
+
+        # A crowded community feed must not hide the owner's direct inspection.
+        for offset in range(2, 67):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_broadcasts (
+                        id, clan_id, author_user_id, shop_id, message,
+                        priority_mode, visibility_scope, serving_status,
+                        created_at, expires_at, authorized_expires_at
+                    ) VALUES (
+                        :id, 1, 2, 2, :message, 'free', 'direct_communities',
+                        'serving', :created_at, :expires_at, :expires_at
+                    )
+                    """
+                ),
+                {
+                    "id": offset,
+                    "message": f"Other campaign {offset}",
+                    "created_at": now + timedelta(seconds=offset),
+                    "expires_at": authorized_expires_at,
+                },
+            )
+
+    live = client.get("/marketplace/shops/1/spotlight-status")
+    assert live.status_code == 200, live.text
+    inspection = live.json()["owner_spotlight_inspection"]
+    assert inspection["state"] == "live"
+    assert inspection["item"]["id"] == 1
+    assert inspection["item"]["message"] == "Owner saved Spotlight"
+    assert inspection["campaign"]["campaign_id"] == 1
+    assert inspection["campaign"]["activated_at"] == activated_at.isoformat()
+    assert inspection["campaign"]["authorized_expires_at"] == authorized_expires_at.isoformat()
+    assert inspection["counts_as_delivery"] is False
+    assert inspection["counts_as_exposure"] is False
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaign_pacing_states (
+                    campaign_id, max_delivery_rounds, consumed_delivery_rounds,
+                    exhausted, created_at, updated_at
+                ) VALUES (1, 10, 10, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+    exhausted = client.get("/marketplace/shops/1/spotlight-status").json()[
+        "owner_spotlight_inspection"
+    ]
+    assert exhausted["state"] == "delivery_exhausted"
+    assert exhausted["delivery_exhausted"] is True
+    assert exhausted["item"]["id"] == 1
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE spotlight_campaigns SET serving_status = 'correction_hold' WHERE id = 1")
+        )
+        conn.execute(
+            text("UPDATE marketplace_broadcasts SET serving_status = 'correction_hold' WHERE id = 1")
+        )
+    held = client.get("/marketplace/shops/1/spotlight-status").json()[
+        "owner_spotlight_inspection"
+    ]
+    assert held["state"] == "correction_hold"
+    assert held["item"] is None
+    assert held["campaign"]["authorized_expires_at"] == authorized_expires_at.isoformat()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET serving_status = 'serving', status = 'active',
+                    authorized_expires_at = :expired_at, expires_at = :expired_at
+                WHERE id = 1
+                """
+            ),
+            {"expired_at": now - timedelta(seconds=1)},
+        )
+        conn.execute(
+            text(
+                """
+                UPDATE marketplace_broadcasts
+                SET serving_status = 'serving',
+                    authorized_expires_at = :expired_at, expires_at = :expired_at
+                WHERE id = 1
+                """
+            ),
+            {"expired_at": now - timedelta(seconds=1)},
+        )
+    expired = client.get("/marketplace/shops/1/spotlight-status").json()[
+        "owner_spotlight_inspection"
+    ]
+    assert expired["state"] == "expired"
+    assert expired["item"] is None
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET serving_status = 'withdrawn', status = 'ended',
+                    authorized_expires_at = :future_expiry, expires_at = :future_expiry
+                WHERE id = 1
+                """
+            ),
+            {"future_expiry": authorized_expires_at},
+        )
+    withdrawn = client.get("/marketplace/shops/1/spotlight-status").json()[
+        "owner_spotlight_inspection"
+    ]
+    assert withdrawn["state"] == "withdrawn"
+    assert withdrawn["item"] is None
+
+
+def test_owner_spotlight_status_rejects_a_different_member(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, role)
+                VALUES
+                    (1, 'viewer@example.invalid', 'hashed', 'user'),
+                    (2, 'owner@example.invalid', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Private Owner Community', 'Private Owner Market', 'PRIVATE1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (2, 1, 2, 'Another Owner Shop', 'Not viewer owned', 1)
+                """
+            )
+        )
+
+    response = client.get("/marketplace/shops/2/spotlight-status")
+    assert response.status_code == 403, response.text
+
+
 def _seed_marketplace_governance_profile_event(
     *,
     enable_member_service_listings: bool = True,

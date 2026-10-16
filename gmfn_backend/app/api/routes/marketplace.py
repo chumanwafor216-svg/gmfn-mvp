@@ -6231,7 +6231,7 @@ def get_shop_spotlight_status(
     if not _shop_owner_can_manage(current_user=current_user, shop=shop):
         raise HTTPException(
             status_code=403,
-            detail="Only the shop owner can view paid spotlight status",
+            detail="Only the shop owner can view Spotlight status",
         )
 
     now = _now_utc()
@@ -6247,6 +6247,79 @@ def get_shop_spotlight_status(
         now=now,
     )
 
+    # This authenticated owner read is also the durable Public Shop inspection
+    # source. It must not depend on the viewer delivery queue: that queue
+    # deliberately excludes the campaign owner and is capped for allocation.
+    owner_campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.owner_user_id == int(shop.owner_user_id))
+        .filter(SpotlightCampaign.shop_id == int(shop.id))
+        .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .first()
+    )
+    owner_spotlight_item = None
+    owner_spotlight_state = "none"
+    owner_campaign_status = None
+    owner_delivery_exhausted = False
+    if owner_campaign is not None:
+        owner_campaign_status = _spotlight_campaign_status_out(
+            db,
+            campaign=owner_campaign,
+        )
+        campaign_expiry = authorized_expiry(owner_campaign)
+        campaign_serving_status = str(
+            getattr(owner_campaign, "serving_status", SPOTLIGHT_SERVING)
+            or SPOTLIGHT_SERVING
+        )
+        campaign_status = str(getattr(owner_campaign, "status", "") or "")
+        if campaign_serving_status == "withdrawn" or campaign_status == "ended":
+            owner_spotlight_state = "withdrawn"
+        elif campaign_expiry is not None and now >= campaign_expiry:
+            owner_spotlight_state = "expired"
+        elif campaign_serving_status == SPOTLIGHT_CORRECTION_HOLD:
+            owner_spotlight_state = "correction_hold"
+        elif campaign_status != "active" or campaign_serving_status != SPOTLIGHT_SERVING:
+            owner_spotlight_state = campaign_status or campaign_serving_status or "unavailable"
+        else:
+            owner_delivery_exhausted = _spotlight_campaign_delivery_exhausted(
+                db=db,
+                campaign_id=int(owner_campaign.id),
+            )
+            owner_spotlight_row = (
+                db.query(MarketplaceBroadcast)
+                .filter(
+                    MarketplaceBroadcast.spotlight_campaign_id == int(owner_campaign.id),
+                    MarketplaceBroadcast.shop_id == int(shop.id),
+                    MarketplaceBroadcast.author_user_id == int(shop.owner_user_id),
+                    MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING,
+                    (
+                        (
+                            MarketplaceBroadcast.authorized_expires_at.isnot(None)
+                            & (MarketplaceBroadcast.authorized_expires_at > now)
+                        )
+                        | (
+                            MarketplaceBroadcast.authorized_expires_at.is_(None)
+                            & (
+                                MarketplaceBroadcast.expires_at.is_(None)
+                                | (MarketplaceBroadcast.expires_at > now)
+                            )
+                        )
+                    ),
+                )
+                .order_by(
+                    MarketplaceBroadcast.created_at.desc(),
+                    MarketplaceBroadcast.id.desc(),
+                )
+                .first()
+            )
+            if owner_spotlight_row is not None:
+                owner_spotlight_item = _broadcast_out(db, owner_spotlight_row)
+                owner_spotlight_state = (
+                    "delivery_exhausted" if owner_delivery_exhausted else "live"
+                )
+            else:
+                owner_spotlight_state = "not_serving"
+
     return {
         "ok": True,
         "shop_id": int(shop.id),
@@ -6258,6 +6331,14 @@ def get_shop_spotlight_status(
         ),
         "payment_context": "spotlight_subscription",
         "priority_mode": SPOTLIGHT_PAID,
+        "owner_spotlight_inspection": {
+            "state": owner_spotlight_state,
+            "campaign": owner_campaign_status,
+            "item": owner_spotlight_item,
+            "counts_as_delivery": False,
+            "counts_as_exposure": False,
+            "delivery_exhausted": owner_delivery_exhausted,
+        },
     }
 
 
