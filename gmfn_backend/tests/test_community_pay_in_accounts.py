@@ -4,9 +4,15 @@ import json
 import shutil
 from pathlib import Path
 
+import pytest
 from sqlalchemy import text
 
 from app.db.database import engine
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_pay_in_tests(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 TEST_UPLOAD_ROOT = Path(__file__).resolve().parents[1] / "test_uploads_payment_proofs"

@@ -4,10 +4,16 @@ import os
 import shutil
 from pathlib import Path
 
+import pytest
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
 from app.services.pipeline_credit_service import allocate_pipeline_credits
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_media_tests(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 def _upload_root() -> Path:

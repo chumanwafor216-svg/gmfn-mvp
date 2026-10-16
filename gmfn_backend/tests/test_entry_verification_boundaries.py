@@ -1,10 +1,16 @@
 import json
 
+import pytest
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
 from app.db.models import TrustEvent
 from app.db.verification_models import IdentityVerificationCheck
+
+
+@pytest.fixture(autouse=True)
+def _enable_payment_operations_for_legacy_verification_tests(monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 def test_entry_identity_verification_rejects_coerced_public_controls_before_check_write(client):
