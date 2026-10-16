@@ -433,7 +433,15 @@ async def provider_bank_webhook(
     allows provider-specific evolution later without changing architecture.
     """
     raw_body = await request.body()
-    if str(provider or "").strip().lower() == "stripe" and stripe_signature:
+    generic_signature_valid = verify_webhook_signature(
+        raw_body=raw_body,
+        provided_signature=x_gmfn_signature,
+    )
+    if (
+        str(provider or "").strip().lower() == "stripe"
+        and stripe_signature
+        and not generic_signature_valid
+    ):
         try:
             event = construct_verified_stripe_event(raw_body, stripe_signature)
         except MemberCreditError as exc:
@@ -448,9 +456,8 @@ async def provider_bank_webhook(
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return {"ok": True, **outcome}
 
-    if not verify_webhook_signature(raw_body=raw_body, provided_signature=x_gmfn_signature):
-        if not stripe_signature:
-            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    if not generic_signature_valid:
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     try:
         parsed = parse_provider_webhook_payload(provider, payload)

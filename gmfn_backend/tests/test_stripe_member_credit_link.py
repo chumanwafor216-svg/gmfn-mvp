@@ -7,16 +7,21 @@ import time
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
+import pytest
 from sqlalchemy import inspect, text
 
+from app.api.routes import bank as bank_routes
 from app.api.routes import member_credits as member_credit_routes
 from app.db.database import SessionLocal, engine
 from app.db.member_credit_models import (
+    MemberCreditAwardObligation,
     MemberCreditPackVersion,
     MemberCreditProviderPayment,
+    MemberCreditPurchaseOrder,
     MemberServiceCreditLedgerEntry,
 )
-from app.services.member_credit_purchase_service import CollectionSession
+from app.services import member_credit_purchase_service as purchase_service
+from app.services.member_credit_purchase_service import CollectionSession, VerifiedTransfer
 from app.services.stripe_member_credit_service import (
     STRIPE_PROVIDER_KEY,
     STRIPE_PURPOSE,
@@ -86,6 +91,14 @@ def _signed_headers(raw: bytes, *, secret: str = WEBHOOK_SECRET) -> dict[str, st
     }
 
 
+def _gmfn_signed_headers(raw: bytes, *, secret: str) -> dict[str, str]:
+    digest = hmac.new(secret.encode("utf-8"), raw, hashlib.sha256).hexdigest()
+    return {
+        "Content-Type": "application/json",
+        "X-GMFN-Signature": f"sha256={digest}",
+    }
+
+
 def _event(*, order: dict, payment_status: str = "paid", event_type: str = "checkout.session.completed",
            amount_minor: int = 2500, currency: str = "gbp", purpose: str = STRIPE_PURPOSE,
            member_user_id: int = 1, livemode: bool = False,
@@ -122,6 +135,8 @@ def _event(*, order: dict, payment_status: str = "paid", event_type: str = "chec
 
 def _open_purchase(client, monkeypatch) -> dict:
     monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv("GMFN_DEV_MODE", "0")
+    monkeypatch.delenv("GMFN_WEBHOOK_SECRET", raising=False)
     monkeypatch.setenv("GSN_STRIPE_MODE", "test")
     monkeypatch.setenv("GSN_STRIPE_MERCHANT_KEY", MERCHANT_KEY)
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", WEBHOOK_SECRET)
@@ -165,6 +180,84 @@ def test_native_stripe_success_awards_once_without_community_funds(
         assert _community_bank_event_count() == 0
 
 
+def test_existing_community_stripe_webhook_keeps_gmfn_signature_path(
+    client, monkeypatch,
+) -> None:
+    community_secret = "legacy-community-webhook-secret"
+    monkeypatch.setenv("GMFN_WEBHOOK_SECRET", community_secret)
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "0")
+    captured: dict[str, object] = {}
+
+    def capture_community_event(_db, **kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "event": {"source_type": kwargs["source_type"], "amount": str(kwargs["amount"])}}
+
+    monkeypatch.setattr(bank_routes, "_ingest_and_reconcile_one", capture_community_event)
+    payload = {
+        "id": "evt_legacy_community_stripe",
+        "type": "payment_intent.succeeded",
+        "data": {"object": {
+            "id": "pi_legacy_community_stripe",
+            "status": "succeeded",
+            "amount_received": 2500,
+            "currency": "gbp",
+            "description": "Existing community contribution",
+            "metadata": {"clan_id": "1", "reference": "GSN-POOL-1"},
+        }},
+    }
+    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+
+    response = client.post(
+        "/bank/webhook/stripe",
+        content=raw,
+        headers={
+            **_gmfn_signed_headers(raw, secret=community_secret),
+            "Stripe-Signature": "preserved-but-not-used-for-community-routing",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["event"]["source_type"] == "webhook_api"
+    assert response.json()["event"]["amount"] == "25.00"
+    assert captured["clan_id"] == 1
+    assert captured["source_id"] == "evt_legacy_community_stripe"
+    assert captured["bank_txn_id"] == "pi_legacy_community_stripe"
+    assert captured["reference_raw"] == "GSN-POOL-1"
+    with SessionLocal() as db:
+        assert db.query(MemberCreditProviderPayment).count() == 0
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 0
+
+
+def test_stripe_header_never_authenticates_a_generic_provider_webhook(
+    client, monkeypatch,
+) -> None:
+    monkeypatch.setenv("GMFN_WEBHOOK_SECRET", "generic-provider-webhook-secret")
+    monkeypatch.setattr(
+        bank_routes,
+        "_ingest_and_reconcile_one",
+        lambda *_args, **_kwargs: pytest.fail("unauthenticated generic webhook reached ingestion"),
+    )
+    payload = {
+        "event": "charge.success",
+        "data": {
+            "status": "success",
+            "id": "paystack-unauthenticated",
+            "clan_id": 1,
+            "amount": 2500,
+            "currency": "NGN",
+            "reference": "GSN-POOL-1",
+        },
+    }
+
+    response = client.post(
+        "/bank/webhook/paystack",
+        json=payload,
+        headers={"Stripe-Signature": "unrelated-header-must-not-authenticate"},
+    )
+
+    assert response.status_code == 401
+
+
 def test_completed_but_unpaid_checkout_does_not_award(
     client, override_current_user, monkeypatch,
 ) -> None:
@@ -196,6 +289,43 @@ def test_stripe_event_rejects_bad_signature_mode_and_member_binding(
         assert _community_bank_event_count() == 0
 
 
+def test_stripe_event_rejects_wrong_purchase_binding_without_durable_payment(
+    client, override_current_user, monkeypatch,
+) -> None:
+    order = _open_purchase(client, monkeypatch)
+    event = _event(order=order)
+    event["data"]["object"]["metadata"]["gsn_purchase_order_key"] = "mcp-wrong-purchase"
+
+    response = _post_event(client, event)
+
+    assert response.status_code == 409
+    with SessionLocal() as db:
+        assert db.query(MemberCreditProviderPayment).count() == 0
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 0
+
+
+@pytest.mark.parametrize(
+    ("event_kwargs", "expected_exception"),
+    [
+        ({"amount_minor": 2400}, "amount_mismatch_unallocated"),
+        ({"currency": "usd"}, "currency_mismatch_unallocated"),
+    ],
+)
+def test_stripe_event_does_not_award_wrong_amount_or_currency(
+    client, override_current_user, monkeypatch, event_kwargs, expected_exception,
+) -> None:
+    order = _open_purchase(client, monkeypatch)
+
+    response = _post_event(client, _event(order=order, **event_kwargs))
+
+    assert response.status_code == 200
+    assert response.json()["awarded"] is False
+    with SessionLocal() as db:
+        payment = db.query(MemberCreditProviderPayment).one()
+        assert payment.exception_code == expected_exception
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 0
+
+
 def test_unrelated_stripe_events_and_payment_suspension_never_award(
     client, override_current_user, monkeypatch,
 ) -> None:
@@ -215,6 +345,74 @@ def test_unrelated_stripe_events_and_payment_suspension_never_award(
         assert db.query(MemberCreditProviderPayment).count() == 0
         assert db.query(MemberServiceCreditLedgerEntry).count() == 0
         assert _community_bank_event_count() == 0
+
+
+def test_payment_check_replay_produces_one_award(
+    client, override_current_user, monkeypatch,
+) -> None:
+    order = _open_purchase(client, monkeypatch)
+
+    class PaidStripeCollectionAdapter(FakeStripeCollectionAdapter):
+        def check_session(self, *, provider_session_id: str):
+            return [VerifiedTransfer(
+                provider_transaction_id="pi_payment_check_replay",
+                merchant_key=MERCHANT_KEY,
+                collection_reference=order["collection_reference"],
+                amount_minor=order["amount_minor"],
+                currency=order["currency"],
+                verified_at=NOW,
+                provider_session_id=provider_session_id,
+                purchase_order_key=order["order_key"],
+                member_user_id=1,
+            )]
+
+    adapter = PaidStripeCollectionAdapter()
+    monkeypatch.setattr(member_credit_routes, "_collection_adapter", lambda: adapter)
+    first = client.post(f"/member-credits/purchases/{order['order_key']}/check-payment")
+    replay = client.post(f"/member-credits/purchases/{order['order_key']}/check-payment")
+
+    assert first.status_code == 200
+    assert replay.status_code == 200
+    assert first.json()["status"] == "awarded"
+    assert replay.json()["status"] == "awarded"
+    with SessionLocal() as db:
+        assert db.query(MemberCreditProviderPayment).count() == 1
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 1
+
+
+def test_stripe_webhook_persists_interrupted_award_and_replay_recovers(
+    client, override_current_user, monkeypatch,
+) -> None:
+    order = _open_purchase(client, monkeypatch)
+    real_apply = purchase_service._apply_verified_award
+
+    def fail_award(*_args, **_kwargs):
+        raise RuntimeError("injected_award_interruption")
+
+    monkeypatch.setattr(purchase_service, "_apply_verified_award", fail_award)
+    interrupted = _post_event(client, _event(order=order))
+
+    assert interrupted.status_code == 200
+    assert interrupted.json()["awarded"] is False
+    assert interrupted.json()["status"] == "verified_award_pending"
+    with SessionLocal() as db:
+        purchase = db.query(MemberCreditPurchaseOrder).one()
+        obligation = db.query(MemberCreditAwardObligation).one()
+        assert purchase.status == "funded_award_pending"
+        assert obligation.status == "pending"
+        assert obligation.last_error == "RuntimeError"
+        assert db.query(MemberCreditProviderPayment).count() == 1
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 0
+
+    monkeypatch.setattr(purchase_service, "_apply_verified_award", real_apply)
+    recovered = _post_event(client, _event(order=order))
+
+    assert recovered.status_code == 200
+    assert recovered.json()["awarded"] is True
+    assert recovered.json()["status"] == "awarded"
+    with SessionLocal() as db:
+        assert db.query(MemberCreditProviderPayment).count() == 1
+        assert db.query(MemberServiceCreditLedgerEntry).count() == 1
 
 
 def test_stripe_adapter_binds_checkout_to_merchant_member_purchase_and_minor_amount() -> None:
