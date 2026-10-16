@@ -12,3 +12,4 @@ reportlab
 pillow
 pywebpush
 boto3
+stripe>=15.6.0,<16

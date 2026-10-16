@@ -26,7 +26,10 @@ from app.services.member_credit_service import (
     apply_award_obligation,
     request_fingerprint,
 )
-from app.services.payment_operations_policy import require_payment_operations_enabled
+from app.services.payment_operations_policy import (
+    payment_operations_enabled,
+    require_payment_operations_enabled,
+)
 
 
 SYNTHETIC_PAYMENTS_ENV = "GSN_MEMBER_CREDIT_SYNTHETIC_PAYMENTS_ENABLED"
@@ -48,13 +51,19 @@ class VerifiedTransfer:
     currency: str
     verified_at: datetime
     settled_at: Optional[datetime] = None
+    provider_session_id: Optional[str] = None
+    purchase_order_key: Optional[str] = None
+    member_user_id: Optional[int] = None
 
 
 class CollectionAdapter(Protocol):
     provider_key: str
     merchant_key: str
 
-    def create_session(self, *, idempotency_key: str, reference: str, amount_minor: int, currency: str) -> CollectionSession: ...
+    def create_session(
+        self, *, idempotency_key: str, reference: str, amount_minor: int,
+        currency: str, purchase_order_key: str, member_user_id: int,
+    ) -> CollectionSession: ...
     def check_session(self, *, provider_session_id: str) -> list[VerifiedTransfer]: ...
 
 
@@ -63,6 +72,17 @@ def require_synthetic_purchase_runtime() -> None:
     enabled = str(os.getenv(SYNTHETIC_PAYMENTS_ENV, "0")).strip().lower() in {"1", "true", "yes", "on"}
     if not enabled or str(os.getenv("PYTEST_RUNNING", "0")) != "1":
         raise MemberCreditError("synthetic_member_credit_runtime_not_enabled")
+
+
+def require_member_credit_purchase_runtime() -> None:
+    require_payment_operations_enabled()
+
+
+def _pack_is_available(pack: MemberCreditPackVersion) -> bool:
+    status = str(pack.status or "").strip().lower()
+    if status == "active":
+        return True
+    return status == "test_active" and str(os.getenv("PYTEST_RUNNING", "0")) == "1"
 
 
 def _now(value: Optional[datetime] = None) -> datetime:
@@ -80,13 +100,19 @@ def issue_purchase_quote(
     db: Session, *, member_user_id: int, pack_version_id: int,
     idempotency_key: str, now: Optional[datetime] = None,
 ) -> MemberCreditPurchaseQuote:
-    require_synthetic_purchase_runtime()
+    require_member_credit_purchase_runtime()
     safe_key = str(idempotency_key or "").strip()
     if not safe_key:
         raise MemberCreditError("idempotency_key_required")
     pack = db.get(MemberCreditPackVersion, int(pack_version_id))
-    if pack is None or str(pack.status) != "test_active":
-        raise MemberCreditError("pack_version_not_test_active")
+    if (
+        pack is not None
+        and str(pack.status or "").strip().lower() == "test_active"
+        and str(os.getenv("PYTEST_RUNNING", "0")) != "1"
+    ):
+        raise MemberCreditError("synthetic_member_credit_runtime_not_enabled")
+    if pack is None or not _pack_is_available(pack):
+        raise MemberCreditError("pack_version_not_available")
     scoped_key = f"member:{int(member_user_id)}:{safe_key}"
     fingerprint = request_fingerprint({"member_user_id": int(member_user_id), "pack_version_id": int(pack.id)})
     existing = db.query(MemberCreditPurchaseQuote).filter_by(
@@ -125,7 +151,7 @@ def confirm_purchase(
     db: Session, *, member_user_id: int, quote_key: str,
     idempotency_key: str, now: Optional[datetime] = None,
 ) -> MemberCreditPurchaseOrder:
-    require_synthetic_purchase_runtime()
+    require_member_credit_purchase_runtime()
     safe_key = str(idempotency_key or "").strip()
     if not safe_key:
         raise MemberCreditError("idempotency_key_required")
@@ -180,7 +206,7 @@ def ensure_collection_session(
     idempotency_key: str, adapter: CollectionAdapter,
     now: Optional[datetime] = None,
 ) -> MemberCreditCollectionAttempt:
-    require_synthetic_purchase_runtime()
+    require_member_credit_purchase_runtime()
     order = db.query(MemberCreditPurchaseOrder).filter_by(
         order_key=str(order_key), member_user_id=int(member_user_id)
     ).one_or_none()
@@ -229,6 +255,8 @@ def ensure_collection_session(
         session = adapter.create_session(
             idempotency_key=attempt_key, reference=collection_reference,
             amount_minor=amount_minor, currency=currency,
+            purchase_order_key=str(order.order_key),
+            member_user_id=int(order.member_user_id),
         )
         _persist_collection_session(db, attempt_id=attempt_id, session=session, now=now)
     except Exception as exc:
@@ -268,7 +296,11 @@ class SyntheticCollectionAdapter:
         self.sessions: dict[str, CollectionSession] = {}
         self.transfers: dict[str, list[VerifiedTransfer]] = {}
 
-    def create_session(self, *, idempotency_key: str, reference: str, amount_minor: int, currency: str) -> CollectionSession:
+    def create_session(
+        self, *, idempotency_key: str, reference: str, amount_minor: int,
+        currency: str, purchase_order_key: str, member_user_id: int,
+    ) -> CollectionSession:
+        require_synthetic_purchase_runtime()
         existing = self.sessions.get(idempotency_key)
         if existing is not None:
             return existing
@@ -282,6 +314,7 @@ class SyntheticCollectionAdapter:
         return result
 
     def check_session(self, *, provider_session_id: str) -> list[VerifiedTransfer]:
+        require_synthetic_purchase_runtime()
         return list(self.transfers.get(provider_session_id, []))
 
     def record_transfer(self, *, provider_session_id: str, transfer: VerifiedTransfer) -> None:
@@ -294,7 +327,7 @@ def check_purchase_payment(
     db: Session, *, member_user_id: int, order_key: str,
     adapter: CollectionAdapter, now: Optional[datetime] = None,
 ) -> dict[str, object]:
-    require_synthetic_purchase_runtime()
+    require_member_credit_purchase_runtime()
     order = db.query(MemberCreditPurchaseOrder).filter_by(
         order_key=str(order_key), member_user_id=int(member_user_id)
     ).one_or_none()
@@ -310,8 +343,17 @@ def check_purchase_payment(
     provider_session_id = str(attempt.provider_session_id)
     db.commit()
     transfers = adapter.check_session(provider_session_id=provider_session_id)
+    is_synthetic = str(adapter.provider_key) == "synthetic-test-provider"
     for transfer in transfers:
-        _record_verified_transfer(db, order_id=int(order.id), attempt_id=int(attempt.id), transfer=transfer, now=now)
+        _record_verified_transfer(
+            db, order_id=int(order.id), attempt_id=int(attempt.id), transfer=transfer,
+            verification_status="test_verified" if is_synthetic else "verified",
+            policy_key=(
+                "synthetic_exact_purchase_link" if is_synthetic
+                else "provider_exact_purchase_link"
+            ),
+            now=now,
+        )
     _apply_order_award_if_pending(db, order_id=int(order.id), now=now)
     attempt = db.get(MemberCreditCollectionAttempt, int(attempt.id))
     attempt.status = "verified" if db.get(MemberCreditPurchaseOrder, int(order.id)).funded_minor else "verification_pending"
@@ -322,7 +364,8 @@ def check_purchase_payment(
 
 def _record_verified_transfer(
     db: Session, *, order_id: int, attempt_id: int,
-    transfer: VerifiedTransfer, now: Optional[datetime],
+    transfer: VerifiedTransfer, verification_status: str,
+    policy_key: str, now: Optional[datetime],
 ) -> MemberCreditProviderPayment:
     attempt = db.get(MemberCreditCollectionAttempt, int(attempt_id))
     order = db.get(MemberCreditPurchaseOrder, int(order_id))
@@ -348,12 +391,18 @@ def _record_verified_transfer(
         mismatch = "collection_reference_mismatch_unallocated"
     elif str(transfer.currency) != str(order.currency):
         mismatch = "currency_mismatch_unallocated"
+    elif transfer.provider_session_id is not None and str(transfer.provider_session_id) != str(attempt.provider_session_id):
+        mismatch = "provider_session_mismatch_unallocated"
+    elif transfer.purchase_order_key is not None and str(transfer.purchase_order_key) != str(order.order_key):
+        mismatch = "purchase_order_mismatch_unallocated"
+    elif transfer.member_user_id is not None and int(transfer.member_user_id) != int(order.member_user_id):
+        mismatch = "member_mismatch_unallocated"
     payment = MemberCreditProviderPayment(
         provider_key=str(attempt.provider_key), merchant_key=str(transfer.merchant_key),
         provider_transaction_id=str(transfer.provider_transaction_id),
         collection_attempt_id=int(attempt.id), amount_minor=int(transfer.amount_minor),
         allocated_minor=0, currency=str(transfer.currency),
-        verification_status="rejected_mismatch" if mismatch else "test_verified",
+        verification_status="rejected_mismatch" if mismatch else str(verification_status),
         exception_code=mismatch, received_at=_now(transfer.verified_at),
         settled_at=_now(transfer.settled_at) if transfer.settled_at else None,
         created_at=_now(now),
@@ -375,10 +424,41 @@ def _record_verified_transfer(
         return payment
     allocate_verified_payment(
         db, provider_payment_id=int(payment.id), purchase_order_id=int(order.id),
-        amount_minor=int(payment.amount_minor), policy_key="synthetic_exact_purchase_link",
+        amount_minor=int(payment.amount_minor), policy_key=str(policy_key),
         allow_partial_contributions=False, now=now, commit=True,
     )
     return payment
+
+
+def record_verified_collection_transfer(
+    db: Session, *, provider_key: str, merchant_key: str,
+    provider_session_id: str, transfer: VerifiedTransfer,
+    verification_status: str = "verified", policy_key: str,
+    now: Optional[datetime] = None,
+) -> dict[str, object]:
+    """Link one provider-verified collection to its existing purchase attempt."""
+    require_member_credit_purchase_runtime()
+    attempt = db.query(MemberCreditCollectionAttempt).filter_by(
+        provider_key=str(provider_key), merchant_key=str(merchant_key),
+        provider_session_id=str(provider_session_id),
+    ).one_or_none()
+    if attempt is None:
+        raise MemberCreditError("collection_attempt_not_found")
+    order = db.get(MemberCreditPurchaseOrder, int(attempt.purchase_order_id))
+    if order is None:
+        raise MemberCreditError("purchase_order_not_found")
+    _record_verified_transfer(
+        db, order_id=int(order.id), attempt_id=int(attempt.id), transfer=transfer,
+        verification_status=str(verification_status), policy_key=str(policy_key), now=now,
+    )
+    _apply_order_award_if_pending(db, order_id=int(order.id), now=now)
+    attempt = db.get(MemberCreditCollectionAttempt, int(attempt.id))
+    attempt.status = "verified" if db.get(MemberCreditPurchaseOrder, int(order.id)).funded_minor else "verification_pending"
+    attempt.updated_at = _now(now)
+    db.commit()
+    return purchase_status(
+        db, member_user_id=int(order.member_user_id), order_key=str(order.order_key)
+    )
 
 
 def _apply_order_award_if_pending(db: Session, *, order_id: int, now: Optional[datetime]) -> None:
@@ -416,19 +496,28 @@ def purchase_status(db: Session, *, member_user_id: int, order_key: str) -> dict
         display_status = "awarded"
     elif str(order.status) == "funded_award_pending":
         display_status = "verified_award_pending"
-    elif any(str(row.verification_status) == "test_verified" for row in payments):
+    elif any(str(row.verification_status) in {"verified", "test_verified"} for row in payments):
         display_status = "verification_exception"
     elif attempt is not None and attempt.provider_session_id:
         display_status = "verification_pending"
     else:
         display_status = "awaiting_payment"
     account = db.query(MemberServiceCreditAccount).filter_by(member_user_id=int(member_user_id)).one_or_none()
+    public_payload: dict[str, object] = {}
+    if attempt is not None and attempt.provider_payload_json:
+        try:
+            decoded = json.loads(str(attempt.provider_payload_json))
+            public_payload = decoded if isinstance(decoded, dict) else {}
+        except (TypeError, ValueError):
+            public_payload = {}
+    action_url = public_payload.get("checkout_url") if payment_operations_enabled() else None
     return {
         "order_key": str(order.order_key), "status": display_status,
         "amount_minor": int(order.quoted_amount_minor), "currency": str(order.currency),
         "credit_units": int(order.credit_units), "funded_minor": int(order.funded_minor),
         "collection_reference": str(attempt.collection_reference) if attempt else None,
         "provider_session_id": str(attempt.provider_session_id) if attempt and attempt.provider_session_id else None,
+        "collection_action_url": str(action_url) if action_url else None,
         "award_error": str(obligation.last_error) if obligation and obligation.last_error else None,
         "balance_units": int(account.balance_units) if account else 0,
         "receipts": [{

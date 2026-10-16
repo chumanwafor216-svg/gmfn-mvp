@@ -84,6 +84,7 @@ class PurchaseStatusOut(BaseModel):
     funded_minor: int
     collection_reference: Optional[str] = None
     provider_session_id: Optional[str] = None
+    collection_action_url: Optional[str] = None
     award_error: Optional[str] = None
     balance_units: int
     receipts: list[PaymentReceiptOut] = Field(default_factory=list)

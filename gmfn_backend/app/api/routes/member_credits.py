@@ -18,6 +18,7 @@ from app.schemas.member_credits import (
 )
 from app.services.member_credit_service import MemberCreditError, create_service_quote, get_member_credit_self
 from app.services.member_credit_purchase_service import (
+    CollectionAdapter,
     SyntheticCollectionAdapter,
     check_purchase_payment,
     confirm_purchase,
@@ -27,10 +28,25 @@ from app.services.member_credit_purchase_service import (
     purchase_status,
 )
 from app.services.payment_operations_policy import PaymentOperationsSuspended
+from app.services.stripe_member_credit_service import StripeCheckoutCollectionAdapter
 
 
 router = APIRouter(prefix="/member-credits", tags=["member-credits"])
 _synthetic_adapter = SyntheticCollectionAdapter()
+
+
+def _collection_adapter() -> CollectionAdapter:
+    provider = str(os.getenv("GSN_MEMBER_CREDIT_COLLECTION_PROVIDER", "") or "").strip().lower()
+    synthetic_enabled = (
+        str(os.getenv("PYTEST_RUNNING", "0")) == "1"
+        and str(os.getenv("GSN_MEMBER_CREDIT_SYNTHETIC_PAYMENTS_ENABLED", "0")).strip().lower()
+        in {"1", "true", "yes", "on"}
+    )
+    if provider == "stripe":
+        return StripeCheckoutCollectionAdapter.from_environment()
+    if synthetic_enabled and provider in {"", "synthetic-test-provider"}:
+        return _synthetic_adapter
+    raise MemberCreditError("member_credit_collection_provider_not_configured")
 
 
 def _test_quotes_enabled() -> bool:
@@ -47,8 +63,10 @@ def _raise_api_error(exc: Exception) -> None:
     code = str(getattr(exc, "code", type(exc).__name__))
     if code in {"purchase_quote_not_found", "purchase_order_not_found"}:
         raise HTTPException(status_code=404, detail=code) from exc
-    if code in {"synthetic_member_credit_runtime_not_enabled", "pack_version_not_test_active"}:
+    if code in {"synthetic_member_credit_runtime_not_enabled", "pack_version_not_available"}:
         raise HTTPException(status_code=404, detail=code) from exc
+    if code == "member_credit_collection_provider_not_configured" or code.endswith("_required"):
+        raise HTTPException(status_code=503, detail=code) from exc
     raise HTTPException(status_code=409, detail=code) from exc
 
 
@@ -108,7 +126,7 @@ def confirm_my_purchase(
         )
         ensure_collection_session(
             db, member_user_id=int(current_user.id), order_key=str(order.order_key),
-            idempotency_key=payload.idempotency_key, adapter=_synthetic_adapter,
+            idempotency_key=payload.idempotency_key, adapter=_collection_adapter(),
         )
         return purchase_status(db, member_user_id=int(current_user.id), order_key=str(order.order_key))
     except (MemberCreditError, PaymentOperationsSuspended) as exc:
@@ -141,7 +159,7 @@ def check_my_purchase_payment(
     try:
         return check_purchase_payment(
             db, member_user_id=int(current_user.id), order_key=order_key,
-            adapter=_synthetic_adapter,
+            adapter=_collection_adapter(),
         )
     except (MemberCreditError, PaymentOperationsSuspended) as exc:
         _raise_api_error(exc)

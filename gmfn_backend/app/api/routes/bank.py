@@ -30,10 +30,16 @@ from app.services.expected_payments_service import (
     list_expected_payments,
 )
 from app.services.pool_service import build_reference
+from app.services.member_credit_service import MemberCreditError
+from app.services.payment_operations_policy import PaymentOperationsSuspended
 from app.services.reconciliation_service import (
     create_bank_event,
     reconcile_batch,
     reconcile_one_event,
+)
+from app.services.stripe_member_credit_service import (
+    construct_verified_stripe_event,
+    process_stripe_member_credit_event,
 )
 
 router = APIRouter(prefix="/bank", tags=["bank"])
@@ -411,6 +417,7 @@ async def provider_bank_webhook(
     request: Request,
     payload: Dict[str, Any] = Body(...),
     x_gmfn_signature: Optional[str] = Header(default=None, alias="X-GMFN-Signature"),
+    stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
     db: Session = Depends(get_db),
 ):
     """
@@ -426,8 +433,24 @@ async def provider_bank_webhook(
     allows provider-specific evolution later without changing architecture.
     """
     raw_body = await request.body()
+    if str(provider or "").strip().lower() == "stripe" and stripe_signature:
+        try:
+            event = construct_verified_stripe_event(raw_body, stripe_signature)
+        except MemberCreditError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=401, detail="Invalid Stripe webhook signature") from exc
+        try:
+            outcome = process_stripe_member_credit_event(db, event=event)
+        except PaymentOperationsSuspended as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except MemberCreditError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {"ok": True, **outcome}
+
     if not verify_webhook_signature(raw_body=raw_body, provided_signature=x_gmfn_signature):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+        if not stripe_signature:
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     try:
         parsed = parse_provider_webhook_payload(provider, payload)
