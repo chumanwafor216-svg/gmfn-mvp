@@ -19,7 +19,9 @@ import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
   createMarketplaceBroadcast,
-  deleteMarketplaceBroadcast,
+  holdSpotlightForCorrection,
+  replaceSpotlightContent,
+  withdrawSpotlightPermanently,
   getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
@@ -145,6 +147,15 @@ type BroadcastRecord = {
   video_url?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
+  spotlight_campaign_id?: number | null;
+  serving_status?: string | null;
+  campaign_serving_status?: string | null;
+  content_version?: number | null;
+  source_product_id?: number | null;
+  activated_at?: string | null;
+  authorized_expires_at?: string | null;
+  remaining_seconds?: number | null;
+  lifecycle_writers_enabled?: boolean | null;
   expires_at?: string | null;
   created_at?: string | null;
 };
@@ -3657,6 +3668,8 @@ export default function ShopControlPage() {
   const [savingShop, setSavingShop] = useState(false);
 
   const [spotlightProductName, setSpotlightProductName] = useState("");
+  const [spotlightCorrectionProductId, setSpotlightCorrectionProductId] =
+    useState<number | null>(null);
   const [spotlightPriceNote, setSpotlightPriceNote] = useState("");
   const [spotlightMessage, setSpotlightMessage] = useState("");
   const [spotlightImageUrl, setSpotlightImageUrl] = useState("");
@@ -3682,6 +3695,10 @@ export default function ShopControlPage() {
     useState<SpotlightMediaChoice>("image");
   const spotlightImagePrepJobRef = useRef(0);
   const spotlightVideoPrepJobRef = useRef(0);
+  const spotlightPublicationAttemptRef = useRef<{
+    signature: string;
+    idempotencyKey: string;
+  } | null>(null);
   const lastAutoScrolledHashRef = useRef("");
   const controlRevealFrameRef = useRef<number | null>(null);
   const controlRevealTargetRef = useRef("");
@@ -3999,9 +4016,11 @@ export default function ShopControlPage() {
   ]);
 
   function clearSpotlightDraft() {
+    spotlightPublicationAttemptRef.current = null;
     spotlightImagePrepJobRef.current += 1;
     spotlightVideoPrepJobRef.current += 1;
     setSpotlightProductName("");
+    setSpotlightCorrectionProductId(null);
     setSpotlightPriceNote("");
     setSpotlightMessage("");
     setSpotlightImageUrl("");
@@ -4433,7 +4452,13 @@ export default function ShopControlPage() {
   const activeSpotlights = useMemo(() => {
     const now = Date.now();
     return spotlights.filter((item) => {
-      const expiresRaw = safeStr(item?.expires_at);
+      const servingStatus = firstTruthy(
+        item?.campaign_serving_status,
+        item?.serving_status,
+        "serving"
+      );
+      if (servingStatus === "withdrawn" || servingStatus === "expired") return false;
+      const expiresRaw = safeStr(item?.authorized_expires_at || item?.expires_at);
       if (!expiresRaw) return true;
       const parsed = new Date(expiresRaw);
       if (Number.isNaN(parsed.getTime())) return true;
@@ -4779,11 +4804,26 @@ export default function ShopControlPage() {
     : "";
   const shopRecordReady = Boolean(shop?.id);
   const publicShopReady = Boolean(shopRecordReady && ownerPublicShopPath);
-  const spotlightStatusLabel = currentActiveSpotlight ? "Live" : "Inactive";
+  const currentSpotlightServingStatus = firstTruthy(
+    currentActiveSpotlight?.campaign_serving_status,
+    currentActiveSpotlight?.serving_status,
+    "serving"
+  );
+  const spotlightStatusLabel = currentActiveSpotlight
+    ? currentSpotlightServingStatus === "correction_hold"
+      ? "Correction hold"
+      : "Live"
+    : "Inactive";
   const spotlightStatusDetail = currentActiveSpotlight
     ? firstTruthy(
-        safeDateTime(currentActiveSpotlight.expires_at)
-          ? `Ends ${safeDateTime(currentActiveSpotlight.expires_at)}`
+        safeDateTime(
+          currentActiveSpotlight.authorized_expires_at ||
+            currentActiveSpotlight.expires_at
+        )
+          ? `Authorised until ${safeDateTime(
+              currentActiveSpotlight.authorized_expires_at ||
+                currentActiveSpotlight.expires_at
+            )}`
           : "Live now",
         "Live now"
       )
@@ -6545,7 +6585,21 @@ export default function ShopControlPage() {
 
     const currentLiveSpotlightIsPaid =
       safeStr(currentActiveSpotlight?.priority_mode).toLowerCase() === "paid";
-    if (spotlightPriorityMode !== "paid" && currentActiveSpotlight && !currentLiveSpotlightIsPaid) {
+    const correctionCampaignId = Number(
+      currentActiveSpotlight?.spotlight_campaign_id || 0
+    );
+    const replacingHeldContent =
+      correctionCampaignId > 0 &&
+      firstTruthy(
+        currentActiveSpotlight?.campaign_serving_status,
+        currentActiveSpotlight?.serving_status
+      ) === "correction_hold";
+    if (
+      !replacingHeldContent &&
+      spotlightPriorityMode !== "paid" &&
+      currentActiveSpotlight &&
+      !currentLiveSpotlightIsPaid
+    ) {
       const activeFreeMessage =
         "A free Spotlight is already live. To add this video, take down the live Spotlight first, then publish the corrected video Spotlight from this page.";
       setSpotlightPublishFeedback({ tone: "error", text: activeFreeMessage });
@@ -6596,6 +6650,35 @@ export default function ShopControlPage() {
       showNotice("error", videoValidationIssue);
       return;
     }
+
+    // Keep the same server idempotency identity when an owner retries the same
+    // draft after a lost response. A materially changed draft starts a new
+    // publication attempt and therefore receives a new identity.
+    const publicationSignature = JSON.stringify({
+      clanId: targetClanId,
+      shopId: Number(activeShop.id),
+      message,
+      manualImageUrl,
+      manualVideoUrl,
+      imageFile: spotlightImageFile
+        ? [spotlightImageFile.name, spotlightImageFile.size, spotlightImageFile.lastModified]
+        : null,
+      videoFile: spotlightVideoFile
+        ? [spotlightVideoFile.name, spotlightVideoFile.size, spotlightVideoFile.lastModified]
+        : null,
+      priorityMode: spotlightPriorityMode,
+      visibilityScope: "direct_communities",
+    });
+    if (spotlightPublicationAttemptRef.current?.signature !== publicationSignature) {
+      spotlightPublicationAttemptRef.current = {
+        signature: publicationSignature,
+        idempotencyKey:
+          globalThis.crypto?.randomUUID?.() ||
+          `spotlight-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
+    }
+    const publicationIdempotencyKey =
+      spotlightPublicationAttemptRef.current.idempotencyKey;
 
     setCreatingSpotlight(true);
     setSpotlightPublishFeedback(null);
@@ -6650,15 +6733,23 @@ export default function ShopControlPage() {
         }
       }
 
-      const createRes = await createMarketplaceBroadcast({
-        clan_id: targetClanId,
-        shop_id: Number(activeShop.id),
-        message: message || "Spotlight update",
-        image_url: imageUrl || null,
-        video_url: videoUrl || null,
-        priority_mode: spotlightPriorityMode,
-        visibility_scope: "direct_communities",
-      });
+      const createRes = replacingHeldContent
+        ? await replaceSpotlightContent(correctionCampaignId, {
+            message: message || "Spotlight update",
+            image_url: imageUrl || null,
+            video_url: videoUrl || null,
+            source_product_id: spotlightCorrectionProductId,
+          })
+        : await createMarketplaceBroadcast({
+            clan_id: targetClanId,
+            shop_id: Number(activeShop.id),
+            message: message || "Spotlight update",
+            image_url: imageUrl || null,
+            video_url: videoUrl || null,
+            priority_mode: spotlightPriorityMode,
+            visibility_scope: "direct_communities",
+            idempotency_key: publicationIdempotencyKey,
+          });
 
       const createdSpotlight =
         (createRes as any)?.item ||
@@ -6690,16 +6781,19 @@ export default function ShopControlPage() {
       );
       const communityPlacementText =
         propagatedCount > 1 ? ` into ${propagatedCount} community feeds` : "";
-      const successMessage =
-        `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight published` +
-        communityPlacementText +
-        `${videoUrl ? " with short video." : "."}`;
+      const successMessage = replacingHeldContent
+        ? "Spotlight correction is live. Its original activation and expiry are unchanged."
+        : `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight published` +
+          communityPlacementText +
+          `${videoUrl ? " with short video." : "."}`;
 
       clearSpotlightDraft();
-      setSpotlights((prev) => [
-        optimisticSpotlight,
-        ...prev.filter((item) => Number(item?.id || 0) !== Number(optimisticSpotlight.id)),
-      ]);
+      if (!replacingHeldContent) {
+        setSpotlights((prev) => [
+          optimisticSpotlight,
+          ...prev.filter((item) => Number(item?.id || 0) !== Number(optimisticSpotlight.id)),
+        ]);
+      }
       setSpotlightPublishFeedback({
         tone: "success",
         text: successMessage,
@@ -6735,6 +6829,56 @@ export default function ShopControlPage() {
     }
   }
 
+  async function handleCorrectCurrentSpotlight() {
+    const campaignId = Number(currentActiveSpotlight?.spotlight_campaign_id || 0);
+    if (campaignId <= 0) {
+      const message = "GSN could not identify the campaign to correct. Refresh and try again.";
+      setSpotlightPublishFeedback({ tone: "error", text: message });
+      showNotice("error", message);
+      return;
+    }
+    setTakingDownSpotlight(true);
+    setSpotlightPublishFeedback(null);
+    try {
+      await holdSpotlightForCorrection(campaignId);
+      setSpotlights((rows) =>
+        rows.map((row) =>
+          Number(row.spotlight_campaign_id || 0) === campaignId
+            ? {
+                ...row,
+                serving_status: "correction_hold",
+                campaign_serving_status: "correction_hold",
+              }
+            : row
+        )
+      );
+      setSpotlightMessage(safeStr(currentActiveSpotlight?.message));
+      setSpotlightCorrectionProductId(
+        Number(currentActiveSpotlight?.source_product_id || 0) || null
+      );
+      setSpotlightImageUrl(safeStr(currentActiveSpotlight?.image_url));
+      setSpotlightVideoUrl(safeStr(currentActiveSpotlight?.video_url));
+      setSpotlightImagePreviewUrl(safeStr(currentActiveSpotlight?.image_url));
+      setSpotlightVideoPreviewUrl(safeStr(currentActiveSpotlight?.video_url));
+      setSpotlightImageFile(null);
+      setSpotlightVideoFile(null);
+      setSpotlightOpen(true);
+      setSpotlightFlowStep("upload");
+      const message =
+        "Correction hold is active. Delivery stopped, but the original expiry continues. Save the replacement before that expiry.";
+      setSpotlightPublishFeedback({ tone: "info", text: message });
+      showNotice("info", message);
+    } catch (err: any) {
+      const message =
+        shopControlRequestErrorMessage(err) ||
+        "GSN could not place this Spotlight on correction hold.";
+      setSpotlightPublishFeedback({ tone: "error", text: message });
+      showNotice("error", message);
+    } finally {
+      setTakingDownSpotlight(false);
+    }
+  }
+
   async function handleTakeDownCurrentSpotlight() {
     if (takingDownSpotlight) {
       setSpotlightPublishFeedback({
@@ -6744,12 +6888,20 @@ export default function ShopControlPage() {
       return;
     }
 
-    const spotlightId = Number(currentActiveSpotlight?.id || 0);
-    if (spotlightId <= 0) {
+    const campaignId = Number(currentActiveSpotlight?.spotlight_campaign_id || 0);
+    if (campaignId <= 0) {
       const missingMessage =
         "GSN could not identify the live Spotlight to take down. Refresh the page, then try again.";
       setSpotlightPublishFeedback({ tone: "error", text: missingMessage });
       showNotice("error", missingMessage);
+      return;
+    }
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Permanently withdraw this Spotlight? Delivery will stop. The used credit or allowance and unused time will not be restored."
+      )
+    ) {
       return;
     }
 
@@ -6757,23 +6909,15 @@ export default function ShopControlPage() {
     setSpotlightPublishFeedback(null);
 
     try {
-      const res = await deleteMarketplaceBroadcast(spotlightId);
-      const deletedItems = Array.isArray((res as any)?.deleted_items)
-        ? ((res as any).deleted_items as Array<{ id?: number | null }>)
-        : [];
-      const deletedIds = new Set<number>(
-        deletedItems
-          .map((item) => Number(item?.id || 0))
-          .filter((id) => id > 0)
-      );
-      deletedIds.add(spotlightId);
-
+      await withdrawSpotlightPermanently(campaignId);
       setSpotlights((prev) =>
-        prev.filter((item) => !deletedIds.has(Number(item?.id || 0)))
+        prev.filter(
+          (item) => Number(item?.spotlight_campaign_id || 0) !== campaignId
+        )
       );
 
       const successMessage =
-        "Live Spotlight taken down. You can now publish the corrected Spotlight from this page.";
+        "Spotlight permanently withdrawn. No credit or unused time was restored.";
       setSpotlightPublishFeedback({
         tone: "success",
         text: successMessage,
@@ -6879,6 +7023,9 @@ export default function ShopControlPage() {
     inlineIcon,
     spotlightProductName,
     setSpotlightProductName,
+    products,
+    spotlightCorrectionProductId,
+    setSpotlightCorrectionProductId,
     spotlightPriceNote,
     setSpotlightPriceNote,
     spotlightMessage,
@@ -6905,6 +7052,7 @@ export default function ShopControlPage() {
     spotlightPreviewHasVideo,
     handleCreateSpotlight,
     takingDownSpotlight,
+    handleCorrectCurrentSpotlight,
     handleTakeDownCurrentSpotlight,
     shopActionsLocked,
   } satisfies ShopControlSpotlightWorkflowProps;

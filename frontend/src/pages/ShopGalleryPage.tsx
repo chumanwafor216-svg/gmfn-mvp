@@ -25,6 +25,7 @@ import {
   getStoredGmfnId,
   recordMarketplaceAttentionEvent,
   qualifySpotlightPresentation,
+  revalidateSpotlightPresentation,
   safeCopy,
   unfollowMarketplaceShop,
 } from "../lib/api";
@@ -143,6 +144,10 @@ type ShopBroadcast = {
   opportunityPresentationToken?: string;
   opportunityPresentationExpiresAt?: string;
   opportunityPresentationSurface?: string;
+  servingStatus?: string;
+  campaignServingStatus?: string;
+  contentVersion?: number;
+  authorizedExpiresAt?: string;
   createdAt?: string;
   expiresAt?: string;
 };
@@ -150,6 +155,8 @@ type ShopBroadcast = {
 type PublicShopSpotlightSelectionCycle = {
   items: any[] | null;
   promise?: Promise<any[] | null>;
+  authoritative: boolean;
+  requestId: string;
   selectedAtMs: number;
   expiresAtMs: number;
 };
@@ -346,7 +353,9 @@ function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): n
         )
       ).getTime();
     })
-    .filter((value) => Number.isFinite(value) && value > selectedAtMs)
+    // Keep elapsed server deadlines. A delayed response must fail closed;
+    // discarding an elapsed deadline here would manufacture a fresh 30-second lease.
+    .filter((value) => Number.isFinite(value))
     .sort((a, b) => a - b)[0];
   const nextScheduledRefresh = selectedAtMs + SPOTLIGHT_PILOT_REFRESH_MS;
   return explicitExpiry
@@ -368,9 +377,16 @@ function publicShopSpotlightCycleIsAuthoritative(
 ): boolean {
   return Boolean(
     cycle &&
-      publicShopSpotlightRowsAreCanonical(cycle.items) &&
+      cycle.authoritative &&
       cycle.expiresAtMs > nowMs
   );
+}
+
+function newSpotlightPresentationRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `spotlight-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 async function loadPublicShopSpotlightPresentationCycle(
@@ -389,20 +405,29 @@ async function loadPublicShopSpotlightPresentationCycle(
   }
 
   const requestStartedAtMs = Date.now();
-  const requestPromise: Promise<any[] | null> = getPublicShopSpotlightOpportunity(cleanedGmfnId)
+  const requestId = existingCycle?.requestId || newSpotlightPresentationRequestId();
+  const requestPromise: Promise<any[] | null> = getPublicShopSpotlightOpportunity(cleanedGmfnId, requestId)
     .then((opportunityRes) => {
       const opportunityItems = publicShopSpotlightResponseItems(opportunityRes);
       const requestFinishedAtMs = Date.now();
-      if (publicShopSpotlightRowsAreCanonical(opportunityItems)) {
+      if (Number(opportunityRes?.serving_contract_version || 0) >= 2) {
+        const expiryMs = publicShopSpotlightCycleExpiryMs(
+          opportunityItems,
+          requestStartedAtMs
+        );
+        const safeItems =
+          publicShopSpotlightRowsAreCanonical(opportunityItems) &&
+          expiryMs > requestFinishedAtMs
+            ? opportunityItems
+            : [];
         publicShopSpotlightSelectionCycles.set(cycleKey, {
-          items: opportunityItems,
-          selectedAtMs: requestFinishedAtMs,
-          expiresAtMs: publicShopSpotlightCycleExpiryMs(
-            opportunityItems,
-            requestFinishedAtMs
-          ),
+          items: safeItems,
+          authoritative: true,
+          requestId,
+          selectedAtMs: requestStartedAtMs,
+          expiresAtMs: Math.max(expiryMs, requestFinishedAtMs + 1),
         });
-        return opportunityItems;
+        return safeItems;
       }
 
       const currentCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
@@ -419,16 +444,21 @@ async function loadPublicShopSpotlightPresentationCycle(
       return null;
     })
     .catch(() => {
-      const currentCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
-      if (currentCycle?.promise === requestPromise) {
-        publicShopSpotlightSelectionCycles.delete(cycleKey);
-      }
-      return null;
+      publicShopSpotlightSelectionCycles.set(cycleKey, {
+        items: [],
+        authoritative: true,
+        requestId,
+        selectedAtMs: requestStartedAtMs,
+        expiresAtMs: requestStartedAtMs + SPOTLIGHT_PILOT_REFRESH_MS,
+      });
+      return [];
     });
 
   publicShopSpotlightSelectionCycles.set(cycleKey, {
     items: null,
     promise: requestPromise,
+    authoritative: false,
+    requestId,
     selectedAtMs: requestStartedAtMs,
     expiresAtMs: requestStartedAtMs + SPOTLIGHT_PILOT_REFRESH_MS,
   });
@@ -1166,14 +1196,34 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       src?.opportunity_presentation_surface,
       src?.opportunityPresentationSurface
     ),
+    servingStatus: firstMeaningful(src?.serving_status, src?.servingStatus),
+    campaignServingStatus: firstMeaningful(
+      src?.campaign_serving_status,
+      src?.campaignServingStatus
+    ),
+    contentVersion:
+      positiveNumber(src?.content_version || src?.contentVersion) || undefined,
+    authorizedExpiresAt: firstMeaningful(
+      src?.authorized_expires_at,
+      src?.authorizedExpiresAt
+    ),
     createdAt: firstMeaningful(src?.created_at, src?.createdAt),
     expiresAt: firstMeaningful(src?.expires_at, src?.expiresAt),
   };
 }
 
 function broadcastIsActive(item: ShopBroadcast | null): boolean {
-  if (!item?.expiresAt) return true;
-  const expiresAt = new Date(item.expiresAt).getTime();
+  if (!item) return false;
+  if (item.servingStatus && item.servingStatus !== "serving") return false;
+  if (
+    item.campaignServingStatus &&
+    item.campaignServingStatus !== "serving"
+  ) {
+    return false;
+  }
+  const expiry = firstMeaningful(item.authorizedExpiresAt, item.expiresAt);
+  if (!expiry) return true;
+  const expiresAt = new Date(expiry).getTime();
   return !Number.isFinite(expiresAt) || expiresAt > Date.now();
 }
 
@@ -1939,7 +1989,7 @@ export default function ShopGalleryPage() {
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
       const spotlightBroadcasts =
-        Array.isArray(viewerSpotlightRows) && viewerSpotlightRows.length > 0
+        Array.isArray(viewerSpotlightRows)
           ? viewerSpotlightRows
           : publicBroadcasts;
 
@@ -2083,7 +2133,7 @@ export default function ShopGalleryPage() {
         const opportunityItems = await loadPublicShopSpotlightPresentationCycle(
           cleanedGmfnId
         );
-        if (opportunityItems && opportunityItems.length > 0) return opportunityItems;
+        if (opportunityItems !== null) return opportunityItems;
       }
 
       const res = await getMarketplaceBroadcasts({
@@ -2965,6 +3015,31 @@ export default function ShopGalleryPage() {
         clearQualificationTimer();
         return;
       }
+      if (
+        activeSpotlight.isCanonicalOpportunity &&
+        activeSpotlight.opportunityPresentationToken
+      ) {
+        void revalidateSpotlightPresentation(
+          activeSpotlight.opportunityPresentationToken
+        )
+          .then((result) => {
+            if (!alive) return;
+            if (result?.valid === true) {
+              evaluateQualification();
+              return;
+            }
+            clearQualificationTimer();
+            const cycleKey = publicShopSpotlightSelectionCycleKey(
+              firstMeaningful(gmfnId)
+            );
+            if (cycleKey) publicShopSpotlightSelectionCycles.delete(cycleKey);
+            window.dispatchEvent(new Event("focus"));
+          })
+          .catch(() => {
+            clearQualificationTimer();
+          });
+        return;
+      }
       evaluateQualification();
     }
 
@@ -2987,7 +3062,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
     };
-  }, [error, loading, miniSpotlight, ownerSpotlightPreviewRequested, trackMarketplaceAttention]);
+  }, [error, gmfnId, loading, miniSpotlight, ownerSpotlightPreviewRequested, trackMarketplaceAttention]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 

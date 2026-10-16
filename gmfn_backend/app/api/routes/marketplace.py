@@ -30,6 +30,7 @@ from app.db.models import (
     MarketplaceShop,
     ShopFollower,
     SpotlightCampaign,
+    SpotlightCampaignPacingState,
     TrustEvent,
     User,
 )
@@ -65,7 +66,22 @@ from app.services.spotlight_presentation_service import (
     PRESENTATION_REJECTION_OWNER_PREVIEW,
     presentation_policy,
     record_spotlight_presentation_qualification,
+    revalidate_spotlight_presentation,
     select_spotlight_presentation,
+)
+from app.services.spotlight_lifecycle_service import (
+    SPOTLIGHT_CORRECTION_HOLD,
+    SPOTLIGHT_SERVING,
+    SPOTLIGHT_SERVING_CONTRACT_VERSION,
+    SpotlightLifecycleError,
+    activation_expiry,
+    authorized_expiry,
+    ensure_initial_content_version,
+    lifecycle_writers_enabled,
+    permanently_withdraw,
+    place_correction_hold,
+    replace_content,
+    row_is_serving,
 )
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
@@ -1782,8 +1798,12 @@ def _count_active_spotlights_for_clan(
         .filter(
             MarketplaceBroadcast.clan_id == int(clan_id),
             MarketplaceBroadcast.priority_mode != SPOTLIGHT_PAID,
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > current_time),
+            MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING,
+            ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+             & (MarketplaceBroadcast.authorized_expires_at > current_time))
+            | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+               & ((MarketplaceBroadcast.expires_at.is_(None))
+                  | (MarketplaceBroadcast.expires_at > current_time))),
         )
         .count()
     )
@@ -1828,12 +1848,114 @@ def _count_active_paid_spotlights_for_shop(
         .filter(MarketplaceBroadcast.shop_id == int(shop_id))
         .filter(MarketplaceBroadcast.priority_mode == SPOTLIGHT_PAID)
         .filter(MarketplaceBroadcast.visibility_scope != "marketplace_repost")
+        .filter(MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING)
         .filter(
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > current_time),
+            ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+             & (MarketplaceBroadcast.authorized_expires_at > current_time))
+            | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+               & ((MarketplaceBroadcast.expires_at.is_(None))
+                  | (MarketplaceBroadcast.expires_at > current_time))),
         )
         .count()
     )
+
+
+def _spotlight_campaign_delivery_exhausted(
+    *,
+    db: Session,
+    campaign_id: int,
+) -> bool:
+    pacing = (
+        db.query(SpotlightCampaignPacingState)
+        .filter(SpotlightCampaignPacingState.campaign_id == int(campaign_id))
+        .one_or_none()
+    )
+    return bool(
+        pacing is not None
+        and (
+            bool(pacing.exhausted)
+            or int(pacing.consumed_delivery_rounds) >= int(pacing.max_delivery_rounds)
+        )
+    )
+
+
+def _reject_delivery_exhausted_campaign() -> None:
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "spotlight_delivery_rounds_exhausted",
+            "message": (
+                "This Spotlight has used its configured delivery opportunities. "
+                "No credit was consumed. Extending time or buying another placement "
+                "cannot create further delivery under the current cap."
+            ),
+        },
+    )
+
+
+def _spotlight_publication_key(value: Any) -> Optional[str]:
+    key = _safe_str(value)[:96]
+    return key or None
+
+
+def _direct_publication_replay(
+    *,
+    db: Session,
+    owner_user_id: int,
+    publication_key: Optional[str],
+    target_clan_ids: list[int],
+    shop_id: Optional[int],
+    message: str,
+    image_url: Optional[str],
+    video_url: Optional[str],
+    priority_mode: str,
+    visibility_scope: str,
+) -> Optional[Dict[str, Any]]:
+    if not publication_key:
+        return None
+    rows = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.author_user_id == int(owner_user_id))
+        .filter(MarketplaceBroadcast.publication_key == publication_key)
+        .order_by(MarketplaceBroadcast.id.asc())
+        .all()
+    )
+    if not rows:
+        return None
+    expected_clans = {int(value) for value in target_clan_ids}
+    actual_clans = {int(row.clan_id) for row in rows}
+    matches = (
+        actual_clans == expected_clans
+        and all((int(row.shop_id) if row.shop_id is not None else None) == shop_id for row in rows)
+        and all(_safe_str(row.message) == _safe_str(message) for row in rows)
+        and all(_safe_str(row.image_url) == _safe_str(image_url) for row in rows)
+        and all(_safe_str(row.video_url) == _safe_str(video_url) for row in rows)
+        and all(_safe_str(row.priority_mode) == priority_mode for row in rows)
+        and all(_safe_str(row.visibility_scope) == visibility_scope for row in rows)
+    )
+    if not matches:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "spotlight_idempotency_key_reused",
+                "message": "This publication key already belongs to a different Spotlight request.",
+            },
+        )
+    primary = next(
+        (row for row in rows if int(row.clan_id) == int(target_clan_ids[0])),
+        rows[0],
+    )
+    return {
+        "ok": True,
+        "item": _broadcast_out(db, primary),
+        "items": [_broadcast_out(db, row) for row in rows],
+        "propagated_clan_ids": [int(row.clan_id) for row in rows],
+        "propagated_count": len(rows),
+        "skipped_capacity_clan_ids": [],
+        "skipped_capacity_count": 0,
+        "idempotent_replay": True,
+        "credit_consumed_by_replay": False,
+    }
 
 
 def _as_aware_utc(value: Optional[datetime]) -> Optional[datetime]:
@@ -2150,6 +2272,7 @@ def _extend_spotlight_campaign(
         incoming_expiry is not None and incoming_expiry > current_expiry
     ):
         campaign.expires_at = incoming_expiry
+        campaign.authorized_expires_at = incoming_expiry
 
 
 def _active_spotlight_campaign_for_owner(
@@ -2222,6 +2345,8 @@ def _ensure_active_spotlight_campaign(
         content_kind=content_kind,
         content_fingerprint=content_fingerprint,
         status=SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE,
+        serving_status=SPOTLIGHT_SERVING,
+        content_version=1,
         source_kind=source_kind,
         commercial_mode=commercial_mode,
         distribution_scope=distribution_scope,
@@ -2229,6 +2354,8 @@ def _ensure_active_spotlight_campaign(
         created_at=current_time,
         activated_at=current_time,
         expires_at=expires_at,
+        authorized_expires_at=expires_at,
+        serving_status_changed_at=current_time,
     )
     db.add(campaign)
     try:
@@ -2279,9 +2406,13 @@ def _end_spotlight_campaign_if_no_active_placements(
     active_placement_count = (
         db.query(MarketplaceBroadcast)
         .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign_id))
+        .filter(MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING)
         .filter(
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > current_time)
+            ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+             & (MarketplaceBroadcast.authorized_expires_at > current_time))
+            | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+               & ((MarketplaceBroadcast.expires_at.is_(None))
+                  | (MarketplaceBroadcast.expires_at > current_time)))
         )
         .count()
     )
@@ -2316,9 +2447,13 @@ def _active_spotlight_rows_for_clan_ids(
     return (
         db.query(MarketplaceBroadcast)
         .filter(MarketplaceBroadcast.clan_id.in_(clean_clan_ids))
+        .filter(MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING)
         .filter(
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > current_time)
+            ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+             & (MarketplaceBroadcast.authorized_expires_at > current_time))
+            | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+               & ((MarketplaceBroadcast.expires_at.is_(None))
+                  | (MarketplaceBroadcast.expires_at > current_time)))
         )
         .order_by(
             priority_rank.desc(),
@@ -2785,6 +2920,7 @@ class MarketplaceBroadcastCreateIn(BaseModel):
     opportunity_remote_available: Optional[bool] = None
     opportunity_availability: Optional[str] = Field(default=None, max_length=24)
     opportunity_expires_at: Optional[datetime] = None
+    idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=96)
 
 
 class SpotlightPresentationQualificationIn(BaseModel):
@@ -2794,11 +2930,25 @@ class SpotlightPresentationQualificationIn(BaseModel):
     visible_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
     document_visible: bool = False
     owner_preview: bool = False
+
+
+class SpotlightPresentationRevalidationIn(BaseModel):
+    presentation_token: str = Field(..., min_length=20, max_length=4000)
+
+
+class SpotlightCorrectionReplacementIn(BaseModel):
+    message: str = Field(default="", max_length=2000)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    video_url: Optional[str] = Field(default=None, max_length=4000)
+    source_product_id: Optional[int] = Field(default=None, gt=0)
+
+
 class MarketplaceRepostCreateIn(BaseModel):
 
     target_clan_id: Optional[int] = Field(default=None, gt=0)
     target_community_code: Optional[str] = Field(default=None, max_length=64)
     duration_days: Optional[int] = Field(default=1, ge=1, le=365)
+    idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=96)
 
 
 def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
@@ -3092,6 +3242,11 @@ def _spotlight_availability_label(expires_at: Optional[datetime]) -> str:
 def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     author = db.query(User).filter(User.id == int(item.author_user_id)).first()
     clan = db.query(Clan).filter(Clan.id == int(item.clan_id)).first()
+    campaign = (
+        db.get(SpotlightCampaign, int(item.spotlight_campaign_id))
+        if item.spotlight_campaign_id is not None
+        else None
+    )
     canonical_shop = None
 
     if getattr(item, "shop_id", None):
@@ -3186,6 +3341,17 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     if message_parts["availability"]:
         source_product_availability = message_parts["availability"]
 
+    item_authorized_expiry = authorized_expiry(item)
+    campaign_authorized_expiry = authorized_expiry(campaign) if campaign is not None else None
+    effective_expiry = min(
+        [value for value in (item_authorized_expiry, campaign_authorized_expiry) if value is not None],
+        default=None,
+    )
+    remaining_seconds = (
+        max(0, int((effective_expiry - _now_utc()).total_seconds()))
+        if effective_expiry is not None
+        else None
+    )
     return {
         "id": int(item.id),
         "spotlight_campaign_id": (
@@ -3193,6 +3359,20 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             if getattr(item, "spotlight_campaign_id", None) is not None
             else None
         ),
+        "serving_status": str(getattr(item, "serving_status", SPOTLIGHT_SERVING) or SPOTLIGHT_SERVING),
+        "campaign_serving_status": (
+            str(campaign.serving_status or SPOTLIGHT_SERVING) if campaign is not None else None
+        ),
+        "content_version": int(getattr(item, "content_version", 1) or 1),
+        "activated_at": (
+            campaign.activated_at.isoformat()
+            if campaign is not None and campaign.activated_at
+            else item.created_at.isoformat() if item.created_at else None
+        ),
+        "authorized_expires_at": effective_expiry.isoformat() if effective_expiry else None,
+        "remaining_seconds": remaining_seconds,
+        "lifecycle_writers_enabled": lifecycle_writers_enabled(),
+        "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
         "clan_id": int(item.clan_id),
         "author_user_id": int(item.author_user_id),
         "author_gmfn_id": author_gmfn_id,
@@ -3223,7 +3403,13 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             else None
         ),
         "source_clan_name": clan_display_name,
-        "source_product_id": int(repost_product.id) if repost_product is not None else None,
+        "source_product_id": (
+            int(repost_product.id)
+            if repost_product is not None
+            else int(campaign.source_product_id)
+            if campaign is not None and campaign.source_product_id is not None
+            else None
+        ),
         "source_product_block": repost_block_number,
         "source_product_slot_number": repost_block_number,
         "source_product_title": source_product_title or None,
@@ -3692,7 +3878,12 @@ def _presentation_broadcast_for_candidate(
     now = _now_utc()
     base_query = db.query(MarketplaceBroadcast).filter(
         MarketplaceBroadcast.spotlight_campaign_id == int(campaign_id),
-        (MarketplaceBroadcast.expires_at.is_(None)) | (MarketplaceBroadcast.expires_at > now),
+        MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING,
+        ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+         & (MarketplaceBroadcast.authorized_expires_at > now))
+        | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+           & ((MarketplaceBroadcast.expires_at.is_(None))
+              | (MarketplaceBroadcast.expires_at > now))),
     )
     if placement_ids:
         preferred = (
@@ -3711,20 +3902,27 @@ def _presentation_broadcast_for_candidate(
 @router.get("/public/shop/{gmfn_id}/spotlight-opportunity")
 def get_public_shop_spotlight_opportunity(
     gmfn_id: str,
+    x_spotlight_request_id: Optional[str] = Header(default=None, alias='X-Spotlight-Presentation-Request-Id'),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
     policy = presentation_policy().to_public_dict()
+    serving_contract = {
+        "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
+        "max_stale_display_seconds": 30,
+        "fallback_allowed": False,
+    }
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
     if int(owner.id) == int(current_user.id):
         return {
+            **serving_contract,
             "ok": True,
             "item": None,
             "presentation": None,
             "policy": policy,
-            "fallback": "legacy_public_shop_broadcasts",
+            "fallback": None,
             "rejection_code": PRESENTATION_REJECTION_OWNER_PREVIEW,
         }
 
@@ -3733,31 +3931,34 @@ def get_public_shop_spotlight_opportunity(
         viewer_user_id=int(current_user.id),
         requested_delivery_slots=1,
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+        issuance_key=x_spotlight_request_id,
     )
     db.commit()
     if not selection.selected or selection.candidate is None:
         return {
+            **serving_contract,
             "ok": True,
             "item": None,
             "presentation": None,
             "policy": policy,
-            "fallback": "legacy_public_shop_broadcasts",
+            "fallback": None,
             "rejection_code": selection.rejection_code,
         }
 
     campaign_id = int(selection.candidate.campaign_id)
-    broadcast = _presentation_broadcast_for_candidate(
-        db,
-        candidate=selection.candidate,
-        campaign_id=campaign_id,
+    broadcast = (
+        db.get(MarketplaceBroadcast, int(selection.placement_broadcast_id))
+        if selection.placement_broadcast_id is not None
+        else None
     )
     if broadcast is None:
         return {
+            **serving_contract,
             "ok": True,
             "item": None,
             "presentation": None,
             "policy": policy,
-            "fallback": "legacy_public_shop_broadcasts",
+            "fallback": None,
             "rejection_code": "canonical_broadcast_snapshot_missing",
         }
 
@@ -3771,6 +3972,7 @@ def get_public_shop_spotlight_opportunity(
     )
     item["opportunity_presentation_surface"] = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
     return {
+        **serving_contract,
         "ok": True,
         "item": item,
         "items": [item],
@@ -3779,13 +3981,31 @@ def get_public_shop_spotlight_opportunity(
             "presentation_token": selection.presentation_token,
             "presentation_expires_at": item["opportunity_presentation_expires_at"],
             "campaign_id": campaign_id,
+            "placement_broadcast_id": selection.placement_broadcast_id,
+            "content_version": selection.content_version,
             "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
-            "delivery_round_consumed": True,
+            "delivery_round_consumed": bool(selection.delivery_round_consumed),
         },
         "policy": policy,
         "fallback": None,
         "rejection_code": None,
     }
+
+
+@router.post("/spotlight-presentations/revalidate")
+def revalidate_spotlight_presentation_route(
+    payload: SpotlightPresentationRevalidationIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    result = revalidate_spotlight_presentation(
+        db,
+        viewer_user_id=int(current_user.id),
+        presentation_token=payload.presentation_token,
+        surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    )
+    db.commit()
+    return result
 
 
 @router.post("/spotlight-presentations/qualify")
@@ -5683,6 +5903,64 @@ def repost_marketplace_product(
 
     current_time = _now_utc()
     duration_days = max(1, min(_safe_int(getattr(payload, "duration_days", 1), 1), 365))
+    publication_key = _spotlight_publication_key(payload.idempotency_key)
+    if publication_key:
+        existing_repost = (
+            db.query(MarketplaceProductRepost)
+            .filter(MarketplaceProductRepost.reposted_by_user_id == int(current_user.id))
+            .filter(MarketplaceProductRepost.publication_key == publication_key)
+            .one_or_none()
+        )
+        if existing_repost is not None:
+            if (
+                int(existing_repost.original_product_id) != int(product.id)
+                or int(existing_repost.target_clan_id) != target_clan_id
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "spotlight_idempotency_key_reused",
+                        "message": "This publication key already belongs to a different Network Spotlight request.",
+                    },
+                )
+            existing_broadcast = (
+                db.query(MarketplaceBroadcast)
+                .filter(MarketplaceBroadcast.author_user_id == int(current_user.id))
+                .filter(MarketplaceBroadcast.publication_key == publication_key)
+                .filter(MarketplaceBroadcast.clan_id == target_clan_id)
+                .one_or_none()
+            )
+            if existing_broadcast is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "spotlight_publication_incomplete",
+                        "message": "The earlier publication is incomplete. No further credit was consumed; review before retrying.",
+                    },
+                )
+            return {
+                "ok": True,
+                "item": _repost_out(db, existing_repost),
+                "broadcast": _broadcast_out(db, existing_broadcast),
+                "product": _product_out(db, product),
+                "target_community": {
+                    "id": target_clan_id,
+                    "community_code": target_community_code,
+                    "name": (
+                        _safe_str(getattr(target_clan, "marketplace_name", None))
+                        or _safe_str(getattr(target_clan, "name", None))
+                        or f"Community {target_clan_id}"
+                    ),
+                },
+                "duration_days": duration_days,
+                "expires_at": (
+                    authorized_expiry(existing_broadcast).isoformat()
+                    if authorized_expiry(existing_broadcast)
+                    else None
+                ),
+                "idempotent_replay": True,
+                "credit_consumed_by_replay": False,
+            }
     required_spotlight_units = duration_days
     available_spotlight_units = get_active_feature_quantity(
         db,
@@ -5708,7 +5986,8 @@ def repost_marketplace_product(
         if spotlight_detail and spotlight_detail != spotlight_title
         else spotlight_title
     )[:2000]
-    spotlight_expires_at = (current_time + timedelta(days=duration_days)).replace(microsecond=0)
+    current_time = current_time.replace(microsecond=0)
+    spotlight_expires_at = activation_expiry(current_time, authorized_days=duration_days)
     content_fingerprint = _spotlight_content_fingerprint(
         content_kind=SPOTLIGHT_CONTENT_KIND_PRODUCT,
         shop_id=int(shop.id),
@@ -5720,6 +5999,14 @@ def repost_marketplace_product(
         owner_user_id=int(current_user.id),
         now=current_time,
     )
+    if (
+        active_campaign is not None
+        and _spotlight_campaign_delivery_exhausted(
+            db=db,
+            campaign_id=int(active_campaign.id),
+        )
+    ):
+        _reject_delivery_exhausted_campaign()
     campaign: Optional[SpotlightCampaign] = None
     if active_campaign is None or _spotlight_campaign_content_matches(
         active_campaign,
@@ -5743,13 +6030,17 @@ def repost_marketplace_product(
         )
 
     repost = MarketplaceProductRepost(
+        publication_key=publication_key,
         original_product_id=int(product.id),
         reposted_by_user_id=int(current_user.id),
         target_clan_id=target_clan_id,
         created_at=current_time,
     )
     broadcast = MarketplaceBroadcast(
+        publication_key=publication_key,
         spotlight_campaign_id=(int(campaign.id) if campaign is not None else None),
+        serving_status=SPOTLIGHT_SERVING,
+        content_version=int(campaign.content_version or 1) if campaign is not None else 1,
         clan_id=target_clan_id,
         author_user_id=int(current_user.id),
         shop_id=int(product.shop_id),
@@ -5759,11 +6050,28 @@ def repost_marketplace_product(
         priority_mode=SPOTLIGHT_PAID,
         visibility_scope="marketplace_repost",
         expires_at=spotlight_expires_at,
+        authorized_expires_at=spotlight_expires_at,
+        serving_status_changed_at=current_time,
         created_at=current_time,
     )
     db.add(repost)
     db.add(broadcast)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "spotlight_publication_conflict",
+                "message": (
+                    "Another matching Network Spotlight publication is completing. "
+                    "Retry with the same publication key; no credit was consumed by this attempt."
+                ),
+            },
+        )
+    if campaign is not None:
+        ensure_initial_content_version(db, campaign=campaign, placement=broadcast)
 
     usage = consume_feature_units(
         db,
@@ -5771,7 +6079,11 @@ def repost_marketplace_product(
         feature_code=FEATURE_SPOTLIGHT_PRIORITY,
         units=required_spotlight_units,
         shop_id=int(shop.id),
-        reference_key=f"marketplace.repost:{int(broadcast.id)}",
+        reference_key=(
+            f"marketplace.repost.request:{publication_key}"
+            if publication_key
+            else f"marketplace.repost:{int(broadcast.id)}"
+        ),
         note="Network Spotlight placement",
         commit=False,
     )
@@ -5862,6 +6174,7 @@ def repost_marketplace_product(
         },
         "duration_days": duration_days,
         "expires_at": spotlight_expires_at.isoformat(),
+        "idempotent_replay": False,
     }
 
 
@@ -5991,9 +6304,13 @@ def list_marketplace_broadcasts(
 
     if active_only:
         now = _now_utc()
+        q = q.filter(MarketplaceBroadcast.serving_status == SPOTLIGHT_SERVING)
         q = q.filter(
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > now)
+            ((MarketplaceBroadcast.authorized_expires_at.isnot(None))
+             & (MarketplaceBroadcast.authorized_expires_at > now))
+            | ((MarketplaceBroadcast.authorized_expires_at.is_(None))
+               & ((MarketplaceBroadcast.expires_at.is_(None))
+                  | (MarketplaceBroadcast.expires_at > now)))
         )
 
     matching_total = q.count()
@@ -6081,18 +6398,9 @@ def create_marketplace_broadcast(
         clan_id=resolved_clan_id,
     )
 
-    expires_at = payload.expires_at
-    if expires_at is None:
-        expires_at = _now_utc().replace(microsecond=0)
-        expires_at = expires_at.replace(hour=23, minute=59, second=59)
-    else:
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        else:
-            expires_at = expires_at.astimezone(timezone.utc)
-
-    if expires_at <= _now_utc():
-        raise HTTPException(status_code=400, detail="expires_at must be in the future")
+    # A direct publish always receives one server-authorised 24-hour unit.
+    # Caller-supplied expiry remains accepted for wire compatibility but cannot
+    # shorten, lengthen, or otherwise control the paid/free entitlement.
 
     if shop is not None:
         if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":
@@ -6114,10 +6422,27 @@ def create_marketplace_broadcast(
     if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No active community memberships found")
 
+    publication_key = _spotlight_publication_key(payload.idempotency_key)
+    replay = _direct_publication_replay(
+        db=db,
+        owner_user_id=int(current_user.id),
+        publication_key=publication_key,
+        target_clan_ids=target_clan_ids,
+        shop_id=(int(shop.id) if shop is not None else None),
+        message=payload.message,
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+        priority_mode=priority_mode,
+        visibility_scope=visibility_scope,
+    )
+    if replay is not None:
+        return replay
+
     for target_clan_id in target_clan_ids:
         require_domain_spotlight_enabled(db, clan_id=int(target_clan_id))
 
-    current_time = _now_utc()
+    current_time = _now_utc().replace(microsecond=0)
+    expires_at = activation_expiry(current_time, authorized_days=1)
     skipped_capacity_clan_ids: list[int] = []
     daily_free_spotlight_count = 0
 
@@ -6139,12 +6464,40 @@ def create_marketplace_broadcast(
                 detail="No active paid spotlight entitlement found for this shop.",
             )
 
+        active_campaign = _active_spotlight_campaign_for_owner(
+            db=db,
+            owner_user_id=int(current_user.id),
+            now=current_time,
+        )
+        if (
+            active_campaign is not None
+            and _spotlight_campaign_delivery_exhausted(
+                db=db,
+                campaign_id=int(active_campaign.id),
+            )
+        ):
+            _reject_delivery_exhausted_campaign()
+
         active_paid_count = _count_active_paid_spotlights_for_shop(
             db=db,
             shop_id=int(shop.id),
             now=current_time,
         )
         if active_paid_count > 0:
+            replay = _direct_publication_replay(
+                db=db,
+                owner_user_id=int(current_user.id),
+                publication_key=publication_key,
+                target_clan_ids=target_clan_ids,
+                shop_id=int(shop.id),
+                message=payload.message,
+                image_url=payload.image_url,
+                video_url=payload.video_url,
+                priority_mode=priority_mode,
+                visibility_scope=visibility_scope,
+            )
+            if replay is not None:
+                return replay
             raise HTTPException(
                 status_code=400,
                 detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
@@ -6167,7 +6520,7 @@ def create_marketplace_broadcast(
     if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No eligible community spotlight placements found")
 
-    created_at = _now_utc()
+    created_at = current_time
     content_fingerprint = _spotlight_content_fingerprint(
         content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
         shop_id=int(shop.id) if shop is not None else None,
@@ -6194,7 +6547,10 @@ def create_marketplace_broadcast(
 
     for clan_id in target_clan_ids:
         item = MarketplaceBroadcast(
+            publication_key=publication_key,
             spotlight_campaign_id=int(campaign.id),
+            serving_status=SPOTLIGHT_SERVING,
+            content_version=int(campaign.content_version or 1),
             clan_id=int(clan_id),
             author_user_id=int(current_user.id),
             shop_id=int(shop.id) if shop is not None else None,
@@ -6204,13 +6560,44 @@ def create_marketplace_broadcast(
             priority_mode=priority_mode,
             visibility_scope=visibility_scope,
             expires_at=expires_at,
+            authorized_expires_at=expires_at,
+            serving_status_changed_at=created_at,
             created_at=created_at,
         )
         db.add(item)
         created_items.append(item)
 
-    if priority_mode == SPOTLIGHT_PAID:
+    try:
         db.flush()
+    except IntegrityError:
+        db.rollback()
+        replay = _direct_publication_replay(
+            db=db,
+            owner_user_id=int(current_user.id),
+            publication_key=publication_key,
+            target_clan_ids=target_clan_ids,
+            shop_id=(int(shop.id) if shop is not None else None),
+            message=payload.message,
+            image_url=payload.image_url,
+            video_url=payload.video_url,
+            priority_mode=priority_mode,
+            visibility_scope=visibility_scope,
+        )
+        if replay is not None:
+            return replay
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "spotlight_publication_conflict",
+                "message": (
+                    "Another matching Spotlight publication is completing. "
+                    "Retry with the same publication key; no credit was consumed by this attempt."
+                ),
+            },
+        )
+    ensure_initial_content_version(db, campaign=campaign, placement=created_items[0])
+
+    if priority_mode == SPOTLIGHT_PAID:
         primary_for_usage = next(
             (x for x in created_items if int(x.clan_id) == int(resolved_clan_id)),
             created_items[0],
@@ -6221,7 +6608,11 @@ def create_marketplace_broadcast(
             feature_code=FEATURE_SPOTLIGHT_PRIORITY,
             units=1,
             shop_id=int(shop.id),
-            reference_key=f"marketplace.broadcast:{int(primary_for_usage.id)}",
+            reference_key=(
+                f"marketplace.broadcast.request:{publication_key}"
+                if publication_key
+                else f"marketplace.broadcast:{int(primary_for_usage.id)}"
+            ),
             note="Subscription Spotlight publish",
             commit=False,
         )
@@ -6325,6 +6716,149 @@ def create_marketplace_broadcast(
         "free_spotlight_daily_limit_per_author": FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR,
         "free_spotlight_used_today_before_publish": daily_free_spotlight_count,
         "spotlight_capacity_pilot_override_active": _spotlight_capacity_pilot_override_active(),
+        "idempotent_replay": False,
+    }
+
+
+def _owned_spotlight_campaign(
+    db: Session,
+    *,
+    campaign_id: int,
+    current_user: User,
+) -> SpotlightCampaign:
+    campaign = db.get(SpotlightCampaign, int(campaign_id))
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="Spotlight campaign not found")
+    if int(campaign.owner_user_id) != int(current_user.id) and not _is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the Spotlight owner can change this campaign")
+    return campaign
+
+
+def _spotlight_lifecycle_error(exc: SpotlightLifecycleError) -> HTTPException:
+    status_code = 503 if exc.code == "spotlight_lifecycle_writers_disabled" else 409
+    return HTTPException(
+        status_code=status_code,
+        detail={"code": exc.code, "message": exc.message},
+    )
+
+
+def _spotlight_campaign_status_out(
+    db: Session,
+    *,
+    campaign: SpotlightCampaign,
+) -> Dict[str, Any]:
+    placements = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign.id))
+        .order_by(MarketplaceBroadcast.id.asc())
+        .all()
+    )
+    return {
+        "campaign_id": int(campaign.id),
+        "status": campaign.status,
+        "serving_status": campaign.serving_status,
+        "content_version": int(campaign.content_version or 1),
+        "activated_at": campaign.activated_at.isoformat() if campaign.activated_at else None,
+        "authorized_expires_at": (
+            authorized_expiry(campaign).isoformat() if authorized_expiry(campaign) else None
+        ),
+        "expiry_unchanged_by_lifecycle_action": True,
+        "placements": [
+            {
+                "broadcast_id": int(row.id),
+                "clan_id": int(row.clan_id),
+                "serving_status": row.serving_status,
+                "content_version": int(row.content_version or 1),
+                "authorized_expires_at": (
+                    authorized_expiry(row).isoformat() if authorized_expiry(row) else None
+                ),
+            }
+            for row in placements
+        ],
+        "lifecycle_writers_enabled": lifecycle_writers_enabled(),
+        "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
+    }
+
+
+@router.post("/spotlight-campaigns/{campaign_id}/correction-hold")
+def hold_spotlight_for_correction(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    campaign = _owned_spotlight_campaign(db, campaign_id=campaign_id, current_user=current_user)
+    try:
+        place_correction_hold(db, campaign=campaign)
+        db.commit()
+    except SpotlightLifecycleError as exc:
+        db.rollback()
+        raise _spotlight_lifecycle_error(exc) from exc
+    return {"ok": True, "campaign": _spotlight_campaign_status_out(db, campaign=campaign)}
+
+
+@router.post("/spotlight-campaigns/{campaign_id}/replace")
+def replace_spotlight_correction(
+    campaign_id: int,
+    payload: SpotlightCorrectionReplacementIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    campaign = _owned_spotlight_campaign(db, campaign_id=campaign_id, current_user=current_user)
+    content_kind = (
+        SPOTLIGHT_CONTENT_KIND_PRODUCT
+        if payload.source_product_id is not None
+        else SPOTLIGHT_CONTENT_KIND_BROADCAST
+    )
+    fingerprint = _spotlight_content_fingerprint(
+        content_kind=content_kind,
+        shop_id=campaign.shop_id,
+        origin_clan_id=campaign.origin_clan_id,
+        message=payload.message,
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+        source_product_id=payload.source_product_id,
+    )
+    try:
+        version = replace_content(
+            db,
+            campaign=campaign,
+            content_kind=content_kind,
+            content_fingerprint=fingerprint,
+            message=payload.message,
+            image_url=_safe_str(payload.image_url) or None,
+            video_url=_safe_str(payload.video_url) or None,
+            source_product_id=payload.source_product_id,
+        )
+        db.commit()
+    except SpotlightLifecycleError as exc:
+        db.rollback()
+        raise _spotlight_lifecycle_error(exc) from exc
+    return {
+        "ok": True,
+        "content_version": int(version.version),
+        "campaign": _spotlight_campaign_status_out(db, campaign=campaign),
+    }
+
+
+@router.post("/spotlight-campaigns/{campaign_id}/withdraw")
+def withdraw_spotlight_permanently(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    campaign = _owned_spotlight_campaign(db, campaign_id=campaign_id, current_user=current_user)
+    try:
+        permanently_withdraw(db, campaign=campaign)
+        db.commit()
+    except SpotlightLifecycleError as exc:
+        db.rollback()
+        raise _spotlight_lifecycle_error(exc) from exc
+    return {
+        "ok": True,
+        "credit_restored": False,
+        "unused_time_restored": False,
+        "cci_changed": False,
+        "campaign": _spotlight_campaign_status_out(db, campaign=campaign),
     }
 
 
@@ -6344,6 +6878,34 @@ def delete_marketplace_broadcast(
 
     if int(item.author_user_id) != int(current_user.id) and not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="You can only delete your own spotlight post")
+
+    if item.spotlight_campaign_id is not None:
+        campaign = _owned_spotlight_campaign(
+            db,
+            campaign_id=int(item.spotlight_campaign_id),
+            current_user=current_user,
+        )
+        try:
+            permanently_withdraw(db, campaign=campaign)
+            db.commit()
+        except SpotlightLifecycleError as exc:
+            db.rollback()
+            raise _spotlight_lifecycle_error(exc) from exc
+        return {
+            "ok": True,
+            "deleted_items": [],
+            "withdrawn_items": [
+                _broadcast_out(db, row)
+                for row in db.query(MarketplaceBroadcast)
+                .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign.id))
+                .order_by(MarketplaceBroadcast.id.asc())
+                .all()
+            ],
+            "permanent_withdrawal": True,
+            "credit_restored": False,
+            "unused_time_restored": False,
+            "campaign": _spotlight_campaign_status_out(db, campaign=campaign),
+        }
 
     sibling_rows = (
         db.query(MarketplaceBroadcast)

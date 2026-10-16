@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -428,6 +428,7 @@ def _is_visible_live_demand(
     demand: MarketplaceRequest,
     *,
     current_user_id: int,
+    now: Optional[datetime] = None,
 ) -> bool:
     clan_id = getattr(demand, "clan_id", None)
     if not clan_id:
@@ -441,7 +442,8 @@ def _is_visible_live_demand(
     if str(getattr(demand, "status", "") or "").lower() != OPEN_DEMAND_STATUS:
         return False
     expires_at = getattr(demand, "expires_at", None)
-    if expires_at is not None and _as_aware_utc(expires_at) < _now_utc():
+    current_time = _as_aware_utc(now) or _now_utc()
+    if expires_at is not None and _as_aware_utc(expires_at) <= current_time:
         return False
     if PROTECTED_TARGET_MARKER in str(getattr(demand, "description", "") or ""):
         return (

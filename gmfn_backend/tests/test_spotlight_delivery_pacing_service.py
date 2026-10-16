@@ -266,15 +266,31 @@ def _basic_setup(*, campaign_count: int = 4, commercial_mode_2: str = "free") ->
         )
 
 
-def _frequency_result(campaign_ids: list[int], *, viewer_user_id: int = 1, **frequency_kwargs):
+def _frequency_result(
+    campaign_ids: list[int],
+    *,
+    viewer_user_id: int = 1,
+    candidate_now=BASE_TIME + timedelta(hours=1),
+    **frequency_kwargs,
+):
     with SessionLocal() as db:
-        candidates = build_spotlight_opportunity_candidates(db, viewer_user_id=viewer_user_id, campaign_ids=campaign_ids)
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=viewer_user_id,
+            campaign_ids=campaign_ids,
+            now=candidate_now,
+        )
         diversity = allocate_spotlight_opportunity_candidates(db, viewer_user_id=viewer_user_id, candidates=candidates)
         return apply_spotlight_frequency_control(db, viewer_user_id=viewer_user_id, diversity_result=diversity, **frequency_kwargs)
 
 
 def _pacing_result(campaign_ids: list[int], *, viewer_user_id: int = 1, requested_delivery_slots: int = 1, pacing_states=None, now=BASE_TIME + timedelta(hours=1), **frequency_kwargs):
-    frequency = _frequency_result(campaign_ids, viewer_user_id=viewer_user_id, **frequency_kwargs)
+    frequency = _frequency_result(
+        campaign_ids,
+        viewer_user_id=viewer_user_id,
+        candidate_now=now,
+        **frequency_kwargs,
+    )
     with SessionLocal() as db:
         return schedule_spotlight_delivery_opportunities(
             db,
@@ -387,8 +403,15 @@ def test_candidate_generation_eligibility_and_feed_fetch_do_not_consume_rounds(c
     _seed_placement(broadcast_id=10, campaign_id=1, clan_id=1, author_user_id=2)
     state = SpotlightCampaignPacingState(campaign_id=1, consumed_rounds=0)
     with SessionLocal() as db:
-        assert build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=[1])
-        assert evaluate_spotlight_eligibility_batch(db, viewer_user_id=1, campaign_ids=[1])[0].eligible is True
+        assert build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=[1], now=BASE_TIME + timedelta(hours=1)
+        )
+        assert evaluate_spotlight_eligibility_batch(
+            db,
+            viewer_user_id=1,
+            campaign_ids=[1],
+            now=BASE_TIME + timedelta(hours=1),
+        )[0].eligible is True
     os.environ["GMFN_SECRET_KEY"] = "phase4d-test-secret"
     token = create_access_token({"sub": "phase4d-user-1@example.com"})
     feed = client.get("/marketplace/broadcasts?clan_id=1&active_only=true", headers={"Authorization": f"Bearer {token}"})

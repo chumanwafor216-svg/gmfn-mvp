@@ -48,6 +48,15 @@ export type ShopControlSpotlightBroadcast = {
   source_product_video_url?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
+  spotlight_campaign_id?: number | null;
+  serving_status?: string | null;
+  campaign_serving_status?: string | null;
+  content_version?: number | null;
+  source_product_id?: number | null;
+  activated_at?: string | null;
+  authorized_expires_at?: string | null;
+  remaining_seconds?: number | null;
+  lifecycle_writers_enabled?: boolean | null;
   expires_at?: string | null;
   created_at?: string | null;
   source_shop_name?: string | null;
@@ -128,6 +137,14 @@ export type ShopControlSpotlightWorkflowProps = {
   inlineIcon: (name: GsnIconName, color?: string, size?: number) => ReactNode;
   spotlightProductName: string;
   setSpotlightProductName: Dispatch<SetStateAction<string>>;
+  products: Array<{
+    id: number;
+    name?: string | null;
+    is_active?: boolean;
+    visibility_mode?: string | null;
+  }>;
+  spotlightCorrectionProductId: number | null;
+  setSpotlightCorrectionProductId: Dispatch<SetStateAction<number | null>>;
   spotlightPriceNote: string;
   setSpotlightPriceNote: Dispatch<SetStateAction<string>>;
   spotlightMessage: string;
@@ -154,6 +171,7 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightPreviewHasVideo: boolean;
   handleCreateSpotlight: () => Promise<void>;
   takingDownSpotlight: boolean;
+  handleCorrectCurrentSpotlight: () => Promise<void>;
   handleTakeDownCurrentSpotlight: () => Promise<void>;
   shopActionsLocked: boolean;
 };

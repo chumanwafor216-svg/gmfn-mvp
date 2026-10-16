@@ -276,8 +276,18 @@ def test_candidate_generation_eligibility_and_feed_read_do_not_consume(client):
     _seed_placement(broadcast_id=12, campaign_id=1)
     with SessionLocal() as db:
         get_or_create_spotlight_campaign_pacing_state(db, campaign_id=1, now=BASE_TIME)
-        assert build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=[1])
-        assert evaluate_spotlight_eligibility_batch(db, viewer_user_id=1, campaign_ids=[1])[0].eligible is True
+        assert build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=1,
+            campaign_ids=[1],
+            now=BASE_TIME,
+        )
+        assert evaluate_spotlight_eligibility_batch(
+            db,
+            viewer_user_id=1,
+            campaign_ids=[1],
+            now=BASE_TIME,
+        )[0].eligible is True
         db.commit()
     os.environ["GMFN_SECRET_KEY"] = "phase4e1-test-secret"
     token = create_access_token({"sub": "phase4e1-user-1@example.com"})

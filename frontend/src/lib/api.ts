@@ -83,6 +83,7 @@ type RequestOptions = {
   keepalive?: boolean;
   quiet?: boolean;
   timeoutMs?: number;
+  headers?: Record<string, string>;
 };
 
 class HttpStatusError extends Error {
@@ -597,6 +598,7 @@ async function httpJson(
   options?: RequestOptions
 ): Promise<any> {
   const headers: Record<string, string> = { Accept: "application/json" };
+  Object.assign(headers, options?.headers || {});
 
   const tok = options?.includeAuth === false ? null : getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
@@ -6717,12 +6719,31 @@ export async function recordMarketplaceAttentionEvent(payload: {
 }
 
 export async function getPublicShopSpotlightOpportunity(
-  gmfnId: string
+  gmfnId: string,
+  presentationRequestId: string
 ): Promise<any> {
   return httpJson(
     `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}/spotlight-opportunity`,
     "GET",
     undefined,
+    {
+      header_clan_id: null,
+      quiet: true,
+      timeoutMs: 8000,
+      headers: {
+        "X-Spotlight-Presentation-Request-Id": presentationRequestId,
+      },
+    }
+  );
+}
+
+export async function revalidateSpotlightPresentation(
+  presentationToken: string
+): Promise<any> {
+  return httpJson(
+    "/marketplace/spotlight-presentations/revalidate",
+    "POST",
+    { presentation_token: presentationToken },
     { header_clan_id: null, quiet: true, timeoutMs: 8000 }
   );
 }
@@ -6961,6 +6982,7 @@ export async function createMarketplaceBroadcast(payload: {
   expires_at?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
+  idempotency_key?: string | null;
 }): Promise<any> {
   const effectiveClanId =
     payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
@@ -6973,6 +6995,10 @@ export async function createMarketplaceBroadcast(payload: {
   const expiresAt = normalizeApiDateTime(payload?.expires_at);
   const priorityMode = String(payload?.priority_mode || "").trim();
   const visibilityScope = String(payload?.visibility_scope || "").trim();
+  const idempotencyKey =
+    String(payload?.idempotency_key || "").trim() ||
+    globalThis.crypto?.randomUUID?.() ||
+    `spotlight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   if (!message && !imageUrl && !videoUrl) {
     throw new Error("message, image_url, or video_url is required");
@@ -6980,6 +7006,7 @@ export async function createMarketplaceBroadcast(payload: {
 
   const baseBody: Record<string, any> = {
     message: message || "Spotlight update",
+    idempotency_key: idempotencyKey,
   };
 
   if (imageUrl) {
@@ -7146,7 +7173,12 @@ export async function createMarketplaceRepost(payload: {
   target_clan_id?: number;
   target_community_code?: string;
   duration_days?: number;
+  idempotency_key?: string | null;
 }): Promise<any> {
+  const idempotencyKey =
+    String(payload?.idempotency_key || "").trim() ||
+    globalThis.crypto?.randomUUID?.() ||
+    `spotlight-repost-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return httpJson(
     `/marketplace/products/${encodeURIComponent(
       String(payload.product_id)
@@ -7156,6 +7188,7 @@ export async function createMarketplaceRepost(payload: {
       target_clan_id: payload.target_clan_id,
       target_community_code: payload.target_community_code,
       duration_days: payload.duration_days,
+      idempotency_key: idempotencyKey,
     }
   );
 }
@@ -7799,6 +7832,38 @@ export async function deleteMarketplaceBroadcast(
   return httpJson(
     `/marketplace/broadcasts/${encodeURIComponent(String(broadcastId))}`,
     "DELETE"
+  );
+}
+
+export async function holdSpotlightForCorrection(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-campaigns/${encodeURIComponent(String(campaignId))}/correction-hold`,
+    "POST",
+    {}
+  );
+}
+
+export async function replaceSpotlightContent(
+  campaignId: number,
+  payload: {
+    message: string;
+    image_url?: string | null;
+    video_url?: string | null;
+    source_product_id?: number | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-campaigns/${encodeURIComponent(String(campaignId))}/replace`,
+    "POST",
+    payload
+  );
+}
+
+export async function withdrawSpotlightPermanently(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-campaigns/${encodeURIComponent(String(campaignId))}/withdraw`,
+    "POST",
+    {}
   );
 }
 

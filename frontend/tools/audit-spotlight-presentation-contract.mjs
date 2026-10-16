@@ -28,8 +28,8 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /build_spotlight_opportunity_candidates[\s\S]*?allocate_spotlight_opportunity_candidates[\s\S]*?apply_spotlight_frequency_control[\s\S]*?schedule_persistent_spotlight_delivery_opportunities[\s\S]*?record_spotlight_qualifying_impression/,
-  "Presentation service must compose candidate, diversity, frequency, persistent pacing, and qualifying ledger stages."
+  /build_spotlight_opportunity_candidates[\s\S]*?allocate_spotlight_opportunity_candidates[\s\S]*?apply_spotlight_frequency_control[\s\S]*?plan_persistent_spotlight_delivery_opportunities[\s\S]*?consume_spotlight_delivery_round[\s\S]*?_persist_presentation_lease[\s\S]*?record_spotlight_qualifying_impression/,
+  "Presentation service must plan candidate, diversity, frequency, and pacing stages before atomically consuming a round with the durable lease, then qualify through the ledger."
 );
 
 assertContains(
@@ -63,8 +63,32 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /publicShopSpotlightSelectionCycles[\s\S]*?function loadPublicShopSpotlightPresentationCycle[\s\S]*?existingCycle\?\.promise[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId\)[\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
-  "Public Shop canonical presentation selection must use one authoritative in-flight/request-cycle guard before falling back to legacy broadcasts."
+  /publicShopSpotlightSelectionCycles[\s\S]*?function loadPublicShopSpotlightPresentationCycle[\s\S]*?existingCycle\?\.promise[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?requestId[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId,\s*requestId\)[\s\S]*?serving_contract_version[\s\S]*?authoritative:\s*true[\s\S]*?items:\s*\[\][\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
+  "Public Shop canonical presentation selection must keep one stable issuance key, cache v2 empty results authoritatively, and fail closed for the bounded stale interval."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /publicShopSpotlightCycleExpiryMs[\s\S]*?filter\(\(value\) => Number\.isFinite\(value\)\)[\s\S]*?expiryMs > requestFinishedAtMs[\s\S]*?\? opportunityItems[\s\S]*?: \[\]/,
+  "Elapsed server presentation deadlines must survive parsing so delayed responses fail closed instead of receiving a fresh client lease."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /function handleVisibilityChange\(\)[\s\S]*?revalidateSpotlightPresentation[\s\S]*?result\?\.valid === true[\s\S]*?publicShopSpotlightSelectionCycles\.delete[\s\S]*?clearQualificationTimer/,
+  "A previously hidden Public Shop page must revalidate its existing presentation and invalidate stale cached delivery before qualification."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /const replacingHeldContent[\s\S]*?!replacingHeldContent[\s\S]*?A free Spotlight is already live[\s\S]*?const createRes = replacingHeldContent[\s\S]*?replaceSpotlightContent/,
+  "A genuine correction-hold replacement must bypass the new-free-campaign guard and use the replacement writer."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS = 30[\s\S]*?SpotlightPresentationLease[\s\S]*?issuance_key[\s\S]*?lease_expires_at/,
+  "Presentation leases must be durable, retry-keyed, and bounded to the 30-second maximum."
 );
 
 assertContains(

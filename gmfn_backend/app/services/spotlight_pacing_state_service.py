@@ -26,6 +26,7 @@ from app.services.spotlight_delivery_pacing_service import (
     schedule_spotlight_delivery_opportunities,
 )
 from app.services.spotlight_frequency_control_service import SpotlightFrequencyControlResult
+from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_serving
 
 SPOTLIGHT_PACING_STATE_PRIVACY = "private_internal_persistent_campaign_pacing_state"
 SPOTLIGHT_PACING_STATE_CONFLICT = "pacing_state_version_conflict"
@@ -153,7 +154,7 @@ def get_or_create_spotlight_campaign_pacing_state(
     next_eligible = _next_permitted_time(
         raw_time=next_eligible_delivery_time(
             activated_at=_campaign_activation_time(campaign, fallback=current_time),
-            expires_at=_as_aware_utc(campaign.expires_at),
+            expires_at=authorized_expiry(campaign),
             max_delivery_rounds=max_rounds,
             consumed_rounds=0,
         ),
@@ -210,6 +211,59 @@ def schedule_persistent_spotlight_delivery_opportunities(
     now: Optional[datetime] = None,
     default_max_delivery_rounds: int = SPOTLIGHT_DEFAULT_MAX_DELIVERY_ROUNDS,
 ) -> SpotlightPersistentPacingResult:
+    planned = plan_persistent_spotlight_delivery_opportunities(
+        db,
+        viewer_user_id=viewer_user_id,
+        frequency_result=frequency_result,
+        requested_delivery_slots=requested_delivery_slots,
+        now=now,
+        default_max_delivery_rounds=default_max_delivery_rounds,
+    )
+    current_time = _as_aware_utc(now) or _now_utc()
+    snapshots = get_or_create_spotlight_campaign_pacing_states(
+        db,
+        campaign_ids=planned.scheduled_campaign_ids,
+        now=current_time,
+        default_max_delivery_rounds=default_max_delivery_rounds,
+    )
+    consumption_results: list[SpotlightRoundConsumptionResult] = []
+    for campaign_id in planned.scheduled_campaign_ids:
+        snapshot = snapshots.get(int(campaign_id))
+        consumption_results.append(
+            consume_spotlight_delivery_round(
+                db,
+                campaign_id=int(campaign_id),
+                now=current_time,
+                expected_version=(snapshot.version if snapshot else None),
+                expected_consumed_rounds=(snapshot.consumed_delivery_rounds if snapshot else None),
+            )
+        )
+    consumed_ids = tuple(result.campaign_id for result in consumption_results if result.consumed)
+    blocked_ids = tuple(result.campaign_id for result in consumption_results if not result.consumed)
+    return SpotlightPersistentPacingResult(
+        viewer_user_id=int(viewer_user_id or 0),
+        pacing_result=planned.pacing_result,
+        consumption_results=tuple(consumption_results),
+        scheduled_campaign_ids=planned.scheduled_campaign_ids,
+        consumed_campaign_ids=consumed_ids,
+        blocked_campaign_ids=blocked_ids,
+    )
+
+
+def plan_persistent_spotlight_delivery_opportunities(
+    db: Session,
+    *,
+    viewer_user_id: int,
+    frequency_result: SpotlightFrequencyControlResult,
+    requested_delivery_slots: int = 1,
+    now: Optional[datetime] = None,
+    default_max_delivery_rounds: int = SPOTLIGHT_DEFAULT_MAX_DELIVERY_ROUNDS,
+) -> SpotlightPersistentPacingResult:
+    """Plan issuances without consuming a round.
+
+    Durable presentation callers must consume the selected round in the same
+    database transaction/savepoint as the presentation lease insert.
+    """
     current_time = _as_aware_utc(now) or _now_utc()
     campaign_ids = [int(candidate.campaign_id) for candidate in frequency_result.candidates]
     snapshots = get_or_create_spotlight_campaign_pacing_states(
@@ -226,27 +280,13 @@ def schedule_persistent_spotlight_delivery_opportunities(
         pacing_states=[snapshot.to_volatile_state() for snapshot in snapshots.values()],
         now=current_time,
     )
-    consumption_results: list[SpotlightRoundConsumptionResult] = []
-    for decision in pacing_result.delivery_opportunities:
-        snapshot = snapshots.get(int(decision.campaign_id))
-        consumption_results.append(
-            consume_spotlight_delivery_round(
-                db,
-                campaign_id=int(decision.campaign_id),
-                now=current_time,
-                expected_version=(snapshot.version if snapshot else None),
-                expected_consumed_rounds=(snapshot.consumed_delivery_rounds if snapshot else None),
-            )
-        )
-    consumed_ids = tuple(result.campaign_id for result in consumption_results if result.consumed)
-    blocked_ids = tuple(result.campaign_id for result in consumption_results if not result.consumed)
     return SpotlightPersistentPacingResult(
         viewer_user_id=int(viewer_user_id or 0),
         pacing_result=pacing_result,
-        consumption_results=tuple(consumption_results),
+        consumption_results=(),
         scheduled_campaign_ids=pacing_result.scheduled_campaign_ids,
-        consumed_campaign_ids=consumed_ids,
-        blocked_campaign_ids=blocked_ids,
+        consumed_campaign_ids=(),
+        blocked_campaign_ids=(),
     )
 
 
@@ -267,7 +307,9 @@ def consume_spotlight_delivery_round(
         return _blocked_from_row(row, reason=SPOTLIGHT_PACING_REASON_CAMPAIGN_MISSING)
     if str(campaign.status or "") != "active":
         return _blocked_from_row(row, reason=SPOTLIGHT_PACING_REASON_CAMPAIGN_NOT_ACTIVE)
-    expires_at = _as_aware_utc(campaign.expires_at)
+    if not row_is_serving(campaign, now=current_time):
+        return _blocked_from_row(row, reason=SPOTLIGHT_PACING_REASON_CAMPAIGN_NOT_ACTIVE)
+    expires_at = authorized_expiry(campaign)
     if expires_at is not None and current_time >= expires_at:
         return _blocked_from_row(row, reason=SPOTLIGHT_PACING_REASON_CAMPAIGN_EXPIRED)
 

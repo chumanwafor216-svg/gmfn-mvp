@@ -46,7 +46,21 @@ function resolveSpotlightMediaSrc(value: unknown): string {
 }
 
 function liveSpotlightStatus(item: ShopControlSpotlightBroadcast | null) {
-  const expiresRaw = safeSpotlightText(item?.expires_at);
+  const servingStatus = safeSpotlightText(
+    item?.campaign_serving_status || item?.serving_status
+  );
+  const expiresRaw = safeSpotlightText(
+    item?.authorized_expires_at || item?.expires_at
+  );
+  if (servingStatus === "correction_hold") {
+    return {
+      chip: "Correction hold",
+      detail: expiresRaw
+        ? `Off-air while corrected. Original expiry: ${formatSpotlightDate(expiresRaw)}.`
+        : "Off-air while corrected. The original entitlement clock is still running.",
+      urgent: true,
+    };
+  }
   if (!expiresRaw) {
     return {
       chip: "Live now",
@@ -137,6 +151,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     inlineIcon,
     spotlightProductName,
     setSpotlightProductName,
+    products,
+    spotlightCorrectionProductId,
+    setSpotlightCorrectionProductId,
     spotlightPriceNote,
     setSpotlightPriceNote,
     spotlightMessage,
@@ -163,11 +180,19 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightPreviewHasVideo,
     handleCreateSpotlight,
     takingDownSpotlight,
+    handleCorrectCurrentSpotlight,
     handleTakeDownCurrentSpotlight,
     shopActionsLocked,
   } = props;
   const currentLiveSpotlightIsPaid =
     firstTruthy(currentActiveSpotlight?.priority_mode, "free").toLowerCase() === "paid";
+  const lifecycleActionsEnabled =
+    currentActiveSpotlight?.lifecycle_writers_enabled === true;
+  const correctionHoldActive =
+    firstTruthy(
+      currentActiveSpotlight?.campaign_serving_status,
+      currentActiveSpotlight?.serving_status
+    ) === "correction_hold";
 
   return (
     <section
@@ -436,10 +461,12 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     </span>
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 12.5 }}>
-                    Take it down first if the media or wording is wrong. After it is down,
-                    publish the corrected Spotlight from this page.
-                    {currentLiveSpotlightIsPaid
-                      ? " Paid Spotlight payments are not refunded by this action."
+                    Activated {formatSpotlightDate(currentActiveSpotlight?.activated_at) || "time unavailable"}.
+                    {" "}Correction preserves this activation, the original expiry, used allowance,
+                    delivery pacing, and viewer-frequency history. Permanent withdrawal stops delivery
+                    without restoring credit or unused time.
+                    {!lifecycleActionsEnabled
+                      ? " These actions remain disabled until the compatible serving reader and cache contract is activated."
                       : ""}
                   </div>
                 </div>
@@ -461,18 +488,19 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   </StableButton>
                   <SecondaryButton
                     type="button"
-                    onClick={() => setSpotlightFlowStep("upload")}
-                    debugId="shop-control.spotlight.live.open-publisher"
+                    onClick={() => handleCorrectCurrentSpotlight()}
+                    disabled={!lifecycleActionsEnabled || takingDownSpotlight || creatingSpotlight}
+                    debugId="shop-control.spotlight.live.correct"
                   >
-                    Open publisher
+                    Correct wording or media
                   </SecondaryButton>
                   <SecondaryButton
                     type="button"
                     onClick={() => handleTakeDownCurrentSpotlight()}
-                    disabled={takingDownSpotlight || creatingSpotlight}
+                    disabled={!lifecycleActionsEnabled || takingDownSpotlight || creatingSpotlight}
                     debugId="shop-control.spotlight.live.take-down"
                   >
-                    {takingDownSpotlight ? "Taking down..." : "Take down live Spotlight"}
+                    {takingDownSpotlight ? "Withdrawing..." : "Permanently withdraw"}
                   </SecondaryButton>
                 </div>
               </div>
@@ -586,6 +614,41 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 Keep it simple outside. GSN handles the shop link, community, timing, and publishing rules inside.
               </div>
+
+              {correctionHoldActive ? (
+                <div style={{ marginTop: 14 }}>
+                  <div style={sectionLabel()}>Corrected shop product (optional)</div>
+                  <select
+                    value={spotlightCorrectionProductId || ""}
+                    onChange={(event) =>
+                      setSpotlightCorrectionProductId(
+                        Number(event.target.value || 0) || null
+                      )
+                    }
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  >
+                    <option value="">Wording or media only</option>
+                    {products
+                      .filter(
+                        (product) =>
+                          product.is_active !== false &&
+                          firstTruthy(
+                            product.visibility_mode,
+                            "community_visible"
+                          ) === "community_visible"
+                      )
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {firstTruthy(product.name, `Product ${product.id}`)}
+                        </option>
+                      ))}
+                  </select>
+                  <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5 }}>
+                    Choosing another eligible product from this shop is a correction,
+                    not a new purchase. The original activation and expiry stay unchanged.
+                  </div>
+                </div>
+              ) : null}
 
               <div
                 style={{

@@ -196,6 +196,20 @@ def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_
     body = token_response.json()
     token = body["presentation"]["presentation_token"]
     presentation_id = body["presentation"]["presentation_id"]
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_presentation_leases
+                SET issued_at = :issued_at
+                WHERE presentation_id = :presentation_id
+                """
+            ),
+            {
+                "issued_at": _now() - timedelta(seconds=2),
+                "presentation_id": presentation_id,
+            },
+        )
 
     hidden = client.post(
         "/marketplace/spotlight-presentations/qualify",
@@ -236,6 +250,17 @@ def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_
     assert changed_key_retry.json()["deduped"] is True
     assert _ledger_count() == 1
     assert _attention_count() == 0
+    with engine.begin() as conn:
+        attribution = conn.execute(
+            text(
+                """
+                SELECT content_version, presentation_id
+                FROM spotlight_exposure_events
+                """
+            )
+        ).mappings().one()
+    assert int(attribution["content_version"]) == 1
+    assert attribution["presentation_id"] == presentation_id
 
 
 def test_owner_preview_does_not_consume_round_or_record_canonical_impression(
@@ -257,7 +282,8 @@ def test_owner_preview_does_not_consume_round_or_record_canonical_impression(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["item"] is None
-    assert body["fallback"] == "legacy_public_shop_broadcasts"
+    assert body["fallback"] is None
+    assert body["serving_contract_version"] == 2
     assert body["rejection_code"] == PRESENTATION_REJECTION_OWNER_PREVIEW
     assert _consumed_rounds() == 0
     assert _ledger_count() == 0
@@ -286,13 +312,41 @@ def test_later_presentation_can_qualify_but_frequency_cap_blocks_forbidden_repea
 
     assert first_result.recorded is True
 
+    second_time = first_time + timedelta(minutes=30)
+    third_time = first_time + timedelta(hours=1)
+    with engine.begin() as conn:
+        for presentation_id, issued_at in (
+            ("second-visible", second_time),
+            ("third-visible", third_time),
+        ):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO spotlight_presentation_leases (
+                        presentation_id, issuance_key, viewer_user_id, campaign_id,
+                        placement_broadcast_id, content_version, surface, status,
+                        issued_at, lease_expires_at
+                    ) VALUES (
+                        :presentation_id, :presentation_id, 1, 1,
+                        1, 1, :surface, 'issued', :issued_at, :lease_expires_at
+                    )
+                    """
+                ),
+                {
+                    "presentation_id": presentation_id,
+                    "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+                    "issued_at": issued_at,
+                    "lease_expires_at": issued_at + timedelta(seconds=30),
+                },
+            )
+
     with SessionLocal() as db:
         second_result = record_spotlight_presentation_qualification(
             db,
             viewer_user_id=1,
             presentation_token=_signed_presentation_token(presentation_id="second-visible"),
             qualification_key="second-visible",
-            event_at=first_time + timedelta(minutes=30, seconds=2),
+            event_at=second_time + timedelta(seconds=2),
             visible_ms=SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
             visible_ratio=SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
             document_visible=True,
@@ -302,7 +356,7 @@ def test_later_presentation_can_qualify_but_frequency_cap_blocks_forbidden_repea
             viewer_user_id=1,
             presentation_token=_signed_presentation_token(presentation_id="third-visible"),
             qualification_key="third-visible",
-            event_at=first_time + timedelta(hours=1),
+            event_at=third_time + timedelta(seconds=2),
             visible_ms=SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
             visible_ratio=SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
             document_visible=True,
@@ -339,6 +393,7 @@ def test_unlinked_repost_fallback_stays_outside_canonical_ledger(client, overrid
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["item"] is None
-    assert body["fallback"] == "legacy_public_shop_broadcasts"
+    assert body["fallback"] is None
+    assert body["serving_contract_version"] == 2
     assert _consumed_rounds() == 0
     assert _ledger_count() == 0

@@ -15,6 +15,7 @@ from app.services.spotlight_opportunity_candidate_service import (
     SPOTLIGHT_CANDIDATE_BAND_DEMANDBOX_MATCH,
     SpotlightOpportunityCandidate,
 )
+from app.services.spotlight_lifecycle_service import row_is_serving
 from app.services.spotlight_opportunity_eligibility_service import (
     SPOTLIGHT_ELIGIBILITY_ROUTE_CANONICAL_PLACEMENT,
     SPOTLIGHT_ELIGIBILITY_ROUTE_COMMUNITY_DOMAIN,
@@ -86,6 +87,8 @@ def record_spotlight_qualifying_impression(
     event_at: Optional[datetime] = None,
     presentation_surface: str = "opportunity_engine",
     presentation_context: Optional[dict[str, Any]] = None,
+    content_version: Optional[int] = None,
+    presentation_id: Optional[str] = None,
     owner_preview: bool = False,
     marketplace_attention_event_id: Optional[int] = None,
 ) -> SpotlightExposureRecordResult:
@@ -126,6 +129,9 @@ def record_spotlight_qualifying_impression(
     if status != "active" or (expires_at is not None and expires_at <= current_time):
         return _rejected(REJECTION_CAMPAIGN_NOT_ACTIVE)
 
+    if not row_is_serving(campaign, now=current_time):
+        return _rejected(REJECTION_CAMPAIGN_NOT_ACTIVE)
+
     availability_allowed, _availability_state, availability_rejection = _availability_allows_match(
         campaign=campaign,
         now=current_time,
@@ -142,6 +148,8 @@ def record_spotlight_qualifying_impression(
         event_type=SPOTLIGHT_EXPOSURE_EVENT_QUALIFYING_IMPRESSION,
         viewer_user_id=viewer_id,
         campaign_id=campaign_id,
+        content_version=int(content_version or getattr(campaign, 'content_version', 1) or 1),
+        presentation_id=_safe_text(presentation_id, max_length=80) or None,
         event_at=current_time,
         allocation_route_type=attribution.allocation_route_type,
         allocation_source_kind=attribution.allocation_source_kind,

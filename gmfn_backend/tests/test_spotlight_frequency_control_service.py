@@ -304,7 +304,9 @@ def _basic_setup(*, commercial_mode_2: str = "free") -> None:
 
 def _frequency_result(campaign_ids: list[int], **kwargs):
     with SessionLocal() as db:
-        candidates = build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=campaign_ids)
+        candidates = build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=campaign_ids, now=BASE_TIME + timedelta(hours=1)
+        )
         diversity = allocate_spotlight_opportunity_candidates(db, viewer_user_id=1, candidates=candidates)
         return apply_spotlight_frequency_control(db, viewer_user_id=1, diversity_result=diversity, **kwargs)
 
@@ -411,7 +413,9 @@ def test_frequency_capped_candidate_is_suppressed_for_viewer_but_available_to_an
 
     capped = _frequency_result([1])
     with SessionLocal() as db:
-        candidates = build_spotlight_opportunity_candidates(db, viewer_user_id=3, campaign_ids=[1])
+        candidates = build_spotlight_opportunity_candidates(
+            db, viewer_user_id=3, campaign_ids=[1], now=BASE_TIME + timedelta(hours=1)
+        )
         diversity = allocate_spotlight_opportunity_candidates(db, viewer_user_id=4, candidates=candidates)
         other_viewer = apply_spotlight_frequency_control(db, viewer_user_id=3, diversity_result=diversity)
 

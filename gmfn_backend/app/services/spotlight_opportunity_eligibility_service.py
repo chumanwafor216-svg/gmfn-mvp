@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -247,10 +247,17 @@ def _active_linked_placements_by_campaign(
     rows = (
         db.query(MarketplaceBroadcast)
         .filter(MarketplaceBroadcast.spotlight_campaign_id.in_(safe_campaign_ids))
+        .filter(MarketplaceBroadcast.serving_status == 'serving')
         .filter(
             or_(
-                MarketplaceBroadcast.expires_at.is_(None),
-                MarketplaceBroadcast.expires_at > now,
+                MarketplaceBroadcast.authorized_expires_at > now,
+                and_(
+                    MarketplaceBroadcast.authorized_expires_at.is_(None),
+                    or_(
+                        MarketplaceBroadcast.expires_at.is_(None),
+                        MarketplaceBroadcast.expires_at > now,
+                    ),
+                ),
             )
         )
         .order_by(
@@ -444,6 +451,14 @@ def _campaign_status_rejection(
         int(campaign.origin_clan_id) if getattr(campaign, "origin_clan_id", None) is not None else None
     )
     status = str(getattr(campaign, "status", "") or "").strip().lower()
+    serving_status = str(getattr(campaign, 'serving_status', 'serving') or 'serving').strip().lower()
+    if serving_status != 'serving':
+        return _inactive_result(
+            campaign_id=campaign_id,
+            origin_clan_id=origin_clan_id,
+            rejection_code='campaign_not_serving',
+            rejection_reason='The campaign entitlement remains recorded but its serving state is not active.',
+        )
     if status == SPOTLIGHT_CAMPAIGN_STATUS_LEGACY_PRESERVED:
         return _inactive_result(
             campaign_id=campaign_id,
@@ -460,6 +475,9 @@ def _campaign_status_rejection(
         )
 
     expires_at = _as_aware_utc(getattr(campaign, "expires_at", None))
+    authorized_expiry = _as_aware_utc(getattr(campaign, 'authorized_expires_at', None))
+    if authorized_expiry is not None:
+        expires_at = authorized_expiry
     if expires_at is not None and expires_at <= now:
         return _inactive_result(
             campaign_id=campaign_id,

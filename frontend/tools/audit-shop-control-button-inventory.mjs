@@ -42,7 +42,7 @@ const expectedSourceActions = {
   StableCtaLink: 13,
   total: 57,
 };
-const expectedNativeFieldCount = 26;
+const expectedNativeFieldCount = 27;
 const expectedFileInputActionRoots = 2;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
@@ -430,10 +430,10 @@ assertShopContains(
 );
 
 
-assertShopContains(
-  /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
-  "Shop Control must own the rich owner-facing live Spotlight frame with media, public shop preview, publisher access, and take-down."
-);
+  assertShopContains(
+    /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.correct"[\s\S]*?Correct wording or media[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"[\s\S]*?Permanently withdraw/,
+    "Shop Control must keep the rich owner-facing live Spotlight frame with public preview and the approved correction/permanent-withdrawal actions."
+  );
 assertShopContains(
   /Picture \/ video, item, message\.[\s\S]*?debugId="shop-control\.spotlight\.media\.image"[\s\S]*?Add picture[\s\S]*?debugId="shop-control\.spotlight\.media\.video"[\s\S]*?Add video[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.image-file"[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.video-file"/,
   "Shop Control free Spotlight publisher must keep one simple outside flow with picture/video upload buttons and hidden audited file inputs."

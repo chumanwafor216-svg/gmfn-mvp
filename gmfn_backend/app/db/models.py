@@ -3532,6 +3532,12 @@ class SpotlightCampaign(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    serving_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default='serving', server_default='serving', index=True
+    )
+    content_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default='1'
+    )
     owner_user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -3664,11 +3670,47 @@ class SpotlightCampaign(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    authorized_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
     ended_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         index=True,
     )
+    serving_status_changed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+
+class SpotlightContentVersion(Base):
+    __tablename__ = 'spotlight_content_versions'
+
+    __table_args__ = (
+        UniqueConstraint('campaign_id', 'version', name='uq_spotlight_content_version_campaign_v1'),
+        Index('ix_spotlight_content_versions_campaign_active', 'campaign_id', 'replaced_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey('spotlight_campaigns.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('marketplace_products.id', ondelete='SET NULL'), nullable=True
+    )
+    message: Mapped[str] = mapped_column(Text, nullable=False, default='', server_default='')
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    video_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    change_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, default='activation', server_default='activation'
+    )
+    activated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+    replaced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
 
 class SpotlightCampaignPacingState(Base):
     __tablename__ = "spotlight_campaign_pacing_states"
@@ -3751,8 +3793,25 @@ class SpotlightCampaignPacingState(Base):
 
 class MarketplaceBroadcast(Base):
     __tablename__ = "marketplace_broadcasts"
+    __table_args__ = (
+        UniqueConstraint(
+            "author_user_id",
+            "publication_key",
+            "clan_id",
+            name="uq_marketplace_broadcast_publication_key_v1",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    publication_key: Mapped[Optional[str]] = mapped_column(
+        String(96), nullable=True, index=True
+    )
+    serving_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default='serving', server_default='serving', index=True
+    )
+    content_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default='1'
+    )
     spotlight_campaign_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("spotlight_campaigns.id", ondelete="SET NULL"),
         nullable=True,
@@ -3800,6 +3859,12 @@ class MarketplaceBroadcast(Base):
         DateTime(timezone=True),
         nullable=True,
         index=True,
+    )
+    authorized_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    serving_status_changed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -3855,8 +3920,18 @@ class MarketplaceReview(Base):
 
 class MarketplaceProductRepost(Base):
     __tablename__ = "marketplace_product_reposts"
+    __table_args__ = (
+        UniqueConstraint(
+            "reposted_by_user_id",
+            "publication_key",
+            name="uq_marketplace_repost_publication_key_v1",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    publication_key: Mapped[Optional[str]] = mapped_column(
+        String(96), nullable=True, index=True
+    )
 
     original_product_id: Mapped[int] = mapped_column(
         ForeignKey("marketplace_products.id", ondelete="CASCADE"),
@@ -3964,6 +4039,10 @@ class SpotlightExposureEvent(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    content_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default='1'
+    )
+    presentation_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
     event_type: Mapped[str] = mapped_column(
         String(40),
         nullable=False,
@@ -4022,6 +4101,44 @@ class SpotlightExposureEvent(Base):
         default=utcnow,
         server_default=func.now(),
     )
+
+class SpotlightPresentationLease(Base):
+    __tablename__ = 'spotlight_presentation_leases'
+
+    __table_args__ = (
+        UniqueConstraint('presentation_id', name='uq_spotlight_presentation_id_v1'),
+        Index('uq_spotlight_presentation_issuance_key_v2', 'issuance_key', unique=True),
+        UniqueConstraint(
+            'viewer_user_id', 'surface', 'issuance_key', name='uq_spotlight_presentation_issuance_v1'
+        ),
+        Index('ix_spotlight_presentation_lease_expiry', 'lease_expires_at'),
+        Index('ix_spotlight_presentation_campaign_status', 'campaign_id', 'status'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    presentation_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    issuance_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    issuance_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    viewer_user_id: Mapped[int] = mapped_column(
+        ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey('spotlight_campaigns.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    placement_broadcast_id: Mapped[int] = mapped_column(
+        ForeignKey('marketplace_broadcasts.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    content_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    surface: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default='issued', server_default='issued', index=True
+    )
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    lease_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    qualified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    invalidated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    invalidation_reason: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
 
 class MarketWisdomSource(Base):
     __tablename__ = "market_wisdom_sources"
@@ -4612,6 +4729,15 @@ class VaultAccessLog(Base):
 
 class FeatureUsageEvent(Base):
     __tablename__ = "feature_usage_events"
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_user_id",
+            "feature_code",
+            "reference_key",
+            "entitlement_id",
+            name="uq_feature_usage_reference_entitlement_v1",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
@@ -4657,6 +4783,8 @@ class FeatureUsageEvent(Base):
         nullable=True,
         index=True,
     )
+
+    request_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

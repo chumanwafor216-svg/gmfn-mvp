@@ -296,7 +296,12 @@ def _seed_spotlight_interests(*, user_id: int = 1, interests: list[str] | None =
 
 def _candidate_for(viewer_user_id: int, campaign_ids: list[int]):
     with SessionLocal() as db:
-        candidates = build_spotlight_opportunity_candidates(db, viewer_user_id=viewer_user_id, campaign_ids=campaign_ids)
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=viewer_user_id,
+            campaign_ids=campaign_ids,
+            now=BASE_TIME + timedelta(hours=1),
+        )
         assert candidates
         return candidates[0]
 
@@ -375,7 +380,7 @@ def test_multiple_eligibility_routes_create_one_impression_with_supporting_route
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="multi-route")
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="multi-route", event_at=BASE_TIME + timedelta(hours=1))
 
     assert result.recorded is True
     assert _ledger_count() == 1
@@ -392,7 +397,7 @@ def test_direct_community_source_provenance_can_be_stored():
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate)
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, event_at=BASE_TIME + timedelta(hours=1))
 
     assert result.event.allocation_route_type == SPOTLIGHT_ELIGIBILITY_ROUTE_DIRECT_SHARED_COMMUNITY
     assert result.event.allocation_source_kind == "clan"
@@ -408,7 +413,7 @@ def test_community_domain_source_provenance_can_be_stored():
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate)
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, event_at=BASE_TIME + timedelta(hours=1))
 
     assert result.event.allocation_route_type == SPOTLIGHT_ELIGIBILITY_ROUTE_COMMUNITY_DOMAIN
     assert result.event.allocation_source_kind == "community_domain"
@@ -425,7 +430,7 @@ def test_demandbox_relevance_coexists_with_domain_source_without_becoming_source
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate)
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, event_at=BASE_TIME + timedelta(hours=1))
 
     assert candidate.priority_band == SPOTLIGHT_CANDIDATE_BAND_DEMANDBOX_MATCH
     assert result.event.demandbox_relevant is True
@@ -443,7 +448,7 @@ def test_explicit_interest_relevance_coexists_without_becoming_source():
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate)
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, event_at=BASE_TIME + timedelta(hours=1))
 
     assert result.event.explicit_interest_relevant is True
     assert result.event.allocation_route_type == SPOTLIGHT_ELIGIBILITY_ROUTE_DIRECT_SHARED_COMMUNITY
@@ -459,11 +464,11 @@ def test_idempotency_dedupes_retry_but_new_key_records_later_repeat():
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        first = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="same-key")
+        first = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="same-key", event_at=BASE_TIME + timedelta(hours=1))
         first_event_id = first.event.id
-        retry = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="same-key")
+        retry = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="same-key", event_at=BASE_TIME + timedelta(hours=1))
         retry_event_id = retry.event.id
-        later = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="new-key")
+        later = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="new-key", event_at=BASE_TIME + timedelta(hours=1, minutes=1))
 
     assert first.recorded is True
     assert retry.recorded is False
@@ -480,8 +485,8 @@ def test_owner_preview_and_self_delivery_do_not_count():
     candidate = _candidate_for(1, [1])
 
     with SessionLocal() as db:
-        preview = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, owner_preview=True)
-        self_delivery = record_spotlight_qualifying_impression(db, viewer_user_id=2, candidate=candidate)
+        preview = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, owner_preview=True, event_at=BASE_TIME + timedelta(hours=1))
+        self_delivery = record_spotlight_qualifying_impression(db, viewer_user_id=2, candidate=candidate, event_at=BASE_TIME + timedelta(hours=1))
 
     assert preview.rejection_code == REJECTION_OWNER_PREVIEW
     assert self_delivery.rejection_code == REJECTION_SELF_DELIVERY
@@ -509,7 +514,9 @@ def test_legacy_ended_expired_or_unavailable_campaign_cannot_be_newly_recorded()
     _seed_campaign(campaign_id=4, owner_user_id=5, origin_clan_id=1)
     candidates = {}
     with SessionLocal() as db:
-        for candidate in build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=[1, 2, 3, 4]):
+        for candidate in build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=[1, 2, 3, 4], now=BASE_TIME
+        ):
             candidates[candidate.campaign_id] = candidate
     with engine.begin() as conn:
         conn.execute(text("UPDATE spotlight_campaigns SET status = 'legacy_preserved' WHERE id = 1"))
@@ -537,7 +544,9 @@ def test_recent_counts_last_n_grouping_and_most_recent_queries():
     _seed_campaign(campaign_id=3, owner_user_id=4, origin_clan_id=3, distribution_scope="community_domain", activated_offset_minutes=3)
     candidates = {}
     with SessionLocal() as db:
-        for candidate in build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=[1, 2, 3]):
+        for candidate in build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=[1, 2, 3], now=BASE_TIME
+        ):
             candidates[candidate.campaign_id] = candidate
         record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidates[1], idempotency_key="q1", event_at=BASE_TIME + timedelta(minutes=10))
         record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidates[2], idempotency_key="q2", event_at=BASE_TIME + timedelta(minutes=20))
@@ -582,7 +591,7 @@ def test_existing_attention_analytics_remain_unchanged_when_canonical_ledger_rec
 
     with SessionLocal() as db:
         attention_before = db.query(MarketplaceAttentionEvent).count()
-        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="ledger-1")
+        result = record_spotlight_qualifying_impression(db, viewer_user_id=1, candidate=candidate, idempotency_key="ledger-1", event_at=BASE_TIME + timedelta(hours=1))
         attention_after = db.query(MarketplaceAttentionEvent).count()
         exposure_count = db.query(SpotlightExposureEvent).count()
 

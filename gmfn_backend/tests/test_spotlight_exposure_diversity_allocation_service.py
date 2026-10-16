@@ -335,12 +335,16 @@ def _direct_two_candidate_setup() -> None:
 
 def _candidates(campaign_ids: list[int]):
     with SessionLocal() as db:
-        return build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=campaign_ids)
+        return build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=campaign_ids, now=BASE_TIME + timedelta(hours=1)
+        )
 
 
 def _allocate(campaign_ids: list[int]):
     with SessionLocal() as db:
-        candidates = build_spotlight_opportunity_candidates(db, viewer_user_id=1, campaign_ids=campaign_ids)
+        candidates = build_spotlight_opportunity_candidates(
+            db, viewer_user_id=1, campaign_ids=campaign_ids, now=BASE_TIME + timedelta(hours=1)
+        )
         return allocate_spotlight_opportunity_candidates(db, viewer_user_id=1, candidates=candidates)
 
 

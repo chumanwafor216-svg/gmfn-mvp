@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
 from app.db.models import UserSettings
+from app.services import spotlight_opportunity_candidate_service as candidate_service
 from app.services.spotlight_opportunity_candidate_service import (
     SPOTLIGHT_CANDIDATE_BAND_COMMUNITY_DOMAIN,
     SPOTLIGHT_CANDIDATE_BAND_DEMANDBOX_MATCH,
@@ -19,6 +21,13 @@ from app.services.spotlight_opportunity_eligibility_service import (
     SPOTLIGHT_ELIGIBILITY_ROUTE_COMMUNITY_DOMAIN,
     SPOTLIGHT_ELIGIBILITY_ROUTE_DIRECT_SHARED_COMMUNITY,
 )
+
+CONTROLLED_NOW = datetime(2026, 10, 12, 8, 0, tzinfo=timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def _controlled_candidate_clock(monkeypatch):
+    monkeypatch.setattr(candidate_service, "_now_utc", lambda: CONTROLLED_NOW)
 
 
 def _fingerprint(campaign_id: int) -> str:
@@ -105,7 +114,7 @@ def _seed_campaign(
     opportunity_expires_delta: timedelta | None = None,
     activated_offset_minutes: int = 0,
 ) -> None:
-    now = datetime(2026, 10, 12, 8, 0, tzinfo=timezone.utc) + timedelta(minutes=activated_offset_minutes)
+    now = CONTROLLED_NOW + timedelta(minutes=activated_offset_minutes)
     campaign_expires_at = None if campaign_expires_delta is None else now + campaign_expires_delta
     opportunity_expires_at = None if opportunity_expires_delta is None else now + opportunity_expires_delta
     with engine.begin() as conn:
@@ -151,7 +160,116 @@ def _seed_campaign(
                 "activated_at": now,
                 "campaign_expires_at": campaign_expires_at,
             },
+          )
+
+
+def _seed_capacity_population(
+    *,
+    total_campaigns: int,
+    expired_campaigns: int,
+    exhausted_campaigns: int,
+) -> list[int]:
+    _seed_users_and_clans(user_count=total_campaigns + 1, clan_count=1)
+    _seed_memberships(
+        [(user_id, 1, user_id) for user_id in range(1, total_campaigns + 2)]
+    )
+    eligible_ids: list[int] = []
+    with engine.begin() as conn:
+        for campaign_id in range(1, total_campaigns + 1):
+            owner_user_id = campaign_id + 1
+            activated_at = CONTROLLED_NOW + timedelta(
+                minutes=total_campaigns - campaign_id
+            )
+            is_expired = campaign_id <= expired_campaigns
+            is_exhausted = (
+                expired_campaigns
+                < campaign_id
+                <= expired_campaigns + exhausted_campaigns
+            )
+            expires_at = (
+                CONTROLLED_NOW - timedelta(minutes=1)
+                if is_expired
+                else CONTROLLED_NOW + timedelta(days=2)
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO spotlight_campaigns (
+                        id, owner_user_id, origin_clan_id, content_kind,
+                        content_fingerprint, status, serving_status, source_kind,
+                        commercial_mode, distribution_scope, opportunity_intent,
+                        opportunity_category, opportunity_geo_scope,
+                        opportunity_availability, created_at, activated_at,
+                        expires_at, authorized_expires_at
+                    ) VALUES (
+                        :id, :owner_user_id, 1, 'broadcast_snapshot',
+                        :fingerprint, 'active', 'serving', 'direct_broadcast',
+                        'free', 'direct_communities', 'offer',
+                        'business_service', 'community', 'available',
+                        :activated_at, :activated_at, :expires_at, :expires_at
+                    )
+                    """
+                ),
+                {
+                    "id": campaign_id,
+                    "owner_user_id": owner_user_id,
+                    "fingerprint": _fingerprint(campaign_id),
+                    "activated_at": activated_at,
+                    "expires_at": expires_at,
+                },
+            )
+            if is_exhausted:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO spotlight_campaign_pacing_states (
+                            campaign_id, max_delivery_rounds,
+                            consumed_delivery_rounds, pacing_profile,
+                            exhausted, version
+                        ) VALUES (
+                            :campaign_id, 10, 10, 'neutral', 1, 10
+                        )
+                        """
+                    ),
+                    {"campaign_id": campaign_id},
+                )
+            elif not is_expired:
+                eligible_ids.append(campaign_id)
+    return eligible_ids
+
+
+def test_sixty_campaigns_do_not_lose_eligible_rows_behind_undeliverable_capacity() -> None:
+    expected = _seed_capacity_population(
+        total_campaigns=60,
+        expired_campaigns=30,
+        exhausted_campaigns=25,
+    )
+    with SessionLocal() as db:
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=1,
+            limit=5,
         )
+
+    assert expected == [56, 57, 58, 59, 60]
+    assert [candidate.campaign_id for candidate in candidates] == expected
+
+
+def test_more_than_four_hundred_campaigns_do_not_retain_top_fifty_starvation() -> None:
+    expected = _seed_capacity_population(
+        total_campaigns=405,
+        expired_campaigns=200,
+        exhausted_campaigns=201,
+    )
+    with SessionLocal() as db:
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=1,
+            limit=4,
+        )
+
+    assert expected == [402, 403, 404, 405]
+    assert [candidate.campaign_id for candidate in candidates] == expected
 
 
 def _seed_demand(

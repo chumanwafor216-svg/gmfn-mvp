@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from app.db.models import MarketplaceRequest, SpotlightCampaign
+from app.db.models import MarketplaceRequest, SpotlightCampaign, SpotlightCampaignPacingState
 from app.services.demand_supply_intelligence_service import (
     OPEN_DEMAND_STATUS,
     _is_visible_live_demand,
@@ -206,10 +206,24 @@ def _active_candidate_campaign_ids(
 ) -> list[int]:
     rows = (
         db.query(SpotlightCampaign.id)
+        .outerjoin(
+            SpotlightCampaignPacingState,
+            SpotlightCampaignPacingState.campaign_id == SpotlightCampaign.id,
+        )
         .filter(SpotlightCampaign.status == "active")
+        .filter(SpotlightCampaign.serving_status == 'serving')
+        .filter(
+            or_(
+                SpotlightCampaignPacingState.campaign_id.is_(None),
+                and_(
+                    SpotlightCampaignPacingState.exhausted.is_(False),
+                    SpotlightCampaignPacingState.consumed_delivery_rounds
+                    < SpotlightCampaignPacingState.max_delivery_rounds,
+                ),
+            )
+        )
         .filter(SpotlightCampaign.owner_user_id != int(viewer_user_id))
         .order_by(SpotlightCampaign.activated_at.desc(), SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.asc())
-        .limit(max(int(limit), 0))
         .all()
     )
     return [int(row.id) for row in rows]
@@ -231,7 +245,12 @@ def _viewer_open_visible_demands(
     )
     return [
         demand for demand in rows
-        if _is_visible_live_demand(db, demand, current_user_id=int(viewer_user_id))
+        if _is_visible_live_demand(
+            db,
+            demand,
+            current_user_id=int(viewer_user_id),
+            now=now,
+        )
     ]
 
 

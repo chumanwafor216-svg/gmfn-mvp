@@ -5951,7 +5951,9 @@ def test_spotlight_campaign_database_invariant_blocks_second_active_campaign(
 def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
     client,
     override_current_user_user,
+    monkeypatch,
 ):
+    monkeypatch.setenv("GSN_SPOTLIGHT_LIFECYCLE_WRITES_ENABLED", "1")
     _ensure_marketplace_tables()
 
     now = datetime.now(timezone.utc)
@@ -6030,6 +6032,9 @@ def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
 
     deleted = client.delete(f"/marketplace/broadcasts/{first_broadcast_id}")
     assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["permanent_withdrawal"] is True
+    assert deleted.json()["credit_restored"] is False
+    assert deleted.json()["unused_time_restored"] is False
 
     with engine.begin() as conn:
         ended = conn.execute(
@@ -6082,7 +6087,9 @@ def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
 def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(
     client,
     override_current_user_user,
+    monkeypatch,
 ):
+    monkeypatch.setenv("GSN_SPOTLIGHT_LIFECYCLE_WRITES_ENABLED", "1")
     _ensure_marketplace_tables()
 
     with engine.begin() as conn:
@@ -6177,12 +6184,22 @@ def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(
     assert res.status_code == 200, res.text
     body = res.json()
 
-    assert body["deleted_count"] == 2
-    assert [item["id"] for item in body["deleted_items"]] == created_ids
+    assert body["permanent_withdrawal"] is True
+    assert body["deleted_items"] == []
+    assert [item["id"] for item in body["withdrawn_items"]] == created_ids
+    repeated = client.delete(f"/marketplace/broadcasts/{primary_id}")
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json()["permanent_withdrawal"] is True
 
     with engine.begin() as conn:
-        remaining_ids = conn.execute(
-            text("SELECT id FROM marketplace_broadcasts ORDER BY id ASC")
+        remaining_rows = conn.execute(
+            text(
+                """
+                SELECT id, serving_status
+                FROM marketplace_broadcasts
+                ORDER BY id ASC
+                """
+            )
         ).fetchall()
         deleted_event_count = conn.execute(
             text(
@@ -6194,8 +6211,13 @@ def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(
             )
         ).scalar_one()
 
-    assert [int(row[0]) for row in remaining_ids] == [991, 992]
-    assert int(deleted_event_count) == 2
+    assert [(int(row[0]), row[1]) for row in remaining_rows] == [
+        (created_ids[0], "withdrawn"),
+        (created_ids[1], "withdrawn"),
+        (991, "serving"),
+        (992, "serving"),
+    ]
+    assert int(deleted_event_count) == 0
 
 
 def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
