@@ -1126,7 +1126,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /product_id: routeProductId > 0 \? routeProductId : undefined,[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?display: focusedBlockLinkActive \? "none" : "block"[\s\S]*?This shared link opens only this public product\/service block\./,
+  /product_id: routeProductId > 0 \? routeProductId : undefined,[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?display: focusedBlockLinkActive \? "none" : "block"[\s\S]*?Shared item\./,
   "Public Shop Gallery exact block links must request the exact product and hide secondary public-shop sections while focused."
 );
 

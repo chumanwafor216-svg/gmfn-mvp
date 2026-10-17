@@ -71,6 +71,19 @@
 - Outstanding decisions: the configurable ten-round campaign-wide counter remains a technical limiter, not an approved commercial package or impression guarantee. Paid renewal/additional-placement/multi-day launch remains unapproved. Unauthenticated community/network Spotlight distribution remains a separate policy decision. Server telemetry can validate reported visibility thresholds but cannot prove human attention.
 - Release boundary: authenticated staging/production checks have not been run. Do not enable writers or sales until schema/readers/client compatibility, authenticated serving/correction/withdrawal, cache invalidation, payment gates, monitoring, and rollback constraints have been reviewed.
 
+## 2026-10-17 - Public Shop product-card controls clarified locally
+- Status: Implemented and verified locally. Not pushed or deployed because the active pilot batch policy still requires an explicit owner publication instruction.
+- Owner report: the large `+` and tall white speaker controls obscured Products & Services media, while the public-globe image used for closing an opened product did not communicate “close”.
+- Route/screen: public Shop Gallery, `/shop/:gmfnId`, Products & Services cards only.
+- Presentation change: the open `+` now lives in the lower card action dock beside Share/Paid Repost; the same control becomes a literal `×` when open. The globe/cart close metaphor is removed.
+- Video change: the product-video speaker remains directly on the media but is locked to a compact 34px phone circle with a dark translucent background instead of inheriting the shared stable button's 52px white capsule geometry.
+- Copy reduction: shelf, focused-link, loading, empty-state, stock guidance, and `Show less` wording were shortened. Product data, prices, Share, Paid Repost, contact, and link behavior are unchanged.
+- Freeze handling: `docs/SCREEN_SPECS.md` and `docs/FREEZE_POLICY.md` record the owner-approved 2026-10-17 presentation exception; Shop Diary separation and chronology remain frozen.
+- Regression proof: passed `audit:shop-gallery-button-inventory`, `audit:shop-diary-phase1`, `audit:marketplace-shop-evidence-boundary`, and the production frontend build. The focused Playwright phone cases passed for normal visitor, focused video product, and logged-out open product; measurements prove the close control sits 10px above the card bottom and the speaker is 34x34px with `rgba(6, 24, 39, 0.74)` background.
+- Broader audit truth: `audit:link-contracts` still fails three pre-existing stale expectations that conflict with the current frozen novice-first Public Shop behavior (install prompt, automatic Spotlight-to-Diary scrolling, and automatic root-link Diary jumping). The exact focused-product link assertion changed in this slice passes; no removed behavior was restored to make the stale checks green.
+- Files changed: `frontend/src/pages/ShopGalleryPage.tsx`, the focused Public Shop audits/visual smoke, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Devil truth: the 34px visible speaker is intentionally compact and clears the media, but it is smaller than the general 48px primary-button target. Its direct-media placement and explicit accessible label preserve usability; physical-phone pilot observation should still confirm it is comfortably tappable.
+
 ## 2026-10-15 - Owner approved current simplification batch for production
 - Status: The owner explicitly lifted the local batch freeze with `deploy`. This release entry supersedes the local-only publication status in the immediately following 2026-10-15 simplification entries.
 - Release scope: compact phone Companion alerts; pruned invite messages and path-only invite links; deep task-state simplification for Support, Admin Support, Vault, and Loan Suggestions; the app-wide novice-surface finish pass; guided Companion settings; associated UX/freeze contracts; and focused regression/browser checks.

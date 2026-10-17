@@ -599,13 +599,13 @@ function productBuyerCue(product: ShopProduct, shopName: string): string {
 
   if (description && description !== displayTitle) return description;
   if (name && name !== displayTitle && isCodeLikeProductName(name)) {
-    return `Product code ${name}. Ask the shop for details.`;
+    return `Code ${name}. Ask the owner.`;
   }
   if (product.priceText.toLowerCase() === "price on request") {
-    return "Ask the shop for today's price and availability.";
+    return "Ask the owner for price and availability.";
   }
-  if (shopName) return `Available from ${shopName}. Contact the owner to request or confirm stock.`;
-  return "Contact the owner to request or confirm stock.";
+  if (shopName) return `${shopName}. Ask about stock.`;
+  return "Ask the owner about stock.";
 }
 
 function publicShopBlockLabel(product: ShopProduct): string {
@@ -6186,8 +6186,8 @@ export default function ShopGalleryPage() {
                 }}
               >
                 {focusedBlockLinkActive
-                  ? "This shared link opens only this public product/service block."
-                  : "Browse public items, then contact the owner to request or confirm availability."}
+                  ? "Shared item."
+                  : "Browse items. Ask the owner about availability."}
               </div>
 
             </div>
@@ -6203,8 +6203,8 @@ export default function ShopGalleryPage() {
           {loading ? (
             <div style={{ ...helperText(), padding: 16 }}>
               {autoRefreshingShop
-                ? "Reconnecting public shop and loading Products & Services..."
-                : "Loading shop gallery..."}
+                ? "Reconnecting shop..."
+                : "Loading products..."}
             </div>
           ) : error ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
@@ -6254,11 +6254,10 @@ export default function ShopGalleryPage() {
           ) : visibleProducts.length === 0 ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
-                No public items are showing yet.
+                No public items yet.
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Check back later, share the shop with someone who should see it,
-                or ask the owner for a private Vault link.
+                Check back later, share this shop, or ask for Vault access.
               </div>
               <div
                 style={{
@@ -6357,7 +6356,7 @@ export default function ShopGalleryPage() {
                 const productOpenActionColumns = showBlockPlacementAction
                   ? `repeat(3, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
-                const diaryMediaControlHeight = isCompact ? 36 : 40;
+                const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
                 const diaryOpenDockHeight = isCompact ? 92 : 104;
 
@@ -6454,14 +6453,19 @@ export default function ShopGalleryPage() {
                           audioUnlockOffLabel="Muted"
                           audioUnlockErrorLabel="Play"
                           audioUnlockStyle={{
-                            top: isCompact ? 9 : 12,
-                            right: isCompact ? 9 : 12,
+                            top: isCompact ? 7 : 10,
+                            right: isCompact ? 7 : 10,
                             minWidth: diaryMediaControlHeight,
                             width: diaryMediaControlHeight,
                             minHeight: diaryMediaControlHeight,
+                            height: diaryMediaControlHeight,
+                            maxHeight: diaryMediaControlHeight,
                             padding: 0,
                             fontSize: isCompact ? 17 : 19,
-                            boxShadow: "0 10px 18px rgba(2, 12, 27, 0.24)",
+                            border: "1px solid rgba(255,255,255,0.52)",
+                            background: "rgba(6,24,39,0.74)",
+                            boxShadow: "0 8px 16px rgba(2, 12, 27, 0.22)",
+                            backdropFilter: "blur(6px)",
                             overflowAnchor: "none",
                           }}
                           maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
@@ -6690,15 +6694,27 @@ export default function ShopGalleryPage() {
                             textOverflow: "ellipsis",
                             overflowWrap: "normal",
                             overflowAnchor: "none",
+                            color: isProductOpen ? "#526C84" : "#0B63B6",
                             background:
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          <GsnRealisticIcon
-                            name={isProductOpen ? "public-globe" : "shopping-cart"}
-                            size={isCompact ? 28 : 32}
-                            decorative
-                          />
+                          <span
+                            data-product-card-toggle-symbol={isProductOpen ? "close" : "open"}
+                            aria-hidden="true"
+                            style={{
+                              display: "inline-grid",
+                              placeItems: "center",
+                              width: "100%",
+                              height: "100%",
+                              fontSize: isCompact ? 25 : 28,
+                              fontWeight: 760,
+                              lineHeight: 1,
+                              transform: isProductOpen ? "translateY(-1px)" : "none",
+                            }}
+                          >
+                            {isProductOpen ? "×" : "+"}
+                          </span>
                         </SecondaryButton>
                         {showBlockPlacementAction ? (
                           <SocialTagShareButton
@@ -6801,7 +6817,7 @@ export default function ShopGalleryPage() {
                 marginTop: 14,
               }}
             >
-              {showAllProducts ? "Show first products" : `Show ${overflowProductCount} more`}
+              {showAllProducts ? "Show less" : `Show ${overflowProductCount} more`}
             </SecondaryButton>
           ) : null}
         </section>

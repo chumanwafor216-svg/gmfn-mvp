@@ -59,6 +59,7 @@ function product(id, block, title) {
     price: String(2500 + id),
     currency: "NGN",
     image_url: imageDataUrl,
+    video_url: id === 2 ? "/test-product-video.mp4" : null,
     visibility_mode: "community_visible",
     public_block_number: block,
     slot_number: block,
@@ -206,6 +207,14 @@ async function installApiMocks(page) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
+    if (path === "/test-product-video.mp4") {
+      await route.fulfill({
+        status: 200,
+        contentType: "video/mp4",
+        body: Buffer.from(videoDataUrl.split(",")[1], "base64"),
+      });
+      return;
+    }
     const backendPrefixes = [
       "/auth", "/clans", "/community-domains", "/identity-risk", "/marketplace",
       "/payment-instructions", "/rosca", "/community-meetings", "/trust-slips",
@@ -306,12 +315,19 @@ async function collectMetrics(page) {
     const brandbar = document.querySelector('.public-shop-brandbar');
     const installPrompt = document.querySelector('[data-gsn-install-surface="public-shop"]');
     const secondaryFeatures = document.querySelector('[data-public-shop-secondary-features="spotlight-vault"]');
+    const productToggle = document.querySelector('[data-product-card-toggle-symbol]');
+    const productCard = productToggle?.closest('.shop-diary-card');
+    const productAudio = document.querySelector('.shop-diary-card button[data-cta-id="spotlight-media-frame.toggle-audio"]');
     const moreRect = more?.getBoundingClientRect();
     const optionsRect = options?.getBoundingClientRect();
     const brandDisplay = brandbar ? getComputedStyle(brandbar).display : null;
     const productRect = productHeading?.getBoundingClientRect();
     const frameRect = frame?.getBoundingClientRect();
     const sectionRect = section?.getBoundingClientRect();
+    const productToggleRect = productToggle?.getBoundingClientRect();
+    const productCardRect = productCard?.getBoundingClientRect();
+    const productAudioRect = productAudio?.getBoundingClientRect();
+    const productAudioStyle = productAudio ? getComputedStyle(productAudio) : null;
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -332,6 +348,14 @@ async function collectMetrics(page) {
       brandDisplay,
       hasPublicShopInstallPrompt: Boolean(installPrompt),
       secondaryFeaturesDisplay: secondaryFeatures ? getComputedStyle(secondaryFeatures).display : null,
+      productToggleSymbol: productToggle?.getAttribute('data-product-card-toggle-symbol') || null,
+      productToggleText: (productToggle?.textContent || '').trim() || null,
+      productToggleTop: productToggleRect ? Math.round(productToggleRect.top) : null,
+      productToggleBottom: productToggleRect ? Math.round(productToggleRect.bottom) : null,
+      productCardBottom: productCardRect ? Math.round(productCardRect.bottom) : null,
+      productAudioWidth: productAudioRect ? Math.round(productAudioRect.width) : null,
+      productAudioHeight: productAudioRect ? Math.round(productAudioRect.height) : null,
+      productAudioBackground: productAudioStyle?.backgroundColor || null,
     };
   });
 }
@@ -353,7 +377,7 @@ async function run() {
       { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
       { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
       { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services" },
-      { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "This shared link opens only this public product/service block" },
+      { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Shared item." },
       { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-control-gallery-tools", width: 430, expect: "Shared a short video update" },
       { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-control-gallery-tools", width: 360, expect: "No confirmed Trade Evidence linked to this shop yet" },
       { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Promote this update" },
@@ -361,7 +385,7 @@ async function run() {
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Work completed" },
       { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
-      { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Contact the owner to request or confirm stock", authenticated: false },
+      { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Diary Kitchen. Ask about stock.", authenticated: false },
       { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
     ];
@@ -418,6 +442,33 @@ async function run() {
         }
         if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
           throw new Error(`${item.name} did not place Products & Services before More from this shop.`);
+        }
+        if (metrics.productToggleSymbol !== "open" || metrics.productToggleText !== "+") {
+          throw new Error(`${item.name} did not keep the closed-card + control in the product action dock.`);
+        }
+        if (
+          metrics.productCardBottom === null ||
+          metrics.productToggleBottom === null ||
+          metrics.productCardBottom - metrics.productToggleBottom > 18
+        ) {
+          throw new Error(`${item.name} placed the + control away from the lower product action dock.`);
+        }
+      }
+      if (item.name === "06-public-shop-focused-product-390") {
+        if (metrics.productToggleSymbol !== "close" || metrics.productToggleText !== "×") {
+          throw new Error(`${item.name} did not replace the ambiguous globe with the literal close symbol.`);
+        }
+        if (
+          metrics.productAudioWidth === null ||
+          metrics.productAudioHeight === null ||
+          metrics.productAudioWidth > 38 ||
+          metrics.productAudioHeight > 38 ||
+          Math.abs(metrics.productAudioWidth - metrics.productAudioHeight) > 1
+        ) {
+          throw new Error(`${item.name} did not keep the video speaker inside a compact circle: ${JSON.stringify({ width: metrics.productAudioWidth, height: metrics.productAudioHeight, background: metrics.productAudioBackground })}`);
+        }
+        if (!String(metrics.productAudioBackground || "").includes("6, 24, 39")) {
+          throw new Error(`${item.name} restored the large white speaker background.`);
         }
       }
       if (item.name === "16-public-shop-exact-update-390") {

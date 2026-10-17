@@ -213,7 +213,7 @@ assertContains(
 
 assertContains(
   "shopGallery",
-  /This shared link opens only this public product\/service block[\s\S]*?These are the public products and services anyone can browse or share/,
+  /const focusedBlockLinkActive = useMemo[\s\S]*?if \(focusedBlockLinkActive\) return focusedBlockProduct \? \[focusedBlockProduct\] : \[\][\s\S]*?display: focusedBlockLinkActive \? "none" : "block"[\s\S]*?Shared item\./,
   "Shop Gallery block links must remain scoped public block links, not broad private shop evidence."
 );
 

@@ -330,8 +330,13 @@ assertFileContains(
 
 
 assertContains(
-  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?name=\{isProductOpen \? "public-globe" : "shopping-cart"\}/,
-  "Public Shop product-commerce surfaces must use the shopping trolley/cart icon while keeping open-state view as the public globe."
+  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}/,
+  "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card open/close uses literal plus and close symbols in the action dock."
+);
+
+assertNotContains(
+  /name=\{isProductOpen \? "public-globe" : "shopping-cart"\}/,
+  "Public Shop product cards must not use a globe or trolley as an ambiguous open/close control."
 );
 
 assertContains(
@@ -340,13 +345,13 @@ assertContains(
 );
 
 assertContains(
-  /Available from \$\{shopName\}\. Contact the owner to request or confirm stock\.[\s\S]*?Contact the owner to request or confirm stock\./,
-  "Public Shop open product cards must tell visitors to request or confirm stock instead of implying fake checkout."
+  /\$\{shopName\}\. Ask about stock\.[\s\S]*?Ask the owner about stock\./,
+  "Public Shop open product cards must tell visitors to ask about stock instead of implying fake checkout."
 );
 
 assertContains(
-  /Browse public items, then contact the owner to request or confirm availability\./,
-  "Public Shop product shelf must keep concise commerce guidance without placeholder process chips."
+  /Browse items\. Ask the owner about availability\./,
+  "Public Shop product shelf must keep plain, concise commerce guidance without placeholder process chips."
 );
 
 assertNotContains(
@@ -384,8 +389,8 @@ assertContains(
 );
 
 assertContains(
-  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight/,
-  "Public Shop Products & Services media audio controls must stay icon-only, fixed-size, and tied to each product card."
+  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight[\s\S]*?height: diaryMediaControlHeight[\s\S]*?maxHeight: diaryMediaControlHeight[\s\S]*?background: "rgba\(6,24,39,0\.74\)"/,
+  "Public Shop Products & Services media audio controls must stay compact, circular, low-obstruction, and tied to each product card."
 );
 
 assertFileContains(

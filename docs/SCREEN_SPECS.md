@@ -1383,6 +1383,11 @@ Rules:
   Verify, WhatsApp, and Products & Services first. The brand bar and repeated
   status strip, and installation prompt stay off the first surface. Share and
   Verify are secondary; WhatsApp is the single primary contact action.
+- Products & Services cards keep their media unobstructed: the `+` open control
+  lives in the lower action dock, changes to a literal `×` when the card is
+  open, and must not use a globe or commerce object as a close metaphor. Video
+  sound may remain over the media only as a compact speaker control without a
+  large white capsule.
 - Keep follow/owner controls behind one closed `Shop options` row. Keep Spotlight,
   Private Vault, and Shop Update behind one closed `More from this shop` row
   after Products & Services. Explicit deep links must still reveal their target.
