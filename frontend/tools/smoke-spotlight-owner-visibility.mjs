@@ -1,4 +1,4 @@
-/* global console, document, localStorage, window */
+/* global console, document, localStorage, window, URL, Event, CustomEvent */
 
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
@@ -295,6 +295,25 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     timeout: 15_000,
   });
   await openOwnerSpotlight(page);
+  await page.waitForTimeout(1_200);
+  if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
+    throw new Error(
+      `Owner inspection counted exposure before another member appeared: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
+    state: "visible",
+    timeout: 8_000,
+  });
+  await page
+    .locator('[data-spotlight-canonical="true"]')
+    .scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1_400);
+  if (scenario.qualifyCalls < 1 || scenario.impressionCalls < 1) {
+    throw new Error(
+      `Another member's Spotlight did not qualify normally: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
 
   await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.getByText("Your Spotlight · Live", { exact: true }).first().waitFor({
@@ -302,6 +321,7 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     timeout: 15_000,
   });
 
+  const canonicalCallsBeforePreview = scenario.canonicalCalls;
   await page.goto(
     `${baseUrl}/shop/${ownerGsnId}?owner_spotlight_preview=1#public-shop-spotlight`,
     { waitUntil: "domcontentloaded", timeout: 60_000 }
@@ -310,6 +330,10 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     state: "visible",
     timeout: 15_000,
   });
+  await page.waitForTimeout(300);
+  if (scenario.canonicalCalls !== canonicalCallsBeforePreview) {
+    throw new Error("Explicit owner Preview consumed another member's delivery opportunity.");
+  }
   await page.goBack({ waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.getByText("Your Spotlight · Live", { exact: true }).first().waitFor({
     state: "visible",
@@ -331,14 +355,9 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     timeout: 15_000,
   });
 
-  if (scenario.canonicalCalls !== 0 || scenario.legacyBroadcastCalls !== 0) {
+  if (scenario.canonicalCalls < 1 || scenario.legacyBroadcastCalls !== 0) {
     throw new Error(
-      `Owner inspection entered delivery feeds: canonical=${scenario.canonicalCalls}, legacy=${scenario.legacyBroadcastCalls}`
-    );
-  }
-  if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
-    throw new Error(
-      `Owner inspection counted exposure: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+      `Ordinary owner entry did not use the governed member feed cleanly: canonical=${scenario.canonicalCalls}, legacy=${scenario.legacyBroadcastCalls}`
     );
   }
   if (scenario.ownerStatusCalls < 4) {
@@ -366,7 +385,7 @@ async function testDelayedOwnerAuthentication(browser, baseUrl) {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page.getByText("More from this shop", { exact: true }).waitFor({
+  await page.locator('[data-public-shop-more="secondary"] > summary').waitFor({
     state: "visible",
     timeout: 15_000,
   });

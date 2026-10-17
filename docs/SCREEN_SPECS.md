@@ -1395,6 +1395,7 @@ Rules:
   disconnected. When there is no live Spotlight, it stays closed. Explicit deep
   links must still reveal their target.
 - Inside that existing owner-only secondary surface, one compact 48px `Add Spotlight` plus may sit beside Spotlight. Authoritative state `none` hands off to the existing creation workflow; every existing campaign state hands off to the existing manage/correction workflow. Community and origin/back context must survive. Opening it cannot publish, replace, pause, debit, reset expiry, consume allowance, issue a promotional opportunity, or count exposure.
+- On an ordinary authenticated visit to the member's own Public Shop, keep the owner's exact live inspection outside exposure accounting but also rotate eligible Spotlights from other members in the viewer's shared communities through the canonical presentation contract. Never replace the whole community feed with only the owner's item. Explicit owner Preview stays pinned to the owner's item and must issue no community delivery request.
 - Ordinary Public Shop visits must not automatically jump past identity and products to Shop Update.
 - An exact shared-update link with `diary_entry_id` is a focused visitor task:
   reveal that Shop Update before Products & Services and suppress unrelated

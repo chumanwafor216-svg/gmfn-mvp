@@ -3915,17 +3915,6 @@ def get_public_shop_spotlight_opportunity(
     }
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
-    if int(owner.id) == int(current_user.id):
-        return {
-            **serving_contract,
-            "ok": True,
-            "item": None,
-            "presentation": None,
-            "policy": policy,
-            "fallback": None,
-            "rejection_code": PRESENTATION_REJECTION_OWNER_PREVIEW,
-        }
-
     selection = select_spotlight_presentation(
         db,
         viewer_user_id=int(current_user.id),

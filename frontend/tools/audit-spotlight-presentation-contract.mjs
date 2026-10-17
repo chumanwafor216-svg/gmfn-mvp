@@ -135,8 +135,8 @@ assertNotContains(
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /fetch_consumes_delivery_round_but_not_impression[\s\S]*?visible_presentation_qualifies_once_and_retry_dedupes[\s\S]*?owner_preview_does_not_consume_round[\s\S]*?unlinked_repost_fallback_stays_outside_canonical_ledger/,
-  "Backend presentation tests must cover fetch-vs-impression, idempotency, owner preview, and unlinked fallback."
+  /fetch_consumes_delivery_round_but_not_impression[\s\S]*?visible_presentation_qualifies_once_and_retry_dedupes[\s\S]*?own_public_shop_can_present_another_member_without_self_delivery[\s\S]*?unlinked_repost_fallback_stays_outside_canonical_ledger/,
+  "Backend presentation tests must cover fetch-vs-impression, idempotency, own-shop delivery of another member, self-exclusion, and unlinked fallback."
 );
 
 if (findings.length > 0) {

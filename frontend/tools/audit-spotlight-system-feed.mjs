@@ -129,8 +129,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const spotlightBroadcasts =[\s\S]*?ownerSpotlightInspectionMode[\s\S]*?ownerInspectionBroadcast[\s\S]*?: Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts/,
-  "Public Shop must separate the authenticated owner inspection item from the visitor delivery feed and public fallback."
+  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const viewerBroadcasts = Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts[\s\S]*?const spotlightBroadcasts = ownerSpotlightInspectionMode[\s\S]*?\? \[ownerInspectionBroadcast, \.\.\.viewerBroadcasts\]\.filter\(Boolean\)[\s\S]*?: viewerBroadcasts/,
+  "Public Shop must merge the authenticated non-delivery owner item with the governed viewer feed instead of replacing other members' Spotlights."
 );
 
 assertContains(
@@ -609,8 +609,14 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const rotationBroadcasts = ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
-  "Public Shop must keep visitor rotation on the shared queue while rendering one non-rotating owner inspection item only after owner authentication."
+  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const viewerRotationBroadcasts = buildSpotlightRotationQueue[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.viewerRotationBroadcasts\][\s\S]*?: viewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  "Ordinary owner entry must rotate the owner's non-delivery item with other eligible members while explicit Preview remains owner-only."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /const canRequestCanonicalPresentation =[\s\S]*?!ownerSpotlightPreviewAuthorized[\s\S]*?viewerSpotlightRows = await loadViewerSpotlightRows\(cleanedGmfnId\)[\s\S]*?miniSpotlightIsOwnerInspection[\s\S]*?qualifySpotlightPresentation/,
+  "An ordinary owner must request and qualify other members' governed presentations, while the owner's own inspection item remains excluded."
 );
 
 assertContains(

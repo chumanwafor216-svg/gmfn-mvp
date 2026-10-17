@@ -10,7 +10,6 @@ from app.db.database import SessionLocal, engine
 os.environ.setdefault("SECRET_KEY", "pytest-spotlight-presentation-contract-secret")
 
 from app.services.spotlight_presentation_service import (
-    PRESENTATION_REJECTION_OWNER_PREVIEW,
     SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
     SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
@@ -263,7 +262,7 @@ def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_
     assert attribution["presentation_id"] == presentation_id
 
 
-def test_owner_preview_does_not_consume_round_or_record_canonical_impression(
+def test_own_public_shop_can_present_another_member_without_self_delivery(
     client,
     override_current_user_user,
 ):
@@ -276,16 +275,20 @@ def test_owner_preview_does_not_consume_round_or_record_canonical_impression(
             text("UPDATE users SET gmfn_id = 'GSN-P4E2-OWNER' WHERE id = 1")
         )
     _seed_campaign_and_broadcast(owner_user_id=1)
+    _seed_campaign_and_broadcast(campaign_id=2, owner_user_id=2)
 
     response = client.get("/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity")
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["item"] is None
+    assert body["item"]["id"] == 2
+    assert body["item"]["author_gmfn_id"] == "GSN-P4E2-OTHER"
+    assert body["item"]["is_canonical_opportunity"] is True
+    assert body["presentation"]["campaign_id"] == 2
     assert body["fallback"] is None
     assert body["serving_contract_version"] == 2
-    assert body["rejection_code"] == PRESENTATION_REJECTION_OWNER_PREVIEW
-    assert _consumed_rounds() == 0
+    assert body["rejection_code"] is None
+    assert _consumed_rounds() == 1
     assert _ledger_count() == 0
 
 

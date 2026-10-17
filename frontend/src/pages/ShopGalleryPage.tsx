@@ -2051,14 +2051,12 @@ export default function ShopGalleryPage() {
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
       const ownerInspectionBroadcast = normalizeBroadcast(ownerInspection?.item);
-      const spotlightBroadcasts =
-        ownerSpotlightInspectionMode
-          ? ownerInspectionBroadcast
-            ? [ownerInspectionBroadcast]
-            : []
-          : Array.isArray(viewerSpotlightRows)
-          ? viewerSpotlightRows
-          : publicBroadcasts;
+      const viewerBroadcasts = Array.isArray(viewerSpotlightRows)
+        ? viewerSpotlightRows
+        : publicBroadcasts;
+      const spotlightBroadcasts = ownerSpotlightInspectionMode
+        ? [ownerInspectionBroadcast, ...viewerBroadcasts].filter(Boolean)
+        : viewerBroadcasts;
 
       const publicOwnerBroadcast = publicBroadcasts
           .map((row) => normalizeBroadcast(row))
@@ -2095,18 +2093,28 @@ export default function ShopGalleryPage() {
             (item) => spotlightBroadcastKey(item) === spotlightBroadcastKey(relevantBroadcast)
           ) || relevantBroadcast
         : null;
-      const rotationBroadcasts = ownerInspectionSpotlight
-        ? [ownerInspectionSpotlight]
-        : buildSpotlightRotationQueue(normalizedBroadcasts);
+      const ownerInspectionKey = spotlightBroadcastKey(ownerInspectionSpotlight);
+      const viewerRotationBroadcasts = buildSpotlightRotationQueue(
+        normalizedBroadcasts.filter(
+          (item) => spotlightBroadcastKey(item) !== ownerInspectionKey
+        )
+      );
+      const rotationBroadcasts = ownerSpotlightPreviewAuthorized
+        ? ownerInspectionSpotlight
+          ? [ownerInspectionSpotlight]
+          : []
+        : ownerInspectionSpotlight
+        ? [ownerInspectionSpotlight, ...viewerRotationBroadcasts]
+        : viewerRotationBroadcasts;
       const currentSpotlight =
         communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
         communitySpotlightsRef.current[0] ||
         null;
       const currentKey = spotlightBroadcastKey(currentSpotlight);
-      const matchedSpotlightIndex = ownerInspectionSpotlight
+      const matchedSpotlightIndex = ownerSpotlightPreviewAuthorized
         ? 0
         : currentKey
-        ? normalizedBroadcasts.findIndex(
+        ? rotationBroadcasts.findIndex(
             (item) => spotlightBroadcastKey(item) === currentKey
           )
         : -1;
@@ -2185,10 +2193,11 @@ export default function ShopGalleryPage() {
 
     async function loadViewerSpotlightRows(cleanedGmfnId: string) {
       if (!getAccessToken()) return null;
+      if (ownerSpotlightPreviewAuthorized) return [];
 
       const canRequestCanonicalPresentation =
         safeStr(cleanedGmfnId) &&
-        !ownerSpotlightInspectionMode &&
+        !ownerSpotlightPreviewAuthorized &&
         (typeof document === "undefined" || document.visibilityState === "visible");
 
       if (canRequestCanonicalPresentation) {
@@ -2335,10 +2344,8 @@ export default function ShopGalleryPage() {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
           if (ownerSpotlightInspectionMode) {
             ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
-            viewerSpotlightRows = [];
-          } else {
-            viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
           }
+          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
           publicDiaryRows = await loadPublicShopDiaryRows(cleanedGmfnId, publicShopRes);
         } catch (err: any) {
           const message = safeStr(err?.message);
@@ -2353,10 +2360,8 @@ export default function ShopGalleryPage() {
             if (publicShopRes) {
               if (ownerSpotlightInspectionMode) {
                 ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
-                viewerSpotlightRows = [];
-              } else {
-                viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
               }
+              viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
               publicDiaryRows = await loadPublicShopDiaryRows(
                 cleanedGmfnId,
                 publicShopRes,
@@ -2400,10 +2405,8 @@ export default function ShopGalleryPage() {
           publicShopRes = await loadPublicShop(effectiveGmfnId);
           if (ownerSpotlightInspectionMode) {
             ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
-            viewerSpotlightRows = [];
-          } else {
-            viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
           }
+          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
           publicDiaryRows = await loadPublicShopDiaryRows(effectiveGmfnId, publicShopRes);
           if (alive) {
             setNotice({
@@ -2472,7 +2475,16 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [explicitRouteClanId, gmfnId, ownerSpotlightInspectionMode, routeClanId, routeDiaryEntryId, routeProductId, shopReconnectRetryKey]);
+  }, [
+    explicitRouteClanId,
+    gmfnId,
+    ownerSpotlightInspectionMode,
+    ownerSpotlightPreviewAuthorized,
+    routeClanId,
+    routeDiaryEntryId,
+    routeProductId,
+    shopReconnectRetryKey,
+  ]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -2959,6 +2971,15 @@ export default function ShopGalleryPage() {
     if (communitySpotlights.length === 0) return null;
     return communitySpotlights[miniSpotlightIndex % communitySpotlights.length] || communitySpotlights[0];
   }, [communitySpotlights, miniSpotlightIndex]);
+  const ownerInspectionSpotlightKey = spotlightBroadcastKey(
+    normalizeBroadcast(ownerSpotlightInspection?.item)
+  );
+  const miniSpotlightIsOwnerInspection = Boolean(
+    ownerSpotlightInspectionMode &&
+      miniSpotlight &&
+      ownerInspectionSpotlightKey &&
+      spotlightBroadcastKey(miniSpotlight) === ownerInspectionSpotlightKey
+  );
 
   const miniSpotlightView = useMemo(() => {
     if (!miniSpotlight) {
@@ -3007,6 +3028,7 @@ export default function ShopGalleryPage() {
 
   const ownerSpotlightStatusView = useMemo(() => {
     if (!ownerSpotlightInspectionMode) return null;
+    if (miniSpotlight && !miniSpotlightIsOwnerInspection) return null;
 
     const state = safeStr(ownerSpotlightInspection?.state || "unavailable").toLowerCase();
     const campaign = ownerSpotlightInspection?.campaign || null;
@@ -3077,6 +3099,7 @@ export default function ShopGalleryPage() {
     };
   }, [
     miniSpotlight,
+    miniSpotlightIsOwnerInspection,
     miniSpotlightView.title,
     ownerSpotlightInspection,
     ownerSpotlightInspectionMode,
@@ -3084,7 +3107,13 @@ export default function ShopGalleryPage() {
   ]);
 
   useEffect(() => {
-    if (loading || error || !miniSpotlight || ownerSpotlightInspectionMode) return;
+    if (
+      loading ||
+      error ||
+      !miniSpotlight ||
+      miniSpotlightIsOwnerInspection ||
+      ownerSpotlightPreviewAuthorized
+    ) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
 
@@ -3254,7 +3283,15 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
     };
-  }, [error, gmfnId, loading, miniSpotlight, ownerSpotlightInspectionMode, trackMarketplaceAttention]);
+  }, [
+    error,
+    gmfnId,
+    loading,
+    miniSpotlight,
+    miniSpotlightIsOwnerInspection,
+    ownerSpotlightPreviewAuthorized,
+    trackMarketplaceAttention,
+  ]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 
