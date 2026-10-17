@@ -59,6 +59,7 @@ Bottom navigation is allowed here.
 18. TrustSlipPage
 19. WhatsAppBridgePage
 20. CommitmentsPage
+21. DemandBoxPage
 
 ## Current Repo Name Notes
 

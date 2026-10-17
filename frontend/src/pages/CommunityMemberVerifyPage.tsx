@@ -325,6 +325,9 @@ export default function CommunityMemberVerifyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [isCompact, setIsCompact] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 620 : false
+  );
   const credentialLoadSeqRef = useRef(0);
   const credentialLoadContextRef = useRef("");
   const cleanCommunityKey = safeStr(communityKey);
@@ -391,9 +394,50 @@ export default function CommunityMemberVerifyPage() {
     void loadCredential();
   }, [loadCredential]);
 
+  useEffect(() => {
+    const handleResize = () => setIsCompact(window.innerWidth <= 620);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   async function copyLink() {
     const ok = await safeCopy(publicLink);
     setCopied(ok ? "Credential link copied." : "Copy failed. You can copy the browser address.");
+  }
+
+  function credentialActions(compact = false) {
+    return (
+      <div
+        data-gsn-member-credential-actions={compact ? "compact" : "wide"}
+        style={{
+          display: "grid",
+          gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, max-content))",
+          gap: 10,
+        }}
+      >
+        <PrimaryButton
+          type="button"
+          onClick={() => void copyLink()}
+          stableHeight={compact ? 48 : 52}
+          debugId="community-member-verify.copy-link"
+        >
+          Copy credential link
+        </PrimaryButton>
+        <SecondaryButton
+          type="button"
+          onClick={() =>
+            window.location.assign(
+              `/verify/community/${encodeURIComponent(cleanCommunityKey)}`
+            )
+          }
+          stableHeight={compact ? 48 : 52}
+          debugId="community-member-verify.open-community-record"
+        >
+          Open community record
+        </SecondaryButton>
+      </div>
+    );
   }
 
   const witnessCount = firstTruthy(credential?.member_witness_count, "0");
@@ -592,7 +636,6 @@ export default function CommunityMemberVerifyPage() {
         },
       ]
     : [];
-
   return (
     <div style={pageShell()}>
       <PageTopNav
@@ -619,9 +662,9 @@ export default function CommunityMemberVerifyPage() {
             background:
               "linear-gradient(135deg, #061827 0%, #08233A 56%, #0B2D4A 100%)",
             color: "#FFFFFF",
-            padding: "22px 18px",
+            padding: isCompact ? "16px 14px" : "22px 18px",
             display: "grid",
-            gap: 14,
+            gap: isCompact ? 8 : 14,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -630,23 +673,27 @@ export default function CommunityMemberVerifyPage() {
               <div style={{ fontSize: 12, fontWeight: 1000, color: "#F2C766" }}>
                 Community membership credential
               </div>
-              <h1 style={{ margin: "4px 0 0", fontSize: 27, lineHeight: 1.08 }}>
+              <h1 style={{ margin: "4px 0 0", fontSize: isCompact ? 22 : 27, lineHeight: 1.08 }}>
                 {loading ? "Checking membership..." : error ? "Credential not found" : title}
               </h1>
             </div>
           </div>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.5 }}>
-            This page checks one member claim against one GSN Community ID.
-          </p>
+          {!isCompact ? (
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.5 }}>
+              This page checks one member claim against one GSN Community ID.
+            </p>
+          ) : null}
         </div>
 
-        <div style={{ padding: 18, display: "grid", gap: 14 }}>
-          <TrustPaperAuthorityStrip
-            title="GSN Community Member Credential"
-            reference={`${memberAnchor} / ${communityAnchor}`}
-            classification="Scoped public credential"
-            compact
-          />
+        <div style={{ padding: isCompact ? 12 : 18, display: "grid", gap: isCompact ? 10 : 14 }}>
+          {!isCompact ? (
+            <TrustPaperAuthorityStrip
+              title="GSN Community Member Credential"
+              reference={`${memberAnchor} / ${communityAnchor}`}
+              classification="Scoped public credential"
+              compact
+            />
+          ) : null}
 
           {loading ? (
             <div style={innerCard()}>Loading the public membership credential...</div>
@@ -713,23 +760,55 @@ export default function CommunityMemberVerifyPage() {
                 </div>
               </div>
 
-              <CommunityProofPanel
-                title="Known by community"
-                subtitle="Public-safe membership proof for this Community ID. It supports judgement without exposing private witnesses or the full Trust Passport."
-                compact
-                communityName={credential.community_name}
-                holderRole={credential.membership_role}
-                identityLabel={membershipStatusText}
-                memberWitnessCount={credential.member_witness_count}
-                membershipStrengthLabel={credential.membership_strength_label}
-                membershipCurrentnessLabel={currentnessLabel}
-                membershipCurrentnessScope={currentnessScope}
-                nextWitnessRenewalStatusLabel={credential.next_witness_renewal_status_label}
-                communityActivityCount={credential.community_activity_count}
-                communityActivityLabel={credential.community_activity_label}
-                communityActivityCategories={credential.community_activity_categories}
-                trustSlipStatusLabel="Community member credential"
-              />
+              {isCompact ? credentialActions(true) : null}
+              {isCompact && copied ? (
+                <div style={innerCard(copied.includes("copied") ? "#EAF7EE" : "#FFF7E6")}>
+                  {copied}
+                </div>
+              ) : null}
+
+              {isCompact ? (
+                <TrustDocumentDisclosureSection
+                  title="Community evidence"
+                  summary="Open for witness, renewal, and activity evidence."
+                >
+                  <CommunityProofPanel
+                    title="Known by community"
+                    subtitle="Public-safe membership proof for this Community ID. It supports judgement without exposing private witnesses or the full Trust Passport."
+                    compact
+                    communityName={credential.community_name}
+                    holderRole={credential.membership_role}
+                    identityLabel={membershipStatusText}
+                    memberWitnessCount={credential.member_witness_count}
+                    membershipStrengthLabel={credential.membership_strength_label}
+                    membershipCurrentnessLabel={currentnessLabel}
+                    membershipCurrentnessScope={currentnessScope}
+                    nextWitnessRenewalStatusLabel={credential.next_witness_renewal_status_label}
+                    communityActivityCount={credential.community_activity_count}
+                    communityActivityLabel={credential.community_activity_label}
+                    communityActivityCategories={credential.community_activity_categories}
+                    trustSlipStatusLabel="Community member credential"
+                  />
+                </TrustDocumentDisclosureSection>
+              ) : (
+                <CommunityProofPanel
+                  title="Known by community"
+                  subtitle="Public-safe membership proof for this Community ID. It supports judgement without exposing private witnesses or the full Trust Passport."
+                  compact
+                  communityName={credential.community_name}
+                  holderRole={credential.membership_role}
+                  identityLabel={membershipStatusText}
+                  memberWitnessCount={credential.member_witness_count}
+                  membershipStrengthLabel={credential.membership_strength_label}
+                  membershipCurrentnessLabel={currentnessLabel}
+                  membershipCurrentnessScope={currentnessScope}
+                  nextWitnessRenewalStatusLabel={credential.next_witness_renewal_status_label}
+                  communityActivityCount={credential.community_activity_count}
+                  communityActivityLabel={credential.community_activity_label}
+                  communityActivityCategories={credential.community_activity_categories}
+                  trustSlipStatusLabel="Community member credential"
+                />
+              )}
 
               <TrustDocumentDisclosureSection
                 title="Audit Details"
@@ -885,15 +964,19 @@ export default function CommunityMemberVerifyPage() {
                 </div>
               </TrustDocumentDisclosureSection>
 
-              <div
-                style={{
-                  ...innerCard("#FFFFFF"),
-                  display: "grid",
-                  gridTemplateColumns: "96px minmax(0, 1fr)",
-                  gap: 14,
-                  alignItems: "center",
-                }}
+              <TrustDocumentDisclosureSection
+                title="QR and sharing"
+                summary="Open the QR that returns to this same public credential."
               >
+                <div
+                  style={{
+                    ...innerCard("#FFFFFF"),
+                    display: "grid",
+                    gridTemplateColumns: "96px minmax(0, 1fr)",
+                    gap: 14,
+                    alignItems: "center",
+                  }}
+                >
                 <div
                   style={{
                     width: 92,
@@ -923,33 +1006,17 @@ export default function CommunityMemberVerifyPage() {
                     The QR opens this same public credential page. It does not reveal private witnesses or contact details.
                   </p>
                 </div>
-              </div>
+                </div>
+              </TrustDocumentDisclosureSection>
               <TrustPaperSecurityNote reference={memberAnchor} compact />
             </>
           ) : null}
         </div>
       </section>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <PrimaryButton
-          type="button"
-          onClick={() => void copyLink()}
-          stableHeight={52}
-          debugId="community-member-verify.copy-link"
-        >
-          Copy Credential Link
-        </PrimaryButton>
-        <SecondaryButton
-          type="button"
-          onClick={() => window.location.assign(`/verify/community/${encodeURIComponent(cleanCommunityKey)}`)}
-          stableHeight={52}
-          debugId="community-member-verify.open-community-record"
-        >
-          Open Community Record
-        </SecondaryButton>
-      </div>
+      {!isCompact ? credentialActions(false) : null}
 
-      {copied ? (
+      {!isCompact && copied ? (
         <div style={innerCard(copied.includes("copied") ? "#EAF7EE" : "#FFF7E6")}>{copied}</div>
       ) : null}
 

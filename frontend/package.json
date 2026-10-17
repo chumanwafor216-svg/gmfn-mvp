@@ -46,6 +46,7 @@
     "audit:marketplace-department-boundaries": "node tools/audit-marketplace-department-boundaries.mjs",
     "audit:marketplace-front-package": "node tools/audit-marketplace-front-package.mjs",
     "audit:demand-box-front-package": "node tools/audit-demand-box-front-package.mjs",
+    "audit:demand-box-expand-search": "node tools/audit-demand-box-expand-search.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:loan-summary-repayment-simple-phone": "node tools/audit-loan-summary-repayment-simple-phone.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",

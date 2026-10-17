@@ -1375,26 +1375,41 @@ export default function DemandBoxPage() {
     }
   }
 
-  async function handleStartRelay(row: DemandRow) {
+  async function handleExpandSearch(row: DemandRow) {
     const demandId = positiveNumber(row?.id);
     if (!demandId) return;
     setUpdatingRelayRequestId(demandId);
+    let consentWasAdded = false;
     try {
+      if (!row?.relay_consent_granted) {
+        await setMarketplaceRequestRelayConsent(demandId, true);
+        consentWasAdded = true;
+      }
       const candidates = await getMarketplaceRequestRelayCandidates(demandId);
       if (!candidates?.has_relay_candidate) {
+        await loadPage();
         showNotice(
           "error",
-          "No authorised receiving community has a current bridge and plausible supply."
+          "No permitted receiving community has a current bridge and plausible supply yet. " +
+            "Expanded-search permission remains on for this request."
         );
         return;
       }
       await createMarketplaceRequestRelayRun(demandId);
+      await loadPage();
       showNotice(
         "success",
-        "A privacy-limited relay offer was issued. No receiving identity is exposed until a bridge accepts."
+        "Expanded search started. GSN has asked an authorised community bridge without exposing a receiving identity."
       );
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "Relay could not be started.");
+      if (consentWasAdded) await loadPage();
+      const errorText = safeStr(err?.message);
+      showNotice(
+        "error",
+        errorText.includes("outbound opportunity relay")
+          ? "Your permission was saved, but this community has not enabled outward search. A community owner or admin must enable it first."
+          : errorText || "Expanded search could not be started."
+      );
     } finally {
       setUpdatingRelayRequestId(0);
     }
@@ -1718,6 +1733,88 @@ export default function DemandBoxPage() {
     );
   }
 
+  function renderExpandedSearchPanel(
+    row: DemandRow,
+    matchState: DemandMatchState | null,
+    debugBase: string
+  ): React.ReactNode {
+    const rowId = positiveNumber(row?.id);
+    const canOfferExpandedSearch =
+      rowId > 0 &&
+      isMineRow(row, me) &&
+      !isProtectedTargetDemand(row) &&
+      matchState?.loaded === true &&
+      !matchState.error &&
+      matchState.count === 0;
+
+    if (!canOfferExpandedSearch) return null;
+
+    const busy = updatingRelayRequestId === rowId;
+    const consentActive = Boolean(row?.relay_consent_granted);
+
+    return (
+      <div
+        data-gsn-demand-expand-search="true"
+        style={{
+          marginTop: 12,
+          ...innerCard("#F8FBFF"),
+          border: "1px solid rgba(13,95,168,0.16)",
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          {demandEmptyStateIcon("community")}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+              No match in this community yet
+            </div>
+            <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
+              Allow GSN to check one other permitted community for this request.
+              Candidate communities and provider identities stay hidden until an
+              authorised bridge accepts.
+            </div>
+          </div>
+        </div>
+
+        <div style={demandActionRowStyle(isCompact, 50, 164, 0)}>
+          <PrimaryButton
+            onClick={() => void handleExpandSearch(row)}
+            disabled={busy}
+            busy={busy}
+            busyLabel="Checking..."
+            debugId={`${debugBase}.expand-search`}
+            style={demandActionStyle(50)}
+          >
+            {demandIconText(
+              "community",
+              consentActive ? "Search again" : "Expand search",
+              18
+            )}
+          </PrimaryButton>
+          {consentActive ? (
+            <SubtleButton
+              onClick={() => void handleRelayConsent(row, false)}
+              disabled={busy}
+              busy={busy}
+              busyLabel="Updating..."
+              debugId={`${debugBase}.stop-expanded-search`}
+              style={demandActionStyle(50)}
+            >
+              {demandIconText("lock", "Stop expanded search", 18)}
+            </SubtleButton>
+          ) : null}
+        </div>
+
+        <div style={{ ...helperText(), fontSize: 12 }}>
+          This authorises one-hop community search for this request only. It is
+          not public, radius-based, paid, or guaranteed search, and permission
+          can be withdrawn.
+        </div>
+      </div>
+    );
+  }
+
   function renderDemandRecord(
     row: DemandRow,
     scope: DemandPaperScope,
@@ -1854,6 +1951,7 @@ export default function DemandBoxPage() {
         </div>
 
         {renderDemandMatchPanel(row, matchState, debugBase)}
+        {renderExpandedSearchPanel(row, matchState, debugBase)}
 
         <div style={demandActionRowStyle(isCompact, 54, 156, 12)}>
           {canClose ? (
@@ -1880,33 +1978,6 @@ export default function DemandBoxPage() {
                 {demandIconText("lock", "Cancel", 20)}
               </SubtleButton>
 
-              <SecondaryButton
-                onClick={() => void handleRelayConsent(row, !row?.relay_consent_granted)}
-                disabled={busy || updatingRelayRequestId === rowId || protectedTarget}
-                busy={updatingRelayRequestId === rowId}
-                busyLabel="Updating..."
-                debugId={`${debugBase}.relay-consent`}
-                style={demandActionStyle(54)}
-              >
-                {demandIconText(
-                  "community",
-                  row?.relay_consent_granted ? "Stop relay" : "Allow one-hop relay",
-                  20
-                )}
-              </SecondaryButton>
-
-              {row?.relay_consent_granted ? (
-                <SecondaryButton
-                  onClick={() => void handleStartRelay(row)}
-                  disabled={busy || updatingRelayRequestId === rowId}
-                  busy={updatingRelayRequestId === rowId}
-                  busyLabel="Checking..."
-                  debugId={`${debugBase}.relay-start`}
-                  style={demandActionStyle(54)}
-                >
-                  {demandIconText("community", "Find another community", 20)}
-                </SecondaryButton>
-              ) : null}
             </>
           ) : null}
 
@@ -2682,7 +2753,7 @@ export default function DemandBoxPage() {
                 <SecondaryButton
                   onClick={() =>
                     void handleSaveRelayPolicy(
-                      !Boolean(relayPolicy?.outbound_enabled),
+                      !relayPolicy?.outbound_enabled,
                       Boolean(relayPolicy?.inbound_enabled)
                     )
                   }
@@ -2698,7 +2769,7 @@ export default function DemandBoxPage() {
                   onClick={() =>
                     void handleSaveRelayPolicy(
                       Boolean(relayPolicy?.outbound_enabled),
-                      !Boolean(relayPolicy?.inbound_enabled)
+                      !relayPolicy?.inbound_enabled
                     )
                   }
                   disabled={savingRelayPolicy}
@@ -3258,12 +3329,12 @@ export default function DemandBoxPage() {
                       disabled={visibilityScope !== DEMAND_VISIBILITY_COMMUNITY}
                       onChange={(e) => setAllowOneHopRelay(e.target.checked)}
                     />
-                    Allow one-hop relay through another authorised community
+                    Allow GSN to expand this search if no local match is found
                   </label>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                    This is explicit consent for this request only. Both communities
-                    must also allow relay. You can withdraw consent later; no private
-                    Ask Person request is eligible.
+                    This is explicit one-hop consent for this request only. Both
+                    communities must permit relay. You can withdraw it later; private
+                    Ask Person requests are never eligible.
                   </div>
                 </div>
               </div>

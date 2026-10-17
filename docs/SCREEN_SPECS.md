@@ -888,6 +888,47 @@ Rules:
 - Use stable real-life pictograms or deterministic SVG marks. Do not use weak
   emoji-style marks for core marketplace lanes.
 
+## DemandBoxPage
+
+Purpose:
+Let one member publish and manage a personal need inside a selected community,
+then deliberately ask GSN to check another authorised community when current
+same-community supply has no plausible match.
+
+Must show:
+- the selected community context;
+- one clear create-demand action;
+- governed queue lanes and the member's own open requests;
+- current same-community supply matches when available;
+- on the requester's own open community-visible request, one compact
+  `Expand search` card only after the supply check succeeds with zero current
+  matches;
+- a clear fulfilled/cancel path;
+- relay policy controls only for authorised community owners/admins.
+
+Rules:
+- A demand remains owned by the personal requester GSN ID. Community or
+  Community Domain context does not become the requester.
+- `Expand search` must reuse the existing explicit per-request one-hop relay
+  consent and community inbound/outbound policy. It must not create a second
+  discovery engine.
+- The action itself may grant consent only when its nearby copy plainly says
+  that GSN is being authorised to check another permitted community for this
+  request. Consent must remain withdrawable.
+- Do not show the no-match card when the supply check failed or is still
+  loading. Failure is not evidence that no supply exists.
+- Do not offer expanded search for private Ask Person requests.
+- Do not describe one-hop relay as public, network-wide, radius-based, nearby,
+  guaranteed, recommended, approved, or paid search.
+- Do not expose candidate communities, providers, private identities, or
+  supply details before a legitimate bridge accepts.
+- Exact location, GPS, postcode-distance matching, 10/20-mile radius, pricing,
+  refunds, and no-match charging remain outside this screen until backend
+  contracts and provider consent exist.
+- On phones, keep relay policy administration collapsed and keep expanded
+  search attached to the relevant personal request rather than exposing it as
+  a competing page-level tool.
+
 ## FinancePage
 
 Purpose:
@@ -1206,6 +1247,10 @@ Must show:
 - open community record action
 
 Rules:
+- On phones, keep the compact credential answer and four primary facts first,
+  place Copy credential link and Open community record immediately after that
+  answer, and keep community evidence, audit detail, secondary facts, privacy
+  notes, and QR sharing behind disclosures.
 - This is a public verification screen and must not show bottom navigation.
 - The route must be anchored by Community ID/key and member GSN ID/key:
   `/verify/community/:communityKey/member/:memberKey`.

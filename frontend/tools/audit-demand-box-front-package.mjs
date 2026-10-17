@@ -352,7 +352,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox must use the O1B read API instead of deriving supply matches locally.",
   ],
   [
-    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Possible matches · \{matchState\.count\}[\s\S]*?Based on your request and currently available supply\./,
+    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Possible matches Â· \{matchState\.count\}[\s\S]*?Based on your request and currently available supply\./,
     "DemandBox O1C must stay a compact possible-match indicator inside existing request cards.",
   ],
   [
