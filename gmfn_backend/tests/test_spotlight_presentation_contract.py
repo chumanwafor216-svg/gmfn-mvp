@@ -14,6 +14,7 @@ from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     SPOTLIGHT_PRESENTATION_TOKEN_TYPE,
+    list_spotlight_presentation_replays,
     record_spotlight_presentation_qualification,
     select_spotlight_presentation,
 )
@@ -400,3 +401,115 @@ def test_unlinked_repost_fallback_stays_outside_canonical_ledger(client, overrid
     assert body["serving_contract_version"] == 2
     assert _consumed_rounds() == 0
     assert _ledger_count() == 0
+
+
+def test_qualified_presentation_replays_without_new_delivery_or_exposure(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+
+    issued = client.get(
+        "/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity"
+    )
+    assert issued.status_code == 200, issued.text
+    issued_body = issued.json()
+    presentation_id = issued_body["presentation"]["presentation_id"]
+    token = issued_body["presentation"]["presentation_token"]
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_presentation_leases
+                SET issued_at = :issued_at
+                WHERE presentation_id = :presentation_id
+                """
+            ),
+            {
+                "issued_at": _now() - timedelta(seconds=2),
+                "presentation_id": presentation_id,
+            },
+        )
+
+    qualified = client.post(
+        "/marketplace/spotlight-presentations/qualify",
+        json={
+            "presentation_token": token,
+            "qualification_key": presentation_id,
+            "visible_ms": SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+            "visible_ratio": SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+            "document_visible": True,
+        },
+    )
+    assert qualified.status_code == 200, qualified.text
+    assert qualified.json()["recorded"] is True
+    rounds_before = _consumed_rounds()
+    exposures_before = _ledger_count()
+
+    replay_response = client.get(
+        "/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity"
+    )
+
+    assert replay_response.status_code == 200, replay_response.text
+    replay_body = replay_response.json()
+    replay = replay_body["item"]
+    assert replay_body["presentation"] is None
+    assert replay["is_canonical_opportunity"] is True
+    assert replay["is_canonical_replay"] is True
+    assert replay["opportunity_presentation_id"] == presentation_id
+    assert replay["opportunity_presentation_token"] is None
+    assert replay["opportunity_counts_as_delivery"] is False
+    assert replay["opportunity_counts_as_exposure"] is False
+    assert datetime.fromisoformat(replay["opportunity_replay_expires_at"]) > _now()
+    assert _consumed_rounds() == rounds_before == 1
+    assert _ledger_count() == exposures_before == 1
+
+
+def test_replay_revalidates_viewer_and_exact_community_route(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+    issued = client.get(
+        "/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity"
+    ).json()
+    presentation_id = issued["presentation"]["presentation_id"]
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_presentation_leases
+                SET issued_at = :issued_at
+                WHERE presentation_id = :presentation_id
+                """
+            ),
+            {
+                "issued_at": _now() - timedelta(seconds=2),
+                "presentation_id": presentation_id,
+            },
+        )
+    qualified = client.post(
+        "/marketplace/spotlight-presentations/qualify",
+        json={
+            "presentation_token": issued["presentation"]["presentation_token"],
+            "qualification_key": presentation_id,
+            "visible_ms": SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+            "visible_ratio": SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+            "document_visible": True,
+        },
+    )
+    assert qualified.json()["recorded"] is True
+
+    with SessionLocal() as db:
+        assert len(list_spotlight_presentation_replays(db, viewer_user_id=1)) == 1
+        assert list_spotlight_presentation_replays(db, viewer_user_id=2) == []
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM clan_memberships WHERE clan_id = 1 AND user_id = 1")
+        )
+
+    with SessionLocal() as db:
+        assert list_spotlight_presentation_replays(db, viewer_user_id=1) == []

@@ -64,6 +64,7 @@ from app.services.vault_domain_service import (
 from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     PRESENTATION_REJECTION_OWNER_PREVIEW,
+    list_spotlight_presentation_replays,
     presentation_policy,
     record_spotlight_presentation_qualification,
     revalidate_spotlight_presentation,
@@ -3923,61 +3924,97 @@ def get_public_shop_spotlight_opportunity(
         issuance_key=x_spotlight_request_id,
     )
     db.commit()
-    if not selection.selected or selection.candidate is None:
-        return {
-            **serving_contract,
-            "ok": True,
-            "item": None,
-            "presentation": None,
-            "policy": policy,
-            "fallback": None,
-            "rejection_code": selection.rejection_code,
-        }
 
-    campaign_id = int(selection.candidate.campaign_id)
-    broadcast = (
-        db.get(MarketplaceBroadcast, int(selection.placement_broadcast_id))
-        if selection.placement_broadcast_id is not None
-        else None
-    )
-    if broadcast is None:
-        return {
-            **serving_contract,
-            "ok": True,
-            "item": None,
-            "presentation": None,
-            "policy": policy,
-            "fallback": None,
-            "rejection_code": "canonical_broadcast_snapshot_missing",
-        }
+    items: list[Dict[str, Any]] = []
+    presentation: Optional[Dict[str, Any]] = None
+    selected_campaign_ids: set[int] = set()
+    rejection_code = selection.rejection_code
+    if selection.selected and selection.candidate is not None:
+        campaign_id = int(selection.candidate.campaign_id)
+        selected_campaign_ids.add(campaign_id)
+        broadcast = (
+            db.get(MarketplaceBroadcast, int(selection.placement_broadcast_id))
+            if selection.placement_broadcast_id is not None
+            else None
+        )
+        if broadcast is not None:
+            item = _broadcast_out(db, broadcast)
+            item["is_canonical_opportunity"] = True
+            item["is_canonical_replay"] = False
+            item["opportunity_campaign_id"] = campaign_id
+            item["opportunity_presentation_id"] = selection.presentation_id
+            item["opportunity_presentation_token"] = selection.presentation_token
+            item["opportunity_presentation_expires_at"] = (
+                selection.token_expires_at.isoformat()
+                if selection.token_expires_at
+                else None
+            )
+            item["opportunity_presentation_surface"] = (
+                SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+            )
+            item["opportunity_counts_as_delivery"] = True
+            item["opportunity_counts_as_exposure"] = False
+            items.append(item)
+            presentation = {
+                "presentation_id": selection.presentation_id,
+                "presentation_token": selection.presentation_token,
+                "presentation_expires_at": item[
+                    "opportunity_presentation_expires_at"
+                ],
+                "campaign_id": campaign_id,
+                "placement_broadcast_id": selection.placement_broadcast_id,
+                "content_version": selection.content_version,
+                "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+                "delivery_round_consumed": bool(selection.delivery_round_consumed),
+            }
+            rejection_code = None
+        else:
+            rejection_code = "canonical_broadcast_snapshot_missing"
 
-    item = _broadcast_out(db, broadcast)
-    item["is_canonical_opportunity"] = True
-    item["opportunity_campaign_id"] = campaign_id
-    item["opportunity_presentation_id"] = selection.presentation_id
-    item["opportunity_presentation_token"] = selection.presentation_token
-    item["opportunity_presentation_expires_at"] = (
-        selection.token_expires_at.isoformat() if selection.token_expires_at else None
+    replays = list_spotlight_presentation_replays(
+        db,
+        viewer_user_id=int(current_user.id),
+        surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+        exclude_campaign_ids=selected_campaign_ids,
     )
-    item["opportunity_presentation_surface"] = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+    for replay in replays:
+        broadcast = db.get(
+            MarketplaceBroadcast,
+            int(replay.placement_broadcast_id),
+        )
+        if broadcast is None:
+            continue
+        replay_item = _broadcast_out(db, broadcast)
+        replay_item["is_canonical_opportunity"] = True
+        replay_item["is_canonical_replay"] = True
+        replay_item["opportunity_campaign_id"] = int(replay.candidate.campaign_id)
+        replay_item["opportunity_presentation_id"] = replay.presentation_id
+        replay_item["opportunity_presentation_token"] = None
+        replay_item["opportunity_presentation_expires_at"] = None
+        replay_item["opportunity_replay_expires_at"] = (
+            replay.replay_expires_at.isoformat()
+        )
+        replay_item["opportunity_presentation_surface"] = (
+            SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+        )
+        replay_item["opportunity_counts_as_delivery"] = False
+        replay_item["opportunity_counts_as_exposure"] = False
+        items.append(replay_item)
+
     return {
         **serving_contract,
         "ok": True,
-        "item": item,
-        "items": [item],
-        "presentation": {
-            "presentation_id": selection.presentation_id,
-            "presentation_token": selection.presentation_token,
-            "presentation_expires_at": item["opportunity_presentation_expires_at"],
-            "campaign_id": campaign_id,
-            "placement_broadcast_id": selection.placement_broadcast_id,
-            "content_version": selection.content_version,
-            "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
-            "delivery_round_consumed": bool(selection.delivery_round_consumed),
+        "item": items[0] if items else None,
+        "items": items,
+        "presentation": presentation,
+        "canonical_replays": {
+            "count": len(replays),
+            "counts_as_delivery": False,
+            "counts_as_exposure": False,
         },
         "policy": policy,
         "fallback": None,
-        "rejection_code": None,
+        "rejection_code": rejection_code,
     }
 
 

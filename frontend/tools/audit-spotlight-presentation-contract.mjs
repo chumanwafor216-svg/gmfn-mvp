@@ -69,7 +69,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /publicShopSpotlightCycleExpiryMs[\s\S]*?filter\(\(value\) => Number\.isFinite\(value\)\)[\s\S]*?expiryMs > requestFinishedAtMs[\s\S]*?\? opportunityItems[\s\S]*?: \[\]/,
+  /publicShopSpotlightCycleExpiryMs[\s\S]*?opportunity_replay_expires_at[\s\S]*?currentCanonicalItems[\s\S]*?expiryMs > requestFinishedAtMs[\s\S]*?\? currentCanonicalItems[\s\S]*?: \[\]/,
   "Elapsed server presentation deadlines must survive parsing so delayed responses fail closed instead of receiving a fresh client lease."
 );
 
@@ -141,8 +141,32 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /loadNextPublicShopSpotlightPresentation[\s\S]*?newSpotlightPresentationRequestId\(\)[\s\S]*?requestNextCanonicalSpotlight[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?requestNextCanonicalSpotlight\(\)/,
+  /loadNextPublicShopSpotlightPresentations[\s\S]*?newSpotlightPresentationRequestId\(\)[\s\S]*?requestNextCanonicalSpotlight[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?requestNextCanonicalSpotlight\(\)/,
   "The next canonical Spotlight must be requested just in time only after the current presentation qualifies visibly."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /list_spotlight_presentation_replays[\s\S]*?status == "qualified"[\s\S]*?next_eligible_at <= current_time[\s\S]*?SpotlightExposureEvent\.presentation_id[\s\S]*?route_placement_ids[\s\S]*?replay_expires_at = min/,
+  "Canonical replay must require a matching qualified exposure, a future pacing boundary, and the exact still-authorized placement route."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /is_canonical_replay"\] = True[\s\S]*?opportunity_presentation_token"\] = None[\s\S]*?opportunity_counts_as_delivery"\] = False[\s\S]*?opportunity_counts_as_exposure"\] = False/,
+  "Replay responses must be tokenless and explicitly excluded from delivery and exposure accounting."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /if \(activeSpotlight\.isCanonicalReplay\) return;[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?trackMarketplaceAttention\(/,
+  "Canonical replay must exit before qualification bookkeeping and owner attention analytics."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_spotlight_presentation_contract.py",
+  /qualified_presentation_replays_without_new_delivery_or_exposure[\s\S]*?replay_revalidates_viewer_and_exact_community_route/,
+  "Backend replay tests must cover accounting neutrality, viewer isolation, and exact-route revocation."
 );
 
 assertContains(

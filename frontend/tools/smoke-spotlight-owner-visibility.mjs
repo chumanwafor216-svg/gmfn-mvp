@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ownerGsnId = "GSN-U-SPOTOWNER";
 const visitorGsnId = "GSN-U-SPOTVISITOR";
-const activatedAt = "2026-10-16T14:35:00Z";
-const authorizedExpiry = "2026-10-17T14:35:00Z";
+const activatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+const authorizedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const shop = {
   id: 101,
   shop_id: 101,
@@ -100,6 +100,7 @@ function member(identity) {
 function spotlightItem({
   label = "Owner saved Spotlight",
   canonical = false,
+  replay = false,
   streamIndex = 1,
 } = {}) {
   const canonicalOffset = Math.max(Number(streamIndex || 1) - 1, 0);
@@ -123,15 +124,21 @@ function spotlightItem({
     expires_at: authorizedExpiry,
     authorized_expires_at: authorizedExpiry,
     is_canonical_opportunity: canonical,
+    is_canonical_replay: canonical && replay,
     opportunity_campaign_id: canonical ? 702 + canonicalOffset : undefined,
     spotlight_campaign_id: canonical ? 702 + canonicalOffset : 701,
     opportunity_presentation_id: canonical ? `visitor-presentation-${streamIndex}` : undefined,
-    opportunity_presentation_token: canonical
+    opportunity_presentation_token: canonical && !replay
       ? `visitor-presentation-token-${streamIndex}-123456789`
       : undefined,
-    opportunity_presentation_expires_at: canonical
+    opportunity_presentation_expires_at: canonical && !replay
       ? new Date(Date.now() + 25_000).toISOString()
       : undefined,
+    opportunity_replay_expires_at: canonical && replay
+      ? new Date(Date.now() + 2 * 60_000).toISOString()
+      : undefined,
+    opportunity_counts_as_delivery: canonical && replay ? false : undefined,
+    opportunity_counts_as_exposure: canonical && replay ? false : undefined,
     opportunity_presentation_surface: canonical
       ? "public_shop_spotlight_rail"
       : undefined,
@@ -232,6 +239,31 @@ async function installMocks(page, scenario) {
       scenario.canonicalCalls += 1;
       const streamIndex = scenario.canonicalCalls;
       if (streamIndex > scenario.streamLimit) {
+        if (scenario.replayAfterStream) {
+          scenario.replayResponses = Number(scenario.replayResponses || 0) + 1;
+          const items = Array.from(
+            { length: scenario.streamLimit },
+            (_, index) =>
+              spotlightItem({
+                label:
+                  index === 0
+                    ? "Visitor eligible Spotlight"
+                    : `Community Spotlight ${index + 1}`,
+                canonical: true,
+                replay: true,
+                streamIndex: index + 1,
+              })
+          );
+          return route.fulfill(
+            json({
+              serving_contract_version: 2,
+              item: items[0] || null,
+              items,
+              presentation: null,
+              rejection_code: "no_delivery_opportunity",
+            })
+          );
+        }
         return route.fulfill(
           json({
             serving_contract_version: 2,
@@ -254,6 +286,7 @@ async function installMocks(page, scenario) {
         json({
           serving_contract_version: 2,
           item,
+          items: [item],
           presentation: {
             presentation_id: item.opportunity_presentation_id,
             presentation_token: item.opportunity_presentation_token,
@@ -520,6 +553,75 @@ async function testExpiredOwnerContentFailsClosed(browser, baseUrl) {
   return scenario;
 }
 
+async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
+  browser,
+  baseUrl
+) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 3,
+    replayAfterStream: true,
+    replayResponses: 0,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await page
+    .locator('[data-spotlight-canonical="true"]')
+    .scrollIntoViewIfNeeded();
+
+  for (const label of [
+    "Visitor eligible Spotlight",
+    "Community Spotlight 2",
+    "Community Spotlight 3",
+  ]) {
+    await page.getByText(label, { exact: true }).waitFor({
+      state: "visible",
+      timeout: 12_000,
+    });
+    await page.waitForTimeout(1_300);
+  }
+  await page.waitForFunction(
+    () => document.body.innerText.includes("Visitor eligible Spotlight"),
+    null,
+    { timeout: 12_000 }
+  );
+
+  const qualifiedBeforeReplayRotation = scenario.qualifyCalls;
+  const impressionsBeforeReplayRotation = scenario.impressionCalls;
+  await page.getByText("Community Spotlight 2", { exact: true }).waitFor({
+    state: "visible",
+    timeout: 12_000,
+  });
+  await page.waitForTimeout(1_300);
+
+  if (scenario.replayResponses < 1 || scenario.canonicalCalls < 4) {
+    throw new Error(
+      `Canonical replay was not requested after fresh delivery stopped: calls=${scenario.canonicalCalls}, replay=${scenario.replayResponses}`
+    );
+  }
+  if (
+    scenario.qualifyCalls !== qualifiedBeforeReplayRotation ||
+    scenario.impressionCalls !== impressionsBeforeReplayRotation
+  ) {
+    throw new Error(
+      `Canonical replay double-counted visibility: qualify=${scenario.qualifyCalls}/${qualifiedBeforeReplayRotation}, impressions=${scenario.impressionCalls}/${impressionsBeforeReplayRotation}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
 const server = await createServer({
   root: frontendRoot,
   logLevel: "silent",
@@ -535,6 +637,10 @@ try {
     await testDelayedOwnerAuthentication(browser, baseUrl),
     await testVisitorCannotForceOwnerPreview(browser, baseUrl),
     await testExpiredOwnerContentFailsClosed(browser, baseUrl),
+    await testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
+      browser,
+      baseUrl
+    ),
   ];
   console.log(
     JSON.stringify(

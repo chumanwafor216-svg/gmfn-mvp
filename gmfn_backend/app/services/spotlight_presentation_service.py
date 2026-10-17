@@ -11,7 +11,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, decode_token
-from app.db.models import MarketplaceBroadcast, SpotlightCampaign, SpotlightPresentationLease
+from app.db.models import (
+    MarketplaceBroadcast,
+    SpotlightCampaign,
+    SpotlightCampaignPacingState,
+    SpotlightExposureEvent,
+    SpotlightPresentationLease,
+)
 from app.services.spotlight_exposure_diversity_allocation_service import allocate_spotlight_opportunity_candidates
 from app.services.spotlight_exposure_ledger_service import (
     SpotlightExposureRecordResult,
@@ -37,6 +43,7 @@ SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000
 SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
 SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000
 SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000
+SPOTLIGHT_PRESENTATION_REPLAY_LIMIT = 4
 
 PRESENTATION_REJECTION_NO_CANDIDATES = "no_canonical_candidates"
 PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY = "no_delivery_opportunity"
@@ -136,8 +143,167 @@ class SpotlightPresentationQualificationResult:
         }
 
 
+@dataclass(frozen=True)
+class SpotlightPresentationReplay:
+    candidate: SpotlightOpportunityCandidate
+    campaign: SpotlightCampaign
+    presentation_id: str
+    placement_broadcast_id: int
+    content_version: int
+    replay_expires_at: datetime
+
+    def to_internal_dict(self) -> dict[str, Any]:
+        return {
+            "campaign_id": int(self.candidate.campaign_id),
+            "presentation_id": self.presentation_id,
+            "placement_broadcast_id": int(self.placement_broadcast_id),
+            "content_version": int(self.content_version),
+            "replay_expires_at": self.replay_expires_at.isoformat(),
+            "counts_as_delivery": False,
+            "counts_as_exposure": False,
+            "privacy": "private_same_viewer_canonical_replay",
+        }
+
+
 def presentation_policy() -> SpotlightPresentationPolicy:
     return SpotlightPresentationPolicy()
+
+
+def list_spotlight_presentation_replays(
+    db: Session,
+    *,
+    viewer_user_id: int,
+    now: Optional[datetime] = None,
+    surface: str = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    limit: int = SPOTLIGHT_PRESENTATION_REPLAY_LIMIT,
+    exclude_campaign_ids: Optional[set[int]] = None,
+) -> list[SpotlightPresentationReplay]:
+    """Return bounded, read-only continuation rows already qualified by this viewer."""
+    current_time = _as_aware_utc(now) or _now_utc()
+    viewer_id = int(viewer_user_id or 0)
+    safe_limit = max(min(int(limit), SPOTLIGHT_PRESENTATION_REPLAY_LIMIT), 0)
+    if viewer_id <= 0 or safe_limit <= 0:
+        return []
+
+    excluded = {
+        int(value)
+        for value in (exclude_campaign_ids or set())
+        if int(value or 0) > 0
+    }
+    leases = (
+        db.query(SpotlightPresentationLease)
+        .filter(SpotlightPresentationLease.viewer_user_id == viewer_id)
+        .filter(SpotlightPresentationLease.surface == surface)
+        .filter(SpotlightPresentationLease.status == "qualified")
+        .filter(SpotlightPresentationLease.qualified_at.is_not(None))
+        .order_by(
+            SpotlightPresentationLease.qualified_at.desc(),
+            SpotlightPresentationLease.id.desc(),
+        )
+        .limit(max(safe_limit * 8, 24))
+        .all()
+    )
+
+    replays: list[SpotlightPresentationReplay] = []
+    processed_campaign_ids: set[int] = set(excluded)
+    for lease in leases:
+        campaign_id = int(lease.campaign_id)
+        if campaign_id in processed_campaign_ids:
+            continue
+        # Only the newest qualified lease for a campaign may authorize replay.
+        processed_campaign_ids.add(campaign_id)
+
+        pacing_state = (
+            db.query(SpotlightCampaignPacingState)
+            .filter(SpotlightCampaignPacingState.campaign_id == campaign_id)
+            .one_or_none()
+        )
+        next_eligible_at = _as_aware_utc(
+            getattr(pacing_state, "next_eligible_delivery_at", None)
+        )
+        if (
+            pacing_state is None
+            or bool(getattr(pacing_state, "exhausted", False))
+            or next_eligible_at is None
+            or next_eligible_at <= current_time
+        ):
+            continue
+
+        exposure = (
+            db.query(SpotlightExposureEvent)
+            .filter(SpotlightExposureEvent.viewer_user_id == viewer_id)
+            .filter(SpotlightExposureEvent.campaign_id == campaign_id)
+            .filter(SpotlightExposureEvent.presentation_id == str(lease.presentation_id))
+            .filter(SpotlightExposureEvent.presentation_surface == surface)
+            .filter(SpotlightExposureEvent.event_type == "qualifying_impression")
+            .filter(SpotlightExposureEvent.content_version == int(lease.content_version))
+            .filter(
+                SpotlightExposureEvent.placement_broadcast_id
+                == int(lease.placement_broadcast_id)
+            )
+            .first()
+        )
+        if exposure is None:
+            continue
+
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=viewer_id,
+            campaign_ids=[campaign_id],
+            limit=1,
+            now=current_time,
+        )
+        candidate = next(
+            (row for row in candidates if int(row.campaign_id) == campaign_id),
+            None,
+        )
+        campaign = db.get(SpotlightCampaign, campaign_id)
+        placement = db.get(MarketplaceBroadcast, int(lease.placement_broadcast_id))
+        if candidate is None or campaign is None or placement is None:
+            continue
+        if not row_is_serving(campaign, now=current_time):
+            continue
+        if not row_is_serving(placement, now=current_time):
+            continue
+        if int(campaign.content_version or 1) != int(lease.content_version):
+            continue
+        if int(placement.content_version or 1) != int(lease.content_version):
+            continue
+
+        route_placement_ids = {
+            int(route.placement_broadcast_id)
+            for route in (getattr(candidate.eligibility, "routes", ()) or ())
+            if getattr(route, "placement_broadcast_id", None) is not None
+        }
+        if int(lease.placement_broadcast_id) not in route_placement_ids:
+            continue
+
+        replay_deadlines = [next_eligible_at]
+        for deadline in (
+            authorized_expiry(campaign),
+            authorized_expiry(placement),
+            _as_aware_utc(getattr(campaign, "opportunity_expires_at", None)),
+        ):
+            if deadline is not None:
+                replay_deadlines.append(deadline)
+        replay_expires_at = min(replay_deadlines)
+        if replay_expires_at <= current_time:
+            continue
+
+        replays.append(
+            SpotlightPresentationReplay(
+                candidate=candidate,
+                campaign=campaign,
+                presentation_id=str(lease.presentation_id),
+                placement_broadcast_id=int(placement.id),
+                content_version=int(lease.content_version),
+                replay_expires_at=replay_expires_at,
+            )
+        )
+        if len(replays) >= safe_limit:
+            break
+
+    return replays
 
 
 def select_spotlight_presentation(

@@ -157,11 +157,15 @@ type ShopBroadcast = {
   priorityMode?: string;
   rotationWeight?: number;
   isCanonicalOpportunity?: boolean;
+  isCanonicalReplay?: boolean;
   opportunityCampaignId?: number;
   opportunityPresentationId?: string;
   opportunityPresentationToken?: string;
   opportunityPresentationExpiresAt?: string;
+  opportunityReplayExpiresAt?: string;
   opportunityPresentationSurface?: string;
+  opportunityCountsAsDelivery?: boolean;
+  opportunityCountsAsExposure?: boolean;
   servingStatus?: string;
   campaignServingStatus?: string;
   contentVersion?: number;
@@ -347,12 +351,28 @@ function publicShopSpotlightResponseItems(response: any): any[] {
 
 function publicShopSpotlightRowIsCanonical(row: any): boolean {
   const src = row?.item || row?.broadcast || row?.data || row;
+  const presentationToken = firstMeaningful(
+    src?.opportunity_presentation_token,
+    src?.opportunityPresentationToken
+  );
+  const replayExpiresAt = firstMeaningful(
+    src?.opportunity_replay_expires_at,
+    src?.opportunityReplayExpiresAt
+  );
+  const countsAsDelivery =
+    src?.opportunity_counts_as_delivery ?? src?.opportunityCountsAsDelivery;
+  const countsAsExposure =
+    src?.opportunity_counts_as_exposure ?? src?.opportunityCountsAsExposure;
+  const canonicalReplay = Boolean(
+    (src?.is_canonical_replay || src?.isCanonicalReplay) &&
+      !presentationToken &&
+      replayExpiresAt &&
+      countsAsDelivery === false &&
+      countsAsExposure === false
+  );
   return Boolean(
     src?.is_canonical_opportunity &&
-      firstMeaningful(
-        src?.opportunity_presentation_token,
-        src?.opportunityPresentationToken
-      )
+      (presentationToken || canonicalReplay)
   );
 }
 
@@ -361,27 +381,43 @@ function publicShopSpotlightRowsAreCanonical(items: any[] | null | undefined): b
 }
 
 function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): boolean {
-  if (!item?.isCanonicalOpportunity || !item.opportunityPresentationToken) return false;
-  const expiresAtMs = new Date(item.opportunityPresentationExpiresAt || "").getTime();
+  if (!item?.isCanonicalOpportunity) return false;
+  if (item.isCanonicalReplay) {
+    if (
+      item.opportunityPresentationToken ||
+      item.opportunityCountsAsDelivery !== false ||
+      item.opportunityCountsAsExposure !== false
+    ) {
+      return false;
+    }
+    const replayExpiresAtMs = new Date(
+      item.opportunityReplayExpiresAt || ""
+    ).getTime();
+    return Number.isFinite(replayExpiresAtMs) && replayExpiresAtMs > Date.now();
+  }
+  if (!item.opportunityPresentationToken) return false;
+  const expiresAtMs = new Date(
+    item.opportunityPresentationExpiresAt || ""
+  ).getTime();
   return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();
 }
 
-async function loadNextPublicShopSpotlightPresentation(
+async function loadNextPublicShopSpotlightPresentations(
   cleanedGmfnId: string
-): Promise<ShopBroadcast | null> {
-  if (!cleanedGmfnId || !getAccessToken()) return null;
+): Promise<ShopBroadcast[]> {
+  if (!cleanedGmfnId || !getAccessToken()) return [];
   const response = await getPublicShopSpotlightOpportunity(
     cleanedGmfnId,
     newSpotlightPresentationRequestId()
   ).catch(() => null);
-  if (Number(response?.serving_contract_version || 0) < 2) return null;
-  const item = publicShopSpotlightResponseItems(response).find((row) =>
-    publicShopSpotlightRowIsCanonical(row)
-  );
-  const normalized = normalizeBroadcast(item);
-  return publicShopSpotlightPresentationIsCurrent(normalized) && broadcastIsActive(normalized)
-    ? normalized
-    : null;
+  if (Number(response?.serving_contract_version || 0) < 2) return [];
+  return publicShopSpotlightResponseItems(response)
+    .filter((row) => publicShopSpotlightRowIsCanonical(row))
+    .map((row) => normalizeBroadcast(row))
+    .filter(
+      (item): item is ShopBroadcast =>
+        publicShopSpotlightPresentationIsCurrent(item) && broadcastIsActive(item)
+    );
 }
 
 function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): number {
@@ -391,7 +427,9 @@ function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): n
       return new Date(
         firstMeaningful(
           src?.opportunity_presentation_expires_at,
-          src?.opportunityPresentationExpiresAt
+          src?.opportunityPresentationExpiresAt,
+          src?.opportunity_replay_expires_at,
+          src?.opportunityReplayExpiresAt
         )
       ).getTime();
     })
@@ -453,14 +491,22 @@ async function loadPublicShopSpotlightPresentationCycle(
       const opportunityItems = publicShopSpotlightResponseItems(opportunityRes);
       const requestFinishedAtMs = Date.now();
       if (Number(opportunityRes?.serving_contract_version || 0) >= 2) {
+        const currentCanonicalItems = opportunityItems.filter((row) => {
+          if (!publicShopSpotlightRowIsCanonical(row)) return false;
+          const normalized = normalizeBroadcast(row);
+          return (
+            publicShopSpotlightPresentationIsCurrent(normalized) &&
+            broadcastIsActive(normalized)
+          );
+        });
         const expiryMs = publicShopSpotlightCycleExpiryMs(
-          opportunityItems,
+          currentCanonicalItems,
           requestStartedAtMs
         );
         const safeItems =
-          publicShopSpotlightRowsAreCanonical(opportunityItems) &&
+          publicShopSpotlightRowsAreCanonical(currentCanonicalItems) &&
           expiryMs > requestFinishedAtMs
-            ? opportunityItems
+            ? currentCanonicalItems
             : [];
         publicShopSpotlightSelectionCycles.set(cycleKey, {
           items: safeItems,
@@ -1218,6 +1264,9 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     isCanonicalOpportunity: Boolean(
       src?.is_canonical_opportunity || src?.isCanonicalOpportunity
     ),
+    isCanonicalReplay: Boolean(
+      src?.is_canonical_replay || src?.isCanonicalReplay
+    ),
     opportunityCampaignId:
       positiveNumber(src?.opportunity_campaign_id || src?.opportunityCampaignId) ||
       positiveNumber(src?.spotlight_campaign_id || src?.spotlightCampaignId) ||
@@ -1234,10 +1283,26 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       src?.opportunity_presentation_expires_at,
       src?.opportunityPresentationExpiresAt
     ),
+    opportunityReplayExpiresAt: firstMeaningful(
+      src?.opportunity_replay_expires_at,
+      src?.opportunityReplayExpiresAt
+    ),
     opportunityPresentationSurface: firstMeaningful(
       src?.opportunity_presentation_surface,
       src?.opportunityPresentationSurface
     ),
+    opportunityCountsAsDelivery:
+      typeof src?.opportunity_counts_as_delivery === "boolean"
+        ? src.opportunity_counts_as_delivery
+        : typeof src?.opportunityCountsAsDelivery === "boolean"
+        ? src.opportunityCountsAsDelivery
+        : undefined,
+    opportunityCountsAsExposure:
+      typeof src?.opportunity_counts_as_exposure === "boolean"
+        ? src.opportunity_counts_as_exposure
+        : typeof src?.opportunityCountsAsExposure === "boolean"
+        ? src.opportunityCountsAsExposure
+        : undefined,
     servingStatus: firstMeaningful(src?.serving_status, src?.servingStatus),
     campaignServingStatus: firstMeaningful(
       src?.campaign_serving_status,
@@ -2865,18 +2930,45 @@ export default function ShopGalleryPage() {
 
     spotlightNextRequestPendingRef.current = true;
     try {
-      const next = await loadNextPublicShopSpotlightPresentation(cleanedGmfnId);
-      if (!next) {
+      const nextItems = await loadNextPublicShopSpotlightPresentations(
+        cleanedGmfnId
+      );
+      if (nextItems.length <= 0) {
         spotlightNextEmptyUntilRef.current = Date.now() + SPOTLIGHT_PILOT_REFRESH_MS;
         return;
       }
       spotlightNextEmptyUntilRef.current = 0;
-      const nextKey = spotlightBroadcastKey(next);
       setCommunitySpotlights((current) => {
-        if (current.some((item) => spotlightBroadcastKey(item) === nextKey)) {
-          return current;
+        const merged = current.filter(
+          (item) =>
+            !item.isCanonicalOpportunity ||
+            publicShopSpotlightPresentationIsCurrent(item)
+        );
+        for (const next of nextItems) {
+          const nextCampaignId = positiveNumber(next.opportunityCampaignId);
+          const nextPresentationId = firstMeaningful(
+            next.opportunityPresentationId
+          );
+          const existingIndex = merged.findIndex((item) => {
+            if (
+              nextCampaignId > 0 &&
+              positiveNumber(item.opportunityCampaignId) === nextCampaignId
+            ) {
+              return true;
+            }
+            return Boolean(
+              nextPresentationId &&
+                firstMeaningful(item.opportunityPresentationId) ===
+                  nextPresentationId
+            );
+          });
+          if (existingIndex >= 0) {
+            merged[existingIndex] = next;
+          } else {
+            merged.push(next);
+          }
         }
-        return [...current, next];
+        return merged;
       });
     } finally {
       spotlightNextRequestPendingRef.current = false;
@@ -3192,6 +3284,10 @@ export default function ShopGalleryPage() {
     ) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
+
+    // A canonical replay is continuity for a presentation already qualified by
+    // this viewer. It must not qualify again or emit a second attention event.
+    if (activeSpotlight.isCanonicalReplay) return;
 
     const target = spotlightRailRef.current;
     if (!target) return;
