@@ -3,9 +3,10 @@
 ## Session continuity
 
 To resume work quickly after a chat reset or a new session, read
-`docs/HANDOFF_NOTES.md` after the core project docs. It tracks the latest
-active workstream, exact routes/screens in play, confirmed facts from code, and
-the next recommended step.
+`docs/HANDOFF_NOTES.md` after the core project docs. It is the compact index
+for the latest active workstream, exact routes/screens in play, confirmed facts
+from code, and the next recommended step. Older detailed history is linked from
+that file and lives under `docs/archive/`.
 
 For route-purpose or architecture work, also read
 `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
