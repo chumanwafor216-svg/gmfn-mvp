@@ -163989,7 +163989,7 @@ Operational note:
 - Contract correction: `FREEZE_POLICY.md` and `SCREEN_SPECS.md` now prohibit restoring the duplicate `Manage {item}` overlay. The workflow-plus and Public Shop button-inventory audits now baseline only the three approved entry shortcuts and two Public Shop section shortcuts.
 - Browser proof: `smoke:three-plus-shortcuts` passed at 390x844, proving an owner receives no floating `Manage Jollof tray` link, the internal `+` opens the card and changes to `×`, and the interaction performs no business write.
 - Verification passed: focused ESLint; workflow-plus audit; Public Shop button inventory; Shop Diary Phase 1 and Phase 2 audits; the 390x844 browser smoke; production frontend build (`290` modules); and `git diff --check` with line-ending warnings only.
-- Deployment boundary: this correction is local on the existing isolated Spotlight repair branch. Do not push or deploy until the product owner explicitly approves the current batch for publication.
+- Deployment completed 2026-10-17 after explicit product-owner approval. `origin/main` was fast-forwarded through `eea97619` to runtime commit `12459f38`. Render MCP triggered the exact main commit because both services have auto-deploy disabled and GitHub CLI authentication was stale. Frontend deploy `dep-db9nfbu1egvs73fu5k1g` and API deploy `dep-db9nfcom7kps73e1tbj0` both reached `live`; API `/health` returned `200` with `{"ok":true,"dev_mode":false}`; the cache-busted live ShopGallery chunk retained `data-product-card-toggle-symbol` and omitted the removed `owner-manage` marker; no frontend/API error-level logs appeared during the deployment window.
 
 ## 2026-10-16 - live free-pilot relay governance and payment suspension successor
 
