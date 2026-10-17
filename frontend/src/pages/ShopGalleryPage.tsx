@@ -3258,6 +3258,12 @@ export default function ShopGalleryPage() {
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 
+  useEffect(() => {
+    if (isCompact && publicShopSpotlightActive) {
+      setShopMoreOpen(true);
+    }
+  }, [isCompact, publicShopSpotlightActive]);
+
   const absoluteShopLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     return ownerId ? publicShopUrl(ownerId) : "";
@@ -4619,6 +4625,7 @@ export default function ShopGalleryPage() {
               gridTemplateColumns: isCompact
                 ? "repeat(3, minmax(0, 1fr))"
                 : "repeat(3, minmax(0, 1fr))",
+              alignItems: "stretch",
               gap: isCompact ? 5 : 10,
               marginTop: isCompact ? 8 : 18,
             }}
@@ -4650,6 +4657,7 @@ export default function ShopGalleryPage() {
               debugId="shop-gallery.share-shop"
               style={{
                 ...secondaryBtn(shopLoadFailed || !absoluteShopShareLink),
+                alignSelf: "stretch",
                 minHeight: isCompact ? 46 : 54,
                 borderRadius: isCompact ? 14 : 18,
                 fontSize: isCompact ? 11.2 : 14,
@@ -4686,6 +4694,7 @@ export default function ShopGalleryPage() {
               aria-controls="public-shop-verify-panel"
               style={{
                 ...secondaryBtn(false),
+                alignSelf: "stretch",
                 minHeight: isCompact ? 46 : 54,
                 borderRadius: isCompact ? 14 : 18,
                 fontSize: isCompact ? 11.2 : 14,
@@ -4712,13 +4721,16 @@ export default function ShopGalleryPage() {
               aria-controls="public-shop-owner-contact-panel"
               style={{
                 ...primaryBtn(false),
+                alignSelf: "stretch",
                 minHeight: isCompact ? 46 : 54,
-                borderRadius: isCompact ? 14 : 15,
-                fontSize: isCompact ? 10.9 : 14,
+                borderRadius: isCompact ? 14 : 18,
+                fontSize: isCompact ? 11.2 : 14,
                 padding: isCompact ? "5px 3px" : "10px 12px",
                 background:
                   "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
                 border: "1px solid rgba(37,211,102,0.38)",
+                boxShadow:
+                  "0 10px 22px rgba(18,140,74,0.14), inset 0 1px 0 rgba(255,255,255,0.30)",
                 gap: isCompact ? 4 : 7,
               }}
             >
@@ -5631,6 +5643,7 @@ export default function ShopGalleryPage() {
 
         <details
           data-public-shop-more="secondary"
+          data-public-shop-live-spotlight={publicShopSpotlightActive ? "true" : "false"}
           data-public-shop-exact-update={routeDiaryEntryId > 0 ? "true" : "false"}
           open={
             !isCompact ||
@@ -5674,9 +5687,13 @@ export default function ShopGalleryPage() {
                 ? "Shared shop update"
                 : ownerSpotlightStatusView
                 ? ownerSpotlightStatusView.label
+                : publicShopSpotlightActive
+                ? "Live Spotlight"
                 : "More from this shop"}
             </span>
-            <span aria-hidden="true">{routeDiaryEntryId > 0 || shopMoreOpen ? "-" : "+"}</span>
+            <span aria-hidden="true">
+              {routeDiaryEntryId > 0 || shopMoreOpen ? "-" : "+"}
+            </span>
           </StableDisclosureSummary>
           <div style={{ display: "grid", gap: isCompact ? 10 : 14, marginTop: isCompact ? 9 : 0 }}>
         <div

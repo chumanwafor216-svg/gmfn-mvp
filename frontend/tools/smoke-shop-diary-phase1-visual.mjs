@@ -77,6 +77,27 @@ const products = [
   product(6, 6, "Community lunch service"),
 ];
 
+const liveSpotlight = {
+  id: 801,
+  shop_id: 88,
+  clan_id: 12,
+  author_gmfn_id: "GMFN-U-MY-FAMILY",
+  message: "Baby skin care set.",
+  spotlight_title: "Baby skin care set.",
+  spotlight_description: "Live from My Family My Pride.",
+  source_product_title: "Baby skin care set.",
+  source_product_description: "Live from My Family My Pride.",
+  source_product_price: "20",
+  source_product_currency: "NGN",
+  source_product_image_url: portraitDataUrl,
+  source_shop_name: "My Family My Pride",
+  source_shop_whatsapp_number: "+447900000002",
+  source_clan_name: "Diary Community",
+  source_clan_id: 12,
+  created_at: new Date().toISOString(),
+  expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+};
+
 const shop = {
   id: 77,
   shop_id: 77,
@@ -183,6 +204,7 @@ const scenarios = {
 };
 let activeScenario = "image";
 let activeAuthenticated = true;
+let activeSpotlight = false;
 
 function serveDist() {
   if (!existsSync(join(distRoot, "index.html"))) {
@@ -252,8 +274,39 @@ async function installApiMocks(page) {
       await route.fulfill(json({ ok: true, item: shop, shop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
       return;
     }
+    if (path === "/marketplace/shops/77/spotlight-status") {
+      await route.fulfill(json({
+        ok: true,
+        owner_spotlight_inspection: {
+          state: activeSpotlight ? "live" : "none",
+          campaign: activeSpotlight
+            ? { authorized_expires_at: liveSpotlight.expires_at }
+            : null,
+          item: activeSpotlight ? liveSpotlight : null,
+          counts_as_delivery: false,
+          counts_as_exposure: false,
+        },
+      }));
+      return;
+    }
+    if (path === "/marketplace/public/shop/GMFN-U-DIARY/spotlight-opportunity") {
+      await route.fulfill(json({
+        ok: true,
+        item: activeSpotlight ? liveSpotlight : null,
+        items: activeSpotlight ? [liveSpotlight] : [],
+      }));
+      return;
+    }
     if (path === "/marketplace/public/shop/GMFN-U-DIARY") {
-      await route.fulfill(json({ ok: true, item: shop, shop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
+      await route.fulfill(json({
+        ok: true,
+        item: shop,
+        shop,
+        products,
+        broadcasts: activeSpotlight ? [liveSpotlight] : [],
+        primary_broadcast: activeSpotlight ? liveSpotlight : null,
+        shop_diary_entries: scenarios[activeScenario] || [],
+      }));
       return;
     }
     if (path === "/marketplace/products") {
@@ -261,7 +314,7 @@ async function installApiMocks(page) {
       return;
     }
     if (path === "/marketplace/broadcasts") {
-      await route.fulfill(json({ ok: true, items: [] }));
+      await route.fulfill(json({ ok: true, items: activeSpotlight ? [liveSpotlight] : [] }));
       return;
     }
     if (path === "/shop-diaries/me") {
@@ -328,6 +381,14 @@ async function collectMetrics(page) {
     const productCardRect = productCard?.getBoundingClientRect();
     const productAudioRect = productAudio?.getBoundingClientRect();
     const productAudioStyle = productAudio ? getComputedStyle(productAudio) : null;
+    const shareAction = document.querySelector('button[data-cta-id="shop-gallery.share-shop"]');
+    const verifyAction = document.querySelector('button[data-cta-id="shop-gallery.verify-shop.toggle"]');
+    const whatsappAction = document.querySelector('button[data-cta-id="shop-gallery.owner-contact.choose"]');
+    const shareActionRect = shareAction?.getBoundingClientRect();
+    const verifyActionRect = verifyAction?.getBoundingClientRect();
+    const whatsappActionRect = whatsappAction?.getBoundingClientRect();
+    const spotlight = document.querySelector(".public-shop-spotlight");
+    const spotlightRect = spotlight?.getBoundingClientRect();
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -356,6 +417,13 @@ async function collectMetrics(page) {
       productAudioWidth: productAudioRect ? Math.round(productAudioRect.width) : null,
       productAudioHeight: productAudioRect ? Math.round(productAudioRect.height) : null,
       productAudioBackground: productAudioStyle?.backgroundColor || null,
+      actionTops: [shareActionRect?.top, verifyActionRect?.top, whatsappActionRect?.top]
+        .map((value) => typeof value === "number" ? Math.round(value) : null),
+      actionHeights: [shareActionRect?.height, verifyActionRect?.height, whatsappActionRect?.height]
+        .map((value) => typeof value === "number" ? Math.round(value) : null),
+      liveSpotlight: more?.getAttribute("data-public-shop-live-spotlight") || null,
+      spotlightDisplay: spotlight ? getComputedStyle(spotlight).display : null,
+      spotlightHeight: spotlightRect ? Math.round(spotlightRect.height) : null,
     };
   });
 }
@@ -388,6 +456,7 @@ async function run() {
       { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Diary Kitchen. Ask about stock.", authenticated: false },
       { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
+      { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Baby skin care set.", spotlight: true },
     ];
     const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
       .split(",")
@@ -399,6 +468,7 @@ async function run() {
 
     for (const item of casesToRun) {
       activeScenario = item.scenario;
+      activeSpotlight = Boolean(item.spotlight);
       const page = await preparePage(browser, item.width, 844, item.authenticated !== false);
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
@@ -417,6 +487,23 @@ async function run() {
           if (!(await page.getByRole("button", { name: channel, exact: true }).isVisible())) {
             throw new Error(`${item.name} did not expose ${channel} in the one-touch share chooser.`);
           }
+        }
+      }
+      if (item.spotlight) {
+        const liveDisclosure = page.locator(
+          '[data-public-shop-more="secondary"] > summary'
+        );
+        const details = page.locator('[data-public-shop-more="secondary"]');
+        if (!(await details.evaluate((node) => node.open))) {
+          throw new Error("The live Spotlight disclosure did not open automatically.");
+        }
+        await liveDisclosure.click();
+        if (await details.evaluate((node) => node.open)) {
+          throw new Error("The live Spotlight disclosure could not be closed.");
+        }
+        await liveDisclosure.click();
+        if (!(await details.evaluate((node) => node.open))) {
+          throw new Error("The live Spotlight disclosure could not be reopened.");
         }
       }
       const metrics = await collectMetrics(page);
@@ -453,6 +540,19 @@ async function run() {
         ) {
           throw new Error(`${item.name} placed the + control away from the lower product action dock.`);
         }
+        const validActionMetrics = [...metrics.actionTops, ...metrics.actionHeights].every(
+          (value) => typeof value === "number"
+        );
+        if (
+          !validActionMetrics ||
+          Math.max(...metrics.actionTops) - Math.min(...metrics.actionTops) > 1 ||
+          Math.max(...metrics.actionHeights) - Math.min(...metrics.actionHeights) > 1
+        ) {
+          throw new Error(
+            "Public Shop actions are not aligned: " +
+              JSON.stringify({ tops: metrics.actionTops, heights: metrics.actionHeights })
+          );
+        }
       }
       if (item.name === "06-public-shop-focused-product-390") {
         if (metrics.productToggleSymbol !== "close" || metrics.productToggleText !== "×") {
@@ -480,6 +580,18 @@ async function run() {
         }
         if (metrics.moreTop === null || metrics.productTop === null || metrics.moreTop >= metrics.productTop) {
           throw new Error(`${item.name} did not place the exact shared Shop Update before Products & Services.`);
+        }
+      }
+      if (item.name === "17-public-shop-live-spotlight-390") {
+        if (!metrics.moreOpen || metrics.liveSpotlight !== "true") {
+          throw new Error("A resolved live Spotlight remained behind the closed More row.");
+        }
+        if (
+          metrics.spotlightDisplay === "none" ||
+          metrics.spotlightHeight === null ||
+          metrics.spotlightHeight < 400
+        ) {
+          throw new Error("The live Spotlight billboard did not render.");
         }
       }
       if (item.route.includes("#shop-diaries") && !item.route.includes("diary_entry_id=")) {

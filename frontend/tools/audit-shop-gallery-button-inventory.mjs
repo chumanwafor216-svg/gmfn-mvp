@@ -411,8 +411,8 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?buttonLabel="Share"[\s\S]*?buttonKind="secondary"[\s\S]*?triggerIcon=\{inlineShareGlyph\("#8C6829", isCompact \? 18 : 21\)\}[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?linear-gradient\(180deg, #FFFFFF 0%, #F7FAFF 100%\)[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
-  "Public Shop phone actions must keep fixed geometry while Share and Verify stay secondary to the primary WhatsApp action."
+  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?alignItems: "stretch"[\s\S]*?buttonLabel="Share"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?fontSize: isCompact \? 11\.2 : 14[\s\S]*?0 10px 22px rgba\(18,140,74,0\.14\)/,
+  "Public Shop Share, Verify, and WhatsApp actions must share one stretched height, radius, and visual footprint while WhatsApp remains primary."
 );
 
 assertContains(
@@ -438,6 +438,11 @@ assertContains(
 assertContains(
   /data-public-shop-more="secondary"[\s\S]*?order: routeDiaryEntryId > 0 \? 1 : 2[\s\S]*?More from this shop[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?className="public-shop-section"[\s\S]*?order: routeDiaryEntryId > 0 \? 2 : 1/,
   "Public Shop must stay Products-first ordinarily and move only an exact shared Shop Update ahead of Products."
+);
+
+assertContains(
+  /const publicShopSpotlightActive = Boolean\(miniSpotlight\);[\s\S]*?useEffect\(\(\) => \{[\s\S]*?if \(isCompact && publicShopSpotlightActive\) \{[\s\S]*?setShopMoreOpen\(true\);[\s\S]*?\}, \[isCompact, publicShopSpotlightActive\]\);[\s\S]*?data-public-shop-live-spotlight=\{publicShopSpotlightActive \? "true" : "false"\}[\s\S]*?open=\{[\s\S]*?!isCompact \|\|[\s\S]*?shopMoreOpen \|\|[\s\S]*?publicShopSpotlightActive[\s\S]*?"Live Spotlight"[\s\S]*?routeDiaryEntryId > 0 \|\| shopMoreOpen \? "-" : "\+"/,
+  "A resolved live Spotlight must open the phone lane once and identify itself instead of looking disconnected, while preserving a truthful close/reopen control."
 );
 
 assertContains(
