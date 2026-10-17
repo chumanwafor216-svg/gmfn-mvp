@@ -509,7 +509,7 @@ assertNotContains(
 );
 assertContains(
   "trustEvidencePack",
-  /def _safe_event_export\(row: TrustEvent\)[\s\S]*?Private delivery\/support record[\s\S]*?Private operational details redacted for evidence pack[\s\S]*?return \[_safe_event_export\(r\) for r in rows\][\s\S]*?return _safe_event_export\(row\)/,
+  /def _safe_event_export\(db: Session, row: TrustEvent\)[\s\S]*?Private delivery\/support record[\s\S]*?Private operational details redacted for evidence pack[\s\S]*?return \[_safe_event_export\(db, r\) for r in rows\][\s\S]*?return _safe_event_export\(db, row\)/,
   "Trust Evidence Pack ZIP shipment, courier, and delivery JSON files must use a redacted event serializer."
 );
 assertContains(

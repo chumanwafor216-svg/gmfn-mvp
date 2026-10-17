@@ -1185,7 +1185,7 @@ export default function LoanSuggestionsPage() {
         status: fitReading.title,
         detailLines: [
           `Fit reading: ${fitReading.title}`,
-          `Planning rows visible: ${suggestedSupporters.length}`,
+          `Suggested supporters visible: ${suggestedSupporters.length}`,
         ],
       })
     );

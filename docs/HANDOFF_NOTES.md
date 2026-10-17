@@ -164100,3 +164100,11 @@ Operational note:
 - Verification passed: production frontend build (290 modules); focused ESLint; DemandBox front-package and expanded-search audits; Trust action audit; Community Verification boundary audit; and `25` opportunity-relay backend tests. `git diff --check` is clean apart from Windows line-ending notices.
 - Wider-suite truth: `audit:proof-surfaces` still fails on two pre-existing unrelated assertions in `trust_evidence_pack_service.py` and `LoanSuggestionsPage.tsx`; the new Community Member Credential ordering assertion passes. The protected-button aggregate also encountered sandboxed `spawn EPERM` visual-launch failures. Those unrelated areas were not changed.
 - Spotlight boundary: no Spotlight source, policy, delivery, presentation, or deployment file was modified.
+
+## 2026-10-17 - Compact supporter-fit share copy and evidence-pack audit truth
+
+- Loan Suggestions now labels its compact copied snapshot count as `Suggested supporters visible`, matching the actual rows and the approved supporter-fit share contract. It does not add a new paper, action, supporter recommendation, approval, or lending decision.
+- The broad institutional proof audit had a false-positive Trust Evidence Pack failure: runtime code already uses a DB-aware `_safe_event_export(db, row)` path for shipment, courier, and delivery JSON, while the audit still expected the obsolete one-argument signature. The audit now recognizes the real redacted call chain.
+- Existing behavioral coverage confirms those exports omit raw loan, community, guarantor, actor, and subject IDs; event metadata; private phone/tracking values; and payment references. No backend runtime logic, schema, route, permission, or export payload changed in this slice.
+- Verification passed: `audit:proof-surfaces`, `audit:trust-actions`, focused ESLint, production frontend build (290 modules), and 39 focused Trust Evidence Pack/institutional surface backend tests.
+- Spotlight, DemandBox, payment, finance, and deployment configuration remain untouched.
