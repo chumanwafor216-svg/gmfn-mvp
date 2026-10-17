@@ -11,10 +11,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-17
 
 - Production branch: `main`.
-- Current verified commit: `bf4801d5188bae46f7186fb29c1302da42167108`
-  (`Repair and archive handoff history`).
-- Frontend Render deploy `dep-db9q0mqog99s738u41g0` reached `live` on that
-  exact commit. GitHub Actions run `39048981792` completed successfully.
+- Current verified commit: `d975629ce3a59867561c97c54ee455fbc650c806`.
+- Frontend Render deploy `dep-db9s8sv2d8hs73df0pi0` reached `live` on that
+  exact commit. GitHub Actions run `39060151001` completed successfully.
 - The public frontend and API health endpoint both returned HTTP 200 after the
   deployment; API health reported `{"ok":true,"dev_mode":false}`.
 - The latest change was frontend/docs/audit-only. The workflow correctly
@@ -46,6 +45,18 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ### DemandBox
 
+- A local, unpublished owner-approved simplicity batch now gives phone members
+  two front-door choices (`Post a need`, `Ask a question`), three exposed
+  queue filters (`All`, `For you`, `Yours`), one `More filters` disclosure,
+  one `More options` form disclosure, and one-open-at-a-time request cards.
+- No DemandBox capability was deliberately removed. All seven direct queue
+  routes, private One person targeting, supply matches, copy/contact,
+  fulfil/cancel, paging, and one-hop expanded search remain reachable.
+- Relay policy administration is hidden from ordinary members and remains
+  collapsed for authorised owners/admins under `Community search settings`.
+- This batch changes only the DemandBox frontend, its focused audits/smoke,
+  and documentation. Marketplace, backend routes, permissions, data models,
+  Dashboard, Spotlight, and Market Wisdom are untouched.
 - Governed `Expand search` is deployed. It appears only on the requester's
   own community-visible open request after a successful local supply check
   finds zero plausible matches.
@@ -71,6 +82,22 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Latest verification
 
+- The local unpublished DemandBox simplicity batch passes the full TypeScript
+  project check and a direct Vite production bundle (290 modules). The combined
+  `npm run build` exceeded the initial five-minute command windows because this
+  repository's TypeScript stage took about 9 minutes; both stages pass when run
+  with realistic time allowances.
+- `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
+  compact first surface, filters, one-open request cards, essential form,
+  optional controls, private-person reveal, and horizontal overflow checks.
+- `audit:demand-box-front-package`, `audit:demand-box-expand-search`,
+  `audit:marketplace-demand-box-lane`, targeted ESLint, and the broad
+  `audit:button-stability` pass for this local batch.
+- `audit:protected-button-freeze` remains red in three visual checks on
+  untouched Dashboard, Shop Control analytics, and Trust Infrastructure
+  surfaces (missing expected baseline selectors/timeouts). Its static button,
+  raw-action, tap, Marketplace, Community Home, entry, Notifications, and
+  route-boundary checks pass. No frozen surface was edited in this batch.
 - Frontend production build passed with 290 modules.
 - `audit:proof-surfaces`, `audit:trust-actions`,
   `audit:demand-box-front-package`, and

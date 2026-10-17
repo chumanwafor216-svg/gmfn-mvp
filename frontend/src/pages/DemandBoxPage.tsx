@@ -395,8 +395,8 @@ function demandHeroActionRowStyle(isCompact: boolean): React.CSSProperties {
     marginTop: isCompact ? 14 : 18,
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "minmax(0, 1fr) minmax(0, 1fr)"
-      : "repeat(3, minmax(0, 1fr))",
+      ? "1fr"
+      : "repeat(2, minmax(0, 1fr))",
     gridAutoRows: isCompact ? "52px" : "54px",
     gap: 10,
     alignItems: "stretch",
@@ -408,7 +408,6 @@ function demandHeroActionRowStyle(isCompact: boolean): React.CSSProperties {
 function demandHeroPrimaryActionStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...demandActionStyle(isCompact ? 52 : 54),
-    gridColumn: isCompact ? "1 / -1" : undefined,
   };
 }
 
@@ -547,19 +546,6 @@ function communityName(currentClan: any, selectedClanId: number): string {
       currentClan?.title
     ) || (selectedClanId ? `Community ${selectedClanId}` : "No community selected")
   );
-}
-
-function cciLabel(me: any): string {
-  const band = firstTruthy(
-    me?.cci_class,
-    me?.cci_band,
-    me?.cross_community_integrity_class,
-    me?.cross_community_integrity_band
-  );
-  if (band) return getContextualEvidencePosture(null, band).shortLabel;
-
-  const score = firstTruthy(me?.cci_score, me?.cross_community_integrity_score);
-  return score ? getContextualEvidencePosture(score).shortLabel : "";
 }
 
 function requesterTrustPostureLabel(row?: DemandRow | null): string {
@@ -784,11 +770,6 @@ export default function DemandBoxPage() {
         "mode",
         "ask_community"
       ),
-      notifications: routeTarget(
-        "notifications",
-        selectedClanId,
-        "demand-box.open-notifications"
-      ),
     }),
     [selectedClanId]
   );
@@ -817,6 +798,7 @@ export default function DemandBoxPage() {
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
   const [openMatchDemandId, setOpenMatchDemandId] = useState<number>(0);
+  const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1847,9 +1829,14 @@ export default function DemandBoxPage() {
           ? visibleCopyDebugId
           : visibleFallbackCopyDebugId;
     const matchState = demandMatchStateForRow(demandMatchesById, row);
+    const recordOpen = !isCompact || openDemandRecordKey === rowKey;
 
     return (
-      <div key={rowKey} style={recordCard()}>
+      <div
+        key={rowKey}
+        data-gsn-demand-record={recordOpen ? "open" : "closed"}
+        style={recordCard()}
+      >
         <div
           style={{
             display: "flex",
@@ -1871,28 +1858,59 @@ export default function DemandBoxPage() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
-            {safeStr(row?.status) ? (
+            {isUrgentDemand(row) ? (
+              <span style={badge(true)}>Urgent</span>
+            ) : null}
+            {recordOpen && safeStr(row?.status) ? (
               <span style={badge(false)}>{safeStr(row?.status)}</span>
             ) : null}
-            {trustPosture && scope === "community" ? (
+            {recordOpen && trustPosture && scope === "community" ? (
               <span style={badge(false)}>General evidence: {trustPosture}</span>
             ) : null}
           </div>
         </div>
 
-        <div style={{ marginTop: 8, ...helperText() }}>
-          {firstTruthy(row?.description, "No extra detail yet.")}
-        </div>
-
         <div
           style={{
-            marginTop: 10,
+            marginTop: 8,
             display: "flex",
             gap: 8,
             flexWrap: "wrap",
+            color: "#466078",
+            fontSize: 13,
+            fontWeight: 800,
           }}
         >
+          {scope === "community" ? <span>By {requesterName(row)}</span> : <span>Yours</span>}
+          {safeStr(row?.area) ? <span>· {safeStr(row?.area)}</span> : null}
+        </div>
+
+        {isCompact ? (
+          <SecondaryButton
+            type="button"
+            onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
+            debugId={debugBase + ".open"}
+            stableHeight={48}
+            style={{ ...demandActionStyle(48), marginTop: 10 }}
+          >
+            {demandIconText(recordOpen ? "lock" : "document", recordOpen ? "Close" : "Open", 18)}
+          </SecondaryButton>
+        ) : null}
+
+        {recordOpen ? (
+        <>
+          <div style={{ marginTop: 10, ...helperText() }}>
+            {firstTruthy(row?.description, "No extra detail yet.")}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
           <span style={badge(fromAskCommunity || protectedTarget)}>
             Source: {sourceLabel}
           </span>
@@ -1948,12 +1966,12 @@ export default function DemandBoxPage() {
           {safeStr(row?.created_at) ? (
             <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
           ) : null}
-        </div>
+          </div>
 
-        {renderDemandMatchPanel(row, matchState, debugBase)}
-        {renderExpandedSearchPanel(row, matchState, debugBase)}
+          {renderDemandMatchPanel(row, matchState, debugBase)}
+          {renderExpandedSearchPanel(row, matchState, debugBase)}
 
-        <div style={demandActionRowStyle(isCompact, 54, 156, 12)}>
+          <div style={demandActionRowStyle(isCompact, 54, 156, 12)}>
           {canClose ? (
             <>
               <SecondaryButton
@@ -1983,7 +2001,9 @@ export default function DemandBoxPage() {
 
           {demandPaperAction(row, scope, copyDebugId)}
           {demandContactActions(row, `${debugBase}.contact`)}
-        </div>
+          </div>
+        </>
+        ) : null}
       </div>
     );
   }
@@ -1998,8 +2018,6 @@ export default function DemandBoxPage() {
       ) || "Member"
     );
   }, [me]);
-  const memberCciLabel = cciLabel(me);
-
   const tagHandleOptions = useMemo(() => {
     const myGsnId = safeStr(me?.gmfn_id).toUpperCase();
     const seen = new Set<string>();
@@ -2033,6 +2051,10 @@ export default function DemandBoxPage() {
   const demandMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("mode") || "").toLowerCase();
+  }, [location.search]);
+  const directDemandId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return positiveNumber(params.get("demand_id"));
   }, [location.search]);
   const shouldOpenDemandQueues = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -2084,11 +2106,11 @@ export default function DemandBoxPage() {
   );
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
-      { key: "open", label: "All open", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
+      { key: "open", label: "All", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
       { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN handle" },
-      { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
-      { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
-      { key: "ask_community", label: "Ask Community", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
+      { key: "for_me", label: "For you", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
+      { key: "mine", label: "Yours", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
+      { key: "ask_community", label: "Questions", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
       { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
       { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
     ],
@@ -2171,6 +2193,12 @@ export default function DemandBoxPage() {
       setActiveQueueLane("open");
     }
   }, [location.search, shouldOpenDemandQueues]);
+  useEffect(() => {
+    if (!directDemandId) return;
+    if (!allOpenRows.some((row) => positiveNumber(row?.id) === directDemandId)) return;
+    setActiveQueueLane("open");
+    setOpenDemandRecordKey(String(directDemandId));
+  }, [allOpenRows, directDemandId]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
   const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
@@ -2559,6 +2587,7 @@ export default function DemandBoxPage() {
 
       {!showCreateWorkSurface ? (
       <section
+        data-gsn-demand-front-door="simple"
         style={{
           ...demandBrandShell(),
           padding: isCompact ? 16 : 20,
@@ -2567,16 +2596,14 @@ export default function DemandBoxPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gridTemplateColumns: "1fr",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
             <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
-              Trusted request
+              DemandBox
             </div>
 
             <div
@@ -2588,20 +2615,28 @@ export default function DemandBoxPage() {
                 lineHeight: 1.12,
               }}
             >
-              Ask clearly from {currentCommunityName}.
+              What do you need?
             </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                ...helperText(),
-                color: "#D7E3F1",
-                maxWidth: 840,
-                lineHeight: isCompact ? 1.45 : 1.75,
-              }}
-            >
-              Post one real need, keep the community context attached, and close
-              it when it is answered.
+            <div style={demandHeroActionRowStyle(isCompact)}>
+              <PrimaryButton
+                onClick={() => {
+                  openCreateDemandPanel();
+                }}
+                debugId="demand-box.create"
+                stableHeight={isCompact ? 52 : 54}
+                style={demandHeroPrimaryActionStyle(isCompact)}
+              >
+                {demandIconText("document", "Post a need", 20)}
+              </PrimaryButton>
+              <StableCtaLink
+                to={routes.askCommunity}
+                debugId="demand-box.ask-community"
+                stableHeight={isCompact ? 52 : 54}
+                style={demandActionStyle(isCompact ? 52 : 54)}
+              >
+                {demandIconText("community", "Ask a question", 20)}
+              </StableCtaLink>
             </div>
 
             <div
@@ -2611,122 +2646,27 @@ export default function DemandBoxPage() {
                 gap: 8,
                 flexWrap: "wrap",
               }}
+              data-gsn-demand-facts="compact"
             >
-              <span style={badge(true)}>From: {memberName}</span>
-              <span style={badge(false)}>{currentCommunityName}</span>
-              <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
-              <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
-              {memberCciLabel ? (
-                <span style={badge(false)}>Evidence: {memberCciLabel}</span>
-              ) : null}
-            </div>
-
-            <div style={demandHeroActionRowStyle(isCompact)}>
-              <SecondaryButton
-                onClick={() => {
-                  openCreateDemandPanel();
-                }}
-                debugId="demand-box.create"
-                stableHeight={isCompact ? 52 : 54}
-                style={demandHeroPrimaryActionStyle(isCompact)}
-              >
-                {demandIconText("document", "Create demand", 20)}
-              </SecondaryButton>
-              <StableCtaLink
-                to={routes.askCommunity}
-                debugId="demand-box.ask-community"
-                stableHeight={isCompact ? 52 : 54}
-                style={demandActionStyle(isCompact ? 52 : 54)}
-              >
-                {demandIconText("community", "Ask Community", 20)}
-              </StableCtaLink>
-              <StableCtaLink
-                to={demandReturnTo}
-                debugId="demand-box.return"
-                stableHeight={isCompact ? 52 : 54}
-                style={demandActionStyle(isCompact ? 52 : 54)}
-              >
-                {demandIconText("shop", demandReturnLabel, 20)}
-              </StableCtaLink>
-              <StableCtaLink
-                to={routes.dashboard}
-                debugId="demand-box.hero-dashboard"
-                stableHeight={isCompact ? 52 : 54}
-                style={demandActionStyle(isCompact ? 52 : 54)}
-              >
-                {demandIconText("home", "Dashboard", 20)}
-              </StableCtaLink>
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...softCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(212,175,55,0.14)",
-              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
-            }}
-          >
-            <div style={sectionLabel()}>Current state</div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#123055",
-                fontWeight: 900,
-                lineHeight: 1.28,
-                fontSize: isCompact ? 18 : 20,
-              }}
-            >
-              {myOpenRows.length > 0
-                ? "You already have live demand."
-                : "No personal demand is open."}
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={badge(myOpenRows.length > 0)}>
-                Mine: {myOpenRows.length}
-              </span>
+              <span style={badge(myOpenRows.length > 0)}>Yours {myOpenRows.length}</span>
               <span style={badge(visibleRows.length > 0)}>
-                Community: {visibleRows.length}
+                For you {visibleRows.length}
               </span>
-              <span style={badge(true)}>Next: post or review</span>
-              {safeStr(me?.gmfn_id) ? (
-                <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
-              ) : null}
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#31506D",
-                fontSize: 13,
-                fontWeight: 800,
-                lineHeight: 1.45,
-              }}
-            >
-              Create only one clear request at a time. Mark it fulfilled or
-              cancel it when the need is resolved.
+              <span style={badge(false)}>{currentCommunityName}</span>
             </div>
           </div>
         </div>
       </section>
       ) : null}
 
-      {!showCreateWorkSurface && selectedClanId ? (
+      {!showCreateWorkSurface && selectedClanId && canManageRelayPolicy ? (
         <details style={detailsShell()}>
           <StableDisclosureSummary
             style={detailsSummary()}
             stableHeight={52}
             debugId="demand-box.relay-policy.summary"
           >
-            <span>Another-community relay</span>
+            <span>Community search settings</span>
             <span style={{ color: "#64748B", fontSize: 13 }}>
               {relayPolicy?.outbound_enabled || relayPolicy?.inbound_enabled
                 ? "Configured"
@@ -2806,7 +2746,7 @@ export default function DemandBoxPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {isCreateMode ? "Marketplace demand form" : "Create demand"}
+              Post a need
             </div>
             <div
               style={{
@@ -2817,20 +2757,7 @@ export default function DemandBoxPage() {
                 lineHeight: 1.12,
               }}
             >
-              {isCreateMode
-                ? `Create demand from ${currentCommunityName}.`
-                : "Tell your community what you need."}
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                ...helperText(),
-                maxWidth: 760,
-              }}
-            >
-              {isCreateMode
-                ? "Fill in the need, area, and evidence expectation. GSN keeps the community context attached."
-                : "Keep it simple: what you need, where it is needed, and what evidence or payment should be clear first."}
+              {isCreateMode ? "Post from " + currentCommunityName + "." : "Tell people what you need."}
             </div>
           </div>
           {!isCreateMode ? (
@@ -2844,24 +2771,6 @@ export default function DemandBoxPage() {
             </SecondaryButton>
           ) : null}
         </div>
-
-        {isCreateMode ? (
-          <div
-            style={{
-              marginTop: 14,
-              ...innerCard("#F8FBFF"),
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <span style={badge(true)}>Community: {currentCommunityName}</span>
-            <span style={badge(false)}>Marketplace context active</span>
-            <span style={badge(false)}>Step 2: fill the request</span>
-            <span style={badge(false)}>Step 3: post demand</span>
-          </div>
-        ) : null}
 
         {!isCreateMode ? (
         <details
@@ -2946,50 +2855,7 @@ export default function DemandBoxPage() {
             alignItems: "center",
           }}
         >
-          <span style={badge(true)}>Community: {currentCommunityName}</span>
-          <span style={badge(false)}>Evidence optional</span>
-          <span style={badge(false)}>Payment terms optional</span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            ...innerCard("#FCFEFF"),
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-            gap: 10,
-            alignItems: "stretch",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Demand type</div>
-            <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 16, fontWeight: 900, lineHeight: 1.3 }}>
-              Post a direct need or ask the community first.
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
-              Use normal demand when you already know what you need. Use Ask Community when you need yes, maybe, or no opinions before stocking, pricing, or offering something.
-            </div>
-          </div>
-          <div style={demandActionRowStyle(isCompact, 52, 160, 0)}>
-            <SecondaryButton
-              type="button"
-              debugId="demand-box.mode.normal-demand"
-              stableHeight={52}
-              style={demandActionStyle(52)}
-              onClick={() => revealDemandCreate()}
-            >
-              {demandIconText("document", "Post demand", 20)}
-            </SecondaryButton>
-            <SecondaryButton
-              type="button"
-              debugId="demand-box.ask-community.inline"
-              stableHeight={52}
-              style={demandActionStyle(52)}
-              onClick={openMarketNeedPulse}
-            >
-              {demandIconText("community", "Ask Community", 20)}
-            </SecondaryButton>
-          </div>
+          <span style={badge(true)}>{currentCommunityName}</span>
         </div>
         {demandBoxFeatureOff ? (
           <div
@@ -3004,12 +2870,11 @@ export default function DemandBoxPage() {
         ) : null}
 
         <div
+          data-gsn-demand-create-form="simple"
           style={{
             marginTop: 16,
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gridTemplateColumns: "1fr",
             gap: 16,
             alignItems: "start",
           }}
@@ -3022,18 +2887,20 @@ export default function DemandBoxPage() {
                 gap: 12,
               }}
             >
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <div style={sectionLabel()}>What do you need?</div>
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
+                <label htmlFor="demand-box-title" style={sectionLabel()}>What do you need?</label>
                 <input
+                  id="demand-box-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Example: Need 5 bags of rice this week"
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>
-              <div>
-                <div style={sectionLabel()}>Need type tag</div>
+              <div style={{ order: 2 }}>
+                <label htmlFor="demand-box-type" style={sectionLabel()}>Type</label>
                 <input
+                  id="demand-box-type"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Food, vacancy, repair, transport"
@@ -3041,9 +2908,11 @@ export default function DemandBoxPage() {
                 />
               </div>
 
-              <div>
-                <div style={sectionLabel()}>Contact by GSN handle</div>
+              {visibilityScope === DEMAND_VISIBILITY_PROTECTED ? (
+              <div style={{ order: 5 }}>
+                <label htmlFor="demand-box-person" style={sectionLabel()}>Choose person</label>
                 <input
+                  id="demand-box-person"
                   value={targetHandle}
                   onChange={(e) => setTargetHandle(e.target.value)}
                   placeholder="@GSN-U-RESPONDER"
@@ -3062,7 +2931,7 @@ export default function DemandBoxPage() {
                   </datalist>
                 ) : null}
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Optional. Start typing or choose a known GSN handle or ID. Do not use a phone number.
+                  Choose a GSN member. Do not enter a phone number.
                 </div>
                 {normalizedTargetHandle ? (
                   <div
@@ -3090,14 +2959,15 @@ export default function DemandBoxPage() {
                   </div>
                 ) : null}
               </div>
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <div style={sectionLabel()}>Privacy route</div>
+              ) : null}
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 4 }}>
+                <div style={sectionLabel()}>Who can see it?</div>
                 <div
                   data-gsn-demand-privacy-route="true"
                   style={{
                     marginTop: 8,
                     display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                     gap: 10,
                   }}
                 >
@@ -3108,7 +2978,7 @@ export default function DemandBoxPage() {
                     style={demandActionStyle(54)}
                     onClick={() => setVisibilityScope(DEMAND_VISIBILITY_COMMUNITY)}
                   >
-                    {demandIconText("community", visibilityScope === DEMAND_VISIBILITY_COMMUNITY ? "Community queue" : "Use community", 20)}
+                    {demandIconText("community", "Community", 20)}
                   </SecondaryButton>
                   <SecondaryButton
                     type="button"
@@ -3122,18 +2992,19 @@ export default function DemandBoxPage() {
                     }}
                     onClick={() => setVisibilityScope(DEMAND_VISIBILITY_PROTECTED)}
                   >
-                    {demandIconText("lock", visibilityScope === DEMAND_VISIBILITY_PROTECTED ? "Ask person" : "Private person", 20)}
+                    {demandIconText("lock", "One person", 20)}
                   </SecondaryButton>
                 </div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
                   {visibilityScope === DEMAND_VISIBILITY_PROTECTED
-                    ? "Private Ask Person needs one matched GSN handle. Only you and that matched person should see the request."
-                    : "Community queue is visible to members who can answer inside the selected community."}
+                    ? "Only you and that person can see it."
+                    : "Members in this community can see it."}
                 </div>
               </div>
-              <div>
-                <div style={sectionLabel()}>Area / location</div>
+              <div style={{ order: 3 }}>
+                <label htmlFor="demand-box-area" style={sectionLabel()}>Area</label>
                 <input
+                  id="demand-box-area"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   placeholder="Area"
@@ -3141,9 +3012,33 @@ export default function DemandBoxPage() {
                 />
               </div>
 
+              <details
+                style={{
+                  ...detailsShell(),
+                  gridColumn: isCompact ? "auto" : "1 / span 2",
+                  order: 6,
+                }}
+              >
+                <StableDisclosureSummary
+                  style={detailsSummary()}
+                  stableHeight={52}
+                  debugId="demand-box.more-options"
+                >
+                  <span>More options</span>
+                  <span style={{ color: "#64748B", fontSize: 13 }}>Optional</span>
+                </StableDisclosureSummary>
+                <div
+                  style={{
+                    padding: "0 18px 18px",
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <div style={sectionLabel()}>Explain briefly</div>
+                <label htmlFor="demand-box-description" style={sectionLabel()}>Short explanation</label>
                 <textarea
+                  id="demand-box-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a short explanation so people can understand the need quickly"
@@ -3152,8 +3047,9 @@ export default function DemandBoxPage() {
               </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <div style={sectionLabel()}>Contact path override</div>
+                <label htmlFor="demand-box-whatsapp" style={sectionLabel()}>WhatsApp number</label>
                 <input
+                  id="demand-box-whatsapp"
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   placeholder="Optional WhatsApp number if your approved profile contact should not be used"
@@ -3162,8 +3058,9 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Urgency</div>
+                <label htmlFor="demand-box-urgency" style={sectionLabel()}>Urgency</label>
                 <select
+                  id="demand-box-urgency"
                   value={urgency}
                   onChange={(e) => setUrgency(e.target.value)}
                   style={{ ...inputStyle(), marginTop: 8 }}
@@ -3175,8 +3072,9 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Payment terms</div>
+                <label htmlFor="demand-box-payment" style={sectionLabel()}>Payment</label>
                 <select
+                  id="demand-box-payment"
                   value={paymentMode}
                   onChange={(e) => setPaymentMode(e.target.value)}
                   style={{ ...inputStyle(), marginTop: 8 }}
@@ -3191,8 +3089,9 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Evidence from responder</div>
+                <label htmlFor="demand-box-evidence" style={sectionLabel()}>Proof needed</label>
                 <select
+                  id="demand-box-evidence"
                   value={responseEvidence}
                   onChange={(e) => setResponseEvidence(e.target.value)}
                   style={{ ...inputStyle(), marginTop: 8 }}
@@ -3212,26 +3111,68 @@ export default function DemandBoxPage() {
                   </option>
                 </select>
               </div>
-            </div>
+              <div>
+                <label htmlFor="demand-box-expiry" style={sectionLabel()}>Hours open</label>
+                <input
+                  id="demand-box-expiry"
+                  type="number"
+                  min="1"
+                  max="168"
+                  value={expiresInHours}
+                  onChange={(e) => setExpiresInHours(e.target.value)}
+                  placeholder="72 hours"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
 
-            <div
-              style={{
-                marginTop: 12,
-                ...innerCard("#F8FBFF"),
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <span style={badge(false)}>Sent by {memberName}</span>
-              {safeStr(me?.gmfn_id) ? (
-                <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
-              ) : null}
-              {memberCciLabel ? (
-                <span style={badge(false)}>Wider evidence {memberCciLabel}</span>
-              ) : null}
-              <span style={badge(false)}>From {currentCommunityName}</span>
+              <div style={{ ...innerCard("#F8FBFF"), gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    color: "#0B1F33",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allowTrustCredit}
+                    onChange={(e) => setAllowTrustCredit(e.target.checked)}
+                  />
+                  Trust credit may be discussed
+                </label>
+              </div>
+
+              <div style={{ ...innerCard("#F8FBFF"), gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    color: "#0B1F33",
+                    fontWeight: 800,
+                    cursor:
+                      visibilityScope === DEMAND_VISIBILITY_COMMUNITY
+                        ? "pointer"
+                        : "not-allowed",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allowOneHopRelay}
+                    disabled={visibilityScope !== DEMAND_VISIBILITY_COMMUNITY}
+                    onChange={(e) => setAllowOneHopRelay(e.target.checked)}
+                  />
+                  Search one more community if needed
+                </label>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                  GSN checks only one permitted community. You can stop it later.
+                </div>
+              </div>
+                </div>
+              </details>
             </div>
 
             <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
@@ -3245,107 +3186,20 @@ export default function DemandBoxPage() {
                 debugId="demand-box.post"
                 style={demandActionStyle(54)}
               >
-                {demandIconText("document", "Post demand", 20)}
+                {demandIconText("document", "Post need", 20)}
               </PrimaryButton>
-
-              <StableCtaLink
-                to={routes.notifications}
-                fullWidth
-                stableHeight={54}
-                debugId="demand-box.open-notifications"
-                style={demandActionStyle(54)}
-              >
-                {demandIconText("alert", "Notifications", 20)}
-              </StableCtaLink>
             </div>
-          </div>
-
-          <div style={detailsShell()}>
-            <details>
-              <StableDisclosureSummary
-                style={detailsSummary()}
-                stableHeight={52}
-                debugId="demand-box.more-detail"
-              >
-                <span>More detail</span>
-                <span style={{ color: "#64748B", fontSize: 13 }}>Optional</span>
-              </StableDisclosureSummary>
-
-              <div style={{ padding: "0 18px 18px", display: "grid", gap: 12 }}>
-
-                <div>
-                  <div style={sectionLabel()}>Expiry in hours</div>
-                  <input
-                    type="number"
-                    min="1"
-                    value={expiresInHours}
-                    onChange={(e) => setExpiresInHours(e.target.value)}
-                    placeholder="72"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div style={innerCard("#F8FBFF")}>
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      color: "#0B1F33",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={allowTrustCredit}
-                      onChange={(e) => setAllowTrustCredit(e.target.checked)}
-                    />
-                    Open to trust credit where appropriate
-                  </label>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                    Trust-credit openness is a request preference, not approval to
-                    release goods, credit, or money.
-                  </div>
-                </div>
-
-                <div style={innerCard("#F8FBFF")}>
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      color: "#0B1F33",
-                      fontWeight: 800,
-                      cursor:
-                        visibilityScope === DEMAND_VISIBILITY_COMMUNITY
-                          ? "pointer"
-                          : "not-allowed",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={allowOneHopRelay}
-                      disabled={visibilityScope !== DEMAND_VISIBILITY_COMMUNITY}
-                      onChange={(e) => setAllowOneHopRelay(e.target.checked)}
-                    />
-                    Allow GSN to expand this search if no local match is found
-                  </label>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                    This is explicit one-hop consent for this request only. Both
-                    communities must permit relay. You can withdraw it later; private
-                    Ask Person requests are never eligible.
-                  </div>
-                </div>
-              </div>
-            </details>
           </div>
         </div>
       </section>
       ) : null}
 
       {!showCreateWorkSurface ? (
-        <section id="demand-box-queue-board" style={pageCard("#FFFFFF")}>
+        <section
+          id="demand-box-queue-board"
+          data-gsn-demand-queue="simple"
+          style={pageCard("#FFFFFF")}
+        >
           <div
             style={{
               display: "flex",
@@ -3356,7 +3210,7 @@ export default function DemandBoxPage() {
             }}
           >
             <div style={{ minWidth: 0, flex: "1 1 320px" }}>
-              <div style={sectionLabel()}>Organised request queue</div>
+              <div style={sectionLabel()}>Needs</div>
               <div
                 style={{
                   marginTop: 8,
@@ -3366,20 +3220,8 @@ export default function DemandBoxPage() {
                   lineHeight: 1.12,
                 }}
               >
-                See the right demand before it gets buried.
+                Can you help?
               </div>
-              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                GSN shows demand as lanes, not chat. Matched GSN handles move into the Tagged lane.
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(allOpenRows.length > 0)}>All open: {allOpenRows.length}</span>
-              <span style={badge(myOpenRows.length > 0)}>Mine: {myOpenRows.length}</span>
-              <span style={badge(askCommunityRows.length > 0)}>Ask: {askCommunityRows.length}</span>
-              <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
-              <span style={badge(visibleRows.length > 0)}>For me: {visibleRows.length}</span>
-              <span style={badge(hasMoreVisibleRows)}>More: {hasMoreVisibleRows ? "available" : "none shown"}</span>
             </div>
           </div>
 
@@ -3388,13 +3230,11 @@ export default function DemandBoxPage() {
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(5, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 10,
             }}
           >
-            {queueLanes.map((lane) => {
+            {queueLanes.filter((lane) => ["open", "for_me", "mine"].includes(lane.key)).map((lane) => {
               const active = activeQueueLane === lane.key;
               const Button = active ? PrimaryButton : SecondaryButton;
 
@@ -3404,66 +3244,60 @@ export default function DemandBoxPage() {
                   onClick={() => setActiveQueueLane(lane.key)}
                   debugId={`demand-box.queue-lane.${lane.key}`}
                   style={{
-                    minHeight: 82,
-                    alignItems: "flex-start",
-                    justifyContent: "flex-start",
-                    textAlign: "left",
-                    padding: isCompact ? "10px" : "12px",
-                    gap: 8,
-                    whiteSpace: "normal",
+                    minHeight: 54,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    padding: "8px",
+                    gap: 6,
+                    whiteSpace: "nowrap",
                     lineHeight: 1.2,
                   }}
                 >
-                  <GsnLegacyIcon name={lane.icon} size={26} />
-                  <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
-                    <span style={{ fontWeight: 900 }}>{lane.label}</span>
-                    <span style={{ fontSize: 13, opacity: 0.9 }}>{lane.key === "categories" ? `${lane.count} groups` : `${lane.count} open`}</span>
-                  </span>
+                  <GsnLegacyIcon name={lane.icon} size={22} />
+                  <span style={{ fontWeight: 900 }}>{lane.label} {lane.count}</span>
                 </Button>
               );
             })}
           </div>
 
-          <div
-            style={{
-              marginTop: 14,
-              ...innerCard("#F8FBFF"),
-              border: "1px solid rgba(13,95,168,0.1)",
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <span style={badge(true)}>
-              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "All open"}
-            </span>
-            <span style={badge(taggedRows.length > 0)}>Tagged: {taggedRows.length}</span>
-            <span style={badge(false)}>Not a chat feed</span>
-            <span style={badge(false)}>Fetched: {visibleRowsRawLoaded}</span>
-          </div>
-
           <details
-            data-gsn-demand-routing-readiness="true"
+            data-gsn-demand-more-filters="true"
             style={{ ...detailsShell(), marginTop: 14 }}
           >
             <StableDisclosureSummary
               style={detailsSummary()}
               stableHeight={54}
-              debugId="demand-box.routing-readiness.summary"
+              debugId="demand-box.more-filters"
             >
-              <span>Routing readiness</span>
-              <span style={{ color: "#64748B", fontSize: 13 }}>Collapsed</span>
+              <span>More filters</span>
+              <span style={{ color: "#64748B", fontSize: 13 }}>
+                {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "All"}
+              </span>
             </StableDisclosureSummary>
-            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-              <div style={{ ...innerCard("#FCFEFF"), display: "grid", gap: 8 }}>
-                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  Current pilot sorting uses saved queue signals, matched GSN handles, need type, urgency, owner, and Ask Community source.
-                </div>
-                <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
-                  Matched GSN handles can route a notification to the tagged lane. Load older requests extends the visible queue in batches; ranked queues, moderation rules, rate limits, and saved assignments still need governed records work before very large communities use DemandBox at full scale.
-                </div>
-              </div>
+            <div
+              style={{
+                padding: "0 14px 14px",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {queueLanes.filter((lane) => ["tagged", "ask_community", "urgent", "categories"].includes(lane.key)).map((lane) => {
+                const active = activeQueueLane === lane.key;
+                const Button = active ? PrimaryButton : SecondaryButton;
+                return (
+                  <Button
+                    key={lane.key}
+                    onClick={() => setActiveQueueLane(lane.key)}
+                    debugId={`demand-box.queue-lane.${lane.key}`}
+                    stableHeight={52}
+                    style={demandActionStyle(52)}
+                  >
+                    {demandIconText(lane.icon, lane.label + " " + lane.count, 18)}
+                  </Button>
+                );
+              })}
             </div>
           </details>
 
@@ -3576,24 +3410,6 @@ export default function DemandBoxPage() {
               </div>
             </div>
           ) : null}
-          <div style={demandActionRowStyle(isCompact, 54, 156, 14)}>
-            <StableCtaLink
-              to={demandReturnTo}
-              debugId="demand-box.bottom-return"
-              stableHeight={54}
-              style={demandActionStyle(54)}
-            >
-              {demandIconText("shop", demandReturnLabel, 20)}
-            </StableCtaLink>
-            <StableCtaLink
-              to={routes.dashboard}
-              debugId="demand-box.bottom-dashboard"
-              stableHeight={54}
-              style={demandActionStyle(54)}
-            >
-              {demandIconText("home", "Dashboard", 20)}
-            </StableCtaLink>
-          </div>
         </section>
       ) : null}
     </div>

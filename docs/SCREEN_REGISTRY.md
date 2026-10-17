@@ -59,7 +59,7 @@ Bottom navigation is allowed here.
 18. TrustSlipPage
 19. WhatsAppBridgePage
 20. CommitmentsPage
-21. DemandBoxPage
+21. DemandBoxPage (`/app/demand-box`; authenticated needs lifecycle owner, novice-first phone surface reviewed 2026-10-17)
 
 ## Current Repo Name Notes
 

@@ -886,8 +886,8 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Create demand", 20\)[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post demand", 20\)[\s\S]*?debugId="demand-box\.open-notifications"[\s\S]*?demandIconText\("alert", "Notifications", 20\)[\s\S]*?debugId="demand-box\.more-detail"/,
-  "DemandBox create/post/notification/detail actions must keep stable shared primitives."
+  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Post a need", 20\)[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?demandIconText\("community", "Ask a question", 20\)[\s\S]*?debugId="demand-box\.more-options"[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post need", 20\)/,
+  "DemandBox simple front-door, optional-detail, and post actions must keep stable shared primitives."
 );
 
 assertContains(
@@ -898,8 +898,8 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /data-gsn-demand-queue-lanes="true"[\s\S]*?debugId=\{`demand-box\.queue-lane\.\$\{lane\.key\}`\}[\s\S]*?data-gsn-demand-queue-results="true"[\s\S]*?debugId="demand-box\.bottom-dashboard"[\s\S]*?demandIconText\("home", "Dashboard", 20\)/,
-  "DemandBox must keep governed queue lane buttons and stable bottom route actions."
+  /data-gsn-demand-queue-lanes="true"[\s\S]*?\["open", "for_me", "mine"\][\s\S]*?debugId=\{[^}]*demand-box\.queue-lane[\s\S]*?debugId="demand-box\.more-filters"[\s\S]*?\["tagged", "ask_community", "urgent", "categories"\][\s\S]*?data-gsn-demand-queue-results="true"/,
+  "DemandBox must keep stable primary queue filters and governed filters behind More filters."
 );
 
 assertContains(

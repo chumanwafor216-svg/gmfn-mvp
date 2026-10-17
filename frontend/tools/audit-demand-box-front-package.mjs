@@ -9,508 +9,76 @@ const pageFile = "src/pages/DemandBoxPage.tsx";
 const apiFile = "src/lib/api.ts";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
 const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
-const findings = [];
+const failures = [];
 
-function lineAt(index) {
-  return source.slice(0, index).split(/\r?\n/).length;
+function requirePattern(input, file, pattern, message) {
+  if (!pattern.test(input)) failures.push(file + ": " + message);
 }
 
-function addFinding(index, message, text = "Expected pattern was not found.") {
-  findings.push({
-    file: pageFile,
-    line: index >= 0 ? lineAt(index) : 1,
-    message,
-    text: text.replace(/\s+/g, " ").slice(0, 260),
-  });
-}
-
-function requirePattern(pattern, message) {
-  const index = source.search(pattern);
-  if (index === -1) {
-    addFinding(-1, message, pattern.toString());
-  }
-}
-
-function requireApiPattern(pattern, message) {
-  if (apiSource.search(pattern) === -1) {
-    findings.push({
-      file: apiFile,
-      line: 1,
-      message,
-      text: pattern.toString().replace(/\s+/g, " ").slice(0, 260),
-    });
-  }
+function forbidPattern(input, file, pattern, message) {
+  if (pattern.test(input)) failures.push(file + ": " + message);
 }
 
 [
-  [
-    /function demandHeroActionRowStyle\(isCompact: boolean\)/,
-    "DemandBox hero actions must use the compact two-row phone grid.",
-  ],
-  [
-    /function demandHeroPrimaryActionStyle\(isCompact: boolean\)/,
-    "DemandBox primary hero action must be able to span the phone row.",
-  ],
-  [
-    /Ask clearly from \{currentCommunityName\}\./,
-    "DemandBox hero copy must stay community-specific and short.",
-  ],
-  [
-    /Post one real need, keep the community context attached, and close\s+it when it is answered\./,
-    "DemandBox hero helper must stay compact and practical.",
-  ],
-  [
-    /Current state/,
-    "DemandBox must expose a compact current-state card.",
-  ],
-  [
-    /Mine: \{myOpenRows\.length\}/,
-    "DemandBox current-state card must show the user's open demand count.",
-  ],
-  [
-    /All open: \{allOpenRows\.length\}/,
-    "DemandBox current-state card must show the full open demand count.",
-  ],
-  [
-    /Next: post or review/,
-    "DemandBox current-state card must show a simple next step.",
-  ],
-  [
-    /Create only one clear request at a time\. Mark it fulfilled or\s+cancel it when the need is resolved\./,
-    "DemandBox must keep one active request guidance visible.",
-  ],
-  [
-    /debugId="demand-box\.change-community\.summary"/,
-    "DemandBox community switching must stay collapsed behind a stable disclosure.",
-  ],
-  [
-    /<span>Change community<\/span>/,
-    "DemandBox community chooser summary must keep the short label.",
-  ],
-  [
-    /<span style=\{badge\(false\)\}>Evidence optional<\/span>/,
-    "DemandBox form context must use compact evidence chips.",
-  ],
-  [
-    /<span style=\{badge\(false\)\}>Payment terms optional<\/span>/,
-    "DemandBox form context must use compact payment chips.",
-  ],
-  [
-    /minHeight: 82/,
-    "DemandBox explanation textarea must stay compact on phone.",
-  ],
-  [
-    /disabled=\{creating\}/,
-    "DemandBox post button must allow an in-place missing-title response instead of silently disabling.",
-  ],
-  [
-    /debugId="demand-box\.post"/,
-    "DemandBox post action must keep its stable debug id.",
-  ],
-  [
-    /debugId="demand-box\.create"/,
-    "DemandBox create action must keep its stable debug id.",
-  ],
-  [
-    /debugId="demand-box\.return"/,
-    "DemandBox return action must keep its stable debug id.",
-  ],
-  [
-    /type DemandQueueLane = "open" \| "tagged" \| "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
-    "DemandBox must define a full open queue plus governed lanes instead of a flat hidden drawer model.",
-  ],
-  [
-    /const \[activeQueueLane, setActiveQueueLane\] = useState<DemandQueueLane>\("open"\)/,
-    "DemandBox must default to the full open queue so dashboard counts match visible rows.",
-  ],
-  [
-    /return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/,
-    "DemandBox must recognize Dashboard queue links and direct lane links.",
-  ],
-  [
-    /uniqueDemandRows\(\[\.\.\.visibleRows, \.\.\.myOpenRows\]\)/,
-    "DemandBox queue board must deduplicate visible and personal open rows.",
-  ],
-  [
-    /const urgentRows = useMemo\(\(\) => allOpenRows\.filter\(isUrgentDemand\), \[allOpenRows\]\)/,
-    "DemandBox must expose an urgent lane derived from recorded urgency/expiry.",
-  ],
-  [
-    /function isAskCommunityDemand\(row: DemandRow\): boolean[\s\S]*?community ask posted through demandbox/,
-    "DemandBox must detect Ask Community rows from existing category/description truth.",
-  ],
-  [
-    /const askCommunityRows = useMemo\([\s\S]*?allOpenRows\.filter\(isAskCommunityDemand\)/,
-    "DemandBox must expose Ask Community as a separate visible lane.",
-  ],
-  [
-    /const taggedRows = useMemo\([\s\S]*?allOpenRows\.filter\(isTaggedForMe\)/,
-    "DemandBox must derive a separate tagged lane from resolved GSN handle metadata.",
-  ],
-  [
-    /key: "tagged"[\s\S]*?label: "Tagged"/,
-    "DemandBox must show tagged demand separately from the general open queue.",
-  ],
-  [
-    /key: "open"[\s\S]*?label: "All open"[\s\S]*?count: allOpenRows\.length/,
-    "DemandBox must expose an All open lane whose count matches every loaded open row.",
-  ],
-  [
-    /const normalizedQueueMode = queueMode === "ask-community" \|\| queueMode === "community" \|\| queueMode === "queue" \|\| queueMode === "all" \? "open" : queueMode/,
-    "DemandBox dashboard queue links must land on the full open queue, not a filtered lane.",
-  ],
-  [
-    /if \(shouldOpenDemandQueues\) \{\s*setActiveQueueLane\("open"\);\s*\}/,
-    "DemandBox fallback queue links must keep all open requests visible.",
-  ],
-  [
-    /function queueKeysOf\(row: DemandRow\): string\[\][\s\S]*?queue_keys/,
-    "DemandBox must consume saved queue keys for large-community sorting.",
-  ],
-  [
-    /queueKeysOf\(row\)\.includes\("urgent"\)/,
-    "DemandBox urgent lane must respect saved queue keys before local fallbacks.",
-  ],
-  [
-    /queueKeys\.includes\("ask_community"\)/,
-    "DemandBox Ask Community lane must respect saved queue keys before local fallbacks.",
-  ],
-  [
-    /mentioned_handles\?: string\[\] \| null/,
-    "DemandBox must expose typed handle metadata and keep delivery truth visible.",
-  ],
-  [
-    /routing_status\?: string \| null/,
-    "DemandBox must expose routing status metadata for queue clarity.",
-  ],
-  [
-    /const categoryBuckets = useMemo\(\(\) => \{[\s\S]*?categoryLabel\(row\)[\s\S]*?urgentCount: rows\.filter\(isUrgentDemand\)\.length/,
-    "DemandBox must group open rows by recorded demand category.",
-  ],
-  [
-    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>[\s\S]*?open: allOpenRows,[\s\S]*?tagged: taggedRows/,
-    "DemandBox must map every lane to a visible result set including All open and Tagged.",
-  ],
-  [
-    /setActiveQueueLane\(lane\.key\)/,
-    "DemandBox lane buttons must switch the visible queue without hiding rows in a drawer.",
-  ],
-  [
-    /data-gsn-demand-queue-lanes="true"/,
-    "DemandBox must render the governed queue lane controls.",
-  ],
-  [
-    /debugId=\{`demand-box\.queue-lane\.\$\{lane\.key\}`\}/,
-    "DemandBox queue lane buttons must keep stable dynamic debug ids.",
-  ],
-  [
-    /data-gsn-demand-queue-results="true"/,
-    "DemandBox must render visible results for the selected lane.",
-  ],
-  [
-    /Need type tag[\s\S]*?value=\{category\}[\s\S]*?Food, vacancy, repair, transport/,
-    "DemandBox must expose the category/tag field in the main create form.",
-  ],
-  [
-    /function normalizeGsnMention\(value: string\): string[\s\S]*?Tagged GSN handle:/,
-    "DemandBox must normalize typed GSN handles into request text for backend tag resolution.",
-  ],
-  [
-    /const \[targetHandle, setTargetHandle\] = useState\(""\)/,
-    "DemandBox must keep an explicit member-handle field instead of expecting users to type hidden syntax.",
-  ],
-  [
-    /buildDemandDescription\(description, responseEvidence, targetHandle\)/,
-    "DemandBox normal request posting must include the optional tagged GSN handle.",
-  ],
-  [
-    /buildAskCommunityDemandDescription\(body, targetHandle, options\)/,
-    "DemandBox Ask Community posting must include the optional tagged GSN handle.",
-  ],
-  [
-    /Contact by GSN handle[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="@GSN-U-RESPONDER"[\s\S]*?demand-box-gsn-member-handles[\s\S]*?Do not use a phone number/,
-    "DemandBox must expose a clear phone-free GSN handle contact control in the create flow.",
-  ],
-  [
-    /listClanMembers\(effectiveClanId\)\.catch\(\(\) => \(\{ items: \[\] \}\)\)/,
-    "DemandBox must use the existing scoped community roster for tag suggestions when available.",
-  ],
-  [
-    /const tagHandleOptions = useMemo\(\(\) => \{[\s\S]*?\.slice\(0, 40\);/,
-    "DemandBox tag suggestions must stay bounded and deduplicated for large communities.",
-  ],
-  [
-    /<datalist id="demand-box-gsn-member-handles">[\s\S]*?tagHandleOptions\.map/,
-    "DemandBox must provide GSN-ID suggestions without exposing a large chat-style roster block.",
-  ],
-  [
-    /const normalizedTargetHandle = useMemo[\s\S]*?const selectedTagMember = useMemo/,
-    "DemandBox must compute visible tag matching from the same bounded community roster suggestions.",
-  ],
-  [
-    /data-gsn-demand-privacy-route="true"[\s\S]*?debugId="demand-box\.visibility\.community"[\s\S]*?debugId="demand-box\.visibility\.protected-target"[\s\S]*?Private Ask Person needs one matched GSN handle/,
-    "DemandBox must expose a deliberate privacy route selector for protected person-targeted requests.",
-  ],
-  [
-    /visibilityScope === DEMAND_VISIBILITY_PROTECTED && !selectedTagMember[\s\S]*?Choose a matched GSN handle before posting a private Ask Person request/,
-    "DemandBox must block protected Ask Person posts until the target handle matches a community member.",
-  ],
-  [
-    /visibility_scope: visibilityScope/,
-    "DemandBox create payload must send the selected visibility scope to the backend.",
-  ],
-  [
-    /data-gsn-demand-protected-target-chip="true"[\s\S]*?Private to matched person/,
-    "DemandBox request cards must visibly distinguish protected person-targeted rows.",
-  ],
-  [
-    /data-gsn-demand-tag-preview="true"[\s\S]*?Matched community member[\s\S]*?will stay in the request text unless it matches an active member's GSN handle or ID/,
-    "DemandBox must preview whether a typed GSN tag is a real in-community member before posting.",
-  ],
-  [
-    /data-gsn-demand-matched-tag-chip="true"[\s\S]*?Matched tags: \{matchedTagCount\}[\s\S]*?No matched member yet/,
-    "DemandBox request cards must distinguish matched member tags from text-only handles.",
-  ],
-  [
-    /label: "Ask Community"[\s\S]*?key: "ask_community"|key: "ask_community"[\s\S]*?label: "Ask Community"/,
-    "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
-  ],
-  [
-    /data-gsn-demand-routing-readiness="true"[\s\S]*?Load older requests extends the visible queue in batches[\s\S]*?ranked queues, moderation rules, rate limits, and saved assignments still need governed records work before/,
-    "DemandBox must keep the large-community routing boundary collapsed, batch-aware, and honest.",
-  ],
-  [
-    /Need types, Urgent, or Tagged to narrow the queue, or load older community requests if more are available\./,
-    "DemandBox overflow guidance must point to lane narrowing or older-batch loading.",
-  ],
-  [
-    /data-gsn-demand-category-buckets="true"/,
-    "DemandBox must render a category bucket view for tag-like sorting.",
-  ],
-  [
-    /function renderDemandRecord\(/,
-    "DemandBox must use one shared demand record renderer instead of duplicate old blocks.",
-  ],
-  [
-    /debugId=\{`\$\{debugBase\}\.fulfilled`\}/,
-    "DemandBox fulfilled actions must keep stable dynamic debug ids through the shared renderer.",
-  ],
-  [
-    /debugId=\{`\$\{debugBase\}\.cancelled`\}/,
-    "DemandBox cancel actions must keep stable dynamic debug ids through the shared renderer.",
-  ],
-  [
-    /Tagged: \{taggedRows\.length\}/,
-    "DemandBox must surface matched GSN handle routing without hiding it in text.",
-  ],
-  [
-    /Not a chat feed/,
-    "DemandBox must state the anti-WhatsApp queue boundary.",
-  ],
-  [
-    /data-gsn-demand-load-older="true"[\s\S]*?debugId="demand-box\.queue\.load-older"[\s\S]*?Load older requests/,
-    "DemandBox must expose a load-older control for paged community demand queues.",
-  ],
-  [
-    /const DEMAND_BOX_PAGE_SIZE = 200/,
-    "DemandBox must keep the backend-safe page size explicit.",
-  ],
-  [
-    /offset: visibleRowsRawLoaded[\s\S]*?nextOffset = visibleRowsRawLoaded \+ nextRawRows\.length[\s\S]*?limit: 1,[\s\S]*?offset: nextOffset/,
-    "DemandBox must request older rows with backend offset and probe the following batch before showing more.",
-  ],
-  [
-    /limit: 1,[\s\S]*?offset: DEMAND_BOX_PAGE_SIZE[\s\S]*?visibleProbeRows[\s\S]*?setHasMoreVisibleRows\(visibleProbeRows\.length > 0\)/,
-    "DemandBox must prove older rows exist with a one-row probe after the initial batch.",
-  ],
-  [
-    /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
-    "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace posting path.",
-  ],
-  [
-    /to=\{routes\.askCommunity\}[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?Ask Community/,
-    "DemandBox hero must expose the Ask Community action without creating a separate demand engine.",
-  ],
-  [
-    /debugId="demand-box\.mode\.normal-demand"[\s\S]*?Post demand[\s\S]*?debugId="demand-box\.ask-community\.inline"[\s\S]*?Ask Community/,
-    "DemandBox form must show Ask Community as a Demand type beside normal demand posting.",
-  ],
-  [
-    /submitMarketNeedPulse[\s\S]*?createMarketplaceRequest[\s\S]*?category: "Community Ask"[\s\S]*?Community question posted in DemandBox/,
-    "DemandBox Ask Community must post into DemandBox requests, not the Community Bulletin notice engine.",
-  ],
-  [
-    /pulseDestination="demand_box"/,
-    "DemandBox Ask Community modal must use DemandBox destination wording and controls.",
-  ],
-  [
-    /debugId="demand-box\.hero-dashboard"/,
-    "DemandBox dashboard escape must keep its stable debug id.",
-  ],
-  [
-    /getDemandSupplyMatches/,
-    "DemandBox must use the O1B read API instead of deriving supply matches locally.",
-  ],
-  [
-    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Possible matches · \{matchState\.count\}[\s\S]*?Based on your request and currently available supply\./,
-    "DemandBox O1C must stay a compact possible-match indicator inside existing request cards.",
-  ],
-  [
-    /function demandMatchReasonLabels[\s\S]*?SAME_COMMUNITY[\s\S]*?CATEGORY_MATCH[\s\S]*?AREA_COMPATIBLE/,
-    "DemandBox must translate deterministic reason codes into plain user language.",
-  ],
-  [
-    /event_type: "match_available"/,
-    "DemandBox must instrument match availability through existing marketplace attention events.",
-  ],
-  [
-    /"matches_opened"/,
-    "DemandBox must instrument match opening through existing marketplace attention events.",
-  ],
-  [
-    /"supply_opened"/,
-    "DemandBox must instrument supply opening through existing marketplace attention events.",
-  ],
-  [
-    /StableCtaLink[\s\S]*?to=\{to\}[\s\S]*?Open supply/,
-    "DemandBox possible matches must reuse an existing shop/product route instead of creating a new result page.",
-  ],
-  [
-    /function demandMatchSupplyPath[\s\S]*?source_demand_id[\s\S]*?source_match_product_id[\s\S]*?source_match_shop_id[\s\S]*?trade_source[\s\S]*?demand_supply_match/,
-    "DemandBox Open supply must preserve non-authoritative source context for later Trade Evidence handoff.",
-  ],
-].forEach(([pattern, message]) => requirePattern(pattern, message));
-requirePattern(
-  /function demandReadyWhatsAppRecipient\(row: DemandRow\): string[\s\S]*?lower\.includes\("@"\) \|\| lower\.includes\("\.local"\)[\s\S]*?normalizeWhatsAppRecipient\(raw\)[\s\S]*?normalized\.length < 8/,
-  "DemandBox must not treat pending .local identities or email-like placeholders as WhatsApp-ready phone numbers."
-);
-
-requirePattern(
-  /hasContact \? "WhatsApp Chat" : "WhatsApp not ready"[\s\S]*?hasContact \? "WhatsApp Call" : "Call not ready"[\s\S]*?Contact path not ready/,
-  "DemandBox request cards must tell the truth when WhatsApp or call contact is not ready."
-);
+  [/data-gsn-demand-front-door="simple"[\s\S]*?What do you need\?/, "the first surface must ask one short question"],
+  [/debugId="demand-box\.create"[\s\S]*?Post a need/, "the first surface must keep one clear Post a need action"],
+  [/debugId="demand-box\.ask-community"[\s\S]*?Ask a question/, "the first surface must keep Ask Community under the plain Ask a question label"],
+  [/data-gsn-demand-facts="compact"[\s\S]*?Yours \{myOpenRows\.length\}[\s\S]*?For you \{visibleRows\.length\}[\s\S]*?\{currentCommunityName\}/, "the first surface must keep only the two useful counts and community context"],
+  [/!showCreateWorkSurface && selectedClanId && canManageRelayPolicy/, "community search policy controls must stay hidden from ordinary members"],
+  [/<span>Community search settings<\/span>/, "admin relay controls need a plain collapsed label"],
+  [/data-gsn-demand-create-form="simple"/, "the create form must expose the simple-form contract"],
+  [/htmlFor="demand-box-title"[\s\S]*?What do you need\?/, "the main form must keep a labelled need field"],
+  [/htmlFor="demand-box-type"[\s\S]*?>Type</, "the main form must keep the matching type field"],
+  [/htmlFor="demand-box-area"[\s\S]*?>Area</, "the main form must keep area on the first surface"],
+  [/data-gsn-demand-privacy-route="true"[\s\S]*?demand-box\.visibility\.community[\s\S]*?Community[\s\S]*?demand-box\.visibility\.protected-target[\s\S]*?One person/, "the main form must keep an explicit community or one-person choice"],
+  [/visibilityScope === DEMAND_VISIBILITY_PROTECTED[\s\S]*?htmlFor="demand-box-person"[\s\S]*?Choose person[\s\S]*?demand-box-gsn-member-handles/, "the person chooser must appear only for the private route"],
+  [/debugId="demand-box\.more-options"[\s\S]*?Short explanation[\s\S]*?WhatsApp number[\s\S]*?Urgency[\s\S]*?Payment[\s\S]*?Proof needed[\s\S]*?Hours open[\s\S]*?Trust credit may be discussed[\s\S]*?Search one more community if needed/, "all optional create controls must remain reachable behind one disclosure"],
+  [/debugId="demand-box\.post"[\s\S]*?Post need/, "the post action must remain stable and plain"],
+  [/visibilityScope === DEMAND_VISIBILITY_PROTECTED && !selectedTagMember[\s\S]*?Choose a matched GSN handle/, "private posting must still require a matched community member"],
+  [/visibility_scope: visibilityScope/, "the selected privacy scope must still reach the API payload"],
+  [/buildDemandDescription\(description, responseEvidence, targetHandle\)/, "optional explanation, proof, and member tag must still reach the request"],
+  [/allow_one_hop_relay:[\s\S]*?visibilityScope === DEMAND_VISIBILITY_COMMUNITY && allowOneHopRelay/, "one-hop search consent must stay community-only"],
+  [/data-gsn-demand-queue="simple"[\s\S]*?data-gsn-demand-queue-lanes="true"/, "the simple queue and its primary filters must render"],
+  [/filter\(\(lane\) => \["open", "for_me", "mine"\]\.includes\(lane\.key\)\)/, "only All, For you, and Yours may remain exposed"],
+  [/data-gsn-demand-more-filters="true"[\s\S]*?More filters[\s\S]*?\["tagged", "ask_community", "urgent", "categories"\]/, "Tagged, Questions, Urgent, and Need types must remain behind More filters"],
+  [/type DemandQueueLane = "open" \| "tagged" \| "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/, "all seven queue contracts must remain supported"],
+  [/return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/, "direct queue links must remain supported"],
+  [/data-gsn-demand-record=\{recordOpen \? "open" : "closed"\}/, "request cards must expose their compact open state"],
+  [/openDemandRecordKey === rowKey[\s\S]*?setOpenDemandRecordKey\(recordOpen \? "" : rowKey\)/, "phone cards must use a single shared open key"],
+  [/recordOpen \? "Close" : "Open"/, "closed cards must offer one plain Open action"],
+  [/directDemandId[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must open the requested card"],
+  [/debugId=\{[^\n]*fulfilled[^\n]*\}[\s\S]*?debugId=\{[^\n]*cancelled[^\n]*\}/, "owner fulfil and cancel controls must remain available inside open cards"],
+  [/demandPaperAction\(row, scope, copyDebugId\)[\s\S]*?demandContactActions\(row/, "copy and contact actions must remain inside open cards"],
+  [/getDemandSupplyMatches/, "possible supply matching must remain server-driven"],
+  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Open supply/, "possible supply results must remain reachable"],
+  [/data-gsn-demand-load-older="true"[\s\S]*?demand-box\.queue\.load-older/, "large queues must keep paged loading"],
+  [/const DEMAND_BOX_PAGE_SIZE = 200/, "the backend-safe page size must remain explicit"],
+  [/pulseDestination="demand_box"/, "Ask a question must still post into DemandBox"],
+].forEach(([pattern, message]) => requirePattern(source, pageFile, pattern, message));
 
 [
-  [
-    /queue_keys\?: string\[\] \| null/,
-    "API request type must include saved queue keys.",
-  ],
-  [
-    /mentioned_handles\?: string\[\] \| null/,
-    "API request type must include typed handle metadata.",
-  ],
-  [
-    /routing_status\?: string \| null/,
-    "API request type must include routing status metadata.",
-  ],
-  [
-    /is_tagged_for_me\?: boolean \| null/,
-    "API request type must include tagged-for-me metadata.",
-  ],
-  [
-    /mentioned_member_count\?: number \| null/,
-    "API request type must include matched-member count metadata.",
-  ],
-  [
-    /visibility_scope\?: string \| null/,
-    "API request type must include protected/community visibility metadata.",
-  ],
-  [
-    /offset\?: number/,
-    "API request list helper must include the backend paging offset.",
-  ],
-].forEach(([pattern, message]) => requireApiPattern(pattern, message));
+  [/queue_keys\?: string\[\] \| null/, "request types must keep saved queue keys"],
+  [/mentioned_handles\?: string\[\] \| null/, "request types must keep member handles"],
+  [/visibility_scope\?: string \| null/, "request types must keep privacy scope"],
+  [/offset\?: number/, "request listing must keep offset paging"],
+].forEach(([pattern, message]) => requirePattern(apiSource, apiFile, pattern, message));
 
 [
-  [
-    /createCommunityNotice[\s\S]*?notice_mode: "market_need_pulse"/,
-    "DemandBox Ask Community must not post into Community Notice Board as a market-need pulse.",
-  ],
-  [
-    /Ask clearly\. Let your trust speak before people answer\./,
-    "DemandBox must not restore the old tall hero sentence.",
-  ],
-  [
-    /How demand works/,
-    "DemandBox must not restore the old explainer card heading.",
-  ],
-  [
-    /disabled=\{creating \|\| !safeStr\(title\)\}/,
-    "DemandBox post button must not hide validation feedback behind a disabled state.",
-  ],
-  [
-    /institutionalStatTile/,
-    "DemandBox must not restore the old exposed stat-tile stack.",
-  ],
-  [
-    /visibleRows\.slice\(0, 6\)/,
-    "DemandBox must not restore the six-card community demand preview.",
-  ],
-  [
-    /const visiblePreview = useMemo\(\(\) => visibleRows\.slice\(0, 1\), \[visibleRows\]\)/,
-    "DemandBox must not hide community demand behind the old one-visible-row preview.",
-  ],
-  [
-    /const extraVisibleRows = useMemo\(\(\) => visibleRows\.slice\(1, 5\), \[visibleRows\]\)/,
-    "DemandBox must not tuck additional community demand into the old bounded drawer preview.",
-  ],
-  [
-    /const extraMyOpenRows = useMemo\(\(\) => myOpenRows\.slice\(1\), \[myOpenRows\]\)/,
-    "DemandBox must not tuck additional personal demand behind the old drawer.",
-  ],
-  [
-    /myOpenRows\.slice\(0, 1\)\.map/,
-    "DemandBox must not show only the first live personal demand before a drawer.",
-  ],
-  [
-    /visiblePreview\.map/,
-    "DemandBox must not show only the first visible community demand before a drawer.",
-  ],
-  [
-    /debugId="demand-box\.more-visible-demand\.summary"/,
-    "DemandBox must not hide extra visible community demand behind the old More drawer.",
-  ],
-  [
-    /debugId="demand-box\.more-my-demand\.summary"/,
-    "DemandBox must not hide extra personal demand behind the old More drawer.",
-  ],
-  [
-    /key: "community", label: "Community"/,
-    "DemandBox must not restore a duplicate Community lane that repeats the For me queue.",
-  ],
-  [
-    /<div style=\{sectionLabel\(\)\}>Category<\/div>[\s\S]*?placeholder="Optional category"/,
-    "DemandBox must not hide the need-type tag inside More detail again.",
-  ],
-  [
-    /cursor paging and direct handles are being built|full list controls are prepared|full list paging still need|Max loaded now: 200 per read/,
-    "DemandBox must not expose raw implementation wording about unfinished cursor/direct-handle work.",
-  ],
-  [
-    /Possible matches[^\n]*\b(recommended|trusted|approved|best|guaranteed)\b/i,
-    "DemandBox possible matches must not use endorsement language.",
-  ],
-  [
-    /data-gsn-demand-supply-intelligence="true"[\s\S]*?reason_codes/i,
-    "DemandBox possible matches must not expose raw reason-code machinery in the UI.",
-  ],
-  [
-    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Open Trade Evidence/,
-    "DemandBox possible matches must keep Trade Evidence out of the initial discovery card.",
-  ],
-].forEach(([pattern, message]) => {
-  const index = source.search(pattern);
-  if (index !== -1) addFinding(index, message, source.slice(index, index + 180));
-});
+  [/Current state/, "the repeated Current state card must not return"],
+  [/Create demand/, "the old technical create label must not return"],
+  [/Ask Community<\/|Ask Community", 20/, "the first surface must not restore the old Ask Community button label"],
+  [/demand-box\.hero-dashboard|demand-box\.bottom-dashboard|demand-box\.bottom-return/, "duplicate route buttons must not return"],
+  [/demand-box\.open-notifications/, "Notifications must not compete with posting"],
+  [/data-gsn-demand-routing-readiness="true"/, "technical routing readiness copy must stay off the member surface"],
+  [/minHeight: 82,\s*alignItems: "flex-start"/, "the seven tall queue tiles must not return"],
+  [/Possible matches[^\n]*\b(recommended|trusted|approved|best|guaranteed)\b/i, "possible matches must not imply endorsement"],
+  [/<button|<summary|<a\s/, "DemandBox must keep shared stable action primitives"],
+].forEach(([pattern, message]) => forbidPattern(source, pageFile, pattern, message));
 
-if (findings.length > 0) {
+if (failures.length) {
   console.error("DemandBox front package audit failed:");
-  for (const finding of findings) {
-    console.error(
-      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
-    );
-  }
+  failures.forEach((failure) => console.error("- " + failure));
   process.exit(1);
 }
 
-console.log("DemandBox front package audit passed.");
+console.log("DemandBox simple front package audit passed.");

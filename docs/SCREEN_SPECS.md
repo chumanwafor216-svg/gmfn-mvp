@@ -897,7 +897,7 @@ same-community supply has no plausible match.
 
 Must show:
 - the selected community context;
-- one clear create-demand action;
+- one clear `Post a need` action and one secondary `Ask a question` action;
 - governed queue lanes and the member's own open requests;
 - current same-community supply matches when available;
 - on the requester's own open community-visible request, one compact
@@ -907,6 +907,23 @@ Must show:
 - relay policy controls only for authorised community owners/admins.
 
 Rules:
+- On phone, the first surface asks only `What do you need?`, then shows
+  `Post a need`, `Ask a question`, the `Yours` and `For you` counts, and the
+  selected community. Do not repeat route buttons, state cards, technical
+  relay explanations, or implementation status on that first surface.
+- The queue exposes only `All`, `For you`, and `Yours` first. `Tagged`,
+  `Questions`, `Urgent`, and `Need types` remain reachable behind one
+  `More filters` disclosure. All direct `?queue=` routes remain supported.
+- Phone request cards start closed with title, urgent status when applicable,
+  requester/owner context, area, and one `Open` action. Opening another card
+  closes the previous card. The open state must retain supply matches,
+  contact/copy actions, fulfil/cancel controls, privacy and evidence details,
+  and governed expanded search.
+- The create form shows only need, type, area, and Community/One person
+  visibility first. The matched-person chooser appears only for One person.
+  Explanation, WhatsApp override, urgency, payment, requested proof, expiry,
+  trust-credit preference, and one-hop search consent remain behind one
+  `More options` disclosure.
 - A demand remains owned by the personal requester GSN ID. Community or
   Community Domain context does not become the requester.
 - `Expand search` must reuse the existing explicit per-request one-hop relay
@@ -925,9 +942,10 @@ Rules:
 - Exact location, GPS, postcode-distance matching, 10/20-mile radius, pricing,
   refunds, and no-match charging remain outside this screen until backend
   contracts and provider consent exist.
-- On phones, keep relay policy administration collapsed and keep expanded
-  search attached to the relevant personal request rather than exposing it as
-  a competing page-level tool.
+- Hide community relay policy administration from ordinary members. Keep it
+  collapsed as `Community search settings` for authorised owners/admins, and
+  keep expanded search attached to the relevant personal request rather than
+  exposing it as a competing page-level tool.
 
 ## FinancePage
 
