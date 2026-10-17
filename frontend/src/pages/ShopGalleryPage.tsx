@@ -360,6 +360,30 @@ function publicShopSpotlightRowsAreCanonical(items: any[] | null | undefined): b
   return Array.isArray(items) && items.some((item) => publicShopSpotlightRowIsCanonical(item));
 }
 
+function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): boolean {
+  if (!item?.isCanonicalOpportunity || !item.opportunityPresentationToken) return false;
+  const expiresAtMs = new Date(item.opportunityPresentationExpiresAt || "").getTime();
+  return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();
+}
+
+async function loadNextPublicShopSpotlightPresentation(
+  cleanedGmfnId: string
+): Promise<ShopBroadcast | null> {
+  if (!cleanedGmfnId || !getAccessToken()) return null;
+  const response = await getPublicShopSpotlightOpportunity(
+    cleanedGmfnId,
+    newSpotlightPresentationRequestId()
+  ).catch(() => null);
+  if (Number(response?.serving_contract_version || 0) < 2) return null;
+  const item = publicShopSpotlightResponseItems(response).find((row) =>
+    publicShopSpotlightRowIsCanonical(row)
+  );
+  const normalized = normalizeBroadcast(item);
+  return publicShopSpotlightPresentationIsCurrent(normalized) && broadcastIsActive(normalized)
+    ? normalized
+    : null;
+}
+
 function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): number {
   const explicitExpiry = items
     .map((item) => {
@@ -1811,6 +1835,8 @@ export default function ShopGalleryPage() {
   const spotlightVisibleRatioRef = useRef(0);
   const spotlightQualificationTimerRef = useRef<number | null>(null);
   const spotlightQualifiedKeysRef = useRef<Set<string>>(new Set());
+  const spotlightNextRequestPendingRef = useRef(false);
+  const spotlightNextEmptyUntilRef = useRef(0);
   const spotlightInteractionPausedUntilRef = useRef(0);
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
   const [spotlightInteractionPausedUntil, setSpotlightInteractionPausedUntil] = useState(0);
@@ -2075,10 +2101,27 @@ export default function ShopGalleryPage() {
         : publicOwnerBroadcast;
 
       if (!alive) return;
-      const normalizedBroadcasts = spotlightBroadcasts
+      const retainedCanonicalBroadcasts = communitySpotlightsRef.current.filter(
+        (item) => publicShopSpotlightPresentationIsCurrent(item) && broadcastIsActive(item)
+      );
+      const normalizedBroadcastCandidates = [
+        ...spotlightBroadcasts
         .map((row) => normalizeBroadcast(row))
         .filter(Boolean)
-        .filter(broadcastIsActive)
+        .filter(broadcastIsActive),
+        ...retainedCanonicalBroadcasts,
+      ] as ShopBroadcast[];
+      const normalizedBroadcastKeys = new Set<string>();
+      const normalizedBroadcasts = normalizedBroadcastCandidates
+        .filter((item) => {
+          const key = firstMeaningful(
+            item.opportunityPresentationId,
+            spotlightBroadcastKey(item)
+          );
+          if (!key || normalizedBroadcastKeys.has(key)) return false;
+          normalizedBroadcastKeys.add(key);
+          return true;
+        })
         .sort((a, b) => {
           const weightDelta =
             Number(b?.rotationWeight || 1) - Number(a?.rotationWeight || 1);
@@ -2087,7 +2130,7 @@ export default function ShopGalleryPage() {
             spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
           if (timeDelta !== 0) return timeDelta;
           return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
-        }) as ShopBroadcast[];
+        });
       const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast
         ? normalizedBroadcasts.find(
             (item) => spotlightBroadcastKey(item) === spotlightBroadcastKey(relevantBroadcast)
@@ -2488,6 +2531,8 @@ export default function ShopGalleryPage() {
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
+    spotlightNextRequestPendingRef.current = false;
+    spotlightNextEmptyUntilRef.current = 0;
   }, [gmfnId]);
 
   useEffect(() => {
@@ -2806,6 +2851,37 @@ export default function ShopGalleryPage() {
     spotlightInteractionPausedUntilRef.current = pausedUntil;
     setSpotlightInteractionPausedUntil(pausedUntil);
   }, []);
+
+  const requestNextCanonicalSpotlight = useCallback(async () => {
+    const cleanedGmfnId = safeStr(gmfnId);
+    if (
+      !cleanedGmfnId ||
+      ownerSpotlightPreviewAuthorized ||
+      spotlightNextRequestPendingRef.current ||
+      Date.now() < spotlightNextEmptyUntilRef.current
+    ) {
+      return;
+    }
+
+    spotlightNextRequestPendingRef.current = true;
+    try {
+      const next = await loadNextPublicShopSpotlightPresentation(cleanedGmfnId);
+      if (!next) {
+        spotlightNextEmptyUntilRef.current = Date.now() + SPOTLIGHT_PILOT_REFRESH_MS;
+        return;
+      }
+      spotlightNextEmptyUntilRef.current = 0;
+      const nextKey = spotlightBroadcastKey(next);
+      setCommunitySpotlights((current) => {
+        if (current.some((item) => spotlightBroadcastKey(item) === nextKey)) {
+          return current;
+        }
+        return [...current, next];
+      });
+    } finally {
+      spotlightNextRequestPendingRef.current = false;
+    }
+  }, [gmfnId, ownerSpotlightPreviewAuthorized]);
   useEffect(() => {
     if (loading || error) return;
     const shopId = positiveNumber(effectiveShop?.id);
@@ -3170,7 +3246,13 @@ export default function ShopGalleryPage() {
           visible_ratio: visibleRatio,
           document_visible: currentDocumentVisible(),
           owner_preview: false,
-        }).catch(() => undefined);
+        })
+          .then((result) => {
+            if (result?.ok === true || result?.recorded === true || result?.deduped === true) {
+              void requestNextCanonicalSpotlight();
+            }
+          })
+          .catch(() => undefined);
       }
 
       if (spotlightShopId) {
@@ -3290,6 +3372,7 @@ export default function ShopGalleryPage() {
     miniSpotlight,
     miniSpotlightIsOwnerInspection,
     ownerSpotlightPreviewAuthorized,
+    requestNextCanonicalSpotlight,
     trackMarketplaceAttention,
   ]);
 

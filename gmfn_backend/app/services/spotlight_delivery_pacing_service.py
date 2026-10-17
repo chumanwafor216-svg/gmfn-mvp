@@ -91,6 +91,7 @@ class SpotlightCampaignPacingState:
     campaign_id: int
     consumed_rounds: int = 0
     max_delivery_rounds: Optional[int] = None
+    next_eligible_delivery_at: Optional[datetime] = None
     delivery_window_policy: Optional[SpotlightDeliveryWindowPolicy] = None
     pacing_profile: str = SPOTLIGHT_PACING_PROFILE_NEUTRAL
 
@@ -290,7 +291,8 @@ def schedule_spotlight_delivery_opportunities(
         expires_at = _as_aware_utc(getattr(campaign, "expires_at", None)) if campaign is not None else None
         status = str(getattr(campaign, "status", "") or "") if campaign is not None else ""
         active_start = activated_at or created_at or current_time
-        next_eligible = next_eligible_delivery_time(
+        persisted_next_eligible = _as_aware_utc(state.next_eligible_delivery_at)
+        next_eligible = persisted_next_eligible or next_eligible_delivery_time(
             activated_at=active_start,
             expires_at=expires_at,
             max_delivery_rounds=max_rounds,

@@ -54,6 +54,7 @@ class SpotlightPacingStateSnapshot:
             campaign_id=self.campaign_id,
             consumed_rounds=self.consumed_delivery_rounds,
             max_delivery_rounds=self.max_delivery_rounds,
+            next_eligible_delivery_at=self.next_eligible_delivery_at,
             delivery_window_policy=self.delivery_window_policy,
             pacing_profile=self.pacing_profile,
         )

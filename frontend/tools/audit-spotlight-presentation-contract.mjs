@@ -34,7 +34,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /SPOTLIGHT_PRESENTATION_ROTATION_MS = 2000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
+  /SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
   "Backend presentation policy constants must be centralized and explicit."
 );
 
@@ -52,7 +52,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/spotlightPresentationPolicy.ts",
-  /PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS = 2000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO = 0\.6/,
+  /PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO = 0\.6/,
   "Frontend Public Shop presentation policy constants must be centralized."
 );
 
@@ -137,6 +137,18 @@ assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
   /fetch_consumes_delivery_round_but_not_impression[\s\S]*?visible_presentation_qualifies_once_and_retry_dedupes[\s\S]*?own_public_shop_can_present_another_member_without_self_delivery[\s\S]*?unlinked_repost_fallback_stays_outside_canonical_ledger/,
   "Backend presentation tests must cover fetch-vs-impression, idempotency, own-shop delivery of another member, self-exclusion, and unlinked fallback."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /loadNextPublicShopSpotlightPresentation[\s\S]*?newSpotlightPresentationRequestId\(\)[\s\S]*?requestNextCanonicalSpotlight[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?requestNextCanonicalSpotlight\(\)/,
+  "The next canonical Spotlight must be requested just in time only after the current presentation qualifies visibly."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_pacing_state_service.py",
+  /to_volatile_state[\s\S]*?next_eligible_delivery_at=self\.next_eligible_delivery_at/,
+  "Persistent next-eligible pacing state must reach the planner instead of being discarded."
 );
 
 if (findings.length > 0) {

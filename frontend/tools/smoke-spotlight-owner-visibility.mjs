@@ -97,15 +97,20 @@ function member(identity) {
   };
 }
 
-function spotlightItem({ label = "Owner saved Spotlight", canonical = false } = {}) {
+function spotlightItem({
+  label = "Owner saved Spotlight",
+  canonical = false,
+  streamIndex = 1,
+} = {}) {
+  const canonicalOffset = Math.max(Number(streamIndex || 1) - 1, 0);
   return {
-    id: canonical ? 502 : 501,
-    broadcast_id: canonical ? 502 : 501,
-    shop_id: canonical ? 202 : 101,
+    id: canonical ? 502 + canonicalOffset : 501,
+    broadcast_id: canonical ? 502 + canonicalOffset : 501,
+    shop_id: canonical ? 202 + canonicalOffset : 101,
     clan_id: 8,
-    author_user_id: canonical ? 318 : 216,
-    author_gmfn_id: canonical ? "GSN-U-OTHEROWNER" : ownerGsnId,
-    source_shop_name: canonical ? "Eligible visitor source" : "Owner Visibility Shop",
+    author_user_id: canonical ? 318 + canonicalOffset : 216,
+    author_gmfn_id: canonical ? `GSN-U-OTHEROWNER-${streamIndex}` : ownerGsnId,
+    source_shop_name: canonical ? `Eligible visitor source ${streamIndex}` : "Owner Visibility Shop",
     message: label,
     image_url: null,
     video_url: null,
@@ -118,11 +123,11 @@ function spotlightItem({ label = "Owner saved Spotlight", canonical = false } = 
     expires_at: authorizedExpiry,
     authorized_expires_at: authorizedExpiry,
     is_canonical_opportunity: canonical,
-    opportunity_campaign_id: canonical ? 702 : undefined,
-    spotlight_campaign_id: canonical ? 702 : 701,
-    opportunity_presentation_id: canonical ? "visitor-presentation" : undefined,
+    opportunity_campaign_id: canonical ? 702 + canonicalOffset : undefined,
+    spotlight_campaign_id: canonical ? 702 + canonicalOffset : 701,
+    opportunity_presentation_id: canonical ? `visitor-presentation-${streamIndex}` : undefined,
     opportunity_presentation_token: canonical
-      ? "visitor-presentation-token-123456789"
+      ? `visitor-presentation-token-${streamIndex}-123456789`
       : undefined,
     opportunity_presentation_expires_at: canonical
       ? new Date(Date.now() + 25_000).toISOString()
@@ -225,7 +230,26 @@ async function installMocks(page, scenario) {
     }
     if (path.endsWith("/spotlight-opportunity")) {
       scenario.canonicalCalls += 1;
-      const item = spotlightItem({ label: "Visitor eligible Spotlight", canonical: true });
+      const streamIndex = scenario.canonicalCalls;
+      if (streamIndex > scenario.streamLimit) {
+        return route.fulfill(
+          json({
+            serving_contract_version: 2,
+            item: null,
+            items: [],
+            presentation: null,
+            rejection_code: "no_delivery_opportunity",
+          })
+        );
+      }
+      const item = spotlightItem({
+        label:
+          streamIndex === 1
+            ? "Visitor eligible Spotlight"
+            : `Community Spotlight ${streamIndex}`,
+        canonical: true,
+        streamIndex,
+      });
       return route.fulfill(
         json({
           serving_contract_version: 2,
@@ -282,6 +306,7 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
+    streamLimit: 4,
   };
   const { context, page } = await newPage(browser, ownerGsnId);
   await installMocks(page, scenario);
@@ -312,6 +337,22 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   if (scenario.qualifyCalls < 1 || scenario.impressionCalls < 1) {
     throw new Error(
       `Another member's Spotlight did not qualify normally: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  for (const label of [
+    "Community Spotlight 2",
+    "Community Spotlight 3",
+    "Community Spotlight 4",
+  ]) {
+    await page.getByText(label, { exact: true }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+  }
+  await page.waitForTimeout(1_400);
+  if (scenario.canonicalCalls < 4 || scenario.qualifyCalls < 4) {
+    throw new Error(
+      `Just-in-time feed did not advance through four governed members: canonical=${scenario.canonicalCalls}, qualify=${scenario.qualifyCalls}`
     );
   }
 
@@ -378,6 +419,7 @@ async function testDelayedOwnerAuthentication(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
+    streamLimit: 1,
   };
   const { context, page } = await newPage(browser);
   await installMocks(page, scenario);
@@ -417,6 +459,7 @@ async function testVisitorCannotForceOwnerPreview(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
+    streamLimit: 1,
   };
   const { context, page } = await newPage(browser, visitorGsnId);
   await installMocks(page, scenario);
@@ -457,6 +500,7 @@ async function testExpiredOwnerContentFailsClosed(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
+    streamLimit: 1,
   };
   const { context, page } = await newPage(browser, ownerGsnId);
   await installMocks(page, scenario);

@@ -329,6 +329,37 @@ def test_repeated_and_stale_concurrent_attempts_cannot_double_consume_same_round
     assert _pacing_rows()[0][2] == 1
 
 
+def test_persisted_not_due_campaign_does_not_hide_due_campaign():
+    _basic_setup(campaign_count=2)
+    with SessionLocal() as db:
+        get_or_create_spotlight_campaign_pacing_state(db, campaign_id=1, now=BASE_TIME)
+        get_or_create_spotlight_campaign_pacing_state(db, campaign_id=2, now=BASE_TIME)
+        db.commit()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE spotlight_campaign_pacing_states "
+                "SET next_eligible_delivery_at = :next_due WHERE campaign_id = 1"
+            ),
+            {"next_due": BASE_TIME + timedelta(hours=2)},
+        )
+
+    result = _persistent_result(
+        [1, 2],
+        now=BASE_TIME + timedelta(hours=1),
+        requested_delivery_slots=1,
+    )
+
+    assert result.consumed_campaign_ids == (2,)
+    decisions = {
+        decision.campaign_id: decision
+        for decision in result.pacing_result.candidate_pacing
+    }
+    assert decisions[1].scheduled is False
+    assert decisions[1].blocked_reason == SPOTLIGHT_PACING_REASON_NOT_YET_ELIGIBLE
+    assert decisions[2].scheduled is True
+
+
 def test_ten_successful_rounds_exhaust_and_survive_requery():
     _basic_setup()
     for hour in range(SPOTLIGHT_DEFAULT_MAX_DELIVERY_ROUNDS):
