@@ -3380,19 +3380,6 @@ export default function ShopGalleryPage() {
     );
   }
 
-  function ownerProductManagePath(product: ShopProduct): string {
-    const params = new URLSearchParams();
-    const productId = positiveNumber(product.id);
-    const blockNumber = positiveNumber(product.slotNumber);
-    if (productId) params.set("manage_product_id", String(productId));
-    if (blockNumber) params.set("manage_block", String(blockNumber));
-
-    return routeWithCommunity(
-      `${APP_ROUTES.SHOP_ME}?${params.toString()}#shop-control-gallery-tools`,
-      ownerSurfaceCommunityId
-    );
-  }
-
   function writePaidRepostHandoff(product: ShopProduct) {
     if (typeof window === "undefined") return;
 
@@ -6466,22 +6453,6 @@ export default function ShopGalleryPage() {
                       scrollMarginTop: 18,
                     }}
                   >
-                    {signedInOwnsShop && positiveNumber(product.id) ? (
-                      <ExistingWorkflowPlusLink
-                        to={ownerProductManagePath(product)}
-                        label={`Manage ${displayTitle}`}
-                        debugId={`shop-gallery.product.${productOpenId}.owner-manage`}
-                        shortcut="shop-product"
-                        data-owner-product-id={positiveNumber(product.id)}
-                        data-owner-product-block={positiveNumber(product.slotNumber)}
-                        style={{
-                          position: "absolute",
-                          top: isCompact ? 9 : 12,
-                          left: isCompact ? 9 : 12,
-                          zIndex: 6,
-                        }}
-                      />
-                    ) : null}
                     <div
                       style={{
                         position: "absolute",

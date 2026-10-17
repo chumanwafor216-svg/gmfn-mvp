@@ -1,4 +1,4 @@
-/* global console, document, localStorage, process, window */
+/* global console, localStorage, URL, window */
 
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -251,9 +251,9 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
   await assertTouchTarget(spotlightPlus, 'Spotlight plus');
   await assertTouchTarget(diaryPlus, 'Shop Diary plus');
-  const productPlus = page.getByRole('link', { name: 'Manage Jollof tray' });
-  await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
-  await assertTouchTarget(productPlus, 'Product block plus');
+  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) {
+    throw new Error('Owner received the removed floating product management plus.');
+  }
   if (await page.getByText(/Started 16 Oct 2026|Expires 17 Oct 2026|Owner inspection does not count/).count()) {
     throw new Error('Live owner Spotlight still exposes removed timing or inspection copy.');
   }
@@ -298,35 +298,26 @@ async function testVisitorShopShortcutsHidden(browser, baseUrl) {
   await context.close();
 }
 
-async function testOwnerProductShortcut(browser, baseUrl) {
+async function testOwnerProductSinglePlus(browser, baseUrl) {
   const scenario = { identity: ownerId, ownerSpotlightState: 'live', demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
   const { context, page } = await newPhonePage(browser, scenario);
   await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  const productPlus = page.getByRole('link', { name: 'Manage Jollof tray' });
+  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) {
+    throw new Error('Product card still exposes the duplicate floating management plus.');
+  }
+  const productPlus = page.getByRole('button', { name: 'Open Jollof tray' });
   await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  const openSymbol = await productPlus.locator('[data-product-card-toggle-symbol="open"]').textContent();
+  if (openSymbol?.trim() !== '+') throw new Error(`Internal product control was ${openSymbol}, expected +.`);
   await productPlus.click();
-  await page.waitForFunction(() => {
-    const url = new URL(window.location.href);
-    return (
-      url.pathname === '/app/shop-control' &&
-      url.searchParams.get('manage_product_id') === '601' &&
-      url.searchParams.get('manage_block') === '2' &&
-      url.searchParams.get('community') === '8' &&
-      url.hash === '#shop-control-gallery-tools'
-    );
-  }, { timeout: 30_000 });
-  const target = page.locator('#shop-assets-selected-public-block[data-owner-product-manage-target="601"]');
-  await target.waitFor({ state: 'visible', timeout: 30_000 });
-  await page.getByRole('button', { name: 'Edit product' }).waitFor({ state: 'visible', timeout: 20_000 });
-  await page.getByRole('button', { name: 'Remove from shop' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: 'Close Jollof tray' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.locator('[data-product-card-toggle-symbol="close"]').waitFor({ state: 'visible', timeout: 20_000 });
   await page.screenshot({
-    path: join(screenshotDir, 'three-plus-owner-product-manage-390x844.png'),
+    path: join(screenshotDir, 'three-plus-owner-product-single-plus-390x844.png'),
     fullPage: true,
   });
-  const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
-  if (!origin.includes(`/shop/${ownerId}`)) throw new Error('Product shortcut lost its Public Shop return path.');
   const writes = businessWrites(scenario.mutations);
-  if (writes.length !== 0) throw new Error(`Product shortcut navigation issued business write request(s): ${writes.join(', ')}.`);
+  if (writes.length !== 0) throw new Error(`Product open/close issued business write request(s): ${writes.join(', ')}.`);
   await context.close();
 }
 
@@ -391,7 +382,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
-  await testOwnerProductShortcut(browser, baseUrl);
+  await testOwnerProductSinglePlus(browser, baseUrl);
   await testVisitorShopShortcutsHidden(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
@@ -403,11 +394,11 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'owner product shortcut selects the exact existing block manager with Edit and Remove',
+      'owner product card has no floating management plus and keeps one internal + / × control',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',
-      'all entry and per-block shortcut touch targets are at least 48 by 48',
+      'all approved entry shortcut touch targets are at least 48 by 48',
       'shortcut navigation issues no business write; existing context/attention telemetry is excluded',
     ],
   }, null, 2));

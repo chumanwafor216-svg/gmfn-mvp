@@ -163981,6 +163981,16 @@ Operational note:
 - Dependency-install truth: the isolated worktree required `npm ci`; npm reported `17` existing audit findings (`1` low, `3` moderate, `13` high). No dependency or lockfile was changed and no automatic audit fix was attempted.
 - Boundary: no schema, migration, publish writer, quota, payment, expiry, placement, community membership, Shop Diary, Dashboard, or Community Home behavior changed. This repair is still local and must not be called deployed until the product owner explicitly approves publication and deployment evidence is verified.
 
+## 2026-10-17 - Public Shop duplicate product plus removed locally
+
+- Owner report and visual evidence: signed-in owners saw two plus controls on each Products & Services card. The large white control over the media was the recently added owner-only `Manage {item}` shortcut; the compact control inside the card action dock was the established open/close control.
+- Owner decision: keep the internal card control and remove the floating screen-level control.
+- Frontend correction: removed the per-product `ExistingWorkflowPlusLink` overlay and its now-unused Public Shop route helper. The internal `+` still opens the exact card and becomes `×` when open. Product Share, Paid Repost, data, and Shop Control management remain unchanged.
+- Contract correction: `FREEZE_POLICY.md` and `SCREEN_SPECS.md` now prohibit restoring the duplicate `Manage {item}` overlay. The workflow-plus and Public Shop button-inventory audits now baseline only the three approved entry shortcuts and two Public Shop section shortcuts.
+- Browser proof: `smoke:three-plus-shortcuts` passed at 390x844, proving an owner receives no floating `Manage Jollof tray` link, the internal `+` opens the card and changes to `×`, and the interaction performs no business write.
+- Verification passed: focused ESLint; workflow-plus audit; Public Shop button inventory; Shop Diary Phase 1 and Phase 2 audits; the 390x844 browser smoke; production frontend build (`290` modules); and `git diff --check` with line-ending warnings only.
+- Deployment boundary: this correction is local on the existing isolated Spotlight repair branch. Do not push or deploy until the product owner explicitly approves the current batch for publication.
+
 ## 2026-10-16 - live free-pilot relay governance and payment suspension successor
 
 - Source boundary: isolated branch `codex/free-pilot-live-successor`, based directly on deployed Release A commit `938b4e74d6c4b4340d9b6eef239c4397e7b3bf24`. The original dirty `main` worktree, the frozen Release A worktree, and the unfinished member-credit/governance branch were not modified or merged.

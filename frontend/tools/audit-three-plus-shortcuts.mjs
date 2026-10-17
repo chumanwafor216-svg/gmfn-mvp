@@ -21,6 +21,10 @@ function assertContains(key, pattern, message) {
   if (!pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
 }
 
+function assertNotContains(key, pattern, message) {
+  if (pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
+}
+
 function pageFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -37,11 +41,11 @@ const usages = allPageSources.flatMap(({ file, text }) =>
   [...text.matchAll(/<ExistingWorkflowPlusLink\b/g)].map(() => file)
 );
 
-if (usages.length !== 4) {
-  findings.push(`Expected the three entry shortcuts plus one owner product-block shortcut template; found ${usages.length}: ${usages.join(', ')}`);
+if (usages.length !== 3) {
+  findings.push(`Expected exactly the three approved entry shortcuts; found ${usages.length}: ${usages.join(', ')}`);
 }
-if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 3) {
-  findings.push('Public Shop must own Spotlight, Shop Diary, and owner product-block shortcut templates.');
+if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 2) {
+  findings.push('Public Shop must own only the Spotlight and Shop Diary shortcut templates.');
 }
 if (usages.filter((file) => file.endsWith('MarketplacePage.tsx')).length !== 1) {
   findings.push('Marketplace must own exactly one DemandBox shortcut.');
@@ -72,10 +76,10 @@ assertContains(
   /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add diary entry["']/,
   'Shop Diary shortcut must be owner-only and reach the existing diary anchor with community context.'
 );
-assertContains(
+assertNotContains(
   'shop',
-  /function ownerProductManagePath\(product: ShopProduct\)[\s\S]*?manage_product_id[\s\S]*?manage_block[\s\S]*?#shop-control-gallery-tools[\s\S]*?signedInOwnsShop && positiveNumber\(product\.id\)[\s\S]*?label=\{`Manage \$\{displayTitle\}`\}[\s\S]*?shortcut="shop-product"/,
-  'Each real product block must expose an owner-only management shortcut to the existing exact-block controls.'
+  /ownerProductManagePath|shop-gallery\.product\.\$\{productOpenId\}\.owner-manage|shortcut="shop-product"/,
+  'Public Shop product media must not restore the duplicate floating owner management plus.'
 );
 assertContains(
   'assets',
@@ -123,4 +127,4 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log('Workflow plus audit passed: the three entry shortcuts and owner-only product-block manager reuse existing workflows without business writes.');
+console.log('Workflow plus audit passed: the three entry shortcuts reuse existing workflows, while product cards keep one internal open/close control.');

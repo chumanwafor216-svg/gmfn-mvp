@@ -30,7 +30,7 @@ const expectedPageSourceActions = {
   StableCtaLink: 5,
   total: 25,
 };
-const expectedExistingWorkflowPlusShortcuts = 3;
+const expectedExistingWorkflowPlusShortcuts = 2;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
