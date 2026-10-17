@@ -11,10 +11,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-17
 
 - Production branch: `main`.
-- Current verified commit: `333311128cc4f0aeb6e0abc152aaeb3bb7fd7e1e`
-  (`Tighten supporter fit evidence copy`).
-- Frontend Render deploy `dep-db9pl86uverc738rt610` reached `live` on that
-  exact commit. GitHub Actions run `39047213993` completed successfully.
+- Current verified commit: `bf4801d5188bae46f7186fb29c1302da42167108`
+  (`Repair and archive handoff history`).
+- Frontend Render deploy `dep-db9q0mqog99s738u41g0` reached `live` on that
+  exact commit. GitHub Actions run `39048981792` completed successfully.
 - The public frontend and API health endpoint both returned HTTP 200 after the
   deployment; API health reported `{"ok":true,"dev_mode":false}`.
 - The latest change was frontend/docs/audit-only. The workflow correctly
@@ -79,9 +79,22 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Focused opportunity-relay backend tests: 25 passed.
 - Current broad phone-surface, loan-action, tap-stability, and visual-route
   coverage audits pass.
-- `audit:button-stability` still reports stale aggregate expectations across
-  several already-refactored pages. Treat each report as an audit-to-runtime
-  comparison; do not change live UX merely to satisfy an obsolete regex.
+- `audit:button-stability` now recognizes the approved current action
+  contracts for Community Home, entry, My GSN, Notifications, Finance,
+  Companion settings, Public Shop, Shop Control, and TrustSlip Verify.
+
+## Button-stability aggregate reconciliation - 2026-10-17
+
+- The broad aggregate had twelve stale expectations left behind by approved
+  phone simplification, disclosure, action-ID, Public Shop product-rail, and
+  Shop Control component-extraction changes.
+- Every affected focused contract passed before the aggregate was changed.
+  Only `frontend/tools/audit-button-stability.mjs` was reconciled; no page,
+  component, route, permission, state transition, or visible product behavior
+  changed.
+- The aggregate now protects the current stable primitives, disclosure
+  controls, CTA resolution, clamped geometry, product open/share/repost rail,
+  and TrustSlip evidence controls without demanding removed UI.
 
 ## Documentation maintenance - 2026-10-17
 

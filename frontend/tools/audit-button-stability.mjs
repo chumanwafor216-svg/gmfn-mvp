@@ -215,13 +215,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
+  /import \{ StableButton, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.switch\.toggle"[\s\S]*?debugId=\{`community-home\.switch\.select\.\$\{clanId \|\| "unknown"\}`\}/,
   "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and front next-action rows."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?debugId="community-home\.finance-summary\.open"[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.trust-summary\.open"[\s\S]*?brandClampLines\(2\)/,
+  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 72,[\s\S]*?minHeight: 72,[\s\S]*?maxHeight: 72,[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?debugId=\{`community-home\.attention\.\$\{item\.id\}`\}[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.goto\.toggle"[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.goto\.trust"[\s\S]*?brandClampLines\(1\)/,
   "Community Home visible action rows must keep stable geometry and clamped text so labels cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -414,7 +414,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /debugId="join-entry\.acknowledge-invite"[\s\S]*?joinEntryIconText\([\s\S]*?"navigation"[\s\S]*?"Continue"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with GSN ID"\)[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinEntryIconText\("id", "Use GSN ID"\)[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinEntryIconText\([\s\S]*?"join-person-plus"[\s\S]*?"New to GSN"[\s\S]*?debugId="join-entry\.submit-existing-gsn"[\s\S]*?Send with GSN ID[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit request"\)/,
+  /debugId="join-entry\.acknowledge-invite"[\s\S]*?joinEntryIconText\([\s\S]*?"navigation"[\s\S]*?"Continue"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with GSN ID"\)[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinEntryIconText\([\s\S]*?"join-person-plus"[\s\S]*?joinActionLabel[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinEntryIconText\("id", "Use existing GSN ID"\)[\s\S]*?debugId="join-entry\.submit-existing-gsn"[\s\S]*?joinEntryIconText\("id", "Send with GSN ID"\)[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit request"\)/,
   "Join entry must keep stable invitation, existing-identity, guided existing-GSN/new-person choices, typed-GSN submit, and submit-request actions."
 );
 
@@ -755,7 +755,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?debugId: "my-gmfn\.route\.demand-box"[\s\S]*?debugId="my-gmfn\.hero\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"[\s\S]*?debugId="my-gmfn\.settings\.reset"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?debugId: "my-gmfn\.route\.demand-box"[\s\S]*?debugId="my-gmfn\.selected-community\.open"[\s\S]*?debugId="my-gmfn\.more\.toggle"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"[\s\S]*?debugId="my-gmfn\.settings\.reset"/,
   "My GSN and I must use shared stable primitives and shared CTA resolution for hero, guide tabs, route tiles, and settings actions."
 );
 
@@ -856,7 +856,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function notificationIconText\([\s\S]*?function notificationIconTile\([\s\S]*?function bucketIconName\(bucket: GuidanceInboxBucketKey\): GsnIconName[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?notificationIconText\("home", "Go to Dashboard"\)[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?notificationIconText\("alert", "Show urgent items \(Act now\)"\)[\s\S]*?debugId="notifications\.toggle-focus"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?notificationIconText\("navigation", focusNotice\.ctaLabel\)[\s\S]*?debugId="notifications\.focus\.open-page"[\s\S]*?notificationIconText\("navigation", "Open page"\)[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{isPhone \? 30 : 34\} \/>[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.selected\.close"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function notificationIconText\([\s\S]*?function notificationIconTile\([\s\S]*?function bucketIconName\(bucket: GuidanceInboxBucketKey\): GsnIconName[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?notificationIconText\("home", "Go to Dashboard"\)[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?notificationIconText\("alert", "Show urgent items \(Act now\)"\)[\s\S]*?debugId="notifications\.toggle-focus"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.focus\.open-page"[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{isPhone \? 30 : 34\} \/>[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.selected\.close"/,
   "Notifications must use shared stable primitives, 3D icon helpers, and shared CTA resolution for hero, urgent, focus, bucket, selected, and collapse actions."
 );
 
@@ -1012,7 +1012,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?debugId="finance\.toggle-overview"[\s\S]*?debugId="finance\.open-loans"[\s\S]*?debugId="finance\.toggle-events"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?debugId="finance\.toggle-overview"[\s\S]*?debugId="finance\.open-loans"[\s\S]*?debugId="finance\.toggle-events"/,
   "Finance page must use shared stable CTA primitives and shared CTA resolution for tool cards, collapse controls, and support route actions."
 );
 
@@ -1330,7 +1330,7 @@ assertNotContains(
 
 assertContains(
   "src/components/CompanionSettingsPanel.tsx",
-  /import \{ SecondaryButton \} from "\.\/StableButton";[\s\S]*?debugId="companion-settings\.mode\.off"[\s\S]*?debugId="companion-settings\.mode\.active"[\s\S]*?debugId="companion-settings\.audible\.urgent-only"[\s\S]*?debugId="companion-settings\.voice\.on"[\s\S]*?debugId="companion-settings\.push\.off"/,
+  /import \{ SecondaryButton, StableDisclosureSummary \} from "\.\/StableButton";[\s\S]*?debugId=\{`companion-settings\.section\.\$\{section\}`\}[\s\S]*?debugId="companion-settings\.toggle"[\s\S]*?debugId="companion-settings\.mode\.off"[\s\S]*?debugId="companion-settings\.mode\.active"[\s\S]*?debugId="companion-settings\.audible\.urgent-only"[\s\S]*?debugId="companion-settings\.voice\.on"[\s\S]*?debugId="companion-settings\.push\.off"/,
   "Companion settings panel must use shared stable button primitives for option and toggle controls."
 );
 
@@ -1630,14 +1630,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?onClick=\{\(\) => setShopVerificationQrOpen\(\(open\) => !open\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?debugId="shop-gallery\.owner-contact\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
   "Shop Gallery must use shared stable primitives for hero, vault, product, spotlight, and remaining public-shop actions."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon[\s\S]*?name="public-globe"[\s\S]*?showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?buttonLabel="Share"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="phone-contact"/,
-  "Shop Gallery product cards must use compact real-life signs for sound, open/close, owner-only block share, and visitor owner contact while keeping accessible action labels."
+  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}[\s\S]*?showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?buttonLabel="Share"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
+  "Shop Gallery product cards must use compact sound and literal open/close signs plus the owner-only block-share action while keeping accessible action labels."
 );
 
 assertNotContains(
@@ -1648,7 +1648,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 2;[\s\S]*?repeat\(\$\{diaryOpenActionCount\}, \$\{diaryActionWidth\}px\)[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 3[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?`repeat\(3, \$\{diaryActionWidth\}px\)`[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?showBlockPlacementAction \? \([\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Shop Gallery owner-only product share and placement actions must share the fixed product action rail without resizing the public visitor controls."
 );
 
@@ -1690,8 +1690,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="shop-control\.spotlight\.setup\.continue"[\s\S]*?debugId="shop-control\.spotlight\.upload\.preview"[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"[\s\S]*?debugId=\{`shop-control\.hero-shortcut\.[\s\S]*?debugId="shop-control\.vault\.pay-1-slot"[\s\S]*?debugId="shop-control\.verify\.pay"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.details\.save"[\s\S]*?debugId="shop-control\.vault-layer\.create-link"[\s\S]*?debugId=\{`shop-control\.vault-link\.\$\{item\.id\}\.copy`\}/,
-  "Shop Control must use shared stable primitives and shared CTA resolution for spotlight, owner shortcuts, paid tools, details, and vault-link actions."
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.vault\.pay-1-slot"[\s\S]*?debugId="shop-control\.verify\.pay"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.details\.save"[\s\S]*?debugId="shop-control\.vault-layer\.create-link"[\s\S]*?debugId=\{`shop-control\.vault-link\.\$\{item\.id\}\.copy`\}/,
+  "Shop Control must use shared stable primitives and shared CTA resolution for owner navigation, paid tools, details, and vault-link actions."
 );
 
 assertNotContains(
@@ -1762,7 +1762,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-slip-verify\.hero\.welcome"[\s\S]*?debugId="trust-slip-verify\.hero\.guide"[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.print"[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-slip-verify\.code-checker\.submit"[\s\S]*?debugId="trust-slip-verify\.full-evidence-toggle"[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.print"[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
   "TrustSlip Verify page must use shared stable primitives, stable disclosure summaries, and shared CTA resolution for public navigation, copy, print, and trust routes."
 );
 
