@@ -11,13 +11,15 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-17
 
 - Production branch: `main`.
-- Current verified commit: `989f3c0c877c3e3a4e00f9a4beaa38a50cc547e4`.
-- Frontend Render deploy `dep-db9to3jbc2fs73d6lmgg` reached `live` on that
-  exact commit. GitHub Actions run `39067348265` completed successfully.
+- Current verified application commit: `e779b831f5c15ede2adbe2a36c15cdca8e343ef8`.
+- Frontend Render deploy `dep-db9u4jvbtjjs73d2kueg` and API Render deploy
+  `dep-db9u8nu1egvs738l9fc0` reached `live` on that exact commit. Trigger
+  Render Deploy run `39069206296` and Backend Tests run `39069191881`
+  completed successfully.
 - The public frontend and API health endpoint both returned HTTP 200 after the
   deployment; API health reported `{"ok":true,"dev_mode":false}`.
-- The latest change was frontend/docs/audit-only. The workflow correctly
-  skipped the API deployment.
+- The deployed correction updates Spotlight frontend rotation/timing and the
+  backend replay-delivery contract, so both frontend and API were deployed.
 
 ## Active product truth
 
@@ -32,7 +34,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   placements, held or expired campaigns, exhausted or not-due campaigns, and
   frequency-capped campaigns. A raw database count is therefore not the number
   of presentations a viewer is entitled to receive.
-- A verified local correction, not yet published or deployed, fixes the
+- The deployed correction fixes the
   remaining continuity gap: qualified, still-live campaigns may return as
   short-lived, revalidated, tokenless replays after fresh delivery rounds are
   exhausted. Replay still creates no delivery round, presentation lease,
@@ -94,7 +96,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - The deployed DemandBox simplicity batch passed the full TypeScript project
   check and a direct Vite production bundle (290 modules).
-- The local Spotlight continuity/timing correction passes the full TypeScript
+- The deployed Spotlight continuity/timing correction passes the full TypeScript
   project check, production build (290 modules), targeted ESLint,
   audit:spotlight-presentation-contract,
   audit:spotlight-system-feed, and the real browser
