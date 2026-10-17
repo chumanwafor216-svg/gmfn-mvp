@@ -580,30 +580,60 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
     .locator('[data-spotlight-canonical="true"]')
     .scrollIntoViewIfNeeded();
 
-  for (const label of [
-    "Visitor eligible Spotlight",
-    "Community Spotlight 2",
-    "Community Spotlight 3",
-  ]) {
+  const waitForSpotlightLabel = async (label) => {
     await page.getByText(label, { exact: true }).waitFor({
       state: "visible",
-      timeout: 12_000,
+      timeout: 15_000,
     });
-    await page.waitForTimeout(1_300);
-  }
-  await page.waitForFunction(
-    () => document.body.innerText.includes("Visitor eligible Spotlight"),
-    null,
-    { timeout: 12_000 }
+    return Date.now();
+  };
+  const assertReadableDwell = (fromLabel, fromTime, toLabel, toTime) => {
+    const dwellMs = toTime - fromTime;
+    if (dwellMs < 4_500) {
+      throw new Error(
+        "Spotlight rotated too quickly from " +
+          fromLabel +
+          " to " +
+          toLabel +
+          ": " +
+          dwellMs +
+          "ms"
+      );
+    }
+  };
+
+  const firstVisibleAt = await waitForSpotlightLabel("Visitor eligible Spotlight");
+  const secondVisibleAt = await waitForSpotlightLabel("Community Spotlight 2");
+  assertReadableDwell(
+    "Visitor eligible Spotlight",
+    firstVisibleAt,
+    "Community Spotlight 2",
+    secondVisibleAt
+  );
+  const thirdVisibleAt = await waitForSpotlightLabel("Community Spotlight 3");
+  assertReadableDwell(
+    "Community Spotlight 2",
+    secondVisibleAt,
+    "Community Spotlight 3",
+    thirdVisibleAt
+  );
+  const firstReplayAt = await waitForSpotlightLabel("Visitor eligible Spotlight");
+  assertReadableDwell(
+    "Community Spotlight 3",
+    thirdVisibleAt,
+    "Visitor eligible Spotlight",
+    firstReplayAt
   );
 
   const qualifiedBeforeReplayRotation = scenario.qualifyCalls;
   const impressionsBeforeReplayRotation = scenario.impressionCalls;
-  await page.getByText("Community Spotlight 2", { exact: true }).waitFor({
-    state: "visible",
-    timeout: 12_000,
-  });
-  await page.waitForTimeout(1_300);
+  const secondReplayAt = await waitForSpotlightLabel("Community Spotlight 2");
+  assertReadableDwell(
+    "Visitor eligible Spotlight",
+    firstReplayAt,
+    "Community Spotlight 2",
+    secondReplayAt
+  );
 
   if (scenario.replayResponses < 1 || scenario.canonicalCalls < 4) {
     throw new Error(

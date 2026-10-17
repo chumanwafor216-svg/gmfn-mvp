@@ -59,7 +59,7 @@ import {
 import {
   PUBLIC_SHOP_SPOTLIGHT_INTERACTION_PAUSE_MS,
   PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO,
-  PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS,
+  publicShopSpotlightRotationMs,
   PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
   PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS,
 } from "../lib/spotlightPresentationPolicy";
@@ -2691,6 +2691,13 @@ export default function ShopGalleryPage() {
     return () => query.removeListener(update);
   }, []);
 
+  const spotlightRotationItemCount = useMemo(() => {
+    const uniqueKeys = new Set(
+      communitySpotlights.map(spotlightBroadcastKey).filter(Boolean)
+    );
+    return Math.max(uniqueKeys.size, communitySpotlights.length > 0 ? 1 : 0);
+  }, [communitySpotlights]);
+
   useEffect(() => {
     if (communitySpotlights.length <= 1) return;
 
@@ -2700,10 +2707,18 @@ export default function ShopGalleryPage() {
       const interactionPaused = Date.now() < spotlightInteractionPausedUntilRef.current;
       if (hidden || interactionPaused || spotlightHasKeyboardFocus) return;
       setMiniSpotlightIndex((prev) => (prev + 1) % communitySpotlights.length);
-    }, spotlightReducedMotion ? PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS : PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS);
+    }, spotlightReducedMotion
+      ? PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS
+      : publicShopSpotlightRotationMs(spotlightRotationItemCount));
 
     return () => window.clearInterval(timer);
-  }, [communitySpotlights.length, spotlightHasKeyboardFocus, spotlightInteractionPausedUntil, spotlightReducedMotion]);
+  }, [
+    communitySpotlights.length,
+    spotlightHasKeyboardFocus,
+    spotlightInteractionPausedUntil,
+    spotlightReducedMotion,
+    spotlightRotationItemCount,
+  ]);
 
   useEffect(() => {
     if (communitySpotlights.length <= 0 && miniSpotlightIndex !== 0) {

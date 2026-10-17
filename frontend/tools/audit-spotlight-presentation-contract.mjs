@@ -34,7 +34,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
+  /SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 60[\s\S]*?SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
   "Backend presentation policy constants must be centralized and explicit."
 );
 
@@ -52,7 +52,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/spotlightPresentationPolicy.ts",
-  /PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO = 0\.6/,
+  /PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_ROTATION_MS = 2000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MAX_CYCLE_MS = 120000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?publicShopSpotlightRotationMs[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MAX_CYCLE_MS \/ safeItemCount/,
   "Frontend Public Shop presentation policy constants must be centralized."
 );
 
@@ -99,7 +99,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /prefers-reduced-motion: reduce[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS[\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation/,
+  /prefers-reduced-motion: reduce[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS[\s\S]*?publicShopSpotlightRotationMs\(spotlightRotationItemCount\)[\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation/,
   "Public Shop rotation must respect reduced motion, keyboard focus, and interaction pause."
 );
 
@@ -147,8 +147,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /list_spotlight_presentation_replays[\s\S]*?status == "qualified"[\s\S]*?next_eligible_at <= current_time[\s\S]*?SpotlightExposureEvent\.presentation_id[\s\S]*?route_placement_ids[\s\S]*?replay_expires_at = min/,
-  "Canonical replay must require a matching qualified exposure, a future pacing boundary, and the exact still-authorized placement route."
+  /list_spotlight_presentation_replays[\s\S]*?status == "qualified"[\s\S]*?pacing_exhausted[\s\S]*?SpotlightExposureEvent\.presentation_id[\s\S]*?route_placement_ids[\s\S]*?SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS[\s\S]*?replay_expires_at = min/,
+  "Canonical replay must require a matching qualified exposure and exact still-authorized route, while allowing exhausted campaigns only through a short revalidated replay lease."
 );
 
 assertContains(
@@ -165,8 +165,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /qualified_presentation_replays_without_new_delivery_or_exposure[\s\S]*?replay_revalidates_viewer_and_exact_community_route/,
-  "Backend replay tests must cover accounting neutrality, viewer isolation, and exact-route revocation."
+  /qualified_presentation_replays_without_new_delivery_or_exposure[\s\S]*?exhausted_campaign_replays_qualified_item_without_new_counting[\s\S]*?replay_revalidates_viewer_and_exact_community_route/,
+  "Backend replay tests must cover accounting neutrality after pacing exhaustion, viewer isolation, and exact-route revocation."
 );
 
 assertContains(

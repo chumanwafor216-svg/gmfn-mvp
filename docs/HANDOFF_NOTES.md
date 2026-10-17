@@ -11,9 +11,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-17
 
 - Production branch: `main`.
-- Current verified commit: `d975629ce3a59867561c97c54ee455fbc650c806`.
-- Frontend Render deploy `dep-db9s8sv2d8hs73df0pi0` reached `live` on that
-  exact commit. GitHub Actions run `39060151001` completed successfully.
+- Current verified commit: `989f3c0c877c3e3a4e00f9a4beaa38a50cc547e4`.
+- Frontend Render deploy `dep-db9to3jbc2fs73d6lmgg` reached `live` on that
+  exact commit. GitHub Actions run `39067348265` completed successfully.
 - The public frontend and API health endpoint both returned HTTP 200 after the
   deployment; API health reported `{"ok":true,"dev_mode":false}`.
 - The latest change was frontend/docs/audit-only. The workflow correctly
@@ -32,8 +32,18 @@ under `docs/` or `docs/archive/`, then link that file here.
   placements, held or expired campaigns, exhausted or not-due campaigns, and
   frequency-capped campaigns. A raw database count is therefore not the number
   of presentations a viewer is entitled to receive.
-- Spotlight behavior is owner-approved and frozen unless the owner explicitly
-  asks to change it.
+- A verified local correction, not yet published or deployed, fixes the
+  remaining continuity gap: qualified, still-live campaigns may return as
+  short-lived, revalidated, tokenless replays after fresh delivery rounds are
+  exhausted. Replay still creates no delivery round, presentation lease,
+  qualifying exposure, or owner-facing impression.
+- Public Shop timing is now count-aware: up to 24 unique queued items retain a
+  five-second dwell; larger queues shorten gradually against a two-minute cycle
+  target with a two-second floor. The backend still selects one fresh relevant
+  opportunity at a time and returns at most four replays, rather than dumping
+  a large raw inventory into the browser.
+- Spotlight behavior remains owner-approved and frozen outside these explicit
+  2026-10-17 continuity/timing corrections.
 
 ### Public Shop
 
@@ -45,7 +55,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ### DemandBox
 
-- A local, unpublished owner-approved simplicity batch now gives phone members
+- The deployed owner-approved simplicity batch gives phone members
   two front-door choices (`Post a need`, `Ask a question`), three exposed
   queue filters (`All`, `For you`, `Yours`), one `More filters` disclosure,
   one `More options` form disclosure, and one-open-at-a-time request cards.
@@ -82,11 +92,17 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Latest verification
 
-- The local unpublished DemandBox simplicity batch passes the full TypeScript
-  project check and a direct Vite production bundle (290 modules). The combined
-  `npm run build` exceeded the initial five-minute command windows because this
-  repository's TypeScript stage took about 9 minutes; both stages pass when run
-  with realistic time allowances.
+- The deployed DemandBox simplicity batch passed the full TypeScript project
+  check and a direct Vite production bundle (290 modules).
+- The local Spotlight continuity/timing correction passes the full TypeScript
+  project check, production build (290 modules), targeted ESLint,
+  audit:spotlight-presentation-contract,
+  audit:spotlight-system-feed, and the real browser
+  smoke:spotlight-owner-visibility. The browser smoke observes four complete
+  small-queue transitions at no less than 4.5 seconds and verifies that replay
+  continues after fresh delivery stops without double-counting.
+- Focused Spotlight presentation backend tests pass: 8 passed, including the
+  exhausted-delivery replay regression; Python compilation also passes.
 - `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
   compact first surface, filters, one-open request cards, essential form,
   optional controls, private-person reveal, and horizontal overflow checks.

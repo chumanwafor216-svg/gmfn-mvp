@@ -38,6 +38,7 @@ from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_s
 SPOTLIGHT_PRESENTATION_TOKEN_TYPE = "spotlight_presentation_v1"
 SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP = "public_shop_spotlight_rail"
 SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS = 30
+SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 60
 SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000
 SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000
 SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
@@ -221,11 +222,11 @@ def list_spotlight_presentation_replays(
         next_eligible_at = _as_aware_utc(
             getattr(pacing_state, "next_eligible_delivery_at", None)
         )
-        if (
-            pacing_state is None
-            or bool(getattr(pacing_state, "exhausted", False))
-            or next_eligible_at is None
-            or next_eligible_at <= current_time
+        if pacing_state is None:
+            continue
+        pacing_exhausted = bool(getattr(pacing_state, "exhausted", False))
+        if not pacing_exhausted and (
+            next_eligible_at is None or next_eligible_at <= current_time
         ):
             continue
 
@@ -278,7 +279,11 @@ def list_spotlight_presentation_replays(
         if int(lease.placement_broadcast_id) not in route_placement_ids:
             continue
 
-        replay_deadlines = [next_eligible_at]
+        replay_deadlines = [
+            current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS)
+        ]
+        if not pacing_exhausted and next_eligible_at is not None:
+            replay_deadlines.append(next_eligible_at)
         for deadline in (
             authorized_expiry(campaign),
             authorized_expiry(placement),

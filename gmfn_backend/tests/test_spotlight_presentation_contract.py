@@ -11,6 +11,7 @@ os.environ.setdefault("SECRET_KEY", "pytest-spotlight-presentation-contract-secr
 
 from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+    SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
     SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     SPOTLIGHT_PRESENTATION_TOKEN_TYPE,
@@ -463,6 +464,89 @@ def test_qualified_presentation_replays_without_new_delivery_or_exposure(
     assert replay["opportunity_counts_as_exposure"] is False
     assert datetime.fromisoformat(replay["opportunity_replay_expires_at"]) > _now()
     assert _consumed_rounds() == rounds_before == 1
+    assert _ledger_count() == exposures_before == 1
+
+
+def test_exhausted_campaign_replays_qualified_item_without_new_counting(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+
+    issued = client.get(
+        "/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity"
+    )
+    assert issued.status_code == 200, issued.text
+    issued_body = issued.json()
+    presentation_id = issued_body["presentation"]["presentation_id"]
+    token = issued_body["presentation"]["presentation_token"]
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_presentation_leases
+                SET issued_at = :issued_at
+                WHERE presentation_id = :presentation_id
+                """
+            ),
+            {
+                "issued_at": _now() - timedelta(seconds=2),
+                "presentation_id": presentation_id,
+            },
+        )
+
+    qualified = client.post(
+        "/marketplace/spotlight-presentations/qualify",
+        json={
+            "presentation_token": token,
+            "qualification_key": presentation_id,
+            "visible_ms": SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+            "visible_ratio": SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+            "document_visible": True,
+        },
+    )
+    assert qualified.status_code == 200, qualified.text
+    assert qualified.json()["recorded"] is True
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaign_pacing_states
+                SET consumed_delivery_rounds = max_delivery_rounds,
+                    next_eligible_delivery_at = NULL,
+                    exhausted = 1
+                WHERE campaign_id = 1
+                """
+            )
+        )
+    rounds_before = _consumed_rounds()
+    exposures_before = _ledger_count()
+    requested_at = _now()
+
+    replay_response = client.get(
+        "/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity"
+    )
+
+    assert replay_response.status_code == 200, replay_response.text
+    replay_body = replay_response.json()
+    replay = replay_body["item"]
+    replay_expires_at = datetime.fromisoformat(
+        replay["opportunity_replay_expires_at"]
+    )
+    assert replay_body["presentation"] is None
+    assert replay["is_canonical_opportunity"] is True
+    assert replay["is_canonical_replay"] is True
+    assert replay["opportunity_presentation_id"] == presentation_id
+    assert replay["opportunity_presentation_token"] is None
+    assert replay["opportunity_counts_as_delivery"] is False
+    assert replay["opportunity_counts_as_exposure"] is False
+    assert requested_at < replay_expires_at
+    assert replay_expires_at <= requested_at + timedelta(
+        seconds=SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS + 2
+    )
+    assert _consumed_rounds() == rounds_before
     assert _ledger_count() == exposures_before == 1
 
 
