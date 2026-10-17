@@ -1323,6 +1323,9 @@ Shop Diary contract:
 - Promotion from a diary entry may prefill the Spotlight publisher for owner review, but must not auto-publish, bypass quota/payment rules, change evidence class, change chronology, or alter Spotlight ranking.
 - Entries are create-only in the frozen contract. Edit, hide/archive, delete, and downstream Spotlight mutation after a diary entry changes remain explicit future lifecycle debt.
 - On Public Shop, the exact authenticated owner may see one compact 48px `Add diary entry` plus beside the Shop Diary/Shop Update heading. It opens the existing Shop Assets Diary form with the current community and origin/back path, performs no write on open, and replaces the redundant empty-state add action. Visitors and non-owners do not see it. Delegated editor exposure remains unavailable until a shop-scoped editor authorization contract exists.
+- Products & Services remain separate from Shop Diary. Each real product/service card may show the exact authenticated owner one compact 48px `Manage {item}` plus; it must resolve that product in the owner's loaded shop data and focus the existing block's Edit/Remove controls without writing on open. Visitors and non-owners do not see it.
+- A live owner-inspection Spotlight card on Public Shop shows the live label and content title without repeating start/expiry timestamps or the owner-exposure disclaimer. Shop Control remains the truthful timing and lifecycle-management surface; serving and exposure rules do not change.
+- Keep the Public Shop Vault card concise: `Private Vault`, `Owner invitation only.`, `Request access`, and `Copy request`. The request and copy handlers remain distinct and unchanged.
 
 Must show:
 - GSN ID status

@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const files = {
   component: 'src/components/ExistingWorkflowPlusLink.tsx',
   shop: 'src/pages/ShopGalleryPage.tsx',
+  assets: 'src/pages/ShopAssetsPage.tsx',
   marketplace: 'src/pages/MarketplacePage.tsx',
   demand: 'src/pages/DemandBoxPage.tsx',
 };
@@ -36,11 +37,11 @@ const usages = allPageSources.flatMap(({ file, text }) =>
   [...text.matchAll(/<ExistingWorkflowPlusLink\b/g)].map(() => file)
 );
 
-if (usages.length !== 3) {
-  findings.push(`Expected exactly three workflow-plus usages; found ${usages.length}: ${usages.join(', ')}`);
+if (usages.length !== 4) {
+  findings.push(`Expected the three entry shortcuts plus one owner product-block shortcut template; found ${usages.length}: ${usages.join(', ')}`);
 }
-if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 2) {
-  findings.push('Public Shop must own exactly the Spotlight and Shop Diary shortcuts.');
+if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 3) {
+  findings.push('Public Shop must own Spotlight, Shop Diary, and owner product-block shortcut templates.');
 }
 if (usages.filter((file) => file.endsWith('MarketplacePage.tsx')).length !== 1) {
   findings.push('Marketplace must own exactly one DemandBox shortcut.');
@@ -70,6 +71,21 @@ assertContains(
   'shop',
   /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add diary entry["']/,
   'Shop Diary shortcut must be owner-only and reach the existing diary anchor with community context.'
+);
+assertContains(
+  'shop',
+  /function ownerProductManagePath\(product: ShopProduct\)[\s\S]*?manage_product_id[\s\S]*?manage_block[\s\S]*?#shop-control-gallery-tools[\s\S]*?signedInOwnsShop && positiveNumber\(product\.id\)[\s\S]*?label=\{`Manage \$\{displayTitle\}`\}[\s\S]*?shortcut="shop-product"/,
+  'Each real product block must expose an owner-only management shortcut to the existing exact-block controls.'
+);
+assertContains(
+  'assets',
+  /manage_product_id[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}/,
+  'Shop Assets must resolve the requested owned product to its actual block and focus the existing Edit/Remove controls.'
+);
+assertContains(
+  'shop',
+  /state === "live"[\s\S]*?detail: ""[\s\S]*?Owner invitation only\.[\s\S]*?Request access[\s\S]*?Copy request/,
+  'Public Shop must keep the approved concise live-Spotlight and Private Vault copy.'
 );
 assertContains(
   'marketplace',
@@ -107,4 +123,4 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log('Three plus shortcuts audit passed: exactly three authorized 48px navigation/focus controls reuse existing workflows without business writes.');
+console.log('Workflow plus audit passed: the three entry shortcuts and owner-only product-block manager reuse existing workflows without business writes.');

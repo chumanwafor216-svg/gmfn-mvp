@@ -30,7 +30,7 @@ const expectedPageSourceActions = {
   StableCtaLink: 5,
   total: 25,
 };
-const expectedExistingWorkflowPlusShortcuts = 2;
+const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
@@ -500,7 +500,7 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact && \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
   "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
 );
 

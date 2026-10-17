@@ -3010,7 +3010,6 @@ export default function ShopGalleryPage() {
 
     const state = safeStr(ownerSpotlightInspection?.state || "unavailable").toLowerCase();
     const campaign = ownerSpotlightInspection?.campaign || null;
-    const activatedAt = formatSpotlightInspectionTime(campaign?.activated_at);
     const expiresAt = formatSpotlightInspectionTime(campaign?.authorized_expires_at);
     const entryLabel = ownerSpotlightPreviewAuthorized ? "Owner preview" : "Your Spotlight";
 
@@ -3019,11 +3018,7 @@ export default function ShopGalleryPage() {
         state,
         label: `${entryLabel} · Live`,
         title: miniSpotlightView.title,
-        detail: [
-          activatedAt ? `Started ${activatedAt}.` : "",
-          expiresAt ? `Expires ${expiresAt}.` : "",
-          "Owner inspection does not count as delivery or exposure.",
-        ].filter(Boolean).join(" "),
+        detail: "",
       };
     }
     if (state === "delivery_exhausted" && miniSpotlight) {
@@ -3338,6 +3333,19 @@ export default function ShopGalleryPage() {
 
     return routeWithCommunity(
       `${APP_ROUTES.MARKETPLACE}?${params.toString()}#marketplace-paid-network-placement`,
+      ownerSurfaceCommunityId
+    );
+  }
+
+  function ownerProductManagePath(product: ShopProduct): string {
+    const params = new URLSearchParams();
+    const productId = positiveNumber(product.id);
+    const blockNumber = positiveNumber(product.slotNumber);
+    if (productId) params.set("manage_product_id", String(productId));
+    if (blockNumber) params.set("manage_block", String(blockNumber));
+
+    return routeWithCommunity(
+      `${APP_ROUTES.SHOP_ME}?${params.toString()}#shop-control-gallery-tools`,
       ownerSurfaceCommunityId
     );
   }
@@ -5850,7 +5858,7 @@ export default function ShopGalleryPage() {
                     ? miniSpotlightView.title
                     : "Discover what's new"}
                 </div>
-                {isCompact && ownerSpotlightStatusView ? (
+                {isCompact && ownerSpotlightStatusView?.detail ? (
                   <div
                     data-owner-spotlight-status-detail="true"
                     style={{
@@ -5863,7 +5871,7 @@ export default function ShopGalleryPage() {
                     {ownerSpotlightStatusView.detail}
                   </div>
                 ) : null}
-                {!isCompact ? (
+                {!isCompact && (!ownerSpotlightStatusView || ownerSpotlightStatusView.detail) ? (
                   <div
                     style={{
                       marginTop: 10,
@@ -6023,19 +6031,8 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.15,
                 }}
               >
-                Private offers by owner invitation.
+                Owner invitation only.
               </div>
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  color: "rgba(235,245,255,0.78)",
-                  fontSize: isCompact ? 10.5 : 13,
-                  lineHeight: 1.28,
-                  fontWeight: 650,
-                }}
-              >
-                Sends a private-offer request, not the public shop share.
-              </p>
               <div
                 style={{
                   display: "grid",
@@ -6060,7 +6057,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {isCompact ? "Ask Vault" : "Ask for Vault access"}
+                  Request access
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyVaultRequestLink}
@@ -6078,7 +6075,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {isCompact ? "Copy Request" : "Copy Vault request"}
+                  Copy request
                 </SecondaryButton>
               </div>
             </div>
@@ -6416,6 +6413,22 @@ export default function ShopGalleryPage() {
                       scrollMarginTop: 18,
                     }}
                   >
+                    {signedInOwnsShop && positiveNumber(product.id) ? (
+                      <ExistingWorkflowPlusLink
+                        to={ownerProductManagePath(product)}
+                        label={`Manage ${displayTitle}`}
+                        debugId={`shop-gallery.product.${productOpenId}.owner-manage`}
+                        shortcut="shop-product"
+                        data-owner-product-id={positiveNumber(product.id)}
+                        data-owner-product-block={positiveNumber(product.slotNumber)}
+                        style={{
+                          position: "absolute",
+                          top: isCompact ? 9 : 12,
+                          left: isCompact ? 9 : 12,
+                          zIndex: 6,
+                        }}
+                      />
+                    ) : null}
                     <div
                       style={{
                         position: "absolute",

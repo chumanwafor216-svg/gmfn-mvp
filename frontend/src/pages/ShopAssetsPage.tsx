@@ -1031,6 +1031,15 @@ function resolveAssetSrc(raw: unknown): string {
 
 export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const embedded = Boolean(props.embedded);
+  const ownerProductManageRequest = useMemo(() => {
+    if (typeof window === "undefined") return { productId: 0, blockNumber: 0 };
+    const params = new URLSearchParams(window.location.search);
+    return {
+      productId: safePositiveNumber(params.get("manage_product_id"), 0),
+      blockNumber: safePositiveNumber(params.get("manage_block"), 0),
+    };
+  }, []);
+  const ownerProductManageAppliedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
@@ -1636,6 +1645,37 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   );
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
+
+  useEffect(() => {
+    if (
+      loading ||
+      ownerProductManageAppliedRef.current ||
+      ownerProductManageRequest.productId <= 0
+    ) {
+      return;
+    }
+
+    const matchedSlotIndex = publicGallerySlots.findIndex(
+      (item) => Number(item?.id || 0) === ownerProductManageRequest.productId
+    );
+    if (matchedSlotIndex < 0) return;
+
+    const matchedSlot = matchedSlotIndex + 1;
+    ownerProductManageAppliedRef.current = true;
+    setSelectedPublicSlot(matchedSlot);
+
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById("shop-assets-selected-public-block");
+      const numberedBlocks = target?.closest("details");
+      if (numberedBlocks instanceof HTMLDetailsElement) numberedBlocks.open = true;
+      window.requestAnimationFrame(() => {
+        target?.scrollIntoView({ behavior: "auto", block: "center" });
+        target?.focus({ preventScroll: true });
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, ownerProductManageRequest.productId, publicGallerySlots]);
 
   function resetDiaryForm() {
     setDiaryActivityType("other_update");
@@ -3369,7 +3409,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               )}
             </div>
 
-            <div style={innerCard("#FCFEFF")}>
+            <div
+              id="shop-assets-selected-public-block"
+              data-owner-product-manage-target={selectedPublicProduct?.id || ""}
+              tabIndex={-1}
+              style={{ ...innerCard("#FCFEFF"), scrollMarginTop: embedded ? 118 : 24 }}
+            >
               <div style={sectionLabel()}>Selected block</div>
               <div
                 style={{

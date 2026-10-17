@@ -64,6 +64,20 @@ const diary = {
   occurred_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
 };
+const product = {
+  id: 601,
+  shop_id: 101,
+  clan_id: 8,
+  name: 'Jollof tray',
+  description: '[BLOCK:2] Family meal tray.',
+  price: '12500',
+  currency: 'NGN',
+  image_url: '',
+  video_url: '',
+  visibility_mode: 'community_visible',
+  public_block_number: 2,
+  is_active: true,
+};
 
 function json(body, status = 200) {
   return { status, contentType: 'application/json', body: JSON.stringify(body) };
@@ -138,7 +152,7 @@ async function installMocks(page, scenario) {
         ok: true,
         item: shop,
         shop,
-        products: [],
+        products: [product],
         broadcasts: [spotlight],
         primary_broadcast: spotlight,
         clan_id: 8,
@@ -169,13 +183,13 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ serving_contract_version: 2, items: [] }));
     }
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
-      return route.fulfill(json({ item: shop, shop, products: [] }));
+      return route.fulfill(json({ item: shop, shop, products: [product] }));
     }
     if (path === '/marketplace/shops' || path.startsWith('/marketplace/shops?')) {
       return route.fulfill(json({ items: [shop], shops: [shop] }));
     }
     if (path.startsWith('/marketplace/products')) {
-      return route.fulfill(json({ items: [], products: [] }));
+      return route.fulfill(json({ items: [product], products: [product] }));
     }
     if (path.startsWith('/marketplace/broadcasts')) {
       return route.fulfill(json({ items: [spotlight] }));
@@ -237,6 +251,16 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
   await assertTouchTarget(spotlightPlus, 'Spotlight plus');
   await assertTouchTarget(diaryPlus, 'Shop Diary plus');
+  const productPlus = page.getByRole('link', { name: 'Manage Jollof tray' });
+  await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  await assertTouchTarget(productPlus, 'Product block plus');
+  if (await page.getByText(/Started 16 Oct 2026|Expires 17 Oct 2026|Owner inspection does not count/).count()) {
+    throw new Error('Live owner Spotlight still exposes removed timing or inspection copy.');
+  }
+  await page.getByText('Owner invitation only.').waitFor({ state: 'visible', timeout: 20_000 });
+  if (await page.getByText('Sends a private-offer request, not the public shop share.').count()) {
+    throw new Error('Private Vault still exposes removed explanatory copy.');
+  }
   const mode = await spotlightPlus.getAttribute('data-spotlight-shortcut-mode');
   const expectedMode = ownerState === 'none' ? 'create' : 'manage';
   if (mode !== expectedMode) throw new Error(`Spotlight shortcut mode was ${mode}, expected ${expectedMode}.`);
@@ -268,8 +292,41 @@ async function testVisitorShopShortcutsHidden(browser, baseUrl) {
   if ((await page.locator('[data-public-shop-more="secondary"]').getAttribute('open')) === null) await summary.click();
   if (await page.getByRole('link', { name: 'Add Spotlight' }).count()) throw new Error('Visitor received owner Spotlight shortcut.');
   if (await page.getByRole('link', { name: 'Add diary entry' }).count()) throw new Error('Visitor received owner Shop Diary shortcut.');
+  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) throw new Error('Visitor received owner product-block shortcut.');
   const writes = businessWrites(scenario.mutations);
   if (writes.length !== 0) throw new Error(`Visitor inspection issued business write request(s): ${writes.join(', ')}.`);
+  await context.close();
+}
+
+async function testOwnerProductShortcut(browser, baseUrl) {
+  const scenario = { identity: ownerId, ownerSpotlightState: 'live', demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
+  const { context, page } = await newPhonePage(browser, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  const productPlus = page.getByRole('link', { name: 'Manage Jollof tray' });
+  await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  await productPlus.click();
+  await page.waitForFunction(() => {
+    const url = new URL(window.location.href);
+    return (
+      url.pathname === '/app/shop-control' &&
+      url.searchParams.get('manage_product_id') === '601' &&
+      url.searchParams.get('manage_block') === '2' &&
+      url.searchParams.get('community') === '8' &&
+      url.hash === '#shop-control-gallery-tools'
+    );
+  }, { timeout: 30_000 });
+  const target = page.locator('#shop-assets-selected-public-block[data-owner-product-manage-target="601"]');
+  await target.waitFor({ state: 'visible', timeout: 30_000 });
+  await page.getByRole('button', { name: 'Edit product' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: 'Remove from shop' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.screenshot({
+    path: join(screenshotDir, 'three-plus-owner-product-manage-390x844.png'),
+    fullPage: true,
+  });
+  const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
+  if (!origin.includes(`/shop/${ownerId}`)) throw new Error('Product shortcut lost its Public Shop return path.');
+  const writes = businessWrites(scenario.mutations);
+  if (writes.length !== 0) throw new Error(`Product shortcut navigation issued business write request(s): ${writes.join(', ')}.`);
   await context.close();
 }
 
@@ -287,14 +344,27 @@ async function testDemandShortcut(browser, baseUrl, { demandPolicyOff = false, m
 
   await demandPlus.waitFor({ state: 'visible', timeout: 30_000 });
   await assertTouchTarget(demandPlus, 'DemandBox plus');
+  const demandHref = await demandPlus.getAttribute('href');
+  const demandTarget = new URL(demandHref || '', baseUrl);
+  if (
+    demandTarget.pathname !== '/app/demand-box' ||
+    demandTarget.searchParams.get('community') !== '8' ||
+    demandTarget.searchParams.get('mode') !== 'create'
+  ) {
+    throw new Error(`DemandBox shortcut href was ${demandHref}, expected create mode with community=8.`);
+  }
   await page.screenshot({
     path: join(screenshotDir, 'three-plus-marketplace-390x844.png'),
     fullPage: true,
   });
   await demandPlus.click();
   await page.waitForTimeout(750);
-  if (!/\/app\/demand-box.*community=8.*mode=create/.test(page.url())) {
-    throw new Error(`DemandBox shortcut navigated to ${page.url()}, expected create mode with community=8.`);
+  const openedDemandUrl = new URL(page.url());
+  if (
+    openedDemandUrl.pathname !== '/app/demand-box' ||
+    openedDemandUrl.searchParams.get('community') !== '8'
+  ) {
+    throw new Error(`DemandBox shortcut navigated to ${page.url()}, expected DemandBox with community=8.`);
   }
   const form = page.locator('#demand-box-create');
   await form.waitFor({ state: 'visible', timeout: 30_000 });
@@ -321,6 +391,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
+  await testOwnerProductShortcut(browser, baseUrl);
   await testVisitorShopShortcutsHidden(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
@@ -332,10 +403,11 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
+      'owner product shortcut selects the exact existing block manager with Edit and Remove',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',
-      'all three touch targets are at least 48 by 48',
+      'all entry and per-block shortcut touch targets are at least 48 by 48',
       'shortcut navigation issues no business write; existing context/attention telemetry is excluded',
     ],
   }, null, 2));
