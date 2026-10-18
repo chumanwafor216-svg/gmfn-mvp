@@ -11,26 +11,26 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `658f8e101a6678339bc65d65fcf86ac75a473095`.
-- Frontend Render deploy `dep-dbacpahum5fc73av46t0` and API Render deploy
-  `dep-dbacqkqjnfac73f7r5ng` reached `live` on that exact commit. Trigger
-  Render Deploy run `39132679148` completed successfully with the explicit
+- Current verified application commit: `780e0a5c4b39ceafcfe78d38b205ab54855ede3f`.
+- Frontend Render deploy `dep-dbaef9p124ks73eev360` and API Render deploy
+  `dep-dbaegg61egvs73adf5g0` reached `live` on that exact commit. Trigger
+  Render Deploy run `39141282655` completed successfully with the explicit
   `deploy_api=true` input.
 - Independent post-deploy requests returned HTTP 200 from the Public Shop
   frontend and API OpenAPI document; the live API still exposes the Spotlight
   qualification route. The workflow also passed its frontend build-marker and
   live API identity/public verification checks.
-- This release adds Spotlight qualification atomicity and per-viewer locking;
-  frontend rotation, expiry, retry, and stale-refresh hardening; and backend
-  candidate/pacing fallback and expired-renewal corrections. Both frontend and
-  API were deployed.
+- This release includes the owner product-management shortcut, exact-owner
+  permanent product deletion across Shop Gallery Tools and Vault Control,
+  atomic Vault/linked-Spotlight retirement, durable reference-safe media
+  cleanup, and bounded expired-Spotlight payload compaction. Both frontend and
+  API, including Alembic migration
+  `20261018_spotlight_payload_retention_v1`, were deployed.
 
-## Local Public Shop product management and retention handoff - 2026-10-18
+## Deployed Public Shop product management and retention handoff - 2026-10-18
 
-- Status: final regression verification in progress; not yet committed, pushed,
-  or deployed.
-  Production still reflects the verified
-  application commit recorded above.
+- Status: committed, pushed to the working branch and `main`, and deployed on
+  the exact verified application commit recorded above.
 - The owner explicitly superseded the 2026-10-17 single-plus Public Shop
   product-card rule. The existing card `+` / `×` remains the open/close
   control. When that exact product card is open, the exact signed-in shop owner
