@@ -11,21 +11,21 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `780e0a5c4b39ceafcfe78d38b205ab54855ede3f`.
-- Frontend Render deploy `dep-dbaef9p124ks73eev360` and API Render deploy
-  `dep-dbaegg61egvs73adf5g0` reached `live` on that exact commit. Trigger
-  Render Deploy run `39141282655` completed successfully with the explicit
-  `deploy_api=true` input.
-- Independent post-deploy requests returned HTTP 200 from the Public Shop
-  frontend and API OpenAPI document; the live API still exposes the Spotlight
-  qualification route. The workflow also passed its frontend build-marker and
-  live API identity/public verification checks.
-- This release includes the owner product-management shortcut, exact-owner
-  permanent product deletion across Shop Gallery Tools and Vault Control,
-  atomic Vault/linked-Spotlight retirement, durable reference-safe media
-  cleanup, and bounded expired-Spotlight payload compaction. Both frontend and
-  API, including Alembic migration
-  `20261018_spotlight_payload_retention_v1`, were deployed.
+- Current verified frontend commit: `fae5be9577e3573b388d22bbb8464777147a1ccb`.
+- Frontend Render deploy `dep-dbaepg1124ks73ef6rcg` reached `live` on that
+  exact commit. Trigger Render Deploy run `39142897929` completed successfully
+  with `deploy_api=false`, verified the public build marker, and intentionally
+  skipped the API.
+- The API remains on verified commit
+  `780e0a5c4b39ceafcfe78d38b205ab54855ede3f` and live Render deploy
+  `dep-dbaegg61egvs73adf5g0` from successful run `39141282655`.
+- An independent post-deploy request returned HTTP 200 from the frontend.
+- The current frontend adds the focused exact-product management destination
+  to the already deployed owner shortcut and permanent-deletion workflow. The
+  retained API release includes atomic Vault/linked-Spotlight retirement,
+  durable reference-safe media cleanup, bounded expired-Spotlight payload
+  compaction, and Alembic migration
+  `20261018_spotlight_payload_retention_v1`.
 
 ## Deployed Public Shop product management and retention handoff - 2026-10-18
 
@@ -85,10 +85,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   focused audits, browser smokes, and 390x844 workflow smoke passed for the
   owner-only management handoff.
 
-## Local exact-product Shop Gallery simplification - 2026-10-18
+## Deployed exact-product Shop Gallery simplification - 2026-10-18
 
-- Status: implemented and locally verified; commit, push, and deployment are
-  still pending.
+- Status: committed as `fae5be9577e3573b388d22bbb8464777147a1ccb`,
+  pushed to the working branch and `main`, and deployed through frontend
+  Render deploy `dep-dbaepg1124ks73ef6rcg`. Workflow run `39142897929`
+  succeeded and an independent public request returned HTTP 200.
 - The Public Shop inner product-management `+` still carries the exact product,
   block, community, and return context into Shop Gallery Tools.
 - That route is now a focused task. It opens the requested block and shows
@@ -104,7 +106,9 @@ under `docs/` or `docs/archive/`, then link that file here.
   passed; the TypeScript/Vite production build passed with 290 modules; and the
   real 390x844 browser smoke passed the exact-product selection, enabled
   Change/Delete choices, focused editor, no-overflow, owner/visitor boundary,
-  return-context, and no-business-write checks.
+  return-context, and no-business-write checks. The complete protected-button
+  freeze audit also passed, including Shop Control action inventory and mobile
+  visual checks.
 
 ## Deployed Spotlight repair - 2026-10-18
 
