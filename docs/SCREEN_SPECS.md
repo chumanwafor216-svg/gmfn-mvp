@@ -1451,6 +1451,12 @@ Rules:
   Verify, WhatsApp, and Products & Services first. The brand bar and repeated
   status strip, and installation prompt stay off the first surface. Share and
   Verify are secondary; WhatsApp is the single primary contact action.
+- Public-facing product counts, focused-product labels, and shared-product
+  messages say `shop item` or `shop items`; `block` remains an internal route
+  and data-contract term. Owner Spotlight states explain what happened in
+  direct language such as `All showings used`, `Needs correction`, `Expired`,
+  or `Not showing`, without exposing delivery-counter, presentation, placement,
+  or cache terminology.
 - Products & Services cards keep their media unobstructed: the `+` open control
   lives in the lower action dock, changes to a literal `×` when the card is
   open, and must not use a globe or commerce object as a close metaphor. Video

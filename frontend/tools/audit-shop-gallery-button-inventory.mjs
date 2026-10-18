@@ -331,7 +331,7 @@ assertFileContains(
 
 
 assertContains(
-  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}/,
+  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}/,
   "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card open/close uses literal plus and close symbols in the action dock."
 );
 
@@ -353,6 +353,26 @@ assertContains(
 assertContains(
   /Browse items\. Ask the owner about availability\./,
   "Public Shop product shelf must keep plain, concise commerce guidance without placeholder process chips."
+);
+
+assertContains(
+  /function publicShopBlockLabel\(product: ShopProduct\): string \{[\s\S]*?return `Shop item \$\{product\.slotNumber\}`;[\s\S]*?"1 shop item showing"[\s\S]*?`\$\{publicBlockCount\} shop items showing`[\s\S]*?"Shared item"/,
+  "Public Shop counts, focused labels, and shared-product labels must use shop-item language instead of exposing internal block terms."
+);
+
+assertNotContains(
+  /return `Block #\$\{product\.slotNumber\}`|"1 public block live"|public blocks live|"Shared block"/,
+  "Public Shop visitor copy must not expose internal block language."
+);
+
+assertContains(
+  /state === "delivery_exhausted"[\s\S]*?All showings used[\s\S]*?All available Spotlight showings have been used[\s\S]*?state === "correction_hold"[\s\S]*?Needs correction[\s\S]*?state === "none"[\s\S]*?No Spotlight saved[\s\S]*?state === "not_serving"[\s\S]*?Not showing[\s\S]*?cannot confirm the current Spotlight status/,
+  "Public Shop owner Spotlight states must explain what happened in direct member language."
+);
+
+assertNotContains(
+  /delivery-opportunity counter|new Spotlight presentations|impression guarantee|No saved Spotlight campaign|eligible placement is serving|cached campaign content|Opening Preview cannot restart its clock/,
+  "Public Shop owner Spotlight states must not expose delivery-engine terminology."
 );
 
 assertNotContains(
@@ -422,7 +442,7 @@ assertContains(
 );
 
 assertContains(
-  /!isCompact \? \([\s\S]*?className="public-shop-status-strip"[\s\S]*?Community Record[\s\S]*?Public Shelf[\s\S]*?Private Vault[\s\S]*?Trust Identity[\s\S]*?\) : null/,
+  /!isCompact \? \([\s\S]*?className="public-shop-status-strip"[\s\S]*?Community Record[\s\S]*?Shop items[\s\S]*?Private Vault[\s\S]*?Trust Identity[\s\S]*?\) : null/,
   "Public Shop phone first surface must hide the repeated four-part status strip."
 );
 

@@ -682,7 +682,7 @@ function productBuyerCue(product: ShopProduct, shopName: string): string {
 }
 
 function publicShopBlockLabel(product: ShopProduct): string {
-  return `Block #${product.slotNumber}`;
+  return `Shop item ${product.slotNumber}`;
 }
 
 function publicShopBlockAnchorId(product: ShopProduct): string {
@@ -3440,7 +3440,7 @@ export default function ShopGalleryPage() {
         miniSpotlight?.sourceProductDescription,
         miniSpotlight?.spotlightDescription,
         messageParts.summary,
-        "Live community promo from the current spotlight source."
+        "Live Spotlight from another shop in this community."
       ),
       priceLabel: firstMeaningful(
         [miniSpotlight?.sourceProductCurrency, miniSpotlight?.sourceProductPrice]
@@ -3480,17 +3480,17 @@ export default function ShopGalleryPage() {
     if (state === "delivery_exhausted" && miniSpotlight) {
       return {
         state,
-        label: `${entryLabel} · Delivery complete`,
+        label: `${entryLabel} · All showings used`,
         title: miniSpotlightView.title,
-        detail: `${expiresAt ? `Saved until ${expiresAt}. ` : ""}The current delivery-opportunity counter is exhausted, so GSN is not issuing new Spotlight presentations. This is not an impression guarantee.`,
+        detail: `${expiresAt ? `Saved until ${expiresAt}. ` : ""}All available Spotlight showings have been used. GSN is not starting another showing from this Spotlight.`,
       };
     }
     if (state === "correction_hold") {
       return {
         state,
-        label: `${entryLabel} · Off-air`,
-        title: "Spotlight is on correction hold",
-        detail: `${expiresAt ? `Original expiry remains ${expiresAt}. ` : ""}Time continues while the campaign is off-air.`,
+        label: `${entryLabel} · Needs correction`,
+        title: "Spotlight is paused for correction",
+        detail: `${expiresAt ? `Original expiry remains ${expiresAt}. ` : ""}Time keeps running while it is paused.`,
       };
     }
     if (state === "withdrawn") {
@@ -3498,7 +3498,7 @@ export default function ShopGalleryPage() {
         state,
         label: `${entryLabel} · Withdrawn`,
         title: "Spotlight was permanently removed",
-        detail: "It is no longer delivered. This owner view has not republished or reactivated it.",
+        detail: "It is no longer being shown. Opening this owner view does not publish it again.",
       };
     }
     if (state === "expired") {
@@ -3506,30 +3506,30 @@ export default function ShopGalleryPage() {
         state,
         label: `${entryLabel} · Expired`,
         title: "Spotlight has expired",
-        detail: `${expiresAt ? `Expired ${expiresAt}. ` : ""}Opening Preview cannot restart its clock.`,
+        detail: `${expiresAt ? `Expired ${expiresAt}. ` : ""}Opening this page does not restart it.`,
       };
     }
     if (state === "none") {
       return {
         state,
         label: `${entryLabel} · None saved`,
-        title: "No saved Spotlight campaign",
-        detail: "No campaign is attached to this shop. Shop Diary entries remain separate.",
+        title: "No Spotlight saved",
+        detail: "This shop does not have a Spotlight yet. Shop updates remain separate.",
       };
     }
     if (state === "not_serving") {
       return {
         state,
-        label: `${entryLabel} · Not serving`,
+        label: `${entryLabel} · Not showing`,
         title: "Spotlight is not currently being shown",
-        detail: "The saved campaign remains recorded, but no eligible placement is serving. This owner view has not reactivated it.",
+        detail: "The Spotlight is saved, but GSN is not showing it now. Opening this owner view does not restart it.",
       };
     }
     return {
       state: "unavailable",
       label: `${entryLabel} · Status unavailable`,
       title: "Spotlight status could not be confirmed",
-      detail: "GSN is not showing cached campaign content. Refresh or use Shop Control when the connection returns.",
+      detail: "GSN cannot confirm the current Spotlight status. Refresh, or open Shop Control and try again.",
     };
   }, [
     miniSpotlight,
@@ -3985,7 +3985,7 @@ export default function ShopGalleryPage() {
       : shopLoadFailed
       ? "This public shop link opened, but GSN has not connected it to an active owner shop yet."
       : effectiveShop?.description ||
-          "Public shop face for visible product records. Private Vault offers open only through an owner-issued link."
+          "Products and services shown by this shop. Private Vault items open only with a link from the owner."
   );
   const showShopHeroDescription =
     Boolean(shopDescriptionText) &&
@@ -3998,8 +3998,8 @@ export default function ShopGalleryPage() {
     : shopLoadFailed
     ? "Shop not connected"
     : publicBlockCount === 1
-      ? "1 public block live"
-      : `${publicBlockCount} public blocks live`;
+      ? "1 shop item showing"
+      : `${publicBlockCount} shop items showing`;
   const shopDiaryCounterText = autoRefreshingShop
     ? "Refreshing"
     : shopLoadFailed
@@ -4074,8 +4074,8 @@ export default function ShopGalleryPage() {
     { icon: "shop", label: "Shop name", value: shopNameText },
     { icon: "id", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
     { icon: "globe", label: "Marketplace", value: shopLocationText },
-    { icon: "community", label: "Community", value: shopCommunityText || "Not exposed yet" },
-    { icon: "lock", label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
+    { icon: "community", label: "Community", value: shopCommunityText || "Not shown" },
+    { icon: "lock", label: "Community ID", value: shopCommunityIdText || "Not shown" },
   ] satisfies Array<{ icon: ShopIconName; label: string; value: string }>;
   const shopTrustCheckOptions = [
     { icon: "document", text: "Request TrustSlip for current evidence" },
@@ -5290,7 +5290,7 @@ export default function ShopGalleryPage() {
               title: "Community Record",
               detail: shopCommunityIdText ? "ID check" : "Record pending",
             },
-            { icon: "cart" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
+            { icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText },
             { icon: "vault" as ShopIconName, title: "Private Vault", detail: "Owner-issued link" },
             { icon: "id" as ShopIconName, title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
@@ -6757,7 +6757,7 @@ export default function ShopGalleryPage() {
               {focusedBlockProduct
                 ? publicShopBlockLabel(focusedBlockProduct)
                 : focusedBlockLinkActive
-                ? "Shared block"
+                ? "Shared item"
                 : shopDiaryCounterText}
             </span>
           </div>
@@ -6766,7 +6766,7 @@ export default function ShopGalleryPage() {
             <div style={{ ...helperText(), padding: 16 }}>
               {autoRefreshingShop
                 ? "Reconnecting shop..."
-                : "Loading products..."}
+                : "Loading shop items..."}
             </div>
           ) : error ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
