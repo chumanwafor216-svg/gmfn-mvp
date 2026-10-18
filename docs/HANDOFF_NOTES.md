@@ -8,6 +8,40 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
+
+- Status: committed locally as `45a8f383` (`Simplify My GSN and guard
+  Profile loading`). Under the active pipeline-shortage batch freeze, this
+  commit has not been pushed, promoted to `main`, or deployed. Production
+  remains on the baseline recorded below.
+- This resolves the Profile first-paint failure recorded in the Community Home
+  batch below. The failure was a real blank-page crash, not a slow route:
+  `/app/profile` redirected correctly, but the collapsed `My Pipeline Credits`
+  section assumed every successful catalogue response contained `packs` and
+  read the first item from an absent array.
+- The Pipeline Credit component now validates balance, catalogue, and purchase
+  payloads before using them. Incomplete or malformed responses produce safe
+  unavailable/empty states while the rest of My GSN remains usable. Purchasing
+  and spending remain paused for the free pilot; no provider, payment, route,
+  permission, catalogue-authority, or activation rule changed.
+- My GSN and its lower guide now replace internal ownership, handoff,
+  orientation, footprint, source-page, queue, and protected-page wording with
+  direct member instructions. Examples include `Open Notifications to see and
+  act on every item`, `Use Shop Control to change products`, `Create or join a
+  community to see it here`, and `Sign in to open your account`. The frozen
+  phone structure, selected-community continuation, More disclosure, Settings,
+  Companion controls, and all routes/actions remain unchanged.
+- The app-tab first-paint audit now reports page URL, body text/HTML, and React
+  page errors on future failures. This diagnostic change does not affect app
+  runtime behavior.
+- Verification passed the Pipeline Credit, surface-ownership,
+  capability-mirror, and member-entry audits; the complete protected-button
+  freeze suite; the 290-module production build; and the full real-browser
+  app-tab first-paint suite. Profile rendered its first phone surface in
+  1.791 seconds in that run, My GSN rendered in 1.333 seconds, the compatibility
+  redirect settled on `/app/my-gmfn-and-i`, Settings/Companion states passed,
+  and no horizontal overflow was found.
+
 ## Verified local Community Home novice wording batch - 2026-10-18
 
 - Status: committed locally as
