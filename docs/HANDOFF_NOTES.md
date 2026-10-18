@@ -143,6 +143,20 @@ under `docs/` or `docs/archive/`, then link that file here.
   at `2026-10-18T13:34:45Z`. Therefore the deployed account-specific
   rotation correction was not yet exercised by a real account, and a real
   owner/visitor opening remains required evidence.
+- The owner subsequently uploaded campaign `324` at
+  `2026-10-18T13:44:30Z`. It is active across six direct-community
+  placements and is authorized until `2026-10-19T13:44:30Z`; prior owner
+  campaign `319` is now persistently labelled `expired`. The owner also
+  reported that live rotation appeared correct and will continue monitoring.
+- Production independently proves that viewer `13` received a governed
+  campaign-`323` presentation lease at `2026-10-18T13:39:23Z`, closing
+  the former blank-selection gap. That lease remained `issued`, with no
+  qualifying exposure recorded, so selection/rotation continuity is proven
+  but qualification completion for that observation is not yet proven.
+- A post-observation API health review found no Spotlight, database,
+  integrity-constraint, timeout, or HTTP 5xx errors. The sampled error-level
+  entries were the known trapped bcrypt-version warning, not Spotlight
+  request failures.
 - A separate latent expiry defect was confirmed in the disabled-by-default
   member-credit writer: it ignored an expired campaign still labelled
   `active` but did not retire it before inserting the renewal, allowing the
