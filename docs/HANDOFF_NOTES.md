@@ -8,6 +8,40 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Verified local Marketplace novice-first wording batch - 2026-10-18
+
+- Status: committed locally as
+  `31f7e847` (`Simplify Marketplace member wording`). Under the active
+  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
+  `main`, or deployed. Production remains on the baseline recorded below.
+- `/app/marketplace` keeps the frozen selected-community, needs-first structure
+  and the same actions, data, permissions, and routes. Its front wording now
+  explains open requests, shops that may be able to help, possible matches,
+  shops for other requests, and the member's recorded money in that community
+  instead of exposing request-lifecycle, provider-connection, shop-face, local
+  net-position, or scoped terminology.
+- The no-community state now leads with `Choose a community to use Marketplace`
+  and one primary `Choose community` action. Secondary choices now say `More
+  things you can do`, `Links to share`, `Promote a shop`, and `Record a trade`.
+  The task finder gives ordinary examples and uses `Show me where`.
+- `May be able to help` remains deliberately neutral: it is still the existing
+  DemandBox possible-match response in backend order, not GSN approval,
+  recommendation, ranking, guarantee, or promised availability. Neutral Shops
+  & Services discovery and Public Shop handoff are unchanged.
+- Verification passed the 290-module production build, every Marketplace audit,
+  and the complete protected-button freeze audit. The 390x844 Marketplace hero
+  browser smoke passed selected-community/domain scope, revised phone wording,
+  retired-wording absence, horizontal containment, and stat containment. The
+  Marketplace lane-boundary browser smoke also completed successfully across
+  marketing, trade, members, support chooser, and support-loan scenarios.
+- Three stale audit assumptions were corrected while proving the batch: the
+  line audit now distinguishes 93 native stable controls from the separate
+  `Add request` workflow-plus control counted by the 94-action inventory; the
+  money-lane audit now protects the current Needs/Add-request front instead of
+  a removed `ask-for-something` control; and the broad action audit now expects
+  the current `Shop Update` label and products-first visual contract. No app
+  control was removed to make an audit pass.
+
 ## Verified local Public Shop wording batch - 2026-10-18
 
 - Status: committed locally as
