@@ -11,17 +11,18 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `f02c0c51b563d468316622d50f953142b5f035ed`.
-- Frontend Render deploy `dep-dba8ib8jgiss7399koi0` and API Render deploy
-  `dep-dba8jkuq1p3s73ao1t6g` reached `live` on that exact commit. Trigger
-  Render Deploy run `39113221448` completed successfully with the explicit
-  `deploy_api=true` input. The earlier frontend-only run `39112938869`
-  succeeded but correctly did not constitute a complete release because its
-  manual-dispatch default left backend deployment disabled.
-- The public frontend and API health endpoint both returned HTTP 200 after the
-  deployment; API health reported `{"ok":true,"dev_mode":false}`.
-- The deployed correction updates Spotlight frontend rotation/timing and the
-  backend replay-delivery contract, so both frontend and API were deployed.
+- Current verified application commit: `ba7428f2acad871946df010d87485258c509024e`.
+- Frontend Render deploy `dep-dba950u54i7c738m87d0` and API Render deploy
+  `dep-dba96bijnfac73eraco0` reached `live` on that exact commit. Trigger
+  Render Deploy run `39115818114` completed successfully with the explicit
+  `deploy_api=true` input.
+- Independent post-deploy requests returned HTTP 200 from the Public Shop
+  frontend and API OpenAPI document; the live API still exposes the Spotlight
+  qualification route. The workflow also passed its frontend build-marker and
+  live API identity/public verification checks.
+- This release adds Spotlight qualification atomicity and per-viewer locking,
+  plus frontend rotation, expiry, retry, and stale-refresh hardening. Both
+  frontend and API therefore required deployment.
 
 ## Deployed Spotlight repair - 2026-10-18
 
@@ -59,34 +60,37 @@ under `docs/` or `docs/archive/`, then link that file here.
   `codex/spotlight-rotation-continuity`, promoted unchanged to `main`, and
   deployed to both Render services.
 
-## Spotlight post-deployment gap audit - 2026-10-18
+## Deployed Spotlight reliability hardening - 2026-10-18
 
-- Read-only backend and frontend audits found no authorization bypass in the
-  deployed due-replay repair. Exact qualified lease, exposure, membership,
-  content-version, lifecycle, and placement checks remain in force.
-- Highest backend follow-up: qualification is split across two commits. An
-  impression can advance the viewer cap before the presentation lease is
-  marked qualified, so a failure between commits can recreate a blank rail.
-  Make exposure plus lease qualification one transaction and add a
-  failure-injection rollback regression.
-- The per-viewer frequency cap is also raceable under simultaneous
-  qualifications. Serialize qualification per viewer/campaign and recheck the
-  cap inside that transaction.
-- Highest frontend follow-up: the API-selected fresh lease can be re-sorted
-  behind replay and weighted copies and expire before display. Keep the fresh
-  governed row first, deduplicate by presentation, and test a 30-second lease.
-- Other confirmed continuity risks: hidden-tab requests can fall through to
-  legacy data and overwrite governed state; qualification is marked complete
-  client-side before server acceptance; three weighted consecutive copies can
-  look stuck; and stale rows have no expiry-driven removal timer.
+- Exposure recording and lease qualification now commit atomically. A
+  failure-injection regression proves a failed commit leaves no exposure and
+  leaves the lease issued rather than falsely qualified.
+- Qualification locks both the presentation lease and a stable viewer row
+  before rechecking eligibility, serializing simultaneous cap decisions for
+  the same viewer on PostgreSQL.
+- Public Shop now prioritizes the API-selected fresh lease without interrupting
+  the current five-second dwell, deduplicates presentations, removes canonical
+  rows at their server expiry, and requests replenishment.
+- Hidden tabs retain authoritative governed state rather than falling through
+  to legacy broadcasts. Refresh generations prevent older overlapping
+  responses from overwriting newer state.
+- Canonical qualification remains retryable until the server accepts it;
+  attention is recorded only after acceptance. Weighted rotation no longer
+  creates consecutive identical items or a duplicate cycle boundary.
+- Verification: 219 focused backend tests passed; TypeScript/Vite production
+  build passed (290 modules); Spotlight presentation, system-feed, Public Shop
+  button, and full protected-button freeze audits passed; the 390x844 browser
+  smoke passed eight scenarios including fresh-over-replay priority, rejected
+  qualification retry, exact expiry removal, WhatsApp removal, replay
+  continuity, and no double counting.
 - Backend inventory risks remain: ten abandoned issuances can consume all
   global delivery rounds without an impression; truncating to 50 candidates
   before pacing can hide a due campaign; a pacing CAS loss does not try the
   next candidate; replay staleness is 60 seconds while the route promises 30;
   and candidate discovery ignores its limit.
 - Changing when the ten global rounds are consumed is a frozen policy decision
-  and requires product-owner approval. The other findings are implementation
-  hardening candidates and were deliberately not mixed into this deployment.
+  and requires product-owner approval. That policy was deliberately not
+  changed in this reliability release.
 
 ## Active product truth
 
@@ -106,6 +110,10 @@ under `docs/` or `docs/archive/`, then link that file here.
   short-lived, revalidated, tokenless replays after fresh delivery rounds are
   exhausted. Replay still creates no delivery round, presentation lease,
   qualifying exposure, or owner-facing impression.
+- The current reliability release keeps fresh governed leases ahead of replay,
+  retries rejected qualification before recording attention, expires contact
+  actions on the server deadline, and prevents weighted repeats from making
+  the rail appear frozen.
 - Public Shop timing is now count-aware: up to 24 unique queued items retain a
   five-second dwell; larger queues shorten gradually against a two-minute cycle
   target with a two-second floor. The backend still selects one fresh relevant
@@ -163,15 +171,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - The deployed DemandBox simplicity batch passed the full TypeScript project
   check and a direct Vite production bundle (290 modules).
-- The deployed Spotlight continuity/timing correction passes the full TypeScript
-  project check, production build (290 modules), targeted ESLint,
-  audit:spotlight-presentation-contract,
-  audit:spotlight-system-feed, and the real browser
-  smoke:spotlight-owner-visibility. The browser smoke observes four complete
-  small-queue transitions at no less than 4.5 seconds and verifies that replay
-  continues after fresh delivery stops without double-counting.
-- Focused Spotlight backend verification passes: 98 tests, including the
-  exhausted-delivery replay regression; Python compilation also passes.
+- The deployed Spotlight reliability release passes the TypeScript/Vite
+  production build (290 modules), audit:spotlight-presentation-contract,
+  audit:spotlight-system-feed, audit:shop-gallery-button-inventory, the full
+  audit:protected-button-freeze, and the eight-scenario real-browser
+  smoke:spotlight-owner-visibility.
+- Focused Spotlight and Public Shop backend verification passes: 219 tests,
+  including atomic rollback, presentation, exposure, frequency, diversity,
+  eligibility, pacing, transaction-safeguard, and Public Shop contracts.
 - `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
   compact first surface, filters, one-open request cards, essential form,
   optional controls, private-person reveal, and horizontal overflow checks.
