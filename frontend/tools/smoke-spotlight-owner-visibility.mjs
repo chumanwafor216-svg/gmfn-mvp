@@ -104,6 +104,9 @@ function spotlightItem({
   canonical = false,
   replay = false,
   streamIndex = 1,
+  presentationExpiresInMs = 25_000,
+  priorityMode = "free",
+  rotationWeight,
 } = {}) {
   const canonicalOffset = Math.max(Number(streamIndex || 1) - 1, 0);
   return {
@@ -118,7 +121,8 @@ function spotlightItem({
     message: label,
     image_url: null,
     video_url: null,
-    priority_mode: "free",
+    priority_mode: priorityMode,
+    rotation_weight: rotationWeight,
     visibility_scope: "direct_communities",
     serving_status: "serving",
     campaign_serving_status: "serving",
@@ -135,7 +139,7 @@ function spotlightItem({
       ? `visitor-presentation-token-${streamIndex}-123456789`
       : undefined,
     opportunity_presentation_expires_at: canonical && !replay
-      ? new Date(Date.now() + 25_000).toISOString()
+      ? new Date(Date.now() + presentationExpiresInMs).toISOString()
       : undefined,
     opportunity_replay_expires_at: canonical && replay
       ? new Date(Date.now() + 2 * 60_000).toISOString()
@@ -284,12 +288,26 @@ async function installMocks(page, scenario) {
             : `Community Spotlight ${streamIndex}`,
         canonical: true,
         streamIndex,
+        presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
       });
+      const items = [item];
+      if (streamIndex === 1 && scenario.includePaidReplay) {
+        items.push(
+          spotlightItem({
+            label: "Older paid replay",
+            canonical: true,
+            replay: true,
+            streamIndex: 90,
+            priorityMode: "paid",
+            rotationWeight: 3,
+          })
+        );
+      }
       return route.fulfill(
         json({
           serving_contract_version: 2,
           item,
-          items: [item],
+          items,
           presentation: {
             presentation_id: item.opportunity_presentation_id,
             presentation_token: item.opportunity_presentation_token,
@@ -300,6 +318,12 @@ async function installMocks(page, scenario) {
     }
     if (path === "/marketplace/spotlight-presentations/qualify") {
       scenario.qualifyCalls += 1;
+      if (Number(scenario.qualifyFailuresRemaining || 0) > 0) {
+        scenario.qualifyFailuresRemaining -= 1;
+        return route.fulfill(
+          json({ ok: false, recorded: false, deduped: false, rejection_code: "synthetic_retry" })
+        );
+      }
       return route.fulfill(json({ ok: true, qualified: true }));
     }
     if (path === "/marketplace/analytics/attention") {
@@ -693,6 +717,111 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
   return scenario;
 }
 
+async function testFreshLeaseWinsOverWeightedReplay(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    includePaidReplay: true,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
+  const initialText = await page.locator("#public-shop-spotlight").innerText();
+  if (initialText.includes("Older paid replay")) {
+    throw new Error("A weighted replay displaced the newly issued fresh presentation.");
+  }
+  await context.close();
+  return scenario;
+}
+
+async function testRejectedQualificationRetriesBeforeAttention(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    qualifyFailuresRemaining: 1,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await page.locator("#public-shop-spotlight").scrollIntoViewIfNeeded();
+  await page.waitForFunction(
+    () => document.querySelector('[data-spotlight-canonical="true"]') !== null,
+    null,
+    { timeout: 15_000 }
+  );
+  await page.waitForTimeout(3_800);
+  if (scenario.qualifyCalls < 2 || scenario.impressionCalls !== 1) {
+    throw new Error(
+      `Rejected qualification did not retry exactly before attention: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
+async function testPresentationExpiryRemovesContact(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    presentationExpiresInMs: 2_500,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
+  await page.waitForTimeout(3_000);
+  if (await page.getByText("Visitor eligible Spotlight", { exact: true }).count()) {
+    throw new Error("Expired canonical presentation remained visible after its server deadline.");
+  }
+  if (
+    await page
+      .locator("#public-shop-spotlight")
+      .getByRole("button", { name: /WhatsApp/i })
+      .count()
+  ) {
+    throw new Error("Expired canonical presentation retained its WhatsApp action.");
+  }
+  await context.close();
+  return scenario;
+}
+
 const server = await createServer({
   root: frontendRoot,
   logLevel: "silent",
@@ -712,6 +841,9 @@ try {
       browser,
       baseUrl
     ),
+    await testFreshLeaseWinsOverWeightedReplay(browser, baseUrl),
+    await testRejectedQualificationRetriesBeforeAttention(browser, baseUrl),
+    await testPresentationExpiryRemovesContact(browser, baseUrl),
   ];
   console.log(
     JSON.stringify(

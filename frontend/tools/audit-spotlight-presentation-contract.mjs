@@ -153,6 +153,18 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /SpotlightPresentationLease\.presentation_id == presentation_id[\s\S]*?with_for_update\(\)[\s\S]*?db\.query\(User\.id\)[\s\S]*?with_for_update\(\)[\s\S]*?_current_presentable_candidate[\s\S]*?commit=False[\s\S]*?lease\.status = 'qualified'[\s\S]*?db\.commit\(\)/,
+  "Qualification must lock the lease and viewer, recheck frequency, and commit the exposure plus qualified lease atomically."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_spotlight_presentation_contract.py",
+  /test_qualification_commit_failure_rolls_back_exposure_and_lease[\s\S]*?pytest\.raises\(RuntimeError[\s\S]*?assert _ledger_count\(\) == 0[\s\S]*?assert lease\["status"\] == "issued"/,
+  "Backend tests must prove a failed qualification commit cannot advance exposure without qualifying the lease."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
   /allow_due_campaign_ids[\s\S]*?due_frequency_replay[\s\S]*?not due_frequency_replay[\s\S]*?frequency_suppressed_campaign_ids = tuple[\s\S]*?SPOTLIGHT_FREQUENCY_SUPPRESSION_VIEWER_CAP[\s\S]*?SPOTLIGHT_FREQUENCY_SUPPRESSION_DEMANDBOX_OVERRIDE_EXHAUSTED/,
   "A due replay must be explicitly authorized by same-viewer frequency suppression and must not use a past pacing deadline as its replay expiry."
 );
@@ -185,6 +197,30 @@ assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
   /onFocusCapture=\{\(event\)[\s\S]*?focusTarget\.matches\(":focus-visible"\)[\s\S]*?setSpotlightHasKeyboardFocus\(keyboardFocus\)/,
   "Touch-generated control focus must not pause Spotlight rotation indefinitely; only keyboard focus-visible receives the unbounded focus pause."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /spotlightQualificationInFlightKeysRef[\s\S]*?qualifySpotlightPresentation[\s\S]*?const accepted = Boolean[\s\S]*?if \(!accepted\)[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?recordAcceptedAttention\(\)/,
+  "Canonical qualification must remain retryable in flight and become locally complete only after server acceptance."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /document\.visibilityState !== "visible"[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?requestGeneration = \+\+spotlightRefreshGenerationRef\.current[\s\S]*?requestGeneration !== spotlightRefreshGenerationRef\.current/,
+  "Hidden-tab refreshes must retain authoritative governed state and stale overlapping responses must not overwrite the latest refresh."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /freshPresentationKey[\s\S]*?freshPresentationIndex[\s\S]*?weightedViewerRotationBroadcasts\[freshPresentationIndex\][\s\S]*?nextExpiryMs[\s\S]*?publicShopSpotlightPresentationIsCurrent[\s\S]*?requestNextCanonicalSpotlight/,
+  "Fresh governed presentations must be prioritized and canonical rows must be removed and replenished at their server expiry."
+);
+
+assertContains(
+  "frontend/src/lib/spotlightPilot.ts",
+  /maximumSafeOccurrences[\s\S]*?entry\.item !== previous[\s\S]*?queue\[0\] === queue\[queue\.length - 1\][\s\S]*?queue\.pop\(\)/,
+  "Weighted rotation must not manufacture consecutive identical presentations or a duplicate cycle boundary."
 );
 
 assertContains(

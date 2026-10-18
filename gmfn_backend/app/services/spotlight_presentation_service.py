@@ -17,6 +17,7 @@ from app.db.models import (
     SpotlightCampaignPacingState,
     SpotlightExposureEvent,
     SpotlightPresentationLease,
+    User,
 )
 from app.services.spotlight_exposure_diversity_allocation_service import allocate_spotlight_opportunity_candidates
 from app.services.spotlight_exposure_ledger_service import (
@@ -604,6 +605,7 @@ def record_spotlight_presentation_qualification(
         db.query(SpotlightPresentationLease)
         .filter(SpotlightPresentationLease.presentation_id == presentation_id)
         .filter(SpotlightPresentationLease.viewer_user_id == token_viewer_id)
+        .with_for_update()
         .one_or_none()
     )
     invalid_reason = _lease_invalid_reason(db, lease=lease, now=current_time)
@@ -640,6 +642,15 @@ def record_spotlight_presentation_qualification(
             rejection_code='reported_visibility_exceeds_server_elapsed_time',
             policy=policy,
         )
+    # Different leases for the same viewer must not qualify against the same
+    # stale frequency count. The stable viewer row serializes qualification in
+    # PostgreSQL; the frequency check below therefore observes the last commit.
+    (
+        db.query(User.id)
+        .filter(User.id == token_viewer_id)
+        .with_for_update()
+        .one()
+    )
     candidate = _current_presentable_candidate(db, viewer_user_id=token_viewer_id, campaign_id=campaign_id, now=current_time)
     if candidate is None:
         return SpotlightPresentationQualificationResult(accepted=False, campaign_id=campaign_id or None, presentation_id=presentation_id or None, rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE, policy=policy)
@@ -664,10 +675,13 @@ def record_spotlight_presentation_qualification(
         content_version=int(lease.content_version),
         presentation_id=presentation_id,
         owner_preview=False,
+        commit=False,
     )
     if exposure.recorded or exposure.deduped:
         lease.status = 'qualified'
         lease.qualified_at = current_time
+        # Exposure and lease qualification are one transaction. A failed
+        # commit cannot consume the viewer cap while leaving an issued lease.
         db.commit()
     event = exposure.event
     return SpotlightPresentationQualificationResult(

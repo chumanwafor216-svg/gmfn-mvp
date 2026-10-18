@@ -382,6 +382,7 @@ function publicShopSpotlightRowsAreCanonical(items: any[] | null | undefined): b
 
 function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): boolean {
   if (!item?.isCanonicalOpportunity) return false;
+  const deadlineMs = publicShopSpotlightPresentationDeadlineMs(item);
   if (item.isCanonicalReplay) {
     if (
       item.opportunityPresentationToken ||
@@ -390,16 +391,18 @@ function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): b
     ) {
       return false;
     }
-    const replayExpiresAtMs = new Date(
-      item.opportunityReplayExpiresAt || ""
-    ).getTime();
-    return Number.isFinite(replayExpiresAtMs) && replayExpiresAtMs > Date.now();
+    return Number.isFinite(deadlineMs) && deadlineMs > Date.now();
   }
   if (!item.opportunityPresentationToken) return false;
-  const expiresAtMs = new Date(
-    item.opportunityPresentationExpiresAt || ""
+  return Number.isFinite(deadlineMs) && deadlineMs > Date.now();
+}
+
+function publicShopSpotlightPresentationDeadlineMs(item: ShopBroadcast): number {
+  return new Date(
+    item.isCanonicalReplay
+      ? item.opportunityReplayExpiresAt || ""
+      : item.opportunityPresentationExpiresAt || ""
   ).getTime();
-  return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();
 }
 
 async function loadNextPublicShopSpotlightPresentations(
@@ -1900,9 +1903,11 @@ export default function ShopGalleryPage() {
   const spotlightVisibleRatioRef = useRef(0);
   const spotlightQualificationTimerRef = useRef<number | null>(null);
   const spotlightQualifiedKeysRef = useRef<Set<string>>(new Set());
+  const spotlightQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
   const spotlightNextRequestPendingRef = useRef(false);
   const spotlightNextEmptyUntilRef = useRef(0);
   const spotlightInteractionPausedUntilRef = useRef(0);
+  const spotlightRefreshGenerationRef = useRef(0);
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
   const [spotlightInteractionPausedUntil, setSpotlightInteractionPausedUntil] = useState(0);
   const [spotlightReducedMotion, setSpotlightReducedMotion] = useState(false);
@@ -2176,6 +2181,16 @@ export default function ShopGalleryPage() {
         .filter(broadcastIsActive),
         ...retainedCanonicalBroadcasts,
       ] as ShopBroadcast[];
+      const freshPresentationKey = firstMeaningful(
+        ...viewerBroadcasts.map((row) => {
+          const normalized = normalizeBroadcast(row);
+          return normalized?.isCanonicalOpportunity &&
+            !normalized.isCanonicalReplay &&
+            normalized.opportunityPresentationToken
+            ? normalized.opportunityPresentationId
+            : "";
+        })
+      );
       const normalizedBroadcastKeys = new Set<string>();
       const normalizedBroadcasts = normalizedBroadcastCandidates
         .filter((item) => {
@@ -2202,11 +2217,23 @@ export default function ShopGalleryPage() {
           ) || relevantBroadcast
         : null;
       const ownerInspectionKey = spotlightBroadcastKey(ownerInspectionSpotlight);
-      const viewerRotationBroadcasts = buildSpotlightRotationQueue(
+      const weightedViewerRotationBroadcasts = buildSpotlightRotationQueue(
         normalizedBroadcasts.filter(
           (item) => spotlightBroadcastKey(item) !== ownerInspectionKey
         )
       );
+      const freshPresentationIndex = freshPresentationKey
+        ? weightedViewerRotationBroadcasts.findIndex(
+            (item) => item.opportunityPresentationId === freshPresentationKey
+          )
+        : -1;
+      const viewerRotationBroadcasts = freshPresentationIndex > 0
+        ? [
+            weightedViewerRotationBroadcasts[freshPresentationIndex],
+            ...weightedViewerRotationBroadcasts.slice(0, freshPresentationIndex),
+            ...weightedViewerRotationBroadcasts.slice(freshPresentationIndex + 1),
+          ]
+        : weightedViewerRotationBroadcasts;
       const rotationBroadcasts = ownerSpotlightPreviewAuthorized
         ? ownerInspectionSpotlight
           ? [ownerInspectionSpotlight]
@@ -2303,10 +2330,19 @@ export default function ShopGalleryPage() {
       if (!getAccessToken()) return null;
       if (ownerSpotlightPreviewAuthorized) return [];
 
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        const cycleKey = publicShopSpotlightSelectionCycleKey(cleanedGmfnId);
+        const currentCycle = cycleKey
+          ? publicShopSpotlightSelectionCycles.get(cycleKey)
+          : undefined;
+        return publicShopSpotlightCycleIsAuthoritative(currentCycle, Date.now())
+          ? currentCycle?.items || []
+          : [];
+      }
+
       const canRequestCanonicalPresentation =
         safeStr(cleanedGmfnId) &&
-        !ownerSpotlightPreviewAuthorized &&
-        (typeof document === "undefined" || document.visibilityState === "visible");
+        !ownerSpotlightPreviewAuthorized;
 
       if (canRequestCanonicalPresentation) {
         const opportunityItems = await loadPublicShopSpotlightPresentationCycle(
@@ -2431,6 +2467,7 @@ export default function ShopGalleryPage() {
     }
 
     async function refreshPublicShopState(showPageLoading: boolean) {
+      const requestGeneration = ++spotlightRefreshGenerationRef.current;
       if (showPageLoading) {
         setLoading(true);
       }
@@ -2475,6 +2512,12 @@ export default function ShopGalleryPage() {
                 publicShopRes,
                 { useCommunityScope: false }
               );
+              if (
+                !alive ||
+                requestGeneration !== spotlightRefreshGenerationRef.current
+              ) {
+                return;
+              }
               applyPublicShop(
                 publicShopRes,
                 clanRes,
@@ -2526,6 +2569,9 @@ export default function ShopGalleryPage() {
           }
         }
 
+        if (!alive || requestGeneration !== spotlightRefreshGenerationRef.current) {
+          return;
+        }
         applyPublicShop(
           publicShopRes,
           clanRes,
@@ -2535,11 +2581,11 @@ export default function ShopGalleryPage() {
           ownerInspection
         );
       } catch (err: any) {
-        if (!alive) return;
+        if (!alive || requestGeneration !== spotlightRefreshGenerationRef.current) return;
         const message = safeStr(err?.message);
         setError(publicShopReconnectErrorMessage(message));
       } finally {
-        if (alive) {
+        if (alive && requestGeneration === spotlightRefreshGenerationRef.current) {
           setAutoRefreshingShop(false);
           if (showPageLoading) {
             setLoading(false);
@@ -2573,6 +2619,7 @@ export default function ShopGalleryPage() {
 
     return () => {
       alive = false;
+      spotlightRefreshGenerationRef.current += 1;
       if (typeof window !== "undefined") {
         window.removeEventListener("focus", handleVisibilityRefresh);
         if (refreshTimer !== null) {
@@ -2596,6 +2643,8 @@ export default function ShopGalleryPage() {
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
+    spotlightQualifiedKeysRef.current.clear();
+    spotlightQualificationInFlightKeysRef.current.clear();
     spotlightNextRequestPendingRef.current = false;
     spotlightNextEmptyUntilRef.current = 0;
   }, [gmfnId]);
@@ -2954,41 +3003,127 @@ export default function ShopGalleryPage() {
       }
       spotlightNextEmptyUntilRef.current = 0;
       setCommunitySpotlights((current) => {
-        const merged = current.filter(
+        const retained = current.filter(
           (item) =>
             !item.isCanonicalOpportunity ||
             publicShopSpotlightPresentationIsCurrent(item)
         );
-        for (const next of nextItems) {
-          const nextCampaignId = positiveNumber(next.opportunityCampaignId);
-          const nextPresentationId = firstMeaningful(
-            next.opportunityPresentationId
-          );
-          const existingIndex = merged.findIndex((item) => {
-            if (
-              nextCampaignId > 0 &&
-              positiveNumber(item.opportunityCampaignId) === nextCampaignId
-            ) {
-              return true;
-            }
-            return Boolean(
-              nextPresentationId &&
-                firstMeaningful(item.opportunityPresentationId) ===
-                  nextPresentationId
+        const nextCampaignIds = new Set(
+          nextItems.map((item) => positiveNumber(item.opportunityCampaignId)).filter(Boolean)
+        );
+        const nextPresentationIds = new Set(
+          nextItems.map((item) => firstMeaningful(item.opportunityPresentationId)).filter(Boolean)
+        );
+        const ownerPrefix =
+          ownerSpotlightInspectionMode &&
+          retained[0] &&
+          !retained[0].isCanonicalOpportunity
+            ? [retained[0]]
+            : [];
+        const viewerCandidates = [
+          ...nextItems,
+          ...retained.slice(ownerPrefix.length).filter((item) => {
+            const campaignId = positiveNumber(item.opportunityCampaignId);
+            const presentationId = firstMeaningful(item.opportunityPresentationId);
+            return !(
+              (campaignId > 0 && nextCampaignIds.has(campaignId)) ||
+              (presentationId && nextPresentationIds.has(presentationId))
             );
-          });
-          if (existingIndex >= 0) {
-            merged[existingIndex] = next;
-          } else {
-            merged.push(next);
-          }
-        }
-        return merged;
+          }),
+        ];
+        const seen = new Set<string>();
+        const uniqueViewerCandidates = viewerCandidates.filter((item) => {
+          const key = firstMeaningful(
+            item.opportunityPresentationId,
+            spotlightBroadcastKey(item)
+          );
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        const weightedQueue = buildSpotlightRotationQueue(uniqueViewerCandidates);
+        const firstNextKey = firstMeaningful(
+          nextItems[0]?.opportunityPresentationId,
+          spotlightBroadcastKey(nextItems[0])
+        );
+        const freshIndex = firstNextKey
+          ? weightedQueue.findIndex(
+              (item) =>
+                firstMeaningful(
+                  item.opportunityPresentationId,
+                  spotlightBroadcastKey(item)
+                ) === firstNextKey
+            )
+          : -1;
+        const prioritizedQueue = freshIndex > 0
+          ? [
+              weightedQueue[freshIndex],
+              ...weightedQueue.slice(0, freshIndex),
+              ...weightedQueue.slice(freshIndex + 1),
+            ]
+          : weightedQueue;
+        const nextQueue = [...ownerPrefix, ...prioritizedQueue];
+        const activeItem = current[miniSpotlightIndexRef.current];
+        const activeKey = firstMeaningful(
+          activeItem?.opportunityPresentationId,
+          spotlightBroadcastKey(activeItem)
+        );
+        const activeIndex = activeKey
+          ? nextQueue.findIndex(
+              (item) =>
+                firstMeaningful(
+                  item.opportunityPresentationId,
+                  spotlightBroadcastKey(item)
+                ) === activeKey
+            )
+          : -1;
+        if (activeIndex < 0) return nextQueue;
+
+        const circularQueue = [
+          nextQueue[activeIndex],
+          ...nextQueue.slice(0, activeIndex),
+          ...nextQueue.slice(activeIndex + 1),
+        ];
+        const retainedIndex = Math.min(
+          miniSpotlightIndexRef.current,
+          circularQueue.length - 1
+        );
+        return retainedIndex > 0
+          ? [
+              ...circularQueue.slice(circularQueue.length - retainedIndex),
+              ...circularQueue.slice(0, circularQueue.length - retainedIndex),
+            ]
+          : circularQueue;
       });
     } finally {
       spotlightNextRequestPendingRef.current = false;
     }
-  }, [gmfnId, ownerSpotlightPreviewAuthorized]);
+  }, [gmfnId, ownerSpotlightInspectionMode, ownerSpotlightPreviewAuthorized]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const nextExpiryMs = communitySpotlights
+      .filter((item) => item.isCanonicalOpportunity)
+      .map(publicShopSpotlightPresentationDeadlineMs)
+      .filter((value) => Number.isFinite(value) && value > Date.now())
+      .sort((a, b) => a - b)[0];
+    if (!nextExpiryMs) return;
+
+    const expiryTimer = window.setTimeout(() => {
+      prunePublicShopSpotlightSelectionCycles(Date.now());
+      setCommunitySpotlights((current) =>
+        current.filter(
+          (item) =>
+            !item.isCanonicalOpportunity ||
+            publicShopSpotlightPresentationIsCurrent(item)
+        )
+      );
+      spotlightNextEmptyUntilRef.current = 0;
+      void requestNextCanonicalSpotlight();
+    }, Math.max(nextExpiryMs - Date.now() + 25, 25));
+
+    return () => window.clearTimeout(expiryTimer);
+  }, [communitySpotlights, requestNextCanonicalSpotlight]);
   useEffect(() => {
     if (loading || error) return;
     const shopId = positiveNumber(effectiveShop?.id);
@@ -3335,8 +3470,11 @@ export default function ShopGalleryPage() {
     }
 
     function recordQualifiedPresentation() {
-      if (!alive || spotlightQualifiedKeysRef.current.has(presentationKey)) return;
-      spotlightQualifiedKeysRef.current.add(presentationKey);
+      if (
+        !alive ||
+        spotlightQualifiedKeysRef.current.has(presentationKey) ||
+        spotlightQualificationInFlightKeysRef.current.has(presentationKey)
+      ) return;
 
       const visibleRatio = Math.min(
         1,
@@ -3349,24 +3487,8 @@ export default function ShopGalleryPage() {
       const spotlightShopId = positiveNumber(activeSpotlight.shopId);
       const attentionClientEventId = `spotlight-attention:${presentationKey}`;
 
-      if (activeSpotlight.isCanonicalOpportunity && activeSpotlight.opportunityPresentationToken) {
-        void qualifySpotlightPresentation({
-          presentation_token: activeSpotlight.opportunityPresentationToken,
-          qualification_key: presentationKey,
-          visible_ms: Math.round(visibleMs),
-          visible_ratio: visibleRatio,
-          document_visible: currentDocumentVisible(),
-          owner_preview: false,
-        })
-          .then((result) => {
-            if (result?.ok === true || result?.recorded === true || result?.deduped === true) {
-              void requestNextCanonicalSpotlight();
-            }
-          })
-          .catch(() => undefined);
-      }
-
-      if (spotlightShopId) {
+      function recordAcceptedAttention() {
+        if (!spotlightShopId) return;
         trackMarketplaceAttention(
           "spotlight_impression",
           {
@@ -3382,11 +3504,63 @@ export default function ShopGalleryPage() {
           { allowShopFallback: false }
         );
       }
+
+      if (
+        activeSpotlight.isCanonicalOpportunity &&
+        activeSpotlight.opportunityPresentationToken
+      ) {
+        spotlightQualificationInFlightKeysRef.current.add(presentationKey);
+        void qualifySpotlightPresentation({
+          presentation_token: activeSpotlight.opportunityPresentationToken,
+          qualification_key: presentationKey,
+          visible_ms: Math.round(visibleMs),
+          visible_ratio: visibleRatio,
+          document_visible: currentDocumentVisible(),
+          owner_preview: false,
+        })
+          .then((result) => {
+            spotlightQualificationInFlightKeysRef.current.delete(presentationKey);
+            const accepted = Boolean(
+              result?.ok === true ||
+              result?.recorded === true ||
+              result?.deduped === true
+            );
+            if (!accepted) {
+              if (alive) {
+                visibleSince = 0;
+                qualificationTimer = window.setTimeout(
+                  evaluateQualification,
+                  750
+                );
+                spotlightQualificationTimerRef.current = qualificationTimer;
+              }
+              return;
+            }
+            spotlightQualifiedKeysRef.current.add(presentationKey);
+            recordAcceptedAttention();
+            void requestNextCanonicalSpotlight();
+          })
+          .catch(() => {
+            spotlightQualificationInFlightKeysRef.current.delete(presentationKey);
+            if (!alive) return;
+            visibleSince = 0;
+            qualificationTimer = window.setTimeout(evaluateQualification, 1000);
+            spotlightQualificationTimerRef.current = qualificationTimer;
+          });
+        return;
+      }
+
+      spotlightQualifiedKeysRef.current.add(presentationKey);
+      recordAcceptedAttention();
     }
 
     function evaluateQualification() {
       clearQualificationTimer();
-      if (!alive || spotlightQualifiedKeysRef.current.has(presentationKey)) return;
+      if (
+        !alive ||
+        spotlightQualifiedKeysRef.current.has(presentationKey) ||
+        spotlightQualificationInFlightKeysRef.current.has(presentationKey)
+      ) return;
       if (!currentDocumentVisible()) {
         visibleSince = 0;
         return;

@@ -54,12 +54,30 @@ export function buildSpotlightRotationQueue<T extends SpotlightRotationCandidate
 ): T[] {
   if (!Array.isArray(items) || items.length <= 1) return items;
 
+  // Weight may influence how often an item appears, but never by placing the
+  // same presentation in consecutive slots. With too little alternative
+  // inventory, surplus weight is deliberately dropped instead of making the
+  // rail look frozen.
   const queue: T[] = [];
-  for (const item of items) {
-    const weight = spotlightRotationWeight(item);
-    for (let index = 0; index < weight; index += 1) {
-      queue.push(item);
-    }
+  const maximumSafeOccurrences = Math.max(items.length - 1, 1);
+  const remaining = items.map((item, index) => ({
+    index,
+    item,
+    count: Math.min(spotlightRotationWeight(item), maximumSafeOccurrences),
+  }));
+
+  while (remaining.some((entry) => entry.count > 0)) {
+    const previous = queue[queue.length - 1];
+    const next = remaining
+      .filter((entry) => entry.count > 0 && entry.item !== previous)
+      .sort((a, b) => b.count - a.count || a.index - b.index)[0];
+    if (!next) break;
+    queue.push(next.item);
+    next.count -= 1;
+  }
+
+  while (queue.length > 1 && queue[0] === queue[queue.length - 1]) {
+    queue.pop();
   }
 
   return queue.length > 0 ? queue : items;

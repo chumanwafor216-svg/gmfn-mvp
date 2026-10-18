@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from sqlalchemy import text
 
 from app.core.security import create_access_token
@@ -262,6 +263,60 @@ def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_
         ).mappings().one()
     assert int(attribution["content_version"]) == 1
     assert attribution["presentation_id"] == presentation_id
+
+
+def test_qualification_commit_failure_rolls_back_exposure_and_lease():
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+    issued_at = _now()
+
+    with SessionLocal() as issue_db:
+        issued = select_spotlight_presentation(
+            issue_db,
+            viewer_user_id=1,
+            now=issued_at,
+        )
+        issue_db.commit()
+
+    assert issued.selected is True
+    presentation_id = issued.presentation_id or ""
+    token = issued.presentation_token or ""
+
+    with SessionLocal() as qualification_db:
+        original_commit = qualification_db.commit
+
+        def fail_commit() -> None:
+            raise RuntimeError("injected qualification commit failure")
+
+        qualification_db.commit = fail_commit  # type: ignore[method-assign]
+        with pytest.raises(RuntimeError, match="injected qualification commit failure"):
+            record_spotlight_presentation_qualification(
+                qualification_db,
+                viewer_user_id=1,
+                presentation_token=token,
+                qualification_key=presentation_id,
+                event_at=issued_at + timedelta(seconds=2),
+                visible_ms=SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+                visible_ratio=SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+                document_visible=True,
+            )
+        qualification_db.rollback()
+        qualification_db.commit = original_commit  # type: ignore[method-assign]
+
+    assert _ledger_count() == 0
+    with engine.begin() as conn:
+        lease = conn.execute(
+            text(
+                """
+                SELECT status, qualified_at
+                FROM spotlight_presentation_leases
+                WHERE presentation_id = :presentation_id
+                """
+            ),
+            {"presentation_id": presentation_id},
+        ).mappings().one()
+    assert lease["status"] == "issued"
+    assert lease["qualified_at"] is None
 
 
 def test_own_public_shop_can_present_another_member_without_self_delivery(

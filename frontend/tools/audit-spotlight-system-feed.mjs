@@ -609,7 +609,7 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const viewerRotationBroadcasts = buildSpotlightRotationQueue[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.viewerRotationBroadcasts\][\s\S]*?: viewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const weightedViewerRotationBroadcasts = buildSpotlightRotationQueue[\s\S]*?const viewerRotationBroadcasts =[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.viewerRotationBroadcasts\][\s\S]*?: viewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
   "Ordinary owner entry must rotate the owner's non-delivery item with other eligible members while explicit Preview remains owner-only."
 );
 

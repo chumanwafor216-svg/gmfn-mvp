@@ -91,6 +91,7 @@ def record_spotlight_qualifying_impression(
     presentation_id: Optional[str] = None,
     owner_preview: bool = False,
     marketplace_attention_event_id: Optional[int] = None,
+    commit: bool = True,
 ) -> SpotlightExposureRecordResult:
     current_time = _as_aware_utc(event_at) or _now_utc()
     viewer_id = int(viewer_user_id or 0)
@@ -169,24 +170,34 @@ def record_spotlight_qualifying_impression(
         relevance_signals_json=_json_dumps(relevance_signals),
         presentation_context_json=_json_dumps(presentation_context or {}),
     )
-    db.add(event)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        if key:
-            existing = (
-                db.query(SpotlightExposureEvent)
-                .filter(
-                    SpotlightExposureEvent.viewer_user_id == viewer_id,
-                    SpotlightExposureEvent.idempotency_key == key,
+    if commit:
+        db.add(event)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if key:
+                existing = (
+                    db.query(SpotlightExposureEvent)
+                    .filter(
+                        SpotlightExposureEvent.viewer_user_id == viewer_id,
+                        SpotlightExposureEvent.idempotency_key == key,
+                    )
+                    .first()
                 )
-                .first()
-            )
-            if existing is not None:
-                return SpotlightExposureRecordResult(recorded=False, deduped=True, event=existing)
-        raise
-    db.refresh(event)
+                if existing is not None:
+                    return SpotlightExposureRecordResult(recorded=False, deduped=True, event=existing)
+            raise
+        db.refresh(event)
+        return SpotlightExposureRecordResult(recorded=True, event=event)
+
+    # The caller owns the surrounding transaction. Do not use a nested
+    # savepoint here: on SQLite, releasing the outermost savepoint can make the
+    # flush survive a later injected commit failure. Qualification serializes
+    # the viewer before reaching this path, so the prior idempotency read is
+    # authoritative for this transaction.
+    db.add(event)
+    db.flush()
     return SpotlightExposureRecordResult(recorded=True, event=event)
 
 
