@@ -244,6 +244,18 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?data-owner-product-manage-mode=\{[\s\S]*?"focused"[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Remove from shop/,
+  "Public Shop owner handoff must focus the exact block and present Change or Remove as the first owner decision."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function revealProductEditor\(\)[\s\S]*?shop-assets-product-editor[\s\S]*?scrollIntoView[\s\S]*?function openEditForPublicSlot[\s\S]*?revealProductEditor\(\)[\s\S]*?id="shop-assets-product-editor"[\s\S]*?Change picture[\s\S]*?Change video/,
+  "Change media must reveal and focus the existing editor, whose picture/video controls use action labels rather than passive readiness labels."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /minHeight: selectedPublicProduct \? \(isCompact \? 236 : 108\) : isCompact \? 68 : 54/,
   "Shop Assets selected block action panel must reserve stable height so Open/Add/Repost controls cannot jump the shelf."
 );

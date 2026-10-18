@@ -3752,6 +3752,20 @@ export default function ShopGalleryPage() {
     );
   }
 
+  function ownerProductManagePath(product: ShopProduct): string {
+    const params = new URLSearchParams();
+    const productId = positiveNumber(product.id);
+    const blockNumber = positiveNumber(product.slotNumber);
+    if (productId) params.set("manage_product_id", String(productId));
+    if (blockNumber) params.set("manage_block", String(blockNumber));
+    params.set("source", "public-shop-product");
+
+    return routeWithCommunity(
+      `${APP_ROUTES.SHOP_ME}?${params.toString()}#shop-control-gallery-tools`,
+      ownerSurfaceCommunityId
+    );
+  }
+
   function writePaidRepostHandoff(product: ShopProduct) {
     if (typeof window === "undefined") return;
 
@@ -6765,7 +6779,9 @@ export default function ShopGalleryPage() {
                   productVideoUrl,
                 ].join("|");
                 const diaryActionHeight = isProductOpen
-                  ? isCompact
+                  ? showBlockPlacementAction
+                    ? 48
+                    : isCompact
                     ? 36
                     : 40
                   : isCompact
@@ -6773,9 +6789,7 @@ export default function ShopGalleryPage() {
                   : 42;
                 const diaryActionWidth = isProductOpen
                   ? showBlockPlacementAction
-                    ? isCompact
-                      ? 54
-                      : 60
+                    ? 48
                     : isCompact
                     ? 36
                     : 40
@@ -6783,10 +6797,10 @@ export default function ShopGalleryPage() {
                   ? 40
                   : 44;
                 const productOpenActionRailWidth = showBlockPlacementAction
-                  ? diaryActionWidth * 3 + (isCompact ? 6 : 8) * 2
+                  ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
                   : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
-                  ? `repeat(3, ${diaryActionWidth}px)`
+                  ? `repeat(4, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
@@ -7211,6 +7225,23 @@ export default function ShopGalleryPage() {
                           >
                             Repost
                           </StableCtaLink>
+                        ) : null}
+
+                        {showBlockPlacementAction && positiveNumber(product.id) ? (
+                          <ExistingWorkflowPlusLink
+                            to={ownerProductManagePath(product)}
+                            label={`Manage media for ${displayTitle}`}
+                            debugId={`shop-gallery.product.${productOpenId}.owner-manage`}
+                            shortcut="shop-product"
+                            data-owner-product-id={positiveNumber(product.id)}
+                            data-owner-product-block={positiveNumber(product.slotNumber)}
+                            style={{
+                              display: isProductOpen ? "inline-flex" : "none",
+                              alignSelf: "center",
+                              justifySelf: "start",
+                              overflowAnchor: "none",
+                            }}
+                          />
                         ) : null}
 
                       </div>

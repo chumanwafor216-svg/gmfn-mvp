@@ -21,10 +21,6 @@ function assertContains(key, pattern, message) {
   if (!pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
 }
 
-function assertNotContains(key, pattern, message) {
-  if (pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
-}
-
 function pageFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -41,11 +37,11 @@ const usages = allPageSources.flatMap(({ file, text }) =>
   [...text.matchAll(/<ExistingWorkflowPlusLink\b/g)].map(() => file)
 );
 
-if (usages.length !== 3) {
-  findings.push(`Expected exactly the three approved entry shortcuts; found ${usages.length}: ${usages.join(', ')}`);
+if (usages.length !== 4) {
+  findings.push(`Expected the three entry shortcuts plus one owner product-media shortcut template; found ${usages.length}: ${usages.join(', ')}`);
 }
-if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 2) {
-  findings.push('Public Shop must own only the Spotlight and Shop Diary shortcut templates.');
+if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 3) {
+  findings.push('Public Shop must own Spotlight, Shop Diary, and one expanded owner product-media shortcut template.');
 }
 if (usages.filter((file) => file.endsWith('MarketplacePage.tsx')).length !== 1) {
   findings.push('Marketplace must own exactly one DemandBox shortcut.');
@@ -76,15 +72,15 @@ assertContains(
   /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add diary entry["']/,
   'Shop Diary shortcut must be owner-only and reach the existing diary anchor with community context.'
 );
-assertNotContains(
+assertContains(
   'shop',
-  /ownerProductManagePath|shop-gallery\.product\.\$\{productOpenId\}\.owner-manage|shortcut="shop-product"/,
-  'Public Shop product media must not restore the duplicate floating owner management plus.'
+  /function ownerProductManagePath\(product: ShopProduct\)[\s\S]*?manage_product_id[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.toggle\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-share\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement\`\}[\s\S]*?showBlockPlacementAction && positiveNumber\(product\.id\)[\s\S]*?label=\{\`Manage media for \$\{displayTitle\}\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage\`\}[\s\S]*?shortcut="shop-product"[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  'An expanded owned product card must keep Close, Share, Repost, then one owner-only media-management plus that routes to the exact existing block workflow.'
 );
 assertContains(
   'assets',
-  /manage_product_id[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}/,
-  'Shop Assets must resolve the requested owned product to its actual block and focus the existing Edit/Remove controls.'
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Remove from shop/,
+  'Shop Assets must resolve the requested product/block, explain the exact task, and expose Change and Remove first.'
 );
 assertContains(
   'shop',
@@ -122,9 +118,9 @@ for (const block of shortcutBlocks) {
 }
 
 if (findings.length) {
-  console.error('Three plus shortcuts audit failed:');
+  console.error('Workflow plus shortcuts audit failed:');
   findings.forEach((finding) => console.error(`- ${finding}`));
   process.exit(1);
 }
 
-console.log('Workflow plus audit passed: the three entry shortcuts reuse existing workflows, while product cards keep one internal open/close control.');
+console.log('Workflow plus audit passed: the three entry shortcuts and expanded owner-only product-media shortcut reuse existing workflows without business writes.');

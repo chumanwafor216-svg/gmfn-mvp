@@ -30,7 +30,7 @@ const expectedPageSourceActions = {
   StableCtaLink: 5,
   total: 25,
 };
-const expectedExistingWorkflowPlusShortcuts = 2;
+const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
@@ -213,6 +213,7 @@ const expectedActionOrder = [
   "shop-gallery.product.${productOpenId}.toggle",
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
+  "shop-gallery.product.${productOpenId}.owner-manage",
   "shop-gallery.toggle-all-products",
 ];
 let cursor = -1;
@@ -408,6 +409,11 @@ assertContains(
 assertContains(
   /onClick=\{\(event\) => \{[\s\S]*?if \(isInteractiveCardTarget\(event\.target\)\) return;[\s\S]*?if \(!isProductOpen\) \{[\s\S]*?setOpenProductId\(productOpenId\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?setOpenProductId\(null\);[\s\S]*?\}\}[\s\S]*?onDoubleClick=\{\(event\) => \{/,
   "Public Shop Products & Services cards must open on a single tap of the card body, with double-click left only as a fallback."
+);
+
+assertContains(
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.toggle\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-share\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement\`\}[\s\S]*?label=\{\`Manage media for \$\{displayTitle\}\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage\`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Expanded owner product cards must keep four fixed actions in order: close, Share, Repost, and the owner-only manage-media plus."
 );
 
 assertContains(

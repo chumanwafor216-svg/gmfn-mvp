@@ -1386,7 +1386,7 @@ Shop Diary contract:
 - Promotion from a diary entry may prefill the Spotlight publisher for owner review, but must not auto-publish, bypass quota/payment rules, change evidence class, change chronology, or alter Spotlight ranking.
 - Entries are create-only in the frozen contract. Edit, hide/archive, delete, and downstream Spotlight mutation after a diary entry changes remain explicit future lifecycle debt.
 - On Public Shop, the exact authenticated owner may see one compact 48px `Add diary entry` plus beside the Shop Diary/Shop Update heading. It opens the existing Shop Assets Diary form with the current community and origin/back path, performs no write on open, and replaces the redundant empty-state add action. Visitors and non-owners do not see it. Delegated editor exposure remains unavailable until a shop-scoped editor authorization contract exists.
-- Products & Services remain separate from Shop Diary. Each product/service card keeps one internal open `+` that becomes `×` when opened. Do not overlay a second owner-only `Manage {item}` plus on the product media; owners continue to manage products through Shop Control.
+- Products & Services remain separate from Shop Diary. Each product/service card keeps its internal open `+` that becomes `×` when opened. Only the exact signed-in shop owner may see one separate 48px media-management `+` inside the expanded action dock after Close, Share, and Repost. It opens the existing Shop Gallery Tools lane on that exact product/block, where Change media or details and Remove from shop are the first decisions. It performs no write on open, stays hidden on closed cards, never opens/plays media, and never appears to visitors or non-owners. Do not place it as a floating media overlay.
 - A live owner-inspection Spotlight card on Public Shop shows the live label and content title without repeating start/expiry timestamps or the owner-exposure disclaimer. Shop Control remains the truthful timing and lifecycle-management surface; serving and exposure rules do not change.
 - Keep the Public Shop Vault card concise: `Private Vault`, `Owner invitation only.`, `Request access`, and `Copy request`. The request and copy handlers remain distinct and unchanged.
 
@@ -1450,7 +1450,10 @@ Rules:
   lives in the lower action dock, changes to a literal `×` when the card is
   open, and must not use a globe or commerce object as a close metaphor. Video
   sound may remain over the media only as a compact speaker control without a
-  large white capsule.
+  large white capsule. For the exact signed-in owner only, the expanded dock
+  also ends with one separate media-management `+`; it routes the exact
+  product/block to Shop Gallery Tools and must not replace the open/close
+  control or appear over the media.
 - Keep follow/owner controls behind one closed `Shop options` row. Keep Spotlight,
   Private Vault, and Shop Update behind `More from this shop` after Products &
   Services. When a live Spotlight is returned, that row opens automatically and

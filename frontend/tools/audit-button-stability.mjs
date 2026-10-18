@@ -1648,8 +1648,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 3[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?`repeat\(3, \$\{diaryActionWidth\}px\)`[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?showBlockPlacementAction \? \([\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
-  "Shop Gallery owner-only product share and placement actions must share the fixed product action rail without resizing the public visitor controls."
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?`repeat\(4, \$\{diaryActionWidth\}px\)`[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?showBlockPlacementAction \? \([\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?showBlockPlacementAction && positiveNumber\(product\.id\)[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Shop Gallery owner-only Share, Repost, and manage-media actions must share the fixed expanded product action rail without resizing public visitor controls."
 );
 
 assertNotContains(

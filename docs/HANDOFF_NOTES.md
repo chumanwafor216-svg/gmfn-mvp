@@ -25,6 +25,40 @@ under `docs/` or `docs/archive/`, then link that file here.
   candidate/pacing fallback and expired-renewal corrections. Both frontend and
   API were deployed.
 
+## Local Public Shop product-media handoff - 2026-10-18
+
+- Status: **local only**. This work is verified locally but has not been
+  committed, pushed, or deployed. Production still reflects the verified
+  application commit recorded above.
+- The owner explicitly superseded the 2026-10-17 single-plus Public Shop
+  product-card rule. The existing card `+` / `×` remains the open/close
+  control. When that exact product card is open, the exact signed-in shop owner
+  now receives a separate 48px `+` after Close, Share, and Repost.
+- The new inner `+` performs no product write and never opens or plays the
+  media. It passes the exact product ID, numbered block, selected community,
+  source, and return context to the existing Shop Gallery Tools lane.
+- Visitors and signed-in non-owners never receive the inner management
+  control. Closed owner cards do not show it, so the public media remains
+  unobstructed.
+- The owner destination selects and focuses the exact block, explains the
+  immediate choice, and presents `Change media or details` and
+  `Remove from shop` first. Change reveals and focuses the existing media
+  editor; its controls now say `Add/Change picture` and
+  `Add/Change video` according to actual media state.
+- Unabated truth: `Remove from shop` is a backend-authorised soft removal
+  that preserves product/history records; it is not a permanent database
+  erase. Backend routes, schemas, permissions, product data contracts,
+  Spotlight, and Shop Diary chronology were not changed.
+- Verification passed: TypeScript/Vite production build (290 modules);
+  focused workflow-plus, Public Shop inventory, Shop Assets slot, Shop Control
+  inventory, Shop Diary Phase 1/2, action-response, broad button-stability, and
+  full protected-button audits; Public Shop and Shop Assets slot-replacement
+  browser smokes; and the focused 390x844 workflow smoke. The focused smoke
+  proves the four expanded owner actions are each at least 48x48, align without
+  overlap or horizontal overflow, preserve exact product/block/community and
+  origin, expose Change/Remove before the editor, issue no business write on
+  navigation, and remain absent for visitors.
+
 ## Deployed Spotlight repair - 2026-10-18
 
 - Production evidence confirmed that campaign `319` for shop `4` activated at
@@ -201,11 +235,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ### Public Shop
 
-- The duplicate screen-level product `+` control was removed. Product cards
-  retain their own add/replace control.
-- Product controls and Spotlight presentation share the current deployed
-  Public Shop surface. Preserve exact product-block links and owner-preview
-  separation.
+- Production still has the 2026-10-17 single-plus product-card contract. The
+  verified local continuation keeps that open/close `+` and adds one separate
+  owner-only inner media-management `+` only after a card opens.
+- Product controls and Spotlight presentation share the Public Shop surface.
+  Preserve exact product-block links, visitor/owner separation, and Spotlight
+  owner-preview separation.
 
 ### DemandBox
 

@@ -251,8 +251,8 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
   await assertTouchTarget(spotlightPlus, 'Spotlight plus');
   await assertTouchTarget(diaryPlus, 'Shop Diary plus');
-  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) {
-    throw new Error('Owner received the removed floating product management plus.');
+  if (await page.getByRole('link', { name: 'Manage media for Jollof tray' }).count()) {
+    throw new Error('Owner product-media plus appeared before its product card was opened.');
   }
   if (await page.getByText(/Started 16 Oct 2026|Expires 17 Oct 2026|Owner inspection does not count/).count()) {
     throw new Error('Live owner Spotlight still exposes removed timing or inspection copy.');
@@ -292,18 +292,23 @@ async function testVisitorShopShortcutsHidden(browser, baseUrl) {
   if ((await page.locator('[data-public-shop-more="secondary"]').getAttribute('open')) === null) await summary.click();
   if (await page.getByRole('link', { name: 'Add Spotlight' }).count()) throw new Error('Visitor received owner Spotlight shortcut.');
   if (await page.getByRole('link', { name: 'Add diary entry' }).count()) throw new Error('Visitor received owner Shop Diary shortcut.');
-  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) throw new Error('Visitor received owner product-block shortcut.');
+  const productPlus = page.getByRole('button', { name: 'Open Jollof tray' });
+  await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  await productPlus.click();
+  if (await page.getByRole('link', { name: 'Manage media for Jollof tray' }).count()) {
+    throw new Error('Visitor received owner product-media shortcut after opening the card.');
+  }
   const writes = businessWrites(scenario.mutations);
   if (writes.length !== 0) throw new Error(`Visitor inspection issued business write request(s): ${writes.join(', ')}.`);
   await context.close();
 }
 
-async function testOwnerProductSinglePlus(browser, baseUrl) {
+async function testOwnerProductMediaShortcut(browser, baseUrl) {
   const scenario = { identity: ownerId, ownerSpotlightState: 'live', demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
   const { context, page } = await newPhonePage(browser, scenario);
   await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  if (await page.getByRole('link', { name: 'Manage Jollof tray' }).count()) {
-    throw new Error('Product card still exposes the duplicate floating management plus.');
+  if (await page.getByRole('link', { name: 'Manage media for Jollof tray' }).count()) {
+    throw new Error('Product media shortcut appeared while the card was closed.');
   }
   const productPlus = page.getByRole('button', { name: 'Open Jollof tray' });
   await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
@@ -312,12 +317,76 @@ async function testOwnerProductSinglePlus(browser, baseUrl) {
   await productPlus.click();
   await page.getByRole('button', { name: 'Close Jollof tray' }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.locator('[data-product-card-toggle-symbol="close"]').waitFor({ state: 'visible', timeout: 20_000 });
+  const productCard = page.locator('#shop-block-2');
+  const closeAction = productCard.getByRole('button', { name: 'Close Jollof tray' });
+  const shareAction = productCard.getByRole('button', { name: 'Share' });
+  const repostAction = productCard.getByRole('link', { name: /Repost Jollof tray/ });
+  const managePlus = page.getByRole('link', { name: 'Manage media for Jollof tray' });
+  await shareAction.waitFor({ state: 'visible', timeout: 20_000 });
+  await repostAction.waitFor({ state: 'visible', timeout: 20_000 });
+  await managePlus.waitFor({ state: 'visible', timeout: 20_000 });
+  for (const [locator, label] of [
+    [closeAction, 'Expanded product close'],
+    [shareAction, 'Expanded product Share'],
+    [repostAction, 'Expanded product Repost'],
+    [managePlus, 'Expanded product manage-media plus'],
+  ]) {
+    await assertTouchTarget(locator, label);
+  }
+  const actionBoxes = await Promise.all(
+    [closeAction, shareAction, repostAction, managePlus].map((locator) => locator.boundingBox())
+  );
+  for (let index = 0; index < actionBoxes.length - 1; index += 1) {
+    const current = actionBoxes[index];
+    const next = actionBoxes[index + 1];
+    if (!current || !next || current.x + current.width > next.x + 0.5) {
+      throw new Error('Expanded product actions overlap or are not ordered Close, Share, Repost, then manage plus.');
+    }
+    if (Math.abs(current.y - next.y) > 2) {
+      throw new Error('Expanded product actions did not stay on one aligned row.');
+    }
+  }
+  const horizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1
+  );
+  if (horizontalOverflow) throw new Error('Expanded owner product actions created horizontal phone overflow.');
   await page.screenshot({
-    path: join(screenshotDir, 'three-plus-owner-product-single-plus-390x844.png'),
+    path: join(screenshotDir, 'three-plus-owner-product-expanded-actions-390x844.png'),
     fullPage: true,
   });
+  await managePlus.click();
+  await page.waitForFunction(() => {
+    const url = new URL(window.location.href);
+    return (
+      url.pathname === '/app/shop-control' &&
+      url.searchParams.get('manage_product_id') === '601' &&
+      url.searchParams.get('manage_block') === '2' &&
+      url.searchParams.get('source') === 'public-shop-product' &&
+      url.searchParams.get('community') === '8' &&
+      url.hash === '#shop-control-gallery-tools'
+    );
+  }, { timeout: 30_000 });
+  const target = page.locator(
+    '#shop-assets-selected-public-block[data-owner-product-manage-target="601"][data-owner-product-manage-mode="focused"]'
+  );
+  await target.waitFor({ state: 'visible', timeout: 30_000 });
+  await page.getByText('This is the exact public block you opened.').waitFor({ state: 'visible', timeout: 20_000 });
+  const changeAction = page.getByRole('button', { name: 'Change media or details' });
+  await changeAction.waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: 'Remove from shop' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await changeAction.click();
+  const editor = page.locator('#shop-assets-product-editor');
+  await editor.waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: /Add picture|Change picture/ }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: /Add video|Change video/ }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.screenshot({
+    path: join(screenshotDir, 'three-plus-owner-product-manage-390x844.png'),
+    fullPage: true,
+  });
+  const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
+  if (!origin.includes(`/shop/${ownerId}`)) throw new Error('Product media shortcut lost its Public Shop return path.');
   const writes = businessWrites(scenario.mutations);
-  if (writes.length !== 0) throw new Error(`Product open/close issued business write request(s): ${writes.join(', ')}.`);
+  if (writes.length !== 0) throw new Error(`Product open/manage navigation issued business write request(s): ${writes.join(', ')}.`);
   await context.close();
 }
 
@@ -382,7 +451,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
-  await testOwnerProductSinglePlus(browser, baseUrl);
+  await testOwnerProductMediaShortcut(browser, baseUrl);
   await testVisitorShopShortcutsHidden(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
@@ -394,7 +463,8 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'owner product card has no floating management plus and keeps one internal + / × control',
+      'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
+      'owner product-media shortcut selects the exact block and exposes Change/Remove before the media editor',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',

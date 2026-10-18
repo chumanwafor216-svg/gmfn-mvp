@@ -1032,11 +1032,14 @@ function resolveAssetSrc(raw: unknown): string {
 export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const embedded = Boolean(props.embedded);
   const ownerProductManageRequest = useMemo(() => {
-    if (typeof window === "undefined") return { productId: 0, blockNumber: 0 };
+    if (typeof window === "undefined") {
+      return { productId: 0, blockNumber: 0, source: "" };
+    }
     const params = new URLSearchParams(window.location.search);
     return {
       productId: safePositiveNumber(params.get("manage_product_id"), 0),
       blockNumber: safePositiveNumber(params.get("manage_block"), 0),
+      source: firstTruthy(params.get("source")),
     };
   }, []);
   const ownerProductManageAppliedRef = useRef(false);
@@ -1645,24 +1648,57 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   );
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
+  const ownerProductManageTargetActive = Boolean(
+    ownerProductManageRequest.source === "public-shop-product" &&
+      selectedPublicProduct &&
+      (
+        (
+          ownerProductManageRequest.productId > 0 &&
+          Number(selectedPublicProduct.id || 0) === ownerProductManageRequest.productId
+        ) ||
+        (
+          ownerProductManageRequest.productId <= 0 &&
+          ownerProductManageRequest.blockNumber === selectedPublicSlot
+        )
+      )
+  );
 
   useEffect(() => {
     if (
       loading ||
       ownerProductManageAppliedRef.current ||
-      ownerProductManageRequest.productId <= 0
+      (
+        ownerProductManageRequest.productId <= 0 &&
+        ownerProductManageRequest.blockNumber <= 0
+      )
     ) {
       return;
     }
 
-    const matchedSlotIndex = publicGallerySlots.findIndex(
-      (item) => Number(item?.id || 0) === ownerProductManageRequest.productId
-    );
+    const matchedSlotIndex = publicGallerySlots.findIndex((item, index) => {
+      if (
+        ownerProductManageRequest.productId > 0 &&
+        Number(item?.id || 0) === ownerProductManageRequest.productId
+      ) {
+        return true;
+      }
+
+      return (
+        ownerProductManageRequest.productId <= 0 &&
+        ownerProductManageRequest.blockNumber > 0 &&
+        index + 1 === ownerProductManageRequest.blockNumber
+      );
+    });
     if (matchedSlotIndex < 0) return;
 
     const matchedSlot = matchedSlotIndex + 1;
     ownerProductManageAppliedRef.current = true;
     setSelectedPublicSlot(matchedSlot);
+    setGalleryActionNotice({
+      tone: "info",
+      text: "This is the exact public block you opened. Change its media or details, or remove it from the shop.",
+      slotNumber: matchedSlot,
+    });
 
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById("shop-assets-selected-public-block");
@@ -1675,7 +1711,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [loading, ownerProductManageRequest.productId, publicGallerySlots]);
+  }, [
+    loading,
+    ownerProductManageRequest.blockNumber,
+    ownerProductManageRequest.productId,
+    publicGallerySlots,
+  ]);
 
   function resetDiaryForm() {
     setDiaryActivityType("other_update");
@@ -2087,6 +2128,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductVisibility("community_visible");
     setProductEditorOpen(true);
     setCollapsed((prev) => ({ ...prev, products: false }));
+    revealProductEditor();
+  }
+
+  function revealProductEditor() {
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById("shop-assets-product-editor");
+        target?.scrollIntoView({ behavior: "auto", block: "start" });
+        target?.focus({ preventScroll: true });
+      });
+    });
   }
 
   function openEditForPublicSlot(item: ProductRecord, slotNumber: number) {
@@ -2102,6 +2155,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductFormNotice(null);
     setProductEditorOpen(true);
     setCollapsed((prev) => ({ ...prev, products: false }));
+    revealProductEditor();
   }
 
   function openQuickAddProduct() {
@@ -3412,10 +3466,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div
               id="shop-assets-selected-public-block"
               data-owner-product-manage-target={selectedPublicProduct?.id || ""}
+              data-owner-product-manage-mode={
+                ownerProductManageTargetActive ? "focused" : undefined
+              }
               tabIndex={-1}
               style={{ ...innerCard("#FCFEFF"), scrollMarginTop: embedded ? 118 : 24 }}
             >
-              <div style={sectionLabel()}>Selected block</div>
+              <div style={sectionLabel()}>
+                {ownerProductManageTargetActive ? "Manage this public block" : "Selected block"}
+              </div>
               <div
                 style={{
                   marginTop: 8,
@@ -3483,7 +3542,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       stableHeight={isCompact ? 56 : 48}
                       debugId={`shop-assets.public-slot.${selectedPublicSlot}.edit`}
                     >
-                      Edit product
+                      Change media or details
                     </PrimaryButton>
 
                     <SecondaryButton
@@ -3585,7 +3644,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       ) : null}
 
       {(!embedded || productEditorOpen) ? (
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        id="shop-assets-product-editor"
+        tabIndex={-1}
+        style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}
+      >
         <div
           style={{
             display: "flex",
@@ -3634,15 +3697,17 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div style={sectionLabel()}>
               {embedded
                 ? editingProductId
-                  ? `Edit product in block #${selectedPublicSlot}`
+                  ? `Change block #${selectedPublicSlot}`
                   : `+ Add product to block #${selectedPublicSlot}`
                 : editingProductId
-                ? `Edit item #${editingProductId}`
+                ? `Change item #${editingProductId}`
                 : "Add item"}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Choose a picture or video, add the name and price, then post.
+              {editingProductId
+                ? "Choose a new picture or video only when you want to replace the current media. Then save the product."
+                : "Choose a picture or video, add the name and price, then post."}
             </div>
 
             {productFormNotice ? (
@@ -3687,7 +3752,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId="shop-assets.product.pick-picture"
                   >
-                    {labelWithIcon("image", productSelectedFile || safeStr(productImageUrlInput) ? "Picture ready" : "Add picture")}
+                    {labelWithIcon(
+                      "image",
+                      productSelectedFile || safeStr(productImageUrlInput)
+                        ? "Change picture"
+                        : "Add picture"
+                    )}
                   </StableButton>
                   <StableButton
                     type="button"
@@ -3696,7 +3766,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId="shop-assets.product.pick-video"
                   >
-                    {labelWithIcon("video", productSelectedVideoFile || safeStr(productVideoUrlInput) ? "Video ready" : "Add video")}
+                    {labelWithIcon(
+                      "video",
+                      productSelectedVideoFile || safeStr(productVideoUrlInput)
+                        ? "Change video"
+                        : "Add video"
+                    )}
                   </StableButton>
                 </div>
                 <details style={{ marginTop: 12 }}>
