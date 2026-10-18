@@ -11,15 +11,18 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified frontend commit: `fae5be9577e3573b388d22bbb8464777147a1ccb`.
-- Frontend Render deploy `dep-dbaepg1124ks73ef6rcg` reached `live` on that
-  exact commit. Trigger Render Deploy run `39142897929` completed successfully
-  with `deploy_api=false`, verified the public build marker, and intentionally
-  skipped the API.
-- The API remains on verified commit
-  `780e0a5c4b39ceafcfe78d38b205ab54855ede3f` and live Render deploy
-  `dep-dbaegg61egvs73adf5g0` from successful run `39141282655`.
-- An independent post-deploy request returned HTTP 200 from the frontend.
+- Current verified frontend and API application commit:
+  `52b9da7f98bc1cd1be08c67b4e89028c9e348674`.
+- Frontend Render deploy `dep-dbafg3p124ks73efotjg` and API Render deploy
+  `dep-dbafhdbncjis73dcq03g` both reached `live` on that exact commit.
+  Trigger Render Deploy run `39146577156` completed successfully with
+  `deploy_api=true`, verified the public frontend build marker, and passed
+  the live API contract check on its first attempt.
+- Main-branch Backend Tests run `39146264192` completed successfully before
+  deployment.
+- Independent post-deploy requests returned HTTP 200 from the frontend,
+  `/health`, and `/marketplace/media/ping`; health reported
+  `{"ok":true,"dev_mode":false}` and the media router reported active.
 - The current frontend adds the focused exact-product management destination
   to the already deployed owner shortcut and permanent-deletion workflow. The
   retained API release includes atomic Vault/linked-Spotlight retirement,
@@ -29,11 +32,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Media Quality Gate v1 implementation - 2026-10-18
 
-- Status: implemented and locally verified; not yet claimed deployed at this point in the handoff.
+- Status: deployed and independently health-checked on the exact application commit recorded above.
 - New product, Vault, Community Notice, and Spotlight videos now share one authenticated backend quality gate. The server inspects the real media, not client duration or file labels; rejects unreadable, sub-720-short-edge, sub-20-fps, extra-wide/tall, empty/too-short, oversized, and failed-transcode video; physically keeps only the opening 10 seconds; and writes a bounded MP4/H.264 output. Existing audio is encoded as AAC with modest loudness normalisation; silent product video remains valid.
 - The implementation deliberately does not add AI enhancement, sharpening, invented detail, filters, or a video editor. The member receives preparation guidance and a specific corrective rejection. Measurable technical checks cannot guarantee subjectively good lighting, framing, speech, or selling quality.
 - New pasted/external video links, direct local video PUT, and direct R2 video PUT can no longer bypass verification. Existing legacy video remains readable and may survive an unchanged edit; a new or changed video must be uploaded through the verified path. Shop Gallery Tools and Vault Control retain explicit Remove video actions.
-- Focused backend verification passed 14 tests, including low-resolution and extreme-aspect rejection, false client-duration resistance, bounded oversize reading, physical trimming of a real 12-second audio/video file, H.264/AAC output inspection, verified-file enforcement, and closure of the legacy direct-upload route. The broader Marketplace, Spotlight lifecycle, Community Notice, and Vault regression run passed 128 tests. The media-quality, Shop Assets, Vault Control, Spotlight controls, and complete protected-button audits passed, and the frontend production build passed with 290 modules. Final publish/deploy verification remains to be recorded before this status is changed to deployed.
+- Focused backend verification passed 14 tests, including low-resolution and extreme-aspect rejection, false client-duration resistance, bounded oversize reading, physical trimming of a real 12-second audio/video file, H.264/AAC output inspection, verified-file enforcement, and closure of the legacy direct-upload route. The broader Marketplace, Spotlight lifecycle, Community Notice, and Vault regression run passed 128 tests. The media-quality, Shop Assets, Vault Control, Spotlight controls, and complete protected-button audits passed, and the frontend production build passed with 290 modules. The deployment workflow and independent HTTP checks recorded above passed. A real authenticated production video publish remains the final phone/pilot observation; the health and route checks do not execute a production transcode.
 
 ## Deployed Public Shop product management and retention handoff - 2026-10-18
 
