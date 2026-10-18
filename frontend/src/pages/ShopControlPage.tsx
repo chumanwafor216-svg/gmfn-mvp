@@ -6514,22 +6514,6 @@ export default function ShopControlPage() {
       }
     } catch (err: any) {
       if (spotlightVideoPrepJobRef.current !== prepJob) return;
-
-      const canUseOriginalForPilot =
-        Number(file.size || 0) <= SPOTLIGHT_MAX_VIDEO_BYTES &&
-        !validateSpotlightVideoFile(file, true);
-
-      if (canUseOriginalForPilot) {
-        setSpotlightVideoFile(file);
-        setSpotlightVideoDurationSeconds(null);
-        setSpotlightPublishFeedback(null);
-        showNotice(
-          "info",
-          "This phone could not trim the video automatically, so GSN will use the uploaded file and play it as a 10-second spotlight clip."
-        );
-        return;
-      }
-
       showNotice(
         "error",
         safeStr(err?.message) || "This video could not be prepared for spotlight publish."

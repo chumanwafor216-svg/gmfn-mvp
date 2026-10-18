@@ -532,6 +532,10 @@ export async function parseError(res: Response): Promise<string> {
     }
 
     if (j?.detail && typeof j.detail === "object") {
+      const detailMessage = String(
+        j.detail.message || j.detail.explanation || j.detail.error || ""
+      ).trim();
+      if (detailMessage) return detailMessage;
       return JSON.stringify(j.detail);
     }
 

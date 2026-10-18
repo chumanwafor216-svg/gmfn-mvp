@@ -25,6 +25,7 @@ def _upload_root() -> Path:
 def test_marketplace_upload_url_rejects_malformed_text_controls(
     client,
     monkeypatch,
+    override_current_user,
 ):
     upload_root = _upload_root()
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
@@ -59,6 +60,7 @@ def test_marketplace_upload_url_rejects_malformed_text_controls(
 def test_marketplace_upload_url_valid_image_still_returns_direct_upload_contract(
     client,
     monkeypatch,
+    override_current_user,
 ):
     upload_root = _upload_root()
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))

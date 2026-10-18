@@ -24,6 +24,7 @@
     "audit:surface-ownership": "node tools/audit-surface-ownership-contract.mjs",
     "audit:commitments-surface": "node tools/audit-commitments-surface.mjs",
     "audit:spotlight-controls": "node tools/audit-spotlight-controls.mjs",
+    "audit:media-quality-gate": "node tools/audit-media-quality-gate.mjs",
     "audit:spotlight-quota": "node tools/audit-spotlight-quota-suspension.mjs",
     "audit:spotlight-system-feed": "node tools/audit-spotlight-system-feed.mjs",
     "audit:spotlight-presentation-contract": "node tools/audit-spotlight-presentation-contract.mjs",

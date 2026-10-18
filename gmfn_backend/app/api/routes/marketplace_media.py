@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import secrets
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -14,13 +15,19 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, User
+from app.services.marketplace_media_quality_service import (
+    MAX_NORMALIZED_VIDEO_BYTES,
+    MAX_VIDEO_DURATION_SECONDS as QUALITY_MAX_VIDEO_DURATION_SECONDS,
+    MediaQualityError,
+    normalize_marketplace_video,
+)
 from app.services.storage_service import StorageServiceError, create_presigned_upload
 
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_BYTES = 15 * 1024 * 1024
-MAX_VIDEO_DURATION_SECONDS = 10.0
+MAX_VIDEO_BYTES = MAX_NORMALIZED_VIDEO_BYTES
+MAX_VIDEO_DURATION_SECONDS = QUALITY_MAX_VIDEO_DURATION_SECONDS
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
@@ -92,9 +99,14 @@ def _video_upload_dir() -> Path:
     return _base_upload_dir() / "videos"
 
 
+def _video_processing_dir() -> Path:
+    return _video_upload_dir() / ".processing"
+
+
 def _ensure_dirs() -> None:
     _image_upload_dir().mkdir(parents=True, exist_ok=True)
     _video_upload_dir().mkdir(parents=True, exist_ok=True)
+    _video_processing_dir().mkdir(parents=True, exist_ok=True)
 
 
 def _safe_ext(filename: Optional[str]) -> str:
@@ -176,13 +188,20 @@ def _max_bytes_for(media_type: str) -> int:
 
 
 async def _read_limited_bytes(file: UploadFile, max_bytes: int) -> bytes:
-    data = await file.read()
-    if len(data) > max_bytes:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File is too large. Maximum allowed is {max_bytes // (1024 * 1024)}MB.",
-        )
-    return data
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File is too large. Maximum allowed is {max_bytes // (1024 * 1024)}MB.",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 class UploadUrlCreateIn(BaseModel):
@@ -205,10 +224,19 @@ class R2UploadUrlCreateIn(UploadUrlCreateIn):
 async def create_marketplace_upload_url(
     payload: UploadUrlCreateIn,
     request: Request,
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _ensure_dirs()
 
     media_type = _validate_media_type(payload.media_type)
+    if media_type == "video":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "verified_video_upload_required",
+                "message": "Videos must use the verified GSN video upload so quality, duration, and format can be checked.",
+            },
+        )
     ext = _safe_ext(payload.filename)
     content_type = _normalize_content_type(payload.content_type)
 
@@ -248,6 +276,14 @@ async def create_marketplace_r2_upload_url(
         use_community_credit_account = True
 
     media_type = _validate_media_type(payload.media_type)
+    if media_type == "video":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "verified_video_upload_required",
+                "message": "Direct R2 video upload is unavailable until it passes the same GSN quality gate.",
+            },
+        )
     ext = _safe_ext(payload.filename)
     content_type = _normalize_content_type(payload.content_type)
 
@@ -304,12 +340,21 @@ async def upload_marketplace_file_direct(
     kind: str,
     filename: str,
     request: Request,
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _ensure_dirs()
 
     kind = str(kind or "").strip().lower()
     if kind not in {"images", "videos"}:
         raise HTTPException(status_code=400, detail="Invalid media path")
+    if kind == "videos":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "verified_video_upload_required",
+                "message": "Direct video upload cannot bypass the GSN quality gate.",
+            },
+        )
 
     ext = _safe_ext(filename)
     media_type = "image" if kind == "images" else "video"
@@ -347,6 +392,7 @@ async def upload_marketplace_file_direct(
 async def upload_marketplace_image(
     file: UploadFile = File(...),
     clan_id: Optional[int] = Form(default=None),
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _ensure_dirs()
 
@@ -380,6 +426,7 @@ async def upload_marketplace_video(
     file: UploadFile = File(...),
     duration_seconds: Optional[float] = Form(default=None),
     clan_id: Optional[int] = Form(default=None),
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _ensure_dirs()
 
@@ -389,28 +436,51 @@ async def upload_marketplace_video(
     _validate_ext("video", ext)
     _validate_content_type("video", content_type, ext)
 
-    if duration_seconds is not None and float(duration_seconds) > MAX_VIDEO_DURATION_SECONDS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Video must not be longer than {int(MAX_VIDEO_DURATION_SECONDS)} seconds.",
-        )
-
     data = await _read_limited_bytes(file, MAX_VIDEO_BYTES)
     if not data:
         raise HTTPException(status_code=400, detail="Video file is empty.")
 
-    filename = _random_name(ext)
+    processing_token = secrets.token_hex(8)
+    input_path = _video_processing_dir() / f"{processing_token}.source{ext}"
+    output_path = _video_processing_dir() / f"{processing_token}.normalized.mp4"
+    filename = f"qv1_{_random_name('.mp4')}"
     filepath = _video_upload_dir() / filename
-    filepath.write_bytes(data)
+
+    try:
+        input_path.write_bytes(data)
+        normalized = normalize_marketplace_video(input_path, output_path)
+        shutil.move(str(output_path), str(filepath))
+    except MediaQualityError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": exc.code,
+                "message": str(exc),
+                "standard": {
+                    "minimum_short_edge": 720,
+                    "minimum_fps": 20,
+                    "maximum_public_seconds": int(MAX_VIDEO_DURATION_SECONDS),
+                    "output_format": "MP4",
+                },
+            },
+        ) from exc
+    finally:
+        input_path.unlink(missing_ok=True)
+        output_path.unlink(missing_ok=True)
 
     return {
         "ok": True,
         "kind": "video",
         "filename": filename,
-        "content_type": content_type,
-        "size_bytes": len(data),
-        "duration_seconds": duration_seconds,
+        "content_type": "video/mp4",
+        "size_bytes": int(normalized.size_bytes),
+        "source_size_bytes": len(data),
+        "duration_seconds": normalized.output.duration_seconds,
+        "source_duration_seconds": normalized.source.duration_seconds,
         "max_video_seconds": MAX_VIDEO_DURATION_SECONDS,
+        "trimmed": normalized.trimmed,
+        "quality_verified": True,
+        "quality": normalized.as_dict(),
         "url": _public_url_for("videos", filename),
         "clan_id": clan_id,
     }

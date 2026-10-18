@@ -9,6 +9,7 @@ import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
 } from "../lib/spotlightPilot";
 import {
   prepareSpotlightImageFile,
@@ -359,6 +360,11 @@ export default function CommunityNoticeModal({
             </div>
             {attachmentUploading ? (
               <p style={attachmentHelpStyle}>Uploading attachment...</p>
+            ) : null}
+            {attachmentKind === "video" ? (
+              <p style={attachmentHelpStyle}>
+                {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
+              </p>
             ) : null}
             {attachmentUploadMessage ? (
               <p style={successTextStyle}>{attachmentUploadMessage}</p>

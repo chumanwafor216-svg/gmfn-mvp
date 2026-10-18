@@ -4,6 +4,10 @@ export type PreparedSpotlightMedia = {
   durationSeconds?: number | null;
 };
 
+const DEFAULT_MIN_VIDEO_SHORT_EDGE = 720;
+const DEFAULT_MAX_VIDEO_ASPECT_RATIO = 1.85;
+const DEFAULT_MIN_VIDEO_DURATION_SECONDS = 1;
+
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -160,6 +164,45 @@ function waitForVideoMetadata(src: string): Promise<HTMLVideoElement> {
   });
 }
 
+function validateVideoQuality(
+  video: HTMLVideoElement,
+  options: {
+    minShortEdge: number;
+    maxAspectRatio: number;
+  }
+) {
+  const width = Math.max(0, Number(video.videoWidth || 0));
+  const height = Math.max(0, Number(video.videoHeight || 0));
+  const durationSeconds = Math.max(0, Number(video.duration || 0));
+
+  if (width <= 0 || height <= 0 || durationSeconds <= 0) {
+    throw new Error(
+      "GSN could not verify this video. Use a playable MP4, WebM, or MOV file."
+    );
+  }
+  if (durationSeconds < DEFAULT_MIN_VIDEO_DURATION_SECONDS) {
+    throw new Error("The video must be at least 1 second long.");
+  }
+
+  const shortEdge = Math.min(width, height);
+  if (shortEdge < options.minShortEdge) {
+    throw new Error(
+      `This video is ${Math.round(width)}x${Math.round(
+        height
+      )}. GSN requires clear 720p or better video. Record or export a higher-quality version.`
+    );
+  }
+
+  const aspectRatio = Math.max(width, height) / Math.max(shortEdge, 1);
+  if (aspectRatio > options.maxAspectRatio) {
+    throw new Error(
+      "Use a normal portrait, square, or landscape video. Very narrow or extra-wide video is not accepted."
+    );
+  }
+
+  return { width, height, durationSeconds };
+}
+
 function chooseRecorderMimeType(): string {
   const candidates = [
     "video/webm;codecs=vp8,opus",
@@ -202,6 +245,8 @@ async function createSpotlightReadyClip(
   options: {
     maxBytes: number;
     maxDurationSeconds: number;
+    minShortEdge: number;
+    maxAspectRatio: number;
   }
 ): Promise<PreparedSpotlightMedia> {
   if (
@@ -217,6 +262,7 @@ async function createSpotlightReadyClip(
 
   try {
     const video = await waitForVideoMetadata(objectUrl);
+    validateVideoQuality(video, options);
     video.muted = false;
     video.defaultMuted = false;
     video.volume = 1;
@@ -350,27 +396,37 @@ export async function prepareSpotlightVideoFile(
   options?: {
     maxBytes?: number;
     maxDurationSeconds?: number;
+    minShortEdge?: number;
+    maxAspectRatio?: number;
   }
 ): Promise<PreparedSpotlightMedia> {
   const maxBytes = Number(options?.maxBytes || 15 * 1024 * 1024);
   const maxDurationSeconds = Number(options?.maxDurationSeconds || 10);
+  const minShortEdge = Number(
+    options?.minShortEdge || DEFAULT_MIN_VIDEO_SHORT_EDGE
+  );
+  const maxAspectRatio = Number(
+    options?.maxAspectRatio || DEFAULT_MAX_VIDEO_ASPECT_RATIO
+  );
 
   const objectUrl = URL.createObjectURL(file);
 
   try {
     const video = await waitForVideoMetadata(objectUrl);
-    const durationSeconds = Number(
-      Math.max(0, Number(video.duration || 0)).toFixed(2)
-    );
+    const inspection = validateVideoQuality(video, {
+      minShortEdge,
+      maxAspectRatio,
+    });
+    const durationSeconds = Number(inspection.durationSeconds.toFixed(2));
 
-    if (Number(file.size || 0) <= maxBytes && durationSeconds > 0) {
+    if (
+      Number(file.size || 0) <= maxBytes &&
+      durationSeconds <= maxDurationSeconds
+    ) {
       return {
         file,
-        message:
-          durationSeconds > maxDurationSeconds
-            ? `We kept your original video so the sound stays intact. GSN will play it as a ${maxDurationSeconds}-second public clip.`
-            : null,
-        durationSeconds: Math.min(durationSeconds, maxDurationSeconds),
+        message: null,
+        durationSeconds,
       };
     }
   } finally {
@@ -380,5 +436,7 @@ export async function prepareSpotlightVideoFile(
   return createSpotlightReadyClip(file, {
     maxBytes,
     maxDurationSeconds,
+    minShortEdge,
+    maxAspectRatio,
   });
 }

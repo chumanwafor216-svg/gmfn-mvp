@@ -25,6 +25,7 @@ import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
 } from "../lib/spotlightPilot";
 import {
   prepareSpotlightImageFile,
@@ -863,14 +864,6 @@ export default function SubscriptionSpotlightPage() {
       showNotice("info", prepared.message || "Video ready for Subscription Spotlight.");
     } catch (err: any) {
       if (!mountedRef.current || videoPrepRef.current !== job) return;
-      const canUseOriginal =
-        Number(file.size || 0) <= SPOTLIGHT_MAX_VIDEO_BYTES;
-      if (canUseOriginal) {
-        setVideoFile(file);
-        setVideoDurationSeconds(null);
-        showNotice("info", "This phone could not trim the video automatically, so GSN will use the selected video and play it as a short spotlight clip.");
-        return;
-      }
       setVideoFile(null);
       setVideoDurationSeconds(null);
       showNotice("error", safeStr(err?.message) || "This video could not be prepared.");
@@ -1257,6 +1250,9 @@ export default function SubscriptionSpotlightPage() {
               onChange={(event) => void prepareVideo(event.target.files?.[0] || null)}
               style={inputStyle()}
             />
+            <div style={{ ...brandHelperText(), fontSize: 12 }}>
+              {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
+            </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={brandBadge(Boolean(imageFile))}>
                 {labelWithIcon("image", imageFile ? "Picture ready" : "Picture optional")}

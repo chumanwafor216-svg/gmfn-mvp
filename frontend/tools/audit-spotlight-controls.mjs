@@ -67,7 +67,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /<StableButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => setSpotlightMediaChoice\("video"\)\}[\s\S]*?debugId="shop-control\.spotlight\.media\.video"/,
+  /<StableButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => \{[\s\S]*?setSpotlightMediaChoice\(spotlightImageFile \? "both" : "video"\)[\s\S]*?shop-control-spotlight-video-file[\s\S]*?input\?\.click\(\)[\s\S]*?debugId="shop-control\.spotlight\.media\.video"/,
   "The Free Spotlight video media selector must be an explicit button action, not a submit/navigation fallthrough."
 );
 
@@ -115,7 +115,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /import \{ navigateWithOrigin \} from "\.\.\/lib\/nav";[\s\S]*?navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.spotlight\.paid-lane"[\s\S]*?navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.subscription\.publisher"/,
+  /import \{ navigateWithOrigin \} from "\.\.\/lib\/nav";[\s\S]*?navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.subscription\.publisher"/,
   "Every Shop Control Subscription Spotlight route button must use shared navigation so Spotlight recovery is set before route movement."
 );
 
@@ -127,14 +127,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /aria-hidden=\{spotlightMediaChoice === "video" \|\| undefined\}[\s\S]*?visibility: spotlightMediaChoice === "video" \? "hidden" : "visible"[\s\S]*?pointerEvents: spotlightMediaChoice === "video" \? "none" : "auto"[\s\S]*?minHeight: 170/,
-  "The picture upload slot must stay mounted when Video is selected so the surface does not jump under the tap."
+  /debugId="shop-control\.spotlight\.media\.image"[\s\S]*?<input[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?type="file"[\s\S]*?style=\{\{ display: "none" \}\}/,
+  "The picture action and hidden upload input must stay mounted so media selection does not move the surface."
 );
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /aria-hidden=\{spotlightMediaChoice === "image" \|\| undefined\}[\s\S]*?visibility: spotlightMediaChoice === "image" \? "hidden" : "visible"[\s\S]*?pointerEvents: spotlightMediaChoice === "image" \? "none" : "auto"[\s\S]*?minHeight: 170/,
-  "The video upload slot must stay mounted when Picture is selected so the surface does not jump under the tap."
+  /debugId="shop-control\.spotlight\.media\.video"[\s\S]*?<input[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?type="file"[\s\S]*?style=\{\{ display: "none" \}\}/,
+  "The video action and hidden upload input must stay mounted so media selection does not move the surface."
 );
 
 assertLineNotContains(

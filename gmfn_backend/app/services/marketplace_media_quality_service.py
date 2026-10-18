@@ -1,0 +1,347 @@
+from __future__ import annotations
+
+import os
+import re
+import subprocess
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlsplit
+
+import imageio_ffmpeg
+
+
+MIN_VIDEO_SHORT_EDGE = 720
+MIN_VIDEO_FPS = 20.0
+MIN_VIDEO_DURATION_SECONDS = 1.0
+MAX_VIDEO_ASPECT_RATIO = 1.85
+MAX_VIDEO_DURATION_SECONDS = 10.0
+MAX_VIDEO_LONG_EDGE = 1280
+MAX_NORMALIZED_VIDEO_BYTES = 15 * 1024 * 1024
+VIDEO_PROCESS_TIMEOUT_SECONDS = 50
+
+_MANAGED_VIDEO_PATH = re.compile(
+    r"^/uploads/marketplace/videos/qv1_[A-Za-z0-9_-]+[.]mp4$"
+)
+
+
+class MediaQualityError(ValueError):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = str(code or "video_quality_rejected")
+
+
+@dataclass(frozen=True)
+class VideoInspection:
+    width: int
+    height: int
+    fps: float
+    duration_seconds: float
+    codec: str
+
+    @property
+    def short_edge(self) -> int:
+        return min(self.width, self.height)
+
+    @property
+    def long_edge(self) -> int:
+        return max(self.width, self.height)
+
+    @property
+    def aspect_ratio(self) -> float:
+        return self.long_edge / max(self.short_edge, 1)
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class NormalizedVideo:
+    source: VideoInspection
+    output: VideoInspection
+    source_had_audio: bool
+    trimmed: bool
+    kept_seconds: float
+    size_bytes: int
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "source": self.source.as_dict(),
+            "output": self.output.as_dict(),
+            "source_had_audio": self.source_had_audio,
+            "trimmed": self.trimmed,
+            "kept_seconds": self.kept_seconds,
+            "size_bytes": self.size_bytes,
+        }
+
+
+def _safe_float(value: Any) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return parsed if parsed > 0 else 0.0
+
+
+def _safe_size(value: Any) -> tuple[int, int]:
+    if not isinstance(value, (tuple, list)) or len(value) < 2:
+        return 0, 0
+    try:
+        width = int(value[0] or 0)
+        height = int(value[1] or 0)
+    except (TypeError, ValueError):
+        return 0, 0
+    return max(0, width), max(0, height)
+
+
+def inspect_video(path: str | Path) -> VideoInspection:
+    source_path = Path(path)
+    if not source_path.is_file() or source_path.stat().st_size <= 0:
+        raise MediaQualityError(
+            "video_empty",
+            "This video is empty or could not be read. Choose a different file.",
+        )
+
+    reader = None
+    try:
+        reader = imageio_ffmpeg.read_frames(str(source_path))
+        metadata = next(reader)
+    except Exception as exc:
+        raise MediaQualityError(
+            "video_unreadable",
+            "GSN could not verify this video. Use a playable MP4, WebM, or MOV file.",
+        ) from exc
+    finally:
+        if reader is not None:
+            try:
+                reader.close()
+            except Exception:
+                pass
+
+    width, height = _safe_size(metadata.get("size"))
+    if width <= 0 or height <= 0:
+        width, height = _safe_size(metadata.get("source_size"))
+
+    inspection = VideoInspection(
+        width=width,
+        height=height,
+        fps=_safe_float(metadata.get("fps")),
+        duration_seconds=_safe_float(metadata.get("duration")),
+        codec=str(metadata.get("codec") or "").strip().lower(),
+    )
+    _validate_video_quality(inspection)
+    return inspection
+
+
+def _validate_video_quality(inspection: VideoInspection) -> None:
+    if inspection.width <= 0 or inspection.height <= 0:
+        raise MediaQualityError(
+            "video_dimensions_unknown",
+            "GSN could not read this video's picture size. Record or export it again before uploading.",
+        )
+    if inspection.duration_seconds < MIN_VIDEO_DURATION_SECONDS:
+        raise MediaQualityError(
+            "video_too_short",
+            "The video must be at least 1 second long.",
+        )
+    if inspection.short_edge < MIN_VIDEO_SHORT_EDGE:
+        raise MediaQualityError(
+            "video_resolution_too_low",
+            (
+                f"This video is {inspection.width}x{inspection.height}. "
+                "GSN requires clear 720p or better video. Record or export a higher-quality version."
+            ),
+        )
+    if inspection.aspect_ratio > MAX_VIDEO_ASPECT_RATIO:
+        raise MediaQualityError(
+            "video_shape_unsupported",
+            "Use a normal portrait, square, or landscape video. Very narrow or extra-wide video is not accepted.",
+        )
+    if inspection.fps < MIN_VIDEO_FPS:
+        raise MediaQualityError(
+            "video_frame_rate_too_low",
+            (
+                f"This video is about {inspection.fps:.1f} frames per second. "
+                "GSN requires at least 20 fps for clear, smooth playback."
+            ),
+        )
+
+
+def _source_has_audio(ffmpeg_exe: str, source_path: Path) -> bool:
+    try:
+        probe = subprocess.run(
+            [ffmpeg_exe, "-hide_banner", "-nostdin", "-i", str(source_path)],
+            capture_output=True,
+            text=True,
+            timeout=12,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return bool(re.search(r"Stream #[^\r\n]+Audio:", probe.stderr or "", re.IGNORECASE))
+
+
+def _normalized_dimensions(inspection: VideoInspection) -> tuple[int, int]:
+    scale = min(1.0, MAX_VIDEO_LONG_EDGE / max(inspection.long_edge, 1))
+    width = max(2, int(round(inspection.width * scale)))
+    height = max(2, int(round(inspection.height * scale)))
+    if width % 2:
+        width -= 1
+    if height % 2:
+        height -= 1
+    return max(2, width), max(2, height)
+
+
+def normalize_marketplace_video(
+    source_path: str | Path,
+    output_path: str | Path,
+) -> NormalizedVideo:
+    input_path = Path(source_path)
+    destination = Path(output_path)
+    inspection = inspect_video(input_path)
+
+    try:
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception as exc:
+        raise MediaQualityError(
+            "video_processor_unavailable",
+            "GSN could not prepare videos right now. Please try again shortly.",
+        ) from exc
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    width, height = _normalized_dimensions(inspection)
+    output_fps = min(30.0, max(MIN_VIDEO_FPS, round(inspection.fps)))
+    has_audio = _source_has_audio(ffmpeg_exe, input_path)
+
+    command = [
+        ffmpeg_exe,
+        "-y",
+        "-nostdin",
+        "-v",
+        "error",
+        "-i",
+        str(input_path),
+        "-t",
+        str(MAX_VIDEO_DURATION_SECONDS),
+        "-map",
+        "0:v:0",
+    ]
+    if has_audio:
+        command.extend(["-map", "0:a:0?"])
+    command.extend(
+        [
+            "-vf",
+            f"scale={width}:{height}",
+            "-r",
+            f"{output_fps:g}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "22",
+            "-maxrate",
+            "2500k",
+            "-bufsize",
+            "5000k",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-map_metadata",
+            "-1",
+        ]
+    )
+    if has_audio:
+        command.extend(
+            [
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+                "-af",
+                "loudnorm=I=-16:TP=-1.5:LRA=11",
+            ]
+        )
+    else:
+        command.append("-an")
+    command.append(str(destination))
+
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=VIDEO_PROCESS_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise MediaQualityError(
+            "video_processing_timeout",
+            "This video took too long to prepare. Try a shorter recording or export it again.",
+        ) from exc
+    except OSError as exc:
+        raise MediaQualityError(
+            "video_processor_unavailable",
+            "GSN could not prepare videos right now. Please try again shortly.",
+        ) from exc
+
+    if completed.returncode != 0 or not destination.is_file():
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_processing_failed",
+            "GSN could not standardise this video. Export it as MP4 and try again.",
+        )
+
+    output_size = destination.stat().st_size
+    if output_size <= 0 or output_size > MAX_NORMALIZED_VIDEO_BYTES:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_output_too_large",
+            "The prepared video is still too large. Use a shorter or simpler 720p recording.",
+        )
+
+    output_inspection = inspect_video(destination)
+    if output_inspection.duration_seconds > MAX_VIDEO_DURATION_SECONDS + 0.35:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_trim_failed",
+            "GSN could not keep this video within the 10-second limit. Export a shorter clip and try again.",
+        )
+
+    return NormalizedVideo(
+        source=inspection,
+        output=output_inspection,
+        source_had_audio=has_audio,
+        trimmed=inspection.duration_seconds > MAX_VIDEO_DURATION_SECONDS + 0.05,
+        kept_seconds=min(inspection.duration_seconds, MAX_VIDEO_DURATION_SECONDS),
+        size_bytes=output_size,
+    )
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def verified_marketplace_video_path(value: Any) -> Path | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    path = urlsplit(raw).path
+    if not _MANAGED_VIDEO_PATH.fullmatch(path):
+        return None
+
+    filename = Path(path).name
+    root = _uploads_root().resolve()
+    candidate = (root / "marketplace" / "videos" / filename).resolve()
+    expected_parent = (root / "marketplace" / "videos").resolve()
+    try:
+        candidate.relative_to(expected_parent)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
+
+
+def is_verified_marketplace_video_url(value: Any) -> bool:
+    return verified_marketplace_video_path(value) is not None

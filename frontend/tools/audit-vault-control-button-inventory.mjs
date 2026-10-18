@@ -23,13 +23,13 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 5,
-  SecondaryButton: 8,
+  SecondaryButton: 9,
   SubtleButton: 2,
   StableButton: 3,
   StableCtaLink: 0,
-  total: 18,
+  total: 19,
 };
-const expectedNativeFieldCount = 8;
+const expectedNativeFieldCount = 7;
 const expectedFileInputActionRoots = 2;
 const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
@@ -219,6 +219,7 @@ const expectedActionOrder = [
   "vault-control.link.open-private-view",
   "vault-control.link.extend",
   "vault-control.link.revoke",
+  "vault-control.editor.remove-video",
   "vault-control.editor.save",
   "vault-control.editor.close",
 ];
@@ -352,8 +353,8 @@ assertVaultContains(
 );
 
 assertVaultContains(
-  /<label style=\{fieldLabelStyle\(\)\}>[\s\S]*?Picture \(optional\)[\s\S]*?Image link \(optional\)[\s\S]*?Video \(optional\)[\s\S]*?Video link \(optional\)[\s\S]*?Offer name[\s\S]*?Price[\s\S]*?Currency[\s\S]*?Short description/,
-  "Vault Control editor must keep visible labels for every upload, link, offer, price, currency, and description field."
+  /<label style=\{fieldLabelStyle\(\)\}>[\s\S]*?Picture \(optional\)[\s\S]*?Image link \(optional\)[\s\S]*?Video \(optional\)[\s\S]*?SPOTLIGHT_VIDEO_QUALITY_GUIDANCE[\s\S]*?debugId="vault-control\.editor\.remove-video"[\s\S]*?New pasted video links are not accepted[\s\S]*?Offer name[\s\S]*?Price[\s\S]*?Currency[\s\S]*?Short description/,
+  "Vault Control must keep labelled upload and offer fields, explicit video removal, shared quality guidance, and no pasted-video bypass."
 );
 
 assertLayoutContains(

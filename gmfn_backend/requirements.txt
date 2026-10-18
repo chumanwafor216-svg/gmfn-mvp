@@ -10,6 +10,7 @@ psycopg[binary]
 email-validator 
 reportlab
 pillow
+imageio-ffmpeg==0.6.0
 pywebpush
 boto3
 stripe>=15.6.0,<16

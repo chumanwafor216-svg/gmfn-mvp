@@ -274,6 +274,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /SPOTLIGHT_VIDEO_QUALITY_GUIDANCE[\s\S]*?debugId="shop-assets\.product\.remove-video"[\s\S]*?New pasted video links are not accepted/,
+  "Shop Assets must show shared video guidance, retain explicit removal, and close the pasted-video bypass."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /minHeight: selectedPublicProduct \? \(isCompact \? 236 : 108\) : isCompact \? 68 : 54/,
   "Shop Assets selected block action panel must reserve stable height so Open/Add/Repost controls cannot jump the shelf."
 );

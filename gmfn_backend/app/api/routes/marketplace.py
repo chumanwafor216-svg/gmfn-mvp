@@ -62,6 +62,9 @@ from app.services.marketplace_media_cleanup_service import (
     process_marketplace_media_deletion_tasks,
     queue_marketplace_media_deletions,
 )
+from app.services.marketplace_media_quality_service import (
+    is_verified_marketplace_video_url,
+)
 from app.services.spotlight_retention_service import (
     compact_spotlight_payloads_for_deleted_product,
 )
@@ -148,6 +151,30 @@ SPOTLIGHT_CAMPAIGN_CONTENT_MISMATCH_DETAIL = (
     "A different Spotlight campaign is already active. Take it down before publishing different Spotlight content."
 )
 SPOTLIGHT_OPPORTUNITY_INTENTS = {"offer", "need", "unspecified"}
+
+
+def _require_verified_marketplace_video(
+    value: Any,
+    *,
+    allowed_legacy_values: tuple[Any, ...] = (),
+) -> Optional[str]:
+    video_url = _safe_str(value) or None
+    if video_url is None:
+        return None
+    if any(video_url == _safe_str(existing) for existing in allowed_legacy_values):
+        return video_url
+    if is_verified_marketplace_video_url(video_url):
+        return video_url
+    raise HTTPException(
+        status_code=400,
+        detail={
+            "code": "verified_video_required",
+            "message": (
+                "This video has not passed the GSN quality gate. "
+                "Upload a clear 720p-or-better video; GSN will keep only the first 10 seconds."
+            ),
+        },
+    )
 SPOTLIGHT_OPPORTUNITY_CATEGORIES = {
     "employment",
     "business_service",
@@ -4937,6 +4964,7 @@ def create_marketplace_product(
     if not _safe_str(payload.image_url):
         raise HTTPException(status_code=400, detail="Product image is required")
 
+    verified_video_url = _require_verified_marketplace_video(payload.video_url)
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
     if visibility_mode == VISIBILITY_VAULT:
         require_domain_vault_enabled(db, clan_id=resolved_clan_id)
@@ -4962,7 +4990,7 @@ def create_marketplace_product(
                 "price": _safe_str(payload.price) or None,
                 "currency": _safe_str(payload.currency, "NGN") or "NGN",
                 "image_url": _safe_str(payload.image_url) or None,
-                "video_url": _safe_str(payload.video_url) or None,
+                "video_url": verified_video_url,
                 "visibility_mode": visibility_mode,
                 "vault_slot_number": int(payload.vault_slot_number) if payload.vault_slot_number is not None else None,
             },
@@ -5057,7 +5085,7 @@ def create_marketplace_product(
     )
 
     if hasattr(product, "video_url"):
-        setattr(product, "video_url", _safe_str(payload.video_url) or None)
+        setattr(product, "video_url", verified_video_url)
 
     try:
         db.add(product)
@@ -5447,6 +5475,7 @@ def update_marketplace_product(
     if hasattr(product, "video_url") and "video_url" in provided:
         new_video = _safe_str(payload.video_url) or None
         if getattr(product, "video_url", None) != new_video:
+            new_video = _require_verified_marketplace_video(new_video)
             setattr(product, "video_url", new_video)
             changed = True
 
@@ -6642,6 +6671,7 @@ def create_marketplace_broadcast(
 ) -> Dict[str, Any]:
     priority_mode = _resolve_priority_mode(payload.priority_mode)
     visibility_scope = _safe_str(payload.visibility_scope, "direct_communities").lower()
+    _require_verified_marketplace_video(payload.video_url)
 
     shop = None
     if payload.shop_id:
@@ -7087,6 +7117,19 @@ def replace_spotlight_correction(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     campaign = _owned_spotlight_campaign(db, campaign_id=campaign_id, current_user=current_user)
+    existing_campaign_video_urls = tuple(
+        row[0]
+        for row in (
+            db.query(MarketplaceBroadcast.video_url)
+            .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign.id))
+            .filter(MarketplaceBroadcast.video_url.isnot(None))
+            .all()
+        )
+    )
+    _require_verified_marketplace_video(
+        payload.video_url,
+        allowed_legacy_values=existing_campaign_video_urls,
+    )
     content_kind = (
         SPOTLIGHT_CONTENT_KIND_PRODUCT
         if payload.source_product_id is not None

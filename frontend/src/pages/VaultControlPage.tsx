@@ -46,6 +46,7 @@ import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
 } from "../lib/spotlightPilot";
 import {
   prepareSpotlightImageFile,
@@ -2476,10 +2477,28 @@ export default function VaultControlPage() {
                     style={inputStyle()}
                   />
                 </label>
-                <label style={fieldLabelStyle()}>
-                  Video link (optional)
-                  <input value={videoUrlInput} onChange={(event) => { setVideoUrlInput(event.target.value); if (!selectedVideoFile) setVideoPreviewUrl(event.target.value); }} placeholder="Paste video link" style={inputStyle()} />
-                </label>
+                <div style={{ ...brandHelperText(), fontSize: 12 }}>
+                  {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
+                </div>
+                {selectedVideoFile || firstTruthy(videoUrlInput) ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      setSelectedVideoFile(null);
+                      setVideoDurationSeconds(null);
+                      setVideoUrlInput("");
+                      setVideoPreviewUrl("");
+                    }}
+                    fullWidth
+                    debugId="vault-control.editor.remove-video"
+                  >
+                    Remove video
+                  </SecondaryButton>
+                ) : (
+                  <div style={{ ...brandHelperText(), fontSize: 12 }}>
+                    New pasted video links are not accepted. Uploading lets GSN verify the real file.
+                  </div>
+                )}
                 <label style={fieldLabelStyle()}>
                   Offer name
                   <input value={productName} onChange={(event) => setProductName(event.target.value)} placeholder="Example: Private wholesale offer" style={inputStyle()} />

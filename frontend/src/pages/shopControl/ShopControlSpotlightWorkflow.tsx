@@ -8,6 +8,7 @@ import {
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
 import { publicApiOrigin } from "../../lib/publicLinks";
+import { SPOTLIGHT_VIDEO_QUALITY_GUIDANCE } from "../../lib/spotlightPilot";
 import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
 function safeSpotlightText(value: unknown): string {
@@ -691,6 +692,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
                   Add a picture, a short video, or both. Use what people will understand fastest.
+                </div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
+                  {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
                 </div>
                 <div
                   style={{

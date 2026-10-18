@@ -65,6 +65,7 @@ import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
 } from "../lib/spotlightPilot";
 import {
   prepareSpotlightImageFile,
@@ -3793,6 +3794,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     )}
                   </StableButton>
                 </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+                  {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
+                </div>
                 <details style={{ marginTop: 12 }}>
                   <StableDisclosureSummary debugId="shop-assets.product.media-options.toggle" stableHeight={42} style={{ color: "#31506D", fontWeight: 950, fontSize: 13 }}>
                     More media options
@@ -3810,18 +3814,27 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       placeholder="Paste item image URL"
                       style={inputStyle()}
                     />
-                    <input
-                      value={productVideoUrlInput}
-                      onChange={(e) => {
-                        setProductFormNotice(null);
-                        setProductVideoUrlInput(e.target.value);
-                        if (!productSelectedVideoFile) {
-                          setProductVideoPreviewUrl(e.target.value);
-                        }
-                      }}
-                      placeholder="Paste item video URL"
-                      style={inputStyle()}
-                    />
+                    {productSelectedVideoFile || safeStr(productVideoUrlInput) ? (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          setProductFormNotice(null);
+                          setProductSelectedVideoFile(null);
+                          setProductVideoDurationSeconds(null);
+                          setProductVideoUrlInput("");
+                          setProductVideoPreviewUrl("");
+                        }}
+                        fullWidth
+                        stableHeight={48}
+                        debugId="shop-assets.product.remove-video"
+                      >
+                        Remove video
+                      </SecondaryButton>
+                    ) : (
+                      <div style={{ ...helperText(), fontSize: 12 }}>
+                        New pasted video links are not accepted. Uploading lets GSN verify the real file.
+                      </div>
+                    )}
                   </div>
                 </details>
               </div>

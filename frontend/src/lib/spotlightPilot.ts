@@ -7,6 +7,10 @@ export const SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS = 10;
 
 export const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const SPOTLIGHT_MAX_VIDEO_BYTES = 15 * 1024 * 1024;
+export const SPOTLIGHT_MIN_VIDEO_SHORT_EDGE = 720;
+export const SPOTLIGHT_MAX_VIDEO_ASPECT_RATIO = 1.85;
+export const SPOTLIGHT_VIDEO_QUALITY_GUIDANCE =
+  "Before recording, clean the lens, use good light, hold the phone steady, keep the product centred, and choose a quiet place. Upload a clear 720p-or-better portrait, square, or landscape video. GSN keeps only the opening 10 seconds and rejects video that cannot meet the technical quality standard.";
 
 export const SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL = Math.max(
   1,
