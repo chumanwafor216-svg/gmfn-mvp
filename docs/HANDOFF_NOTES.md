@@ -91,11 +91,38 @@ under `docs/` or `docs/archive/`, then link that file here.
   `frontend/screenshots/`. This is synthetic local interaction coverage, not
   an authenticated production write. Deployment was separately verified by
   Render and by the public route/asset checks recorded above.
-- The broad `audit:link-contracts` command still reports three existing
-  `ShopGalleryPage.tsx` failures concerning the install prompt and Shop Diary
-  auto-scroll. This batch did not edit `ShopGalleryPage.tsx`; the changed
-  Shop Assets copy-link assertion itself passed through the institutional
-  evidence audit. Do not misreport the broad link audit as green.
+- The broad `audit:link-contracts` command now passes after the stale Public
+  Shop install-prompt and automatic Shop Update jump assertions were corrected
+  in the audit-only follow-up recorded below.
+
+## Public Shop visitor-link audit correction - 2026-10-18
+
+- Status: test-contract correction committed as
+  `551bd334f4f5d56e69ec6789c2a117ec35a90eda`. It changes no application bundle,
+  backend route, data, permission, or runtime behavior and therefore requires
+  no Render application deployment.
+- Investigation proved that the three previously reported broad-link failures
+  were stale audit expectations, not three live `ShopGalleryPage.tsx` defects.
+  One demanded a Public Shop install prompt even though the current phone spec
+  and frozen visual smoke require that unrelated prompt to stay off the visitor
+  surface. Two demanded automatic root-link movement to Shop Update even though
+  the current screen contract requires ordinary visits to keep shop identity
+  and Products & Services first.
+- `audit-link-contracts.mjs` now protects the current contract: no Public Shop
+  install component, no root-link Shop Update jump, and automatic reveal only
+  for explicit hash, product, block, or exact shared-update targets.
+- The Shop Diary real-browser smoke still pointed its owner scenarios at the
+  now-products-only Gallery Tools route. Those scenarios now use the dedicated
+  `#shop-assets-diary` owner task while retaining the separate visitor deep-link
+  scenarios.
+- Verification passed the broad link-contract audit, both frozen Shop Diary
+  audits, Public Shop button inventory, the complete protected-button freeze
+  audit, and the 290-module production build. The 17-scenario phone smoke passed
+  at 360/390/430 widths. Its ordinary 430px visitor case kept Products &
+  Services before the closed `More from this shop` row, placed Shop Update
+  farther down, and rendered no install prompt. The exact shared-update case
+  alone opened and focused Shop Update; the live-Spotlight case opened the
+  secondary row without using a Shop Update root jump.
 
 ## Deployed Shop Gallery task separation - 2026-10-18
 
