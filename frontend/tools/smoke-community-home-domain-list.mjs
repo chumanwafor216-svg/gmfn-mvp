@@ -34,6 +34,17 @@ async function installApiMocks(page, controls = {}) {
       member_count: 7,
       notice_posting_policy: "members",
     },
+    {
+      id: 9,
+      clan_id: 9,
+      name: "Neighbourhood Helpers",
+      display_name: "Neighbourhood Helpers",
+      marketplace_name: "Neighbourhood Helpers",
+      community_code: "GMFN-C-000009",
+      gmfn_id: "GMFN-C-000009",
+      member_count: 4,
+      notice_posting_policy: "admins",
+    },
   ];
   const domains = [
     {
@@ -66,7 +77,7 @@ async function installApiMocks(page, controls = {}) {
       controls.authResolved = true;
       return route.fulfill(json(me));
     }
-    if (path === "/clans/me") return route.fulfill(json(clans));
+    if (path === "/clans/me") return route.fulfill(json(controls.noCommunities ? [] : clans));
     if (path === "/community-domains/my") return route.fulfill(json({ items: domains }));
     const clanSelectMatch = path.match(/^\/clans\/(\d+)\/select\/?$/);
     if (clanSelectMatch) {
@@ -131,7 +142,7 @@ async function run() {
     });
 
     await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
+    await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
 
     if (controls.authResolved) {
       console.error("Community Home first usable state waited for /auth/me.");
@@ -177,8 +188,8 @@ async function run() {
       const required = [
         "Homeland isa Marketplace",
         "GMFN-C-000008",
-        "Community Bulletin",
-        "Go to",
+        "Bulletin",
+        "Community actions",
         "Marketplace",
         "Manage shop",
         "Finance",
@@ -188,8 +199,8 @@ async function run() {
         "Admin area",
       ];
       const forbidden = [
-        "Payments Â",
-        "Payments Ã",
+        "Payments Ã‚",
+        "Payments Ãƒ",
         "Open Free Spotlight",
         "Subscription Spotlight",
         "Paid Repost",
@@ -220,7 +231,7 @@ async function run() {
 
     controls.selectClanCalls = [];
     await routeCheckPage.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await routeCheckPage.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
+    await routeCheckPage.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
     const accessibleRouteState = await routeCheckPage.evaluate(() => {
       const text = document.body.textContent || "";
       return {
@@ -252,6 +263,8 @@ async function run() {
 
     controls.selectClanCalls = [];
     await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
+    await page.locator('[data-cta-id="community-home.goto.toggle"]').click();
     await page.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
 
     const selectCallsBeforeOpen = controls.selectClanCalls.length;
@@ -286,7 +299,53 @@ async function run() {
     await page.locator('[data-cta-id="community-home.admin.community-domain"]').click();
     await page.waitForURL(/\/app\/community-domain\/13/, { timeout: 30000 });
 
-    console.log("Community Home domain/admin smoke passed: screenshot saved to screenshots/community-home-domain-list-390x844.png");
+    const emptyPage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true });
+    await installApiMocks(emptyPage, { noCommunities: true });
+    await emptyPage.addInitScript(() => {
+      localStorage.setItem("access_token", "local-community-home-empty-token");
+      localStorage.removeItem("gmfn_selected_clan_id");
+    });
+    await emptyPage.goto(`${baseURL}/app/community`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await emptyPage.waitForSelector('[data-cta-id="community-home.empty.create-community"]', { timeout: 30000 });
+    const emptyState = await emptyPage.evaluate(() => {
+      const text = document.body.textContent || "";
+      const required = [
+        "Start here",
+        "No communities yet",
+        "You have not created or joined a community yet.",
+        "Create community",
+        "Set up Community Domain",
+        "Invite your first people",
+        "Back to Dashboard",
+      ];
+      const forbidden = [
+        "verification or work evidence",
+        "existing-member create lane",
+        "join-community lane",
+        "No marketplace communities yet",
+      ];
+      const overflow = Array.from(document.querySelectorAll("main *"))
+        .filter((element) => {
+          if (element.closest('[aria-hidden="true"]')) return false;
+          const rect = element.getBoundingClientRect();
+          return rect.width > 0 && (rect.left < -2 || rect.right > document.documentElement.clientWidth + 2);
+        })
+        .slice(0, 6)
+        .map((element) => (element.textContent || "").trim().slice(0, 80));
+      return {
+        missing: required.filter((item) => !text.includes(item)),
+        presentForbidden: forbidden.filter((item) => text.includes(item)),
+        overflow,
+      };
+    });
+    await emptyPage.screenshot({ path: join(screenshotDir, "community-home-empty-390x844.png"), fullPage: false });
+    await emptyPage.close();
+    if (emptyState.missing.length || emptyState.presentForbidden.length || emptyState.overflow.length) {
+      console.error("Community Home novice no-community state failed:", emptyState);
+      process.exit(1);
+    }
+
+    console.log("Community Home domain/admin and novice empty-state smoke passed: screenshots saved to frontend/screenshots.");
   } finally {
     if (browser) await browser.close();
     if (server) await server.close();

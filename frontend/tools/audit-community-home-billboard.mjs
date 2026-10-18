@@ -46,7 +46,7 @@ requirePattern(
 );
 requirePattern(
   communitySource,
-  /function communityIdentityFactsStyle\(\)[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?data-community-home-billboard-facts="true"[\s\S]*?label="Members"[\s\S]*?label="Community ID"[\s\S]*?label="Your position"[\s\S]*?label="Membership"/,
+  /function communityIdentityFactsStyle\(\)[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?data-community-home-billboard-facts="true"[\s\S]*?label="Members"[\s\S]*?label="Community ID"[\s\S]*?label="Your role"[\s\S]*?label="Membership"/,
   communityFile,
   "The first billboard must keep its four immediate facts in the approved two-column layout."
 );

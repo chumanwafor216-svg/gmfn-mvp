@@ -560,7 +560,7 @@ Must show, in phone-first order:
   - a compact two-column fact grid directly after the name
   - real active-member count from the membership record; missing count data must say `Count unavailable` and must never be converted into zero
   - stable community reference / global ID labelled `Community ID`
-  - signed-in member role labelled `Your position` and active membership labelled `Membership`
+  - signed-in member role labelled `Your role` and active membership labelled `Membership`
   - selected-community `Available now` balance only when the connected effective balance is greater than zero
   - one small `Invite` action inside the hero
 - tapping `Invite` opens one recipient-name field and one `Send invite` action
@@ -603,6 +603,8 @@ Rules:
 - Community Home must not expose a full cross-community portfolio; My GSN owns cross-GSN/community identity orientation later.
 - Community Home must keep admin/officer controls collapsed and separated from ordinary member flow.
 - Secondary details stay collapsed, grouped, or represented as compact rows.
+- Visible guidance must describe the user's next action in ordinary language. Do not expose internal terms such as `lane`, `record`, `officer review`, or `verification/work evidence` when `form`, `announcement`, `admin approval`, or a direct action sentence is accurate.
+- The no-community state must plainly say that the member has not created or joined a community yet, while keeping Create Community, Join Community guidance, First Circle, Community Domain, and Dashboard recovery reachable.
 - Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - On phone, the authenticated app shell owns the page title/navigation; Community Home must not add another route-level Back/title strip or repeat the `Community Home` label inside the identity hero.

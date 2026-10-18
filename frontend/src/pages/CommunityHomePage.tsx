@@ -2355,8 +2355,8 @@ export default function CommunityHomePage() {
           scope: "community",
           kind: "action",
           urgency: urgency.tone === "green" ? "yellow" : urgency.tone,
-          summary: "Acknowledgement needed",
-          detail: `${title} still needs acknowledgement.`,
+          summary: "Please confirm you saw this",
+          detail: "Open the announcement and confirm you saw it.",
           actionLabel: "Open notice",
           actionTo: APP_ROUTES.COMMUNITY,
           groupLabel: "acknowledgement needed",
@@ -2374,8 +2374,8 @@ export default function CommunityHomePage() {
         scope: "admin",
         kind: "action",
         urgency: "red",
-        summary: "Admin review waiting",
-        detail: "Member-submitted bulletin records are waiting for officer review.",
+        summary: "Announcements waiting for review",
+        detail: "Members have submitted announcements for an admin to approve.",
         actionLabel: "Open Action Inbox",
         actionTo: APP_ROUTES.NOTIFICATIONS,
         groupLabel: "admin review",
@@ -2611,7 +2611,7 @@ export default function CommunityHomePage() {
     routes.trust,
   ]);
   const communityNextActionIntro =
-    "Choose the verification or work evidence you need. GSN checks the first required step, then opens the right community, trust, finance, support, or notice path.";
+    "Tell GSN what you want to do. It will open the right place and show the first step.";
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const guide = safeStr(params.get("guide")).toLowerCase();
@@ -2677,7 +2677,7 @@ export default function CommunityHomePage() {
       {
         id: "create-community",
         label: "Create community",
-        detail: "Start a new GSN community before Community Home can focus on one selected group.",
+        detail: "Start a new community using your current GSN account.",
         technical: "Create community",
         keywords: ["create", "new community", "start group", "founder"],
         tone: "primary",
@@ -2685,14 +2685,14 @@ export default function CommunityHomePage() {
       {
         id: "join-community",
         label: "Join community",
-        detail: "Use an invite or request path to enter an existing community.",
+        detail: "Use an invitation or ask to join a community that already exists.",
         technical: "Join community",
         keywords: ["join", "existing", "invite", "enter community"],
       },
       {
         id: "circle",
         label: "Build first circle",
-        detail: "Prepare trusted people before live community work begins.",
+        detail: "Invite people you already know to form your first trusted group.",
         technical: "Trusted circle",
         keywords: ["invite", "circle", "people", "trusted", "grow"],
       },
@@ -2707,27 +2707,27 @@ export default function CommunityHomePage() {
         return {
           title: "Start a new community",
           detail:
-            "GSN will open the existing-member create lane so your same GSN ID starts a new community without repeating the full personal record.",
-          firstStep: "Open the existing-member create path.",
+            "Use your current GSN account to start a community. You will not need to sign up again.",
+          firstStep: "Open the form to create a community.",
           continueLabel: "Start community",
           continueTone: "primary",
         };
       case "join-community":
         return {
-          title: "Enter an existing community",
+          title: "Join an existing community",
           detail:
-            "GSN will open the join lane so you can use the right invite or existing-community entry path.",
-          firstStep: "Open the join-community lane.",
-          continueLabel: "Open join path",
+            "Use an invitation you received, or ask to join a community that already exists.",
+          firstStep: "Open the join form.",
+          continueLabel: "Join a community",
           continueTone: "primary",
         };
       case "circle":
         return {
           title: "Grow your trusted circle",
           detail:
-            "GSN will open First Circle so you can prepare the people you already know in real life.",
-          firstStep: "Open First Circle.",
-          continueLabel: "Open First Circle",
+            "Open First Circle to invite people you already know and trust.",
+          firstStep: "Add the first person.",
+          continueLabel: "Invite first people",
           continueTone: "primary",
         };
       default:
@@ -4088,8 +4088,8 @@ export default function CommunityHomePage() {
       ) {
         items.push({
           id: `notice-ack-${noticeKey}`,
-          title: "Acknowledgement needed",
-          detail: `${title} still needs acknowledgement.`,
+        title: "Please confirm you saw this",
+        detail: "Open the announcement and confirm you saw it.",
           actionLabel: "Open notice",
           noticeIndex: index,
         });
@@ -4099,8 +4099,8 @@ export default function CommunityHomePage() {
     if (canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0) {
       items.push({
         id: "notice-admin-review",
-        title: "Bulletin review waiting",
-        detail: `${pendingCommunityNoticeReviewCount} member-submitted ${pendingCommunityNoticeReviewCount === 1 ? "record" : "records"} waiting for officer review.`,
+        title: "Announcements waiting for review",
+        detail: `${pendingCommunityNoticeReviewCount} submitted ${pendingCommunityNoticeReviewCount === 1 ? "announcement is" : "announcements are"} waiting for approval.`,
         actionLabel: "Open admin area",
         adminReview: true,
       });
@@ -4123,7 +4123,7 @@ export default function CommunityHomePage() {
             <PageTopNav
               sectionLabel="Community Home"
               title="Community Home"
-              subtitle="Loading your marketplace communities..."
+              subtitle="Loading your communities..."
               homeTo={routes.dashboard}
               homeLabel="Dashboard"
               backTo={routes.dashboard}
@@ -4132,7 +4132,7 @@ export default function CommunityHomePage() {
 
           <section style={communityBlockCard("quiet")}>
             <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-              Loading your marketplace communities...
+              Loading your communities...
             </div>
           </section>
         </div>
@@ -4149,7 +4149,7 @@ export default function CommunityHomePage() {
             <PageTopNav
               sectionLabel="Community Home"
               title="Community Home"
-              subtitle="Choose the marketplace community you want to open."
+              subtitle="Create a community or join one to get started."
               homeTo={routes.dashboard}
               homeLabel="Dashboard"
               backTo={routes.dashboard}
@@ -4158,14 +4158,14 @@ export default function CommunityHomePage() {
 
           <React.Suspense fallback={null}>
             <DomainIntroToggle
-              title="About Community Home"
-              body="Create or join first. Then choose the group you want to open."
+              title="Start here"
+              body="Create a community or join one. Community Home will then open the community you choose."
               bullets={[
-                "Create or join a marketplace community first.",
-                "Open one group at a time.",
-                "Marketplace and local activity stay inside that group.",
+                "Create a new community, or join one with an invitation.",
+                "Community Home shows one community at a time.",
+                "You can change community later.",
               ]}
-              note="Simple rule: choose the group first, then work inside it."
+              note="Choose a community first. Then GSN will show what belongs to it."
               tone="dark"
             />
           </React.Suspense>
@@ -4183,7 +4183,7 @@ export default function CommunityHomePage() {
           </React.Suspense>
 
           <section style={communityBlockCard("blue")}>
-            <div style={sectionLabel()}>{clansLoadError ? "Community list unavailable" : "No marketplace communities yet"}</div>
+            <div style={sectionLabel()}>{clansLoadError ? "Community list unavailable" : "No communities yet"}</div>
 
             <div
               style={{
@@ -4195,7 +4195,7 @@ export default function CommunityHomePage() {
                 maxWidth: 760,
               }}
             >
-              {clansLoadError || "You do not have any visible marketplace communities in Community Home yet."}
+              {clansLoadError || "You have not created or joined a community yet."}
             </div>
 
             <div
@@ -4209,7 +4209,7 @@ export default function CommunityHomePage() {
             >
               {clansLoadError
                 ? "Try again from Dashboard or use create/join if you still need a community."
-                : "Create or join first. Your marketplace communities will appear here."}
+                : "Create one, join one with an invitation, or return to Dashboard."}
             </div>
 
             <RealLifeMeaningGuide
@@ -4232,7 +4232,7 @@ export default function CommunityHomePage() {
                 onClick={(event) => openCommunityRoute(event, routes.createCommunity)}
                 style={communityActionStyle("primary")}
               >
-                Create marketplace community
+                Create community
               </StableButton>
               <StableButton
                 type="button"
@@ -4252,7 +4252,7 @@ export default function CommunityHomePage() {
                 }
                 style={communityActionStyle("secondary")}
               >
-                Build Your First Circle
+                Invite your first people
               </StableButton>
               <StableButton
                 type="button"
@@ -4260,7 +4260,7 @@ export default function CommunityHomePage() {
                 onClick={(event) => openCommunityRoute(event, routes.dashboard)}
                 style={communityActionStyle("secondary")}
               >
-                Dashboard
+                Back to Dashboard
               </StableButton>
             </div>
           </section>
@@ -4338,7 +4338,7 @@ export default function CommunityHomePage() {
             <div style={{ display: "grid", gap: 9 }}>
               {!isCompact ? (
                 <div style={{ color: "#D4E1EE", fontSize: 15, fontWeight: 760, lineHeight: 1.5 }}>
-                  You are inside one selected community. Marketplace, shop, support, trust, and notices open from this community context.
+                  This is the community you are using now. Open its Bulletin or choose a community action below.
                 </div>
               ) : null}
               <div
@@ -4361,7 +4361,7 @@ export default function CommunityHomePage() {
                 </div>
                 <div data-debug-id="community-home.identity.position">
                   <CommunityIdentityFact
-                    label="Your position"
+                    label="Your role"
                     value={selectedCommunityRoleLabel}
                     compact={isCompact}
                   />
@@ -4602,27 +4602,27 @@ export default function CommunityHomePage() {
             <div id="community-home-actions-panel" style={{ marginTop: 10, display: "grid", gap: 9 }}>
             <StableButton type="button" debugId="community-home.goto.marketplace" onClick={(event) => void openSelectedMarketplace(event)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(true)}>{communityIconGlyph("shop", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open listings and community exchange for this selected community.</span> : null}</span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See requests, shops, and services in this community.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.shop-control" onClick={(event) => openCommunityShopControl(event)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(true)}>{communityIconGlyph("marketplace", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Manage shop</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Your shop tools, public shop, and Spotlight management live in Shop Control.</span> : null}</span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Manage shop</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Change your shop, public products, or Spotlight.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.finance" onClick={(event) => openCommunityRoute(event, routes.finance)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("financeInstitution", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Finance</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open the full money record outside Community Home.</span> : null}</span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Finance</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See the money records available to you.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.support" onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("wallet", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Support</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open borrowing and support activity for this community.</span> : null}</span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Support</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Ask for or manage support in this community.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             <StableButton type="button" debugId="community-home.goto.trust" onClick={(event) => openCommunityRoute(event, routes.trust)} style={communityToolRowStyle()}>
               <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Open your trust evidence and member standing.</span> : null}</span>
+              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See your trust information and recorded evidence.</span> : null}</span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
             </StableButton>
             </div>
@@ -4697,7 +4697,7 @@ export default function CommunityHomePage() {
               <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
               <span style={{ minWidth: 0 }}>
                 <span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Admin area</span>
-                <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>{isCompact ? "Manage this community." : "Bulletin settings, review queue, join requests, and Community Domain controls."}</span>
+                <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 12 : 13, fontWeight: 720 }}>Manage announcements, join requests, and community settings.</span>
               </span>
               <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>{communityAdminOpen ? "^" : "v"}</span>
             </StableButton>
@@ -4707,7 +4707,7 @@ export default function CommunityHomePage() {
                 {canOpenCommunityNoticeComposer ? (
                   <StableButton type="button" debugId="community-home.admin.notice.post" onClick={(event) => { consumeCommunityButtonEvent(event); setNoticeModalOpen(true); }} style={communityToolRowStyle()}>
                     <span style={communityActionIcon(true)}>{communityIconGlyph("megaphone", 30)}</span>
-                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>{communityNoticeSubmitMode === "review" ? "Submit bulletin record" : "Post bulletin record"}</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Create a community notice for the selected community.</span></span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>{communityNoticeSubmitMode === "review" ? "Send announcement for review" : "Post announcement"}</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Write an announcement for this community.</span></span>
                     <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
                   </StableButton>
                 ) : null}
@@ -4725,7 +4725,7 @@ export default function CommunityHomePage() {
 
                 {canManageCommunityNoticeSettings ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel("left")}>Review queue</div>
+                    <div style={sectionLabel("left")}>Announcements waiting for review</div>
                     <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                       {communityNoticeReviewLoading ? (
                         <div style={{ color: "#617085", fontWeight: 800 }}>Loading reviews...</div>
@@ -4734,7 +4734,7 @@ export default function CommunityHomePage() {
                           const submissionId = firstTruthy(submission?.submission_event_id, index);
                           return (
                             <div key={`review-${submissionId}`} style={innerCard("#F8FBFF")}>
-                              <div style={{ color: "#07172C", fontSize: 14, fontWeight: 920 }}>{wordLimit(firstTruthy(submission?.body, submission?.title, "Submitted bulletin record"), 16)}</div>
+                              <div style={{ color: "#07172C", fontSize: 14, fontWeight: 920 }}>{wordLimit(firstTruthy(submission?.body, submission?.title, "Submitted announcement"), 16)}</div>
                               <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                                 <StableButton type="button" debugId={`community-home.admin.review.approve.${submissionId}`} onClick={(event) => reviewCommunityNoticeSubmission(event, submission, "approve")} busy={communityNoticeReviewBusy === `approve:${submissionId}`} busyLabel="Approving" style={communityActionStyle("primary", Boolean(communityNoticeReviewBusy))}>Approve</StableButton>
                                 <StableButton type="button" debugId={`community-home.admin.review.reject.${submissionId}`} onClick={(event) => reviewCommunityNoticeSubmission(event, submission, "reject")} busy={communityNoticeReviewBusy === `reject:${submissionId}`} busyLabel="Rejecting" style={communityActionStyle("soft", Boolean(communityNoticeReviewBusy))}>Reject</StableButton>
@@ -4743,7 +4743,7 @@ export default function CommunityHomePage() {
                           );
                         })
                       ) : (
-                        <div style={{ color: "#617085", fontWeight: 800 }}>No bulletin reviews waiting.</div>
+                        <div style={{ color: "#617085", fontWeight: 800 }}>No announcements are waiting for review.</div>
                       )}
                     </div>
                   </div>
@@ -4758,7 +4758,7 @@ export default function CommunityHomePage() {
                 {canManageCommunityDomain && selectedCommunityDomainRow ? (
                   <StableButton type="button" debugId="community-home.admin.community-domain" onClick={(event) => openCommunityDomainDestination(event, selectedCommunityDomainRow, selectedCommunityDomainRow.dashboardPath)} style={communityToolRowStyle()}>
                     <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 30)}</span>
-                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>Community Domain</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Manage policy, billing, and capacity for this domain.</span></span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>Community Domain</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Manage this organisation's rules, plan, and member capacity.</span></span>
                     <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
                   </StableButton>
                 ) : null}

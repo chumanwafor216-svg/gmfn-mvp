@@ -96,7 +96,7 @@ assertContains(
   "Community Home Marketplace handoff must stay a protected compact row."
 );
 assertContains(
-  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Spotlight management live in Shop Control/,
+  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Change your shop, public products, or Spotlight/,
   "Community Home shop owner handoff must point to Shop Control without embedding Spotlight controls."
 );
 assertContains(
@@ -115,7 +115,7 @@ if (phoneHiddenPageTopNavCount !== 3) {
   });
 }
 assertContains(
-  /data-debug-id="community-home\.identity-card"[\s\S]*?!isCompact \? \([\s\S]*?You are inside one selected community[\s\S]*?\) : null/,
+  /data-debug-id="community-home\.identity-card"[\s\S]*?!isCompact \? \([\s\S]*?This is the community you are using now[\s\S]*?\) : null/,
   "Community Home phone identity must keep the explanatory paragraph off the first surface."
 );
 assertContains(
@@ -159,15 +159,28 @@ assertContains(
   "Community Home community rows must remain tappable, busy-aware selection rows."
 );
 assertContains(
-  /debugId="community-home\.admin\.toggle"[\s\S]*?Bulletin settings, review queue, join requests, and Community Domain controls/s,
+  /debugId="community-home\.admin\.toggle"[\s\S]*?Manage announcements, join requests, and community settings/s,
   "Community Home admin tools must be collapsed behind one admin row."
 );
 assertContains(
   /canManageCommunityDomain && selectedCommunityDomainRow[\s\S]*?debugId="community-home\.admin\.community-domain"/s,
   "Community Home Community Domain control must be gated by selected-domain can_admin."
 );
+assertContains(
+  /title="Start here"[\s\S]*?You have not created or joined a community yet\.[\s\S]*?Create community[\s\S]*?Set up Community Domain[\s\S]*?Invite your first people[\s\S]*?Back to Dashboard/s,
+  "Community Home no-community state must explain the situation plainly while preserving its approved recovery actions."
+);
+assertContains(
+  /Tell GSN what you want to do\.[\s\S]*?Use your current GSN account to start a community\.[\s\S]*?Use an invitation you received, or ask to join[\s\S]*?Invite first people/s,
+  "Community Home setup guidance must describe create, join, and First Circle work in direct member language."
+);
+assertContains(
+  /Please confirm you saw this[\s\S]*?Announcements waiting for review[\s\S]*?Manage announcements, join requests, and community settings\.[\s\S]*?Send announcement for review[\s\S]*?Post announcement/s,
+  "Community Home attention and admin copy must use direct announcement language."
+);
 
 assertNotContains(/overflowWrap: "anywhere"/g, "Community Home route-local action styles must not split words anywhere on phone buttons.");
+assertNotContains(/Choose the verification or work evidence|existing-member create lane|join-community lane|Submit bulletin record|Post bulletin record|No bulletin reviews waiting/g, "Community Home must not restore internal workflow language on member-facing guidance.");
 assertNotContains(/display: "none"[\s\S]{0,1800}<StableButton\b/g, "Community Home must not keep hidden StableButton sections in the source action inventory.");
 assertNotContains(/display: "none"/g, "Community Home must not keep hidden route-local UI remnants in the page source.");
 assertNotContains(/<div\s+style=\{communityToolRowStyle\(\)\}/g, "Community Home must not use plain divs with compact button geometry; button-looking rows must be protected StableButton actions.");

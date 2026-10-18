@@ -72,7 +72,7 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Permissions: Member for request; owner/admin/reviewer for approval.
 - Exact route(s): `/app/community; /app/clans; /join/:code; /pending-approval; /app/community/:id/join-requests`
 - Exact visible labels: Community Home; Set up Community Domain; Join marketplace; Owner approvals; Review Join Requests
-- Empty/stale state: No marketplace communities yet; invite code or join link needed; request may remain pending.
+- Empty/stale state: No communities yet; invite code or join link needed; request may remain pending.
 - Recovery path: Use latest invite link/code, ask owner/admin to review, or return to Community Home/Dashboard.
 - Screenshot: screenshots/2026-09-13_community-home.png
 - Verification evidence: Community Home and Clans audits; join request tests; appRoutes COMMUNITY/CLANS/JOIN_PENDING.

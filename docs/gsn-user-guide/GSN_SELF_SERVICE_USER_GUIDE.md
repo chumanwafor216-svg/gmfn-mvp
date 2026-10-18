@@ -36,7 +36,7 @@ Status: LIVE. Behaviour: USER_CONFIGURES_OR_CREATES.
 Where to go: Community Home; Set up Community Domain; Join marketplace; Owner approvals; Review Join Requests.
 Before it works: Signed-in member and invite or owner intent to create.
 What feeds or creates it: Community record, invite code/link/QR context, join request, approval votes, selected community.
-Empty or stale state: No marketplace communities yet; invite code or join link needed; request may remain pending.
+Empty or stale state: No communities yet; invite code or join link needed; request may remain pending.
 Recovery: Use latest invite link/code, ask owner/admin to review, or return to Community Home/Dashboard.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
 

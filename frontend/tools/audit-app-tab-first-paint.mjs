@@ -719,14 +719,14 @@ async function run() {
       path: "/app/community?community=8",
       selector: '[data-debug-id="community-home.identity-card"]',
       text: "Community Home",
-      loadingText: "Loading your marketplace communities",
+      loadingText: "Loading your communities",
     },
     {
       name: "Marketplace",
       mode: "marketplace",
       path: "/app/marketplace?community=8",
       selector: '[data-cta-id="marketplace.job.find-people-services"]',
-      text: "Shops & Services",
+      text: "Shops & services",
       loadingText: "Loading your current community",
     },
     {

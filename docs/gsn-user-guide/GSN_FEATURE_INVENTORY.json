@@ -30,7 +30,7 @@
     "permissions": "Member for request; owner/admin/reviewer for approval.",
     "route": "/app/community; /app/clans; /join/:code; /pending-approval; /app/community/:id/join-requests",
     "labels": "Community Home; Set up Community Domain; Join marketplace; Owner approvals; Review Join Requests",
-    "empty_state": "No marketplace communities yet; invite code or join link needed; request may remain pending.",
+    "empty_state": "No communities yet; invite code or join link needed; request may remain pending.",
     "recovery": "Use latest invite link/code, ask owner/admin to review, or return to Community Home/Dashboard.",
     "evidence": "Community Home and Clans audits; join request tests; appRoutes COMMUNITY/CLANS/JOIN_PENDING.",
     "screenshots": "screenshots/2026-09-13_community-home.png"
