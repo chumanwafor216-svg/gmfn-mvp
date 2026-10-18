@@ -8,6 +8,51 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Verified local Community Home novice wording batch - 2026-10-18
+
+- Status: committed locally as
+  `46bf3b8d` (`Simplify Community Home member wording`). Under the active
+  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
+  `main`, or deployed. Production remains on the baseline recorded below.
+- `/app/community` and `/app/community/:clanId` retain the frozen
+  selected-community identity hero, immediate Bulletin, actionable attention,
+  five Community actions, conditional switcher, personalised Invite, and
+  authority-gated Admin area. No route, action, permission, data call, count,
+  disclosure, or mobile geometry changed.
+- The no-community state now says `No communities yet` and explains directly
+  that the member has not created or joined one. Its recovery actions now read
+  `Create community`, `Set up Community Domain`, `Invite your first
+  people`, and `Back to Dashboard`. The optional create/join/First Circle
+  guide no longer exposes internal `lane`, `verification/work evidence`,
+  or repeated-registration language.
+- The selected-community hero now labels the signed-in position as `Your
+  role`. Desktop destination explanations describe what the member will find
+  in Marketplace, Manage shop, Finance, Support, and Trust. Attention and
+  authorised administration use direct announcement language such as `Please
+  confirm you saw this`, `Send announcement for review`, and
+  `Announcements waiting for review`.
+- Matching frozen specs, wording contracts, billboard expectations,
+  first-paint text, and self-service inventory wording were updated. The older
+  domain/admin browser smoke was corrected to open `Community actions`
+  before Marketplace, and its switcher fixture now truthfully provides two
+  ordinary communities. It also covers the rendered novice no-community
+  surface and horizontal containment.
+- Verification passed all three Community Home focused audits, the complete
+  protected-button freeze suite, the 290-module production build,
+  `smoke:community-home-simple-phone`, and the expanded
+  `smoke:community-home-domain-list`. The latter covers route reconciliation,
+  Marketplace handoff, ordinary-community switching, Community Domain admin
+  gating, the novice empty state, and 390x844 containment.
+- Remaining truth: the broader `audit:app-tab-first-paint` is not fully
+  green. After its stale Marketplace phone-capitalisation expectation was
+  corrected, it advanced to Profile and repeatedly timed out waiting for
+  `[data-my-gsn-member-home="true"]`. No Profile application code changed in
+  this batch, but that separate Profile audit failure has not yet been
+  diagnosed. The generated empty-state screenshot exists locally; the image
+  viewer itself was blocked by the Windows split-root sandbox, so visual
+  inspection was not claimed.
+- Phone OTP and Pipeline Credit were not changed or activated.
+
 ## Verified local Marketplace novice-first wording batch - 2026-10-18
 
 - Status: committed locally as
