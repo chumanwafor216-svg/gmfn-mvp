@@ -10,10 +10,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
 
-- Status: committed locally as `45a8f383` (`Simplify My GSN and guard
-  Profile loading`). Under the active pipeline-shortage batch freeze, this
-  commit has not been pushed, promoted to `main`, or deployed. Production
-  remains on the baseline recorded below.
+- Status: the implementation was committed as `45a8f383` (`Simplify My GSN
+  and guard Profile loading`) and the complete wording batch was released from
+  exact app commit `bab697155e74c355a8fef901b8b3901cf8695105` through Render
+  deploy `dep-dbajl0c9v7es738pbt7g`. GitHub Actions run `39168144033`
+  completed successfully and verified the public frontend asset graph.
 - This resolves the Profile first-paint failure recorded in the Community Home
   batch below. The failure was a real blank-page crash, not a slow route:
   `/app/profile` redirected correctly, but the collapsed `My Pipeline Credits`
@@ -44,10 +45,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Verified local Community Home novice wording batch - 2026-10-18
 
-- Status: committed locally as
-  `46bf3b8d` (`Simplify Community Home member wording`). Under the active
-  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
-  `main`, or deployed. Production remains on the baseline recorded below.
+- Status: originally committed as `46bf3b8d` (`Simplify Community Home member
+  wording`) and deployed as part of exact frontend app commit `bab69715`.
 - `/app/community` and `/app/community/:clanId` retain the frozen
   selected-community identity hero, immediate Bulletin, actionable attention,
   five Community actions, conditional switcher, personalised Invite, and
@@ -89,10 +88,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Verified local Marketplace novice-first wording batch - 2026-10-18
 
-- Status: committed locally as
-  `31f7e847` (`Simplify Marketplace member wording`). Under the active
-  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
-  `main`, or deployed. Production remains on the baseline recorded below.
+- Status: originally committed as `31f7e847` (`Simplify Marketplace member
+  wording`) and deployed as part of exact frontend app commit `bab69715`.
 - `/app/marketplace` keeps the frozen selected-community, needs-first structure
   and the same actions, data, permissions, and routes. Its front wording now
   explains open requests, shops that may be able to help, possible matches,
@@ -123,11 +120,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Verified local Public Shop wording batch - 2026-10-18
 
-- Status: committed locally as
-  `8bdbdd2f` (`Simplify Public Shop customer wording`). Under the active
-  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
-  `main`, or deployed. Production therefore remains on the baseline recorded
-  below.
+- Status: originally committed as `8bdbdd2f` (`Simplify Public Shop customer
+  wording`) and deployed as part of exact frontend app commit `bab69715`.
 - The Public Shop now presents product counts, focused products, and shared
   products as `shop item` / `shop items` instead of exposing the internal word
   `block`. Internal route parameters, anchors, product-slot contracts, and API
@@ -169,11 +163,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Production branch: `main`.
 - Current verified frontend application commit:
-  `c3b8e1462fc516c0f3e42993e6954fd84809b1e4`.
-- Frontend Render deploy `dep-dbaiir72d8hs73dtrsag` reached `live` on
-  that exact commit. Trigger Render Deploy run `39162639202` completed
-  successfully with `deploy_api=false` and verified the public frontend
-  asset graph.
+  `bab697155e74c355a8fef901b8b3901cf8695105`.
+- Frontend Render deploy `dep-dbajl0c9v7es738pbt7g` reached `live` on that
+  exact commit. Trigger Render Deploy run `39168144033` completed successfully
+  with `deploy_api=false` and verified the public frontend asset graph.
 - Current verified API application commit remains
   `f25ed01b271480b1e8927c36c4bd17b018ab4afe`; API Render deploy
   `dep-dbahcvrncjis73djcrb0` remains the live API release because this
@@ -181,10 +174,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Main-branch Backend Tests run `39156093134` completed successfully before
   deployment.
 - Independent post-deploy requests returned HTTP 200 from the frontend index,
-  `/app/shop-control`, and `/app/shop-assets`. The deployed asset graph
-  contains `What do you want to change?`, `Manage your shop`, `More shop &
-  community space`, and `Manage this shop item`, proving the new owner-facing
-  wording is being served publicly. The
+  `/app/profile`, and `/app/my-gmfn-and-i`. The deployed My GSN asset contains
+  `See your identity, communities, shop, trust, and account in one place`,
+  `Use Shop Control to change products`, and `Create or join a community to
+  see it here`, proving the new member wording is being served publicly. The
   prior API release checks returned HTTP 200 from `/health` and
   `/marketplace/media/ping`; health reported
   `{"ok":true,"dev_mode":false}` and the media router reported active. The
