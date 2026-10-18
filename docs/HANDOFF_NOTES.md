@@ -12,27 +12,27 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Production branch: `main`.
 - Current verified frontend and API application commit:
-  `8f836f9a927e51279796c60c18ac6e4fc56c42ff`.
-- Frontend Render deploy `dep-dbafu7654i7c738r48og` and API Render deploy
-  `dep-dbafvgrncjis73deb83g` both reached `live` on that exact commit.
-  Trigger Render Deploy run `39148862403` completed successfully with
+  `f25ed01b271480b1e8927c36c4bd17b018ab4afe`.
+- Frontend Render deploy `dep-dbahc3om7kps738rrpu0` and API Render deploy
+  `dep-dbahcvrncjis73djcrb0` both reached `live` on that exact commit.
+  Trigger Render Deploy run `39156346696` completed successfully with
   `deploy_api=true`, verified the public frontend build marker, and passed
   the live API contract check.
-- Main-branch Backend Tests run `39148571993` completed successfully before
+- Main-branch Backend Tests run `39156093134` completed successfully before
   deployment.
 - Independent post-deploy requests returned HTTP 200 from the frontend,
   `/health`, and `/marketplace/media/ping`; health reported
-  `{"ok":true,"dev_mode":false}` and the media router reported active.
-- The current frontend adds the focused exact-product management destination
-  to the already deployed owner shortcut and permanent-deletion workflow. The
-  retained API release includes atomic Vault/linked-Spotlight retirement,
-  durable reference-safe media cleanup, bounded expired-Spotlight payload
-  compaction, and Alembic migration
-  `20261018_spotlight_payload_retention_v1`.
+  `{"ok":true,"dev_mode":false}` and the media router reported active. The
+  live frontend bundle contained the product-media visibility marker, and the
+  live API rejected an unqualified `product_open` request with HTTP 422.
+- This application release adds qualification-time Spotlight delivery
+  accounting and qualified Shop product-media attention to the previously
+  deployed exact-product management, permanent-deletion, media-retention, and
+  media-quality work.
 
 ## Spotlight qualification accounting and product-media attention - 2026-10-18
 
-- Status: owner-approved implementation is locally verified; it has not yet been committed, pushed, or deployed.
+- Status: committed, pushed to the working branch and `main`, deployed on the exact application commit recorded above, and independently verified against the public frontend and API.
 - Canonical Spotlight fetch now creates a bounded 30-second reservation without incrementing `consumed_delivery_rounds`. Only one current reservation per campaign version may exist globally. Accepted visible qualification consumes the round, records the canonical exposure, and marks the lease qualified in one transaction.
 - An expired unqualified reservation consumes no round. The abandoning viewer cannot repeatedly reacquire that campaign version, while another eligible viewer may receive a later reservation. Qualified retries remain idempotent; replay, owner preview, replacement, withdrawal, expiry, and commit failure remain accounting-neutral.
 - Public Shop product cards no longer record `product_open` merely because the card expanded. The media must remain at least 60% visible in an active tab for one continuous second. The analytics endpoint rejects product-open writes without that evidence and retains daily dedupe. Product media receives no Spotlight-style round allowance; this remains weak attention evidence, not buyer or sale proof.
