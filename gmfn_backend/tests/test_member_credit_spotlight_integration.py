@@ -271,6 +271,51 @@ def test_internal_synthetic_accounting_to_spotlight_journey(monkeypatch) -> None
         assert provider_cost_entries[0].balance_after == Decimal("9.00")
 
 
+def test_expired_active_campaign_is_retired_before_member_credit_renewal(monkeypatch) -> None:
+    monkeypatch.setenv("GSN_MEMBER_CREDIT_SPOTLIGHT_WRITES_ENABLED", "1")
+    pack_id, service_id = _seed_spotlight_foundation()
+    with SessionLocal() as db:
+        account_id = _award_one_credit(db, pack_id=pack_id)
+        expired_campaign = SpotlightCampaign(
+            owner_user_id=1,
+            shop_id=1,
+            origin_clan_id=1,
+            status="active",
+            serving_status="serving",
+            activated_at=ACTIVATED_AT - timedelta(days=2),
+            expires_at=ACTIVATED_AT - timedelta(days=1),
+            authorized_expires_at=ACTIVATED_AT - timedelta(days=1),
+        )
+        db.add(expired_campaign)
+        db.commit()
+        expired_campaign_id = int(expired_campaign.id)
+
+        result = spotlight_spend.activate_single_day_spotlight(
+            db,
+            member_user_id=1,
+            service_version_id=service_id,
+            funding_source="member_credit",
+            shop_id=1,
+            product_id=1,
+            placement_clan_ids=[1],
+            message="Renewed after the prior deadline",
+            image_url=None,
+            video_url=None,
+            idempotency_key="expired-campaign-renewal",
+            now=ACTIVATED_AT,
+            commit=True,
+        )
+
+        db.expire_all()
+        retired = db.get(SpotlightCampaign, expired_campaign_id)
+        assert retired is not None
+        assert retired.status == "expired"
+        assert retired.ended_at.replace(tzinfo=timezone.utc) == ACTIVATED_AT
+        assert result.campaign_id != expired_campaign_id
+        assert db.get(SpotlightCampaign, result.campaign_id).status == "active"
+        assert db.get(MemberServiceCreditAccount, account_id).balance_units == 0
+
+
 def test_permission_and_payment_suspension_are_rechecked_before_member_credit_debit(
     monkeypatch,
 ) -> None:

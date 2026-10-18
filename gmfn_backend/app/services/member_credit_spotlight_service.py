@@ -162,9 +162,11 @@ def activate_single_day_spotlight(
         .with_for_update()
         .all()
     )
+    expired_active_campaigns: list[SpotlightCampaign] = []
     for campaign in active_campaigns:
         expiry = authorized_expiry(campaign)
         if expiry is not None and current >= expiry:
+            expired_active_campaigns.append(campaign)
             continue
         pacing = db.get(SpotlightCampaignPacingState, int(campaign.id))
         if pacing is not None and (
@@ -187,6 +189,13 @@ def activate_single_day_spotlight(
     expires = activation_expiry(current, authorized_days=1)
     try:
         with db.begin_nested():
+            # Retire deadline-expired rows in the same savepoint as the new
+            # activation. PostgreSQL's partial unique index permits only one
+            # status='active' campaign per owner, so merely ignoring a stale
+            # active row would make a valid renewal fail at insert time.
+            for campaign in expired_active_campaigns:
+                campaign.status = "expired"
+                campaign.ended_at = current
             if source == 'member_credit':
                 require_payment_operations_enabled()
                 require_member_credit_service_permission(
