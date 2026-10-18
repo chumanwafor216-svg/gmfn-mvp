@@ -8,20 +8,22 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
-## Current production baseline - 2026-10-17
+## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `e779b831f5c15ede2adbe2a36c15cdca8e343ef8`.
-- Frontend Render deploy `dep-db9u4jvbtjjs73d2kueg` and API Render deploy
-  `dep-db9u8nu1egvs738l9fc0` reached `live` on that exact commit. Trigger
-  Render Deploy run `39069206296` and Backend Tests run `39069191881`
-  completed successfully.
+- Current verified application commit: `f02c0c51b563d468316622d50f953142b5f035ed`.
+- Frontend Render deploy `dep-dba8ib8jgiss7399koi0` and API Render deploy
+  `dep-dba8jkuq1p3s73ao1t6g` reached `live` on that exact commit. Trigger
+  Render Deploy run `39113221448` completed successfully with the explicit
+  `deploy_api=true` input. The earlier frontend-only run `39112938869`
+  succeeded but correctly did not constitute a complete release because its
+  manual-dispatch default left backend deployment disabled.
 - The public frontend and API health endpoint both returned HTTP 200 after the
   deployment; API health reported `{"ok":true,"dev_mode":false}`.
 - The deployed correction updates Spotlight frontend rotation/timing and the
   backend replay-delivery contract, so both frontend and API were deployed.
 
-## Local verified Spotlight repair - 2026-10-18 (not published)
+## Deployed Spotlight repair - 2026-10-18
 
 - Production evidence confirmed that campaign `319` for shop `4` activated at
   `2026-10-17T00:17:45Z` and expired exactly 24 hours later at
@@ -52,9 +54,39 @@ under `docs/` or `docs/archive/`, then link that file here.
   390x844, including WhatsApp containment, expired-state honesty, touch-focus
   recovery, replay rotation, and no double counting; the full protected-button
   freeze audit also passed.
-- This repair is intentionally uncommitted/unpublished at handoff time because
-  the current batch-mode freeze requires the product owner to say the batch is
-  ready before push or Render promotion.
+- The product owner explicitly authorized deployment. Commit
+  `f02c0c51b563d468316622d50f953142b5f035ed` was pushed to
+  `codex/spotlight-rotation-continuity`, promoted unchanged to `main`, and
+  deployed to both Render services.
+
+## Spotlight post-deployment gap audit - 2026-10-18
+
+- Read-only backend and frontend audits found no authorization bypass in the
+  deployed due-replay repair. Exact qualified lease, exposure, membership,
+  content-version, lifecycle, and placement checks remain in force.
+- Highest backend follow-up: qualification is split across two commits. An
+  impression can advance the viewer cap before the presentation lease is
+  marked qualified, so a failure between commits can recreate a blank rail.
+  Make exposure plus lease qualification one transaction and add a
+  failure-injection rollback regression.
+- The per-viewer frequency cap is also raceable under simultaneous
+  qualifications. Serialize qualification per viewer/campaign and recheck the
+  cap inside that transaction.
+- Highest frontend follow-up: the API-selected fresh lease can be re-sorted
+  behind replay and weighted copies and expire before display. Keep the fresh
+  governed row first, deduplicate by presentation, and test a 30-second lease.
+- Other confirmed continuity risks: hidden-tab requests can fall through to
+  legacy data and overwrite governed state; qualification is marked complete
+  client-side before server acceptance; three weighted consecutive copies can
+  look stuck; and stale rows have no expiry-driven removal timer.
+- Backend inventory risks remain: ten abandoned issuances can consume all
+  global delivery rounds without an impression; truncating to 50 candidates
+  before pacing can hide a due campaign; a pacing CAS loss does not try the
+  next candidate; replay staleness is 60 seconds while the route promises 30;
+  and candidate discovery ignores its limit.
+- Changing when the ten global rounds are consumed is a frozen policy decision
+  and requires product-owner approval. The other findings are implementation
+  hardening candidates and were deliberately not mixed into this deployment.
 
 ## Active product truth
 
@@ -138,7 +170,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   smoke:spotlight-owner-visibility. The browser smoke observes four complete
   small-queue transitions at no less than 4.5 seconds and verifies that replay
   continues after fresh delivery stops without double-counting.
-- Focused Spotlight presentation backend tests pass: 8 passed, including the
+- Focused Spotlight backend verification passes: 98 tests, including the
   exhausted-delivery replay regression; Python compilation also passes.
 - `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
   compact first surface, filters, one-open request cards, essential form,
@@ -146,11 +178,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - `audit:demand-box-front-package`, `audit:demand-box-expand-search`,
   `audit:marketplace-demand-box-lane`, targeted ESLint, and the broad
   `audit:button-stability` pass for this local batch.
-- `audit:protected-button-freeze` remains red in three visual checks on
-  untouched Dashboard, Shop Control analytics, and Trust Infrastructure
-  surfaces (missing expected baseline selectors/timeouts). Its static button,
-  raw-action, tap, Marketplace, Community Home, entry, Notifications, and
-  route-boundary checks pass. No frozen surface was edited in this batch.
+- `audit:protected-button-freeze` passes in full for this deployed repair.
 - Frontend production build passed with 290 modules.
 - `audit:proof-surfaces`, `audit:trust-actions`,
   `audit:demand-box-front-package`, and
