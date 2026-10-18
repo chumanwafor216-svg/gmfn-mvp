@@ -8,9 +8,11 @@ import imageio_ffmpeg
 import pytest
 from fastapi import HTTPException
 
-from app.api.routes.marketplace_media import _read_limited_bytes
+from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited_upload
 from app.api.routes.marketplace import _require_verified_marketplace_video
 from app.services.marketplace_media_quality_service import (
+    MAX_NORMALIZED_VIDEO_BYTES,
+    MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
     MediaQualityError,
     inspect_video,
@@ -184,6 +186,39 @@ def test_video_upload_is_server_verified_and_ignores_claimed_short_duration(
     assert (upload_root / "marketplace" / "videos" / body["filename"]).is_file()
 
 
+def test_video_upload_accepts_source_above_published_limit_and_reduces_it(
+    client,
+    override_current_user,
+    monkeypatch,
+    tmp_path: Path,
+):
+    upload_root = tmp_path / "uploads"
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+    source = _make_video(
+        tmp_path / "large-phone-source.mp4",
+        seconds=12,
+        with_audio=True,
+    )
+    with source.open("ab") as stream:
+        stream.write(b"\0" * (MAX_NORMALIZED_VIDEO_BYTES + 1))
+
+    assert source.stat().st_size > MAX_NORMALIZED_VIDEO_BYTES
+    assert source.stat().st_size < MAX_SOURCE_VIDEO_BYTES
+
+    with source.open("rb") as stream:
+        response = client.post(
+            "/marketplace/media/video",
+            files={"file": ("large-phone-source.mp4", stream, "video/mp4")},
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["source_size_bytes"] > MAX_NORMALIZED_VIDEO_BYTES
+    assert body["size_bytes"] <= MAX_NORMALIZED_VIDEO_BYTES
+    assert body["max_source_bytes"] == MAX_SOURCE_VIDEO_BYTES
+    assert body["trimmed"] is True
+
+
 def test_legacy_direct_video_upload_contract_is_closed(
     client,
     override_current_user,
@@ -208,5 +243,18 @@ def test_upload_limit_stops_reading_after_the_limit_is_crossed():
         asyncio.run(_read_limited_bytes(upload, 3))
 
     assert exc_info.value.status_code == 400
+    assert len(upload.read_sizes) == 2
+    assert upload.chunks == [b"should-not-be-read"]
+
+
+def test_large_upload_stream_limit_removes_partial_file(tmp_path: Path):
+    upload = _ChunkedUpload([b"aa", b"bb", b"should-not-be-read"])
+    destination = tmp_path / "partial.source.mp4"
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(_write_limited_upload(upload, destination, 3))
+
+    assert exc_info.value.status_code == 400
+    assert not destination.exists()
     assert len(upload.read_sizes) == 2
     assert upload.chunks == [b"should-not-be-read"]

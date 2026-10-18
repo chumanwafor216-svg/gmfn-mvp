@@ -41,12 +41,15 @@ const subscription = readFrontend("src/pages/SubscriptionSpotlightPage.tsx");
 
 requirePattern(requirements, /^imageio-ffmpeg==0\.6\.0$/m, "The bundled FFmpeg dependency must stay pinned.");
 requirePattern(service, /MIN_VIDEO_SHORT_EDGE = 720[\s\S]*?MIN_VIDEO_FPS = 20\.0[\s\S]*?MAX_VIDEO_ASPECT_RATIO = 1\.85[\s\S]*?MAX_VIDEO_DURATION_SECONDS = 10\.0/, "The server quality thresholds changed without updating this audit.");
+requirePattern(service, /MAX_SOURCE_VIDEO_BYTES = 100 \* 1024 \* 1024[\s\S]*?MAX_NORMALIZED_VIDEO_BYTES = 15 \* 1024 \* 1024/, "Large phone sources and bounded published outputs must retain separate ceilings.");
 requirePattern(service, /"-t",[\s\S]*?str\(MAX_VIDEO_DURATION_SECONDS\)[\s\S]*?"libx264"[\s\S]*?"yuv420p"[\s\S]*?"\+faststart"/, "The server must physically trim and produce web-safe H.264 MP4.");
 requirePattern(service, /"aac"[\s\S]*?"loudnorm=I=-16:TP=-1\.5:LRA=11"/, "Existing audio must keep modest AAC loudness normalisation.");
 requirePattern(mediaRoute, /@router\.post\("\/video"\)[\s\S]*?Depends\(get_current_user\)[\s\S]*?normalize_marketplace_video[\s\S]*?quality_verified": True/, "The authenticated video endpoint must inspect and mark only verified output.");
+requirePattern(mediaRoute, /_write_limited_upload\([\s\S]*?MAX_SOURCE_VIDEO_BYTES[\s\S]*?normalize_marketplace_video/, "The server must stream a bounded large source before normalising it.");
 requirePattern(mediaRoute, /verified_video_upload_required/g, "Direct video upload bypasses must remain closed.");
 requirePattern(marketplaceRoute, /def _require_verified_marketplace_video[\s\S]*?is_verified_marketplace_video_url/, "Marketplace writes must retain the verified managed-video guard.");
 requirePattern(prep, /file\.size \|\| 0\) <= maxBytes[\s\S]*?durationSeconds <= maxDurationSeconds[\s\S]*?createSpotlightReadyClip/, "The browser may keep an original only when both size and duration pass; otherwise it must create a real clip.");
+requirePattern(prep, /This is not a quality-gate bypass[\s\S]*?server inspects,[\s\S]*?trims and normalises/, "Unsupported phone-side preparation must fall back to the authoritative server gate.");
 requirePattern(pilot, /clean the lens[\s\S]*?good light[\s\S]*?quiet place[\s\S]*?720p-or-better[\s\S]*?opening 10 seconds/, "Shared preparation guidance must remain practical and truthful.");
 requirePattern(api, /j\.detail\.message \|\| j\.detail\.explanation \|\| j\.detail\.error/, "Structured server rejections must surface their plain corrective message.");
 requirePattern(shopAssets, /shop-assets\.product\.remove-video[\s\S]*?New pasted video links are not accepted/, "Shop Assets must keep removal and reject pasted video links.");

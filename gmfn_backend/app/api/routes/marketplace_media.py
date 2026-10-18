@@ -17,6 +17,7 @@ from app.db.database import get_db
 from app.db.models import ClanMembership, User
 from app.services.marketplace_media_quality_service import (
     MAX_NORMALIZED_VIDEO_BYTES,
+    MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS as QUALITY_MAX_VIDEO_DURATION_SECONDS,
     MediaQualityError,
     normalize_marketplace_video,
@@ -202,6 +203,35 @@ async def _read_limited_bytes(file: UploadFile, max_bytes: int) -> bytes:
             )
         chunks.append(chunk)
     return b"".join(chunks)
+
+
+async def _write_limited_upload(
+    file: UploadFile,
+    destination: Path,
+    max_bytes: int,
+) -> int:
+    # Stream a large phone upload to disk instead of holding it in RAM.
+    total = 0
+    try:
+        with destination.open("wb") as stream:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "This source video is too large for automatic preparation. "
+                            f"Choose a video up to {max_bytes // (1024 * 1024)}MB."
+                        ),
+                    )
+                stream.write(chunk)
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+    return total
 
 
 class UploadUrlCreateIn(BaseModel):
@@ -436,10 +466,6 @@ async def upload_marketplace_video(
     _validate_ext("video", ext)
     _validate_content_type("video", content_type, ext)
 
-    data = await _read_limited_bytes(file, MAX_VIDEO_BYTES)
-    if not data:
-        raise HTTPException(status_code=400, detail="Video file is empty.")
-
     processing_token = secrets.token_hex(8)
     input_path = _video_processing_dir() / f"{processing_token}.source{ext}"
     output_path = _video_processing_dir() / f"{processing_token}.normalized.mp4"
@@ -447,7 +473,13 @@ async def upload_marketplace_video(
     filepath = _video_upload_dir() / filename
 
     try:
-        input_path.write_bytes(data)
+        source_size_bytes = await _write_limited_upload(
+            file,
+            input_path,
+            MAX_SOURCE_VIDEO_BYTES,
+        )
+        if source_size_bytes <= 0:
+            raise HTTPException(status_code=400, detail="Video file is empty.")
         normalized = normalize_marketplace_video(input_path, output_path)
         shutil.move(str(output_path), str(filepath))
     except MediaQualityError as exc:
@@ -474,7 +506,8 @@ async def upload_marketplace_video(
         "filename": filename,
         "content_type": "video/mp4",
         "size_bytes": int(normalized.size_bytes),
-        "source_size_bytes": len(data),
+        "source_size_bytes": source_size_bytes,
+        "max_source_bytes": MAX_SOURCE_VIDEO_BYTES,
         "duration_seconds": normalized.output.duration_seconds,
         "source_duration_seconds": normalized.source.duration_seconds,
         "max_video_seconds": MAX_VIDEO_DURATION_SECONDS,

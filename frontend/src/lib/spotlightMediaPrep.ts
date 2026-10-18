@@ -395,12 +395,14 @@ export async function prepareSpotlightVideoFile(
   file: File,
   options?: {
     maxBytes?: number;
+    maxSourceBytes?: number;
     maxDurationSeconds?: number;
     minShortEdge?: number;
     maxAspectRatio?: number;
   }
 ): Promise<PreparedSpotlightMedia> {
   const maxBytes = Number(options?.maxBytes || 15 * 1024 * 1024);
+  const maxSourceBytes = Number(options?.maxSourceBytes || 100 * 1024 * 1024);
   const maxDurationSeconds = Number(options?.maxDurationSeconds || 10);
   const minShortEdge = Number(
     options?.minShortEdge || DEFAULT_MIN_VIDEO_SHORT_EDGE
@@ -410,6 +412,7 @@ export async function prepareSpotlightVideoFile(
   );
 
   const objectUrl = URL.createObjectURL(file);
+  let durationSeconds = 0;
 
   try {
     const video = await waitForVideoMetadata(objectUrl);
@@ -417,7 +420,7 @@ export async function prepareSpotlightVideoFile(
       minShortEdge,
       maxAspectRatio,
     });
-    const durationSeconds = Number(inspection.durationSeconds.toFixed(2));
+    durationSeconds = Number(inspection.durationSeconds.toFixed(2));
 
     if (
       Number(file.size || 0) <= maxBytes &&
@@ -433,10 +436,30 @@ export async function prepareSpotlightVideoFile(
     URL.revokeObjectURL(objectUrl);
   }
 
-  return createSpotlightReadyClip(file, {
-    maxBytes,
-    maxDurationSeconds,
-    minShortEdge,
-    maxAspectRatio,
-  });
+  try {
+    return await createSpotlightReadyClip(file, {
+      maxBytes,
+      maxDurationSeconds,
+      minShortEdge,
+      maxAspectRatio,
+    });
+  } catch {
+    if (Number(file.size || 0) > maxSourceBytes) {
+      throw new Error(
+        `This phone could not reduce the video before upload, and the source is over ${formatFileSize(
+          maxSourceBytes
+        )}. Choose a shorter recording and try again.`
+      );
+    }
+
+    // This is not a quality-gate bypass. The authenticated server inspects,
+    // trims and normalises the original before it can be published.
+    return {
+      file,
+      durationSeconds,
+      message: `Your phone could not make the smaller clip locally, so GSN will securely prepare the opening ${Math.round(
+        maxDurationSeconds
+      )} seconds during upload.`,
+    };
+  }
 }

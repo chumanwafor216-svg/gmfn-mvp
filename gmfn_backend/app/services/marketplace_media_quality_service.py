@@ -17,6 +17,10 @@ MIN_VIDEO_DURATION_SECONDS = 1.0
 MAX_VIDEO_ASPECT_RATIO = 1.85
 MAX_VIDEO_DURATION_SECONDS = 10.0
 MAX_VIDEO_LONG_EDGE = 1280
+# The source ceiling is deliberately higher than the published-file ceiling.
+# Members may select an ordinary phone recording without knowing its duration
+# or encoded size; GSN then keeps and normalises only the opening public clip.
+MAX_SOURCE_VIDEO_BYTES = 100 * 1024 * 1024
 MAX_NORMALIZED_VIDEO_BYTES = 15 * 1024 * 1024
 VIDEO_PROCESS_TIMEOUT_SECONDS = 50
 

@@ -54,6 +54,7 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnVaultInviteMessage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
@@ -1065,10 +1066,12 @@ function validateSpotlightVideoFile(
     return `Use a ${SPOTLIGHT_ALLOWED_VIDEO_LABEL} video. Other formats are not accepted yet.`;
   }
 
-  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_VIDEO_BYTES) {
+  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES) {
     return `Video is ${formatFileSize(
       file.size
-    )}. Spotlight videos must be 15 MB or smaller.`;
+    )}. GSN can automatically prepare source videos up to ${formatFileSize(
+      SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES
+    )}.`;
   }
 
   return "";
