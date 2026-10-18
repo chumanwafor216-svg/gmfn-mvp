@@ -193,8 +193,15 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /!isCompact \|\| !hasGsnId[\s\S]*?!isCompact[\s\S]*?Your community list stays covered[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Notifications owns the full queue[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
+  /!isCompact \|\| !hasGsnId[\s\S]*?!isCompact[\s\S]*?Open your community list when you need it[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Open Notifications to see and act on every item[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
   "Phone My GSN must hide repeated helper explanations and use short section labels while preserving the desktop guidance."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /See your identity, communities, shop, trust, and account in one place[\s\S]*?Create or join a community to see it here[\s\S]*?Use Shop Control to change products[\s\S]*?Use Trust Passport for your private record[\s\S]*?Account settings and GSN links[\s\S]*?Open the related page if you need the full details/,
+  "My GSN desktop guidance must use direct member language instead of internal ownership, handoff, footprint, or source-page wording."
 );
 
 assertContains(

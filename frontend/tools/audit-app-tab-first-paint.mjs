@@ -206,6 +206,8 @@ async function measureRoute(browser, baseURL, test) {
     isMobile: true,
   });
   const page = await context.newPage();
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(String(error?.stack || error)));
   const delayed = await installApiMocks(page, test.mode);
 
   await page.addInitScript(() => {
@@ -218,12 +220,31 @@ async function measureRoute(browser, baseURL, test) {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });
-  await page.waitForSelector(test.selector, { timeout: MAX_FIRST_SURFACE_MS });
-  await page.waitForFunction(
-    (requiredText) => (document.body.textContent || "").includes(requiredText),
-    test.text,
-    { timeout: MAX_FIRST_SURFACE_MS }
-  );
+  try {
+    await page.waitForSelector(test.selector, { timeout: MAX_FIRST_SURFACE_MS });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      text: (document.body.textContent || "").replace(/\s+/g, " ").trim().slice(0, 1600),
+      html: document.body.innerHTML.slice(0, 1600),
+    }));
+    console.error("First-paint selector diagnostic:", { test: test.name, diagnostic, pageErrors });
+    throw error;
+  }
+  try {
+    await page.waitForFunction(
+      (requiredText) => (document.body.textContent || "").includes(requiredText),
+      test.text,
+      { timeout: MAX_FIRST_SURFACE_MS }
+    );
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      text: (document.body.textContent || "").replace(/\s+/g, " ").trim().slice(0, 2400),
+    }));
+    console.error("First-paint text diagnostic:", { test: test.name, requiredText: test.text, diagnostic, pageErrors });
+    throw error;
+  }
   const firstSurfaceMs = Date.now() - startedAt;
   const loadingTextStillVisible = await page.evaluate(
     (loadingText) => (document.body.textContent || "").includes(loadingText),

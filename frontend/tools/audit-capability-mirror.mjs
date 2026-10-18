@@ -159,7 +159,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /const memberCommunityRows = useMemo\([\s\S]*?const shouldShowAttentionSummary[\s\S]*?Your shop in \$\{selectedCommunityName\}[\s\S]*?data-my-gsn-identity-first="true"[\s\S]*?data-my-gsn-community-portfolio="true"[\s\S]*?data-my-gsn-phase2-attention="conditional"[\s\S]*?data-my-gsn-attention-summary="true"[\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.attention\.demand-box[\s\S]*?data-my-gsn-shop-business="true"[\s\S]*?Shop Control owns products, Spotlight, Vault, diary and analytics[\s\S]*?data-my-gsn-trust-evidence="true"[\s\S]*?APP_ROUTES\.TRUST_SLIP[\s\S]*?data-my-gsn-settings-account="true"/,
+  /const memberCommunityRows = useMemo\([\s\S]*?const shouldShowAttentionSummary[\s\S]*?Your shop in \$\{selectedCommunityName\}[\s\S]*?data-my-gsn-identity-first="true"[\s\S]*?data-my-gsn-community-portfolio="true"[\s\S]*?data-my-gsn-phase2-attention="conditional"[\s\S]*?data-my-gsn-attention-summary="true"[\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.attention\.demand-box[\s\S]*?data-my-gsn-shop-business="true"[\s\S]*?Use Shop Control to change products, Spotlight, Vault, diary, and analytics[\s\S]*?data-my-gsn-trust-evidence="true"[\s\S]*?APP_ROUTES\.TRUST_SLIP[\s\S]*?data-my-gsn-settings-account="true"/,
   "Default My GSN must keep the Phase 2 member-home order: identity, communities, conditional attention summary, selected-community shop/business handoff, trust/evidence handoff, and settings/account."
 );
 assertContains(

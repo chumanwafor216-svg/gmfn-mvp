@@ -2468,10 +2468,10 @@ export default function MyGMFNAndIPage() {
   const opportunityStatus = memberOpportunityStillLoading
     ? "Checking"
     : memberOpportunitySourceUnavailable("visibleRequests", "spotlights")
-      ? "Source unavailable"
+      ? "Could not load"
       : taggedRequestCount + concreteSpotlightCount > 0
         ? `${taggedRequestCount + concreteSpotlightCount} signal${taggedRequestCount + concreteSpotlightCount === 1 ? "" : "s"}`
-        : "Open source pages";
+        : "Open to check";
   const communityStatus = memberOpportunityStillLoading
     ? "Checking"
     : memberOpportunitySourceUnavailable("communities") && memberCommunityCount <= 0
@@ -2487,7 +2487,7 @@ export default function MyGMFNAndIPage() {
 
   const shopScopeLabel = selectedOrFirstCommunityId
     ? `Your shop in ${selectedCommunityName}`
-    : "Shop scope not selected";
+    : "Choose a community first";
   const trustSlipStatus = firstTruthy(passportVm.outputs.trustSlipStatus, "Not issued yet");
   const trustEvidenceStatus = `${trustPassportStatus} / TrustSlip ${trustSlipStatus}`;
   const settingsScopeStatus = "Device preferences stay on this device; display name saves to account";
@@ -2516,8 +2516,8 @@ export default function MyGMFNAndIPage() {
   const topNavSubtitle = isAppRoute
     ? showIdentityGuideSurface
       ? "Your identity, trust records, communities, shops, and opportunity guide."
-      : "Identity, memberships, business, evidence and account orientation."
-    : `Understand what GSN can do before you sign in, enter a community, or move into protected pages.`;
+      : "See your identity, communities, shop, trust, and account."
+    : `See what GSN can do before you sign in, create a community, or join one.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
       {
@@ -2540,9 +2540,9 @@ export default function MyGMFNAndIPage() {
       },
       {
         id: "sign-in",
-        label: "Sign in to reopen protected pages",
+        label: "Sign in to open your account",
         detail:
-          "Use sign in when you already have an account and need dashboard, marketplace, loans, trust, or other protected member tools.",
+          "Sign in when you already have an account and want to open your dashboard, marketplace, loans, trust, or other member pages.",
         to: "/login",
         keywords: ["login", "sign in", "dashboard", "member", "protected"],
         tone: "secondary",
@@ -2561,7 +2561,7 @@ export default function MyGMFNAndIPage() {
       },
       {
         label: "Community Home",
-        detail: "Community power and private control.",
+        detail: "Open and work inside one community.",
         icon: "home" as GsnIconName,
         to: routes.community,
         debugId: "my-gmfn.route.community",
@@ -2603,7 +2603,7 @@ export default function MyGMFNAndIPage() {
       },
       {
         label: "My GSN",
-        detail: "Member guidance, settings, and capability overview.",
+        detail: "See your identity, communities, settings, and help.",
         icon: "user" as GsnIconName,
         to: routes.guide,
         debugId: "my-gmfn.route.my-gmfn",
@@ -2891,7 +2891,7 @@ export default function MyGMFNAndIPage() {
                 >
                   {showIdentityGuideSurface
                     ? "Your identity, trust records, communities, shops, and opportunities in one place."
-                    : "Your identity, communities, attention, shop, evidence and account handoffs across GSN."}
+                    : "See your identity, communities, shop, trust, and account in one place."}
                 </div>
               ) : null}
             </div>
@@ -2970,7 +2970,7 @@ export default function MyGMFNAndIPage() {
                   ) : null}
                   {!isCompact ? (
                     <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                      Your community list stays covered until you open it. Community Home owns the selected community work.
+                      Open your community list when you need it. Use Community Home to work inside the selected community.
                     </div>
                   ) : null}
                   {selectedCommunityForShop ? (
@@ -3072,9 +3072,9 @@ export default function MyGMFNAndIPage() {
                         ))
                       ) : (
                         <div style={{ ...memberHomeCard(true), minHeight: 78 }}>
-                          <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>No active community shown yet</div>
+                          <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>No community to show yet</div>
                           <div style={{ marginTop: 6, ...helperText(), color: "#526174" }}>
-                            Join or create a community to build your GSN footprint.
+                            Create or join a community to see it here.
                           </div>
                         </div>
                       )}
@@ -3101,7 +3101,7 @@ export default function MyGMFNAndIPage() {
                     </h2>
                     {!isCompact ? (
                       <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                        My GSN shows the signal only. Notifications owns the full queue.
+                        This is a short summary. Open Notifications to see and act on every item.
                       </div>
                     ) : null}
                     <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
@@ -3178,17 +3178,17 @@ export default function MyGMFNAndIPage() {
                 <div style={memberHomeSectionShell()} data-my-gsn-shop-business="true">
                   {memberHomeSectionKicker("shop", isCompact ? "Shop & trust" : "Shop / TrustSlip", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {hasOwnShop ? ownShopName : isCompact ? "Shop and trust" : "Shop and evidence handoffs"}
+                    {hasOwnShop ? ownShopName : "Shop and trust"}
                   </h2>
                   {!isCompact ? (
                     <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
                       {hasOwnShop
-                        ? `${shopScopeLabel}. Shop Control owns products, Spotlight, Vault, diary and analytics.`
+                        ? `${shopScopeLabel}. Use Shop Control to change products, Spotlight, Vault, diary, and analytics.`
                         : "Open Shop Control when you are ready to set up or manage your shop."}
                     </div>
                   ) : null}
                   <div data-my-gsn-trust-evidence="true" style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                    {trustEvidenceStatus}{isCompact ? "" : ". Trust Passport owns private review. TrustSlip owns portable public checks."}
+                    {trustEvidenceStatus}{isCompact ? "" : ". Use Trust Passport for your private record and TrustSlip for a shareable check."}
                   </div>
                   <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                     <StableCtaLink to={shopRouteFor(selectedOrFirstCommunityId)} kind="secondary" debugId="my-gmfn.shop.manage" style={memberHomeCompactActionLink(false)}>
@@ -3209,7 +3209,7 @@ export default function MyGMFNAndIPage() {
                 <div style={memberHomeSectionShell()} data-my-gsn-settings-account="true">
                   {memberHomeSectionKicker("shield", isCompact ? "Account" : "Settings / Official GSN", isCompact)}
                   <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    {isCompact ? "Settings and links" : "Account and confirmed channels"}
+                    {isCompact ? "Settings and links" : "Account settings and GSN links"}
                   </h2>
                   {!isCompact ? (
                     <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
@@ -3297,7 +3297,7 @@ export default function MyGMFNAndIPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Some information couldn't be loaded right now. Open the source page if you need the full record.
+                  Some information couldn't be loaded right now. Open the related page if you need the full details.
                 </div>
               ) : null}
 
@@ -3307,7 +3307,7 @@ export default function MyGMFNAndIPage() {
                   {closedActivityStatus}
                 </h2>
                 <p style={{ margin: "8px 0 0", ...helperText(), color: "#526174" }}>
-                  Closed requests are only a quiet activity signal here. They are not a Trust Passport judgement or proof of quality.
+                  Closed requests are shown here only as past activity. They do not change your Trust Passport or prove quality.
                 </p>
               </div>
             </div>

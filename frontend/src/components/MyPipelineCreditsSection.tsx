@@ -95,6 +95,55 @@ function statusLabel(status: string): string {
   return labels[key] || key.replace(/_/g, " ") || "Status unavailable";
 }
 
+function normalizeMemberCreditAccount(value: unknown): MemberCreditSelf | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<MemberCreditSelf>;
+  const balanceUnits = Number(candidate.balance_units);
+  if (!Number.isFinite(balanceUnits)) return null;
+  return {
+    member_user_id: Number(candidate.member_user_id || 0),
+    account_status: String(candidate.account_status || "unavailable"),
+    balance_units: balanceUnits,
+    entries: Array.isArray(candidate.entries)
+      ? candidate.entries.filter(
+          (entry): entry is MemberCreditSelf["entries"][number] =>
+            Boolean(entry && typeof entry === "object")
+        )
+      : [],
+  };
+}
+
+function normalizeMemberCreditCatalogue(value: unknown): MemberCreditCatalogue | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<MemberCreditCatalogue>;
+  if (!Array.isArray(candidate.packs) || !Array.isArray(candidate.services)) return null;
+  return {
+    member_user_id: Number(candidate.member_user_id || 0),
+    balance_units: Number.isFinite(Number(candidate.balance_units))
+      ? Number(candidate.balance_units)
+      : 0,
+    purchase_operations_enabled: candidate.purchase_operations_enabled === true,
+    spending_operations_enabled: candidate.spending_operations_enabled === true,
+    catalogue_mode: String(candidate.catalogue_mode || "unavailable"),
+    packs: candidate.packs.filter(
+      (pack): pack is MemberCreditCatalogue["packs"][number] =>
+        Boolean(pack && typeof pack === "object")
+    ),
+    services: candidate.services.filter(
+      (service): service is MemberCreditCatalogue["services"][number] =>
+        Boolean(service && typeof service === "object")
+    ),
+  };
+}
+
+function normalizeMemberCreditPurchases(value: unknown): MemberCreditPurchaseStatus[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.filter(
+    (purchase): purchase is MemberCreditPurchaseStatus =>
+      Boolean(purchase && typeof purchase === "object")
+  );
+}
+
 const shellStyle: React.CSSProperties = {
   gridColumn: "1 / -1",
   borderRadius: 20,
@@ -157,21 +206,46 @@ export default function MyPipelineCreditsSection({
       listMyMemberCreditPurchases(),
     ]);
     const failures: unknown[] = [];
-    if (accountResult.status === "fulfilled") setAccount(accountResult.value);
-    else failures.push(accountResult.reason);
+    if (accountResult.status === "fulfilled") {
+      const nextAccount = normalizeMemberCreditAccount(accountResult.value);
+      setAccount(nextAccount);
+      if (!nextAccount) {
+        failures.push(new Error("Pipeline Credit balance is unavailable."));
+      }
+    } else {
+      setAccount(null);
+      failures.push(accountResult.reason);
+    }
     if (catalogueResult.status === "fulfilled") {
-      setCatalogue(catalogueResult.value);
+      const nextCatalogue = normalizeMemberCreditCatalogue(catalogueResult.value);
+      setCatalogue(nextCatalogue);
       setSelectedPackId((current) => {
-        if (current && catalogueResult.value.packs.some((pack) => pack.pack_version_id === current)) {
+        if (
+          current &&
+          nextCatalogue?.packs.some((pack) => pack.pack_version_id === current)
+        ) {
           return current;
         }
-        return catalogueResult.value.packs[0]?.pack_version_id ?? null;
+        return nextCatalogue?.packs[0]?.pack_version_id ?? null;
       });
+      if (!nextCatalogue) {
+        failures.push(new Error("Pipeline Credit options are unavailable."));
+      }
     } else {
+      setCatalogue(null);
+      setSelectedPackId(null);
       failures.push(catalogueResult.reason);
     }
-    if (purchasesResult.status === "fulfilled") setPurchases(purchasesResult.value);
-    else failures.push(purchasesResult.reason);
+    if (purchasesResult.status === "fulfilled") {
+      const nextPurchases = normalizeMemberCreditPurchases(purchasesResult.value);
+      setPurchases(nextPurchases || []);
+      if (!nextPurchases) {
+        failures.push(new Error("Pipeline Credit activity is unavailable."));
+      }
+    } else {
+      setPurchases([]);
+      failures.push(purchasesResult.reason);
+    }
     setLoadError(failures.length ? safeError(failures[0]) : "");
     setLoading(false);
     setRefreshing(false);

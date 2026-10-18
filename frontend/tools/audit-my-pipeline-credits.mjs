@@ -36,6 +36,10 @@ requireText(component, "status.collection_action_url", "Checkout navigation must
 requireText(component, 'parsed.protocol === "https:"', "Checkout navigation must reject a non-HTTPS destination.");
 requireText(component, "Current balance is insufficient", "The service row must represent insufficient personal balance truthfully.");
 requireText(component, "Community and provider-cost accounts are separate.", "Personal and community/provider-cost balances must remain visibly separate.");
+requireText(component, "normalizeMemberCreditAccount", "My GSN must reject a malformed personal-credit balance without crashing Profile.");
+requireText(component, "normalizeMemberCreditCatalogue", "My GSN must validate catalogue arrays before selecting the first pack.");
+requireText(component, "normalizeMemberCreditPurchases", "My GSN must treat a malformed purchase list as unavailable rather than iterating it.");
+requireText(component, "Array.isArray(candidate.packs)", "The personal-credit catalogue boundary must verify server-owned pack and service arrays.");
 requireText(api, 'httpJson("/member-credits/catalogue"', "The frontend must read the server-owned catalogue.");
 requireText(api, "/member-credits/service-permissions/", "The frontend must persist service permission on the authenticated server contract.");
 requireText(api, '"/member-credits/purchase-quotes"', "The frontend must use the existing quote contract.");

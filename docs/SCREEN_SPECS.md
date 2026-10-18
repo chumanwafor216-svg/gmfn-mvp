@@ -208,6 +208,7 @@ Rules:
 - My GSN must not become Dashboard, Community Home, Marketplace, Shop Control, Trust Passport, or TrustSlip.
 - Dashboard owns immediate operational overview. My GSN owns durable identity, memberships, footprint, and orientation.
 - Community Home owns one selected community. My GSN owns the cross-community personal portfolio.
+- Visible My GSN guidance must speak to the member directly. Use plain actions such as `Open`, `Use`, `Create`, and `Join`; keep internal ownership, handoff, orientation, footprint, source-page, and queue language out of member-facing explanations when a direct instruction is available.
 - Profile tab must open the canonical member home, not the historical guide-first branch.
 - Do not revive the old standalone `ProfilePage.tsx`; treat it as deprecated/unmounted source until a later deletion audit.
 - The approved Pipeline Credit disclosure must stay in-place and collapsed by default. It must not become a page, navigation item, community/provider-cost balance, automatic renewal surface, or substitute for Shop Control. Service names may hand off only to server-authorised existing workflows with selected-community context.
