@@ -11,10 +11,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `1793b53048351f80fbd9a3eb2eac71a8e4167b3a`.
-- Frontend Render deploy `dep-dba9h4hum5fc73asungg` and API Render deploy
-  `dep-dba9irrncjis73cns2ig` reached `live` on that exact commit. Trigger
-  Render Deploy run `39117486532` completed successfully with the explicit
+- Current verified application commit: `658f8e101a6678339bc65d65fcf86ac75a473095`.
+- Frontend Render deploy `dep-dbacpahum5fc73av46t0` and API Render deploy
+  `dep-dbacqkqjnfac73f7r5ng` reached `live` on that exact commit. Trigger
+  Render Deploy run `39132679148` completed successfully with the explicit
   `deploy_api=true` input.
 - Independent post-deploy requests returned HTTP 200 from the Public Shop
   frontend and API OpenAPI document; the live API still exposes the Spotlight
@@ -22,7 +22,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   live API identity/public verification checks.
 - This release adds Spotlight qualification atomicity and per-viewer locking;
   frontend rotation, expiry, retry, and stale-refresh hardening; and backend
-  candidate/pacing fallback corrections. Both frontend and API were deployed.
+  candidate/pacing fallback and expired-renewal corrections. Both frontend and
+  API were deployed.
 
 ## Deployed Spotlight repair - 2026-10-18
 
@@ -118,6 +119,42 @@ under `docs/` or `docs/archive/`, then link that file here.
   qualified impression; changing that frozen policy still requires explicit
   product-owner approval.
 
+## Production viewer audit and expired-renewal hardening - 2026-10-18
+
+- A read-only Render/PostgreSQL audit used only campaign, placement,
+  membership, pacing, lease, and exposure identifiers. No names, phone
+  numbers, emails, Spotlight messages, credentials, or secrets were queried.
+- The original owner campaign `319` expired at `2026-10-18T00:17:45Z`
+  exactly as shown by the UI. Campaign `321` expired at
+  `2026-10-18T08:13:17Z`. Runtime selection excludes both by their
+  authoritative deadlines even though their persisted lifecycle labels had
+  not yet been lazily changed from `active`/`serving`.
+- At `2026-10-18T13:36:06Z`, viewer `13` had a capped but replay-eligible
+  route to campaign `322`, plus a live, due, non-capped route to campaign
+  `323`. Campaign `323` belongs to viewer `3`, is placed in communities
+  `2`, `4`, and `8`, and remains authorized until
+  `2026-10-19T08:12:17Z`.
+- Viewer `3` had no non-self live campaign route at that time. This is
+  expected: campaign `323` is their own campaign, and owners see their own
+  Spotlight through authenticated owner inspection rather than delivery
+  rotation.
+- The production ledger contained zero new Spotlight leases or exposures
+  between the prior API deployment at `2026-10-18T10:05:49Z` and the audit
+  at `2026-10-18T13:34:45Z`. Therefore the deployed account-specific
+  rotation correction was not yet exercised by a real account, and a real
+  owner/visitor opening remains required evidence.
+- A separate latent expiry defect was confirmed in the disabled-by-default
+  member-credit writer: it ignored an expired campaign still labelled
+  `active` but did not retire it before inserting the renewal, allowing the
+  one-active-owner database constraint to reject a valid renewal. The service
+  now retires expired active rows inside the same savepoint as the replacement
+  activation; funding or activation failure rolls the cleanup back as well.
+- Verification: the focused member-credit integration suite passed `7`
+  tests; the broad Spotlight/Public Shop/member-credit suite passed `229`
+  tests; Python compilation and scoped diff checks passed. The ten-round
+  policy, frontend UX, auth, permissions, pricing, schema, and environment
+  configuration were not changed.
+
 ## Active product truth
 
 ### Spotlight
@@ -202,7 +239,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   audit:spotlight-system-feed, audit:shop-gallery-button-inventory, the full
   audit:protected-button-freeze, and the eight-scenario real-browser
   smoke:spotlight-owner-visibility.
-- Focused Spotlight and Public Shop backend verification passes: 222 tests,
+- Focused Spotlight, Public Shop, and member-credit backend verification
+  passes: 229 tests,
   including atomic rollback, presentation, exposure, frequency, diversity,
   eligibility, pacing, transaction-safeguard, and Public Shop contracts.
 - `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
