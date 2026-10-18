@@ -23,16 +23,23 @@ from app.db.models import (
     Clan,
     ClanMembership,
     FeatureEntitlement,
+    MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceProductRepost,
     MarketplaceReview,
     MarketplaceShop,
+    ProtectedTradeRecord,
+    ShopDiaryEntry,
     ShopFollower,
     SpotlightCampaign,
     SpotlightCampaignPacingState,
+    SpotlightContentVersion,
     TrustEvent,
     User,
+    VaultAccessLink,
+    VaultBlock,
+    VaultPrivateOffer,
 )
 from app.db.notification_models import Notification
 from app.services.feature_entitlements_service import (
@@ -51,6 +58,13 @@ from app.services.community_domain_delegation_service import (
     has_clan_domain_direct_delegation_scope,
 )
 from app.services.notification_service import create_notification
+from app.services.marketplace_media_cleanup_service import (
+    process_marketplace_media_deletion_tasks,
+    queue_marketplace_media_deletions,
+)
+from app.services.spotlight_retention_service import (
+    compact_spotlight_payloads_for_deleted_product,
+)
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
@@ -2576,6 +2590,29 @@ def _product_owner_can_manage(
     return False
 
 
+def _exact_product_shop_owner_or_403(
+    *,
+    db: Session,
+    current_user: User,
+    product: MarketplaceProduct,
+    lock: bool = False,
+) -> MarketplaceShop:
+    query = db.query(MarketplaceShop).filter(
+        MarketplaceShop.id == int(product.shop_id)
+    )
+    if lock:
+        query = query.with_for_update()
+    shop = query.first()
+    if shop is None:
+        raise HTTPException(status_code=409, detail="Product shop record is missing")
+    if int(shop.owner_user_id) != int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the current shop owner can permanently delete this product",
+        )
+    return shop
+
+
 def _remove_product_reposts(
     db: Session,
     *,
@@ -2590,6 +2627,81 @@ def _remove_product_reposts(
     for row in rows:
         db.delete(row)
     return count
+
+
+def _retire_deleted_product_vault_payload(
+    db: Session,
+    *,
+    product_id: int,
+) -> tuple[Dict[str, int], list[str]]:
+    """Permanently deleted Vault content loses payload and access, while minimal archived/link audit rows survive."""
+    product_id = int(product_id)
+    offers = (
+        db.query(VaultPrivateOffer)
+        .filter(VaultPrivateOffer.product_id == product_id)
+        .with_for_update()
+        .all()
+    )
+    media_urls: list[str] = []
+    seen_media_urls: set[str] = set()
+    for offer in offers:
+        for value in (offer.media_url, offer.thumbnail_url):
+            media_url = _safe_str(value)
+            if media_url and media_url not in seen_media_urls:
+                seen_media_urls.add(media_url)
+                media_urls.append(media_url)
+        offer.status = "archived"
+        offer.media_url = None
+        offer.thumbnail_url = None
+        offer.caption = None
+        offer.owner_note = None
+
+    links = (
+        db.query(VaultAccessLink)
+        .filter(VaultAccessLink.product_id == product_id)
+        .with_for_update()
+        .all()
+    )
+    revoked_count = 0
+    for link in links:
+        if link.status == "revoked":
+            continue
+        link.status = "revoked"
+        link.revoked_at = _now_utc()
+        revoked_count += 1
+
+    return {
+        "vault_private_offers_archived": len(offers),
+        "vault_access_links_revoked": revoked_count,
+    }, media_urls
+
+
+def _detach_product_history_references(db: Session, *, product_id: int) -> Dict[str, int]:
+    """Keep history rows while explicitly detaching their deleted catalog key.
+
+    This makes permanent deletion behavior identical on SQLite and Postgres
+    instead of relying on database-specific foreign-key enforcement.
+    """
+    product_id = int(product_id)
+    reference_columns = (
+        ("protected_trades", ProtectedTradeRecord.product_id),
+        ("shop_diary_entries", ShopDiaryEntry.product_id),
+        ("spotlight_campaigns", SpotlightCampaign.source_product_id),
+        ("spotlight_content_versions", SpotlightContentVersion.source_product_id),
+        ("marketplace_reviews", MarketplaceReview.product_id),
+        ("marketplace_attention_events", MarketplaceAttentionEvent.product_id),
+        ("vault_blocks", VaultBlock.product_id),
+        ("vault_private_offers", VaultPrivateOffer.product_id),
+        ("vault_access_links", VaultAccessLink.product_id),
+    )
+    detached_counts: Dict[str, int] = {}
+    for name, column in reference_columns:
+        detached_counts[name] = (
+            db.query(column.class_)
+            .filter(column == product_id)
+            .update({column: None}, synchronize_session=False)
+        )
+    return detached_counts
 
 
 def _count_active_products_for_shop(
@@ -5594,10 +5706,8 @@ def update_marketplace_product(
     }
 
 
-@router.delete("/products/{product_id}")
-@router.post("/products/{product_id}/delete")
 @router.post("/products/{product_id}/archive")
-def delete_marketplace_product(
+def reject_legacy_product_archive(
     product_id: int,
     x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
     db: Session = Depends(get_db),
@@ -5610,67 +5720,96 @@ def delete_marketplace_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    if not _product_owner_can_manage(db=db, current_user=current_user, product=product):
-        raise HTTPException(status_code=403, detail="Only the shop owner can delete this product")
-
-    resolved_clan_id = _resolve_existing_marketplace_clan_id(
+    _exact_product_shop_owner_or_403(
+        db=db,
         current_user=current_user,
-        db=db,
-        stored_clan_id=int(product.clan_id or 0),
-        header_clan_id=x_clan_id,
+        product=product,
+    )
+    requested_clan_id = _safe_int(x_clan_id, 0)
+    if x_clan_id is not None and requested_clan_id <= 0:
+        raise HTTPException(status_code=400, detail="X-Clan-Id must be a positive integer")
+    if requested_clan_id > 0 and requested_clan_id != int(product.clan_id):
+        raise HTTPException(status_code=409, detail="Selected community does not own this product")
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Reversible archive is no longer supported. Use the owner-confirmed "
+            "permanent delete action."
+        ),
     )
 
-    _require_active_membership(
-        db=db,
-        user_id=int(current_user.id),
-        clan_id=int(product.clan_id),
-    )
 
-    if int(resolved_clan_id) != int(product.clan_id):
+@router.delete("/products/{product_id}")
+@router.post("/products/{product_id}/delete")
+def delete_marketplace_product(
+    product_id: int,
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .with_for_update()
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    _exact_product_shop_owner_or_403(
+        db=db,
+        current_user=current_user,
+        product=product,
+        lock=True,
+    )
+    resolved_clan_id = int(product.clan_id)
+    requested_clan_id = _safe_int(x_clan_id, 0)
+    if x_clan_id is not None and requested_clan_id <= 0:
+        raise HTTPException(status_code=400, detail="X-Clan-Id must be a positive integer")
+    if requested_clan_id > 0 and requested_clan_id != resolved_clan_id:
         raise HTTPException(status_code=409, detail="Selected community does not own this product")
 
-    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
-
     removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
-    snapshot = _product_out(db, product)
-
-    if hasattr(product, "is_active"):
-        product.is_active = False
-        db.add(product)
-        db.commit()
-        db.refresh(product)
-
-        log_trust_event(
+    retired_vault_payload, vault_media_urls = _retire_deleted_product_vault_payload(
+        db,
+        product_id=int(product.id),
+    )
+    retired_spotlight_payload, spotlight_task_ids = (
+        compact_spotlight_payloads_for_deleted_product(
             db,
-            event_type="marketplace.product.removed",
-            clan_id=resolved_clan_id,
-            actor_user_id=int(current_user.id),
-            subject_user_id=int(current_user.id),
-            loan_id=None,
-            guarantor_id=None,
-            meta={
-                "product_id": int(product.id),
-                "shop_id": int(product.shop_id),
-                "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
-                "removed_reposts": removed_reposts,
-                "reason": "marketplace_product_deleted_soft",
-            },
-            commit=False,
-            refresh=False,
+            product_id=int(product.id),
         )
-        db.commit()
-
-        return {
-            "ok": True,
-            "item": _product_out(db, product),
-            "removed_reposts": removed_reposts,
-            "detail": "Product block removed.",
-        }
-
+    )
+    detached_history_references = _detach_product_history_references(
+        db,
+        product_id=int(product.id),
+    )
+    snapshot = _product_out(db, product)
+    media_urls = list(
+        dict.fromkeys(
+            value
+            for value in (
+                _safe_str(getattr(product, "image_url", None)),
+                _safe_str(getattr(product, "video_url", None)),
+                *vault_media_urls,
+            )
+            if value
+        )
+    )
+    queued_media = queue_marketplace_media_deletions(
+        db,
+        media_urls=media_urls,
+        source="deleted_marketplace_product",
+    )
+    media_task_ids = list(
+        dict.fromkeys([*spotlight_task_ids, *queued_media["task_ids"]])
+    )
+    spotlight_retirement_audit = {
+        key: value
+        for key, value in retired_spotlight_payload.items()
+        if key != "media_cleanup"
+    }
     db.delete(product)
-    db.commit()
-
     log_trust_event(
         db,
         event_type="marketplace.product.removed",
@@ -5684,6 +5823,9 @@ def delete_marketplace_product(
             "shop_id": int(snapshot["shop_id"]),
             "visibility_mode": snapshot.get("visibility_mode"),
             "removed_reposts": removed_reposts,
+            "retired_vault_payload": retired_vault_payload,
+            "retired_spotlight_payload": spotlight_retirement_audit,
+            "detached_history_references": detached_history_references,
             "reason": "marketplace_product_deleted_hard",
         },
         commit=False,
@@ -5691,11 +5833,39 @@ def delete_marketplace_product(
     )
     db.commit()
 
+    media_cleanup = [
+        *retired_spotlight_payload.get("media_cleanup", []),
+        *queued_media["immediate"],
+    ]
+    try:
+        media_cleanup.extend(
+            process_marketplace_media_deletion_tasks(
+                db,
+                task_ids=media_task_ids,
+                limit=max(len(media_task_ids), 1),
+            )
+        )
+    except Exception:
+        db.rollback()
+        media_cleanup.append(
+            {
+                "media_url": None,
+                "status": "queued_for_retry",
+                "provider": None,
+                "queued_tasks": len(media_task_ids),
+            }
+        )
+
     return {
         "ok": True,
         "item": snapshot,
         "removed_reposts": removed_reposts,
-        "detail": "Product block removed.",
+        "retired_vault_payload": retired_vault_payload,
+        "retired_spotlight_payload": retired_spotlight_payload,
+        "detached_history_references": detached_history_references,
+        "permanent_delete": True,
+        "media_cleanup": media_cleanup,
+        "detail": "Product permanently deleted.",
     }
 
 

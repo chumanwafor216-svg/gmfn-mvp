@@ -38,7 +38,10 @@ import {
 } from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
-import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
+import {
+  forgetShopProductMedia,
+  rememberShopProductMedia,
+} from "../lib/shopProductMediaCache";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -1745,23 +1748,38 @@ export default function VaultControlPage() {
     }
   }
 
-  async function hideProduct(item: ProductRecord) {
+  async function deleteProduct(item: ProductRecord) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Delete this Vault offer permanently? Its private media will be removed, active access links will be revoked, and any linked Spotlight will stop. It cannot be restored."
+      )
+    ) {
+      return;
+    }
+
     setSavingProduct(true);
     try {
       await apiJson<any>(`/api/marketplace/products/${Number(item.id)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ is_active: false, status: "inactive" }),
+        method: "DELETE",
       });
+      forgetShopProductMedia(item.id);
       if (!mountedRef.current) return;
       if (shop?.id) {
         setVaultSlotMap(forgetVaultProductSlot(shop.id, item.id));
       }
       await loadPage();
       if (!mountedRef.current) return;
-      showNotice("success", "Vault block hidden.");
+      showNotice(
+        "success",
+        "Vault offer permanently deleted. Upload it again if you need it later."
+      );
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice("error", safeStr(err?.message) || "Vault block could not be hidden.");
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Vault offer could not be permanently deleted."
+      );
     } finally {
       if (mountedRef.current) setSavingProduct(false);
     }
@@ -2262,14 +2280,14 @@ export default function VaultControlPage() {
                   Edit block #{selectedSlot}
                 </PrimaryButton>
                 <SecondaryButton
-                  onClick={() => void hideProduct(selectedProduct)}
+                  onClick={() => void deleteProduct(selectedProduct)}
                   disabled={savingProduct}
                   busy={savingProduct}
-                  busyLabel="Hiding..."
+                  busyLabel="Deleting..."
                   style={brandActionButton("secondary", savingProduct)}
-                  debugId="vault-control.selected-block.hide"
+                  debugId="vault-control.selected-block.delete"
                 >
-                  Hide block
+                  Delete permanently
                 </SecondaryButton>
               </div>
             ) : (

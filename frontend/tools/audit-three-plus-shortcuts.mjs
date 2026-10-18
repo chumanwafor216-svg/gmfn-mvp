@@ -79,8 +79,8 @@ assertContains(
 );
 assertContains(
   'assets',
-  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Remove from shop/,
-  'Shop Assets must resolve the requested product/block, explain the exact task, and expose Change and Remove first.'
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
+  'Shop Assets must resolve the requested product/block, explain the exact task, and expose Change and permanent deletion first.'
 );
 assertContains(
   'shop',

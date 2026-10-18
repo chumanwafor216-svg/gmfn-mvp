@@ -122,6 +122,8 @@ def _link_status(
 
     product_id = getattr(link, "product_id", None)
     block_id = getattr(link, "block_id", None)
+    if product_id is None:
+        return "product_inactive"
     block: Optional[VaultBlock] = None
     if block_id is not None:
         block = db.get(VaultBlock, int(block_id))
@@ -132,23 +134,22 @@ def _link_status(
         ):
             return "block_inactive"
 
-    if product_id is not None:
-        product = _vault_product_for_link_scope(
-            db,
-            shop_id=int(link.shop_id),
-            product_id=int(product_id),
-        )
-        if product is None:
-            return "product_inactive"
-        if block is None:
-            block = find_vault_block_for_product(db, product_id=int(product_id))
-        if (
-            block is None
-            or _safe_str(getattr(block, "state", None)) != "active"
-            or getattr(block, "product_id", None) is None
-            or int(block.product_id) != int(product_id)
-        ):
-            return "block_inactive"
+    product = _vault_product_for_link_scope(
+        db,
+        shop_id=int(link.shop_id),
+        product_id=int(product_id),
+    )
+    if product is None:
+        return "product_inactive"
+    if block is None:
+        block = find_vault_block_for_product(db, product_id=int(product_id))
+    if (
+        block is None
+        or _safe_str(getattr(block, "state", None)) != "active"
+        or getattr(block, "product_id", None) is None
+        or int(block.product_id) != int(product_id)
+    ):
+        return "block_inactive"
 
     if not has_active_feature(
         db,
@@ -476,8 +477,7 @@ def resolve_vault_access_view(
         .filter(MarketplaceProduct.is_active.is_(True))
         .filter(MarketplaceProduct.visibility_mode == VISIBILITY_VAULT)
     )
-    if getattr(link, "product_id", None) is not None:
-        product_query = product_query.filter(MarketplaceProduct.id == int(link.product_id))
+    product_query = product_query.filter(MarketplaceProduct.id == int(link.product_id))
     products = product_query.order_by(
         MarketplaceProduct.created_at.desc(),
         MarketplaceProduct.id.desc(),

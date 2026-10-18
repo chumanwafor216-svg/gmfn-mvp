@@ -292,6 +292,39 @@ def test_vault_access_link_requires_and_returns_one_active_block_scope(
     assert log_count == 1
 
 
+def test_vault_access_link_with_missing_product_scope_fails_closed(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+    created = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1},
+    )
+    assert created.status_code == 200, created.text
+    token = created.json()["item"]["token"]
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE vault_access_links
+                SET product_id = NULL, status = 'active'
+                WHERE token = :token
+                """
+            ),
+            {"token": token},
+        )
+
+    viewed = client.get(f"/marketplace/vault-access/{token}")
+
+    assert viewed.status_code == 200, viewed.text
+    assert viewed.json()["ok"] is False
+    assert viewed.json()["status"] == "product_inactive"
+    assert "products" not in viewed.json()
+
+
 def test_vault_access_link_create_respects_disabled_community_domain_vault_policy(
     client,
     override_current_user_user,

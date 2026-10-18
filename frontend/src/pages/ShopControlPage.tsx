@@ -7382,6 +7382,11 @@ export default function ShopControlPage() {
             preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id) || null}
             seedShop={shop}
             seedProducts={products}
+            onProductDeleted={(productId) =>
+              setProducts((current) =>
+                current.filter((item) => Number(item?.id || 0) !== productId)
+              )
+            }
           />
         </section>
       ) : null}

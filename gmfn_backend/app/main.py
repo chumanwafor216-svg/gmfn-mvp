@@ -27,7 +27,11 @@ import app.db.member_credit_models  # noqa: F401
 import app.db.verification_models  # noqa: F401
 
 from app.db.bank_models import BankEvent
+from app.services.marketplace_media_cleanup_service import (
+    process_marketplace_media_deletion_tasks,
+)
 from app.services.reconciliation_service import reconcile_batch
+from app.services.spotlight_retention_service import compact_expired_spotlight_payloads
 
 
 def _truthy(value: str | None) -> bool:
@@ -52,6 +56,22 @@ def _reconciliation_loop_enabled() -> bool:
     if raw is not None and str(raw).strip() != "":
         return _truthy(raw)
     return False
+
+
+def _spotlight_retention_loop_enabled() -> bool:
+    raw = os.getenv("GSN_ENABLE_SPOTLIGHT_RETENTION_LOOP")
+    if raw is not None and str(raw).strip() != "":
+        return _truthy(raw)
+    return False
+
+
+def _spotlight_retention_interval_seconds() -> int:
+    raw = str(os.getenv("GSN_SPOTLIGHT_RETENTION_INTERVAL_SECONDS", "3600") or "").strip()
+    try:
+        parsed = int(raw)
+    except ValueError:
+        parsed = 3600
+    return max(300, min(parsed, 86400))
 
 
 def _cors_settings() -> tuple[list[str], Optional[str]]:
@@ -134,6 +154,31 @@ async def _reconciliation_loop() -> None:
                 print(traceback.format_exc())
 
 
+def _compact_expired_spotlights_once() -> None:
+    db: Session = SessionLocal()
+    try:
+        retried = process_marketplace_media_deletion_tasks(db, limit=100)
+        result = compact_expired_spotlight_payloads(db, limit=100)
+        print(
+            "[GSN retention] "
+            f"campaigns_compacted={result['campaigns_compacted']} "
+            f"retry_tasks_processed={len(retried)} "
+            f"new_media_results={len(result['media_cleanup'])}"
+        )
+    finally:
+        db.close()
+
+
+async def _spotlight_retention_loop() -> None:
+    while True:
+        try:
+            await asyncio.to_thread(_compact_expired_spotlights_once)
+        except Exception:
+            print("[GSN retention] failed")
+            print(traceback.format_exc())
+        await asyncio.sleep(_spotlight_retention_interval_seconds())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ---- Startup ----
@@ -150,18 +195,29 @@ async def lifespan(app: FastAPI):
     else:
         app.state.reconciliation_task = None
 
+    spotlight_retention_task: Optional[asyncio.Task] = None
+    if _spotlight_retention_loop_enabled():
+        try:
+            spotlight_retention_task = asyncio.create_task(_spotlight_retention_loop())
+            app.state.spotlight_retention_task = spotlight_retention_task
+        except Exception:
+            app.state.spotlight_retention_task = None
+    else:
+        app.state.spotlight_retention_task = None
+
     yield
 
     # ---- Shutdown ----
-    task = getattr(app.state, "reconciliation_task", None)
-    if task is not None:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-        except Exception:
-            pass
+    for task_name in ("reconciliation_task", "spotlight_retention_task"):
+        task = getattr(app.state, task_name, None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass
 
 
 app = FastAPI(

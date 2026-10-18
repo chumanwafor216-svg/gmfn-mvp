@@ -3681,6 +3681,9 @@ class SpotlightCampaign(Base):
     serving_status_changed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
     )
+    payload_compacted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
 class SpotlightContentVersion(Base):
     __tablename__ = 'spotlight_content_versions'
@@ -4023,6 +4026,38 @@ class MarketplaceAttentionEvent(Base):
         server_default=func.now(),
         index=True,
     )
+
+
+class MarketplaceMediaDeletionTask(Base):
+    """Durable retry record for managed media whose owning payload was deleted."""
+
+    __tablename__ = "marketplace_media_deletion_tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    canonical_key: Mapped[str] = mapped_column(String(760), nullable=False, unique=True)
+    media_url: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(
+        String(80),
+        nullable=False,
+        default="marketplace",
+        server_default="marketplace",
+        index=True,
+    )
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+        index=True,
+    )
+
+
 class SpotlightExposureEvent(Base):
     __tablename__ = "spotlight_exposure_events"
 

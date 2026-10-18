@@ -26,6 +26,10 @@ services:
         value: preview
       - key: GMFN_ENABLE_RECONCILIATION_LOOP
         value: "0"
+      - key: GSN_ENABLE_SPOTLIGHT_RETENTION_LOOP
+        value: "1"
+      - key: GSN_SPOTLIGHT_RETENTION_INTERVAL_SECONDS
+        value: "3600"
       - key: GMFN_ACCESS_TOKEN_EXPIRE_MINUTES
         value: "60"
       - key: GMFN_UPLOADS_DIR

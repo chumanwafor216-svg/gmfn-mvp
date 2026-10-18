@@ -25,10 +25,11 @@ under `docs/` or `docs/archive/`, then link that file here.
   candidate/pacing fallback and expired-renewal corrections. Both frontend and
   API were deployed.
 
-## Local Public Shop product-media handoff - 2026-10-18
+## Local Public Shop product management and retention handoff - 2026-10-18
 
-- Status: **local only**. This work is verified locally but has not been
-  committed, pushed, or deployed. Production still reflects the verified
+- Status: final regression verification in progress; not yet committed, pushed,
+  or deployed.
+  Production still reflects the verified
   application commit recorded above.
 - The owner explicitly superseded the 2026-10-17 single-plus Public Shop
   product-card rule. The existing card `+` / `×` remains the open/close
@@ -42,22 +43,47 @@ under `docs/` or `docs/archive/`, then link that file here.
   unobstructed.
 - The owner destination selects and focuses the exact block, explains the
   immediate choice, and presents `Change media or details` and
-  `Remove from shop` first. Change reveals and focuses the existing media
+  `Delete permanently` first. Change reveals and focuses the existing media
   editor; its controls now say `Add/Change picture` and
   `Add/Change video` according to actual media state.
-- Unabated truth: `Remove from shop` is a backend-authorised soft removal
-  that preserves product/history records; it is not a permanent database
-  erase. Backend routes, schemas, permissions, product data contracts,
-  Spotlight, and Shop Diary chronology were not changed.
-- Verification passed: TypeScript/Vite production build (290 modules);
-  focused workflow-plus, Public Shop inventory, Shop Assets slot, Shop Control
-  inventory, Shop Diary Phase 1/2, action-response, broad button-stability, and
-  full protected-button audits; Public Shop and Shop Assets slot-replacement
-  browser smokes; and the focused 390x844 workflow smoke. The focused smoke
-  proves the four expanded owner actions are each at least 48x48, align without
-  overlap or horizontal overflow, preserve exact product/block/community and
-  origin, expose Change/Remove before the editor, issue no business write on
-  navigation, and remain absent for visitors.
+- `Delete permanently` in Shop Gallery Tools and Vault Control requires exact
+  current-shop-owner authority and confirmation. It permanently removes the
+  product row and reposts, scrubs the attached Vault offer payload (media,
+  caption, and owner note), revokes active Vault access links, withdraws and
+  compacts any linked live Spotlight, explicitly detaches surviving evidence
+  references, preserves minimal archived/link/exposure evidence, and clears
+  stale frontend seed/cache state. There is no restore path; the owner must
+  upload the item again if needed. Former sellers/admins do not inherit this
+  irreversible owner authority, and the legacy `/archive` endpoint refuses
+  instead of deleting.
+- Managed media cleanup compares canonical object identity rather than raw URL
+  strings, confines local/R2 targets to the marketplace namespace, and uses a
+  durable bounded retry queue committed with the payload deletion. Shared,
+  external, and unsafe paths are retained; failed storage calls remain queued.
+  Completed task rows are removed so the retry queue stays lean.
+- Expired Spotlight maintenance now uses a bounded compactor that removes
+  delivery payload and unreferenced managed media without destroying campaign
+  identity, fingerprints, version chronology, or exposure evidence.
+- A new `payload_compacted_at` marker and migration make Spotlight compaction
+  explicit and idempotent.
+- Minimal audit and exposure evidence is preserved after payload compaction;
+  expiry alone does not authorize deletion of trust or commercial history.
+- The API runs bounded maintenance at startup and hourly, enabled by two
+  nonsecret Render Blueprint environment variables and without a new service.
+  It retries pending media cleanup first, compacts expired Spotlight payload,
+  and logs production work/failures.
+- Current verification: 25 focused backend product-deletion, canonical-media,
+  R2, Spotlight-retention, and Vault tests passed; the broad Marketplace Public
+  Shop and controlled-lifecycle run passed 78 tests; frontend TypeScript/Vite
+  production build passed with 290 modules; the focused Shop Assets, Vault
+  Control, three-plus, and action-response audits passed; and the complete
+  protected-button freeze audit passed, including its browser visual stages.
+  `render.yaml` parsed successfully and Alembic reports one head:
+  `20261018_spotlight_payload_retention_v1`.
+- Earlier plus-handoff verification: before the permanent-deletion and
+  retention changes, the TypeScript/Vite production build (290 modules),
+  focused audits, browser smokes, and 390x844 workflow smoke passed for the
+  owner-only management handoff.
 
 ## Deployed Spotlight repair - 2026-10-18
 

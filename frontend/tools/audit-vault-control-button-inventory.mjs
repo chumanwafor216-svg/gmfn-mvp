@@ -211,7 +211,7 @@ const expectedActionOrder = [
   "vault-control.block-slot.${slotNumber}.select",
   "vault-control.selected-block.locked",
   "vault-control.selected-block.edit",
-  "vault-control.selected-block.hide",
+  "vault-control.selected-block.delete",
   "vault-control.selected-block.add",
   "vault-control.link.create-or-replace",
   "vault-control.link.copy",
@@ -343,6 +343,12 @@ assertVaultContains(
 assertVaultContains(
   /<SpotlightMediaFrame[\s\S]*?alt=\{firstTruthy\(selectedProduct\.name, `Vault block #\$\{selectedSlot\}`\)\}[\s\S]*?showAudioUnlock=\{Boolean\(selectedProduct\.video_url\)\}[\s\S]*?<SpotlightMediaFrame[\s\S]*?alt=\{firstTruthy\(productName, "Vault preview"\)\}[\s\S]*?showVideoControls[\s\S]*?showAudioUnlock/,
   "Vault Control must keep media frames for selected private block playback and editor preview playback."
+);
+
+assertVaultContains(
+  /function deleteProduct\(item: ProductRecord\)[\s\S]*?Delete this Vault offer permanently\?[\s\S]*?method: "DELETE"[\s\S]*?forgetShopProductMedia\(item\.id\)[\s\S]*?Vault offer permanently deleted/,
+  "Vault Control removal must use the same confirmed, non-restorable product deletion contract as Shop Assets.",
+  "Expected owner confirmation, DELETE, local media-cache cleanup, and truthful permanent-delete feedback."
 );
 
 assertVaultContains(

@@ -70,3 +70,15 @@ export function getCachedShopProductMedia(
   const item = readCache()[id];
   return item && typeof item === "object" ? item : null;
 }
+
+export function forgetShopProductMedia(
+  productId: number | string | null | undefined
+): void {
+  const id = safeStr(productId);
+  if (!id) return;
+
+  const cache = readCache();
+  if (!Object.prototype.hasOwnProperty.call(cache, id)) return;
+  delete cache[id];
+  writeCache(cache);
+}

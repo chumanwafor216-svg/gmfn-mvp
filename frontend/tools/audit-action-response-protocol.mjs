@@ -185,8 +185,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /async function copyText[\s\S]*?missingMessage = "Nothing to copy yet\."[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?function openShopLink[\s\S]*?Public shop link is not ready yet[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the public shop window[\s\S]*?This item is hidden\. Restore it before copying a public shop link\./,
-  "Shop Assets inner buttons must explain missing links, blocked windows, hidden items, and clipboard failures."
+  /async function copyText[\s\S]*?missingMessage = "Nothing to copy yet\."[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?function openShopLink[\s\S]*?Public shop link is not ready yet[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the public shop window/,
+  "Shop Assets inner buttons must explain missing links, blocked windows, and clipboard failures."
 );
 
 assertContains(

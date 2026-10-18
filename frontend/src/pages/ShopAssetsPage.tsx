@@ -56,7 +56,10 @@ import {
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import type { ShareResultChannel, ShareTarget } from "../lib/share";
-import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
+import {
+  forgetShopProductMedia,
+  rememberShopProductMedia,
+} from "../lib/shopProductMediaCache";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
@@ -130,6 +133,7 @@ type ShopAssetsPageProps = {
   preferredGmfnId?: string | null;
   seedShop?: ShopRecord | null;
   seedProducts?: ProductRecord[] | null;
+  onProductDeleted?: (productId: number) => void;
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
@@ -1050,6 +1054,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const mountedRef = useRef(false);
   const hasLoadedOnceRef = useRef(false);
   const loadSeqRef = useRef(0);
+  const deletedProductIdsRef = useRef<Set<number>>(new Set());
   const productImagePrepJobRef = useRef(0);
   const productVideoPrepJobRef = useRef(0);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -1107,7 +1112,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [preparingProductVideo, setPreparingProductVideo] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
-  const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
   const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
     useState<any>(null);
   const [diaryEntries, setDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
@@ -1304,7 +1308,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const loadPage = useCallback(async (): Promise<ProductRecord[]> => {
     const loadSeq = loadSeqRef.current + 1;
     loadSeqRef.current = loadSeq;
-    const seedProducts = normalizeProductRecords(props.seedProducts || []);
+    const seedProducts = normalizeProductRecords(props.seedProducts || []).filter(
+      (item) => !deletedProductIdsRef.current.has(Number(item?.id || 0))
+    );
     const seedShop = (props.seedShop || null) as ShopRecord | null;
     if (!hasLoadedOnceRef.current) setLoading(true);
     setShop(seedShop);
@@ -1422,7 +1428,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         setDiaryTradeOptions([]);
       }
 
-      nextProducts = mergeProductsById(nextProducts, publicShopProducts);
+      nextProducts = mergeProductsById(nextProducts, publicShopProducts).filter(
+        (item) => !deletedProductIdsRef.current.has(Number(item?.id || 0))
+      );
       setShop(shopItem);
 
       if (shopItem) {
@@ -1696,7 +1704,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setSelectedPublicSlot(matchedSlot);
     setGalleryActionNotice({
       tone: "info",
-      text: "This is the exact public block you opened. Change its media or details, or remove it from the shop.",
+      text: "This is the exact public block you opened. Change its media or details, or delete it permanently.",
       slotNumber: matchedSlot,
     });
 
@@ -2406,9 +2414,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function deleteProduct(productId: number) {
-    if (shopDiaryFeatureOff) {
-      showNotice("error", shopDiaryFeatureOffText);
-      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Delete this product permanently? This removes the shop item and reposts. Vault media and active Vault links will be retired, and any linked Spotlight will stop. It cannot be restored; upload it again if needed."
+      )
+    ) {
       return;
     }
 
@@ -2418,43 +2429,29 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       await apiJson<any>(`/api/marketplace/products/${productId}`, {
         method: "DELETE",
       });
+      forgetShopProductMedia(productId);
+      deletedProductIdsRef.current.add(productId);
+      props.onProductDeleted?.(productId);
       if (!mountedRef.current) return;
-      await loadPage();
-      if (!mountedRef.current) return;
+      setProducts((current) =>
+        current.filter((item) => Number(item?.id || 0) !== productId)
+      );
       if (editingProductId === productId) {
         closeProductEditor();
       }
-      showNotice("success", "Product removed.");
+      showNotice(
+        "success",
+        "Product permanently deleted. Upload it again if you need it later."
+      );
+      void loadPage();
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice("error", safeStr(err?.message) || "Product could not be removed.");
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Product could not be permanently deleted."
+      );
     } finally {
       if (mountedRef.current) setDeletingProductId(null);
-    }
-  }
-
-  async function restoreProduct(productId: number) {
-    if (shopDiaryFeatureOff) {
-      showNotice("error", shopDiaryFeatureOffText);
-      return;
-    }
-
-    setRestoringProductId(productId);
-
-    try {
-      await apiJson<any>(`/api/marketplace/products/${productId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ is_active: true, status: "active" }),
-      });
-      if (!mountedRef.current) return;
-      await loadPage();
-      if (!mountedRef.current) return;
-      showNotice("success", "Product restored.");
-    } catch (err: any) {
-      if (!mountedRef.current) return;
-      showNotice("error", safeStr(err?.message) || "Product could not be restored.");
-    } finally {
-      if (mountedRef.current) setRestoringProductId(null);
     }
   }
 
@@ -2683,7 +2680,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   {hiddenProducts.length}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Restorable hidden items
+                  Legacy hidden items to clear
                 </div>
               </div>
             </div>
@@ -3552,12 +3549,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         deletingProductId === Number(selectedPublicProduct.id)
                       }
                       busy={deletingProductId === Number(selectedPublicProduct.id)}
-                      busyLabel="Removing..."
+                      busyLabel="Deleting..."
                       fullWidth
                       stableHeight={isCompact ? 56 : 48}
-                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.hide`}
+                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.delete`}
                     >
-                      Remove from shop
+                      Delete permanently
                     </SecondaryButton>
 
                     <SubtleButton
@@ -4098,7 +4095,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <div>
             <div style={sectionLabel()}>Posted items</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Open this only when you need to edit, hide, restore, or copy an item link.
+              Open this only when you need to edit, permanently delete, or copy an item link.
             </div>
           </div>
 
@@ -4141,9 +4138,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               const itemName = firstTruthy(item?.name, "Product");
               const itemImage = resolveAssetSrc(item?.image_url);
               const itemVideo = resolveAssetSrc(item?.video_url);
-              const isBusy =
-                deletingProductId === Number(item.id) ||
-                restoringProductId === Number(item.id);
+              const isBusy = deletingProductId === Number(item.id);
 
               return (
                 <div
@@ -4220,7 +4215,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     ) : null}
                     {iconBadge(
                       isHidden ? "document" : "check",
-                      isHidden ? "Hidden - can restore" : "Live",
+                      isHidden ? "Legacy hidden item" : "Live",
                       !isHidden
                     )}
                     {label ? iconBadge("tag", <>Tag: {label}</>) : null}
@@ -4275,59 +4270,41 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       ...ownerActionGrid(isCompact),
                     }}
                   >
-                    <StableButton
-                      onClick={() => {
-                        if (
-                          firstTruthy(item?.visibility_mode, "community_visible") !==
-                          "vault_private"
-                        ) {
-                          setSelectedPublicSlot(publicSlotNumber > 0 ? publicSlotNumber : 1);
-                        }
-                        startEditProduct(item);
-                      }}
-                      kind={isHidden ? "secondary" : "primary"}
+                    {!isHidden ? (
+                      <StableButton
+                        onClick={() => {
+                          if (
+                            firstTruthy(item?.visibility_mode, "community_visible") !==
+                            "vault_private"
+                          ) {
+                            setSelectedPublicSlot(publicSlotNumber > 0 ? publicSlotNumber : 1);
+                          }
+                          startEditProduct(item);
+                        }}
+                        kind="primary"
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.product.${item.id}.edit`}
+                      >
+                        Edit
+                      </StableButton>
+                    ) : null}
+
+                    <SecondaryButton
+                      onClick={() => void deleteProduct(Number(item.id))}
+                      disabled={isBusy}
+                      busy={deletingProductId === Number(item.id)}
+                      busyLabel="Deleting..."
                       fullWidth
                       stableHeight={isCompact ? 56 : 48}
-                      debugId={`shop-assets.product.${item.id}.edit`}
+                      debugId={`shop-assets.product.${item.id}.delete`}
                     >
-                      Edit
-                    </StableButton>
+                      Delete permanently
+                    </SecondaryButton>
 
-                    {isHidden ? (
-                      <PrimaryButton
-                        onClick={() => void restoreProduct(Number(item.id))}
-                        disabled={isBusy}
-                        busy={restoringProductId === Number(item.id)}
-                        busyLabel="Restoring..."
-                        fullWidth
-                        stableHeight={isCompact ? 56 : 48}
-                        debugId={`shop-assets.product.${item.id}.restore`}
-                      >
-                        Restore
-                      </PrimaryButton>
-                    ) : (
-                      <SecondaryButton
-                        onClick={() => void deleteProduct(Number(item.id))}
-                        disabled={isBusy}
-                        busy={deletingProductId === Number(item.id)}
-                        busyLabel="Removing..."
-                        fullWidth
-                        stableHeight={isCompact ? 56 : 48}
-                        debugId={`shop-assets.product.${item.id}.delete`}
-                      >
-                        Delete
-                      </SecondaryButton>
-                    )}
-
-                    <SubtleButton
-                      onClick={() => {
-                        if (isHidden) {
-                          showNotice(
-                            "error",
-                            "This item is hidden. Restore it before copying a public shop link."
-                          );
-                          return;
-                        }
+                    {!isHidden ? (
+                      <SubtleButton
+                        onClick={() => {
                         void copyText(
                           buildPublicShopMessage(
                             productLink,
@@ -4337,13 +4314,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                           "Public shop item package copied. It opens this product/service item on the Public Shop.",
                           "This item link is not ready yet. Refresh the shop identity, then try again."
                         );
-                      }}
-                      fullWidth
-                      stableHeight={isCompact ? 56 : 48}
-                      debugId={`shop-assets.product.${item.id}.copy-link`}
-                    >
-                      Copy shop link
-                    </SubtleButton>
+                        }}
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.product.${item.id}.copy-link`}
+                      >
+                        Copy shop link
+                      </SubtleButton>
+                    ) : null}
                   </div>
                 </div>
               );

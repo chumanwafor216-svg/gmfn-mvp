@@ -108,7 +108,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /type ShopAssetsPageProps = \{[\s\S]*?seedShop\?: ShopRecord \| null;[\s\S]*?seedProducts\?: ProductRecord\[\] \| null;[\s\S]*?\}/,
+  /type ShopAssetsPageProps = \{[\s\S]*?seedShop\?: ShopRecord \| null;[\s\S]*?seedProducts\?: ProductRecord\[\] \| null;[\s\S]*?onProductDeleted\?: \(productId: number\) => void;[\s\S]*?\}/,
   "Embedded Shop Assets must accept the parent Shop Control shop/products as seed data."
 );
 
@@ -244,8 +244,26 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?data-owner-product-manage-mode=\{[\s\S]*?"focused"[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Remove from shop/,
-  "Public Shop owner handoff must focus the exact block and present Change or Remove as the first owner decision."
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?data-owner-product-manage-mode=\{[\s\S]*?"focused"[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
+  "Public Shop owner handoff must focus the exact block and present Change or permanent deletion as the first owner decision."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /Delete this product permanently\?[\s\S]*?linked Spotlight will stop[\s\S]*?method: "DELETE"[\s\S]*?forgetShopProductMedia\(productId\)[\s\S]*?deletedProductIdsRef\.current\.add\(productId\)[\s\S]*?props\.onProductDeleted\?\.\(productId\)[\s\S]*?Product permanently deleted\. Upload it again if you need it later\./,
+  "Shop Assets deletion must be explicit, server-backed, cache-clearing, and non-restorable."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /const seedProducts = normalizeProductRecords\(props\.seedProducts \|\| \[\]\)\.filter\([\s\S]*?deletedProductIdsRef\.current\.has[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)\.filter\([\s\S]*?deletedProductIdsRef\.current\.has/,
+  "Shop Assets must exclude locally deleted ids from stale embedded seeds and public responses."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /seedProducts=\{products\}[\s\S]*?onProductDeleted=\{\(productId\) =>[\s\S]*?setProducts\(\(current\) =>[\s\S]*?Number\(item\?\.id \|\| 0\) !== productId/,
+  "Embedded Shop Control must remove a permanently deleted product from its parent seed state."
 );
 
 assertContains(
@@ -268,7 +286,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.edit`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.hide`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.copy-link`\}[\s\S]*?Number\(selectedPublicProduct\.id \|\| 0\) > 0[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost-unavailable`\}/,
+  /debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.edit`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.delete`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.copy-link`\}[\s\S]*?Number\(selectedPublicProduct\.id \|\| 0\) > 0[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost-unavailable`\}/,
   "Shop Assets selected live block actions must stay traceable, fixed-height, and must not route Paid Repost for an id-less block."
 );
 

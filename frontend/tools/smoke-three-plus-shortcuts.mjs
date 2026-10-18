@@ -373,7 +373,7 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   await page.getByText('This is the exact public block you opened.').waitFor({ state: 'visible', timeout: 20_000 });
   const changeAction = page.getByRole('button', { name: 'Change media or details' });
   await changeAction.waitFor({ state: 'visible', timeout: 20_000 });
-  await page.getByRole('button', { name: 'Remove from shop' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByRole('button', { name: 'Delete permanently' }).waitFor({ state: 'visible', timeout: 20_000 });
   await changeAction.click();
   const editor = page.locator('#shop-assets-product-editor');
   await editor.waitFor({ state: 'visible', timeout: 20_000 });

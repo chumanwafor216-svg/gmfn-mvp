@@ -4,6 +4,7 @@ import hashlib
 import os
 import uuid
 from typing import Any, Dict, Optional
+from urllib.parse import unquote, urlparse
 
 import boto3
 from botocore.client import Config
@@ -189,3 +190,41 @@ def build_public_url(object_key: str) -> str:
     if not endpoint or not bucket or not key:
         return ""
     return f"{endpoint}/{bucket}/{key}"
+
+
+def r2_object_key_from_public_url(public_url: object) -> Optional[str]:
+    """Return a key only for URLs issued by this configured R2 bucket."""
+
+    value = _safe_text(public_url)
+    endpoint = r2_endpoint().rstrip("/")
+    bucket = _r2_bucket_name().strip("/")
+    if not value or not endpoint or not bucket:
+        return None
+
+    try:
+        parsed_value = urlparse(value)
+        parsed_endpoint = urlparse(endpoint)
+    except ValueError:
+        return None
+
+    if (
+        parsed_value.scheme.lower() != parsed_endpoint.scheme.lower()
+        or parsed_value.netloc.lower() != parsed_endpoint.netloc.lower()
+    ):
+        return None
+
+    prefix = f"/{bucket}/"
+    if not parsed_value.path.startswith(prefix):
+        return None
+
+    key = unquote(parsed_value.path[len(prefix) :]).lstrip("/")
+    return key or None
+
+
+def delete_r2_object(*, object_key: str) -> None:
+    """Delete one object from the configured R2 bucket."""
+
+    clean_key = _safe_text(object_key).lstrip("/")
+    if not clean_key:
+        raise StorageServiceError("object_key is required for R2 deletion.")
+    _r2_client().delete_object(Bucket=_r2_bucket_name(), Key=clean_key)
