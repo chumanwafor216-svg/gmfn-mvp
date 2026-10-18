@@ -12,9 +12,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Production branch: `main`.
 - Current verified frontend application commit:
-  `069606562baea9e345035e2d730e66281f367bb3`.
-- Frontend Render deploy `dep-dbai6iu90tus73cmvjgg` reached `live` on
-  that exact commit. Trigger Render Deploy run `39160662327` completed
+  `c3b8e1462fc516c0f3e42993e6954fd84809b1e4`.
+- Frontend Render deploy `dep-dbaiir72d8hs73dtrsag` reached `live` on
+  that exact commit. Trigger Render Deploy run `39162639202` completed
   successfully with `deploy_api=false` and verified the public frontend
   asset graph.
 - Current verified API application commit remains
@@ -23,21 +23,79 @@ under `docs/` or `docs/archive/`, then link that file here.
   frontend-only batch changed no backend files.
 - Main-branch Backend Tests run `39156093134` completed successfully before
   deployment.
-- Independent post-deploy requests returned HTTP 200 from the frontend index
-  and `/app/shop-control`. The deployed
-  `assets/ShopAssetsPage-CjswOxSy.js` chunk contains both the ordinary
-  Gallery Tools and `View product in public shop` release markers. The
+- Independent post-deploy requests returned HTTP 200 from the frontend index,
+  `/app/shop-control`, and `/app/shop-assets`. The deployed asset graph
+  contains `What do you want to change?`, `Manage your shop`, `More shop &
+  community space`, and `Manage this shop item`, proving the new owner-facing
+  wording is being served publicly. The
   prior API release checks returned HTTP 200 from `/health` and
   `/marketplace/media/ping`; health reported
   `{"ok":true,"dev_mode":false}` and the media router reported active. The
   live frontend bundle contained the product-media visibility marker, and the
   live API rejected an unqualified `product_open` request with HTTP 422.
-- The current frontend release adds focused exact-product management, ordinary
-  Gallery/Diary task separation, visible phone result continuity, and an
-  exact-product Public Shop continuation after successful saves. The API
+- The current frontend release adds the plain-language Shop owner presentation
+  on top of focused exact-product management, ordinary Gallery/Diary task
+  separation, visible phone result continuity, and an exact-product Public Shop
+  continuation after successful saves. The API
   retains the prior qualification-time Spotlight delivery accounting,
   product-media attention, permanent-deletion, retention, and media-quality
   contracts.
+
+## Deployed Shop Gallery plain-language cleanup - 2026-10-18
+
+- Status: committed as `c3b8e1462fc516c0f3e42993e6954fd84809b1e4`,
+  pushed unchanged to the working branch and `main`, deployed as frontend
+  release `dep-dbaiir72d8hs73dtrsag`, and independently verified from the
+  public frontend.
+- The ordinary `/app/shop-control` Shop Gallery owner task now leads with
+  `What do you want to change?` and three direct shortcuts: `Change shop
+  picture`, `Write shop update`, and `Add more selling space`. The long
+  billboard/block/capacity explanation was removed from this first decision
+  surface.
+- The Products & Services task now presents the existing numbered-slot system
+  as `Your shop items` and `shop spaces`. Owners see `Add item`, `Shop item`,
+  `Available`, `Ready to use`, and `Post item` instead of `block control`,
+  `numbered blocks`, `Empty block`, and `Post product`. Full-capacity,
+  missing-media, save, and delete results use the same plain language.
+- The standalone `/app/shop-assets` Pictures & Products workbench now leads
+  with `Manage your shop`, `At a glance`, and `Start here`. Its editor says
+  `Add shop or Vault item`, saved content is grouped under `Your saved items`,
+  and copy confirmations say `Shop link and message copied` rather than
+  referring to a technical package.
+- The existing paid-capacity destination is now presented as `More shop &
+  community space`. It leads with `Choose what you need`, explains the
+  bank-transfer confirmation in one short paragraph, shows the unchanged GBP
+  1 / GBP 60 pricing plainly, and labels its choices as one more shop space,
+  one more member place, ROSCA for one year, and meeting support. `ROSCA
+  engine` and `Meeting pack engine` became `Run a ROSCA cycle` and `Plan a
+  community meeting`; their routes and actions are unchanged.
+- The exact-product task now says `This is the shop item you opened` and
+  `Manage this shop item`. Exact product/block IDs are still carried in the
+  route and backend contract, but the owner no longer has to interpret the
+  internal word `block`.
+- The six-slot data model, selected-slot persistence, routes, API calls,
+  Marketplace Shops policy, exact-product Change/Delete flow, permanent
+  deletion semantics, Shop Diary separation, Spotlight behavior, and frozen
+  Market Wisdom area did not change. `block` remains an internal contract term
+  and is still allowed in technical audits/docs.
+- Verification passed the 290-module production build, Shop Assets slot audit,
+  Shop Control button inventory, three-plus shortcut audit, institutional
+  evidence-surface audit, and the complete protected-button freeze audit. The
+  expanded 390x844 local phone flow passed and completed mocked Add/Save,
+  exact-item return, focused Save/Delete, Diary separation, standalone
+  Pictures & Products language, and the deeper paid-space language with no
+  navigation business write. It writes three visual checkpoints:
+  `shop-gallery-plain-language-390x844.png`,
+  `shop-assets-plain-language-390x844.png`, and
+  `shop-community-space-plain-language-390x844.png` under
+  `frontend/screenshots/`. This is synthetic local interaction coverage, not
+  an authenticated production write. Deployment was separately verified by
+  Render and by the public route/asset checks recorded above.
+- The broad `audit:link-contracts` command still reports three existing
+  `ShopGalleryPage.tsx` failures concerning the install prompt and Shop Diary
+  auto-scroll. This batch did not edit `ShopGalleryPage.tsx`; the changed
+  Shop Assets copy-link assertion itself passed through the institutional
+  evidence audit. Do not misreport the broad link audit as green.
 
 ## Deployed Shop Gallery task separation - 2026-10-18
 
