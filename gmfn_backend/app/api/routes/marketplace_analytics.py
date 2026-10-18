@@ -41,6 +41,9 @@ EVENT_DEMAND_MATCH_AVAILABLE = "match_available"
 EVENT_DEMAND_MATCHES_OPENED = "matches_opened"
 EVENT_DEMAND_SUPPLY_OPENED = "supply_opened"
 
+PRODUCT_MEDIA_QUALIFYING_VISIBLE_MS = 1000
+PRODUCT_MEDIA_MIN_VISIBLE_RATIO = 0.6
+
 ATTENTION_EVENT_TYPES = {
     EVENT_SHOP_VISIT,
     EVENT_PRODUCT_OPEN,
@@ -200,6 +203,9 @@ class MarketplaceAttentionIn(BaseModel):
     source_path: Optional[str] = Field(default=None, max_length=240)
     session_key: Optional[str] = Field(default=None, max_length=160)
     client_event_id: Optional[str] = Field(default=None, max_length=120)
+    visible_ms: Optional[int] = Field(default=None, ge=0, le=600_000)
+    visible_ratio: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    document_visible: Optional[bool] = None
 
     @field_validator("event_type", "source", "source_path", "session_key", "client_event_id", mode="before")
     @classmethod
@@ -1340,6 +1346,8 @@ def record_marketplace_attention(
         clan_id = clan_id or _safe_positive_int(getattr(broadcast, "clan_id", None))
 
     product = None
+    if event_type == EVENT_PRODUCT_OPEN and product_id is None:
+        raise HTTPException(status_code=422, detail="A qualified product-media view requires a product")
     if product_id is not None:
         product = db.query(MarketplaceProduct).filter(MarketplaceProduct.id == product_id).first()
         if not product or not bool(getattr(product, "is_active", True)):
@@ -1356,6 +1364,23 @@ def record_marketplace_attention(
     shop = db.query(MarketplaceShop).filter(MarketplaceShop.id == shop_id).first()
     if not shop or not bool(getattr(shop, "is_active", True)):
         raise HTTPException(status_code=404, detail="Shop not found")
+
+    if event_type == EVENT_PRODUCT_OPEN:
+        if payload.document_visible is not True:
+            raise HTTPException(
+                status_code=422,
+                detail="Product media must be visible in the active tab before it counts",
+            )
+        if int(payload.visible_ms or 0) < PRODUCT_MEDIA_QUALIFYING_VISIBLE_MS:
+            raise HTTPException(
+                status_code=422,
+                detail="Product media was not visible long enough to count",
+            )
+        if float(payload.visible_ratio or 0.0) < PRODUCT_MEDIA_MIN_VISIBLE_RATIO:
+            raise HTTPException(
+                status_code=422,
+                detail="Product media was not sufficiently visible to count",
+            )
 
     if broadcast is not None:
         broadcast_shop_id = _safe_positive_int(getattr(broadcast, "shop_id", None))

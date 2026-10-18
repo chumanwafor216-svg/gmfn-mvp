@@ -331,7 +331,13 @@ async function installMocks(page, scenario) {
       if (payload?.event_type === "spotlight_impression") {
         scenario.impressionCalls += 1;
       }
-      return route.fulfill(json({ ok: true }));
+      if (payload?.event_type === "product_open") {
+        scenario.productOpenCalls = Number(scenario.productOpenCalls || 0) + 1;
+        scenario.productOpenPayload = payload;
+      }
+      return route.fulfill(
+        json({ ok: true, recorded: true, deduped: false, event_id: 1 })
+      );
     }
     if (path === "/marketplace/broadcasts") {
       scenario.legacyBroadcastCalls += 1;
@@ -561,6 +567,56 @@ async function testVisitorCannotForceOwnerPreview(browser, baseUrl) {
   if (scenario.qualifyCalls < 1 || scenario.impressionCalls < 1) {
     throw new Error(
       `Visitor presentation did not retain qualifying exposure handling: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
+async function testProductMediaRequiresVisibleDwell(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    productOpenCalls: 0,
+    productOpenPayload: null,
+    diaryCalls: 0,
+    streamLimit: 1,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+
+  const card = page.locator('[data-product-media-attention-id="1"]');
+  await card.waitFor({ state: "visible", timeout: 15_000 });
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole("button", { name: /Open Independent Shop Diary product/i }).click();
+  await card.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(350);
+  if (scenario.productOpenCalls !== 0) {
+    throw new Error("Product media counted immediately on open before visible dwell.");
+  }
+  await page.waitForTimeout(1_100);
+  if (scenario.productOpenCalls !== 1) {
+    throw new Error(
+      `Product media did not count exactly once after visible dwell: ${scenario.productOpenCalls}`
+    );
+  }
+  const payload = scenario.productOpenPayload || {};
+  if (
+    Number(payload.visible_ms || 0) < 1000 ||
+    Number(payload.visible_ratio || 0) < 0.6 ||
+    payload.document_visible !== true
+  ) {
+    throw new Error(
+      `Product media visibility evidence was incomplete: ${JSON.stringify(payload)}`
     );
   }
   await context.close();
@@ -836,6 +892,7 @@ try {
     await testOwnerReopenPreviewBackAndResume(browser, baseUrl),
     await testDelayedOwnerAuthentication(browser, baseUrl),
     await testVisitorCannotForceOwnerPreview(browser, baseUrl),
+    await testProductMediaRequiresVisibleDwell(browser, baseUrl),
     await testExpiredOwnerContentFailsClosed(browser, baseUrl),
     await testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
       browser,

@@ -28,8 +28,8 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /build_spotlight_opportunity_candidates[\s\S]*?allocate_spotlight_opportunity_candidates[\s\S]*?apply_spotlight_frequency_control[\s\S]*?plan_persistent_spotlight_delivery_opportunities[\s\S]*?consume_spotlight_delivery_round[\s\S]*?_persist_presentation_lease[\s\S]*?record_spotlight_qualifying_impression/,
-  "Presentation service must plan candidate, diversity, frequency, and pacing stages before atomically consuming a round with the durable lease, then qualify through the ledger."
+  /build_spotlight_opportunity_candidates[\s\S]*?allocate_spotlight_opportunity_candidates[\s\S]*?apply_spotlight_frequency_control[\s\S]*?plan_persistent_spotlight_delivery_opportunities[\s\S]*?_persist_presentation_lease[\s\S]*?consume_spotlight_delivery_round[\s\S]*?record_spotlight_qualifying_impression/,
+  "Presentation service must plan candidate, diversity, frequency, and pacing, persist a bounded reservation, then atomically consume the round with visible qualification."
 );
 
 assertContains(
@@ -52,20 +52,20 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /while remaining_frequency\.candidates[\s\S]*?with db\.begin_nested\(\)[\s\S]*?consume_spotlight_delivery_round[\s\S]*?except _SpotlightRoundNotConsumed[\s\S]*?remaining_frequency = replace[\s\S]*?continue/,
-  "A blocked first pacing candidate must roll back its savepoint and retry the next eligible candidate."
+  /while remaining_frequency\.candidates[\s\S]*?with db\.begin_nested\(\)[\s\S]*?active_reservation[\s\S]*?_SpotlightReservationUnavailable[\s\S]*?remaining_frequency = replace[\s\S]*?continue/,
+  "A campaign with an active reservation must be skipped safely so selection can retry the next eligible candidate."
 );
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /test_pacing_sees_due_campaign_beyond_previous_fifty_candidate_cutoff[\s\S]*?campaign_id == 51[\s\S]*?test_delivery_conflict_retries_the_next_paced_candidate[\s\S]*?blocked_campaign_ids == \(1,\)[\s\S]*?consumed_campaign_ids == \(2,\)/,
-  "Backend regressions must protect full-set pacing and next-candidate fallback after a delivery conflict."
+  /test_pacing_sees_due_campaign_beyond_previous_fifty_candidate_cutoff[\s\S]*?campaign_id == 51[\s\S]*?test_active_reservation_retries_the_next_paced_candidate[\s\S]*?blocked_campaign_ids == \(1,\)[\s\S]*?consumed_campaign_ids == \(\)/,
+  "Backend regressions must protect full-set pacing and next-candidate fallback around a live reservation."
 );
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
   /@router\.get\("\/public\/shop\/\{gmfn_id\}\/spotlight-opportunity"\)[\s\S]*?select_spotlight_presentation[\s\S]*?db\.commit\(\)[\s\S]*?opportunity_presentation_token/,
-  "Public Shop opportunity endpoint must select a canonical presentation and persist consumed delivery rounds."
+  "Public Shop opportunity endpoint must select and persist a canonical presentation reservation."
 );
 
 assertContains(
@@ -159,8 +159,8 @@ assertNotContains(
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /fetch_consumes_delivery_round_but_not_impression[\s\S]*?visible_presentation_qualifies_once_and_retry_dedupes[\s\S]*?own_public_shop_can_present_another_member_without_self_delivery[\s\S]*?unlinked_repost_fallback_stays_outside_canonical_ledger/,
-  "Backend presentation tests must cover fetch-vs-impression, idempotency, own-shop delivery of another member, self-exclusion, and unlinked fallback."
+  /fetch_reserves_round_but_consumes_nothing[\s\S]*?abandoned_reservation_spends_no_round[\s\S]*?visible_presentation_qualifies_once_and_retry_dedupes[\s\S]*?own_public_shop_can_present_another_member_without_self_delivery[\s\S]*?unlinked_repost_fallback_stays_outside_canonical_ledger/,
+  "Backend presentation tests must cover reservation-vs-consumption, abandonment, idempotency, own-shop delivery of another member, self-exclusion, and unlinked fallback."
 );
 
 assertContains(
@@ -177,14 +177,32 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /SpotlightPresentationLease\.presentation_id == presentation_id[\s\S]*?with_for_update\(\)[\s\S]*?db\.query\(User\.id\)[\s\S]*?with_for_update\(\)[\s\S]*?_current_presentable_candidate[\s\S]*?commit=False[\s\S]*?lease\.status = 'qualified'[\s\S]*?db\.commit\(\)/,
-  "Qualification must lock the lease and viewer, recheck frequency, and commit the exposure plus qualified lease atomically."
+  /SpotlightCampaign\.id == campaign_id[\s\S]*?with_for_update\(\)[\s\S]*?SpotlightPresentationLease\.presentation_id == presentation_id[\s\S]*?with_for_update\(\)[\s\S]*?db\.query\(User\.id\)[\s\S]*?_current_presentable_candidate[\s\S]*?consume_spotlight_delivery_round[\s\S]*?commit=False[\s\S]*?lease\.status = 'qualified'[\s\S]*?db\.commit\(\)/,
+  "Qualification must lock campaign, lease, and viewer, recheck frequency, and atomically commit the round, exposure, and qualified lease."
 );
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /test_qualification_commit_failure_rolls_back_exposure_and_lease[\s\S]*?pytest\.raises\(RuntimeError[\s\S]*?assert _ledger_count\(\) == 0[\s\S]*?assert lease\["status"\] == "issued"/,
-  "Backend tests must prove a failed qualification commit cannot advance exposure without qualifying the lease."
+  /test_qualification_commit_failure_rolls_back_exposure_and_lease[\s\S]*?pytest\.raises\(RuntimeError[\s\S]*?assert _ledger_count\(\) == 0[\s\S]*?assert _consumed_rounds\(\) == 0[\s\S]*?assert lease\["status"\] == "issued"/,
+  "Backend tests must prove a failed qualification commit cannot advance the round or exposure without qualifying the lease."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /EVENT_PRODUCT_OPEN[\s\S]*?PRODUCT_MEDIA_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PRODUCT_MEDIA_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?payload\.document_visible is not True[\s\S]*?payload\.visible_ms[\s\S]*?payload\.visible_ratio/,
+  "Product-open analytics must reject media that lacks active-tab, duration, and viewport evidence."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /productMediaQualifiedKeysRef[\s\S]*?trackMarketplaceAttention\("product_open"[\s\S]*?visible_ms:[\s\S]*?document_visible: true[\s\S]*?IntersectionObserver[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO[\s\S]*?data-product-media-attention-id/,
+  "Expanded Shop product media must qualify visibly before Product opens analytics are recorded."
+);
+
+assertContains(
+  "frontend/tools/smoke-spotlight-owner-visibility.mjs",
+  /testProductMediaRequiresVisibleDwell[\s\S]*?productOpenCalls !== 0[\s\S]*?waitForTimeout\(1_100\)[\s\S]*?productOpenCalls !== 1[\s\S]*?visible_ms[\s\S]*?visible_ratio[\s\S]*?document_visible/,
+  "The phone-browser smoke must prove product media does not count on open and counts once only after visible dwell."
 );
 
 assertContains(

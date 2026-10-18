@@ -4092,7 +4092,7 @@ def get_public_shop_spotlight_opportunity(
             item["opportunity_presentation_surface"] = (
                 SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
             )
-            item["opportunity_counts_as_delivery"] = True
+            item["opportunity_counts_as_delivery"] = False
             item["opportunity_counts_as_exposure"] = False
             items.append(item)
             presentation = {
@@ -4106,6 +4106,7 @@ def get_public_shop_spotlight_opportunity(
                 "content_version": selection.content_version,
                 "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
                 "delivery_round_consumed": bool(selection.delivery_round_consumed),
+                "delivery_round_reserved": True,
             }
             rejection_code = None
         else:

@@ -6851,11 +6851,23 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
             {"created_at": datetime.now(timezone.utc)},
         )
 
+    unqualified_product_open = client.post(
+        "/marketplace/analytics/attention",
+        json={
+            "event_type": "product_open",
+            "shop_id": 1,
+            "product_id": 1,
+            "source": "public_shop_product",
+            "session_key": "visitor-unqualified",
+        },
+    )
+    assert unqualified_product_open.status_code == 422
+
     event_payloads = [
         {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy", "session_key": "visitor-a"},
-        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy&product_id=1", "session_key": "visitor-a"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy&product_id=1", "session_key": "visitor-a", "visible_ms": 1000, "visible_ratio": 0.6, "document_visible": True},
         {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop_gallery", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
-        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop_product", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop_product", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower", "visible_ms": 1000, "visible_ratio": 0.6, "document_visible": True},
         {"event_type": "spotlight_impression", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
         {"event_type": "spotlight_shop_click", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
         {"event_type": "contact_tap", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "product", "session_key": "visitor-a"},

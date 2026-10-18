@@ -6858,6 +6858,9 @@ export async function recordMarketplaceAttentionEvent(payload: {
   source?: string | null;
   source_path?: string | null;
   client_event_id?: string | null;
+  visible_ms?: number | null;
+  visible_ratio?: number | null;
+  document_visible?: boolean | null;
 }): Promise<any> {
   const sourcePath =
     payload.source_path ??

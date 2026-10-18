@@ -30,6 +30,14 @@ under `docs/` or `docs/archive/`, then link that file here.
   compaction, and Alembic migration
   `20261018_spotlight_payload_retention_v1`.
 
+## Spotlight qualification accounting and product-media attention - 2026-10-18
+
+- Status: owner-approved implementation is locally verified; it has not yet been committed, pushed, or deployed.
+- Canonical Spotlight fetch now creates a bounded 30-second reservation without incrementing `consumed_delivery_rounds`. Only one current reservation per campaign version may exist globally. Accepted visible qualification consumes the round, records the canonical exposure, and marks the lease qualified in one transaction.
+- An expired unqualified reservation consumes no round. The abandoning viewer cannot repeatedly reacquire that campaign version, while another eligible viewer may receive a later reservation. Qualified retries remain idempotent; replay, owner preview, replacement, withdrawal, expiry, and commit failure remain accounting-neutral.
+- Public Shop product cards no longer record `product_open` merely because the card expanded. The media must remain at least 60% visible in an active tab for one continuous second. The analytics endpoint rejects product-open writes without that evidence and retains daily dedupe. Product media receives no Spotlight-style round allowance; this remains weak attention evidence, not buyer or sale proof.
+- Verification: the broad Spotlight and targeted Marketplace attention suite passed 213 tests; the complete Public Shop backend suite passed 70 tests; and the focused pacing/presentation/concurrency collection passed 55 tests with five destructive PostgreSQL-only cases correctly skipped because no disposable database was configured. Python compilation, the Spotlight presentation contract audit, the 290-module production frontend build, the complete protected-button-freeze audit, and the nine-scenario 390x844 phone-browser Spotlight/Product-media smoke passed. The smoke proved no `product_open` write during the first 350 ms after expansion and exactly one write after the continuous one-second visible dwell. A custom caller can still forge generic product-attention fields because product attention is deliberately weak analytics rather than a paid canonical delivery ledger; Spotlight remains protected by its signed lease and server elapsed-time checks.
+
 ## Media Quality Gate v1 implementation - 2026-10-18
 
 - Status: deployed and independently health-checked on the exact application commit recorded above.

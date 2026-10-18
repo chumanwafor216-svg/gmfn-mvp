@@ -37,6 +37,7 @@ from app.services.spotlight_pacing_state_service import (
     SpotlightPersistentPacingResult,
     consume_spotlight_delivery_round,
     plan_persistent_spotlight_delivery_opportunities,
+    spotlight_delivery_round_blocked_reason,
 )
 from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_serving
 
@@ -64,10 +65,14 @@ PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE = "campaign_not_active"
 PRESENTATION_REJECTION_ISSUANCE_CONFLICT = "issuance_key_payload_conflict"
 
 
-class _SpotlightRoundNotConsumed(RuntimeError):
-    def __init__(self, result: Any):
-        super().__init__(str(getattr(result, "blocked_reason", None) or PRESENTATION_REJECTION_DELIVERY_CONFLICT))
-        self.result = result
+PRESENTATION_REJECTION_RESERVATION_ACTIVE = "presentation_reservation_active"
+PRESENTATION_REJECTION_VIEWER_ABANDONED = "viewer_abandoned_campaign_version"
+
+
+class _SpotlightReservationUnavailable(RuntimeError):
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -131,6 +136,7 @@ class SpotlightPresentationQualificationResult:
     event_id: Optional[int] = None
     campaign_id: Optional[int] = None
     presentation_id: Optional[str] = None
+    delivery_round_consumed: bool = False
     rejection_code: Optional[str] = None
     exposure_result: Optional[SpotlightExposureRecordResult] = None
     policy: SpotlightPresentationPolicy = SpotlightPresentationPolicy()
@@ -144,9 +150,10 @@ class SpotlightPresentationQualificationResult:
             "event_id": int(event.id) if event is not None and event.id is not None else self.event_id,
             "campaign_id": int(self.campaign_id) if self.campaign_id is not None else None,
             "presentation_id": self.presentation_id,
+            "delivery_round_consumed": bool(self.delivery_round_consumed),
             "rejection_code": self.rejection_code,
             "policy": self.policy.to_public_dict(),
-            "boundary_note": "A delivery round is not a qualifying impression until the visible presentation contract is satisfied.",
+            "boundary_note": "Issuance reserves presentation access; the delivery round and qualifying impression are recorded together only after the visible presentation contract is satisfied.",
         }
 
 
@@ -409,8 +416,8 @@ def select_spotlight_presentation(
 
     candidate_by_id = {int(candidate.campaign_id): candidate for candidate in frequency.candidates}
     remaining_frequency = frequency
-    blocked_consumptions: list[Any] = []
     blocked_campaign_ids: list[int] = []
+    blocked_reservation_reasons: list[str] = []
     last_pacing: Optional[SpotlightPersistentPacingResult] = None
 
     while remaining_frequency.candidates:
@@ -426,7 +433,7 @@ def select_spotlight_presentation(
             combined_pacing = SpotlightPersistentPacingResult(
                 viewer_user_id=viewer_id,
                 pacing_result=pacing.pacing_result,
-                consumption_results=tuple(blocked_consumptions),
+                consumption_results=(),
                 scheduled_campaign_ids=tuple(blocked_campaign_ids),
                 consumed_campaign_ids=(),
                 blocked_campaign_ids=tuple(blocked_campaign_ids),
@@ -468,6 +475,15 @@ def select_spotlight_presentation(
                         policy=policy,
                     )
 
+                pacing_blocked_reason = spotlight_delivery_round_blocked_reason(
+                    db,
+                    campaign_id=selected_campaign_id,
+                    now=current_time,
+                    lock_for_update=True,
+                )
+                if pacing_blocked_reason is not None:
+                    raise _SpotlightReservationUnavailable(pacing_blocked_reason)
+
                 placement = _placement_for_candidate(
                     db,
                     candidate=candidate,
@@ -501,6 +517,36 @@ def select_spotlight_presentation(
                         policy=policy,
                     )
                 content_version = int(getattr(campaign, 'content_version', 1) or 1)
+                active_reservation = (
+                    db.query(SpotlightPresentationLease.id)
+                    .filter(SpotlightPresentationLease.campaign_id == selected_campaign_id)
+                    .filter(SpotlightPresentationLease.content_version == content_version)
+                    .filter(SpotlightPresentationLease.status == 'issued')
+                    .filter(SpotlightPresentationLease.lease_expires_at > current_time)
+                    .first()
+                )
+                if active_reservation is not None:
+                    raise _SpotlightReservationUnavailable(
+                        PRESENTATION_REJECTION_RESERVATION_ACTIVE
+                    )
+
+                # An unqualified lease is a bounded reservation, not a spent
+                # delivery round. Do not let one viewer repeatedly abandon and
+                # reacquire the same campaign version after its lease expires.
+                abandoned_by_viewer = (
+                    db.query(SpotlightPresentationLease.id)
+                    .filter(SpotlightPresentationLease.viewer_user_id == viewer_id)
+                    .filter(SpotlightPresentationLease.campaign_id == selected_campaign_id)
+                    .filter(SpotlightPresentationLease.content_version == content_version)
+                    .filter(SpotlightPresentationLease.qualified_at.is_(None))
+                    .filter(SpotlightPresentationLease.lease_expires_at <= current_time)
+                    .first()
+                )
+                if abandoned_by_viewer is not None:
+                    raise _SpotlightReservationUnavailable(
+                        PRESENTATION_REJECTION_VIEWER_ABANDONED
+                    )
+
                 lease = SpotlightPresentationLease(
                     presentation_id=presentation_id,
                     issuance_key=safe_issuance_key or presentation_id,
@@ -514,17 +560,10 @@ def select_spotlight_presentation(
                     issued_at=current_time,
                     lease_expires_at=token_expires_at,
                 )
-                consumption = consume_spotlight_delivery_round(
-                    db,
-                    campaign_id=selected_campaign_id,
-                    now=current_time,
-                )
-                if not consumption.consumed:
-                    raise _SpotlightRoundNotConsumed(consumption)
                 _persist_presentation_lease(db, lease=lease)
-        except _SpotlightRoundNotConsumed as exc:
-            blocked_consumptions.append(exc.result)
+        except _SpotlightReservationUnavailable as exc:
             blocked_campaign_ids.append(selected_campaign_id)
+            blocked_reservation_reasons.append(exc.reason)
             remaining_candidates = tuple(
                 row
                 for row in remaining_frequency.candidates
@@ -556,9 +595,9 @@ def select_spotlight_presentation(
         combined_pacing = SpotlightPersistentPacingResult(
             viewer_user_id=viewer_id,
             pacing_result=pacing.pacing_result,
-            consumption_results=tuple([*blocked_consumptions, consumption]),
+            consumption_results=(),
             scheduled_campaign_ids=tuple([*blocked_campaign_ids, selected_campaign_id]),
-            consumed_campaign_ids=(selected_campaign_id,),
+            consumed_campaign_ids=(),
             blocked_campaign_ids=tuple(blocked_campaign_ids),
         )
         token = create_access_token(
@@ -580,7 +619,7 @@ def select_spotlight_presentation(
             presentation_token=token,
             placement_broadcast_id=int(placement.id),
             content_version=content_version,
-            delivery_round_consumed=True,
+            delivery_round_consumed=False,
             token_expires_at=token_expires_at,
             pacing_result=combined_pacing,
             frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
@@ -592,8 +631,8 @@ def select_spotlight_presentation(
         pacing_result=last_pacing,
         frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
         rejection_code=(
-            str(blocked_consumptions[-1].blocked_reason)
-            if blocked_consumptions
+            blocked_reservation_reasons[-1]
+            if blocked_reservation_reasons
             else PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY
         ),
         policy=policy,
@@ -634,6 +673,21 @@ def record_spotlight_presentation_qualification(
     if owner_preview:
         return SpotlightPresentationQualificationResult(accepted=False, campaign_id=campaign_id or None, presentation_id=presentation_id or None, rejection_code=PRESENTATION_REJECTION_OWNER_PREVIEW, policy=policy)
 
+    campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.id == campaign_id)
+        .with_for_update()
+        .one_or_none()
+    )
+    if campaign is None:
+        return SpotlightPresentationQualificationResult(
+            accepted=False,
+            campaign_id=campaign_id or None,
+            presentation_id=presentation_id or None,
+            rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
+            policy=policy,
+        )
+
     lease = (
         db.query(SpotlightPresentationLease)
         .filter(SpotlightPresentationLease.presentation_id == presentation_id)
@@ -641,6 +695,14 @@ def record_spotlight_presentation_qualification(
         .with_for_update()
         .one_or_none()
     )
+    if lease is not None and int(lease.campaign_id) != campaign_id:
+        return SpotlightPresentationQualificationResult(
+            accepted=False,
+            campaign_id=campaign_id or None,
+            presentation_id=presentation_id or None,
+            rejection_code=PRESENTATION_REJECTION_INVALID_TOKEN,
+            policy=policy,
+        )
     invalid_reason = _lease_invalid_reason(db, lease=lease, now=current_time)
     if invalid_reason is not None:
         return SpotlightPresentationQualificationResult(
@@ -675,6 +737,35 @@ def record_spotlight_presentation_qualification(
             rejection_code='reported_visibility_exceeds_server_elapsed_time',
             policy=policy,
         )
+
+    if str(lease.status or '') == 'qualified':
+        existing_exposure = (
+            db.query(SpotlightExposureEvent)
+            .filter(SpotlightExposureEvent.viewer_user_id == token_viewer_id)
+            .filter(SpotlightExposureEvent.campaign_id == campaign_id)
+            .filter(SpotlightExposureEvent.presentation_id == presentation_id)
+            .filter(SpotlightExposureEvent.event_type == 'qualifying_impression')
+            .one_or_none()
+        )
+        if existing_exposure is None:
+            return SpotlightPresentationQualificationResult(
+                accepted=False,
+                campaign_id=campaign_id,
+                presentation_id=presentation_id,
+                rejection_code='qualified_lease_missing_exposure',
+                policy=policy,
+            )
+        db.commit()
+        return SpotlightPresentationQualificationResult(
+            accepted=True,
+            recorded=False,
+            deduped=True,
+            event_id=int(existing_exposure.id),
+            campaign_id=campaign_id,
+            presentation_id=presentation_id,
+            delivery_round_consumed=False,
+            policy=policy,
+        )
     # Different leases for the same viewer must not qualify against the same
     # stale frequency count. The stable viewer row serializes qualification in
     # PostgreSQL; the frequency check below therefore observes the last commit.
@@ -690,6 +781,24 @@ def record_spotlight_presentation_qualification(
 
     safe_key = str(qualification_key or "").strip()[:96]
     idempotency_key = f"{SPOTLIGHT_PRESENTATION_TOKEN_TYPE}:{presentation_id}"
+    consumption = consume_spotlight_delivery_round(
+        db,
+        campaign_id=campaign_id,
+        now=current_time,
+    )
+    if not consumption.consumed:
+        db.rollback()
+        return SpotlightPresentationQualificationResult(
+            accepted=False,
+            campaign_id=campaign_id,
+            presentation_id=presentation_id,
+            rejection_code=(
+                str(consumption.blocked_reason)
+                if consumption.blocked_reason
+                else PRESENTATION_REJECTION_DELIVERY_CONFLICT
+            ),
+            policy=policy,
+        )
     exposure = record_spotlight_qualifying_impression(
         db,
         viewer_user_id=token_viewer_id,
@@ -710,12 +819,22 @@ def record_spotlight_presentation_qualification(
         owner_preview=False,
         commit=False,
     )
-    if exposure.recorded or exposure.deduped:
-        lease.status = 'qualified'
-        lease.qualified_at = current_time
-        # Exposure and lease qualification are one transaction. A failed
-        # commit cannot consume the viewer cap while leaving an issued lease.
-        db.commit()
+    if not (exposure.recorded or exposure.deduped):
+        db.rollback()
+        return SpotlightPresentationQualificationResult(
+            accepted=False,
+            campaign_id=campaign_id,
+            presentation_id=presentation_id,
+            rejection_code=exposure.rejection_code,
+            exposure_result=exposure,
+            policy=policy,
+        )
+
+    lease.status = 'qualified'
+    lease.qualified_at = current_time
+    # Round consumption, qualifying exposure, and lease completion are one
+    # transaction. A failed commit leaves all three unchanged.
+    db.commit()
     event = exposure.event
     return SpotlightPresentationQualificationResult(
         accepted=bool(exposure.recorded or exposure.deduped),
@@ -724,6 +843,7 @@ def record_spotlight_presentation_qualification(
         event_id=int(event.id) if event is not None and event.id is not None else None,
         campaign_id=campaign_id,
         presentation_id=presentation_id,
+        delivery_round_consumed=True,
         rejection_code=exposure.rejection_code,
         exposure_result=exposure,
         policy=policy,

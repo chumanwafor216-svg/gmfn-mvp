@@ -260,11 +260,7 @@ def plan_persistent_spotlight_delivery_opportunities(
     now: Optional[datetime] = None,
     default_max_delivery_rounds: int = SPOTLIGHT_DEFAULT_MAX_DELIVERY_ROUNDS,
 ) -> SpotlightPersistentPacingResult:
-    """Plan issuances without consuming a round.
-
-    Durable presentation callers must consume the selected round in the same
-    database transaction/savepoint as the presentation lease insert.
-    """
+    """Plan presentation reservations without consuming a delivery round."""
     current_time = _as_aware_utc(now) or _now_utc()
     campaign_ids = [int(candidate.campaign_id) for candidate in frequency_result.candidates]
     snapshots = get_or_create_spotlight_campaign_pacing_states(
@@ -289,6 +285,52 @@ def plan_persistent_spotlight_delivery_opportunities(
         consumed_campaign_ids=(),
         blocked_campaign_ids=(),
     )
+
+
+def spotlight_delivery_round_blocked_reason(
+    db: Session,
+    *,
+    campaign_id: int,
+    now: Optional[datetime] = None,
+    lock_for_update: bool = False,
+) -> Optional[str]:
+    """Revalidate current round availability without consuming it."""
+    current_time = _as_aware_utc(now) or _now_utc()
+    state_query = db.query(SpotlightCampaignPacingStateModel).filter(
+        SpotlightCampaignPacingStateModel.campaign_id == int(campaign_id)
+    )
+    if lock_for_update:
+        state_query = state_query.with_for_update()
+    row = state_query.one_or_none()
+    if row is None:
+        return SPOTLIGHT_PACING_REASON_CAMPAIGN_MISSING
+
+    campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.id == int(campaign_id))
+        .one_or_none()
+    )
+    if campaign is None:
+        return SPOTLIGHT_PACING_REASON_CAMPAIGN_MISSING
+    if str(campaign.status or '') != 'active' or not row_is_serving(
+        campaign, now=current_time
+    ):
+        return SPOTLIGHT_PACING_REASON_CAMPAIGN_NOT_ACTIVE
+    expires_at = authorized_expiry(campaign)
+    if expires_at is not None and current_time >= expires_at:
+        return SPOTLIGHT_PACING_REASON_CAMPAIGN_EXPIRED
+
+    policy = _delivery_window_policy_from_json(row.delivery_window_policy_json)
+    if not evaluate_spotlight_delivery_window(now=current_time, policy=policy).active:
+        return SPOTLIGHT_PACING_REASON_QUIET_WINDOW
+    next_eligible = _as_aware_utc(row.next_eligible_delivery_at)
+    if next_eligible is not None and current_time < next_eligible:
+        return SPOTLIGHT_PACING_REASON_NOT_YET_ELIGIBLE
+    if bool(row.exhausted) or int(row.consumed_delivery_rounds) >= int(
+        row.max_delivery_rounds
+    ):
+        return SPOTLIGHT_PACING_REASON_ROUNDS_EXHAUSTED
+    return None
 
 
 def consume_spotlight_delivery_round(

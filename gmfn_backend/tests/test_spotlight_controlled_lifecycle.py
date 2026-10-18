@@ -401,9 +401,10 @@ def test_presentation_retry_reuses_lease_and_earliest_deadline(monkeypatch) -> N
         assert replay.selected is True
         assert replay.presentation_id == first.presentation_id
         assert replay.token_expires_at == first.token_expires_at
+        assert first.delivery_round_consumed is False
         assert replay.delivery_round_consumed is False
         assert first.token_expires_at == now + timedelta(seconds=12)
-        assert pacing.consumed_delivery_rounds == 1
+        assert pacing.consumed_delivery_rounds == 0
         assert len(leases) == 1
         assert revalidate_spotlight_presentation(
             db,

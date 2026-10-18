@@ -19,7 +19,12 @@ from app.services.feature_entitlements_service import consume_feature_units
 from app.services.member_credit_service import MemberCreditError
 from app.services.member_credit_spotlight_service import _consume_member_credits
 from app.services.spotlight_lifecycle_service import permanently_withdraw
-from app.services.spotlight_presentation_service import select_spotlight_presentation
+from app.services.spotlight_presentation_service import (
+    SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+    SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+    record_spotlight_presentation_qualification,
+    select_spotlight_presentation,
+)
 
 
 POSTGRES_URL = str(os.getenv("SPOTLIGHT_POSTGRES_TEST_DATABASE_URL", "") or "").strip()
@@ -109,7 +114,7 @@ def _seed_spotlight(postgres_engine, *, max_rounds: int = 1) -> None:
         )
 
 
-def test_postgres_concurrent_final_round_cannot_overconsume(postgres_engine, monkeypatch) -> None:
+def test_postgres_concurrent_final_round_allows_one_live_reservation(postgres_engine, monkeypatch) -> None:
     monkeypatch.setenv("SECRET_KEY", "postgres-disposable-concurrency-secret")
     _seed_spotlight(postgres_engine)
     sessions = sessionmaker(bind=postgres_engine, autoflush=False, expire_on_commit=False)
@@ -130,8 +135,64 @@ def test_postgres_concurrent_final_round_cannot_overconsume(postgres_engine, mon
         consumed = conn.execute(text("SELECT consumed_delivery_rounds FROM spotlight_campaign_pacing_states WHERE campaign_id=1")).scalar_one()
         leases = conn.execute(text("SELECT COUNT(*) FROM spotlight_presentation_leases")).scalar_one()
     assert sum(bool(value) for value in outcomes) == 1
-    assert int(consumed) == 1
+    assert int(consumed) == 0
     assert int(leases) == 1
+
+
+def test_postgres_concurrent_qualification_consumes_final_round_once(
+    postgres_engine, monkeypatch
+) -> None:
+    monkeypatch.setenv("SECRET_KEY", "postgres-disposable-concurrency-secret")
+    _seed_spotlight(postgres_engine)
+    sessions = sessionmaker(bind=postgres_engine, autoflush=False, expire_on_commit=False)
+    with sessions() as db:
+        issued = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=NOW,
+            issuance_key="pg-qualified-final-round",
+        )
+        db.commit()
+    assert issued.selected is True
+    token = issued.presentation_token or ""
+    barrier = Barrier(2)
+
+    def qualify():
+        with sessions() as db:
+            barrier.wait()
+            result = record_spotlight_presentation_qualification(
+                db,
+                viewer_user_id=1,
+                presentation_token=token,
+                qualification_key="pg-qualified-final-round",
+                event_at=NOW + timedelta(seconds=2),
+                visible_ms=SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS,
+                visible_ratio=SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
+                document_visible=True,
+            )
+            return result.recorded, result.deduped, result.delivery_round_consumed
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(lambda _index: qualify(), (1, 2)))
+    with postgres_engine.begin() as conn:
+        consumed = conn.execute(
+            text(
+                "SELECT consumed_delivery_rounds FROM spotlight_campaign_pacing_states WHERE campaign_id=1"
+            )
+        ).scalar_one()
+        exposures = conn.execute(
+            text("SELECT COUNT(*) FROM spotlight_exposure_events")
+        ).scalar_one()
+        lease_status = conn.execute(
+            text("SELECT status FROM spotlight_presentation_leases")
+        ).scalar_one()
+
+    assert sum(bool(recorded) for recorded, _deduped, _consumed in outcomes) == 1
+    assert sum(bool(deduped) for _recorded, deduped, _consumed in outcomes) == 1
+    assert sum(bool(round_consumed) for _recorded, _deduped, round_consumed in outcomes) == 1
+    assert int(consumed) == 1
+    assert int(exposures) == 1
+    assert lease_status == "qualified"
 
 
 def test_postgres_concurrent_final_legacy_unit_cannot_overconsume(postgres_engine) -> None:

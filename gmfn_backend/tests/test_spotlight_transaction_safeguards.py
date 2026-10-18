@@ -186,7 +186,7 @@ def test_idempotent_retry_preserves_accounting_but_never_reauthorizes_changed_st
         assert replay.presentation_id == first.presentation_id
         assert replay.token_expires_at == original_deadline
         assert replay.rejection_code == expected_reason
-        assert state.consumed_delivery_rounds == 1
+        assert state.consumed_delivery_rounds == 0
         assert db.query(SpotlightPresentationLease).count() == 1
 
 

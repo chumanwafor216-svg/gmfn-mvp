@@ -11,10 +11,6 @@ from app.db.database import SessionLocal, engine
 os.environ.setdefault("SECRET_KEY", "pytest-spotlight-presentation-contract-secret")
 
 from app.services import spotlight_presentation_service as presentations
-from app.services.spotlight_pacing_state_service import (
-    SPOTLIGHT_PACING_STATE_CONFLICT,
-    SpotlightRoundConsumptionResult,
-)
 from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
     SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
@@ -178,7 +174,7 @@ def _signed_presentation_token(*, presentation_id: str, campaign_id: int = 1, vi
     )
 
 
-def test_public_shop_presentation_fetch_consumes_delivery_round_but_not_impression(
+def test_public_shop_presentation_fetch_reserves_round_but_consumes_nothing(
     client,
     override_current_user_user,
 ):
@@ -192,8 +188,76 @@ def test_public_shop_presentation_fetch_consumes_delivery_round_but_not_impressi
     assert body["max_stale_display_seconds"] == SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
     assert body["item"]["is_canonical_opportunity"] is True
     assert body["presentation"]["surface"] == SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
-    assert body["presentation"]["delivery_round_consumed"] is True
-    assert _consumed_rounds() == 1
+    assert body["presentation"]["delivery_round_consumed"] is False
+    assert body["presentation"]["delivery_round_reserved"] is True
+    assert body["item"]["opportunity_counts_as_delivery"] is False
+    assert _consumed_rounds() == 0
+    assert _ledger_count() == 0
+
+
+def test_abandoned_reservation_spends_no_round_and_cannot_be_reacquired_by_same_viewer():
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, role, gmfn_id,
+                    display_name, trust_score, trust_band,
+                    trust_score_updated_at
+                ) VALUES (
+                    3, 'phase4e2-viewer-3@example.com', 'hashed', 'member',
+                    'GSN-P4E2-VIEWER-3', 'Phase 4E2 Viewer 3',
+                    70, 'B', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (3, 1, 3, 'member', 0)
+                """
+            )
+        )
+    _seed_campaign_and_broadcast()
+    issued_at = _now()
+
+    with SessionLocal() as db:
+        first = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=issued_at,
+            issuance_key='abandoned-first-viewer',
+        )
+        db.commit()
+
+    assert first.selected is True
+    assert _consumed_rounds() == 0
+    after_expiry = issued_at + timedelta(seconds=31)
+
+    with SessionLocal() as db:
+        same_viewer = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=after_expiry,
+            issuance_key='abandoned-same-viewer-retry',
+        )
+        different_viewer = select_spotlight_presentation(
+            db,
+            viewer_user_id=3,
+            now=after_expiry,
+            issuance_key='abandoned-different-viewer',
+        )
+        db.commit()
+
+    assert same_viewer.selected is False
+    assert same_viewer.rejection_code == 'viewer_abandoned_campaign_version'
+    assert different_viewer.selected is True
+    assert different_viewer.delivery_round_consumed is False
+    assert _consumed_rounds() == 0
     assert _ledger_count() == 0
 
 
@@ -285,7 +349,7 @@ def test_pacing_sees_due_campaign_beyond_previous_fifty_candidate_cutoff():
     assert selection.candidate.campaign_id == 51
 
 
-def test_delivery_conflict_retries_the_next_paced_candidate(monkeypatch):
+def test_active_reservation_retries_the_next_paced_candidate():
     _seed_users_and_clans()
     with engine.begin() as conn:
         conn.execute(
@@ -327,33 +391,26 @@ def test_delivery_conflict_retries_the_next_paced_candidate(monkeypatch):
             {"shared_activation": shared_activation},
         )
 
-    original_consume = presentations.consume_spotlight_delivery_round
-    conflict_injected = False
-
-    def consume_with_first_campaign_conflict(db, *, campaign_id, **kwargs):
-        nonlocal conflict_injected
-        if int(campaign_id) == 1 and not conflict_injected:
-            conflict_injected = True
-            return SpotlightRoundConsumptionResult(
-                campaign_id=1,
-                consumed=False,
-                consumed_rounds_before=0,
-                consumed_rounds_after=0,
-                max_delivery_rounds=10,
-                version_before=0,
-                version_after=0,
-                last_delivery_opportunity_at=None,
-                next_eligible_delivery_at=None,
-                exhausted=False,
-                blocked_reason=SPOTLIGHT_PACING_STATE_CONFLICT,
-            )
-        return original_consume(db, campaign_id=campaign_id, **kwargs)
-
-    monkeypatch.setattr(
-        presentations,
-        "consume_spotlight_delivery_round",
-        consume_with_first_campaign_conflict,
-    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_presentation_leases (
+                    presentation_id, issuance_key, viewer_user_id, campaign_id,
+                    placement_broadcast_id, content_version, surface, status,
+                    issued_at, lease_expires_at
+                ) VALUES (
+                    'campaign-one-reservation', 'campaign-one-reservation', 1, 1,
+                    1, 1, :surface, 'issued', :issued_at, :lease_expires_at
+                )
+                """
+            ),
+            {
+                "surface": SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+                "issued_at": _now(),
+                "lease_expires_at": _now() + timedelta(seconds=30),
+            },
+        )
     with SessionLocal() as db:
         selection = select_spotlight_presentation(
             db,
@@ -381,15 +438,14 @@ def test_delivery_conflict_retries_the_next_paced_candidate(monkeypatch):
             )
         ).scalars().all()
 
-    assert conflict_injected is True
     assert selection.selected is True
     assert selection.candidate is not None
     assert selection.candidate.campaign_id == 2
     assert selection.pacing_result is not None
     assert selection.pacing_result.blocked_campaign_ids == (1,)
-    assert selection.pacing_result.consumed_campaign_ids == (2,)
-    assert pacing_rows == {1: 0, 2: 1}
-    assert leases == [2]
+    assert selection.pacing_result.consumed_campaign_ids == ()
+    assert pacing_rows == {1: 0, 2: 0}
+    assert leases == [1, 2]
 
 
 def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_current_user_user):
@@ -447,11 +503,14 @@ def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_
     assert retry.status_code == 200, retry.text
     assert changed_key_retry.status_code == 200, changed_key_retry.text
     assert first.json()["recorded"] is True
+    assert first.json()["delivery_round_consumed"] is True
     assert retry.json()["recorded"] is False
     assert retry.json()["deduped"] is True
+    assert retry.json()["delivery_round_consumed"] is False
     assert changed_key_retry.json()["recorded"] is False
     assert changed_key_retry.json()["deduped"] is True
     assert _ledger_count() == 1
+    assert _consumed_rounds() == 1
     assert _attention_count() == 0
     with engine.begin() as conn:
         attribution = conn.execute(
@@ -505,6 +564,7 @@ def test_qualification_commit_failure_rolls_back_exposure_and_lease():
         qualification_db.commit = original_commit  # type: ignore[method-assign]
 
     assert _ledger_count() == 0
+    assert _consumed_rounds() == 0
     with engine.begin() as conn:
         lease = conn.execute(
             text(
@@ -546,7 +606,7 @@ def test_own_public_shop_can_present_another_member_without_self_delivery(
     assert body["fallback"] is None
     assert body["serving_contract_version"] == 2
     assert body["rejection_code"] is None
-    assert _consumed_rounds() == 1
+    assert _consumed_rounds() == 0
     assert _ledger_count() == 0
 
 
@@ -601,6 +661,7 @@ def test_later_presentation_can_qualify_but_frequency_cap_blocks_forbidden_repea
                 },
             )
 
+    _set_next_delivery_now(1, second_time)
     with SessionLocal() as db:
         second_result = record_spotlight_presentation_qualification(
             db,
@@ -612,6 +673,7 @@ def test_later_presentation_can_qualify_but_frequency_cap_blocks_forbidden_repea
             visible_ratio=SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
             document_visible=True,
         )
+        _set_next_delivery_now(1, third_time)
         third_result = record_spotlight_presentation_qualification(
             db,
             viewer_user_id=1,

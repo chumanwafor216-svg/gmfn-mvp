@@ -1904,6 +1904,8 @@ export default function ShopGalleryPage() {
   const spotlightQualificationTimerRef = useRef<number | null>(null);
   const spotlightQualifiedKeysRef = useRef<Set<string>>(new Set());
   const spotlightQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
+  const productMediaQualifiedKeysRef = useRef<Set<string>>(new Set());
+  const productMediaQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
   const spotlightNextRequestPendingRef = useRef(false);
   const spotlightNextEmptyUntilRef = useRef(0);
   const spotlightInteractionPausedUntilRef = useRef(0);
@@ -2965,7 +2967,7 @@ export default function ShopGalleryPage() {
 
       const clanId = positiveNumber(payload.clan_id) || positiveNumber(effectiveShop?.clanId) || undefined;
 
-      void recordMarketplaceAttentionEvent({
+      return recordMarketplaceAttentionEvent({
         ...payload,
         event_type: eventType,
         shop_id: shopId,
@@ -3139,12 +3141,126 @@ export default function ShopGalleryPage() {
     const openedProduct = products.find(
       (product) => (product.id ?? product.slotNumber) === openProductId
     );
-    if (!openedProduct) return;
+    const productId = positiveNumber(openedProduct?.id);
+    if (!openedProduct || !productId || typeof document === "undefined") return;
 
-    trackMarketplaceAttention("product_open", {
-      product_id: positiveNumber(openedProduct.id) || undefined,
-      source: "public_shop_product",
-    });
+    const qualificationKey = `product-media:${productId}`;
+    if (productMediaQualifiedKeysRef.current.has(qualificationKey)) return;
+    const target = document.querySelector<HTMLElement>(
+      `[data-product-media-attention-id="${productId}"]`
+    );
+    if (!target) return;
+
+    let alive = true;
+    let visibleSince = 0;
+    let visibleRatio = 0;
+    let qualificationTimer: number | null = null;
+
+    function clearQualificationTimer() {
+      if (qualificationTimer !== null) {
+        window.clearTimeout(qualificationTimer);
+        qualificationTimer = null;
+      }
+    }
+
+    function documentIsVisible() {
+      return document.visibilityState === "visible";
+    }
+
+    function recordQualifiedProductMedia() {
+      if (
+        !alive ||
+        productMediaQualifiedKeysRef.current.has(qualificationKey) ||
+        productMediaQualificationInFlightKeysRef.current.has(qualificationKey)
+      ) return;
+
+      productMediaQualificationInFlightKeysRef.current.add(qualificationKey);
+      const visibleMs = Math.max(
+        PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
+        visibleSince > 0
+          ? Date.now() - visibleSince
+          : PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS
+      );
+      void trackMarketplaceAttention("product_open", {
+        product_id: productId,
+        source: "public_shop_product_visible",
+        visible_ms: visibleMs,
+        visible_ratio: Math.min(1, Math.max(visibleRatio, 0)),
+        document_visible: true,
+      })?.then((result) => {
+        productMediaQualificationInFlightKeysRef.current.delete(qualificationKey);
+        if (!alive) return;
+        if (result?.recorded === true || result?.deduped === true) {
+          productMediaQualifiedKeysRef.current.add(qualificationKey);
+          return;
+        }
+        visibleSince = 0;
+      });
+    }
+
+    function evaluateQualification() {
+      clearQualificationTimer();
+      if (
+        !alive ||
+        productMediaQualifiedKeysRef.current.has(qualificationKey) ||
+        productMediaQualificationInFlightKeysRef.current.has(qualificationKey)
+      ) return;
+      if (
+        !documentIsVisible() ||
+        visibleRatio < PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO
+      ) {
+        visibleSince = 0;
+        return;
+      }
+
+      if (visibleSince <= 0) visibleSince = Date.now();
+      const remaining =
+        PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS -
+        (Date.now() - visibleSince);
+      if (remaining <= 0) {
+        recordQualifiedProductMedia();
+        return;
+      }
+      qualificationTimer = window.setTimeout(evaluateQualification, remaining);
+    }
+
+    const observer =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(
+            (entries) => {
+              const entry = entries[0];
+              visibleRatio = entry?.isIntersecting
+                ? Number(entry.intersectionRatio || 0)
+                : 0;
+              evaluateQualification();
+            },
+            { threshold: [0, PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO, 1] }
+          )
+        : null;
+
+    function handleVisibilityChange() {
+      if (!documentIsVisible()) {
+        visibleSince = 0;
+        clearQualificationTimer();
+        return;
+      }
+      evaluateQualification();
+    }
+
+    if (observer) {
+      observer.observe(target);
+    } else {
+      visibleRatio = 1;
+      evaluateQualification();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      alive = false;
+      clearQualificationTimer();
+      observer?.disconnect();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [error, loading, openProductId, products, trackMarketplaceAttention]);
 
   const handleFollowShop = useCallback(async () => {
@@ -6812,6 +6928,9 @@ export default function ShopGalleryPage() {
                     className="shop-diary-card"
                     id={publicShopBlockAnchorId(product)}
                     aria-expanded={isProductOpen}
+                    data-product-media-attention-id={
+                      positiveNumber(product.id) || undefined
+                    }
                     onClick={(event) => {
                       if (isInteractiveCardTarget(event.target)) return;
                       if (!isProductOpen) {
