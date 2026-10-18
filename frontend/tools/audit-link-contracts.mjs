@@ -235,10 +235,10 @@ assertContains(
   "Sign in must expose the GSN phone-screen install prompt so returning members can keep the app reachable."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import GsnInstallPrompt[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="public-shop"/,
-  "Public Shop must expose the GSN phone-screen install prompt for WhatsApp/shared-link visitors."
+  /GsnInstallPrompt|surface="public-shop"/,
+  "Public Shop must keep the unrelated install prompt off the visitor surface; phone setup remains available on entry and member setup screens."
 );
 
 assertContains(
@@ -826,8 +826,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /if \(location\.hash\) return;\s*if \(communitySpotlights\.length > 0\) return;[\s\S]*?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
-  "Public Shop must not auto-scroll past the live Spotlight into Shop Diaries when community spotlight rows are present."
+  /if \(!location\.hash && routeProductId <= 0 && routeBlockNumber <= 0\) return;[\s\S]*?const id = location\.hash\.replace\(\/\^#\/, ""\);[\s\S]*?revealGalleryTarget\(id\);/,
+  "Public Shop must reserve automatic reveals for explicit hash, product, or block targets and must not use Spotlight presence to jump ordinary visitors into Shop Update."
 );
 
 assertNotContains(
@@ -1142,10 +1142,10 @@ assertContains(
   "Public Shop Gallery must wait for the shelf to load and reserve hash/product reveals for intentional non-root links only."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /if \(loading \|\| error\) return;[\s\S]*?if \(location\.hash\) return;[\s\S]*?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
-  "Public shop root links must automatically bring visitors to Shop Diary after the full shop loads."
+  /useEffect\(\(\) => \{[\s\S]{0,500}?if \(loading \|\| error\) return;[\s\S]{0,500}?if \(location\.hash\) return;[\s\S]{0,500}?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
+  "Public Shop root links must keep identity and Products & Services first instead of automatically jumping to Shop Update."
 );
 
 assertContains(

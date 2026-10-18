@@ -440,21 +440,21 @@ async function run() {
     browser = await chromium.launch({ headless: true });
 
     const cases = [
-      { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-control-gallery-tools", width: 360, expect: "No business activity updates yet" },
-      { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Delivered a weekend food tray" },
+      { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No business activity updates yet" },
+      { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Delivered a weekend food tray" },
       { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
       { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
       { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services" },
       { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Shared item." },
-      { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-control-gallery-tools", width: 430, expect: "Shared a short video update" },
-      { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-control-gallery-tools", width: 360, expect: "No confirmed Trade Evidence linked to this shop yet" },
-      { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Promote this update" },
+      { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-assets-diary", width: 430, expect: "Shared a short video update" },
+      { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No confirmed Trade Evidence linked to this shop yet" },
+      { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Promote this update" },
       { name: "10-public-shop-text-only-diary-360", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "without adding media" },
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Work completed" },
       { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
       { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Diary Kitchen. Ask about stock.", authenticated: false },
-      { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-control-gallery-tools", width: 390, expect: "Choose channel", openShare: true },
+      { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Baby skin care set.", spotlight: true },
     ];
