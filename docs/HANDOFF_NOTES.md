@@ -11,28 +11,39 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified frontend and API application commit:
-  `f25ed01b271480b1e8927c36c4bd17b018ab4afe`.
-- Frontend Render deploy `dep-dbahc3om7kps738rrpu0` and API Render deploy
-  `dep-dbahcvrncjis73djcrb0` both reached `live` on that exact commit.
-  Trigger Render Deploy run `39156346696` completed successfully with
-  `deploy_api=true`, verified the public frontend build marker, and passed
-  the live API contract check.
+- Current verified frontend application commit:
+  `069606562baea9e345035e2d730e66281f367bb3`.
+- Frontend Render deploy `dep-dbai6iu90tus73cmvjgg` reached `live` on
+  that exact commit. Trigger Render Deploy run `39160662327` completed
+  successfully with `deploy_api=false` and verified the public frontend
+  asset graph.
+- Current verified API application commit remains
+  `f25ed01b271480b1e8927c36c4bd17b018ab4afe`; API Render deploy
+  `dep-dbahcvrncjis73djcrb0` remains the live API release because this
+  frontend-only batch changed no backend files.
 - Main-branch Backend Tests run `39156093134` completed successfully before
   deployment.
-- Independent post-deploy requests returned HTTP 200 from the frontend,
-  `/health`, and `/marketplace/media/ping`; health reported
+- Independent post-deploy requests returned HTTP 200 from the frontend index
+  and `/app/shop-control`. The deployed
+  `assets/ShopAssetsPage-CjswOxSy.js` chunk contains both the ordinary
+  Gallery Tools and `View product in public shop` release markers. The
+  prior API release checks returned HTTP 200 from `/health` and
+  `/marketplace/media/ping`; health reported
   `{"ok":true,"dev_mode":false}` and the media router reported active. The
   live frontend bundle contained the product-media visibility marker, and the
   live API rejected an unqualified `product_open` request with HTTP 422.
-- This application release adds qualification-time Spotlight delivery
-  accounting and qualified Shop product-media attention to the previously
-  deployed exact-product management, permanent-deletion, media-retention, and
-  media-quality work.
+- The current frontend release adds focused exact-product management, ordinary
+  Gallery/Diary task separation, visible phone result continuity, and an
+  exact-product Public Shop continuation after successful saves. The API
+  retains the prior qualification-time Spotlight delivery accounting,
+  product-media attention, permanent-deletion, retention, and media-quality
+  contracts.
 
-## Verified local Shop Gallery task separation - 2026-10-18
+## Deployed Shop Gallery task separation - 2026-10-18
 
-- Status: verified locally; not committed, pushed, or deployed.
+- Status: committed, pushed to the working branch and `main`, deployed on
+  frontend application commit `069606562baea9e345035e2d730e66281f367bb3`,
+  and independently verified from the public frontend.
 - Ordinary `Shop Gallery Tools` now presents one owner task at a time. Its
   default embedded surface shows Products & Services only. `Write diary
   update` opens Shop Diary only, and Shop billboard continues to use the
@@ -59,12 +70,16 @@ under `docs/` or `docs/archive/`, then link that file here.
   reopens and focuses the visible block result before exposing the exact saved
   product Public Shop URL.
 - No backend route, permission, schema, deletion rule, Marketplace behavior,
-  Spotlight logic, or frozen Market Wisdom presentation changed. Browser
-  coverage uses a synthetic local API; production remains unchanged.
+  Spotlight logic, or frozen Market Wisdom presentation changed. The
+  authenticated save/delete browser coverage uses a synthetic local API; the
+  public post-deploy check verifies the production code, not a live
+  authenticated production write.
 
-## Verified local exact-product usability cleanup - 2026-10-18
+## Deployed exact-product usability cleanup - 2026-10-18
 
-- Status: verified locally; not committed, pushed, or deployed.
+- Status: committed, pushed, deployed in frontend application commit
+  `069606562baea9e345035e2d730e66281f367bb3`, and independently verified
+  from the public frontend asset.
 - The owner-only Public Shop product-management `+` still opens the existing
   Shop Gallery Tools workflow, but its focused route no longer places the
   generic Shop Gallery introduction, Shop billboard, Diary, or Marketplace
