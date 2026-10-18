@@ -1046,6 +1046,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       source: firstTruthy(params.get("source")),
     };
   }, []);
+  const ownerProductManageFocusRequested = Boolean(
+    ownerProductManageRequest.source === "public-shop-product" &&
+      (
+        ownerProductManageRequest.productId > 0 ||
+        ownerProductManageRequest.blockNumber > 0
+      )
+  );
   const ownerProductManageAppliedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
@@ -1095,7 +1102,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
   const productVideoInputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedPublicSlot, setSelectedPublicSlot] = useState(1);
+  const [selectedPublicSlot, setSelectedPublicSlot] = useState(
+    ownerProductManageRequest.blockNumber || 1
+  );
   const selectedPublicSlotRef = useRef(selectedPublicSlot);
   selectedPublicSlotRef.current = selectedPublicSlot;
   const [productEditorOpen, setProductEditorOpen] = useState(false);
@@ -3203,13 +3212,20 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Products & Services block control</div>
+              <div style={sectionLabel()}>
+                {ownerProductManageFocusRequested
+                  ? "Manage this product"
+                  : "Products & Services block control"}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                Tap + Add product. Numbered blocks and item controls stay under Manage blocks.
+                {ownerProductManageFocusRequested
+                  ? "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
+                  : "Tap + Add product. Numbered blocks and item controls stay under Manage blocks."}
               </div>
             </div>
 
-            <div
+            {!ownerProductManageFocusRequested ? (
+              <div
               style={{
                 display: "flex",
                 gap: 8,
@@ -3234,6 +3250,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 + Add product
               </PrimaryButton>
             </div>
+            ) : null}
           </div>
 
           {shopDiaryFeatureOff ? (
@@ -3242,10 +3259,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           ) : null}
 
-          <details open={!isCompact} style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}>
+          <details open={ownerProductManageFocusRequested || !isCompact} style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}>
             <StableDisclosureSummary debugId="shop-assets.products.blocks.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
-              Manage numbered blocks
+              {ownerProductManageFocusRequested ? "This product" : "Manage numbered blocks"}
             </StableDisclosureSummary>
+            {!ownerProductManageFocusRequested ? (
             <div
             style={{
               marginTop: 16,
@@ -3404,6 +3422,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               );
             })}
           </div>
+            ) : null}
 
           <div
             style={{
@@ -3544,10 +3563,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
                     <SecondaryButton
                       onClick={() => void deleteProduct(Number(selectedPublicProduct.id))}
-                      disabled={
-                        shopDiaryFeatureOff ||
-                        deletingProductId === Number(selectedPublicProduct.id)
-                      }
+                      disabled={deletingProductId === Number(selectedPublicProduct.id)}
                       busy={deletingProductId === Number(selectedPublicProduct.id)}
                       busyLabel="Deleting..."
                       fullWidth
@@ -3557,6 +3573,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       Delete permanently
                     </SecondaryButton>
 
+                    {!ownerProductManageTargetActive ? (
+                      <>
                     <SubtleButton
                       onClick={() =>
                         copyText(
@@ -3622,6 +3640,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         Repost unavailable
                       </SecondaryButton>
                     )}
+                      </>
+                    ) : null}
                   </>
                 ) : (
                   <PrimaryButton
@@ -3703,7 +3723,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
             <div style={{ marginTop: 10, ...helperText() }}>
               {editingProductId
-                ? "Choose a new picture or video only when you want to replace the current media. Then save the product."
+                ? ownerProductManageFocusRequested
+                  ? "Change only what you need, then tap Save changes."
+                  : "Choose a new picture or video only when you want to replace the current media. Then save the product."
                 : "Choose a picture or video, add the name and price, then post."}
             </div>
 
@@ -3901,7 +3923,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   stableHeight={isCompact ? 56 : 48}
                   debugId="shop-assets.product.submit"
                 >
-                  {editingProductId ? "Save product" : "Post product"}
+                  {editingProductId ? "Save changes" : "Post product"}
                 </PrimaryButton>
 
                 <SecondaryButton
@@ -3913,7 +3935,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   {embedded ? "Close form" : "Clear form"}
                 </SecondaryButton>
 
-                <SubtleButton
+                {!ownerProductManageFocusRequested ? (
+                  <SubtleButton
                   onClick={() =>
                     copyText(
                       buildPublicShopMessage(shopLink),
@@ -3927,6 +3950,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 >
                   Copy shop link
                 </SubtleButton>
+                ) : null}
               </div>
             </div>
           </div>

@@ -85,6 +85,27 @@ under `docs/` or `docs/archive/`, then link that file here.
   focused audits, browser smokes, and 390x844 workflow smoke passed for the
   owner-only management handoff.
 
+## Local exact-product Shop Gallery simplification - 2026-10-18
+
+- Status: implemented and locally verified; commit, push, and deployment are
+  still pending.
+- The Public Shop inner product-management `+` still carries the exact product,
+  block, community, and return context into Shop Gallery Tools.
+- That route is now a focused task. It opens the requested block and shows
+  Change media or details and Delete permanently first, while hiding the
+  generic six-block chooser, quick Add, Copy, and Repost controls. Ordinary
+  Shop Gallery Tools entry retains all of those capabilities.
+- Choosing Change opens the existing editor with `Save changes` and
+  `Close form`. The focused editor omits the unrelated Copy shop link action.
+- Permanent deletion on the selected product is no longer visually disabled by
+  the separate Shop Diary feature switch; backend exact-owner authorization and
+  permanent-deletion safeguards remain unchanged.
+- Verification: Shop Assets slot audit passed; three-plus shortcut audit
+  passed; the TypeScript/Vite production build passed with 290 modules; and the
+  real 390x844 browser smoke passed the exact-product selection, enabled
+  Change/Delete choices, focused editor, no-overflow, owner/visitor boundary,
+  return-context, and no-business-write checks.
+
 ## Deployed Spotlight repair - 2026-10-18
 
 - Production evidence confirmed that campaign `319` for shop `4` activated at

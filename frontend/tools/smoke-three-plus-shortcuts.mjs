@@ -372,13 +372,28 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   await target.waitFor({ state: 'visible', timeout: 30_000 });
   await page.getByText('This is the exact public block you opened.').waitFor({ state: 'visible', timeout: 20_000 });
   const changeAction = page.getByRole('button', { name: 'Change media or details' });
+  const deleteAction = page.getByRole('button', { name: 'Delete permanently' });
   await changeAction.waitFor({ state: 'visible', timeout: 20_000 });
-  await page.getByRole('button', { name: 'Delete permanently' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await deleteAction.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!(await deleteAction.isEnabled())) throw new Error('Focused permanent-delete action was unexpectedly disabled.');
+  if (await page.getByText('Manage numbered blocks', { exact: true }).count()) {
+    throw new Error('Focused product management still exposed the generic numbered-block chooser.');
+  }
+  if (await target.getByRole('button', { name: 'Copy shop link' }).count()) {
+    throw new Error('Focused product management still exposed the secondary Copy action.');
+  }
+  if (await target.getByRole('link', { name: /^Repost/ }).count()) {
+    throw new Error('Focused product management still exposed the secondary Repost action.');
+  }
   await changeAction.click();
   const editor = page.locator('#shop-assets-product-editor');
   await editor.waitFor({ state: 'visible', timeout: 20_000 });
   await page.getByRole('button', { name: /Add picture|Change picture/ }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.getByRole('button', { name: /Add video|Change video/ }).waitFor({ state: 'visible', timeout: 20_000 });
+  await editor.getByRole('button', { name: 'Save changes' }).waitFor({ state: 'visible', timeout: 20_000 });
+  if (await editor.getByRole('button', { name: 'Copy shop link' }).count()) {
+    throw new Error('Focused edit form still exposed the unrelated Copy shop link action.');
+  }
   await page.screenshot({
     path: join(screenshotDir, 'three-plus-owner-product-manage-390x844.png'),
     fullPage: true,
@@ -464,7 +479,7 @@ try {
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
-      'owner product-media shortcut selects the exact block and exposes Change/Remove before the media editor',
+      'owner product-media shortcut selects the exact block, hides unrelated tools, and exposes Change/Delete before the Save changes editor',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',
