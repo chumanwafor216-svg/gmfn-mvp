@@ -12,13 +12,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Production branch: `main`.
 - Current verified frontend and API application commit:
-  `52b9da7f98bc1cd1be08c67b4e89028c9e348674`.
-- Frontend Render deploy `dep-dbafg3p124ks73efotjg` and API Render deploy
-  `dep-dbafhdbncjis73dcq03g` both reached `live` on that exact commit.
-  Trigger Render Deploy run `39146577156` completed successfully with
+  `8f836f9a927e51279796c60c18ac6e4fc56c42ff`.
+- Frontend Render deploy `dep-dbafu7654i7c738r48og` and API Render deploy
+  `dep-dbafvgrncjis73deb83g` both reached `live` on that exact commit.
+  Trigger Render Deploy run `39148862403` completed successfully with
   `deploy_api=true`, verified the public frontend build marker, and passed
-  the live API contract check on its first attempt.
-- Main-branch Backend Tests run `39146264192` completed successfully before
+  the live API contract check.
+- Main-branch Backend Tests run `39148571993` completed successfully before
   deployment.
 - Independent post-deploy requests returned HTTP 200 from the frontend,
   `/health`, and `/marketplace/media/ping`; health reported
@@ -46,6 +46,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Supported phones still prepare a smaller clip locally first to reduce upload time. If that optional phone step is unavailable or fails, sources within the server ceiling fall back to the same verified backend pipeline; this does not restore an unverified publication bypass.
 - The measurable quality rules remain unchanged: at least one second, 720-pixel short edge, 20 fps, aspect ratio no greater than 1.85:1, and a playable MP4/WebM/MOV source. No AI enhancement, upscaling, invented detail, or video-editor workflow was added.
 - Verification: the focused media suite passed 10 tests, including a real source larger than the former 15 MB ceiling being physically reduced and returned below the published limit; the broader Marketplace/Public Shop/Spotlight/Vault/Community Notice run passed 131 tests; the media-quality audit and production frontend build (290 modules) passed; and the complete protected-button-freeze audit passed. A real phone upload near the new source ceiling remains a production-pilot observation because local tests cannot prove the member's network upload speed or Render request latency.
+- Deployment: application commit `8f836f9a927e51279796c60c18ac6e4fc56c42ff` was pushed unchanged to the pilot branch and `main`. Backend Tests run `39148571993` passed; Trigger Render Deploy run `39148862403` completed successfully; frontend deploy `dep-dbafu7654i7c738r48og` and API deploy `dep-dbafvgrncjis73deb83g` both reached `live`. Independent post-deploy requests returned HTTP 200 from the frontend, `/health`, and `/marketplace/media/ping`.
 
 ## Deployed Public Shop product management and retention handoff - 2026-10-18
 
