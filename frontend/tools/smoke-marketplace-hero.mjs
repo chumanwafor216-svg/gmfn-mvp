@@ -264,14 +264,22 @@ async function run() {
       const text = document.body.textContent || "";
       const required = [
         "Builders corporation Marketplace",
-        "Trust",
-        "Shops & Services",
         "Needs",
+        "Shops & services",
+        "See all shops",
+        "Invite someone",
         "Community board",
-        "More marketplace tools",
-        "One community. Choose one job at a time.",
+        "More things you can do",
       ];
       const missing = required.filter((item) => !text.includes(item));
+      const forbiddenPresent = [
+        "Live DemandBox requests",
+        "Request lifecycle",
+        "Relevant provider",
+        "Visible shop faces",
+        "More marketplace tools",
+        "local net position",
+      ].filter((item) => text.includes(item));
       const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
@@ -308,11 +316,12 @@ async function run() {
           clientHeight: element.clientHeight,
           scrollHeight: element.scrollHeight,
         }));
-      return { missing, overflow, clippedHeroStats };
+      return { missing, forbiddenPresent, overflow, clippedHeroStats };
     });
 
     if (
       result.missing.length ||
+      result.forbiddenPresent.length ||
       result.overflow.length ||
       result.clippedHeroStats.length
     ) {

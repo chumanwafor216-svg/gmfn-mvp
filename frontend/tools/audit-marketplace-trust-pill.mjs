@@ -40,7 +40,7 @@ assertContains(
 );
 
 assertContains(
-  /const marketplaceStats = \[[\s\S]*?label: "Members"[\s\S]*?label: "Shops"[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?detail: marketplaceTrustEvidenceLabel[\s\S]*?glyph: "trust"[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"[\s\S]*?glyph: "chart"/,
+  /const marketplaceStats = \[[\s\S]*?label: "Members"[\s\S]*?label: "Shops"[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?detail: marketplaceTrustEvidenceLabel[\s\S]*?glyph: "trust"[\s\S]*?label: "Wider view"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Across other communities"[\s\S]*?glyph: "chart"/,
   "Marketplace hero stats must show local Trust and CCI-backed wider posture instead of duplicating Support or Demand."
 );
 
@@ -70,7 +70,7 @@ assertNotContains(
 );
 
 assertContains(
-  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More marketplace tools[\s\S]*?placeholder="Try: trust, identity, evidence, messages\.\.\."/,
+  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More things you can do[\s\S]*?placeholder="Try: add money or ask for support"/,
   "Fuller evidence and trust routes must remain in progressive marketplace tools, not inside the front summary."
 );
 

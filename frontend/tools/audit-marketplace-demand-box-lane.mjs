@@ -62,7 +62,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplacePageSource,
-  /demandBoxCreatePath = useMemo\([\s\S]*?params\.set\("mode", "create"\)[\s\S]*?canCreateMarketplaceDemand = Boolean\([\s\S]*?canCreateMarketplaceDemand \? \([\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  /demandBoxCreatePath = useMemo\([\s\S]*?params\.set\("mode", "create"\)[\s\S]*?canCreateMarketplaceDemand = Boolean\([\s\S]*?Use DemandBox to add or manage a request[\s\S]*?canCreateMarketplaceDemand \? \([\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Open requests/,
   "Marketplace Add request shortcut must route to canonical DemandBox create mode with authenticated selected-community context."
 );
 

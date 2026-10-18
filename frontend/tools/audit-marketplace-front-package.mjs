@@ -116,14 +116,14 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?One community\. Choose one job at a time\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?One community\. Choose one job at a time\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Your recorded money here[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?See money details[\s\S]*?Total you owe[\s\S]*?Held for guarantees[\s\S]*?Guarantee earnings/,
   "Marketplace front package must use a premium identity hero with local Trust/CCI stats and one finance summary disclosure."
 );
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /const marketplaceStats = \[[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"/,
+  /const marketplaceStats = \[[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider view"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Across other communities"/,
   "Marketplace hero stats must carry local Trust and CCI-backed wider posture without exposing the internal CCI acronym."
 );
 
@@ -144,7 +144,28 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?What people here need[\s\S]*?<ExistingWorkflowPlusLink[\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  /Opening your Marketplace[\s\S]*?Start with a community[\s\S]*?Choose a community to use Marketplace[\s\S]*?Choose community/,
+  "Marketplace loading and no-community states must tell a first-time member exactly what to do."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /More things you can do[\s\S]*?Links to share[\s\S]*?Promote a shop[\s\S]*?Record a trade[\s\S]*?Your recorded money here[\s\S]*?Your recorded money position in this community[\s\S]*?See money details/,
+  "Marketplace secondary tools and money summary must use direct task language."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /Live DemandBox requests|Request lifecycle|Relevant provider|Possible provider|No relevant provider|More provider connections|Providers for other needs|Visible shop faces|Public Shop owns the details|more in directory|Finance Summary|local net position|scoped to this selected marketplace|More marketplace tools|>Access links<|>Marketing tools</g,
+  "Marketplace member-facing copy must not restore the retired internal or abstract wording."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?What people here need[\s\S]*?Use DemandBox to add or manage a request[\s\S]*?<ExistingWorkflowPlusLink[\s\S]*?to=\{demandBoxCreatePath\}[\s\S]*?label="Add request"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Open requests/,
   "Marketplace front must lead with live DemandBox needs and expose one authorised add-request shortcut to canonical DemandBox."
 );
 
@@ -165,20 +186,20 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceMatchesByNeedId\.get\(needId\)[\s\S]*?Community need[\s\S]*?visibleProviders\.map\(\(item, matchIndex\) =>[\s\S]*?renderNeedProviderMatch\(item, matchIndex, "need"\)[\s\S]*?No relevant provider found in this community yet\.[\s\S]*?Browse Shops & Services or open DemandBox/,
+  /marketplaceMatchesByNeedId\.get\(needId\)[\s\S]*?Community need[\s\S]*?visibleProviders\.map\(\(item, matchIndex\) =>[\s\S]*?renderNeedProviderMatch\(item, matchIndex, "need"\)[\s\S]*?No matching shop was found in this community\.[\s\S]*?Browse all shops or open the request in DemandBox/,
   "Marketplace needs must show contextual relevant providers, hand off to Public Shop, and keep no-match wording community-scoped."
 );
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /Relevant provider[\s\S]*?debugId=\{`marketplace\.front\.need-provider\.\$\{requestId \|\| "unknown"\}\.\$\{productId \|\| index\}\.open-shop`\}[\s\S]*?openMarketplaceRoute\(event, publicShopPath\)[\s\S]*?>\s*Open shop\s*<\/StableButton>/,
+  /May be able to help[\s\S]*?debugId=\{`marketplace\.front\.need-provider\.\$\{requestId \|\| "unknown"\}\.\$\{productId \|\| index\}\.open-shop`\}[\s\S]*?openMarketplaceRoute\(event, publicShopPath\)[\s\S]*?>\s*Open shop\s*<\/StableButton>/,
   "Marketplace relevant provider rows must use neutral wording and open the canonical Public Shop path."
 );
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /hiddenNeedProviderMatches[\s\S]*?More provider connections[\s\S]*?Providers for other needs[\s\S]*?renderNeedProviderMatch\(item, index, "overflow"\)/,
+  /hiddenNeedProviderMatches[\s\S]*?More possible matches[\s\S]*?Shops for other requests[\s\S]*?renderNeedProviderMatch\(item, index, "overflow"\)/,
   "Marketplace must avoid duplicating visible need-provider rows and keep any separate provider block for overflow needs only."
 );
 
@@ -213,7 +234,7 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Record a trade/,
   "Trade Evidence must remain reachable only through progressive or contextual evidence intent, not as a neutral front-door job."
 );
 

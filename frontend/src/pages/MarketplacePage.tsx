@@ -8674,9 +8674,9 @@ export default function MarketplacePage() {
       tone: "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
     },
     {
-      label: "Wider",
+      label: "Wider view",
       value: marketplaceCciDisplay,
-      detail: "Cross-community signal",
+      detail: "Across other communities",
       glyph: "chart" as MarketplaceGlyphName,
       tone: "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
     },
@@ -8708,7 +8708,7 @@ export default function MarketplacePage() {
       >
         <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
           <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
-            Relevant provider
+            May be able to help
           </div>
           <div
             style={{
@@ -8722,7 +8722,7 @@ export default function MarketplacePage() {
             {firstTruthy(item.match?.shop_name, "Marketplace shop")}
           </div>
           <div style={marketplaceLiveMetaStyle(isCompact)}>
-            {firstTruthy(item.match?.product_title, "Possible provider")}
+            {firstTruthy(item.match?.product_title, "Possible match")}
           </div>
           {context === "overflow" ? (
             <div style={marketplaceLiveMetaStyle(isCompact)}>
@@ -8844,7 +8844,7 @@ export default function MarketplacePage() {
               lineHeight: 1.08,
             }}
           >
-            Selected community marketplace
+            Opening your Marketplace
           </div>
           <div style={{ marginTop: 12, ...helperText(), color: "#50667A" }}>
             Loading your current community...
@@ -8866,15 +8866,15 @@ export default function MarketplacePage() {
         ) : null}
 
         <DomainIntroToggle
-          title="Your Marketplace"
-          eyebrow="Choose community first"
-          body="Marketplace only opens after you choose one community first. Go to Community Home, pick the group you want, then come back here to work inside it."
+          title="Marketplace"
+          eyebrow="Start with a community"
+          body="Marketplace shows one community at a time. Choose the community you want to use, then come back here."
           bullets={[
-            "This is not the page for all your groups together.",
-            "It shows one community's members, shops, links, demand, money signs, and trust signs.",
-            "After choosing a community, come here to work inside that one community.",
+            "See requests and shops from the community you choose.",
+            "Open its money, support, and trust information when you need it.",
+            "You can change community later.",
           ]}
-          note="Simple rule: choose the community first, then work inside it here."
+          note="First choose a community. Then Marketplace will show what belongs to it."
           tone="blue"
         />
 
@@ -8893,12 +8893,12 @@ export default function MarketplacePage() {
               maxWidth: 760,
             }}
           >
-            No community is active in Marketplace yet
+            Choose a community to use Marketplace
           </div>
 
           <div style={{ marginTop: 12, ...helperText(), color: "#50667A", maxWidth: 860 }}>
-            Choose a community in Community Home first, then return here to open
-            that community's Marketplace.
+            Marketplace works with one community at a time. Open Community Home,
+            choose one, then return here.
           </div>
 
           <RealLifeMeaningGuide
@@ -8921,7 +8921,7 @@ export default function MarketplacePage() {
               onClick={(event) => openMarketplaceCta(event, "communityHome")}
               style={marketplaceActionStyle("primary")}
             >
-              Community Home
+              Choose community
             </StableButton>
             <StableButton
               type="button"
@@ -9146,7 +9146,7 @@ export default function MarketplacePage() {
                 </div>
                 {!isCompact ? (
                   <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                    Live DemandBox requests from this marketplace. The request lifecycle stays in DemandBox.
+                    Open requests from this community. Use DemandBox to add or manage a request.
                   </div>
                 ) : null}
               </div>
@@ -9176,7 +9176,7 @@ export default function MarketplacePage() {
                     DemandBox
                   </span>
                   <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    Request lifecycle
+                    Open requests
                   </span>
                 </>
               ) : null}
@@ -9310,7 +9310,7 @@ export default function MarketplacePage() {
                       <div style={{ display: "grid", gap: 7 }}>
                         {marketplaceMatchesLoading ? (
                           <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            Checking relevant providers.
+                            Looking for shops that may be able to help.
                           </div>
                         ) : visibleProviders.length ? (
                           <>
@@ -9319,13 +9319,13 @@ export default function MarketplacePage() {
                             )}
                             {extraProviderCount ? (
                               <div style={marketplaceLiveMetaStyle(isCompact)}>
-                                +{extraProviderCount} more provider{extraProviderCount === 1 ? "" : "s"} in DemandBox order.
+                                +{extraProviderCount} more possible match{extraProviderCount === 1 ? "" : "es"} in DemandBox.
                               </div>
                             ) : null}
                           </>
                         ) : (
                           <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            No relevant provider found in this community yet. Browse Shops & Services or open DemandBox to review the need.
+                            No matching shop was found in this community. Browse all shops or open the request in DemandBox.
                           </div>
                         )}
                       </div>
@@ -9335,7 +9335,7 @@ export default function MarketplacePage() {
               ) : (
                 <div style={marketplaceLiveRowStyle(isCompact)}>
                   <div style={marketplaceLiveMetaStyle(isCompact)}>
-                    No open DemandBox needs are visible in this marketplace yet.
+                    No open requests are showing in this community yet.
                   </div>
                 </div>
               )}
@@ -9358,7 +9358,7 @@ export default function MarketplacePage() {
                 </div>
                 {!isCompact ? (
                   <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                    Visible shop faces in this community. Public Shop owns the details.
+                    Shops in this community. Open one to see its products or services.
                   </div>
                 ) : null}
               </div>
@@ -9397,7 +9397,7 @@ export default function MarketplacePage() {
               </span>
               {hiddenShopDirectoryCount ? (
                 <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                  {hiddenShopDirectoryCount} more in directory
+                  {hiddenShopDirectoryCount} more shop{hiddenShopDirectoryCount === 1 ? "" : "s"}
                 </span>
               ) : null}
             </div>
@@ -9465,7 +9465,7 @@ export default function MarketplacePage() {
               ) : (
                 <div style={marketplaceLiveRowStyle(isCompact)}>
                   <div style={marketplaceLiveMetaStyle(isCompact)}>
-                    No visible public shops are connected to this marketplace yet.
+                    No public shops are showing in this community yet.
                   </div>
                 </div>
               )}
@@ -9490,15 +9490,15 @@ export default function MarketplacePage() {
                 <div style={{ minWidth: 0 }}>
                   {!isCompact ? (
                     <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
-                      More provider connections
+                      More possible matches
                     </div>
                   ) : null}
                   <div style={{ marginTop: isCompact ? 0 : 6, ...marketplaceLiveCardTitleStyle(isCompact) }}>
-                    {isCompact ? "More providers" : "Providers for other needs"}
+                    {isCompact ? "More matches" : "Shops for other requests"}
                   </div>
                   {!isCompact ? (
                     <div style={{ marginTop: 6, ...marketplaceLiveMetaStyle(isCompact) }}>
-                      These are relevant providers for needs not shown above.
+                      These shops may be able to help with requests not shown above.
                     </div>
                   ) : null}
                 </div>
@@ -9611,7 +9611,7 @@ export default function MarketplacePage() {
               fontWeight: 950,
             }}
           >
-            More marketplace tools
+            More things you can do
           </StableDisclosureSummary>
           <div
             style={{
@@ -9655,7 +9655,7 @@ export default function MarketplacePage() {
               stableHeight={isCompact ? 54 : 58}
               style={marketplaceInlineActionStyle("secondary", false, isCompact)}
             >
-              Access links
+              Links to share
             </StableButton>
             <StableButton
               type="button"
@@ -9668,7 +9668,7 @@ export default function MarketplacePage() {
               stableHeight={isCompact ? 54 : 58}
               style={marketplaceInlineActionStyle("secondary", false, isCompact)}
             >
-              Marketing tools
+              Promote a shop
             </StableButton>
             <StableButton
               type="button"
@@ -9680,7 +9680,7 @@ export default function MarketplacePage() {
               stableHeight={isCompact ? 54 : 58}
               style={marketplaceInlineActionStyle("secondary", false, isCompact)}
             >
-              Trade Evidence
+              Record a trade
             </StableButton>
           </div>
         </details>
@@ -9810,7 +9810,7 @@ export default function MarketplacePage() {
           <div style={marketplaceFrontSummaryGridStyle(isCompact)}>
           <div style={marketplaceFrontSummaryCardStyle(isCompact)}>
             <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
-              Finance Summary
+              Your recorded money here
             </div>
             <div
               style={{
@@ -9825,11 +9825,11 @@ export default function MarketplacePage() {
               {marketplaceFinanceSummaryValue}
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 12.5 }}>
-              Your local net position inside this marketplace.
+              Your recorded money position in this community.
             </div>
             <div style={{ marginTop: 10, ...marketplaceFrontTagRowStyle(isCompact) }}>
               <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                Net position
+                Money position
               </span>
               <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
                 {localFinanceStandingTone}
@@ -9851,7 +9851,7 @@ export default function MarketplacePage() {
                   fontWeight: 950,
                 }}
               >
-                Finance details
+                See money details
               </StableDisclosureSummary>
               <div
                 style={{
@@ -9868,12 +9868,12 @@ export default function MarketplacePage() {
                     "Pool balance",
                     financeText(localPoolBalance, visiblePoolCurrency),
                   ],
-                  ["Owing total", financeText(localOwingTotal, visiblePoolCurrency)],
+                  ["Total you owe", financeText(localOwingTotal, visiblePoolCurrency)],
                   [
-                    "Locked by guarantees",
+                    "Held for guarantees",
                     financeText(localLockedGuaranteeTotal, visiblePoolCurrency),
                   ],
-                  ["Current guarantee earning", currentGuaranteeEarningText],
+                  ["Guarantee earnings", currentGuaranteeEarningText],
                 ].map(([label, value]) => (
                   <div key={label} style={marketplaceProfileStatStyle()}>
                     <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
@@ -9893,9 +9893,8 @@ export default function MarketplacePage() {
                 ))}
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                These figures are scoped to this selected marketplace. Current
-                guarantee earning appears only when the finance record exposes
-                a current or pending earning amount.
+                These figures are only for this community. Guarantee earnings
+                appear only when GSN has a current or pending amount to show.
               </div>
             </details>
           </div>
@@ -9905,9 +9904,8 @@ export default function MarketplacePage() {
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>
               <div style={{ ...helperText(), marginBottom: 12 }}>
-                Use this helper when the job is not one of the main cards.
-                Search still understands money, ROSCA, support, shop, invite,
-                demand, and records.
+                Type what you want to do, such as add money, ask for support,
+                open your shop, invite someone, or check a record.
               </div>
 
               <form
@@ -9925,7 +9923,7 @@ export default function MarketplacePage() {
                   {...marketplaceFieldTouchProps("marketplace.intent.query")}
                   value={intentQuery}
                   onChange={(event) => setIntentQuery(event.target.value)}
-                  placeholder="Try: trust, identity, evidence, messages..."
+                  placeholder="Try: add money or ask for support"
                   aria-label="Type what you want to do next"
                   style={{
                     ...inputStyle(),
@@ -9938,7 +9936,7 @@ export default function MarketplacePage() {
                   debugId="marketplace.intent.submit"
                   style={marketplaceActionStyle("primary")}
                 >
-                  {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
+                  {matchedIntent ? `Open ${matchedIntent.label}` : "Show me where"}
                 </StableButton>
               </form>
 

@@ -404,7 +404,7 @@ assertContains(
 );
 
 assertContains(
-  /label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"[\s\S]*?debugId="marketplace\.finance-standing\.details"[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  /label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider view"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Across other communities"[\s\S]*?debugId="marketplace\.finance-standing\.details"[\s\S]*?Total you owe[\s\S]*?Held for guarantees[\s\S]*?Guarantee earnings/,
   "Marketplace front stats must expose local Trust and CCI-backed wider posture, while finance detail stays inside one disclosure."
 );
 
@@ -1008,12 +1008,12 @@ assertContains(
 );
 
 assertContains(
-  /\{isCompact \? "Needs" : "What people here need"\}[\s\S]*?!isCompact \? \([\s\S]*?Live DemandBox requests[\s\S]*?\) : null/,
+  /\{isCompact \? "Needs" : "What people here need"\}[\s\S]*?!isCompact \? \([\s\S]*?Open requests from this community[\s\S]*?\) : null/,
   "Marketplace phone Needs card must keep one heading and hide its repeated explanation."
 );
 
 assertContains(
-  /\{isCompact \? "Shops & services" : "Who can provide something"\}[\s\S]*?!isCompact \? \([\s\S]*?Visible shop faces[\s\S]*?\) : null[\s\S]*?\{isCompact \? "See all shops" : "Shops & Services"\}/,
+  /\{isCompact \? "Shops & services" : "Who can provide something"\}[\s\S]*?!isCompact \? \([\s\S]*?Shops in this community[\s\S]*?\) : null[\s\S]*?\{isCompact \? "See all shops" : "Shops & Services"\}/,
   "Marketplace phone Shops card must keep one heading, one clear action, and no repeated explanation."
 );
 

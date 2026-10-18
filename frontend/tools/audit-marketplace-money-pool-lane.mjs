@@ -45,7 +45,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.progressive\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.progressive\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
   "Marketplace front door must keep the frozen needs-first order, Shops & Services handoff, progressive secondary tools, and demoted wisdom lens."
 );
 

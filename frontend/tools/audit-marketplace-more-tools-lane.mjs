@@ -84,13 +84,13 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
 });
 
 assertContains(
-  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More marketplace tools[\s\S]*?debugId="marketplace\.progressive\.tools"[\s\S]*?Access links/,
+  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More things you can do[\s\S]*?debugId="marketplace\.progressive\.tools"[\s\S]*?Links to share/,
   "More marketplace tools must be progressive access rather than a permanent neutral front-door card."
 );
 
 assertContains(
-  /Use this helper when the job is not one of the main cards\.[\s\S]*?Search still understands money, ROSCA, support, shop, invite,[\s\S]*?demand, and records\.[\s\S]*?placeholder="Try: trust, identity, evidence, messages\.\.\."/,
-  "Expanded More helper must explain that search can still find main lanes without exposing them as equal buttons."
+  /Type what you want to do, such as add money, ask for support,[\s\S]*?open your shop, invite someone, or check a record\.[\s\S]*?placeholder="Try: add money or ask for support"[\s\S]*?Show me where/,
+  "Expanded More helper must explain its task finder in direct member language without exposing main lanes as equal buttons."
 );
 
 assertContains(

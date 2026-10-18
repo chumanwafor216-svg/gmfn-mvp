@@ -435,8 +435,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?Shop Diary[\s\S]*?featuredDiaryEntry[\s\S]*?Products & Services[\s\S]*?visibleProducts\.map/,
-  "Public Shop Gallery must anchor the real Shop Diary before Products & Services."
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?Shop Update[\s\S]*?featuredDiaryEntry[\s\S]*?Products & Services[\s\S]*?visibleProducts\.map/,
+  "Public Shop Gallery must keep the real Shop Update anchor and the products-first visual ordering contract."
 );
 
 assertContains(

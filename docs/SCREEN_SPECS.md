@@ -868,8 +868,16 @@ Rules:
   context`, not `verified community context`, unless the selected community has
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
-- Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More marketplace tools`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
+- Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More things you can do`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
 - On phone, the Marketplace identity uses the selected community name and status without a repeated instruction sentence. The first market cards use one short heading (`Needs`, `Shops & services`), one clear action, and compact counts; explanatory paragraphs and decorative category tags stay off the first surface.
+- Marketplace first-surface wording must explain member tasks rather than the
+  implementation. Use `open requests`, `may be able to help`, `possible
+  matches`, `shops`, `your recorded money here`, and direct verbs such as
+  `links to share`, `promote a shop`, and `record a trade`. Do not expose
+  `request lifecycle`, `provider connections`, `shop faces`, `local net
+  position`, or `scoped` language to members. These wording changes do not
+  alter DemandBox ownership, provider-match order, neutral discovery, finance
+  calculations, permissions, or route handoffs.
 - The Needs heading may expose one compact 48px `Add request` plus only when the authenticated member's community list contains the selected community and community policy permits DemandBox. A route parameter alone is not authorization. It opens and focuses the existing DemandBox request form with the selected community and an explicit origin/back path. Opening the shortcut creates nothing and must not enable relay consent, cross-community reach, paid capacity, or any other governed option.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.

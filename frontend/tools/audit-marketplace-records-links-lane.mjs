@@ -43,7 +43,7 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.progressive\.tools"[\s\S]*?aria-label="Open marketplace access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?Access links/,
+  /debugId="marketplace\.progressive\.tools"[\s\S]*?aria-label="Open marketplace access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?Links to share/,
   "Marketplace owned links must be reachable through progressive access, not a permanent front-door engine card."
 );
 

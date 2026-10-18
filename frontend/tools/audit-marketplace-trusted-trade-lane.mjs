@@ -75,7 +75,7 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Record a trade/,
   "Trade Evidence must be available through progressive evidence intent while staying separate from other Marketplace lanes."
 );
 
