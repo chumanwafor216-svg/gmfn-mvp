@@ -11,18 +11,18 @@ under `docs/` or `docs/archive/`, then link that file here.
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
-- Current verified application commit: `ba7428f2acad871946df010d87485258c509024e`.
-- Frontend Render deploy `dep-dba950u54i7c738m87d0` and API Render deploy
-  `dep-dba96bijnfac73eraco0` reached `live` on that exact commit. Trigger
-  Render Deploy run `39115818114` completed successfully with the explicit
+- Current verified application commit: `1793b53048351f80fbd9a3eb2eac71a8e4167b3a`.
+- Frontend Render deploy `dep-dba9h4hum5fc73asungg` and API Render deploy
+  `dep-dba9irrncjis73cns2ig` reached `live` on that exact commit. Trigger
+  Render Deploy run `39117486532` completed successfully with the explicit
   `deploy_api=true` input.
 - Independent post-deploy requests returned HTTP 200 from the Public Shop
   frontend and API OpenAPI document; the live API still exposes the Spotlight
   qualification route. The workflow also passed its frontend build-marker and
   live API identity/public verification checks.
-- This release adds Spotlight qualification atomicity and per-viewer locking,
-  plus frontend rotation, expiry, retry, and stale-refresh hardening. Both
-  frontend and API therefore required deployment.
+- This release adds Spotlight qualification atomicity and per-viewer locking;
+  frontend rotation, expiry, retry, and stale-refresh hardening; and backend
+  candidate/pacing fallback corrections. Both frontend and API were deployed.
 
 ## Deployed Spotlight repair - 2026-10-18
 
@@ -83,14 +83,40 @@ under `docs/` or `docs/archive/`, then link that file here.
   smoke passed eight scenarios including fresh-over-replay priority, rejected
   qualification retry, exact expiry removal, WhatsApp removal, replay
   continuity, and no double counting.
-- Backend inventory risks remain: ten abandoned issuances can consume all
-  global delivery rounds without an impression; truncating to 50 candidates
-  before pacing can hide a due campaign; a pacing CAS loss does not try the
-  next candidate; replay staleness is 60 seconds while the route promises 30;
-  and candidate discovery ignores its limit.
+- The remaining backend policy risk is that ten abandoned issuances can
+  consume all global delivery rounds without an impression. The candidate
+  cutoff, pacing-conflict fallback, replay TTL, and ignored-limit defects
+  listed here were repaired by the following deployment.
 - Changing when the ten global rounds are consumed is a frozen policy decision
   and requires product-owner approval. That policy was deliberately not
   changed in this reliability release.
+
+## Deployed Spotlight candidate and pacing hardening - 2026-10-18
+
+- Canonical Public Shop selection now sends the full eligible campaign set to
+  diversity, frequency, and pacing rather than cutting it to 50 candidates
+  first. A regression with 51 distinct owners proves a due campaign after the
+  old boundary remains selectable.
+- Bounded candidate-discovery calls now honor their limit and exclude expired
+  campaign, placement, and opportunity rows before applying that bound. The
+  canonical path is explicitly unbounded so it cannot hide a due campaign
+  behind the generic discovery limit.
+- A delivery-round conflict or compare-and-swap loss for the first selected
+  campaign now rolls back that attempt inside a nested transaction and tries
+  the next planned candidate. A failure-injection regression proves the first
+  campaign is not consumed and the second can receive the sole lease.
+- Presentation replay time-to-live and the route's advertised maximum stale
+  time are now the same 30-second constant.
+- Verification: 222 backend tests passed across presentation, exposure,
+  frequency, diversity, candidate, eligibility, pacing, delivery, transaction
+  safeguard, and Public Shop contracts. The TypeScript/Vite production build
+  passed (290 modules), all three focused Spotlight/Public Shop audits passed,
+  the eight-scenario real-browser Spotlight smoke passed, and the full
+  protected-button freeze audit passed.
+- The ten-round issuance-consumption policy was not changed. Ten abandoned
+  issued leases can still consume all global delivery rounds without a
+  qualified impression; changing that frozen policy still requires explicit
+  product-owner approval.
 
 ## Active product truth
 
@@ -176,7 +202,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   audit:spotlight-system-feed, audit:shop-gallery-button-inventory, the full
   audit:protected-button-freeze, and the eight-scenario real-browser
   smoke:spotlight-owner-visibility.
-- Focused Spotlight and Public Shop backend verification passes: 219 tests,
+- Focused Spotlight and Public Shop backend verification passes: 222 tests,
   including atomic rollback, presentation, exposure, frequency, diversity,
   eligibility, pacing, transaction-safeguard, and Public Shop contracts.
 - `smoke:demand-box-simple-phone` passes at 390x844 and 360x780, including
