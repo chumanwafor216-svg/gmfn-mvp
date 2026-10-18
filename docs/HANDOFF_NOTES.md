@@ -8,6 +8,50 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Verified local Public Shop wording batch - 2026-10-18
+
+- Status: committed locally as
+  `8bdbdd2f` (`Simplify Public Shop customer wording`). Under the active
+  pipeline-shortage batch freeze, this commit has not been pushed, promoted to
+  `main`, or deployed. Production therefore remains on the baseline recorded
+  below.
+- The Public Shop now presents product counts, focused products, and shared
+  products as `shop item` / `shop items` instead of exposing the internal word
+  `block`. Internal route parameters, anchors, product-slot contracts, and API
+  data remain unchanged.
+- Owner Spotlight states now use direct wording including `All showings used`,
+  `Needs correction`, `No Spotlight saved`, and `Not showing`. Delivery-counter,
+  presentation, placement, and cache terminology was removed from member-facing
+  explanations. Spotlight timing, qualification, rotation, accounting,
+  permissions, and expiry behavior did not change.
+- Verification passed the 290-module production build, the Public Shop button
+  inventory, broad link contracts, Spotlight presentation and system-feed
+  audits, both Shop Diary audits, three-plus shortcuts, institutional proof
+  surfaces, and the complete protected-button freeze audit. The 17-scenario
+  real-browser phone smoke passed at 360, 390, and 430 pixels. Automated body
+  checks confirmed the retired wording is absent in the relevant empty,
+  focused-product, and live-Spotlight cases. This is local synthetic coverage,
+  not an authenticated production write or a deployment claim.
+
+## Deferred activation priorities after wording - 2026-10-18
+
+- **Phone OTP is not live-provider activated.** The repository contains the
+  phone-verification records, start/confirm/resume UI and routes, and local
+  preview/development behavior. The production backend does not currently wire
+  a direct SMS or WhatsApp provider client, so it cannot truthfully claim to
+  send a live OTP yet.
+- **Pipeline Credit purchasing and spending are not operationally activated.**
+  The repository contains substantial ledger, catalogue, spend-gate,
+  diagnostics, Stripe purchase, and expected bank-payment/top-up foundations,
+  but the member surface explicitly keeps purchases and spending paused for
+  the free pilot. Provider readiness and cost controls must pass before any
+  paid operation is opened.
+- The product owner's sequence is preserved: finish the wording/presentation
+  cleanup first; then complete live phone OTP delivery and the GSN Pipeline
+  Credit channel as separate, tested activation work. Existing community/bank
+  transfer remains the current payment method. Do not invent another transfer
+  engine or activate bank/provider verification as part of this wording batch.
+
 ## Current production baseline - 2026-10-18
 
 - Production branch: `main`.
