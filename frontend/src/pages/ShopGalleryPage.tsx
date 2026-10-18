@@ -7352,6 +7352,7 @@ export default function ShopGalleryPage() {
                             label={`Manage media for ${displayTitle}`}
                             debugId={`shop-gallery.product.${productOpenId}.owner-manage`}
                             shortcut="shop-product"
+                            preserveOrigin={false}
                             data-owner-product-id={positiveNumber(product.id)}
                             data-owner-product-block={positiveNumber(product.slotNumber)}
                             style={{

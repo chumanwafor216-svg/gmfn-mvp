@@ -58,7 +58,12 @@ import {
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
-import { PUBLIC_SHOP_SPOTLIGHT_ANCHOR, publicFrontendUrl, publicShopPath } from "../lib/publicLinks";
+import {
+  PUBLIC_SHOP_SPOTLIGHT_ANCHOR,
+  publicFrontendUrl,
+  publicShopBlockPath,
+  publicShopPath,
+} from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
@@ -3584,6 +3589,23 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 export default function ShopControlPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const ownerProductManageRequest = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      productId: safePositiveNumber(params.get("manage_product_id"), 0),
+      blockNumber: safePositiveNumber(params.get("manage_block"), 0),
+      source: safeStr(params.get("source")),
+    };
+  }, [location.search]);
+  const ownerProductManageFocusRequested = Boolean(
+    ownerProductManageRequest.source === "public-shop-product" &&
+      (
+        ownerProductManageRequest.productId > 0 ||
+        ownerProductManageRequest.blockNumber > 0
+      )
+  );
+  const shopDiaryTaskFocused =
+    safeStr(location.hash).replace(/^#/, "") === "shop-assets-diary";
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -4798,6 +4820,15 @@ export default function ShopControlPage() {
   }, [routes.freeSpotlight, routes.shopAssets, routes.shopDetails, routes.shopGallery, routes.tradeEvidence, shopAnalyticsWisdom.diagnosisCode, shopAnalyticsWisdom.primaryActionLabel]);
   const ownerShopGsnId = firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id);
   const ownerPublicShopPath = ownerShopGsnId ? publicShopPath(ownerShopGsnId) : "";
+  const ownerProductManageReturnPath =
+    ownerProductManageFocusRequested && ownerShopGsnId
+      ? publicShopBlockPath({
+          gmfnId: ownerShopGsnId,
+          productId: ownerProductManageRequest.productId || null,
+          block: ownerProductManageRequest.blockNumber || null,
+          clanId: effectiveShopClanId || selectedClanId || null,
+        })
+      : "";
   const ownerPublicShopSpotlightPreviewPath = ownerPublicShopPath
     ? appendRouteQueryParam(
         `${ownerPublicShopPath}#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
@@ -7112,13 +7143,41 @@ export default function ShopControlPage() {
     <div style={institutionalBlueRailShell(isCompact)}>
       <ShopControlFieldPolish />
       <PageTopNav
-        sectionLabel="Focused Task"
-        title="Shop Control"
-        subtitle=""
+        sectionLabel={
+          ownerProductManageFocusRequested || shopDiaryTaskFocused
+            ? "Focused task"
+            : "Shop Control"
+        }
+        title={
+          ownerProductManageFocusRequested
+            ? "Manage product"
+            : shopDiaryTaskFocused
+              ? "Write shop update"
+              : "Shop Control"
+        }
+        subtitle={
+          ownerProductManageFocusRequested
+            ? "Change or remove the exact public-shop item you opened."
+            : shopDiaryTaskFocused
+              ? "Publish one short message for visitors."
+              : ""
+        }
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={routes.marketplace}
-        backLabel="Marketplace"
+        backTo={
+          ownerProductManageFocusRequested
+            ? ownerProductManageReturnPath || ownerPublicShopPath || routes.marketplace
+            : shopDiaryTaskFocused
+              ? routes.shopGallery
+              : routes.marketplace
+        }
+        backLabel={
+          ownerProductManageFocusRequested
+            ? "Public Shop"
+            : shopDiaryTaskFocused
+              ? "Gallery tools"
+              : "Marketplace"
+        }
       />
 
       {detailsLoading ? (
@@ -7321,52 +7380,57 @@ export default function ShopControlPage() {
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
         >
-          <div
-            style={{
-              marginBottom: 14,
-              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
-              border: "1px solid rgba(214,170,69,0.16)",
-            }}
-          >
-            <div style={sectionLabel()}>Shop Gallery Tools</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Control the public shop billboard, 6 standard product/service blocks, and paid extra capacity.
+          {!ownerProductManageFocusRequested && !shopDiaryTaskFocused ? (
+            <div
+              style={{
+                marginBottom: 14,
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
+                border: "1px solid rgba(214,170,69,0.16)",
+              }}
+            >
+              <div style={sectionLabel()}>Shop Gallery Tools</div>
+              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
+                Control the public shop billboard, 6 standard product/service blocks, and paid extra capacity.
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Use this lane for pictures, products/services, diary updates, and the public shop face.
+                When the marketplace needs extra public shop blocks, open Marketplace Capacity.
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
+                <StableCtaLink
+                  to={routes.shopDetails}
+                  kind="secondary"
+                  fullWidth
+                  debugId="shop-control.gallery.shop-billboard"
+                >
+                  Shop billboard
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.shopDiary}
+                  kind="secondary"
+                  fullWidth
+                  debugId="shop-control.gallery.write-diary"
+                >
+                  Write diary update
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.communityPackages}
+                  kind="secondary"
+                  fullWidth
+                  debugId="shop-control.gallery.community-package"
+                >
+                  Marketplace capacity
+                </StableCtaLink>
+              </div>
             </div>
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use this lane for pictures, products/services, diary updates, and the public shop face.
-              When the marketplace needs extra public shop blocks, open Marketplace Capacity.
-            </div>
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
-              <StableCtaLink
-                to={routes.shopDetails}
-                kind="secondary"
-                fullWidth
-                debugId="shop-control.gallery.shop-billboard"
-              >
-                Shop billboard
-              </StableCtaLink>
-              <StableCtaLink
-                to={routes.shopDiary}
-                kind="secondary"
-                fullWidth
-                debugId="shop-control.gallery.write-diary"
-              >
-                Write diary update
-              </StableCtaLink>
-              <StableCtaLink
-                to={routes.communityPackages}
-                kind="secondary"
-                fullWidth
-                debugId="shop-control.gallery.community-package"
-              >
-                Marketplace capacity
-              </StableCtaLink>
-            </div>
-          </div>
+          ) : null}
           <ShopAssetsPage
             embedded
+            embeddedSection={shopDiaryTaskFocused ? "diary" : "products"}
             preferredClanId={effectiveShopClanId || selectedClanId || null}
             preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id) || null}
+            focusedProductReturnPath={ownerProductManageReturnPath || null}
+            focusedShopReturnPath={ownerPublicShopPath || null}
             seedShop={shop}
             seedProducts={products}
             onProductDeleted={(productId) =>

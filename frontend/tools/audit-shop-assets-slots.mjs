@@ -256,6 +256,42 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /const deletedSlotNumber = selectedPublicSlot[\s\S]*?showGalleryActionNotice\([\s\S]*?Block #\$\{deletedSlotNumber\} is empty[\s\S]*?showGalleryActionNotice\("error", message, deletedSlotNumber\)/,
+  "Permanent-delete success and failure must remain visible beside the exact block where the owner acted."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /focusedProductReturnPath\?: string \| null[\s\S]*?focusedShopReturnPath\?: string \| null[\s\S]*?debugId="shop-assets\.focused-product\.return"[\s\S]*?View updated product[\s\S]*?Back to public shop/,
+  "The focused product task must provide an in-context return after save or permanent deletion."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /embeddedSection\?: "products" \| "diary"[\s\S]*?const embeddedSection = props\.embeddedSection \|\| "products"[\s\S]*?!embedded \? \([\s\S]*?Public shop picture[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?Shop Diary[\s\S]*?embedded && embeddedSection === "products"[\s\S]*?Products & Services block control/,
+  "Embedded Gallery Tools must show only Products & Services or Shop Diary, while standalone Shop Assets retains the full workbench."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function openAddForPublicSlot[\s\S]*?marketplaceShopsFeatureOff[\s\S]*?function openEditForPublicSlot[\s\S]*?marketplaceShopsFeatureOff[\s\S]*?async function submitProduct[\s\S]*?marketplaceShopsFeatureOff/,
+  "Product add, edit, and save must obey Marketplace Shops policy rather than Shop Diary policy."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /publicBlocksOpen[\s\S]*?function revealSelectedPublicBlock\(\)[\s\S]*?shop-assets-selected-public-block[\s\S]*?setPublicBlocksOpen\(true\)[\s\S]*?showGalleryActionNotice\([\s\S]*?setProductEditorOpen\(false\)[\s\S]*?setPublicBlocksOpen\(true\)[\s\S]*?revealSelectedPublicBlock\(\)[\s\S]*?open=\{ownerProductManageFocusRequested \|\| publicBlocksOpen\}/,
+  "Ordinary phone Add/save outcomes must reopen the numbered-block disclosure and return focus to the visible block result."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /lastSavedPublicBlock[\s\S]*?savedId > 0[\s\S]*?productId: savedId[\s\S]*?wasEditing: wasEditingProduct[\s\S]*?!ownerProductManageFocusRequested[\s\S]*?galleryActionNotice\.tone === "success"[\s\S]*?debugId="shop-assets\.ordinary-product\.view-public"[\s\S]*?View product in public shop/,
+  "An ordinary successful public-product save must expose one exact saved-product Public Shop continuation."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /const seedProducts = normalizeProductRecords\(props\.seedProducts \|\| \[\]\)\.filter\([\s\S]*?deletedProductIdsRef\.current\.has[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)\.filter\([\s\S]*?deletedProductIdsRef\.current\.has/,
   "Shop Assets must exclude locally deleted ids from stale embedded seeds and public responses."
 );

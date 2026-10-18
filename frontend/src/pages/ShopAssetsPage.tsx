@@ -130,8 +130,11 @@ type CollapseState = {
 
 type ShopAssetsPageProps = {
   embedded?: boolean;
+  embeddedSection?: "products" | "diary";
   preferredClanId?: number | null;
   preferredGmfnId?: string | null;
+  focusedProductReturnPath?: string | null;
+  focusedShopReturnPath?: string | null;
   seedShop?: ShopRecord | null;
   seedProducts?: ProductRecord[] | null;
   onProductDeleted?: (productId: number) => void;
@@ -1036,6 +1039,7 @@ function resolveAssetSrc(raw: unknown): string {
 
 export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const embedded = Boolean(props.embedded);
+  const embeddedSection = props.embeddedSection || "products";
   const ownerProductManageRequest = useMemo(() => {
     if (typeof window === "undefined") {
       return { productId: 0, blockNumber: 0, source: "" };
@@ -1118,6 +1122,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     text: string;
     slotNumber: number;
   } | null>(null);
+  const [lastSavedPublicBlock, setLastSavedPublicBlock] = useState<{
+    productId: number;
+    slotNumber: number;
+    wasEditing: boolean;
+  } | null>(null);
+  const [publicBlocksOpen, setPublicBlocksOpen] = useState(
+    ownerProductManageFocusRequested || !isCompact
+  );
   const [preparingProductImage, setPreparingProductImage] = useState(false);
   const [preparingProductVideo, setPreparingProductVideo] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
@@ -2133,20 +2145,32 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function openAddForPublicSlot(slotNumber: number) {
-    if (shopDiaryFeatureOff) {
+    if (marketplaceShopsFeatureOff) {
       setSelectedPublicSlot(slotNumber);
-      showGalleryActionNotice("error", shopDiaryFeatureOffText, slotNumber);
+      showGalleryActionNotice("error", marketplaceShopsFeatureOffText, slotNumber);
       return;
     }
 
     setSelectedPublicSlot(slotNumber);
     setGalleryActionNotice(null);
+    setLastSavedPublicBlock(null);
     resetProductForm();
     setProductFormNotice(null);
     setProductVisibility("community_visible");
     setProductEditorOpen(true);
     setCollapsed((prev) => ({ ...prev, products: false }));
     revealProductEditor();
+  }
+
+  function revealSelectedPublicBlock() {
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById("shop-assets-selected-public-block");
+        target?.scrollIntoView({ behavior: "auto", block: "center" });
+        target?.focus({ preventScroll: true });
+      });
+    });
   }
 
   function revealProductEditor() {
@@ -2161,14 +2185,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function openEditForPublicSlot(item: ProductRecord, slotNumber: number) {
-    if (shopDiaryFeatureOff) {
+    if (marketplaceShopsFeatureOff) {
       setSelectedPublicSlot(slotNumber);
-      showGalleryActionNotice("error", shopDiaryFeatureOffText, slotNumber);
+      showGalleryActionNotice("error", marketplaceShopsFeatureOffText, slotNumber);
       return;
     }
 
     setSelectedPublicSlot(slotNumber);
     setGalleryActionNotice(null);
+    setLastSavedPublicBlock(null);
     startEditProduct(item);
     setProductFormNotice(null);
     setProductEditorOpen(true);
@@ -2177,8 +2202,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function openQuickAddProduct() {
-    if (shopDiaryFeatureOff) {
-      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+    if (marketplaceShopsFeatureOff) {
+      setPublicBlocksOpen(true);
+      showGalleryActionNotice("error", marketplaceShopsFeatureOffText, selectedPublicSlot);
+      revealSelectedPublicBlock();
       return;
     }
 
@@ -2188,11 +2215,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       return;
     }
 
+    setPublicBlocksOpen(true);
     showGalleryActionNotice(
       "error",
       "All public product blocks are full. Remove one product or open Marketplace Capacity for more blocks.",
       selectedPublicSlot
     );
+    revealSelectedPublicBlock();
   }
 
   function closeProductEditor() {
@@ -2201,9 +2230,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function submitProduct() {
-    if (shopDiaryFeatureOff) {
-      showProductFormNotice("error", shopDiaryFeatureOffText);
-      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+    if (marketplaceShopsFeatureOff) {
+      showProductFormNotice("error", marketplaceShopsFeatureOffText);
+      showGalleryActionNotice("error", marketplaceShopsFeatureOffText, selectedPublicSlot);
       return;
     }
 
@@ -2354,8 +2383,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         if (!mountedRef.current) return;
         showProductFormNotice("success", message);
         showGalleryActionNotice("success", message, selectedPublicSlot);
+        setLastSavedPublicBlock(null);
         resetProductForm();
         setProductEditorOpen(false);
+        setPublicBlocksOpen(true);
+        revealSelectedPublicBlock();
         return;
       }
 
@@ -2389,6 +2421,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       if (targetVisibility === "community_visible") {
         const savedSlotNumber = selectedPublicSlot;
         setSelectedPublicSlot(savedSlotNumber);
+        setLastSavedPublicBlock(
+          savedId > 0
+            ? {
+                productId: savedId,
+                slotNumber: savedSlotNumber,
+                wasEditing: wasEditingProduct,
+              }
+            : null
+        );
         showGalleryActionNotice(
           "success",
           nextVideoUrl
@@ -2397,6 +2438,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           savedSlotNumber
         );
       } else {
+        setLastSavedPublicBlock(null);
         showGalleryActionNotice(
           "success",
           wasEditingProduct ? "Private item updated." : "Private item posted.",
@@ -2405,11 +2447,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }
       resetProductForm();
       setProductEditorOpen(false);
+      setPublicBlocksOpen(true);
       setCollapsed((prev) => ({
         ...prev,
         products: true,
         posted: false,
       }));
+      revealSelectedPublicBlock();
     } catch (err: any) {
       if (!mountedRef.current) return;
       const message = shopAssetsRequestErrorMessage(
@@ -2424,6 +2468,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function deleteProduct(productId: number) {
+    const deletedSlotNumber = selectedPublicSlot;
     if (
       typeof window !== "undefined" &&
       !window.confirm(
@@ -2434,6 +2479,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     }
 
     setDeletingProductId(productId);
+    setLastSavedPublicBlock((current) =>
+      current?.productId === productId ? null : current
+    );
 
     try {
       await apiJson<any>(`/api/marketplace/products/${productId}`, {
@@ -2453,13 +2501,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         "success",
         "Product permanently deleted. Upload it again if you need it later."
       );
+      showGalleryActionNotice(
+        "success",
+        `Block #${deletedSlotNumber} is empty. The product was permanently deleted; upload it again if you need it later.`,
+        deletedSlotNumber
+      );
+      setPublicBlocksOpen(true);
+      revealSelectedPublicBlock();
       void loadPage();
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Product could not be permanently deleted."
-      );
+      const message = safeStr(err?.message) || "Product could not be permanently deleted.";
+      showNotice("error", message);
+      showGalleryActionNotice("error", message, deletedSlotNumber);
+      setPublicBlocksOpen(true);
+      revealSelectedPublicBlock();
     } finally {
       if (mountedRef.current) setDeletingProductId(null);
     }
@@ -2758,6 +2814,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         </>
       ) : null}
 
+      {!embedded ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -3015,7 +3072,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         </div>
         ) : null}
       </section>
+      ) : null}
 
+      {!embedded || embeddedSection === "diary" ? (
       <section id="shop-assets-diary" style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}>
         <div
           style={{
@@ -3201,7 +3260,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           </details>
         </div>
       </section>
-      {embedded ? (
+      ) : null}
+      {embedded && embeddedSection === "products" ? (
         <section style={pageCard("#FFFFFF")}>
           <div
             style={{
@@ -3221,7 +3281,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
                 {ownerProductManageFocusRequested
                   ? "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
-                  : "Tap + Add product. Numbered blocks and item controls stay under Manage blocks."}
+                  : "Add a new item, or open Manage numbered blocks to change one already live."}
               </div>
             </div>
 
@@ -3254,13 +3314,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             ) : null}
           </div>
 
-          {shopDiaryFeatureOff ? (
+          {marketplaceShopsFeatureOff ? (
             <div style={{ marginTop: 14, ...noticeCard("error") }}>
-              {shopDiaryFeatureOffText}
+              {marketplaceShopsFeatureOffText}
             </div>
           ) : null}
 
-          <details open={ownerProductManageFocusRequested || !isCompact} style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}>
+          <details
+            open={ownerProductManageFocusRequested || publicBlocksOpen}
+            onToggle={(event) => {
+              if (!ownerProductManageFocusRequested) {
+                setPublicBlocksOpen(event.currentTarget.open);
+              }
+            }}
+            style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}
+          >
             <StableDisclosureSummary debugId="shop-assets.products.blocks.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
               {ownerProductManageFocusRequested ? "This product" : "Manage numbered blocks"}
             </StableDisclosureSummary>
@@ -3484,13 +3552,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               id="shop-assets-selected-public-block"
               data-owner-product-manage-target={selectedPublicProduct?.id || ""}
               data-owner-product-manage-mode={
-                ownerProductManageTargetActive ? "focused" : undefined
+                ownerProductManageFocusRequested ? "focused" : undefined
               }
               tabIndex={-1}
               style={{ ...innerCard("#FCFEFF"), scrollMarginTop: embedded ? 118 : 24 }}
             >
               <div style={sectionLabel()}>
-                {ownerProductManageTargetActive ? "Manage this public block" : "Selected block"}
+                {ownerProductManageFocusRequested ? "Manage this public block" : "Selected block"}
               </div>
               <div
                 style={{
@@ -3518,6 +3586,52 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <div style={{ marginTop: 12, ...noticeCard(galleryActionNotice.tone) }}>
                   {galleryActionNotice.text}
                 </div>
+              ) : null}
+
+              {ownerProductManageFocusRequested &&
+              galleryActionNotice?.slotNumber === selectedPublicSlot &&
+              galleryActionNotice.tone === "success" &&
+              (selectedPublicProduct
+                ? props.focusedProductReturnPath
+                : props.focusedShopReturnPath) ? (
+                <StableCtaLink
+                  to={
+                    selectedPublicProduct
+                      ? String(props.focusedProductReturnPath)
+                      : String(props.focusedShopReturnPath)
+                  }
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.focused-product.return"
+                  style={{ marginTop: 10 }}
+                >
+                  {selectedPublicProduct ? "View updated product" : "Back to public shop"}
+                </StableCtaLink>
+              ) : null}
+
+              {!ownerProductManageFocusRequested &&
+              galleryActionNotice?.slotNumber === selectedPublicSlot &&
+              galleryActionNotice.tone === "success" &&
+              lastSavedPublicBlock?.slotNumber === selectedPublicSlot &&
+              lastSavedPublicBlock.productId > 0 &&
+              gmfnIdValue ? (
+                <StableCtaLink
+                  to={buildProductDeepLink(
+                    gmfnIdValue,
+                    lastSavedPublicBlock.productId,
+                    lastSavedPublicBlock.slotNumber
+                  )}
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.ordinary-product.view-public"
+                  style={{ marginTop: 10 }}
+                >
+                  {lastSavedPublicBlock.wasEditing
+                    ? "View updated product"
+                    : "View product in public shop"}
+                </StableCtaLink>
               ) : null}
 
               <div style={{ marginTop: 12, ...helperText(), maxWidth: 620 }}>
@@ -3734,9 +3848,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={{ marginTop: 12, ...noticeCard(productFormNotice.tone) }}>
                 {productFormNotice.text}
               </div>
-            ) : shopDiaryFeatureOff ? (
+            ) : marketplaceShopsFeatureOff ? (
               <div style={{ marginTop: 12, ...noticeCard("error") }}>
-                {shopDiaryFeatureOffText}
+                {marketplaceShopsFeatureOffText}
               </div>
             ) : null}
 
@@ -3919,7 +4033,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <PrimaryButton
                   onClick={() => void submitProduct()}
                   disabled={
-                    shopDiaryFeatureOff ||
+                    marketplaceShopsFeatureOff ||
                     savingProduct ||
                     preparingProductImage ||
                     preparingProductVideo

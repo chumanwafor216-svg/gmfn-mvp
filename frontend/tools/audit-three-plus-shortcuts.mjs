@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const files = {
   component: 'src/components/ExistingWorkflowPlusLink.tsx',
   shop: 'src/pages/ShopGalleryPage.tsx',
+  control: 'src/pages/ShopControlPage.tsx',
   assets: 'src/pages/ShopAssetsPage.tsx',
   marketplace: 'src/pages/MarketplacePage.tsx',
   demand: 'src/pages/DemandBoxPage.tsx',
@@ -78,9 +79,34 @@ assertContains(
   'An expanded owned product card must keep Close, Share, Repost, then one owner-only media-management plus that routes to the exact existing block workflow.'
 );
 assertContains(
+  'shop',
+  /shortcut="shop-product"[\s\S]*?preserveOrigin=\{false\}[\s\S]*?data-owner-product-id/,
+  'The exact-product handoff must use its computed product/block return instead of a generic route origin.'
+);
+assertContains(
   'assets',
   /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
   'Shop Assets must resolve the requested product/block, explain the exact task, and expose Change and permanent deletion first.'
+);
+assertContains(
+  'control',
+  /publicShopBlockPath[\s\S]*?ownerProductManageFocusRequested[\s\S]*?ownerProductManageReturnPath[\s\S]*?ownerProductManageFocusRequested[\s\S]*?"Manage product"[\s\S]*?ownerProductManageReturnPath \|\| ownerPublicShopPath \|\| routes\.marketplace[\s\S]*?"Public Shop"/,
+  'The focused product task must expose a truthful exact-product Public Shop return path.'
+);
+assertContains(
+  'control',
+  /activeOwnerLayer === "products"[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused \? \([\s\S]*?Shop Gallery Tools[\s\S]*?Shop billboard[\s\S]*?Write diary update[\s\S]*?Marketplace capacity[\s\S]*?embeddedSection=\{shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}/,
+  'Ordinary Gallery Tools must show its shortcuts, while exact-product and Diary handoffs each reveal only their requested task.'
+);
+assertContains(
+  'assets',
+  /embeddedSection\?: "products" \| "diary"[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?embedded && embeddedSection === "products"/,
+  'Embedded Shop Assets must keep the Shop Diary and Products & Services tasks separate.'
+);
+assertContains(
+  'assets',
+  /showGalleryActionNotice\([\s\S]*?Block #\$\{deletedSlotNumber\} is empty[\s\S]*?debugId="shop-assets\.focused-product\.return"[\s\S]*?View updated product[\s\S]*?Back to public shop/,
+  'Focused save/delete outcomes must stay visible beside the selected block and offer a clear Public Shop return.'
 );
 assertContains(
   'shop',

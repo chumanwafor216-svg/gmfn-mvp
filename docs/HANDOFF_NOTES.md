@@ -30,6 +30,62 @@ under `docs/` or `docs/archive/`, then link that file here.
   deployed exact-product management, permanent-deletion, media-retention, and
   media-quality work.
 
+## Verified local Shop Gallery task separation - 2026-10-18
+
+- Status: verified locally; not committed, pushed, or deployed.
+- Ordinary `Shop Gallery Tools` now presents one owner task at a time. Its
+  default embedded surface shows Products & Services only. `Write diary
+  update` opens Shop Diary only, and Shop billboard continues to use the
+  separate Shop Details task. The standalone Pictures & Products route keeps
+  its complete multi-section workbench.
+- A real cross-feature defect was corrected: product Add/Edit/Save had been
+  gated by Shop Diary policy. Product management now obeys Marketplace Shops
+  policy only; a community may disable Shop Diary without disabling product
+  management.
+- A second ordinary-phone defect was corrected: a save, delete, or blocked
+  quick-add could refresh the compact numbered-block disclosure closed and
+  hide the result. The affected block now remains open, its local outcome
+  stays visible, and focus returns to that result.
+- Successful ordinary public-product saves now offer one
+  `View product in public shop` action addressed to the exact saved product
+  and block. Failed saves, deletes, and pending-review submissions do not
+  receive that live-product continuation.
+- Local verification passed the 290-module production build, Shop Assets slot
+  audit, three-plus shortcut audit, both frozen Shop Diary audits, and Shop
+  Control button inventory. The 390x844 mocked phone smoke proved Products
+  and Diary never appear together in the embedded route, Shop Diary OFF still
+  leaves `+ Add product` enabled, Diary publishing stays disabled, task
+  navigation performs no business write, and an ordinary mocked product save
+  reopens and focuses the visible block result before exposing the exact saved
+  product Public Shop URL.
+- No backend route, permission, schema, deletion rule, Marketplace behavior,
+  Spotlight logic, or frozen Market Wisdom presentation changed. Browser
+  coverage uses a synthetic local API; production remains unchanged.
+
+## Verified local exact-product usability cleanup - 2026-10-18
+
+- Status: verified locally; not committed, pushed, or deployed.
+- The owner-only Public Shop product-management `+` still opens the existing
+  Shop Gallery Tools workflow, but its focused route no longer places the
+  generic Shop Gallery introduction, Shop billboard, Diary, or Marketplace
+  capacity shortcuts ahead of the requested product.
+- The desktop task header is labelled `Manage product`; the compact phone
+  route goes directly to `Manage this public block`. Its visible Public Shop
+  return resolves to the exact product/block. Successful saves expose
+  `View updated product` beside the block result. Permanent-deletion success
+  and failure now remain visible beside the affected block; success offers
+  `Back to public shop`, while the emptied block keeps its existing re-upload
+  action.
+- Exact-product permissions, deletion semantics, media rules, backend routes,
+  Marketplace behavior, and frozen Market Wisdom presentation did not change.
+- Verification passed the Shop Assets slot audit, three-plus shortcut audit,
+  Shop Control button inventory, 290-module production frontend build, and the
+  complete protected-button freeze audit. The 390x844 phone smoke passed the
+  owner/visitor boundary, exact return, no-overflow and no-write-on-open
+  checks, then completed mocked Save and permanent Delete requests and
+  verified both local outcome/return actions. This is strong local coverage,
+  but not a live authenticated production save/delete.
+
 ## Spotlight qualification accounting and product-media attention - 2026-10-18
 
 - Status: committed, pushed to the working branch and `main`, deployed on the exact application commit recorded above, and independently verified against the public frontend and API.

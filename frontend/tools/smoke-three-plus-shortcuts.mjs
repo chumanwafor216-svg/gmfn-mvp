@@ -72,7 +72,7 @@ const product = {
   description: '[BLOCK:2] Family meal tray.',
   price: '12500',
   currency: 'NGN',
-  image_url: '',
+  image_url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
   video_url: '',
   visibility_mode: 'community_visible',
   public_block_number: 2,
@@ -136,13 +136,17 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ items: [member(scenario.identity)] }));
     }
     if (path.startsWith('/community-domains')) {
+      const features = {};
+      if (scenario.demandPolicyOff) features.demand_box = 'off';
+      if (scenario.diaryPolicyOff) features.shop_diary = 'off';
+      if (scenario.marketplaceShopsPolicyOff) features.marketplace_shops = 'off';
       return route.fulfill(json({
-        items: scenario.demandPolicyOff
+        items: Object.keys(features).length > 0
           ? [{
               id: 80,
               clan_id: 8,
               community_domain: { id: 80, clan_id: 8, display_name: 'Shortcut Community' },
-              feature_policy: { features: { demand_box: 'off' } },
+              feature_policy: { features },
             }]
           : [],
       }));
@@ -187,6 +191,18 @@ async function installMocks(page, scenario) {
     }
     if (path === '/marketplace/shops' || path.startsWith('/marketplace/shops?')) {
       return route.fulfill(json({ items: [shop], shops: [shop] }));
+    }
+    if (path === '/marketplace/products' && method === 'POST') {
+      return route.fulfill(json({
+        item: {
+          ...product,
+          id: 602,
+          name: 'Phone smoke item',
+          description: '[BLOCK:1] Phone smoke item.',
+          price: '2500',
+          public_block_number: 1,
+        },
+      }));
     }
     if (path.startsWith('/marketplace/products')) {
       return route.fulfill(json({ items: [product], products: [product] }));
@@ -369,8 +385,24 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   const target = page.locator(
     '#shop-assets-selected-public-block[data-owner-product-manage-target="601"][data-owner-product-manage-mode="focused"]'
   );
+  const selectedBlock = page.locator('#shop-assets-selected-public-block');
   await target.waitFor({ state: 'visible', timeout: 30_000 });
   await page.getByText('This is the exact public block you opened.').waitFor({ state: 'visible', timeout: 20_000 });
+  const publicShopBack = page.getByRole('link', { name: 'Public Shop' });
+  await publicShopBack.waitFor({ state: 'visible', timeout: 20_000 });
+  const publicShopBackTarget = new URL(await publicShopBack.getAttribute('href') || '', baseUrl);
+  if (
+    publicShopBackTarget.pathname !== '/shop/' + ownerId ||
+    publicShopBackTarget.searchParams.get('product_id') !== '601' ||
+    publicShopBackTarget.searchParams.get('block') !== '2'
+  ) {
+    throw new Error('Focused product task did not return to the exact Public Shop product/block.');
+  }
+  for (const unrelatedLabel of ['Shop billboard', 'Write diary update', 'Marketplace capacity']) {
+    if (await page.getByRole('link', { name: unrelatedLabel, exact: true }).count()) {
+      throw new Error('Focused product management still exposed an unrelated wrapper shortcut.');
+    }
+  }
   const changeAction = page.getByRole('button', { name: 'Change media or details' });
   const deleteAction = page.getByRole('button', { name: 'Delete permanently' });
   await changeAction.waitFor({ state: 'visible', timeout: 20_000 });
@@ -390,7 +422,14 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   await editor.waitFor({ state: 'visible', timeout: 20_000 });
   await page.getByRole('button', { name: /Add picture|Change picture/ }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.getByRole('button', { name: /Add video|Change video/ }).waitFor({ state: 'visible', timeout: 20_000 });
-  await editor.getByRole('button', { name: 'Save changes' }).waitFor({ state: 'visible', timeout: 20_000 });
+  const saveChanges = editor.getByRole('button', { name: 'Save changes' });
+  await saveChanges.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!(await saveChanges.isEnabled())) {
+    throw new Error(
+      'Save changes was disabled in the exact-product editor. Visible editor state: ' +
+      (await editor.innerText()).replace(/\s+/g, ' ').trim(),
+    );
+  }
   if (await editor.getByRole('button', { name: 'Copy shop link' }).count()) {
     throw new Error('Focused edit form still exposed the unrelated Copy shop link action.');
   }
@@ -398,10 +437,150 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
     path: join(screenshotDir, 'three-plus-owner-product-manage-390x844.png'),
     fullPage: true,
   });
-  const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
-  if (!origin.includes(`/shop/${ownerId}`)) throw new Error('Product media shortcut lost its Public Shop return path.');
+  const navigationWrites = businessWrites(scenario.mutations);
+  if (navigationWrites.length !== 0) {
+    throw new Error(`Product open/manage navigation issued business write request(s): ${navigationWrites.join(', ')}.`);
+  }
+
+  await saveChanges.click();
+  const viewUpdatedProduct = target.getByRole('link', { name: 'View updated product' });
+  try {
+    await viewUpdatedProduct.waitFor({ state: 'visible', timeout: 30_000 });
+  } catch (error) {
+    throw new Error(
+      'Successful product save did not expose View updated product. Visible block state: ' +
+      (await target.innerText()).replace(/\s+/g, ' ').trim() +
+      '. Visible editor state: ' + (await editor.innerText()).replace(/\s+/g, ' ').trim() +
+      '. Recorded requests: ' + scenario.mutations.join(', '),
+      { cause: error },
+    );
+  }
+  const updatedProductTarget = new URL(await viewUpdatedProduct.getAttribute('href') || '', baseUrl);
+  if (
+    updatedProductTarget.pathname !== '/shop/' + ownerId ||
+    updatedProductTarget.searchParams.get('product_id') !== '601' ||
+    updatedProductTarget.searchParams.get('block') !== '2'
+  ) {
+    throw new Error('Successful product save did not expose the exact updated-product return.');
+  }
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await deleteAction.click();
+  await selectedBlock.getByText(/Block #2 is empty\. The product was permanently deleted/).waitFor({
+    state: 'visible',
+    timeout: 30_000,
+  });
+  const backAfterDelete = selectedBlock.getByRole('link', { name: 'Back to public shop' });
+  await backAfterDelete.waitFor({ state: 'visible', timeout: 20_000 });
+  const deletedProductReturn = new URL(await backAfterDelete.getAttribute('href') || '', baseUrl);
+  if (deletedProductReturn.pathname !== '/shop/' + ownerId) {
+    throw new Error('Permanent deletion did not expose the Public Shop return.');
+  }
   const writes = businessWrites(scenario.mutations);
-  if (writes.length !== 0) throw new Error(`Product open/manage navigation issued business write request(s): ${writes.join(', ')}.`);
+  const expectedWrites = ['PATCH /marketplace/products/601', 'DELETE /marketplace/products/601'];
+  if (writes.join('|') !== expectedWrites.join('|')) {
+    throw new Error(`Focused save/delete emitted unexpected writes: ${writes.join(', ')}.`);
+  }
+  await context.close();
+}
+
+async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
+  const scenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'live',
+    demandPolicyOff: false,
+    diaryPolicyOff: true,
+    marketplaceShopsPolicyOff: false,
+    memberOfCommunity: true,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+  await page.goto(`${baseUrl}/app/shop-control?community=8#shop-control-gallery-tools`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+
+  const productTask = page.getByText('Products & Services block control', { exact: true });
+  await productTask.waitFor({ state: 'visible', timeout: 30_000 });
+  const addProduct = page.getByRole('button', { name: '+ Add product', exact: true });
+  await addProduct.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!(await addProduct.isEnabled())) {
+    throw new Error('Shop Diary policy OFF incorrectly disabled product creation.');
+  }
+  if (await page.locator('#shop-assets-diary').count()) {
+    throw new Error('Ordinary Gallery Tools exposed Shop Diary beside the product task.');
+  }
+  if (await page.getByText('Public shop picture', { exact: true }).count()) {
+    throw new Error('Ordinary Gallery Tools exposed the separate Shop billboard editor.');
+  }
+
+  const blocksSummary = page.getByText('Manage numbered blocks', { exact: true });
+  const blocksDisclosure = blocksSummary.locator('..');
+  if ((await blocksDisclosure.getAttribute('open')) !== null) {
+    throw new Error('Ordinary phone Gallery Tools exposed the numbered-block detail before the owner requested it.');
+  }
+
+  await addProduct.click();
+  const editor = page.locator('#shop-assets-product-editor');
+  await editor.waitFor({ state: 'visible', timeout: 20_000 });
+  await editor.locator('input[placeholder="Item name"]').fill('Phone smoke item');
+  await editor.locator('input[placeholder="Price"]').fill('2500');
+  await editor.getByText('More media options', { exact: true }).click();
+  await editor.locator('input[placeholder="Paste item image URL"]').fill(
+    'data:image/gif;base64,R0lGODlhAQABAAAAACw='
+  );
+  await editor.getByRole('button', { name: 'Post product', exact: true }).click();
+  const ordinaryBlockResult = page.locator('#shop-assets-selected-public-block');
+  const ordinarySaveResult = ordinaryBlockResult.getByText(
+    'Block #1 saved with picture. It is now visible in the public shop gallery.',
+    { exact: true }
+  );
+  await ordinarySaveResult.waitFor({ state: 'visible', timeout: 30_000 });
+  if ((await blocksDisclosure.getAttribute('open')) === null) {
+    throw new Error('Ordinary product save hid its success result inside the numbered-block disclosure.');
+  }
+  const focusedResultId = await page.evaluate(() => document.activeElement?.id || '');
+  if (focusedResultId !== 'shop-assets-selected-public-block') {
+    throw new Error(`Ordinary product save did not return focus to its block result (focus=${focusedResultId}).`);
+  }
+  const viewPublicProduct = ordinaryBlockResult.getByRole('link', {
+    name: 'View product in public shop',
+    exact: true,
+  });
+  await viewPublicProduct.waitFor({ state: 'visible', timeout: 20_000 });
+  const viewPublicProductTarget = new URL(
+    await viewPublicProduct.getAttribute('href') || '',
+    baseUrl
+  );
+  if (
+    viewPublicProductTarget.pathname !== '/shop/' + ownerId ||
+    viewPublicProductTarget.searchParams.get('product_id') !== '602' ||
+    viewPublicProductTarget.searchParams.get('block') !== '1'
+  ) {
+    throw new Error('Ordinary product save did not expose the exact saved-product Public Shop link.');
+  }
+
+  const diaryShortcut = page.getByRole('link', { name: 'Write diary update', exact: true });
+  await diaryShortcut.waitFor({ state: 'visible', timeout: 20_000 });
+  await diaryShortcut.click();
+  await page.waitForFunction(() => window.location.hash === '#shop-assets-diary', { timeout: 20_000 });
+  await page.locator('#shop-assets-diary').waitFor({ state: 'visible', timeout: 30_000 });
+  if (await page.getByText('Products & Services block control', { exact: true }).count()) {
+    throw new Error('Focused Shop Diary task still exposed Products & Services controls.');
+  }
+  if (await page.getByRole('link', { name: 'Shop billboard', exact: true }).count()) {
+    throw new Error('Focused Shop Diary task still exposed the generic Gallery shortcuts.');
+  }
+  const publishUpdate = page.getByRole('button', { name: 'Publish update', exact: true });
+  await publishUpdate.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await publishUpdate.isEnabled()) {
+    throw new Error('Shop Diary policy OFF did not disable Diary publishing.');
+  }
+  const writes = businessWrites(scenario.mutations);
+  const expectedWrites = ['POST /marketplace/products'];
+  if (writes.join('|') !== expectedWrites.join('|')) {
+    throw new Error(`Ordinary Gallery save/navigation emitted unexpected writes: ${writes.join(', ')}.`);
+  }
   await context.close();
 }
 
@@ -467,6 +646,7 @@ try {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
   await testOwnerProductMediaShortcut(browser, baseUrl);
+  await testOrdinaryGalleryTaskSeparation(browser, baseUrl);
   await testVisitorShopShortcutsHidden(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
@@ -479,7 +659,10 @@ try {
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
-      'owner product-media shortcut selects the exact block, hides unrelated tools, and exposes Change/Delete before the Save changes editor',
+      'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
+      'ordinary Gallery Tools shows Products only; Diary handoff shows Diary only; Shop Diary policy OFF does not disable product Add',
+      'ordinary phone product Save reopens the numbered block, preserves its success notice, and returns focus to the result',
+      'ordinary successful product Save exposes one exact-item View product in public shop action',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',
