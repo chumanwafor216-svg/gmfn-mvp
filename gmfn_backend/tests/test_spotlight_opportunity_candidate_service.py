@@ -272,6 +272,23 @@ def test_more_than_four_hundred_campaigns_do_not_retain_top_fifty_starvation() -
     assert [candidate.campaign_id for candidate in candidates] == expected
 
 
+def test_active_candidate_discovery_honors_its_oversampled_limit() -> None:
+    _seed_capacity_population(
+        total_campaigns=40,
+        expired_campaigns=0,
+        exhausted_campaigns=0,
+    )
+    with SessionLocal() as db:
+        campaign_ids = candidate_service._active_candidate_campaign_ids(
+            db,
+            viewer_user_id=1,
+            limit=7,
+            now=CONTROLLED_NOW,
+        )
+
+    assert len(campaign_ids) == 7
+
+
 def _seed_demand(
     *,
     demand_id: int,

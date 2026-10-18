@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import uuid4
@@ -43,7 +43,7 @@ from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_s
 SPOTLIGHT_PRESENTATION_TOKEN_TYPE = "spotlight_presentation_v1"
 SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP = "public_shop_spotlight_rail"
 SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS = 30
-SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 60
+SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 30
 SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000
 SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000
 SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
@@ -371,7 +371,10 @@ def select_spotlight_presentation(
     candidates = build_spotlight_opportunity_candidates(
         db,
         viewer_user_id=viewer_id,
-        limit=50,
+        # Pacing must see the complete eligible set. Candidate discovery was
+        # already unbounded here historically; making that intent explicit
+        # avoids discarding a due campaign after relevance sorting.
+        limit=None,
         now=current_time,
     )
     if not candidates:
@@ -404,165 +407,195 @@ def select_spotlight_presentation(
             policy=policy,
         )
 
-    pacing = plan_persistent_spotlight_delivery_opportunities(
-        db,
-        viewer_user_id=viewer_id,
-        frequency_result=frequency,
-        requested_delivery_slots=max(int(requested_delivery_slots), 1),
-        now=current_time,
-    )
-    if not pacing.scheduled_campaign_ids:
-        return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=pacing,
-            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY,
-            policy=policy,
-        )
-    selected_campaign_id = int(pacing.scheduled_campaign_ids[0])
     candidate_by_id = {int(candidate.campaign_id): candidate for candidate in frequency.candidates}
-    candidate = candidate_by_id.get(selected_campaign_id)
-    if candidate is None:
-        return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=pacing,
-            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
-            policy=policy,
+    remaining_frequency = frequency
+    blocked_consumptions: list[Any] = []
+    blocked_campaign_ids: list[int] = []
+    last_pacing: Optional[SpotlightPersistentPacingResult] = None
+
+    while remaining_frequency.candidates:
+        pacing = plan_persistent_spotlight_delivery_opportunities(
+            db,
+            viewer_user_id=viewer_id,
+            frequency_result=remaining_frequency,
+            requested_delivery_slots=max(int(requested_delivery_slots), 1),
+            now=current_time,
         )
-    campaign = (
-        db.query(SpotlightCampaign)
-        .filter(SpotlightCampaign.id == selected_campaign_id)
-        .with_for_update()
-        .one_or_none()
-    )
-    if campaign is None or str(getattr(campaign, "status", "") or "") != "active":
+        last_pacing = pacing
+        if not pacing.scheduled_campaign_ids:
+            combined_pacing = SpotlightPersistentPacingResult(
+                viewer_user_id=viewer_id,
+                pacing_result=pacing.pacing_result,
+                consumption_results=tuple(blocked_consumptions),
+                scheduled_campaign_ids=tuple(blocked_campaign_ids),
+                consumed_campaign_ids=(),
+                blocked_campaign_ids=tuple(blocked_campaign_ids),
+            )
+            return SpotlightPresentationSelection(
+                selected=False,
+                pacing_result=combined_pacing,
+                frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+                rejection_code=PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY,
+                policy=policy,
+            )
+
+        selected_campaign_id = int(pacing.scheduled_campaign_ids[0])
+        candidate = candidate_by_id.get(selected_campaign_id)
+        if candidate is None:
+            return SpotlightPresentationSelection(
+                selected=False,
+                pacing_result=pacing,
+                frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+                rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
+                policy=policy,
+            )
+
+        presentation_id = f"sp-{uuid4().hex}"
+        try:
+            with db.begin_nested():
+                campaign = (
+                    db.query(SpotlightCampaign)
+                    .filter(SpotlightCampaign.id == selected_campaign_id)
+                    .with_for_update()
+                    .one_or_none()
+                )
+                if campaign is None or str(getattr(campaign, "status", "") or "") != "active":
+                    return SpotlightPresentationSelection(
+                        selected=False,
+                        pacing_result=pacing,
+                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+                        rejection_code=PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE,
+                        policy=policy,
+                    )
+
+                placement = _placement_for_candidate(
+                    db,
+                    candidate=candidate,
+                    campaign_id=selected_campaign_id,
+                    now=current_time,
+                    lock_for_update=True,
+                )
+                if placement is None:
+                    return SpotlightPresentationSelection(
+                        selected=False,
+                        pacing_result=pacing,
+                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+                        rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
+                        policy=policy,
+                    )
+                deadlines = [current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS)]
+                for deadline in (
+                    authorized_expiry(campaign),
+                    authorized_expiry(placement),
+                    _as_aware_utc(getattr(campaign, 'opportunity_expires_at', None)),
+                ):
+                    if deadline is not None:
+                        deadlines.append(deadline)
+                token_expires_at = min(deadlines)
+                if token_expires_at <= current_time:
+                    return SpotlightPresentationSelection(
+                        selected=False,
+                        pacing_result=pacing,
+                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+                        rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
+                        policy=policy,
+                    )
+                content_version = int(getattr(campaign, 'content_version', 1) or 1)
+                lease = SpotlightPresentationLease(
+                    presentation_id=presentation_id,
+                    issuance_key=safe_issuance_key or presentation_id,
+                    issuance_fingerprint=issuance_fingerprint,
+                    viewer_user_id=viewer_id,
+                    campaign_id=selected_campaign_id,
+                    placement_broadcast_id=int(placement.id),
+                    content_version=content_version,
+                    surface=surface,
+                    status='issued',
+                    issued_at=current_time,
+                    lease_expires_at=token_expires_at,
+                )
+                consumption = consume_spotlight_delivery_round(
+                    db,
+                    campaign_id=selected_campaign_id,
+                    now=current_time,
+                )
+                if not consumption.consumed:
+                    raise _SpotlightRoundNotConsumed(consumption)
+                _persist_presentation_lease(db, lease=lease)
+        except _SpotlightRoundNotConsumed as exc:
+            blocked_consumptions.append(exc.result)
+            blocked_campaign_ids.append(selected_campaign_id)
+            remaining_candidates = tuple(
+                row
+                for row in remaining_frequency.candidates
+                if int(row.campaign_id) != selected_campaign_id
+            )
+            remaining_frequency = replace(
+                remaining_frequency,
+                candidates=remaining_candidates,
+                candidate_order_after_frequency=tuple(
+                    int(row.campaign_id) for row in remaining_candidates
+                ),
+            )
+            continue
+        except IntegrityError:
+            if safe_issuance_key:
+                replay = _replay_existing_lease(
+                    db,
+                    viewer_user_id=viewer_id,
+                    issuance_key=safe_issuance_key,
+                    issuance_fingerprint=issuance_fingerprint,
+                    surface=surface,
+                    now=current_time,
+                    policy=policy,
+                )
+                if replay is not None:
+                    return replay
+            raise
+
+        combined_pacing = SpotlightPersistentPacingResult(
+            viewer_user_id=viewer_id,
+            pacing_result=pacing.pacing_result,
+            consumption_results=tuple([*blocked_consumptions, consumption]),
+            scheduled_campaign_ids=tuple([*blocked_campaign_ids, selected_campaign_id]),
+            consumed_campaign_ids=(selected_campaign_id,),
+            blocked_campaign_ids=tuple(blocked_campaign_ids),
+        )
+        token = create_access_token(
+            {
+                "typ": SPOTLIGHT_PRESENTATION_TOKEN_TYPE,
+                "sid": presentation_id,
+                "viewer_user_id": viewer_id,
+                "campaign_id": selected_campaign_id,
+                "surface": surface,
+                "issued_at": current_time.isoformat(),
+            },
+            expires_delta=timedelta(seconds=SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS),
+        )
         return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=pacing,
+            selected=True,
+            candidate=candidate,
+            campaign=campaign,
+            presentation_id=presentation_id,
+            presentation_token=token,
+            placement_broadcast_id=int(placement.id),
+            content_version=content_version,
+            delivery_round_consumed=True,
+            token_expires_at=token_expires_at,
+            pacing_result=combined_pacing,
             frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE,
             policy=policy,
         )
 
-    presentation_id = f"sp-{uuid4().hex}"
-    placement = _placement_for_candidate(
-        db,
-        candidate=candidate,
-        campaign_id=selected_campaign_id,
-        now=current_time,
-        lock_for_update=True,
-    )
-    if placement is None:
-        return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=pacing,
-            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
-            policy=policy,
-        )
-    deadlines = [current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS)]
-    for deadline in (
-        authorized_expiry(campaign),
-        authorized_expiry(placement),
-        _as_aware_utc(getattr(campaign, 'opportunity_expires_at', None)),
-    ):
-        if deadline is not None:
-            deadlines.append(deadline)
-    token_expires_at = min(deadlines)
-    if token_expires_at <= current_time:
-        return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=pacing,
-            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
-            policy=policy,
-        )
-    content_version = int(getattr(campaign, 'content_version', 1) or 1)
-    lease = SpotlightPresentationLease(
-        presentation_id=presentation_id,
-        issuance_key=safe_issuance_key or presentation_id,
-        issuance_fingerprint=issuance_fingerprint,
-        viewer_user_id=viewer_id,
-        campaign_id=selected_campaign_id,
-        placement_broadcast_id=int(placement.id),
-        content_version=content_version,
-        surface=surface,
-        status='issued',
-        issued_at=current_time,
-        lease_expires_at=token_expires_at,
-    )
-    try:
-        with db.begin_nested():
-            consumption = consume_spotlight_delivery_round(
-                db,
-                campaign_id=selected_campaign_id,
-                now=current_time,
-            )
-            if not consumption.consumed:
-                raise _SpotlightRoundNotConsumed(consumption)
-            _persist_presentation_lease(db, lease=lease)
-    except _SpotlightRoundNotConsumed as exc:
-        blocked_pacing = SpotlightPersistentPacingResult(
-            viewer_user_id=viewer_id,
-            pacing_result=pacing.pacing_result,
-            consumption_results=(exc.result,),
-            scheduled_campaign_ids=pacing.scheduled_campaign_ids,
-            consumed_campaign_ids=(),
-            blocked_campaign_ids=(selected_campaign_id,),
-        )
-        return SpotlightPresentationSelection(
-            selected=False,
-            pacing_result=blocked_pacing,
-            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-            rejection_code=str(exc),
-            policy=policy,
-        )
-    except IntegrityError:
-        if safe_issuance_key:
-            replay = _replay_existing_lease(
-                db,
-                viewer_user_id=viewer_id,
-                issuance_key=safe_issuance_key,
-                issuance_fingerprint=issuance_fingerprint,
-                surface=surface,
-                now=current_time,
-                policy=policy,
-            )
-            if replay is not None:
-                return replay
-        raise
-    pacing = SpotlightPersistentPacingResult(
-        viewer_user_id=viewer_id,
-        pacing_result=pacing.pacing_result,
-        consumption_results=(consumption,),
-        scheduled_campaign_ids=pacing.scheduled_campaign_ids,
-        consumed_campaign_ids=(selected_campaign_id,),
-        blocked_campaign_ids=(),
-    )
-    token = create_access_token(
-        {
-            "typ": SPOTLIGHT_PRESENTATION_TOKEN_TYPE,
-            "sid": presentation_id,
-            "viewer_user_id": viewer_id,
-            "campaign_id": selected_campaign_id,
-            "surface": surface,
-            "issued_at": current_time.isoformat(),
-        },
-        expires_delta=timedelta(seconds=SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS),
-    )
     return SpotlightPresentationSelection(
-        selected=True,
-        candidate=candidate,
-        campaign=campaign,
-        presentation_id=presentation_id,
-        presentation_token=token,
-        placement_broadcast_id=int(placement.id),
-        content_version=content_version,
-        delivery_round_consumed=True,
-        token_expires_at=token_expires_at,
-        pacing_result=pacing,
+        selected=False,
+        pacing_result=last_pacing,
         frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+        rejection_code=(
+            str(blocked_consumptions[-1].blocked_reason)
+            if blocked_consumptions
+            else PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY
+        ),
         policy=policy,
     )
 

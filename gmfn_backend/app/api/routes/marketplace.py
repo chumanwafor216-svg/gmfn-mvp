@@ -62,6 +62,7 @@ from app.services.vault_domain_service import (
     sync_legacy_entitlements_to_blocks,
 )
 from app.services.spotlight_presentation_service import (
+    SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     PRESENTATION_REJECTION_OWNER_PREVIEW,
     list_spotlight_presentation_replays,
@@ -3911,7 +3912,7 @@ def get_public_shop_spotlight_opportunity(
     policy = presentation_policy().to_public_dict()
     serving_contract = {
         "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
-        "max_stale_display_seconds": 30,
+        "max_stale_display_seconds": SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
         "fallback_allowed": False,
     }
     if not owner:

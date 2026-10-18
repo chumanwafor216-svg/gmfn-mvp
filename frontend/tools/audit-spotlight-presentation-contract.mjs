@@ -34,8 +34,32 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 60[\s\S]*?SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
+  /SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 30[\s\S]*?SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
   "Backend presentation policy constants must be centralized and explicit."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_opportunity_candidate_service.py",
+  /safe_limit = None if limit is None[\s\S]*?return candidates if safe_limit is None else candidates\[:safe_limit\][\s\S]*?def _active_candidate_campaign_ids[\s\S]*?query = query\.limit/,
+  "Candidate discovery must honor explicit limits while allowing the canonical pacing path to request the complete eligible set."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /build_spotlight_opportunity_candidates\([\s\S]*?limit=None[\s\S]*?plan_persistent_spotlight_delivery_opportunities/,
+  "Canonical presentation pacing must not truncate eligible campaigns before evaluating persisted due state."
+);
+
+assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /while remaining_frequency\.candidates[\s\S]*?with db\.begin_nested\(\)[\s\S]*?consume_spotlight_delivery_round[\s\S]*?except _SpotlightRoundNotConsumed[\s\S]*?remaining_frequency = replace[\s\S]*?continue/,
+  "A blocked first pacing candidate must roll back its savepoint and retry the next eligible candidate."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_spotlight_presentation_contract.py",
+  /test_pacing_sees_due_campaign_beyond_previous_fifty_candidate_cutoff[\s\S]*?campaign_id == 51[\s\S]*?test_delivery_conflict_retries_the_next_paced_candidate[\s\S]*?blocked_campaign_ids == \(1,\)[\s\S]*?consumed_campaign_ids == \(2,\)/,
+  "Backend regressions must protect full-set pacing and next-candidate fallback after a delivery conflict."
 );
 
 assertContains(

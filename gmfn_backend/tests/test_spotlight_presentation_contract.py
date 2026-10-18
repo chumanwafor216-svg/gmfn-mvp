@@ -10,6 +10,11 @@ from app.core.security import create_access_token
 from app.db.database import SessionLocal, engine
 os.environ.setdefault("SECRET_KEY", "pytest-spotlight-presentation-contract-secret")
 
+from app.services import spotlight_presentation_service as presentations
+from app.services.spotlight_pacing_state_service import (
+    SPOTLIGHT_PACING_STATE_CONFLICT,
+    SpotlightRoundConsumptionResult,
+)
 from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO,
     SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
@@ -184,11 +189,207 @@ def test_public_shop_presentation_fetch_consumes_delivery_round_but_not_impressi
 
     assert response.status_code == 200, response.text
     body = response.json()
+    assert body["max_stale_display_seconds"] == SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
     assert body["item"]["is_canonical_opportunity"] is True
     assert body["presentation"]["surface"] == SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
     assert body["presentation"]["delivery_round_consumed"] is True
     assert _consumed_rounds() == 1
     assert _ledger_count() == 0
+
+
+def test_pacing_sees_due_campaign_beyond_previous_fifty_candidate_cutoff():
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        for owner_user_id in range(3, 53):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO users (
+                        id, email, hashed_password, role, gmfn_id,
+                        display_name, trust_score, trust_band,
+                        trust_score_updated_at
+                    ) VALUES (
+                        :owner_user_id, :email, 'hashed', 'member', :gmfn_id,
+                        :display_name, 70, 'B', CURRENT_TIMESTAMP
+                    )
+                    """
+                ),
+                {
+                    "owner_user_id": owner_user_id,
+                    "email": f"phase4e2-owner-{owner_user_id}@example.com",
+                    "gmfn_id": f"GSN-P4E2-OWNER-{owner_user_id}",
+                    "display_name": f"Phase 4E2 Owner {owner_user_id}",
+                },
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO clan_memberships (
+                        id, clan_id, user_id, role, personal_pool_balance
+                    ) VALUES (
+                        :membership_id, 1, :owner_user_id, 'member', 0
+                    )
+                    """
+                ),
+                {
+                    "membership_id": owner_user_id,
+                    "owner_user_id": owner_user_id,
+                },
+            )
+    for campaign_id in range(1, 52):
+        _seed_campaign_and_broadcast(
+            campaign_id=campaign_id,
+            owner_user_id=campaign_id + 1,
+        )
+    with engine.begin() as conn:
+        shared_activation = _now() - timedelta(hours=1)
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET created_at = :shared_activation,
+                    activated_at = :shared_activation
+                """
+            ),
+            {"shared_activation": shared_activation},
+        )
+        for campaign_id in range(1, 51):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO spotlight_campaign_pacing_states (
+                        campaign_id, max_delivery_rounds,
+                        consumed_delivery_rounds, next_eligible_delivery_at,
+                        pacing_profile, exhausted, version
+                    ) VALUES (
+                        :campaign_id, 10, 0, :next_eligible,
+                        'neutral', 0, 0
+                    )
+                    """
+                ),
+                {
+                    "campaign_id": campaign_id,
+                    "next_eligible": _now() + timedelta(hours=1),
+                },
+            )
+
+    with SessionLocal() as db:
+        selection = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=_now(),
+        )
+
+    assert selection.selected is True
+    assert selection.candidate is not None
+    assert selection.candidate.campaign_id == 51
+
+
+def test_delivery_conflict_retries_the_next_paced_candidate(monkeypatch):
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, role, gmfn_id,
+                    display_name, trust_score, trust_band,
+                    trust_score_updated_at
+                ) VALUES (
+                    3, 'phase4e2-owner-3@example.com', 'hashed', 'member',
+                    'GSN-P4E2-OWNER-3', 'Phase 4E2 Owner 3',
+                    70, 'B', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (3, 1, 3, 'member', 0)
+                """
+            )
+        )
+    _seed_campaign_and_broadcast(campaign_id=1, owner_user_id=2)
+    _seed_campaign_and_broadcast(campaign_id=2, owner_user_id=3)
+    with engine.begin() as conn:
+        shared_activation = _now() - timedelta(hours=1)
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET created_at = :shared_activation,
+                    activated_at = :shared_activation
+                """
+            ),
+            {"shared_activation": shared_activation},
+        )
+
+    original_consume = presentations.consume_spotlight_delivery_round
+    conflict_injected = False
+
+    def consume_with_first_campaign_conflict(db, *, campaign_id, **kwargs):
+        nonlocal conflict_injected
+        if int(campaign_id) == 1 and not conflict_injected:
+            conflict_injected = True
+            return SpotlightRoundConsumptionResult(
+                campaign_id=1,
+                consumed=False,
+                consumed_rounds_before=0,
+                consumed_rounds_after=0,
+                max_delivery_rounds=10,
+                version_before=0,
+                version_after=0,
+                last_delivery_opportunity_at=None,
+                next_eligible_delivery_at=None,
+                exhausted=False,
+                blocked_reason=SPOTLIGHT_PACING_STATE_CONFLICT,
+            )
+        return original_consume(db, campaign_id=campaign_id, **kwargs)
+
+    monkeypatch.setattr(
+        presentations,
+        "consume_spotlight_delivery_round",
+        consume_with_first_campaign_conflict,
+    )
+    with SessionLocal() as db:
+        selection = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=_now(),
+            issuance_key="retry-next-paced-candidate",
+        )
+        pacing_rows = {
+            int(row[0]): int(row[1])
+            for row in db.execute(
+                text(
+                    """
+                    SELECT campaign_id, consumed_delivery_rounds
+                    FROM spotlight_campaign_pacing_states
+                    """
+                )
+            ).all()
+        }
+        leases = db.execute(
+            text(
+                """
+                SELECT campaign_id
+                FROM spotlight_presentation_leases
+                """
+            )
+        ).scalars().all()
+
+    assert conflict_injected is True
+    assert selection.selected is True
+    assert selection.candidate is not None
+    assert selection.candidate.campaign_id == 2
+    assert selection.pacing_result is not None
+    assert selection.pacing_result.blocked_campaign_ids == (1,)
+    assert selection.pacing_result.consumed_campaign_ids == (2,)
+    assert pacing_rows == {1: 0, 2: 1}
+    assert leases == [2]
 
 
 def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_current_user_user):

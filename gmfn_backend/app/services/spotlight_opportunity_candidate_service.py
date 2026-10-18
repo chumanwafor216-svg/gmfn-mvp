@@ -128,16 +128,24 @@ def build_spotlight_opportunity_candidates(
     *,
     viewer_user_id: int,
     campaign_ids: Optional[Iterable[int]] = None,
-    limit: int = 25,
+    limit: Optional[int] = 25,
     now: Optional[datetime] = None,
 ) -> list[SpotlightOpportunityCandidate]:
     current_time = _as_aware_utc(now) or _now_utc()
+    safe_limit = None if limit is None else max(int(limit), 0)
+    if safe_limit == 0:
+        return []
     safe_campaign_ids = _safe_ints(campaign_ids)
     if not safe_campaign_ids:
         safe_campaign_ids = _active_candidate_campaign_ids(
             db,
             viewer_user_id=int(viewer_user_id),
-            limit=max(int(limit) * 8, int(limit), 25),
+            limit=(
+                None
+                if safe_limit is None
+                else max(safe_limit * 8, safe_limit, 25)
+            ),
+            now=current_time,
         )
     if not safe_campaign_ids:
         return []
@@ -195,16 +203,17 @@ def build_spotlight_opportunity_candidates(
         candidates.append(candidate)
 
     candidates.sort(key=_candidate_sort_key)
-    return candidates[: max(int(limit), 0)]
+    return candidates if safe_limit is None else candidates[:safe_limit]
 
 
 def _active_candidate_campaign_ids(
     db: Session,
     *,
     viewer_user_id: int,
-    limit: int,
+    limit: Optional[int],
+    now: datetime,
 ) -> list[int]:
-    rows = (
+    query = (
         db.query(SpotlightCampaign.id)
         .outerjoin(
             SpotlightCampaignPacingState,
@@ -212,6 +221,24 @@ def _active_candidate_campaign_ids(
         )
         .filter(SpotlightCampaign.status == "active")
         .filter(SpotlightCampaign.serving_status == 'serving')
+        .filter(
+            or_(
+                SpotlightCampaign.authorized_expires_at > now,
+                and_(
+                    SpotlightCampaign.authorized_expires_at.is_(None),
+                    or_(
+                        SpotlightCampaign.expires_at.is_(None),
+                        SpotlightCampaign.expires_at > now,
+                    ),
+                ),
+            )
+        )
+        .filter(
+            or_(
+                SpotlightCampaign.opportunity_expires_at.is_(None),
+                SpotlightCampaign.opportunity_expires_at > now,
+            )
+        )
         .filter(
             or_(
                 SpotlightCampaignPacingState.campaign_id.is_(None),
@@ -224,8 +251,10 @@ def _active_candidate_campaign_ids(
         )
         .filter(SpotlightCampaign.owner_user_id != int(viewer_user_id))
         .order_by(SpotlightCampaign.activated_at.desc(), SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.asc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(max(int(limit), 0))
+    rows = query.all()
     return [int(row.id) for row in rows]
 
 
