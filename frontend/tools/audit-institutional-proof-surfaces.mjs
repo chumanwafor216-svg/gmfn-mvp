@@ -1526,7 +1526,7 @@ assertNotContains(
 );
 assertContains(
   "shopAssets",
-  /buildGsnPublicShopLinkMessage[\s\S]*?function buildPublicShopMessage[\s\S]*?Public shop package copied[\s\S]*?Public shop block package copied[\s\S]*?Public shop item package copied/,
+  /buildGsnPublicShopLinkMessage[\s\S]*?function buildPublicShopMessage[\s\S]*?Shop link and message copied[\s\S]*?Shop item link and message copied[\s\S]*?Shop item link and message copied/,
   "Shop Assets public shop and item copy actions must use compact GSN public shop link text."
 );
 assertContains(

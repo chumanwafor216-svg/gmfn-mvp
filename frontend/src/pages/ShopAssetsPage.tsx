@@ -578,7 +578,7 @@ function shopAssetsRequestErrorMessage(error: any, fallback = ""): string {
       "GSN could not save from this browser yet. Check your connection, reopen GSN if needed, then try again."
     );
   }
-  return message || fallback || "Shop Gallery Tools could not complete that request.";
+  return message || fallback || "Shop Gallery could not complete that request.";
 }
 
 const SHOP_ASSETS_JSON_TIMEOUT_MS = 30000;
@@ -1605,7 +1605,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       product?.name,
       extractProductLabel(firstTruthy(product?.description)),
       product ? "Public shop item" : "",
-      visibleBlock > 0 ? `Block ${visibleBlock}` : ""
+      visibleBlock > 0 ? `Shop item ${visibleBlock}` : ""
     );
 
     return buildGsnPublicShopLinkMessage({
@@ -1726,7 +1726,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setSelectedPublicSlot(matchedSlot);
     setGalleryActionNotice({
       tone: "info",
-      text: "This is the exact public block you opened. Change its media or details, or delete it permanently.",
+      text: "This is the shop item you opened. Change its picture, video, or details, or delete it permanently.",
       slotNumber: matchedSlot,
     });
 
@@ -1890,7 +1890,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       showProductFormNotice(
         "info",
         prepared.message ||
-          `${safeStr(prepared.file.name) || "Selected picture"} is ready for this gallery block.`
+          `${safeStr(prepared.file.name) || "Selected picture"} is ready for this shop item.`
       );
     } catch (err: any) {
       if (productImagePrepJobRef.current !== prepJob) return;
@@ -1958,7 +1958,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         "info",
         prepared.message
           ? `${prepared.message.replace("spotlight-ready", "shop-gallery-ready")}${coverMessage}`
-          : `${safeStr(prepared.file.name) || "Selected video"} is ready for this gallery block.${coverMessage}`
+          : `${safeStr(prepared.file.name) || "Selected video"} is ready for this shop item.${coverMessage}`
       );
     } catch (err: any) {
       if (productVideoPrepJobRef.current !== prepJob) return;
@@ -2218,7 +2218,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setPublicBlocksOpen(true);
     showGalleryActionNotice(
       "error",
-      "All public product blocks are full. Remove one product or open Marketplace Capacity for more blocks.",
+      "All your shop spaces are filled. Remove an item or choose Add more selling space.",
       selectedPublicSlot
     );
     revealSelectedPublicBlock();
@@ -2239,18 +2239,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     if (preparingProductImage || preparingProductVideo) {
       showProductFormNotice(
         "info",
-        "Please wait while GSN prepares the selected media, then tap Post again."
+        "Please wait while GSN prepares the selected media, then tap Post item again."
       );
       return;
     }
 
     if (!safeStr(productName)) {
-      showProductFormNotice("error", "Add the product title first.");
+      showProductFormNotice("error", "Add the item name first.");
       return;
     }
 
     if (!safeStr(productPrice)) {
-      showProductFormNotice("error", "Add the product price first.");
+      showProductFormNotice("error", "Add the item price first.");
       return;
     }
 
@@ -2270,7 +2270,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     ) {
       showProductFormNotice(
         "error",
-        "The public shop gallery has reached its current live-block capacity. Open Marketplace Capacity if this shop needs paid extra public blocks."
+        "Your public shop has no open spaces. Remove an item or choose Add more selling space."
       );
       return;
     }
@@ -2329,7 +2329,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         if (!nextImageUrl) {
           showProductFormNotice(
             "error",
-            `Block #${selectedPublicSlot} needs a picture or a video before it can be posted.`
+            `Shop space ${selectedPublicSlot} needs a picture or a video before it can be posted.`
           );
           setSavingProduct(false);
           return;
@@ -2433,8 +2433,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         showGalleryActionNotice(
           "success",
           nextVideoUrl
-            ? `Block #${savedSlotNumber} saved with video. Open the public shop, open the item, then tap Sound on to hear the audio.`
-            : `Block #${savedSlotNumber} saved with picture. It is now visible in the public shop gallery.`,
+            ? `Shop item ${savedSlotNumber} saved with video. Open the public shop, open the item, then tap Sound on to hear the audio.`
+            : `Shop item ${savedSlotNumber} saved with picture. It is now visible in your public shop.`,
           savedSlotNumber
         );
       } else {
@@ -2503,7 +2503,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       );
       showGalleryActionNotice(
         "success",
-        `Block #${deletedSlotNumber} is empty. The product was permanently deleted; upload it again if you need it later.`,
+        `Shop space ${deletedSlotNumber} is empty. The product was permanently deleted; upload it again if you need it later.`,
         deletedSlotNumber
       );
       setPublicBlocksOpen(true);
@@ -2528,7 +2528,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <PageTopNav
             sectionLabel="Shop Control"
             title="Pictures & Products"
-            subtitle="Loading shop picture and product lanes..."
+            subtitle="Loading your shop picture and items..."
             homeTo={routes.dashboard}
             homeLabel="Dashboard"
             backTo={routes.shop}
@@ -2556,7 +2556,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         <PageTopNav
           sectionLabel="Shop Control"
           title="Pictures & Products"
-          subtitle="Prepare the public shop face, then add public products or private Vault offers."
+          subtitle="Set your shop picture, add public items, or prepare a private Vault offer."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.shop}
@@ -2601,7 +2601,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#D8B95B" }}>Owner workbench</div>
+            <div style={{ ...sectionLabel(), color: "#D8B95B" }}>Manage your shop</div>
 
             <div
               style={{
@@ -2612,7 +2612,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 lineHeight: 1.12,
               }}
             >
-              {firstTruthy(shop?.name, "Your shop face")}
+              {firstTruthy(shop?.name, "Your shop")}
             </div>
 
             <div
@@ -2623,7 +2623,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 color: "#D7E3F1",
               }}
             >
-              Keep the public picture, public products, and private Vault offers in their own lanes.
+              Change the shop picture, manage items everyone can see, or prepare a private Vault offer.
             </div>
 
             <div
@@ -2635,9 +2635,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               }}
             >
               {iconBadge("image", <>Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</>, true)}
-              {iconBadge("shop", <>Public products: {occupiedPublicSlotCount} / {publicProductSlotsTotal}</>, occupiedPublicSlotCount > 0)}
+              {iconBadge("shop", <>Shop items: {occupiedPublicSlotCount} / {publicProductSlotsTotal}</>, occupiedPublicSlotCount > 0)}
               {iconBadge("lock", <>Vault offers: {vaultProducts.length} / 2</>, vaultProducts.length > 0)}
-              {iconBadge("document", <>Hidden: {hiddenProducts.length}</>)}
+              {iconBadge("document", <>Not shown: {hiddenProducts.length}</>)}
             </div>
 
             <div
@@ -2668,7 +2668,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 onClick={() =>
                   copyText(
                     buildPublicShopMessage(shopLink),
-                    "Public shop package copied.",
+                    "Shop link and message copied.",
                     "Public shop link is not ready yet. Refresh the shop identity, then try again."
                   )
                 }
@@ -2677,7 +2677,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 style={isCompact ? { gridColumn: "1 / -1" } : undefined}
                 debugId="shop-assets.copy-public-link"
               >
-                Copy public link
+                Copy shop link
               </SecondaryButton>
             </div>
           </div>
@@ -2689,7 +2689,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>Shop readiness</div>
+            <div style={sectionLabel()}>At a glance</div>
 
             <div
               style={{
@@ -2700,7 +2700,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>{labelWithIcon("shop", "Public")}</div>
+                <div style={sectionLabel()}>{labelWithIcon("shop", "Shop items")}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -2712,7 +2712,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   {occupiedPublicSlotCount}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Open gallery items
+                  Items people can see
                 </div>
               </div>
 
@@ -2734,7 +2734,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>{labelWithIcon("document", "Hidden")}</div>
+                <div style={sectionLabel()}>{labelWithIcon("document", "Not shown")}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -2746,7 +2746,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   {hiddenProducts.length}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Legacy hidden items to clear
+                  Older items to review
                 </div>
               </div>
             </div>
@@ -2765,9 +2765,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Simple order</div>
+            <div style={sectionLabel()}>Start here</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Follow one clean order: public picture first, public products second, private Vault offers last.
+              Set the shop picture first, add public items next, then use Vault only for private offers.
             </div>
           </div>
 
@@ -2789,21 +2789,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>{labelWithIcon("image", "1. Public picture")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("image", "1. Shop picture")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Make the shop face clear before people see the product shelf.
               </div>
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>{labelWithIcon("cart", "2. Public products")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("cart", "2. Shop items")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Add only the items people can browse and share openly.
+                Add products or services that everyone may browse and share.
               </div>
             </div>
 
             <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>{labelWithIcon("lock", "3. Vault offers")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("lock", "3. Private Vault")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Use Vault only for private offers shared by controlled access.
               </div>
@@ -3182,7 +3182,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       <div style={sectionLabel()}>Related product/service</div>
                       <select value={diaryLinkedProductId} onChange={(event) => setDiaryLinkedProductId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
                         <option value="">No product link</option>
-                        {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Block ${publicBlockNumberForProduct(item)}`)}</option>)}
+                        {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Shop item ${publicBlockNumberForProduct(item)}`)}</option>)}
                       </select>
                     </div>
                     <div>
@@ -3276,12 +3276,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={sectionLabel()}>
                 {ownerProductManageFocusRequested
                   ? "Manage this product"
-                  : "Products & Services block control"}
+                  : "Products & Services"}
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
                 {ownerProductManageFocusRequested
                   ? "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
-                  : "Add a new item, or open Manage numbered blocks to change one already live."}
+                  : "Add a product or service, or open Your shop items to change what is already showing."}
               </div>
             </div>
 
@@ -3298,7 +3298,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             >
               {iconBadge(
                 "shop",
-                <>{occupiedPublicSlotCount} / {publicProductSlotsTotal} live blocks</>,
+                <>{occupiedPublicSlotCount} of {publicProductSlotsTotal} spaces filled</>,
                 occupiedPublicSlotCount > 0
               )}
               <PrimaryButton
@@ -3308,7 +3308,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 minWidth={isCompact ? undefined : 152}
                 debugId="shop-assets.product.quick-add"
               >
-                + Add product
+                + Add item
               </PrimaryButton>
             </div>
             ) : null}
@@ -3330,7 +3330,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}
           >
             <StableDisclosureSummary debugId="shop-assets.products.blocks.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
-              {ownerProductManageFocusRequested ? "This product" : "Manage numbered blocks"}
+              {ownerProductManageFocusRequested ? "This product" : "Your shop items"}
             </StableDisclosureSummary>
             {!ownerProductManageFocusRequested ? (
             <div
@@ -3348,7 +3348,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               const isSelected = selectedPublicSlot === slotNumber;
               const itemImage = resolveAssetSrc(item?.image_url);
               const itemVideo = resolveAssetSrc(item?.video_url);
-              const itemName = firstTruthy(item?.name, `Block #${slotNumber}`);
+              const itemName = firstTruthy(item?.name, `Shop item ${slotNumber}`);
 
               return (
                 <StableButton
@@ -3375,7 +3375,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     gap: 6,
                   }}
                   debugId={`shop-assets.public-slot.${slotNumber}.select`}
-                  aria-label={`Select gallery block ${slotNumber}`}
+                  aria-label={`Select shop space ${slotNumber}`}
                 >
                   <div
                     style={{
@@ -3394,7 +3394,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         flexShrink: 0,
                       }}
                     >
-                      #{slotNumber}
+                      Item {slotNumber}
                     </span>
                     <span
                       style={{
@@ -3407,7 +3407,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         minWidth: 0,
                       }}
                     >
-                      {item ? "Live" : "Empty"}
+                      {item ? "Live" : "Available"}
                     </span>
                   </div>
 
@@ -3485,7 +3485,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       WebkitBoxOrient: "vertical",
                     }}
                   >
-                    {item ? itemName : "Tap + to add"}
+                    {item ? itemName : "Add item"}
                   </div>
                 </StableButton>
               );
@@ -3533,7 +3533,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               ) : selectedPublicProduct?.image_url ? (
                 <img
                   src={resolveAssetSrc(selectedPublicProduct.image_url)}
-                  alt={firstTruthy(selectedPublicProduct.name, `Block #${selectedPublicSlot}`)}
+                  alt={firstTruthy(selectedPublicProduct.name, `Shop item ${selectedPublicSlot}`)}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -3543,7 +3543,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 />
               ) : (
                 <div style={{ color: "#D7E3F1", fontWeight: 900 }}>
-                  Tap + Add product
+                  No picture or video yet
                 </div>
               )}
             </div>
@@ -3558,7 +3558,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               style={{ ...innerCard("#FCFEFF"), scrollMarginTop: embedded ? 118 : 24 }}
             >
               <div style={sectionLabel()}>
-                {ownerProductManageFocusRequested ? "Manage this public block" : "Selected block"}
+                {ownerProductManageFocusRequested ? "Manage this shop item" : "Selected shop item"}
               </div>
               <div
                 style={{
@@ -3569,13 +3569,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   lineHeight: 1.12,
                 }}
               >
-                Block #{selectedPublicSlot}
+                Shop item {selectedPublicSlot}
               </div>
 
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {iconBadge(
                   selectedPublicProduct ? "check" : "hash",
-                  selectedPublicProduct ? "Live public item" : "Empty block",
+                  selectedPublicProduct ? "Live in your shop" : "Ready to use",
                   Boolean(selectedPublicProduct)
                 )}
                 {iconBadge("shop", "Products & Services")}
@@ -3638,9 +3638,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 {selectedPublicProduct
                   ? firstTruthy(
                       stripProductMetadata(firstTruthy(selectedPublicProduct.description)),
-                      firstTruthy(selectedPublicProduct.name, "This block has no description yet.")
+                      firstTruthy(selectedPublicProduct.name, "This item has no description yet.")
                     )
-                  : "Tap + Add product to post a picture or short video in this block."}
+                  : "Add a product or service here with a picture or short video."}
               </div>
 
               {selectedPublicProduct ? (
@@ -3702,7 +3702,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             selectedPublicProduct,
                             selectedPublicSlot
                           ),
-                          "Public shop block package copied. It opens this product/service block on the Public Shop."
+                          "Shop item link and message copied. It opens this item in the public shop."
                         )
                       }
                       fullWidth
@@ -3721,7 +3721,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         fullWidth
                         stableHeight={isCompact ? 56 : 48}
                         debugId={`shop-assets.public-slot.${selectedPublicSlot}.paid-repost`}
-                        aria-label={`Repost block ${selectedPublicSlot} into another community Spotlight`}
+                        aria-label={`Repost shop item ${selectedPublicSlot} into another community Spotlight`}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
@@ -3765,7 +3765,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId={`shop-assets.public-slot.${selectedPublicSlot}.add`}
                   >
-                    + Add product
+                    + Add item
                   </PrimaryButton>
                 )}
               </div>
@@ -3792,12 +3792,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         >
           <div>
             <div style={sectionLabel()}>
-              {editingProductId ? "Edit product" : embedded ? "Add product" : "Products and Vault offers"}
+              {editingProductId ? "Edit shop item" : embedded ? "Add shop item" : "Add shop or Vault item"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {embedded
-                ? "Add the photo/video, name and price. Save when ready."
-                : "Add one item at a time. Choose public gallery or private Vault before saving."}
+                ? "Add a picture or short video, the item name, and its price."
+                : "Add one item at a time. Choose whether everyone can see it or only approved Vault visitors."}
             </div>
           </div>
 
@@ -3829,8 +3829,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div style={sectionLabel()}>
               {embedded
                 ? editingProductId
-                  ? `Change block #${selectedPublicSlot}`
-                  : `+ Add product to block #${selectedPublicSlot}`
+                  ? `Change shop item ${selectedPublicSlot}`
+                  : `Add item to shop space ${selectedPublicSlot}`
                 : editingProductId
                 ? `Change item #${editingProductId}`
                 : "Add item"}
@@ -3840,8 +3840,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               {editingProductId
                 ? ownerProductManageFocusRequested
                   ? "Change only what you need, then tap Save changes."
-                  : "Choose a new picture or video only when you want to replace the current media. Then save the product."
-                : "Choose a picture or video, add the name and price, then post."}
+                  : "Choose a new picture or video only when you want to replace the current one. Then save the item."
+                : "Choose a picture or short video, add the name and price, then post it to your shop."}
             </div>
 
             {productFormNotice ? (
@@ -4050,7 +4050,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   stableHeight={isCompact ? 56 : 48}
                   debugId="shop-assets.product.submit"
                 >
-                  {editingProductId ? "Save changes" : "Post product"}
+                  {editingProductId ? "Save changes" : "Post item"}
                 </PrimaryButton>
 
                 <SecondaryButton
@@ -4067,7 +4067,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   onClick={() =>
                     copyText(
                       buildPublicShopMessage(shopLink),
-                      "Public shop package copied.",
+                      "Shop link and message copied.",
                       "Public shop link is not ready yet. Refresh the shop identity, then try again."
                     )
                   }
@@ -4244,7 +4244,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Posted items</div>
+            <div style={sectionLabel()}>Your saved items</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Open this only when you need to edit, permanently delete, or copy an item link.
             </div>
@@ -4269,7 +4269,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         >
           {products.length === 0 ? (
             <div style={{ ...helperText(), gridColumn: "1 / -1" }}>
-              No item has been posted yet.
+              You have not added an item yet.
             </div>
           ) : (
             products.map((item) => {
@@ -4286,7 +4286,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 publicSlotNumber > 0 ? publicSlotNumber : undefined
               );
               const isHidden = item?.is_active === false;
-              const itemName = firstTruthy(item?.name, "Product");
+              const itemName = firstTruthy(item?.name, "Shop item");
               const itemImage = resolveAssetSrc(item?.image_url);
               const itemVideo = resolveAssetSrc(item?.video_url);
               const isBusy = deletingProductId === Number(item.id);
@@ -4362,7 +4362,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     {iconBadge("tag", <>Item #{item.id}</>, true)}
                     {publicSlotNumber > 0 &&
                     firstTruthy(item?.visibility_mode, "community_visible") !== "vault_private" ? (
-                      iconBadge("hash", <>Block #{publicSlotNumber}</>)
+                      iconBadge("hash", <>Shop item {publicSlotNumber}</>)
                     ) : null}
                     {iconBadge(
                       isHidden ? "document" : "check",
@@ -4462,7 +4462,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             item,
                             publicSlotNumber > 0 ? publicSlotNumber : undefined
                           ),
-                          "Public shop item package copied. It opens this product/service item on the Public Shop.",
+                          "Shop item link and message copied. It opens this item in the public shop.",
                           "This item link is not ready yet. Refresh the shop identity, then try again."
                         );
                         }}

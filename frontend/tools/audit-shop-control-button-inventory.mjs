@@ -680,8 +680,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard product\/service blocks, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
-  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the product/service block lane."
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery[\s\S]*?What do you want to change\?[\s\S]*?Change shop picture[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?Write shop update[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Add more selling space/,
+  "Shop Control gallery must use plain owner-facing wording while preserving the picture, update, and capacity routes."
 );
 
 if (
@@ -699,8 +699,8 @@ if (
 }
 
 assertShopContains(
-  /Marketplace capacity[\s\S]*?Add capacity when the marketplace needs more[\s\S]*?Generate the exact capacity reference[\s\S]*?Other capacity units: GBP 1[\s\S]*?Latest capacity reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
-  "Shop Control must keep Marketplace Capacity wording and connect the ROSCA capacity action to the ROSCA cycle and payout controls."
+  /More shop & community space[\s\S]*?Choose what you need\.[\s\S]*?bank-transfer reference[\s\S]*?Other choices: GBP 1 each[\s\S]*?Latest payment reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
+  "Shop Control must explain paid space in plain language and keep the ROSCA purchase, cycle, and payout controls connected."
 );
 
 assertShopContains(

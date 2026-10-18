@@ -4780,7 +4780,7 @@ export default function ShopControlPage() {
           to: routes.shopAssets,
           label: shopAnalyticsWisdom.primaryActionLabel || "Edit products",
           actionKey: "improve_products",
-          detail: "Open the existing product and shop block tools.",
+          detail: "Open the existing shop-item tools.",
         };
       case "FOLLOWERS_WAITING":
       case "GATHERING_DATA":
@@ -4863,10 +4863,10 @@ export default function ShopControlPage() {
       )
     : "No active promotion";
   const productStatusLabel = occupiedPublicProductSlotCount > 0
-    ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public blocks`
+    ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} shop spaces filled`
     : "No public items";
   const shopDiaryStatusLabel = occupiedPublicProductSlotCount > 0
-    ? `${occupiedPublicProductSlotCount} public content block${occupiedPublicProductSlotCount === 1 ? "" : "s"}`
+    ? `${occupiedPublicProductSlotCount} public shop item${occupiedPublicProductSlotCount === 1 ? "" : "s"}`
     : "No public content yet";
   const vaultStatusLabel = vaultProducts.length > 0
     ? `${vaultProducts.length} private offer${vaultProducts.length === 1 ? "" : "s"}`
@@ -4884,7 +4884,7 @@ export default function ShopControlPage() {
       return {
         label: "Add product or service",
         to: routes.shopGallery,
-        detail: "Add one public block before promoting the shop.",
+        detail: "Add one public shop item before promoting the shop.",
         debugId: "shop-control.orientation.primary.products",
       };
     }
@@ -4957,7 +4957,7 @@ export default function ShopControlPage() {
       icon: "copy" as GsnIconName,
       label: "Shop Diary",
       value: shopDiaryStatusLabel,
-      detail: "Public blocks and ordinary shop content, not formal evidence.",
+      detail: "Public shop items and ordinary content, not formal evidence.",
       to: routes.shopDiary,
       action: occupiedPublicProductSlotCount > 0 ? "Review" : "Write",
       debugId: "shop-control.orientation.diary",
@@ -4984,13 +4984,13 @@ export default function ShopControlPage() {
     },
     {
       label: "Paid repost",
-      detail: "Send one public block into a permitted marketplace lane.",
+      detail: "Send one public shop item to another permitted marketplace.",
       to: routes.paidRepost,
       debugId: "shop-control.more.paid-repost",
     },
     {
-      label: "Marketplace capacity",
-      detail: "Extra shop blocks, member places, ROSCA yearly, and meeting packs.",
+      label: "More shop & community space",
+      detail: "Add shop spaces or member places, or open ROSCA and meeting support.",
       to: routes.communityPackages,
       debugId: "shop-control.more.community-packages",
     },
@@ -5437,10 +5437,10 @@ export default function ShopControlPage() {
 
   const communityPackageStatusText = useMemo(() => {
     const packageLabels: Array<[string, string]> = [
-      ["extra_shop_blocks", "Shop blocks"],
+      ["extra_shop_blocks", "Shop spaces"],
       ["extra_members", "Member places"],
-      ["rosca_cycle", "ROSCA yearly"],
-      ["community_meeting_pack", "Meeting records"],
+      ["rosca_cycle", "ROSCA service"],
+      ["community_meeting_pack", "Meeting support"],
     ];
 
     return packageLabels.map(([code, label]) => {
@@ -5449,9 +5449,11 @@ export default function ShopControlPage() {
       if (code === "rosca_cycle") {
         return `${label}: ${remaining > 0 ? "yearly service active" : "yearly service inactive"}`;
       }
-      const readyText = remaining > 0 ? `${remaining} ready` : "none ready";
-      const engineText = item?.engine_ready === false ? "record only" : "active";
-      return `${label}: ${readyText}${remaining > 0 ? `, ${engineText}` : ""}`;
+      if (remaining <= 0) return `${label}: none ready`;
+      if (code === "extra_shop_blocks" || code === "extra_members") {
+        return `${label}: ${remaining} ready`;
+      }
+      return `${label}: ${remaining} ready${item?.engine_ready === false ? ", records only" : ""}`;
     });
   }, [communityPackageByCode]);
 
@@ -7388,13 +7390,13 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(214,170,69,0.16)",
               }}
             >
-              <div style={sectionLabel()}>Shop Gallery Tools</div>
+              <div style={sectionLabel()}>Shop Gallery</div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-                Control the public shop billboard, 6 standard product/service blocks, and paid extra capacity.
+                What do you want to change?
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Use this lane for pictures, products/services, diary updates, and the public shop face.
-                When the marketplace needs extra public shop blocks, open Marketplace Capacity.
+                Add or change products below. Use a shortcut for your shop picture, a short update,
+                or more selling space.
               </div>
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
                 <StableCtaLink
@@ -7403,7 +7405,7 @@ export default function ShopControlPage() {
                   fullWidth
                   debugId="shop-control.gallery.shop-billboard"
                 >
-                  Shop billboard
+                  Change shop picture
                 </StableCtaLink>
                 <StableCtaLink
                   to={routes.shopDiary}
@@ -7411,7 +7413,7 @@ export default function ShopControlPage() {
                   fullWidth
                   debugId="shop-control.gallery.write-diary"
                 >
-                  Write diary update
+                  Write shop update
                 </StableCtaLink>
                 <StableCtaLink
                   to={routes.communityPackages}
@@ -7419,7 +7421,7 @@ export default function ShopControlPage() {
                   fullWidth
                   debugId="shop-control.gallery.community-package"
                 >
-                  Marketplace capacity
+                  Add more selling space
                 </StableCtaLink>
               </div>
             </div>
@@ -7898,18 +7900,17 @@ export default function ShopControlPage() {
             id="shop-control-community-packages"
             style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #FFF8DE 100%)")}
           >
-            <div style={sectionLabel()}>Marketplace capacity</div>
+            <div style={sectionLabel()}>More shop & community space</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Add capacity when the marketplace needs more.
+              Choose what you need.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Generate the exact capacity reference. Extra shop blocks and member places
-              activate after bank match. ROSCA starts contribution cycles, while meeting
-              packs create reminder and summary evidence for TrustEvents.
+              Choose one option and GSN will create a bank-transfer reference. The new
+              space or service becomes available after the payment is confirmed.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(false)}>ROSCA: GBP 60 yearly</span>
-              <span style={badge(false)}>Other capacity units: GBP 1</span>
+              <span style={badge(false)}>ROSCA service: GBP 60 a year</span>
+              <span style={badge(false)}>Other choices: GBP 1 each</span>
               <span style={badge(Boolean(latestCommunityPackagePayment))}>
                 {latestCommunityPackagePayment
                   ? firstTruthy(latestCommunityPackagePayment.status, "Expected")
@@ -7955,7 +7956,7 @@ export default function ShopControlPage() {
                   border: "1px solid rgba(13,95,168,0.10)",
                 }}
               >
-                <div style={sectionLabel()}>Latest capacity reference</div>
+                <div style={sectionLabel()}>Latest payment reference</div>
                 <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
                   {firstTruthy(latestCommunityPackagePayment.reference_display, "Awaiting reference")}
                 </div>
@@ -8022,7 +8023,7 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
               <PrimaryButton
                 onClick={() =>
-                  createCommunityPackageInstruction("extra_shop_blocks", "Extra shop block", {
+                  createCommunityPackageInstruction("extra_shop_blocks", "Shop space", {
                     needsShop: true,
                   })
                 }
@@ -8036,11 +8037,11 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.package.extra-shop-block"
               >
-                Extra shop block
+                One more shop space
               </PrimaryButton>
               <SecondaryButton
                 onClick={() =>
-                  createCommunityPackageInstruction("extra_members", "Extra member place")
+                  createCommunityPackageInstruction("extra_members", "Member place")
                 }
                 disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
                 busy={creatingCommunityPackageCode === "extra_members"}
@@ -8048,7 +8049,7 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.package.extra-members"
               >
-                Extra member place
+                One more member place
               </SecondaryButton>
               <SecondaryButton
                 onClick={() =>
@@ -8064,7 +8065,7 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.package.rosca-cycle"
               >
-                ROSCA yearly
+                ROSCA for one year
               </SecondaryButton>
               <SecondaryButton
                 onClick={() =>
@@ -8079,7 +8080,7 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.package.meeting-pack"
               >
-                Meeting pack
+                Meeting support
               </SecondaryButton>
             </div>
             <div
@@ -8089,7 +8090,7 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(13,95,168,0.10)",
               }}
             >
-              <div style={sectionLabel()}>ROSCA engine</div>
+              <div style={sectionLabel()}>Run a ROSCA cycle</div>
               <div
                 style={{
                   marginTop: 8,
@@ -8217,10 +8218,10 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(13,95,168,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Meeting pack engine</div>
+              <div style={sectionLabel()}>Plan a community meeting</div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Create the reminder record in GSN, share the meeting text through
-                WhatsApp, then return here to record the summary as TrustEvent evidence.
+                Create a reminder in GSN, share it through WhatsApp, then return here
+                to save the meeting summary in the community record.
               </div>
               <div
                 style={{
@@ -8323,7 +8324,7 @@ export default function ShopControlPage() {
                       : ""}
                   </>
                 ) : (
-                  "One meeting pack unit creates one reminder evidence thread. The summary later uses the same thread and does not consume another unit."
+                  "One meeting-support payment covers the reminder and its later summary. It is charged once, not twice."
                 )}
               </div>
               {meetingForActions ? (
@@ -8650,9 +8651,8 @@ export default function ShopControlPage() {
               </div>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              ROSCA and meeting packs now create GSN evidence. ROSCA still does not
-              execute external payouts, and WhatsApp remains the outside conversation
-              channel for meetings.
+              GSN keeps the ROSCA and meeting records. It does not move ROSCA money,
+              and meeting conversations still happen through WhatsApp.
             </div>
           </div>
         </div>
@@ -9064,7 +9064,7 @@ export default function ShopControlPage() {
             }}
             aria-label="Shop owner key analytics metrics"
           >
-            <ShopAnalyticsMetricCard icon="tag" label="Public items" value={`${occupiedPublicProductSlotCount} / ${publicProductSlotsTotal}`} detail={occupiedPublicProductSlotCount >= publicProductSlotsTotal ? "All published" : "Public shop blocks"} accent="green" />
+            <ShopAnalyticsMetricCard icon="tag" label="Public items" value={`${occupiedPublicProductSlotCount} / ${publicProductSlotsTotal}`} detail={occupiedPublicProductSlotCount >= publicProductSlotsTotal ? "All published" : "Public shop spaces"} accent="green" />
             <ShopAnalyticsMetricCard icon="vault" label="Vault" value={`${vaultProducts.length} / 6`} detail={vaultProducts.length > 0 ? "Private offers" : "No vault items yet"} accent="purple" />
             <ShopAnalyticsMetricCard icon="megaphone" label="Spotlights" value={activeSpotlights.length} detail={activeSpotlights.length > 0 ? "Active spotlight" : "No active spotlight"} accent="gold" />
             <ShopAnalyticsMetricCard icon="user" label="Followers" value={shopFollowerCount} detail={shopFollowerCount > 0 ? "Notification audience" : "No followers yet"} accent="blue" />
@@ -9072,7 +9072,7 @@ export default function ShopControlPage() {
             <ShopAnalyticsMetricCard icon="community" label="Notice visits" value={followerNoticeResponseVisitors} detail={followerNoticeResponseVisits > followerNoticeResponseVisitors ? `${followerNoticeResponseVisits} total visits` : "From follower notices"} accent="blue" />
             <ShopAnalyticsMetricCard icon="copy" label="Shared links" value={shareActions7Days} detail="Prepared shares" accent="gold" />
             <ShopAnalyticsMetricCard icon="community" label="Visitors" value={attentionVisitors7Days} detail={attentionShopVisits7Days > attentionVisitors7Days ? `${attentionShopVisits7Days} total visits` : "Last 7 days"} accent="blue" />
-            <ShopAnalyticsMetricCard icon="shop" label="Product opens" value={attentionProductOpens7Days} detail="Opened shop blocks" accent="green" />
+            <ShopAnalyticsMetricCard icon="shop" label="Product opens" value={attentionProductOpens7Days} detail="Opened shop items" accent="green" />
             <ShopAnalyticsMetricCard icon="phone" label="Contact taps" value={attentionContactTaps7Days} detail="Buyer intent signal only" accent="red" />
             <ShopAnalyticsMetricCard icon="document" label="Trade records" value={tradeOutcomeRecords7Days} detail={tradeOutcomeReleasedRecords > 0 ? `${tradeOutcomeReleasedRecords} released` : "Protected evidence"} accent="green" />
             <ShopAnalyticsMetricCard icon="eye" label="Spotlight seen" value={attentionSpotlightImpressions7Days} detail={`Potential audience: ${attentionPossibleSpotlightReach}`} accent="navy" />
@@ -9124,7 +9124,7 @@ export default function ShopControlPage() {
             <ShopAnalyticsFunnelStep icon="eye" label="Potential Audience" value={attentionPossibleSpotlightReach} detail="People who may see your spotlight" rateLabel="Reach base" strong />
             <ShopAnalyticsFunnelStep icon="community" label="Spotlight Seen" value={attentionSpotlightImpressions7Days} detail="People saw your spotlight" rateLabel={`${formatAnalyticsRate(attentionSpotlightImpressions7Days, attentionPossibleSpotlightReach)} of reach`} strong />
             <ShopAnalyticsFunnelStep icon="user" label="Visitors" value={attentionVisitors7Days} detail="Unique visitors" rateLabel={`${formatAnalyticsRate(attentionVisitors7Days, attentionSpotlightImpressions7Days)} of seen`} />
-            <ShopAnalyticsFunnelStep icon="shop" label="Product Opens" value={attentionProductOpens7Days} detail="Opened shop blocks" rateLabel={`${formatAnalyticsRate(attentionProductOpens7Days, attentionVisitors7Days)} of visitors`} />
+            <ShopAnalyticsFunnelStep icon="shop" label="Product Opens" value={attentionProductOpens7Days} detail="Opened shop items" rateLabel={`${formatAnalyticsRate(attentionProductOpens7Days, attentionVisitors7Days)} of visitors`} />
             <ShopAnalyticsFunnelStep icon="phone" label="Contact Taps" value={attentionContactTaps7Days} detail="Buyer intent signal only" rateLabel={`${formatAnalyticsRate(attentionContactTaps7Days, attentionVisitors7Days)} of visitors`} />
           </div>
         </div>

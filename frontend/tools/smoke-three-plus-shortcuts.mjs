@@ -387,7 +387,7 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   );
   const selectedBlock = page.locator('#shop-assets-selected-public-block');
   await target.waitFor({ state: 'visible', timeout: 30_000 });
-  await page.getByText('This is the exact public block you opened.').waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByText('This is the shop item you opened.', { exact: false }).waitFor({ state: 'visible', timeout: 20_000 });
   const publicShopBack = page.getByRole('link', { name: 'Public Shop' });
   await publicShopBack.waitFor({ state: 'visible', timeout: 20_000 });
   const publicShopBackTarget = new URL(await publicShopBack.getAttribute('href') || '', baseUrl);
@@ -398,7 +398,7 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   ) {
     throw new Error('Focused product task did not return to the exact Public Shop product/block.');
   }
-  for (const unrelatedLabel of ['Shop billboard', 'Write diary update', 'Marketplace capacity']) {
+  for (const unrelatedLabel of ['Change shop picture', 'Write shop update', 'Add more selling space']) {
     if (await page.getByRole('link', { name: unrelatedLabel, exact: true }).count()) {
       throw new Error('Focused product management still exposed an unrelated wrapper shortcut.');
     }
@@ -408,7 +408,7 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   await changeAction.waitFor({ state: 'visible', timeout: 20_000 });
   await deleteAction.waitFor({ state: 'visible', timeout: 20_000 });
   if (!(await deleteAction.isEnabled())) throw new Error('Focused permanent-delete action was unexpectedly disabled.');
-  if (await page.getByText('Manage numbered blocks', { exact: true }).count()) {
+  if (await page.getByText('Your shop items', { exact: true }).count()) {
     throw new Error('Focused product management still exposed the generic numbered-block chooser.');
   }
   if (await target.getByRole('button', { name: 'Copy shop link' }).count()) {
@@ -466,7 +466,7 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
 
   page.once('dialog', (dialog) => dialog.accept());
   await deleteAction.click();
-  await selectedBlock.getByText(/Block #2 is empty\. The product was permanently deleted/).waitFor({
+  await selectedBlock.getByText(/Shop space 2 is empty\. The product was permanently deleted/).waitFor({
     state: 'visible',
     timeout: 30_000,
   });
@@ -500,9 +500,9 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
     timeout: 60_000,
   });
 
-  const productTask = page.getByText('Products & Services block control', { exact: true });
+  const productTask = page.getByText('Products & Services', { exact: true }).first();
   await productTask.waitFor({ state: 'visible', timeout: 30_000 });
-  const addProduct = page.getByRole('button', { name: '+ Add product', exact: true });
+  const addProduct = page.getByRole('button', { name: '+ Add item', exact: true });
   await addProduct.waitFor({ state: 'visible', timeout: 20_000 });
   if (!(await addProduct.isEnabled())) {
     throw new Error('Shop Diary policy OFF incorrectly disabled product creation.');
@@ -514,11 +514,16 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
     throw new Error('Ordinary Gallery Tools exposed the separate Shop billboard editor.');
   }
 
-  const blocksSummary = page.getByText('Manage numbered blocks', { exact: true });
+  const blocksSummary = page.getByText('Your shop items', { exact: true });
   const blocksDisclosure = blocksSummary.locator('..');
   if ((await blocksDisclosure.getAttribute('open')) !== null) {
     throw new Error('Ordinary phone Gallery Tools exposed the numbered-block detail before the owner requested it.');
   }
+
+  await page.screenshot({
+    path: join(screenshotDir, 'shop-gallery-plain-language-390x844.png'),
+    fullPage: true,
+  });
 
   await addProduct.click();
   const editor = page.locator('#shop-assets-product-editor');
@@ -529,10 +534,10 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
   await editor.locator('input[placeholder="Paste item image URL"]').fill(
     'data:image/gif;base64,R0lGODlhAQABAAAAACw='
   );
-  await editor.getByRole('button', { name: 'Post product', exact: true }).click();
+  await editor.getByRole('button', { name: 'Post item', exact: true }).click();
   const ordinaryBlockResult = page.locator('#shop-assets-selected-public-block');
   const ordinarySaveResult = ordinaryBlockResult.getByText(
-    'Block #1 saved with picture. It is now visible in the public shop gallery.',
+    'Shop item 1 saved with picture. It is now visible in your public shop.',
     { exact: true }
   );
   await ordinarySaveResult.waitFor({ state: 'visible', timeout: 30_000 });
@@ -560,15 +565,15 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
     throw new Error('Ordinary product save did not expose the exact saved-product Public Shop link.');
   }
 
-  const diaryShortcut = page.getByRole('link', { name: 'Write diary update', exact: true });
+  const diaryShortcut = page.getByRole('link', { name: 'Write shop update', exact: true });
   await diaryShortcut.waitFor({ state: 'visible', timeout: 20_000 });
   await diaryShortcut.click();
   await page.waitForFunction(() => window.location.hash === '#shop-assets-diary', { timeout: 20_000 });
   await page.locator('#shop-assets-diary').waitFor({ state: 'visible', timeout: 30_000 });
-  if (await page.getByText('Products & Services block control', { exact: true }).count()) {
+  if (await page.getByText('Products & Services', { exact: true }).count()) {
     throw new Error('Focused Shop Diary task still exposed Products & Services controls.');
   }
-  if (await page.getByRole('link', { name: 'Shop billboard', exact: true }).count()) {
+  if (await page.getByRole('link', { name: 'Change shop picture', exact: true }).count()) {
     throw new Error('Focused Shop Diary task still exposed the generic Gallery shortcuts.');
   }
   const publishUpdate = page.getByRole('button', { name: 'Publish update', exact: true });
@@ -580,6 +585,80 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
   const expectedWrites = ['POST /marketplace/products'];
   if (writes.join('|') !== expectedWrites.join('|')) {
     throw new Error(`Ordinary Gallery save/navigation emitted unexpected writes: ${writes.join(', ')}.`);
+  }
+  await context.close();
+}
+
+async function testDeeperShopPlainLanguage(browser, baseUrl) {
+  const scenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'live',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+
+  await page.goto(`${baseUrl}/app/shop-assets?community=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await page.getByText('Manage your shop', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 30_000,
+  });
+  for (const label of ['At a glance', 'Start here', 'Add shop or Vault item', 'Your saved items']) {
+    await page.getByText(label, { exact: true }).first().waitFor({ state: 'visible', timeout: 20_000 });
+  }
+  for (const oldLabel of ['Owner workbench', 'Shop readiness', 'Simple order', 'Products and Vault offers', 'Posted items']) {
+    if (await page.getByText(oldLabel, { exact: true }).count()) {
+      throw new Error(`Standalone Pictures & Products still exposes old wording: ${oldLabel}.`);
+    }
+  }
+  await page.screenshot({
+    path: join(screenshotDir, 'shop-assets-plain-language-390x844.png'),
+    fullPage: true,
+  });
+
+  await page.goto(`${baseUrl}/app/shop-control?community=8#shop-control-community-packages`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  const capacity = page.locator('#shop-control-community-packages');
+  await capacity.waitFor({ state: 'visible', timeout: 30_000 });
+  await capacity.scrollIntoViewIfNeeded();
+  for (const label of [
+    'More shop & community space',
+    'Choose what you need.',
+    'One more shop space',
+    'One more member place',
+    'ROSCA for one year',
+    'Meeting support',
+    'Run a ROSCA cycle',
+    'Plan a community meeting',
+  ]) {
+    await capacity.getByText(label, { exact: true }).first().waitFor({ state: 'visible', timeout: 20_000 });
+  }
+  for (const oldLabel of [
+    'Marketplace capacity',
+    'Add capacity when the marketplace needs more.',
+    'Extra shop block',
+    'Extra member place',
+    'ROSCA engine',
+    'Meeting pack engine',
+  ]) {
+    if (await capacity.getByText(oldLabel, { exact: true }).count()) {
+      throw new Error(`Paid-space task still exposes old wording: ${oldLabel}.`);
+    }
+  }
+  await page.screenshot({
+    path: join(screenshotDir, 'shop-community-space-plain-language-390x844.png'),
+    fullPage: false,
+  });
+
+  const writes = businessWrites(scenario.mutations);
+  if (writes.length !== 0) {
+    throw new Error(`Plain-language Shop navigation issued business writes: ${writes.join(', ')}.`);
   }
   await context.close();
 }
@@ -647,6 +726,7 @@ try {
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
   await testOwnerProductMediaShortcut(browser, baseUrl);
   await testOrdinaryGalleryTaskSeparation(browser, baseUrl);
+  await testDeeperShopPlainLanguage(browser, baseUrl);
   await testVisitorShopShortcutsHidden(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
@@ -663,6 +743,7 @@ try {
       'ordinary Gallery Tools shows Products only; Diary handoff shows Diary only; Shop Diary policy OFF does not disable product Add',
       'ordinary phone product Save reopens the numbered block, preserves its success notice, and returns focus to the result',
       'ordinary successful product Save exposes one exact-item View product in public shop action',
+      'standalone Pictures & Products and deeper paid-space tasks use plain owner-facing language',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',

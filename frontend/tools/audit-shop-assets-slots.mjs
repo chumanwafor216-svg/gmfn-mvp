@@ -90,8 +90,14 @@ if (/letterSpacing:\s*[1-9]/.test(shopAssetsSource)) {
 
 assertContains(
   shopAssetsFile,
-  /iconBadge\("image"[\s\S]*?Shop picture:[\s\S]*?iconBadge\("shop"[\s\S]*?Public products:[\s\S]*?iconBadge\("lock"[\s\S]*?Vault offers:[\s\S]*?iconBadge\("document"[\s\S]*?Hidden:/,
+  /iconBadge\("image"[\s\S]*?Shop picture:[\s\S]*?iconBadge\("shop"[\s\S]*?Shop items:[\s\S]*?iconBadge\("lock"[\s\S]*?Vault offers:[\s\S]*?iconBadge\("document"[\s\S]*?Not shown:/,
   "Shop Assets workbench counters must use image/shop/lock/document 3D GSN chips instead of emoji labels."
+);
+
+assertContains(
+  shopAssetsFile,
+  /Manage your shop[\s\S]*?At a glance[\s\S]*?Start here[\s\S]*?Add shop or Vault item[\s\S]*?Your saved items/,
+  "Standalone Pictures & Products must present its complete workbench in plain owner-facing language."
 );
 
 assertContains(
@@ -150,7 +156,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicSlotCount = useMemo[\s\S]*?publicGallerySlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicSlotCount\} \/ \{publicProductSlotsTotal\} live blocks/,
+  /const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicSlotCount = useMemo[\s\S]*?publicGallerySlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicSlotCount\} of \{publicProductSlotsTotal\} spaces filled/,
   "Shop Assets live-block counter must use occupied arranged slots, not raw product row count."
 );
 
@@ -172,7 +178,7 @@ if (/publicProducts\.length/.test(shopAssetsSource)) {
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= publicProductSlotsTotal[\s\S]*?The public shop gallery has reached its current live-block capacity/,
+  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= publicProductSlotsTotal[\s\S]*?Your public shop has no open spaces/,
   "Shop Assets add guard must use visible occupied slots, not raw public product rows."
 );
 
@@ -208,19 +214,19 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /Public products: \{occupiedPublicSlotCount\} \/ \{publicProductSlotsTotal\}[\s\S]*?occupiedPublicSlotCount > 0/,
+  /Shop items: \{occupiedPublicSlotCount\} \/ \{publicProductSlotsTotal\}[\s\S]*?occupiedPublicSlotCount > 0/,
   "Shop Assets header public-products badge must report visible occupied slots."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /<div style=\{sectionLabel\(\)\}>\{labelWithIcon\("shop", "Public"\)\}<\/div>[\s\S]*?\{occupiedPublicSlotCount\}[\s\S]*?Open gallery items/,
+  /<div style=\{sectionLabel\(\)\}>\{labelWithIcon\("shop", "Shop items"\)\}<\/div>[\s\S]*?\{occupiedPublicSlotCount\}[\s\S]*?Items people can see/,
   "Shop Assets readiness Public stat must report visible occupied slots."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /debugId="shop-assets\.product\.quick-add"[\s\S]*?\+ Add product/,
+  /debugId="shop-assets\.product\.quick-add"[\s\S]*?\+ Add item/,
   "Shop Assets must expose a simple plus-style product add action above the public block grid."
 );
 
@@ -244,7 +250,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?data-owner-product-manage-mode=\{[\s\S]*?"focused"[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the shop item you opened[\s\S]*?data-owner-product-manage-mode=\{[\s\S]*?"focused"[\s\S]*?Manage this shop item[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
   "Public Shop owner handoff must focus the exact block and present Change or permanent deletion as the first owner decision."
 );
 
@@ -256,7 +262,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const deletedSlotNumber = selectedPublicSlot[\s\S]*?showGalleryActionNotice\([\s\S]*?Block #\$\{deletedSlotNumber\} is empty[\s\S]*?showGalleryActionNotice\("error", message, deletedSlotNumber\)/,
+  /const deletedSlotNumber = selectedPublicSlot[\s\S]*?showGalleryActionNotice\([\s\S]*?Shop space \$\{deletedSlotNumber\} is empty[\s\S]*?showGalleryActionNotice\("error", message, deletedSlotNumber\)/,
   "Permanent-delete success and failure must remain visible beside the exact block where the owner acted."
 );
 
@@ -268,7 +274,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /embeddedSection\?: "products" \| "diary"[\s\S]*?const embeddedSection = props\.embeddedSection \|\| "products"[\s\S]*?!embedded \? \([\s\S]*?Public shop picture[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?Shop Diary[\s\S]*?embedded && embeddedSection === "products"[\s\S]*?Products & Services block control/,
+  /embeddedSection\?: "products" \| "diary"[\s\S]*?const embeddedSection = props\.embeddedSection \|\| "products"[\s\S]*?!embedded \? \([\s\S]*?Public shop picture[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?Shop Diary[\s\S]*?embedded && embeddedSection === "products"[\s\S]*?Products & Services[\s\S]*?Your shop items/,
   "Embedded Gallery Tools must show only Products & Services or Shop Diary, while standalone Shop Assets retains the full workbench."
 );
 

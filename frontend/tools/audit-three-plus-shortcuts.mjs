@@ -85,7 +85,7 @@ assertContains(
 );
 assertContains(
   'assets',
-  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the exact public block you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this public block[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
+  /manage_product_id[\s\S]*?manage_block[\s\S]*?source[\s\S]*?publicGallerySlots\.findIndex[\s\S]*?This is the shop item you opened[\s\S]*?shop-assets-selected-public-block[\s\S]*?data-owner-product-manage-target=\{selectedPublicProduct\?\.id \|\| ""\}[\s\S]*?Manage this shop item[\s\S]*?Change media or details[\s\S]*?Delete permanently/,
   'Shop Assets must resolve the requested product/block, explain the exact task, and expose Change and permanent deletion first.'
 );
 assertContains(
@@ -95,7 +95,7 @@ assertContains(
 );
 assertContains(
   'control',
-  /activeOwnerLayer === "products"[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused \? \([\s\S]*?Shop Gallery Tools[\s\S]*?Shop billboard[\s\S]*?Write diary update[\s\S]*?Marketplace capacity[\s\S]*?embeddedSection=\{shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}/,
+  /activeOwnerLayer === "products"[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused \? \([\s\S]*?Shop Gallery[\s\S]*?Change shop picture[\s\S]*?Write shop update[\s\S]*?Add more selling space[\s\S]*?embeddedSection=\{shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}/,
   'Ordinary Gallery Tools must show its shortcuts, while exact-product and Diary handoffs each reveal only their requested task.'
 );
 assertContains(
@@ -105,7 +105,7 @@ assertContains(
 );
 assertContains(
   'assets',
-  /showGalleryActionNotice\([\s\S]*?Block #\$\{deletedSlotNumber\} is empty[\s\S]*?debugId="shop-assets\.focused-product\.return"[\s\S]*?View updated product[\s\S]*?Back to public shop/,
+  /showGalleryActionNotice\([\s\S]*?Shop space \$\{deletedSlotNumber\} is empty[\s\S]*?debugId="shop-assets\.focused-product\.return"[\s\S]*?View updated product[\s\S]*?Back to public shop/,
   'Focused save/delete outcomes must stay visible beside the selected block and offer a clear Public Shop return.'
 );
 assertContains(

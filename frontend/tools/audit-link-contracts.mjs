@@ -886,7 +886,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopMessage\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this product\/service block on the Public Shop\.[\s\S]*?Public shop item package copied\. It opens this product\/service item on the Public Shop\./,
+  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopMessage\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: link[\s\S]*?Shop link and message copied\.[\s\S]*?Shop item link and message copied\. It opens this item in the public shop\.[\s\S]*?Shop item link and message copied\. It opens this item in the public shop\./,
   "Shop Assets copy actions must copy frontend-domain preview-ready compact GSN messages for Products & Services and exact block/item links with honest feedback."
 );
 
