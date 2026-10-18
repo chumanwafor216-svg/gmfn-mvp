@@ -23,7 +23,11 @@ from app.services.spotlight_exposure_ledger_service import (
     SpotlightExposureRecordResult,
     record_spotlight_qualifying_impression,
 )
-from app.services.spotlight_frequency_control_service import apply_spotlight_frequency_control
+from app.services.spotlight_frequency_control_service import (
+    SPOTLIGHT_FREQUENCY_SUPPRESSION_DEMANDBOX_OVERRIDE_EXHAUSTED,
+    SPOTLIGHT_FREQUENCY_SUPPRESSION_VIEWER_CAP,
+    apply_spotlight_frequency_control,
+)
 from app.services.spotlight_opportunity_candidate_service import (
     SpotlightOpportunityCandidate,
     build_spotlight_opportunity_candidates,
@@ -101,6 +105,7 @@ class SpotlightPresentationSelection:
     delivery_round_consumed: bool = False
     token_expires_at: Optional[datetime] = None
     pacing_result: Optional[SpotlightPersistentPacingResult] = None
+    frequency_suppressed_campaign_ids: tuple[int, ...] = ()
     rejection_code: Optional[str] = None
     policy: SpotlightPresentationPolicy = SpotlightPresentationPolicy()
 
@@ -178,6 +183,7 @@ def list_spotlight_presentation_replays(
     surface: str = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     limit: int = SPOTLIGHT_PRESENTATION_REPLAY_LIMIT,
     exclude_campaign_ids: Optional[set[int]] = None,
+    allow_due_campaign_ids: Optional[set[int]] = None,
 ) -> list[SpotlightPresentationReplay]:
     """Return bounded, read-only continuation rows already qualified by this viewer."""
     current_time = _as_aware_utc(now) or _now_utc()
@@ -189,6 +195,11 @@ def list_spotlight_presentation_replays(
     excluded = {
         int(value)
         for value in (exclude_campaign_ids or set())
+        if int(value or 0) > 0
+    }
+    due_campaign_ids = {
+        int(value)
+        for value in (allow_due_campaign_ids or set())
         if int(value or 0) > 0
     }
     leases = (
@@ -225,8 +236,19 @@ def list_spotlight_presentation_replays(
         if pacing_state is None:
             continue
         pacing_exhausted = bool(getattr(pacing_state, "exhausted", False))
-        if not pacing_exhausted and (
-            next_eligible_at is None or next_eligible_at <= current_time
+        if not pacing_exhausted and next_eligible_at is None:
+            continue
+        due_frequency_replay = bool(
+            not pacing_exhausted
+            and next_eligible_at is not None
+            and next_eligible_at <= current_time
+            and campaign_id in due_campaign_ids
+        )
+        if (
+            not pacing_exhausted
+            and next_eligible_at is not None
+            and next_eligible_at <= current_time
+            and not due_frequency_replay
         ):
             continue
 
@@ -282,7 +304,11 @@ def list_spotlight_presentation_replays(
         replay_deadlines = [
             current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS)
         ]
-        if not pacing_exhausted and next_eligible_at is not None:
+        if (
+            not pacing_exhausted
+            and next_eligible_at is not None
+            and not due_frequency_replay
+        ):
             replay_deadlines.append(next_eligible_at)
         for deadline in (
             authorized_expiry(campaign),
@@ -360,8 +386,22 @@ def select_spotlight_presentation(
         viewer_user_id=viewer_id,
         diversity_result=diversity,
     )
+    frequency_suppressed_campaign_ids = tuple(
+        int(control.campaign_id)
+        for control in frequency.candidate_frequency
+        if control.suppressed_reason
+        in {
+            SPOTLIGHT_FREQUENCY_SUPPRESSION_VIEWER_CAP,
+            SPOTLIGHT_FREQUENCY_SUPPRESSION_DEMANDBOX_OVERRIDE_EXHAUSTED,
+        }
+    )
     if not frequency.candidates:
-        return SpotlightPresentationSelection(selected=False, rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE, policy=policy)
+        return SpotlightPresentationSelection(
+            selected=False,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
+            rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
+            policy=policy,
+        )
 
     pacing = plan_persistent_spotlight_delivery_opportunities(
         db,
@@ -374,6 +414,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY,
             policy=policy,
         )
@@ -384,6 +425,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
             policy=policy,
         )
@@ -397,6 +439,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE,
             policy=policy,
         )
@@ -413,6 +456,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
             policy=policy,
         )
@@ -429,6 +473,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
             policy=policy,
         )
@@ -468,6 +513,7 @@ def select_spotlight_presentation(
         return SpotlightPresentationSelection(
             selected=False,
             pacing_result=blocked_pacing,
+            frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
             rejection_code=str(exc),
             policy=policy,
         )
@@ -515,6 +561,7 @@ def select_spotlight_presentation(
         delivery_round_consumed=True,
         token_expires_at=token_expires_at,
         pacing_result=pacing,
+        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
         policy=policy,
     )
 

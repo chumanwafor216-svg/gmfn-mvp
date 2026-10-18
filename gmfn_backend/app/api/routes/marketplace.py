@@ -3976,6 +3976,11 @@ def get_public_shop_spotlight_opportunity(
         viewer_user_id=int(current_user.id),
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
         exclude_campaign_ids=selected_campaign_ids,
+        allow_due_campaign_ids=(
+            set(selection.frequency_suppressed_campaign_ids)
+            if not selection.selected
+            else set()
+        ),
     )
     for replay in replays:
         broadcast = db.get(

@@ -21,6 +21,41 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The deployed correction updates Spotlight frontend rotation/timing and the
   backend replay-delivery contract, so both frontend and API were deployed.
 
+## Local verified Spotlight repair - 2026-10-18 (not published)
+
+- Production evidence confirmed that campaign `319` for shop `4` activated at
+  `2026-10-17T00:17:45Z` and expired exactly 24 hours later at
+  `2026-10-18T00:17:45Z` (`01:17:45` BST). The owner's approximately `08:56`
+  BST screenshot was therefore correctly expired; it was not an early-expiry
+  defect.
+- The asymmetric rotation was real but was not a separate or broken shop
+  channel. Viewer `13` had already reached two qualifying impressions on live
+  campaigns `321` and `322`, while viewer `3` had not; campaign/community
+  placement and self-delivery rules also made their eligible pools different.
+  Repeated production opportunity requests returned HTTP 200, proving the
+  phone refresh loop was running.
+- Root defect: fresh selection suppressed viewer-capped campaigns while replay
+  suppressed the same campaigns whenever global pacing said they were due.
+  The endpoint could therefore return an empty rail for the more active viewer.
+- Local repair permits a short tokenless due replay only when no fresh item was
+  selected and the exact campaign was suppressed by that viewer's normal cap
+  or exhausted DemandBox override. Lifecycle, exact route/membership, content
+  version, availability, and prior qualified exposure are still revalidated.
+  It creates no delivery round, presentation lease, exposure, or impression.
+- Public Shop phone repair puts live Spotlight WhatsApp on a contained second
+  action row, hides it without a live contact, prevents touch-retained focus
+  from pausing rotation indefinitely, and prevents an expired owner status from
+  reusing the shop hero as apparently live campaign media.
+- Verification: 98 focused backend tests passed; TypeScript/Vite production
+  build passed (290 modules); Spotlight presentation, system-feed, and Public
+  Shop button audits passed; enhanced real-browser Spotlight smoke passed at
+  390x844, including WhatsApp containment, expired-state honesty, touch-focus
+  recovery, replay rotation, and no double counting; the full protected-button
+  freeze audit also passed.
+- This repair is intentionally uncommitted/unpublished at handoff time because
+  the current batch-mode freeze requires the product owner to say the batch is
+  ready before push or Render promotion.
+
 ## Active product truth
 
 ### Spotlight

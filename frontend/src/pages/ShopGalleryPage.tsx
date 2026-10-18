@@ -3488,6 +3488,10 @@ export default function ShopGalleryPage() {
   ]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
+  const spotlightWhatsAppAvailable = Boolean(
+    publicShopSpotlightActive &&
+      normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
+  );
 
   useEffect(() => {
     if (isCompact && publicShopSpotlightActive) {
@@ -5933,8 +5937,12 @@ export default function ShopGalleryPage() {
             }
             onPointerEnter={pauseSpotlightPresentationRotation}
             onPointerDown={pauseSpotlightPresentationRotation}
-            onFocusCapture={() => {
-              setSpotlightHasKeyboardFocus(true);
+            onFocusCapture={(event) => {
+              const focusTarget = event.target;
+              const keyboardFocus =
+                focusTarget instanceof HTMLElement &&
+                focusTarget.matches(":focus-visible");
+              setSpotlightHasKeyboardFocus(keyboardFocus);
               pauseSpotlightPresentationRotation();
             }}
             onBlurCapture={() => {
@@ -5993,10 +6001,14 @@ export default function ShopGalleryPage() {
                   style={{
                     width: isCompact ? "100%" : "fit-content",
                     maxWidth: "100%",
-                    display: isCompact ? "flex" : "inline-flex",
+                    display: isCompact ? "grid" : "inline-flex",
+                    gridTemplateColumns: isCompact
+                      ? "minmax(0, 1fr) 48px"
+                      : undefined,
                     alignItems: "center",
                     justifyContent: isCompact ? "space-between" : "flex-start",
                     gap: isCompact ? 6 : 6,
+                    rowGap: isCompact ? 6 : undefined,
                     minHeight: isCompact ? 34 : 52,
                     padding: 0,
                     borderRadius: 0,
@@ -6014,7 +6026,8 @@ export default function ShopGalleryPage() {
                       alignItems: "center",
                       gap: 4,
                       minHeight: isCompact ? 28 : "auto",
-                      maxWidth: isCompact ? "calc(100% - 94px)" : "100%",
+                      maxWidth: "100%",
+                      minWidth: 0,
                       padding: isCompact ? "4px 8px" : "6px 11px",
                       borderRadius: isCompact ? 999 : 9,
                       background: isCompact ? "rgba(237,245,233,0.94)" : "#EDF5E9",
@@ -6040,34 +6053,44 @@ export default function ShopGalleryPage() {
                       data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
                     />
                   ) : null}
-                  <PrimaryButton
-                    onClick={contactSpotlightOwnerByWhatsApp}
-                    minWidth={0}
-                    fullWidth={false}
-                    stableHeight={isCompact ? 34 : 52}
-                    debugId="shop-gallery.spotlight.whatsapp-chat"
-                    style={{
-                      ...primaryBtn(!publicShopSpotlightActive),
-                      borderRadius: 999,
-                      minHeight: isCompact ? 34 : 52,
-                      width: "fit-content",
-                      maxWidth: "100%",
-                      padding: isCompact ? "5px 9px" : "10px 16px",
-                      fontSize: isCompact ? 11 : 14,
-                      whiteSpace: "nowrap",
-                      background:
-                        "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
-                      border: "1px solid rgba(37,211,102,0.38)",
-                      boxShadow: isCompact
-                        ? "0 8px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18)"
-                        : undefined,
-                    }}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 8 }}>
-                      {inlineShopIcon("phone", "#FFFFFF", isCompact ? 11 : 15)}
-                      WhatsApp
-                    </span>
-                  </PrimaryButton>
+                  {spotlightWhatsAppAvailable ? (
+                    <PrimaryButton
+                      onClick={contactSpotlightOwnerByWhatsApp}
+                      minWidth={0}
+                      fullWidth={false}
+                      stableHeight={isCompact ? 34 : 52}
+                      debugId="shop-gallery.spotlight.whatsapp-chat"
+                      style={{
+                        ...primaryBtn(false),
+                        gridColumn: isCompact ? "1 / -1" : undefined,
+                        justifySelf: isCompact ? "end" : undefined,
+                        borderRadius: 999,
+                        minHeight: isCompact ? 34 : 52,
+                        width: "fit-content",
+                        maxWidth: "100%",
+                        padding: isCompact ? "5px 9px" : "10px 16px",
+                        fontSize: isCompact ? 11 : 14,
+                        whiteSpace: "nowrap",
+                        background:
+                          "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
+                        border: "1px solid rgba(37,211,102,0.38)",
+                        boxShadow: isCompact
+                          ? "0 8px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18)"
+                          : undefined,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: isCompact ? 3 : 8,
+                        }}
+                      >
+                        {inlineShopIcon("phone", "#FFFFFF", isCompact ? 11 : 15)}
+                        WhatsApp
+                      </span>
+                    </PrimaryButton>
+                  ) : null}
                 </div>
                 <div
                   style={{
@@ -6188,7 +6211,7 @@ export default function ShopGalleryPage() {
                       objectPosition: "center",
                     }}
                   />
-                ) : heroImage ? (
+                ) : heroImage && !ownerSpotlightStatusView ? (
                   <img
                     src={heroImage}
                     alt={shopNameText}

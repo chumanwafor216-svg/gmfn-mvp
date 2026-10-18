@@ -152,6 +152,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/services/spotlight_presentation_service.py",
+  /allow_due_campaign_ids[\s\S]*?due_frequency_replay[\s\S]*?not due_frequency_replay[\s\S]*?frequency_suppressed_campaign_ids = tuple[\s\S]*?SPOTLIGHT_FREQUENCY_SUPPRESSION_VIEWER_CAP[\s\S]*?SPOTLIGHT_FREQUENCY_SUPPRESSION_DEMANDBOX_OVERRIDE_EXHAUSTED/,
+  "A due replay must be explicitly authorized by same-viewer frequency suppression and must not use a past pacing deadline as its replay expiry."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /allow_due_campaign_ids=\([\s\S]*?selection\.frequency_suppressed_campaign_ids[\s\S]*?if not selection\.selected[\s\S]*?else set\(\)/,
+  "The Public Shop endpoint must permit due frequency-capped continuity only when no fresh presentation was selected."
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
   /is_canonical_replay"\] = True[\s\S]*?opportunity_presentation_token"\] = None[\s\S]*?opportunity_counts_as_delivery"\] = False[\s\S]*?opportunity_counts_as_exposure"\] = False/,
   "Replay responses must be tokenless and explicitly excluded from delivery and exposure accounting."
@@ -165,8 +177,20 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_spotlight_presentation_contract.py",
-  /qualified_presentation_replays_without_new_delivery_or_exposure[\s\S]*?exhausted_campaign_replays_qualified_item_without_new_counting[\s\S]*?replay_revalidates_viewer_and_exact_community_route/,
-  "Backend replay tests must cover accounting neutrality after pacing exhaustion, viewer isolation, and exact-route revocation."
+  /qualified_presentation_replays_without_new_delivery_or_exposure[\s\S]*?frequency_capped_due_campaign_replays_without_new_counting[\s\S]*?exhausted_campaign_replays_qualified_item_without_new_counting[\s\S]*?replay_revalidates_viewer_and_exact_community_route/,
+  "Backend replay tests must cover accounting neutrality during pacing wait, after same-viewer frequency suppression, after pacing exhaustion, and after exact-route revocation."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /onFocusCapture=\{\(event\)[\s\S]*?focusTarget\.matches\(":focus-visible"\)[\s\S]*?setSpotlightHasKeyboardFocus\(keyboardFocus\)/,
+  "Touch-generated control focus must not pause Spotlight rotation indefinitely; only keyboard focus-visible receives the unbounded focus pause."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /spotlightWhatsAppAvailable[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 1fr\) 48px"[\s\S]*?gridColumn: isCompact \? "1 \/ -1"[\s\S]*?heroImage && !ownerSpotlightStatusView/,
+  "Compact Spotlight contact must remain inside the card, disappear without a live contact, and never reuse shop hero media for a non-live owner status."
 );
 
 assertContains(

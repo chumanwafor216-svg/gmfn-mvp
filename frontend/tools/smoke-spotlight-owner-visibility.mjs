@@ -20,6 +20,8 @@ const shop = {
   name: "Owner Visibility Shop",
   shop_name: "Owner Visibility Shop",
   description: "Synthetic owner visibility qualification shop.",
+  image_url:
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Crect width='20' height='20' fill='%2308274A'/%3E%3C/svg%3E",
   is_active: true,
 };
 const product = {
@@ -112,6 +114,7 @@ function spotlightItem({
     author_user_id: canonical ? 318 + canonicalOffset : 216,
     author_gmfn_id: canonical ? `GSN-U-OTHEROWNER-${streamIndex}` : ownerGsnId,
     source_shop_name: canonical ? `Eligible visitor source ${streamIndex}` : "Owner Visibility Shop",
+    source_shop_whatsapp: "+441234567890",
     message: label,
     image_url: null,
     video_url: null,
@@ -352,6 +355,23 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     state: "visible",
     timeout: 15_000,
   });
+  const spotlightRail = page.locator("#public-shop-spotlight");
+  const spotlightWhatsApp = spotlightRail.getByRole("button", {
+    name: /WhatsApp/i,
+  });
+  await spotlightWhatsApp.waitFor({ state: "visible", timeout: 15_000 });
+  const [railBounds, whatsappBounds] = await Promise.all([
+    spotlightRail.boundingBox(),
+    spotlightWhatsApp.boundingBox(),
+  ]);
+  if (
+    !railBounds ||
+    !whatsappBounds ||
+    whatsappBounds.x < railBounds.x - 1 ||
+    whatsappBounds.x + whatsappBounds.width > railBounds.x + railBounds.width + 1
+  ) {
+    throw new Error("Compact Spotlight WhatsApp action overflowed the card bounds.");
+  }
   await openOwnerSpotlight(page);
   await page.waitForTimeout(1_200);
   if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
@@ -549,6 +569,15 @@ async function testExpiredOwnerContentFailsClosed(browser, baseUrl) {
   if (body.includes("Owner saved Spotlight")) {
     throw new Error("Expired owner content was replayed from the public-shop cache/feed.");
   }
+  const expiredRail = page.locator("#public-shop-spotlight");
+  if (
+    (await expiredRail.getByRole("button", { name: /WhatsApp/i }).count()) !== 0
+  ) {
+    throw new Error("Expired Spotlight kept an actionable WhatsApp contact.");
+  }
+  if ((await expiredRail.locator('img[alt="Owner Visibility Shop"]').count()) !== 0) {
+    throw new Error("Expired Spotlight reused the shop hero as if it were live campaign media.");
+  }
   await context.close();
   return scenario;
 }
@@ -603,6 +632,13 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
   };
 
   const firstVisibleAt = await waitForSpotlightLabel("Visitor eligible Spotlight");
+  await page.evaluate(() => {
+    window.open = () => null;
+  });
+  await page
+    .locator("#public-shop-spotlight")
+    .getByRole("button", { name: /WhatsApp/i })
+    .tap();
   const secondVisibleAt = await waitForSpotlightLabel("Community Spotlight 2");
   assertReadableDwell(
     "Visitor eligible Spotlight",
@@ -610,6 +646,11 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
     "Community Spotlight 2",
     secondVisibleAt
   );
+  if (secondVisibleAt - firstVisibleAt > 14_000) {
+    throw new Error(
+      "Touch-focused Spotlight contact paused rotation beyond the bounded interaction window."
+    );
+  }
   const thirdVisibleAt = await waitForSpotlightLabel("Community Spotlight 3");
   assertReadableDwell(
     "Community Spotlight 2",
