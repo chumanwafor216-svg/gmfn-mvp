@@ -1152,6 +1152,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: audit:spotlight-controls,
   audit:spotlight-presentation-contract, targeted ESLint for the three
   changed frontend files, and the 291-module frontend production build.
+- Release commit 21cd7ffc5a2c1cb663519f6557196b7fb41d1d9f was pushed to
+  codex/spotlight-rotation-continuity and promoted unchanged to main. GitHub
+  Render workflow 39297920335 completed successfully. Exact frontend deploy
+  dep-dbb5i5d3t7ss73fef8dg reached live, and final frontend sign-in plus API
+  health requests both returned HTTP 200.
 - Residual truth: the separate complaint that Family Pride did not see another
   member's already-published Spotlight is not proven solved by this session
   repair. Production showed eligible campaigns and successful public
