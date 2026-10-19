@@ -925,3 +925,37 @@ under `docs/` or `docs/archive/`, then link that file here.
   all-or-nothing; old media-less database history remains historical; and an
   authenticated owner/visitor production-phone replay is still required to
   prove the repaired Spotlight behavior against real member traffic.
+
+## Live Spotlight visibility and invalid-slot repair - 2026-10-19
+
+- Production inspection separated the two reported cases. Shop 5 / ?My family
+  my pride Marketplace? had campaign 326, created at 09:40 UTC without saved
+  image or video, withdrawn at 10:40 UTC, and then incorrectly counted against
+  the owner?s later valid retry. Shop 4?s campaign 324 did contain video and
+  received two qualifying impressions from other members, but its authorized
+  24-hour window ended at 13:44 UTC; it was therefore no longer displayable.
+- At 14:27 UTC there were no eligible placement rows in community 4 (?My family
+  my pride?). The only globally eligible campaign was the ?Shoes? Spotlight in
+  communities 6 and 8. This matched the report that one other media item was
+  visible. Owners remain deliberately excluded from their own public delivery
+  allocation; owner confirmation must use the authoritative Shop Control
+  inspection/preview while another member account tests public delivery.
+- Free daily quota counting now counts distinct publication/campaign runs
+  rather than per-community placement rows and ignores legacy rows that contain
+  neither an image nor a video. Current publish writes already reject such
+  media-less rows. A valid Spotlight that is voluntarily withdrawn still
+  consumes the daily free slot; the no-restoration policy was not weakened.
+- The inaccurate error copy now says that the free Spotlight ?has already been
+  used,? rather than claiming a withdrawn/expired Spotlight ?is already
+  active.?
+- Verification passed: all 72 Marketplace Public Shop tests, both Spotlight
+  quota/system-feed audits, and the 291-module frontend production build.
+  GitHub Backend Tests run 39271075963 passed on exact commit
+  d0a4f8dcff561950c64e7a7488b36f6ea699c961.
+- Render workflow 39271973173 explicitly deployed the API. Frontend deploy
+  dep-dbb2qj9124ks73estocg and API deploy dep-dbb2rf4s728c73a7b2jg are live on
+  exact commit d0a4f8dc; the post-restart API health check returned HTTP 200
+  with dev_mode false.
+- The historical campaign 326 row was not rewritten or deleted. After this
+  deployment, that owner may select the verified video again and publish; the
+  invalid media-less row no longer blocks today?s free run.
