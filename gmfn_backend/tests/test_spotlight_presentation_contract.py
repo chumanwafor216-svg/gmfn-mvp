@@ -195,7 +195,7 @@ def test_public_shop_presentation_fetch_reserves_round_but_consumes_nothing(
     assert _ledger_count() == 0
 
 
-def test_abandoned_reservation_spends_no_round_and_cannot_be_reacquired_by_same_viewer():
+def test_abandoned_reservation_spends_no_round_and_allows_one_bounded_same_viewer_recovery():
     _seed_users_and_clans()
     with engine.begin() as conn:
         conn.execute(
@@ -236,25 +236,39 @@ def test_abandoned_reservation_spends_no_round_and_cannot_be_reacquired_by_same_
 
     assert first.selected is True
     assert _consumed_rounds() == 0
-    after_expiry = issued_at + timedelta(seconds=31)
+    after_first_expiry = issued_at + timedelta(seconds=31)
 
     with SessionLocal() as db:
-        same_viewer = select_spotlight_presentation(
+        same_viewer_recovery = select_spotlight_presentation(
             db,
             viewer_user_id=1,
-            now=after_expiry,
+            now=after_first_expiry,
             issuance_key='abandoned-same-viewer-retry',
+        )
+        db.commit()
+
+    assert same_viewer_recovery.selected is True
+    assert same_viewer_recovery.delivery_round_consumed is False
+    assert _consumed_rounds() == 0
+
+    after_recovery_expiry = issued_at + timedelta(seconds=62)
+    with SessionLocal() as db:
+        same_viewer_exhausted = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=after_recovery_expiry,
+            issuance_key='abandoned-same-viewer-exhausted',
         )
         different_viewer = select_spotlight_presentation(
             db,
             viewer_user_id=3,
-            now=after_expiry,
+            now=after_recovery_expiry,
             issuance_key='abandoned-different-viewer',
         )
         db.commit()
 
-    assert same_viewer.selected is False
-    assert same_viewer.rejection_code == 'viewer_abandoned_campaign_version'
+    assert same_viewer_exhausted.selected is False
+    assert same_viewer_exhausted.rejection_code == 'viewer_abandoned_campaign_version'
     assert different_viewer.selected is True
     assert different_viewer.delivery_round_consumed is False
     assert _consumed_rounds() == 0

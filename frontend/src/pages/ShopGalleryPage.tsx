@@ -1237,6 +1237,7 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       src?.source_shop_whatsapp_number,
       src?.sourceShopWhatsAppNumber,
       src?.source_shop_whatsapp,
+      src?.sourceShopWhatsApp,
       src?.shop_whatsapp_number,
       src?.whatsapp_number
     ),
@@ -1896,6 +1897,9 @@ export default function ShopGalleryPage() {
   const [miniSpotlightIndex, setMiniSpotlightIndex] = useState(0);
   const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
   const miniSpotlightIndexRef = useRef(0);
+  const spotlightPresentationGateRef = useRef<HTMLDetailsElement | null>(null);
+  const spotlightPresentationAutoOpenedRef = useRef(false);
+  const spotlightPresentationVisibleRef = useRef(false);
   const spotlightRailRef = useRef<HTMLElement | null>(null);
   const spotlightVisibleRatioRef = useRef(0);
   const spotlightQualificationTimerRef = useRef<number | null>(null);
@@ -1907,6 +1911,8 @@ export default function ShopGalleryPage() {
   const spotlightNextEmptyUntilRef = useRef(0);
   const spotlightInteractionPausedUntilRef = useRef(0);
   const spotlightRefreshGenerationRef = useRef(0);
+  const [spotlightPresentationActivated, setSpotlightPresentationActivated] =
+    useState(false);
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
   const [spotlightInteractionPausedUntil, setSpotlightInteractionPausedUntil] = useState(0);
   const [spotlightReducedMotion, setSpotlightReducedMotion] = useState(false);
@@ -2275,6 +2281,16 @@ export default function ShopGalleryPage() {
       setOwnerSpotlightInspection(
         ownerSpotlightInspectionMode ? ownerInspection || null : null
       );
+      if (
+        spotlightPresentationActivated &&
+        spotlightPresentationAutoOpenedRef.current &&
+        rotationBroadcasts.length <= 0
+      ) {
+        spotlightPresentationAutoOpenedRef.current = false;
+        setShopMoreOpen(false);
+      } else if (rotationBroadcasts.length > 0) {
+        spotlightPresentationAutoOpenedRef.current = false;
+      }
       setCommunitySpotlights(rotationBroadcasts);
       setMiniSpotlightIndex(
         rotationBroadcasts.length <= 0
@@ -2335,6 +2351,15 @@ export default function ShopGalleryPage() {
     async function loadViewerSpotlightRows(cleanedGmfnId: string) {
       if (!getAccessToken()) return null;
       if (ownerSpotlightPreviewAuthorized) return [];
+      if (!spotlightPresentationVisibleRef.current) {
+        const cycleKey = publicShopSpotlightSelectionCycleKey(cleanedGmfnId);
+        const currentCycle = cycleKey
+          ? publicShopSpotlightSelectionCycles.get(cycleKey)
+          : undefined;
+        return publicShopSpotlightCycleIsAuthoritative(currentCycle, Date.now())
+          ? currentCycle?.items || []
+          : [];
+      }
 
       if (typeof document !== "undefined" && document.visibilityState !== "visible") {
         const cycleKey = publicShopSpotlightSelectionCycleKey(cleanedGmfnId);
@@ -2624,7 +2649,7 @@ export default function ShopGalleryPage() {
       }
     }
 
-    void refreshPublicShopState(true);
+    void refreshPublicShopState(!spotlightPresentationActivated);
 
     let refreshTimer: number | null = null;
 
@@ -2669,10 +2694,94 @@ export default function ShopGalleryPage() {
     routeDiaryEntryId,
     routeProductId,
     shopReconnectRetryKey,
+    spotlightPresentationActivated,
+  ]);
+
+  useEffect(() => {
+    const setVisible = (visible: boolean) => {
+      spotlightPresentationVisibleRef.current = visible;
+      if (visible) setSpotlightPresentationActivated(true);
+    };
+
+    if (
+      loading ||
+      !getAccessToken() ||
+      ownerSpotlightPreviewAuthorized ||
+      routeDiaryEntryId > 0
+    ) {
+      setVisible(false);
+      return;
+    }
+
+    const gate = spotlightPresentationGateRef.current;
+    const rail = spotlightRailRef.current;
+    if (!gate || !rail || typeof window === 'undefined') {
+      setVisible(false);
+      return;
+    }
+
+    const elementIsVisible = (element: HTMLElement) => {
+      if (
+        typeof document !== 'undefined' &&
+        document.visibilityState !== 'visible'
+      ) {
+        return false;
+      }
+      const rect = element.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight &&
+        rect.right > 0 &&
+        rect.left < window.innerWidth
+      );
+    };
+
+    const updateVisibility = () => {
+      const gateVisible = elementIsVisible(gate);
+      if (gateVisible && isCompact && !gate.open) {
+        setVisible(false);
+        spotlightPresentationAutoOpenedRef.current = true;
+        setShopMoreOpen(true);
+        return;
+      }
+      setVisible(gateVisible && gate.open && elementIsVisible(rail));
+    };
+
+    const observer =
+      typeof IntersectionObserver === 'function'
+        ? new IntersectionObserver(updateVisibility, {
+            threshold: [0, 0.01],
+          })
+        : null;
+    observer?.observe(gate);
+    observer?.observe(rail);
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', updateVisibility);
+    document.addEventListener('visibilitychange', updateVisibility);
+    updateVisibility();
+
+    return () => {
+      setVisible(false);
+      observer?.disconnect();
+      window.removeEventListener('scroll', updateVisibility);
+      window.removeEventListener('resize', updateVisibility);
+      document.removeEventListener('visibilitychange', updateVisibility);
+    };
+  }, [
+    isCompact,
+    loading,
+    ownerSpotlightPreviewAuthorized,
+    routeDiaryEntryId,
+    shopMoreOpen,
   ]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
+    spotlightPresentationAutoOpenedRef.current = false;
+    spotlightPresentationVisibleRef.current = false;
+    setSpotlightPresentationActivated(false);
     spotlightQualifiedKeysRef.current.clear();
     spotlightQualificationInFlightKeysRef.current.clear();
     spotlightNextRequestPendingRef.current = false;
@@ -2776,28 +2885,6 @@ export default function ShopGalleryPage() {
     );
     return Math.max(uniqueKeys.size, communitySpotlights.length > 0 ? 1 : 0);
   }, [communitySpotlights]);
-
-  useEffect(() => {
-    if (communitySpotlights.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      const hidden =
-        typeof document !== "undefined" && document.visibilityState !== "visible";
-      const interactionPaused = Date.now() < spotlightInteractionPausedUntilRef.current;
-      if (hidden || interactionPaused || spotlightHasKeyboardFocus) return;
-      setMiniSpotlightIndex((prev) => (prev + 1) % communitySpotlights.length);
-    }, spotlightReducedMotion
-      ? PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS
-      : publicShopSpotlightRotationMs(spotlightRotationItemCount));
-
-    return () => window.clearInterval(timer);
-  }, [
-    communitySpotlights.length,
-    spotlightHasKeyboardFocus,
-    spotlightInteractionPausedUntil,
-    spotlightReducedMotion,
-    spotlightRotationItemCount,
-  ]);
 
   useEffect(() => {
     if (communitySpotlights.length <= 0 && miniSpotlightIndex !== 0) {
@@ -3016,6 +3103,7 @@ export default function ShopGalleryPage() {
     if (
       !cleanedGmfnId ||
       ownerSpotlightPreviewAuthorized ||
+      !spotlightPresentationVisibleRef.current ||
       spotlightNextRequestPendingRef.current ||
       Date.now() < spotlightNextEmptyUntilRef.current
     ) {
@@ -3503,6 +3591,72 @@ export default function ShopGalleryPage() {
     setSpotlightMediaReadyKey('');
     setSpotlightMediaUnavailableKey('');
   }, [spotlightMediaKey]);
+
+  const spotlightRotationMediaSettled =
+    !spotlightHasRenderableMedia ||
+    spotlightMediaReadyKey === spotlightMediaKey ||
+    spotlightMediaUnavailableKey === spotlightMediaKey;
+  const spotlightRotationDelayMs = spotlightReducedMotion
+    ? PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS
+    : publicShopSpotlightRotationMs(spotlightRotationItemCount);
+  const spotlightRotationHasMultipleItems = communitySpotlights.length > 1;
+  const spotlightRotationActiveKey = firstMeaningful(
+    miniSpotlight?.opportunityPresentationId,
+    spotlightMediaKey
+  );
+
+  useEffect(() => {
+    if (
+      !spotlightRotationHasMultipleItems ||
+      !spotlightRotationActiveKey ||
+      !spotlightRotationMediaSettled
+    ) {
+      return;
+    }
+
+    let remainingVisibleMs = spotlightRotationDelayMs;
+    let lastTickAt = Date.now();
+    let timer: number | null = null;
+
+    const tick = () => {
+      const now = Date.now();
+      const hidden =
+        typeof document !== 'undefined' &&
+        document.visibilityState !== 'visible';
+      const paused =
+        hidden ||
+        !spotlightPresentationVisibleRef.current ||
+        Date.now() < spotlightInteractionPausedUntilRef.current ||
+        spotlightHasKeyboardFocus;
+
+      if (!paused) {
+        remainingVisibleMs -= Math.max(0, now - lastTickAt);
+      }
+      lastTickAt = now;
+
+      if (remainingVisibleMs <= 0) {
+        const activeRows = communitySpotlightsRef.current;
+        if (activeRows.length > 1) {
+          setMiniSpotlightIndex((prev) => (prev + 1) % activeRows.length);
+        }
+        return;
+      }
+
+      timer = window.setTimeout(tick, Math.min(250, remainingVisibleMs));
+    };
+
+    timer = window.setTimeout(tick, Math.min(250, remainingVisibleMs));
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [
+    spotlightHasKeyboardFocus,
+    spotlightInteractionPausedUntil,
+    spotlightRotationActiveKey,
+    spotlightRotationDelayMs,
+    spotlightRotationHasMultipleItems,
+    spotlightRotationMediaSettled,
+  ]);
 
   const ownerSpotlightStatusView = useMemo(() => {
     if (!ownerSpotlightInspectionMode) return null;
@@ -6218,6 +6372,7 @@ export default function ShopGalleryPage() {
         ) : null}
 
         <details
+          ref={spotlightPresentationGateRef}
           data-public-shop-more="secondary"
           data-public-shop-live-spotlight={publicShopSpotlightActive ? "true" : "false"}
           data-public-shop-exact-update={routeDiaryEntryId > 0 ? "true" : "false"}
@@ -6231,7 +6386,12 @@ export default function ShopGalleryPage() {
             ].includes(location.hash)
           }
           onToggle={(event) => {
-            if (isCompact) setShopMoreOpen(event.currentTarget.open);
+            if (!isCompact) return;
+            if (publicShopSpotlightActive && !event.currentTarget.open) {
+              setShopMoreOpen(true);
+              return;
+            }
+            setShopMoreOpen(event.currentTarget.open);
           }}
           style={{
             order: routeDiaryEntryId > 0 ? 1 : 2,

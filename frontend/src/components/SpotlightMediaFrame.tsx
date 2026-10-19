@@ -54,6 +54,7 @@ export default function SpotlightMediaFrame(
   const [imageRetryCount, setImageRetryCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [audioError, setAudioError] = useState("");
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastAudioToggleRef = useRef(0);
   const mediaReportRef = useRef<'pending' | 'ready' | 'unavailable'>(
@@ -171,6 +172,30 @@ export default function SpotlightMediaFrame(
   const shouldShowAudioUnlock =
     Boolean(videoSrc) &&
     Boolean(props.showAudioUnlock);
+
+  useEffect(() => {
+    const image = imageRef.current;
+    if (
+      image &&
+      image.complete &&
+      image.naturalWidth > 0 &&
+      mediaReportRef.current === 'pending'
+    ) {
+      mediaReportRef.current = 'ready';
+      props.onMediaReady?.();
+      return;
+    }
+
+    const video = videoRef.current;
+    if (
+      video &&
+      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      mediaReportRef.current === 'pending'
+    ) {
+      mediaReportRef.current = 'ready';
+      props.onMediaReady?.();
+    }
+  }, [imageSrc, props.onMediaReady, videoSrc]);
 
   function stopMediaControlEvent(event?: React.SyntheticEvent) {
     event?.preventDefault();
@@ -492,6 +517,7 @@ export default function SpotlightMediaFrame(
         {backdrop}
         <div style={foregroundStyle}>
           <img
+            ref={imageRef}
             src={imageSrc}
             alt={props.alt}
             onLoad={reportMediaReady}

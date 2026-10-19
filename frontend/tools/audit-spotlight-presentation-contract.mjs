@@ -295,6 +295,42 @@ assertContains(
   'Canonical request errors must stay distinct from a true empty result, retain current valid rows, and disclose automatic retry.'
 );
 
+assertContains(
+  'gmfn_backend/app/services/spotlight_presentation_service.py',
+  /SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER = 2[^]*?abandoned_attempt_count[^]*?[.]count[(][)][^]*?>=[^]*?SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER/,
+  'One expired unqualified lease may recover once, while a second abandonment must block the same viewer and campaign version.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightPresentationGateRef[^]*?spotlightPresentationVisibleRef[^]*?loadViewerSpotlightRows[^]*?!spotlightPresentationVisibleRef[.]current[^]*?elementIsVisible[(]rail[)][^]*?IntersectionObserver/,
+  'Canonical selection must remain dormant until the Public Shop Spotlight surface is genuinely visible.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightRotationActiveKey[^]*?remainingVisibleMs = spotlightRotationDelayMs[^]*?!spotlightPresentationVisibleRef[.]current[^]*?remainingVisibleMs -=[^]*?setMiniSpotlightIndex/,
+  'Every active Spotlight item must receive its own complete visible dwell before rotation advances.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testCanonicalIssuanceWaitsForVisibleSpotlightSurface[^]*?canonicalCalls !== 0[^]*?scrollIntoViewIfNeeded[^]*?canonicalCalls < 1[^]*?qualifyCalls < 1/,
+  'The phone smoke must prove off-screen loading cannot consume a presentation lease and visible media still qualifies normally.'
+);
+
+assertContains(
+  'frontend/src/components/SpotlightMediaFrame.tsx',
+  /imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?props[.]onMediaReady/,
+  'Cached image and video readiness must still reach the Public Shop qualification and dwell gates.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /source_shop_whatsapp[^]*?sourceShopWhatsApp[^]*?spotlightWhatsAppAvailable/,
+  'Spotlight normalization must retain an already-normalized WhatsApp contact.'
+);
+
 if (findings.length > 0) {
   console.error("Spotlight presentation contract audit failed:");
   for (const finding of findings) {

@@ -8,6 +8,44 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight visible-rotation reliability repair - 2026-10-19
+
+- Status: the approved frozen-contract exception is implemented and verified
+  locally on `codex/spotlight-rotation-continuity`. It has not yet been pushed
+  or deployed under the pipeline-shortage batch rule.
+- Production evidence before the fix showed campaign `329` active and serving
+  with valid media and a 2026-10-20 16:27:35 UTC authorization deadline, but
+  still at zero of ten rounds. Viewer `13` had an issued presentation lease
+  at 16:27:37 UTC that expired unqualified with no exposure. The viewer was
+  eligible and correctly mapped on the owner's Public Shop route.
+- Root cause was three-part: Public Shop requested a 30-second canonical lease
+  during page load while the Spotlight rail was still below the viewport; the
+  queue-wide interval could give a newly inserted item only the remainder of
+  the previous item's dwell; and one expired unqualified lease permanently
+  excluded that viewer from the campaign version.
+- Public Shop now activates canonical selection only after the Spotlight rail
+  is genuinely visible, keeps live Spotlight expanded on phone, and gives each
+  media-settled active item its own complete visible dwell. Hidden, off-screen,
+  focused, and interaction-paused time does not consume that dwell. Cached
+  image/video readiness is reported reliably, and double-normalized Spotlight
+  rows retain their WhatsApp field.
+- The backend now allows exactly one same-viewer recovery after an expired
+  unqualified lease. A second abandonment still blocks that viewer/campaign
+  version. Neither attempt spends a round; qualification accounting remains
+  unchanged.
+- Verification passed: all 14 backend presentation-contract tests, seven
+  transaction safeguards, the Spotlight presentation and Public Shop button
+  audits, the complete protected-button freeze audit, the production frontend
+  build, and all 11 mocked phone-browser Spotlight scenarios. Five
+  PostgreSQL-only concurrency cases were collected but skipped because no
+  external PostgreSQL test URL was present. The phone suite proves no
+  canonical request occurs off-screen, visible ready media qualifies, every
+  replay item keeps readable dwell, media failure remains uncounted, rejected
+  qualification retries, and expired contact is removed.
+- Frozen boundaries unchanged: ten global rounds, five-second pilot dwell,
+  community eligibility, frequency caps, self-delivery exclusion, paid/free
+  separation, and Shop Diary separation.
+
 ## Spotlight false short-duration rejection repair - 2026-10-19
 
 - Status: application commit `d4a97502` was pushed unchanged to

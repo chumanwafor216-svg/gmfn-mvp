@@ -51,6 +51,7 @@ SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
 SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000
 SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000
 SPOTLIGHT_PRESENTATION_REPLAY_LIMIT = 4
+SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER = 2
 
 PRESENTATION_REJECTION_NO_CANDIDATES = "no_canonical_candidates"
 PRESENTATION_REJECTION_NO_DELIVERY_OPPORTUNITY = "no_delivery_opportunity"
@@ -519,18 +520,22 @@ def select_spotlight_presentation(
                     )
 
                 # An unqualified lease is a bounded reservation, not a spent
-                # delivery round. Do not let one viewer repeatedly abandon and
-                # reacquire the same campaign version after its lease expires.
-                abandoned_by_viewer = (
+                # delivery round. Permit one recovery from a browser/off-screen
+                # interruption, then stop the same viewer from repeatedly
+                # reacquiring this campaign version.
+                abandoned_attempt_count = (
                     db.query(SpotlightPresentationLease.id)
                     .filter(SpotlightPresentationLease.viewer_user_id == viewer_id)
                     .filter(SpotlightPresentationLease.campaign_id == selected_campaign_id)
                     .filter(SpotlightPresentationLease.content_version == content_version)
                     .filter(SpotlightPresentationLease.qualified_at.is_(None))
                     .filter(SpotlightPresentationLease.lease_expires_at <= current_time)
-                    .first()
+                    .count()
                 )
-                if abandoned_by_viewer is not None:
+                if (
+                    abandoned_attempt_count
+                    >= SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER
+                ):
                     raise _SpotlightReservationUnavailable(
                         PRESENTATION_REJECTION_VIEWER_ABANDONED
                     )

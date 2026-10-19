@@ -215,6 +215,16 @@ async function newPage(browser, identity = "") {
   return { context, page };
 }
 
+async function revealSpotlightSurface(page) {
+  const disclosure = page.locator('[data-public-shop-more=secondary]');
+  await disclosure.scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => {
+    const element = document.querySelector('[data-public-shop-more=secondary]');
+    return element instanceof HTMLDetailsElement && element.open;
+  });
+  await page.locator('#public-shop-spotlight').scrollIntoViewIfNeeded();
+}
+
 async function installMocks(page, scenario) {
   await page.route("**/*", async (route) => {
     if (new URL(route.request().url()).pathname === syntheticSpotlightImagePath) {
@@ -254,6 +264,14 @@ async function installMocks(page, scenario) {
       );
     }
     if (path.endsWith("/spotlight-opportunity")) {
+      if (
+        String(route.request().headers().referer || '').includes(
+          'owner_spotlight_preview=1'
+        )
+      ) {
+        scenario.explicitPreviewCanonicalCalls =
+          Number(scenario.explicitPreviewCanonicalCalls || 0) + 1;
+      }
       scenario.canonicalCalls += 1;
       const streamIndex = scenario.canonicalCalls;
       if (streamIndex > scenario.streamLimit) {
@@ -397,10 +415,18 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     state: "visible",
     timeout: 15_000,
   });
+  await openOwnerSpotlight(page);
   const spotlightRail = page.locator("#public-shop-spotlight");
+  await spotlightRail.scrollIntoViewIfNeeded();
   const spotlightWhatsApp = spotlightRail.getByRole("button", {
     name: /WhatsApp/i,
   });
+  if ((await spotlightWhatsApp.count()) === 0) {
+    throw new Error(
+      'Owner Spotlight lost its WhatsApp action after reveal: ' +
+        (await spotlightRail.innerText())
+    );
+  }
   await spotlightWhatsApp.waitFor({ state: "visible", timeout: 15_000 });
   const [railBounds, whatsappBounds] = await Promise.all([
     spotlightRail.boundingBox(),
@@ -421,13 +447,46 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
       `Owner inspection counted exposure before another member appeared: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
     );
   }
-  await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
-    state: "visible",
-    timeout: 8_000,
-  });
-  await page
-    .locator('[data-spotlight-canonical="true"]')
-    .scrollIntoViewIfNeeded();
+  try {
+    await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
+      state: "visible",
+      timeout: 18_000,
+    });
+  } catch {
+    const geometry = await page.evaluate(() => {
+      const gate = document.querySelector('[data-public-shop-more=secondary]');
+      const rail = document.querySelector('#public-shop-spotlight');
+      const describe = (element) => {
+        if (!(element instanceof HTMLElement)) return null;
+        const rect = element.getBoundingClientRect();
+        return {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        };
+      };
+      return {
+        visibility: document.visibilityState,
+        viewportHeight: window.innerHeight,
+        gate: describe(gate),
+        rail: describe(rail),
+      };
+    });
+    throw new Error(
+      'Owner rotation did not reach the visitor item: canonical=' +
+        scenario.canonicalCalls +
+        ', disclosureOpen=' +
+        (await page.locator('[data-public-shop-more=secondary]').getAttribute('open')) +
+        ', geometry=' +
+        JSON.stringify(geometry) +
+        ', rail=' +
+        (await spotlightRail.innerText())
+    );
+  }
+  await revealSpotlightSurface(page);
   await page.waitForTimeout(1_400);
   if (scenario.qualifyCalls < 1 || scenario.impressionCalls < 1) {
     throw new Error(
@@ -457,7 +516,6 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     timeout: 15_000,
   });
 
-  const canonicalCallsBeforePreview = scenario.canonicalCalls;
   await page.goto(
     `${baseUrl}/shop/${ownerGsnId}?owner_spotlight_preview=1#public-shop-spotlight`,
     { waitUntil: "domcontentloaded", timeout: 60_000 }
@@ -467,7 +525,7 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     timeout: 15_000,
   });
   await page.waitForTimeout(300);
-  if (scenario.canonicalCalls !== canonicalCallsBeforePreview) {
+  if (Number(scenario.explicitPreviewCanonicalCalls || 0) !== 0) {
     throw new Error("Explicit owner Preview consumed another member's delivery opportunity.");
   }
   await page.goBack({ waitUntil: "domcontentloaded", timeout: 60_000 });
@@ -585,6 +643,51 @@ async function testVisitorCannotForceOwnerPreview(browser, baseUrl) {
   return scenario;
 }
 
+async function testCanonicalIssuanceWaitsForVisibleSpotlightSurface(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(baseUrl + '/shop/' + ownerGsnId, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await page.waitForTimeout(700);
+  if (scenario.canonicalCalls !== 0) {
+    throw new Error(
+      'Off-screen Spotlight consumed a presentation lease before its surface was visible: ' +
+        scenario.canonicalCalls
+    );
+  }
+
+  await page.locator('[data-public-shop-more=secondary]').scrollIntoViewIfNeeded();
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.locator('#public-shop-spotlight').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1_400);
+  if (scenario.canonicalCalls < 1 || scenario.qualifyCalls < 1) {
+    throw new Error(
+      'Visible Spotlight surface did not request and qualify normally: canonical=' +
+        scenario.canonicalCalls +
+        ', qualify=' +
+        scenario.qualifyCalls
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
 async function testMediaLessSpotlightNeverQualifies(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
@@ -604,6 +707,7 @@ async function testMediaLessSpotlightNeverQualifies(browser, baseUrl) {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
+  await revealSpotlightSurface(page);
   await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
     state: 'visible',
     timeout: 15_000,
@@ -736,9 +840,7 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page
-    .locator('[data-spotlight-canonical="true"]')
-    .scrollIntoViewIfNeeded();
+  await revealSpotlightSurface(page);
 
   const waitForSpotlightLabel = async (label) => {
     await page.getByText(label, { exact: true }).waitFor({
@@ -843,6 +945,7 @@ async function testFreshLeaseWinsOverWeightedReplay(browser, baseUrl) {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
+  await revealSpotlightSurface(page);
   await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
     state: "visible",
     timeout: 15_000,
@@ -874,7 +977,7 @@ async function testRejectedQualificationRetriesBeforeAttention(browser, baseUrl)
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page.locator("#public-shop-spotlight").scrollIntoViewIfNeeded();
+  await revealSpotlightSurface(page);
   await page.waitForFunction(
     () => document.querySelector('[data-spotlight-canonical="true"]') !== null,
     null,
@@ -909,6 +1012,7 @@ async function testPresentationExpiryRemovesContact(browser, baseUrl) {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
+  await revealSpotlightSurface(page);
   await page.getByText("Visitor eligible Spotlight", { exact: true }).waitFor({
     state: "visible",
     timeout: 15_000,
@@ -943,6 +1047,7 @@ try {
     await testOwnerReopenPreviewBackAndResume(browser, baseUrl),
     await testDelayedOwnerAuthentication(browser, baseUrl),
     await testVisitorCannotForceOwnerPreview(browser, baseUrl),
+    await testCanonicalIssuanceWaitsForVisibleSpotlightSurface(browser, baseUrl),
     await testMediaLessSpotlightNeverQualifies(browser, baseUrl),
     await testProductMediaRequiresVisibleDwell(browser, baseUrl),
     await testExpiredOwnerContentFailsClosed(browser, baseUrl),
