@@ -8,6 +8,38 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight same-file phone-picker recovery - 2026-10-19
+
+- Status: application commit `0a9de704` was pushed to
+  `codex/spotlight-rotation-continuity` and `main`. GitHub Render workflow
+  `39277028352` passed and verified the public frontend. Render frontend deploy
+  `dep-dbb3af1124ks73eteik0` reached `live` from that exact commit.
+- Fresh production evidence after the earlier quota repair showed no image,
+  video, or publish request reaching the API from the reported retry. The
+  current failure was therefore in the phone browser before upload rather than
+  another API rejection.
+- Root cause: mobile file inputs can suppress the change event when the same
+  file is chosen again. That leaves the prior media error visible and never
+  starts preparation. Some phone pickers can also return a selected video
+  through the picture input or a selected picture through the video input.
+- Both Spotlight picker actions now clear their native input before opening so
+  the same file always triggers selection again. Shop Control also identifies
+  the selected file from its supported extension and browser media type and
+  routes it to the correct picture or video preparation path instead of showing
+  a misleading format error from the wrong path.
+- Server inspection remains authoritative. This repair changes phone selection
+  and recovery only; it does not bypass decoding, video normalization, the
+  practical hard-quality floor, the ten-second output limit, or media-backed
+  publication requirements.
+- Verification passed: Spotlight controls audit, media-quality audit, Shop
+  Control inventory, full protected-button freeze, scoped whitespace check,
+  and the 291-module production frontend build. Focused lint still reports four
+  pre-existing unused destructured properties in the extracted Spotlight
+  component; the repair did not widen into that unrelated cleanup.
+- Unabated truth: automated checks prove the retry and routing contracts in
+  source and the exact commit is live, but the affected physical phone must
+  still choose the same video once more to prove its browser-specific behavior.
+
 ## Usable social-video quality correction - 2026-10-19
 
 - Status: committed as `4a1ecef6`, pushed to the working branch and `main`,
