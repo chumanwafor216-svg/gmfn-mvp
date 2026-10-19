@@ -83,6 +83,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The combined phone, public-entry, signed-in identity, diagnostics, and
   Pipeline Credit regression band passed 115 tests after these preflight
   corrections.
+- Product-owner decision: keep OTP attached to the shared Pipeline Credit
+  boundary and do not introduce a phone-specific spend bypass. Live OTP should
+  remain inactive until Pipeline Credit operations are formally activated and
+  funded; `registration-only` is the intended state in the meantime.
 
 ## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
 

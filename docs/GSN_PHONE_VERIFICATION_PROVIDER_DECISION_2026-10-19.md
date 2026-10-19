@@ -10,6 +10,11 @@ Verify as the first adapter. Public entry and signed-in identity completion use
 the same service, audit fields, Pipeline Credit gate, resend limit, check limit,
 and fail-closed error contract.
 
+Product-owner decision on 2026-10-19: phone verification remains attached to
+the shared Pipeline Credit activation boundary. Do not add a phone-specific
+spend bypass. Keep live OTP inactive until Pipeline Credit operations are
+formally activated and funded.
+
 Live delivery is not inferred from configuration or from creating a local
 verification row. The API may say a code was accepted for SMS delivery only
 after Twilio returns a verification receipt. The API may record phone ownership
@@ -55,7 +60,8 @@ identity engine.
 
 1. Configure Twilio credentials and Verify Service SID in Render.
 2. Configure the Pipeline Credit account and per-send cost.
-3. Enable payment operations and the phone-provider kill switch.
+3. As part of the approved Pipeline Credit activation, enable payment
+   operations and the phone-provider kill switch together.
 4. Confirm `/system/diagnostics/api-readiness` reports
    `phone.sms_or_verify: live_ready`.
 5. Use a controlled phone number to test start, wrong code, resend cooldown,
@@ -81,3 +87,7 @@ Twilio credentials, a Verify Service, Pipeline Credits, payment-operations
 permission, and a controlled-number test are all present. Repository tests mock
 the provider; they do not prove Twilio account approval, sender reachability,
 country coverage, billing, or live handset delivery.
+
+Until Pipeline Credit is activated, `registration-only` is the intended phone
+state. A blocked paid-provider call is correct behavior, not an incomplete OTP
+fallback to work around.
