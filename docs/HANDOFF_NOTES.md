@@ -8,6 +8,38 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight false short-duration rejection repair - 2026-10-19
+
+- Status: application commit `d4a97502` was pushed unchanged to
+  `codex/spotlight-rotation-continuity` and `main`. Direct Render API deploy
+  `dep-dbb3sj0473hc73chpk2g` reached `live` from exact commit
+  `d4a97502d872a3590bf5e81c67252ed340e71272` at 16:02:05 UTC. The live
+  `/health` response was `{"ok":true,"dev_mode":false}`, post-deploy memory
+  was about 264 MB of 512 MiB with one live instance, and no error-level log
+  followed the rollout.
+- The owner screenshot showed a clearly playable multi-second preview alongside
+  `The video must be at least 1 second long.` Production logs independently
+  confirmed `POST /marketplace/media/video` returned HTTP 400 at 15:52:24 UTC
+  and no publication request followed. This was not a connection failure and
+  not evidence that the member failed to press Publish.
+- Root cause: lightweight source-container inspection can report zero or a
+  sub-second duration for an otherwise decodable phone/social-media video.
+  The API previously treated that single source metadata value as final and
+  rejected the upload before FFmpeg could produce the standard GSN MP4.
+- Source duration validation is now deferred only inside the normalisation
+  path. Width, height, frame rate, aspect ratio, file ceiling, decoding, and
+  processing checks remain active before/during preparation. The generated
+  MP4 is then inspected normally and must still meet the unchanged one-second
+  minimum; a genuinely 0.4-second output remains rejected.
+- Verification passed: 14 focused media-quality tests, including unreliable
+  source-duration recovery and genuine sub-second rejection; all 72
+  Marketplace Public Shop tests; Python compilation; and scoped diff checks.
+- Residual truth: the production logic is deployed, but the exact member file
+  is not available in the repository. One controlled phone retry with that
+  same video is still required to prove its container is handled end to end.
+  GitHub Backend Tests run `39281965910` was queued at handoff time; direct
+  Render deployment was used because API auto-deploy is disabled.
+
 ## Spotlight API memory containment - 2026-10-19
 
 - Status: application commit `c7761bb8` was pushed to
