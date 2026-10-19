@@ -10,9 +10,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Spotlight visible-rotation reliability repair - 2026-10-19
 
-- Status: the approved frozen-contract exception is implemented and verified
-  locally on `codex/spotlight-rotation-continuity`. It has not yet been pushed
-  or deployed under the pipeline-shortage batch rule.
+- Status: application commit `573da206` was pushed unchanged to
+  `codex/spotlight-rotation-continuity` and `main`. GitHub Render workflow
+  `39293129304` completed successfully for that exact commit. Render frontend
+  deploy `dep-dbb52b2gjjms73d2akt0` and API deploy
+  `dep-dbb538qfngtc739utnpg` both reached `live`. The workflow verified the
+  public frontend build and live API contracts; an independent check returned
+  HTTP 200 from the frontend and `{"ok":true,"dev_mode":false}` from `/health`.
 - Production evidence before the fix showed campaign `329` active and serving
   with valid media and a 2026-10-20 16:27:35 UTC authorization deadline, but
   still at zero of ten rounds. Viewer `13` had an issued presentation lease
