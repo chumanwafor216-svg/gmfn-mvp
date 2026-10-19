@@ -800,12 +800,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The active handoff is now this compact index, following the repository's
   existing handoff-size rule.
 
-## Local Spotlight media, delivery, and Attention truth repair - 2026-10-19
+## Deployed Spotlight media, delivery, and Attention truth repair - 2026-10-19
 
-- This batch is verified locally only. It is not committed, pushed, promoted
-  to `main`, or deployed. Production remains on commit
-  `bab697155e74c355a8fef901b8b3901cf8695105` until the owner gives a separate
-  ready-to-publish approval under `docs/FREEZE_POLICY.md`.
+- Runtime release commit `c93c295c2e12b0ef73ca3dd23304b46fb7d186cb`
+  was pushed to `codex/spotlight-rotation-continuity`, promoted unchanged to
+  `main`, and deployed to both Render services. Follow-up commit
+  `cba38c572fdfe33fe184d1176dc0bfb3e6255979` only aligns the older opportunity-
+  metadata test fixtures with the approved media-required contract.
 - Production evidence showed that campaign `326` was created without an upload
   request or usable media, consumed one qualified round, and was later
   withdrawn. Current active campaigns `324` and `325` had media at audit time;
@@ -843,10 +844,17 @@ under `docs/` or `docs/archive/`, then link that file here.
   passed 6; Python compilation passed; Dashboard semantic/audit checks passed;
   Spotlight control, presentation, system-feed, and media-quality audits passed;
   the ten-scenario real-browser Spotlight smoke passed; and the frontend
-  production build passed with 291 modules.
+  production build passed with 291 modules. GitHub's corrected full backend
+  workflow passed `1538` tests with `16` skipped.
+- GitHub Actions `Trigger Render Deploy` run `39247129815` completed
+  successfully. Exact frontend deploy `dep-dbb06fgjgiss739pcfvg` and exact API
+  deploy `dep-dbb07r67bikc73b84c5g` reached `live`; the public frontend marker
+  and live API identity/public-verification contracts passed. The earlier
+  backend workflow failure was only eight stale text-only test fixtures; no
+  production code was relaxed, and the one-file correction rerun passed.
 - Residual truth: remote HTTP image URLs are not fetched server-side because an
   unrestricted fetch would introduce SSRF risk; legacy product media inherited
   by Network Repost is not newly backfilled; mixed-community policy remains
-  all-or-nothing; old media-less database history remains historical; and no
-  authenticated production-phone replay can be completed until this batch is
-  deployed.
+  all-or-nothing; old media-less database history remains historical; and an
+  authenticated owner/visitor production-phone replay is still required to
+  prove the repaired Spotlight behavior against real member traffic.
