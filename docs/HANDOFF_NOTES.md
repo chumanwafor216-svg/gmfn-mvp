@@ -1127,3 +1127,34 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The historical campaign 326 row was not rewritten or deleted. After this
   deployment, that owner may select the verified video again and publish; the
   invalid media-less row no longer blocks today?s free run.
+
+## Spotlight expired-session truth repair - 2026-10-19
+
+- Production logs proved that the reported “could not connect this spotlight
+  to your shop” incident was not a media, community-link, or broadcast-write
+  failure. The affected phone received 401 Unauthorized twice from
+  POST /marketplace/shops; no later broadcast publication request occurred.
+  Other authenticated Spotlight/shop requests continued returning 200.
+- Shop Control had already captured the real authentication error, but the
+  publish caller overwrote it with a false generic shop-linkage message. The
+  same overwrite could also turn a legitimate submitted_for_review result
+  into an error.
+- The forward repair preserves the exact shop-preparation result. A 401 now
+  explains that sign-in expired, records the existing Spotlight recovery
+  target, clears only the stale access token, and opens the forced sign-in
+  flow. Sign-in explains that the phone media must be selected again because a
+  browser cannot retain a local file across reauthentication.
+- No backend authentication, shop/community contract, campaign schema,
+  delivery economics, or frozen Dashboard Market Wisdom surface changed.
+  Rolling back the visibility repair remains unsafe because it would restore
+  off-screen presentation lease consumption without correcting expired
+  sessions.
+- Verification passed: audit:spotlight-controls,
+  audit:spotlight-presentation-contract, targeted ESLint for the three
+  changed frontend files, and the 291-module frontend production build.
+- Residual truth: the separate complaint that Family Pride did not see another
+  member's already-published Spotlight is not proven solved by this session
+  repair. Production showed eligible campaigns and successful public
+  opportunity requests, but the authenticated response payload was not
+  captured. That replay/delivery path still requires a distinct eligible
+  member phone test and request/qualification evidence.

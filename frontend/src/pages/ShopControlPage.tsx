@@ -27,6 +27,7 @@ import {
   getMarketplaceShopByGmfnId,
   getMarketplaceShopAttentionSummary,
   getMarketplaceShopSpotlightStatus,
+  setAccessToken,
   listMarketplaceRequests,
   recordMarketplaceAttentionEvent,
   getMyMarketplaceShop,
@@ -3508,6 +3509,11 @@ function shopControlRequestErrorMessage(error: any): string {
   const governedMessage = marketplaceGovernanceErrorMessage(error);
   const message = safeStr(governedMessage || error?.message || error);
   const lower = message.toLowerCase();
+  if (Number(error?.status || 0) === 401) {
+    return (
+      "Your GSN sign-in expired before Spotlight could publish. Sign in again, then GSN will return you to Spotlight."
+    );
+  }
   if (
     lower.includes("failed to fetch") ||
     lower.includes("networkerror") ||
@@ -6496,6 +6502,19 @@ export default function ShopControlPage() {
         shopControlRequestErrorMessage(err) || "GSN could not create the shop record yet.";
       setSpotlightPublishFeedback({ tone: "error", text: errorMessage });
       showNotice("error", errorMessage);
+      if (Number(err?.status || 0) === 401) {
+        rememberPublishRecovery(
+          routes.freeSpotlight,
+          "shop-control.spotlight.shop.session-expired"
+        );
+        setAccessToken(null);
+        navigate(
+          `/login?session=expired&force=1&next=${encodeURIComponent(
+            routes.freeSpotlight
+          )}`,
+          { replace: true }
+        );
+      }
       return null;
     } finally {
       setCreatingSpotlightShop(false);
@@ -6735,13 +6754,7 @@ export default function ShopControlPage() {
       return;
     }
     const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
-    if (!activeShop?.id) {
-      const missingShopMessage =
-        "GSN could not connect this spotlight to your shop yet. Check the selected community, then try publish again.";
-      setSpotlightPublishFeedback({ tone: "error", text: missingShopMessage });
-      showNotice("error", missingShopMessage);
-      return;
-    }
+    if (!activeShop?.id) return;
 
     const targetClanId = Number(activeShop?.clan_id || selectedClanId || effectiveShopClanId || 0);
 

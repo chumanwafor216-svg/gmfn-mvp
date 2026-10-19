@@ -552,6 +552,7 @@ export default function LoginPage() {
     safeStr(searchParams.get("gmfn_id"));
   const founderCommunityName = safeStr(founderContext.clan_name || "");
   const forceLogin = searchParams.get("force") === "1";
+  const sessionExpired = searchParams.get("session") === "expired";
   const recoveryRequested =
     searchParams.get("recovery") === "1" || searchParams.get("mode") === "recovery";
   const recoveryPhoneFromQuery = safeStr(
@@ -583,7 +584,11 @@ export default function LoginPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(() =>
+    sessionExpired
+      ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
+      : null
+  );
   const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);

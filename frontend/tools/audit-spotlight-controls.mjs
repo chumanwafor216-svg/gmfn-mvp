@@ -101,6 +101,30 @@ assertContains(
   "Free Spotlight publish must quietly prepare a missing shop record and still attach the spotlight to the user's one shop."
 );
 
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /Number\(err\?\.status \|\| 0\) === 401[\s\S]*?rememberPublishRecovery\([\s\S]*?shop-control\.spotlight\.shop\.session-expired[\s\S]*?setAccessToken\(null\)[\s\S]*?\/login\?session=expired&force=1&next=/,
+  "Expired Spotlight shop sessions must preserve the publisher return target, clear the stale token, and open the existing forced sign-in recovery flow."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /const activeShop = shop\?\.id \? shop : await ensureSpotlightShopRecord\(\);\s*if \(!activeShop\?\.id\) return;/,
+  "The Spotlight publish caller must preserve the exact shop preparation outcome instead of overwriting authentication or governance feedback with a generic linkage error."
+);
+
+assertLineNotContains(
+  "src/pages/ShopControlPage.tsx",
+  /GSN could not connect this spotlight to your shop yet/,
+  "Spotlight must not hide authentication or governance outcomes behind a false shop-linkage error."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /const sessionExpired = searchParams\.get\("session"\) === "expired";[\s\S]*?previous sign-in expired before GSN could finish the action[\s\S]*?choose the picture or video again before publishing/,
+  "Forced sign-in recovery must explain why Spotlight stopped and that phone media must be selected again after login."
+);
+
 assertLineNotContains(
   "src/pages/ShopControlPage.tsx",
   /setSpotlightFlowStep\(shop\?\.id \? "upload" : "setup"\)/,
