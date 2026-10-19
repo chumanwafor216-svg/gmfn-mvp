@@ -58,6 +58,40 @@ Render will prompt for the `sync: false` values.
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET_NAME`
 
+### Phone verification activation
+
+The checked-in Blueprint deliberately keeps:
+
+- `GMFN_ENTRY_PHONE_DELIVERY=registration-only`
+- `GSN_PHONE_VERIFICATION_ENABLED=0`
+
+This prevents the public service from exposing preview OTPs or claiming SMS
+delivery before the paid provider rail is ready.
+
+To activate Twilio Verify, configure these values on `gmfn-api` without
+committing their values:
+
+- `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`, or a restricted
+  `TWILIO_API_KEY` and `TWILIO_API_SECRET`
+- `TWILIO_VERIFY_SERVICE_SID`
+- `GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY`
+- `GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY`
+
+Then enable the controls together:
+
+- `GSN_PAYMENT_OPERATIONS_ENABLED=1`
+- `GSN_PHONE_VERIFICATION_ENABLED=1`
+- `GSN_PHONE_VERIFICATION_PROVIDER=twilio_verify`
+- `GMFN_ENTRY_PHONE_DELIVERY=sms`
+
+`sync: false` Blueprint entries prompt only when a service is first created;
+for this existing service, set or rotate the values in the Render Dashboard.
+Save-and-deploy the API, then check the admin-only
+`/system/diagnostics/api-readiness` response. Do not run a paid controlled-phone
+test unless `phone.sms_or_verify` reports `live_ready`. A provider failure after
+the Pipeline Credit debit may still incur provider cost, so retain the audit
+row and do not describe the debit as proof of delivery.
+
 ## 4. Deploy behavior already configured
 
 The backend service is configured to:
@@ -242,8 +276,12 @@ Check these first:
 ## 7. Important deployment assumptions
 
 - production must run with `GMFN_DEV_MODE=0`
-- the university pilot can use `GMFN_ENTRY_PHONE_DELIVERY=preview` for controlled OTP verification without paid SMS delivery
-- live public SMS must remove the preview/manual OTP mode and configure a real SMS provider
+- local or explicitly isolated test environments may use
+  `GMFN_ENTRY_PHONE_DELIVERY=preview`; a public production pilot must not use a
+  visible preview code as proof of phone possession
+- production stays `registration-only` until the complete Twilio Verify and
+  Pipeline Credit activation sequence above passes; live public SMS must remove
+  preview/manual mode
 - production must set `DATABASE_URL`
 - production must set `GMFN_SECRET_KEY`
 - uploads use the Render persistent disk through `GMFN_UPLOADS_DIR=/var/data/gmfn-uploads`

@@ -492,6 +492,14 @@ Rules:
 - User completes Step 1 before Step 2.
 - User may create the community after Step 2 once phone registration or phone
   verification is attached to the entry.
+- Live phone mode must show a code-entry state only after the provider returns
+  a delivery receipt. It must not expose a preview code, claim an SMS was sent
+  after a provider/gate failure, or continue as verified before provider
+  approval. Preview mode must remain visibly labelled controlled testing and
+  must require an explicit confirm action rather than auto-confirming itself.
+- Live phone code-entry states provide one rate-limited resend action. A resend
+  failure must explain whether the wait limit, Pipeline Credit gate, or provider
+  blocked delivery; it must never imply a new code was sent.
 - Step 3 is optional at the front door and should explain that stronger checks
   such as bank/wallet, driver licence, passport/selfie, NIN, or other regional
   IDs can raise founder assurance later without blocking basic community setup.
@@ -1086,6 +1094,11 @@ Rules:
   missing evidence can be completed there.
 - If a signed-in completion route does not exist yet, say so plainly in the
   active task response.
+- Starting a signed-in phone check must not overwrite the member's current
+  phone or verified-phone timestamp. Attach the new number only after the
+  provider (or explicit controlled-preview check) approves the code, and keep
+  resend behind the same ownership, rate-limit, provider, and Pipeline Credit
+  boundaries.
 
 ## CommunityConfirmationPolicyPage
 

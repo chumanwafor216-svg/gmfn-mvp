@@ -1460,7 +1460,13 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             .first()
         )
 
-    phone_recorded = bool(phone or getattr(row, "phone_e164", None))
+    phone_recorded = bool(
+        phone
+        or (
+            getattr(row, "phone_e164", None)
+            and getattr(row, "verified_at", None) is not None
+        )
+    )
     phone_recorded_at = getattr(row, "created_at", None) if row else None
     payout = (
         db.query(UserPayoutDestination)

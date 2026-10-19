@@ -282,6 +282,32 @@ def test_api_readiness_diagnostics_sms_meter_ready_still_not_live_without_provid
 
     assert phone["configured"] is True
     assert phone["live_ready"] is False
-    assert phone["status"] == "meter_ready_provider_not_wired_no_sms_sent"
+    assert phone["status"] == "blocked_provider_disabled_or_incomplete"
     assert phone["credit_meter_required"] is True
-    assert "does not send SMS yet" in phone["boundary"]
+    assert "disabled by default" in phone["boundary"]
+
+
+def test_api_readiness_diagnostics_phone_live_requires_provider_and_meter(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
+    monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
+    monkeypatch.setenv("GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY", "1")
+    monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
+
+    res = client.get("/system/diagnostics/api-readiness")
+    assert res.status_code == 200, res.text
+    phone = {
+        item["key"]: item for item in res.json()["services"]
+    }["phone.sms_or_verify"]
+
+    assert phone["configured"] is True
+    assert phone["live_ready"] is True
+    assert phone["status"] == "live_ready"
+    assert "secret-token" not in res.text

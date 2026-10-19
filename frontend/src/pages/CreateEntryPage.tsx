@@ -20,6 +20,7 @@ import {
   loginAndStore,
   recordEntryOfficialId,
   recordEntryIdentityPhoto,
+  resendEntryPhoneVerification,
   resumeEntryPhoneVerification,
   saveEntryBankDetails,
   setSelectedClanId,
@@ -3080,29 +3081,16 @@ export default function CreateEntryPage() {
     }
 
     if (nextVerificationId > 0 && previewCode) {
-      const confirmed = await confirmEntryPhoneVerification({
-        verification_id: nextVerificationId,
-        code: previewCode,
-      });
-
       setOtpCode(otpDigits(previewCode));
-      setPhoneVerificationProof({
-        display_name: safeStr(confirmed?.display_name),
-        phone_e164: safeStr(confirmed?.phone_e164),
-        verified_at: safeStr(confirmed?.verified_at),
-        confirmation_message: safeStr(confirmed?.confirmation_message),
-        trust_event_response: confirmed?.trust_event_response || null,
-      });
-      setStep("community");
-      setOpenPanel("community");
-      focusPanel("community");
+      setStep("verify");
+      setOpenPanel("verification");
+      focusPanel("verification");
 
       return {
         verificationId: nextVerificationId,
-        autoConfirmed: true,
+        autoConfirmed: false,
         message:
-          safeStr(confirmed?.confirmation_message) ||
-          "Phone check completed. Set up the community now. You can add stronger founder checks as optional trust evidence.",
+          "A preview code is ready for controlled testing. Review and confirm it before continuing.",
       };
     }
 
@@ -3175,6 +3163,30 @@ export default function CreateEntryPage() {
       );
     } catch (err: any) {
       showError("phone", humanEntryErrorMessage(err, "Phone verification could not be completed."));
+    } finally {
+      finishAction();
+    }
+  }
+
+  async function handleResendVerification() {
+    if (busy || verificationId <= 0 || otpDeliveryMode !== "pending-sms") return;
+
+    beginAction("phone");
+    try {
+      const out = await resendEntryPhoneVerification({
+        verification_id: verificationId,
+        phone_e164: safeStr(phone),
+      });
+      setOtpPreview("");
+      setOtpCode("");
+      setOtpDeliveryMode(safeStr(out?.delivery_mode) || "pending-sms");
+      showSuccess(
+        "phone",
+        safeStr(out?.confirmation_message) ||
+          "A new code was accepted for SMS delivery. Enter it when it arrives."
+      );
+    } catch (err: any) {
+      showError("phone", humanEntryErrorMessage(err, "A new phone code could not be sent."));
     } finally {
       finishAction();
     }
@@ -5267,7 +5279,9 @@ export default function CreateEntryPage() {
                           fontSize: 14,
                         }}
                       >
-                        Record this phone to protect the entry. SMS evidence can be added later.
+                        {otpDeliveryMode === "pending-sms"
+                          ? "GSN has a provider delivery receipt. Enter the code from the SMS to prove you control this phone."
+                          : "Confirm the controlled-testing code before this phone can protect the entry."}
                       </div>
                     </div>
 
@@ -5312,7 +5326,7 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          Use this code only if the app has not delivered an SMS code yet.
+                          This code is visible only in controlled preview mode. It is not evidence that an SMS was delivered.
                         </div>
                       </div>
                     ) : otpDeliveryMode === "pending-sms" ? (
@@ -5327,20 +5341,28 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          SMS delivery is only needed when the live SMS rail is enabled. For this pilot, refresh this step to record the phone and continue.
+                          The provider accepted SMS delivery. Enter the code from your phone. If it does not arrive, wait for the resend limit before asking for another.
                         </div>
                       </div>
                     ) : null}
 
                     <div style={entryActionRowStyle(56)}>
                       <SecondaryButton
-                        onClick={clearVerificationBlock}
+                        onClick={
+                          otpDeliveryMode === "pending-sms"
+                            ? handleResendVerification
+                            : clearVerificationBlock
+                        }
                         minWidth={0}
                         stableHeight={56}
-                        debugId="create-entry.verification.clear-code"
+                        debugId={
+                          otpDeliveryMode === "pending-sms"
+                            ? "create-entry.verification.resend-code"
+                            : "create-entry.verification.clear-code"
+                        }
                         style={{ ...secondaryBtn(), ...entryActionStyle(56) }}
                       >
-                        Clear
+                        {otpDeliveryMode === "pending-sms" ? "Send again" : "Clear"}
                       </SecondaryButton>
                       <PrimaryButton
                         onClick={handleConfirmVerification}

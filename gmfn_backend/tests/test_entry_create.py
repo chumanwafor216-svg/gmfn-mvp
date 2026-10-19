@@ -804,7 +804,7 @@ def test_entry_records_country_and_official_id_without_provider_verification(cli
         assert "National Identification Number" in str(official_event.meta_json or official_event.meta)
 
 
-def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypatch):
+def test_entry_phone_sms_mode_fails_closed_without_provider_config(client, monkeypatch):
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
 
@@ -820,18 +820,9 @@ def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypat
             "phone_e164": "+2348011111011",
         },
     )
-    assert start_res.status_code == 201, start_res.text
-    start_body = start_res.json()
-
-    assert start_body["delivery_mode"] == "pending-sms"
-    assert start_body["otp_preview"] is None
-    assert start_body["registered_only"] is False
-    assert start_body["verified"] is False
-    assert start_body["provider_key"] == "phone.sms_or_verify"
-    assert start_body["workflow_key"] == "phone.sms_or_verify.delivery"
-    assert start_body["provider_delivery_status"] == "not_wired_no_sms_sent"
-    assert "did not send an SMS" in start_body["provider_delivery_boundary"]
-    assert "debit Pipeline Credits" in start_body["provider_delivery_boundary"]
+    assert start_res.status_code == 503, start_res.text
+    assert start_res.json()["detail"]["code"] == "phone_provider_not_ready"
+    assert "No SMS was sent" in start_res.json()["detail"]["message"]
 
     with SessionLocal() as db:
         after_debits = db.execute(

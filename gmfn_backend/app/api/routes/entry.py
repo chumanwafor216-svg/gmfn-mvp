@@ -31,6 +31,14 @@ from app.db.models import (
 )
 from app.db.verification_models import IdentityVerificationCheck
 from app.services.notification_service import create_notification
+from app.services.phone_verification_service import (
+    PhoneVerificationServiceError,
+    begin_live_phone_verification,
+    confirm_live_phone_verification,
+    confirm_preview_code,
+    prepare_preview_code,
+    provider_delivery_context,
+)
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.trust_score_service import apply_trust_score
 
@@ -302,6 +310,7 @@ class EntryPhoneStartOut(BaseModel):
     workflow_key: Optional[str] = None
     provider_delivery_status: Optional[str] = None
     provider_delivery_boundary: Optional[str] = None
+    retry_after_seconds: Optional[int] = None
 
 
 class EntryPhoneConfirmIn(BaseModel):
@@ -314,6 +323,21 @@ class EntryPhoneConfirmIn(BaseModel):
         return _reject_bool_float_integer(value, info.field_name)
 
     @field_validator("code", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
+class EntryPhoneResendIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+    phone_e164: str = Field(..., min_length=8, max_length=32)
+
+    @field_validator('verification_id', mode='before')
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator('phone_e164', mode='before')
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -787,10 +811,6 @@ def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
     return max(10, min(minutes, 24 * 60))
 
 
-def _generate_code() -> str:
-    return f"{secrets.randbelow(900000) + 100000}"
-
-
 def _phone_provider_delivery_context(delivery_mode: str) -> dict[str, Any]:
     if delivery_mode != "pending-sms":
         return {
@@ -802,9 +822,9 @@ def _phone_provider_delivery_context(delivery_mode: str) -> dict[str, Any]:
     return {
         "provider_key": "phone.sms_or_verify",
         "workflow_key": "phone.sms_or_verify.delivery",
-        "provider_delivery_status": "not_wired_no_sms_sent",
+        "provider_delivery_status": "provider_receipt_not_present",
         "provider_delivery_boundary": (
-            "SMS provider delivery is not wired in this backend slice. GSN created a verification code, but it did not send an SMS, debit Pipeline Credits, or prove phone ownership by provider delivery."
+            "No live provider receipt is recorded for this session. It must not be treated as proof that an SMS was sent or that phone ownership was verified."
         ),
     }
 
@@ -1613,6 +1633,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         email=email,
     )
 
+    preview_code: Optional[str] = None
     if resumable is not None:
         if email and not _clean_text(resumable.email):
             resumable.email = email
@@ -1636,24 +1657,43 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         resumable.expires_at = _now() + timedelta(
             minutes=_entry_phone_session_minutes(preview_enabled=preview_enabled)
         )
+        verified_at = _utc_aware(resumable.verified_at)
+        is_verified = verified_at is not None
+        if preview_enabled and not is_verified:
+            preview_code = prepare_preview_code(db, resumable, commit=False)
         db.add(resumable)
         db.commit()
         db.refresh(resumable)
 
-        verified_at = _utc_aware(resumable.verified_at)
-        is_verified = verified_at is not None
+        provider_context = _phone_provider_delivery_context(delivery_mode)
+        if delivery_mode == "pending-sms" and resumable.provider_key:
+            provider_context = provider_delivery_context(resumable)
+        if delivery_mode == "pending-sms" and not is_verified:
+            if resumable.provider_verification_id and resumable.provider_status in {
+                "pending",
+                "approved",
+            }:
+                provider_context = provider_delivery_context(resumable)
+            else:
+                try:
+                    provider_context = begin_live_phone_verification(db, resumable)
+                except PhoneVerificationServiceError as exc:
+                    raise HTTPException(
+                        status_code=exc.status_code,
+                        detail=exc.detail(),
+                    ) from exc
         return {
             "ok": True,
             "verification_id": int(resumable.id),
             "phone_e164": resumable.phone_e164,
             "expires_at": resumable.expires_at.isoformat(),
             "delivery_mode": delivery_mode,
-            "otp_preview": resumable.code if preview_enabled and not is_verified else None,
+            "otp_preview": preview_code if preview_enabled and not is_verified else None,
             "verified": is_verified,
             "registered_only": registration_only and not is_verified,
             "verified_at": verified_at.isoformat() if verified_at else None,
             "bank_details_recorded": resumable.bank_details_recorded_at is not None,
-            **_phone_provider_delivery_context(delivery_mode),
+            **provider_context,
             "confirmation_message": (
                 "GSN found your unfinished entry record and reopened it so you can continue."
                 if not is_verified and not registration_only
@@ -1671,15 +1711,16 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         browser_timezone=browser_timezone,
         phone_country_hint=phone_country_hint,
         locale_country_hint=locale_country_hint,
-        code=_generate_code(),
+        code=None,
         expires_at=_now()
         + timedelta(minutes=_entry_phone_session_minutes(preview_enabled=preview_enabled)),
         verified_at=None,
         consumed_at=None,
     )
     db.add(verification)
-    db.commit()
-    db.refresh(verification)
+    db.flush()
+    if preview_enabled:
+        preview_code = prepare_preview_code(db, verification, commit=False)
     _upsert_entry_identity_profile_check(
         db,
         verification=verification,
@@ -1692,6 +1733,17 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         device_label=payload.device_label,
     )
     db.commit()
+    db.refresh(verification)
+
+    provider_context = _phone_provider_delivery_context(delivery_mode)
+    if delivery_mode == "pending-sms":
+        try:
+            provider_context = begin_live_phone_verification(db, verification)
+        except PhoneVerificationServiceError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail=exc.detail(),
+            ) from exc
 
     return {
         "ok": True,
@@ -1699,9 +1751,9 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         "phone_e164": phone_e164,
         "expires_at": verification.expires_at.isoformat(),
         "delivery_mode": delivery_mode,
-        "otp_preview": verification.code if preview_enabled else None,
+        "otp_preview": preview_code if preview_enabled else None,
         "registered_only": registration_only,
-        **_phone_provider_delivery_context(delivery_mode),
+        **provider_context,
         "confirmation_message": _phone_registration_only_message(verification)
         if registration_only
         else None,
@@ -1727,11 +1779,24 @@ def confirm_entry_phone_verification(
     if _verification_expired(row):
         raise HTTPException(status_code=400, detail="Phone verification code has expired")
 
-    if _clean_text(payload.code) != str(row.code):
+    try:
+        code_approved = (
+            confirm_live_phone_verification(db, row, payload.code)
+            if row.provider_key
+            else confirm_preview_code(db, row, payload.code)
+        )
+    except PhoneVerificationServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail(),
+        ) from exc
+    if not code_approved:
         raise HTTPException(status_code=400, detail="Verification code is not correct")
 
     verified_at = _now()
     row.verified_at = verified_at
+    row.code = None
+    row.code_digest = None
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -1755,6 +1820,57 @@ def confirm_entry_phone_verification(
                 "GSN will write this as a permanent trust event on your record."
             ),
         },
+    }
+
+
+@router.post("/phone/resend", response_model=EntryPhoneStartOut)
+def resend_entry_phone_verification(
+    payload: EntryPhoneResendIn,
+    db: Session = Depends(get_db),
+):
+    row = (
+        db.query(EntryPhoneVerification)
+        .filter(EntryPhoneVerification.id == int(payload.verification_id))
+        .first()
+    )
+    phone_e164 = _normalize_phone(payload.phone_e164, allow_legacy_local=True)
+    if not row or phone_e164 not in _phone_identity_candidates(
+        _normalize_phone(getattr(row, "phone_e164", None), allow_legacy_local=True)
+    ):
+        raise HTTPException(status_code=404, detail="Phone verification session not found")
+    if row.consumed_at is not None or row.verified_at is not None:
+        raise HTTPException(status_code=409, detail="Phone verification is already complete")
+    if _entry_phone_delivery_mode() != "pending-sms":
+        raise HTTPException(
+            status_code=409,
+            detail="Live SMS delivery is not enabled for this environment.",
+        )
+
+    try:
+        provider_context = begin_live_phone_verification(db, row)
+    except PhoneVerificationServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail(),
+        ) from exc
+    row.expires_at = _now() + timedelta(
+        minutes=_entry_phone_session_minutes(preview_enabled=False)
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "verification_id": int(row.id),
+        "phone_e164": row.phone_e164,
+        "expires_at": row.expires_at.isoformat(),
+        "delivery_mode": "pending-sms",
+        "otp_preview": None,
+        "verified": False,
+        "registered_only": False,
+        "bank_details_recorded": row.bank_details_recorded_at is not None,
+        **provider_context,
+        "confirmation_message": "A new code was accepted for SMS delivery.",
     }
 
 

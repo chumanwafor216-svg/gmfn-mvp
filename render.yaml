@@ -23,7 +23,21 @@ services:
       - key: GMFN_AUTO_CREATE_SCHEMA
         value: "0"
       - key: GMFN_ENTRY_PHONE_DELIVERY
-        value: preview
+        value: registration-only
+      - key: GSN_PHONE_VERIFICATION_ENABLED
+        value: "0"
+      - key: GSN_PHONE_VERIFICATION_PROVIDER
+        value: twilio_verify
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+      - key: GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY
+        sync: false
+      - key: GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY
+        sync: false
       - key: GMFN_ENABLE_RECONCILIATION_LOOP
         value: "0"
       - key: GSN_ENABLE_SPOTLIGHT_RETENTION_LOOP

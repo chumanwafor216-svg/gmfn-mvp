@@ -15,6 +15,7 @@ from app.core.auth import get_current_user
 from app.core.constants import PROTOCOL_VERSION
 from app.db.database import get_db
 from app.db.models import MarketplaceProduct, MarketplaceShop, User
+from app.services.phone_verification_service import phone_provider_readiness_payload
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -365,10 +366,17 @@ def api_readiness_diagnostics(
         provider_key="phone.sms_or_verify",
         workflow_key="phone.sms_or_verify.delivery",
     )
-    if phone_live_requested and phone_credit_meter_ready:
-        phone_status = "meter_ready_provider_not_wired_no_sms_sent"
-    elif phone_live_requested:
-        phone_status = "live_requested_without_provider"
+    phone_provider = phone_provider_readiness_payload()
+    phone_provider_ready = bool(phone_provider.get("ready"))
+    phone_live_ready = bool(
+        phone_live_requested and phone_provider_ready and phone_credit_meter_ready
+    )
+    if phone_live_ready:
+        phone_status = "live_ready"
+    elif phone_live_requested and not phone_provider_ready:
+        phone_status = "blocked_provider_disabled_or_incomplete"
+    elif phone_live_requested and not phone_credit_meter_ready:
+        phone_status = "blocked_missing_pipeline_credit_meter"
     else:
         phone_status = "record_only_or_preview"
     callback_mode = _env_mode("GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE", "disabled")
@@ -458,19 +466,23 @@ def api_readiness_diagnostics(
             label="Phone/SMS verification delivery",
             category="identity_verification",
             status=phone_status,
-            configured=phone_live_requested,
-            live_ready=False,
+            configured=bool(phone_live_requested or phone_provider_ready),
+            live_ready=phone_live_ready,
             paid_provider=True,
             credit_meter_required=True,
             env_signals=[
                 "GMFN_ENTRY_PHONE_DELIVERY",
+                "GSN_PHONE_VERIFICATION_ENABLED",
+                "GSN_PHONE_VERIFICATION_PROVIDER",
+                "TWILIO_VERIFY_SERVICE_SID_present",
+                "TWILIO_API_KEY_and_TWILIO_API_SECRET_or_account_credentials_present",
                 "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY_or_fallback_present",
                 "GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY_or_fallback_present",
             ],
             boundary=(
-                "The entry flow can record or preview phone verification, but no direct SMS/WhatsApp provider client is wired here. Even with Pipeline Credit meter config, this backend does not send SMS yet."
+                "Twilio Verify delivery is fail-closed and disabled by default. GSN reports delivery only after a provider receipt and records ownership only after provider approval."
             ),
-            next_step="Wire exactly one SMS or verification provider behind Pipeline Credits before promising live phone delivery; failed attempts and abuse can cost money.",
+            next_step="Configure Twilio Verify, the kill switch, and the Pipeline Credit account/cost together; then run a controlled-number sandbox test before changing the delivery mode.",
         ),
         _readiness_item(
             key="web_push.browser",

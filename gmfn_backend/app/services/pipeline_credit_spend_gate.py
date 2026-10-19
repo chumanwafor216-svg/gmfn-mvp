@@ -45,7 +45,7 @@ PIPELINE_PROVIDER_GATE_CATALOG: tuple[dict[str, Any], ...] = (
         "provider_key": "phone.sms_or_verify",
         "workflow_key": "phone.sms_or_verify.delivery",
         "label": "SMS or phone verification provider delivery",
-        "integration_status": "not_wired",
+        "integration_status": "wired_disabled_by_default",
     },
     {
         "provider_key": "email.transactional",

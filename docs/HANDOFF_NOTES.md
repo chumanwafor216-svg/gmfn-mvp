@@ -8,6 +8,52 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Verified local live phone-verification foundation - 2026-10-19
+
+- Status: implemented, verified, and committed locally in the OTP work commit;
+  not pushed, deployed, or live-provider activated. Production remains deliberately
+  `registration-only` with the phone-provider kill switch off until real
+  Twilio Verify credentials, a Verify Service, funded Pipeline Credits, and a
+  controlled-number test exist.
+- One shared fail-closed service now owns public-entry and signed-in phone
+  delivery. Twilio Verify is the first adapter. Every start/resend reserves an
+  abuse-limited attempt, debits the `phone.sms_or_verify.delivery` Pipeline
+  Credit gate, then calls the provider. GSN reports delivery only after a
+  provider receipt and records ownership only after provider status
+  `approved` with `valid=true`.
+- New preview codes are HMAC-digested rather than stored in plaintext; live
+  codes are never generated or stored locally. Preview and live checks share a
+  five-attempt default. Live sends default to a 60-second cooldown, three sends
+  per session, and five sends per phone/window. Provider responses are reduced
+  to non-secret receipt/status fields.
+- Signed-in start no longer overwrites `User.phone_e164` or leaves an old
+  `phone_verified_at` attached to a new unconfirmed number. Candidate sessions
+  bind to `owner_user_id`; the user phone changes only after confirmation.
+  A start event is now `identity.phone_verification_started`, so TrustSlip and
+  Identity Integrity do not present an unconfirmed candidate as recorded phone
+  evidence.
+- Public and signed-in resend routes and UI are present. Preview mode no longer
+  auto-confirms itself. Live UI distinguishes provider-receipted delivery from
+  ownership approval and exposes a rate-limited resend.
+- Migration head is
+  `20261019_phone_verification_provider_audit_v1`. The architectural and
+  activation decision is recorded in
+  `docs/GSN_PHONE_VERIFICATION_PROVIDER_DECISION_2026-10-19.md`.
+- Verification: 82 focused backend tests passed after the final fail-closed
+  tightening. The full backend run produced 1,503 passes, 16 skips, and 16
+  Windows-temp setup errors with no assertion failures; the 16 blocked tests
+  then passed under an escalated writable base temp, giving 1,519 unique
+  backend passes and 16 skips. The 290-module frontend production build,
+  entry/auth audit, member-entry audit, and complete protected-button freeze
+  passed. `render.yaml` parsed successfully and Alembic reports the new single
+  head.
+- Render Blueprint guidance affected the rollout: secrets are represented only
+  as `sync: false` keys, and the deployment guide warns that existing Render
+  services must set them in the Dashboard because later Blueprint syncs ignore
+  new `sync: false` prompts. The current Render documentation fetch returned
+  no readable content in this environment, so the local bundled Render guidance
+  and YAML parsing were used; Render CLI validation was unavailable.
+
 ## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
 
 - Status: the implementation was committed as `45a8f383` (`Simplify My GSN
@@ -140,13 +186,14 @@ under `docs/` or `docs/archive/`, then link that file here.
   focused-product, and live-Spotlight cases. This is local synthetic coverage,
   not an authenticated production write or a deployment claim.
 
-## Deferred activation priorities after wording - 2026-10-18
+## Deferred operational activation priorities after wording - 2026-10-18
 
-- **Phone OTP is not live-provider activated.** The repository contains the
-  phone-verification records, start/confirm/resume UI and routes, and local
-  preview/development behavior. The production backend does not currently wire
-  a direct SMS or WhatsApp provider client, so it cannot truthfully claim to
-  send a live OTP yet.
+- **Phone OTP is provider-capable but not live-provider activated.** The
+  repository now contains a Twilio Verify adapter, Pipeline Credit spend gate,
+  audit fields, rate limits, resend routes, and fail-closed UI. Production stays
+  `registration-only` and the provider kill switch stays off until credentials,
+  credits, account approval, country coverage, and a controlled handset test
+  are proven. Local mocked-provider tests do not prove real SMS delivery.
 - **Pipeline Credit purchasing and spending are not operationally activated.**
   The repository contains substantial ledger, catalogue, spend-gate,
   diagnostics, Stripe purchase, and expected bank-payment/top-up foundations,

@@ -313,7 +313,7 @@ def test_trustslip_me_exposes_official_id_context_before_phone_verification(
     )
 
 
-def test_signed_in_phone_start_sms_mode_reports_no_provider_send(
+def test_signed_in_phone_start_sms_mode_fails_closed_without_provider(
     client: TestClient,
     monkeypatch,
     override_current_user_user,
@@ -326,19 +326,14 @@ def test_signed_in_phone_start_sms_mode_reports_no_provider_send(
         "/entry/signed-in/phone/start",
         json={"phone_e164": "+447700900112", "country": "GB"},
     )
-    assert start_res.status_code == 201, start_res.text
-    body = start_res.json()
+    assert start_res.status_code == 503, start_res.text
+    assert start_res.json()["detail"]["code"] == "phone_provider_not_ready"
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user.phone_e164 is None
+        assert user.phone_verified_at is None
 
-    assert body["registered"] is True
-    assert body["delivery_mode"] == "pending-sms"
-    assert body["otp_preview"] is None
-    assert body["provider_key"] == "phone.sms_or_verify"
-    assert body["workflow_key"] == "phone.sms_or_verify.delivery"
-    assert body["provider_delivery_status"] == "not_wired_no_sms_sent"
-    assert "did not send an SMS" in body["provider_delivery_boundary"]
-    assert "debit Pipeline Credits" in body["provider_delivery_boundary"]
-
-def test_signed_in_phone_start_records_system_generated_phone_evidence(
+def test_signed_in_phone_start_does_not_attach_phone_until_code_confirmed(
     client: TestClient,
     monkeypatch,
     override_current_user_user,
@@ -359,24 +354,33 @@ def test_signed_in_phone_start_records_system_generated_phone_evidence(
 
     with SessionLocal() as db:
         user = db.get(User, 1)
-        assert user.phone_e164 == "+447700900111"
+        assert user.phone_e164 is None
         assert user.phone_verified_at is None
         event = (
             db.query(TrustEvent)
             .filter(
                 TrustEvent.subject_user_id == 1,
-                TrustEvent.event_type == "identity.phone_registered",
+                TrustEvent.event_type == "identity.phone_verification_started",
             )
             .one()
         )
         assert event.clan_id == 1
         payload = get_trust_slip_payload(db, user_id=1)
 
-    assert payload["identity_context"]["phone_recorded"] is True
+    assert payload["identity_context"]["phone_recorded"] is False
     assert payload["identity_context"]["phone_verified"] is False
-    assert payload["identity_context"]["phone_status_label"] == (
-        "Phone number recorded; network verification pending"
+    confirm_res = client.post(
+        "/entry/signed-in/phone/confirm",
+        json={
+            "verification_id": body["verification_id"],
+            "code": body["otp_preview"],
+        },
     )
+    assert confirm_res.status_code == 200, confirm_res.text
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user.phone_e164 == "+447700900111"
+        assert user.phone_verified_at is not None
 
 
 def test_signed_in_phone_start_releases_abandoned_pending_phone_identity(
@@ -412,7 +416,7 @@ def test_signed_in_phone_start_releases_abandoned_pending_phone_identity(
         assert abandoned.phone_e164 is None
         assert abandoned.email.startswith(f"abandoned-entry-{abandoned_id}-")
         assert signed_in is not None
-        assert signed_in.phone_e164 == "+447700900333"
+        assert signed_in.phone_e164 is None
         assert signed_in.phone_verified_at is None
 
 

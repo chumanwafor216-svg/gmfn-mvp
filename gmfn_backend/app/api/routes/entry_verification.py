@@ -18,6 +18,14 @@ from app.db.database import get_db
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, EntryPhoneVerification, User
 from app.db.verification_models import IdentityVerificationCheck
 from app.services.pipeline_credit_spend_gate import debit_provider_spend
+from app.services.phone_verification_service import (
+    PhoneVerificationServiceError,
+    begin_live_phone_verification,
+    confirm_live_phone_verification,
+    confirm_preview_code,
+    prepare_preview_code,
+    provider_delivery_context,
+)
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.verification_adapters.base import (
     VERIFICATION_STATUS_UNAVAILABLE,
@@ -142,6 +150,15 @@ class SignedInPhoneConfirmIn(BaseModel):
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
+
+
+class SignedInPhoneResendIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
 
 
 class SignedInOfficialIdRecordIn(BaseModel):
@@ -320,15 +337,11 @@ def _phone_provider_delivery_context(delivery_mode: str) -> dict[str, Any]:
     return {
         "provider_key": "phone.sms_or_verify",
         "workflow_key": "phone.sms_or_verify.delivery",
-        "provider_delivery_status": "not_wired_no_sms_sent",
+        "provider_delivery_status": "provider_receipt_not_present",
         "provider_delivery_boundary": (
-            "SMS provider delivery is not wired in this backend slice. GSN created a verification code, but it did not send an SMS, debit Pipeline Credits, or prove phone ownership by provider delivery."
+            "No live provider receipt is recorded for this session. It must not be treated as proof that an SMS was sent or that phone ownership was verified."
         ),
     }
-
-def _generate_code() -> str:
-    return f"{secrets.randbelow(1000000):06d}"
-
 
 def _active_clan_id_for_user(db: Session, user_id: int) -> Optional[int]:
     membership = (
@@ -605,23 +618,25 @@ def start_signed_in_phone_verification(
         display_name=_display_name_for_user(db_user),
         phone_e164=phone,
         email=_clean_text(getattr(db_user, "email", None)) or None,
+        owner_user_id=int(db_user.id),
         phone_country_hint=_normalize_region_code(payload.country),
-        code=_generate_code(),
+        code=None,
         expires_at=_now() + timedelta(minutes=15),
         verified_at=None,
         consumed_at=None,
     )
     db.add(verification)
-    db_user.phone_e164 = phone
-    db.add(db_user)
     db.flush()
+    preview_code: Optional[str] = None
+    if delivery_mode == "preview":
+        preview_code = prepare_preview_code(db, verification, commit=False)
 
     clan_id = _active_clan_id_for_user(db, int(db_user.id))
     meta = build_trust_meta(
-        reason="signed_in_phone_registered",
+        reason="signed_in_phone_verification_started",
         note=(
-            "Phone number was recorded from the signed-in Identity Integrity task. "
-            "It is recorded phone evidence until the code is confirmed."
+            "A phone verification session was started from the signed-in Identity Integrity task. "
+            "The number is not attached as phone evidence until the code is confirmed."
         ),
         system=True,
         extra={
@@ -633,7 +648,7 @@ def start_signed_in_phone_verification(
     )
     log_trust_event(
         db,
-        event_type="identity.phone_registered",
+        event_type="identity.phone_verification_started",
         clan_id=clan_id,
         actor_user_id=int(db_user.id),
         subject_user_id=int(db_user.id),
@@ -645,6 +660,21 @@ def start_signed_in_phone_verification(
     db.commit()
     db.refresh(verification)
 
+    provider_context = _phone_provider_delivery_context(delivery_mode)
+    if delivery_mode == "pending-sms":
+        try:
+            provider_context = begin_live_phone_verification(
+                db,
+                verification,
+                user_id=int(db_user.id),
+                clan_id=clan_id,
+            )
+        except PhoneVerificationServiceError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail=exc.detail(),
+            ) from exc
+
     return {
         "ok": True,
         "registered": True,
@@ -652,11 +682,72 @@ def start_signed_in_phone_verification(
         "phone_e164": phone,
         "expires_at": verification.expires_at.isoformat(),
         "delivery_mode": delivery_mode,
-        "otp_preview": verification.code if delivery_mode == "preview" else None,
-        **_phone_provider_delivery_context(delivery_mode),
+        "otp_preview": preview_code if delivery_mode == "preview" else None,
+        **provider_context,
         "message": (
             "Phone code created. Confirm the code to attach this phone to your signed-in identity."
         ),
+    }
+
+
+@router.post("/signed-in/phone/resend")
+def resend_signed_in_phone_verification(
+    payload: SignedInPhoneResendIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_user = db.get(User, int(current_user.id))
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Signed-in user was not found")
+    row = (
+        db.query(EntryPhoneVerification)
+        .filter(EntryPhoneVerification.id == int(payload.verification_id))
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Phone verification session not found")
+    owner_email = _clean_text(getattr(db_user, "email", None)).lower()
+    owner_user_id = int(getattr(row, "owner_user_id", 0) or 0)
+    legacy_email_mismatch = (
+        owner_user_id == 0
+        and _clean_text(row.email).lower()
+        and _clean_text(row.email).lower() != owner_email
+    )
+    if (owner_user_id and owner_user_id != int(db_user.id)) or legacy_email_mismatch:
+        raise HTTPException(status_code=403, detail="Phone verification session does not belong to this user")
+    if row.consumed_at is not None or row.verified_at is not None:
+        raise HTTPException(status_code=409, detail="Phone verification is already complete")
+    if _signed_in_phone_delivery_mode() != "pending-sms":
+        raise HTTPException(
+            status_code=409,
+            detail="Live SMS delivery is not enabled for this environment.",
+        )
+
+    try:
+        provider_context = begin_live_phone_verification(
+            db,
+            row,
+            user_id=int(db_user.id),
+            clan_id=_active_clan_id_for_user(db, int(db_user.id)),
+        )
+    except PhoneVerificationServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail(),
+        ) from exc
+    row.expires_at = _now() + timedelta(minutes=15)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "verification_id": int(row.id),
+        "phone_e164": row.phone_e164,
+        "expires_at": row.expires_at.isoformat(),
+        "delivery_mode": "pending-sms",
+        "otp_preview": None,
+        **provider_context,
+        "message": "A new code was accepted for SMS delivery.",
     }
 
 
@@ -680,14 +771,34 @@ def confirm_signed_in_phone_verification(
         raise HTTPException(status_code=400, detail="Phone verification session has already been used")
     if _verification_expired(row):
         raise HTTPException(status_code=400, detail="Phone verification code has expired")
-    if _clean_text(row.email).lower() and _clean_text(row.email).lower() != _clean_text(getattr(db_user, "email", None)).lower():
+    owner_user_id = int(getattr(row, "owner_user_id", 0) or 0)
+    legacy_email_mismatch = (
+        owner_user_id == 0
+        and _clean_text(row.email).lower()
+        and _clean_text(row.email).lower()
+        != _clean_text(getattr(db_user, "email", None)).lower()
+    )
+    if (owner_user_id and owner_user_id != int(db_user.id)) or legacy_email_mismatch:
         raise HTTPException(status_code=403, detail="Phone verification session does not belong to this user")
-    if _clean_text(payload.code) != str(row.code):
+    try:
+        code_approved = (
+            confirm_live_phone_verification(db, row, payload.code)
+            if row.provider_key
+            else confirm_preview_code(db, row, payload.code)
+        )
+    except PhoneVerificationServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail(),
+        ) from exc
+    if not code_approved:
         raise HTTPException(status_code=400, detail="Verification code is not correct")
 
     verified_at = _now()
     row.verified_at = verified_at
     row.consumed_at = verified_at
+    row.code = None
+    row.code_digest = None
     db_user.phone_e164 = row.phone_e164
     db_user.phone_verified_at = verified_at
     db.add(row)

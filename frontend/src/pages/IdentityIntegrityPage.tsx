@@ -27,6 +27,7 @@ import {
   confirmSignedInPhoneVerification,
   recordSignedInIdentityPhoto,
   recordSignedInOfficialId,
+  resendSignedInPhoneVerification,
   safeCopy,
   setupIdentityRecovery,
   startSignedInPhoneVerification,
@@ -1891,6 +1892,7 @@ export default function IdentityIntegrityPage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneVerificationId, setPhoneVerificationId] = useState<number | null>(null);
   const [phoneOtpPreview, setPhoneOtpPreview] = useState("");
+  const [phoneDeliveryMode, setPhoneDeliveryMode] = useState("");
   const [phoneTaskMessage, setPhoneTaskMessage] = useState("");
   const [phoneTaskTone, setPhoneTaskTone] = useState<PhoneTaskTone>("success");
   const [phoneConflict, setPhoneConflict] = useState<PhoneConflictState | null>(null);
@@ -3100,24 +3102,19 @@ export default function IdentityIntegrityPage() {
       setPhoneVerificationId(Number(out?.verification_id || 0) || null);
       setPhoneOtpPreview(safeStr(out?.otp_preview));
       setPhoneCode(safeStr(out?.otp_preview));
-      setMe((prev: any) => ({
-        ...(prev || {}),
-        phone_e164: out?.phone_e164 || phoneInput,
-        phone_recorded: true,
-      }));
-      setIdentityCardGeneratedAt(new Date().toISOString());
+      setPhoneDeliveryMode(safeStr(out?.delivery_mode));
       setPhoneConflict(null);
       setPhoneTaskMessage(
         out?.otp_preview
           ? `System code generated: ${out.otp_preview}. Confirm it below.`
-          : "Phone number recorded. Waiting for delivery provider code; confirmation is still pending."
+          : "The provider accepted SMS delivery. Enter the code from your phone; ownership is still unconfirmed."
       );
       setPhoneTaskTone("success");
       showNotice(
         "success",
         out?.otp_preview
           ? "System phone code is ready in the phone task."
-          : "Phone number recorded. Confirmation is still pending."
+          : "SMS delivery was accepted. Confirmation is still pending."
       );
     } catch (err: any) {
       const conflict = parsePhoneTaskConflict(err);
@@ -3151,6 +3148,7 @@ export default function IdentityIntegrityPage() {
       setPhoneConflict(null);
       setPhoneCode("");
       setPhoneOtpPreview("");
+      setPhoneDeliveryMode("");
       const nextTrustSlip = await refreshTrustSlipAfterIdentityChange();
       const nextTrustSlipCode = safeStr(
         nextTrustSlip?.code ||
@@ -3172,6 +3170,31 @@ export default function IdentityIntegrityPage() {
       );
     } catch (err: any) {
       const message = structuredErrorMessage(err, "Phone code could not be confirmed.");
+      setPhoneTaskMessage(message);
+      setPhoneTaskTone("error");
+      showNotice("error", message);
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
+
+  async function handleResendPhoneVerification() {
+    if (phoneBusy || !phoneVerificationId || phoneDeliveryMode !== "pending-sms") return;
+
+    setPhoneBusy(true);
+    try {
+      const out = await resendSignedInPhoneVerification({
+        verification_id: phoneVerificationId,
+      });
+      setPhoneCode("");
+      setPhoneOtpPreview("");
+      setPhoneTaskMessage(
+        out?.message || "A new code was accepted for SMS delivery. Enter it when it arrives."
+      );
+      setPhoneTaskTone("success");
+      showNotice("success", "A new phone code was accepted for delivery.");
+    } catch (err: any) {
+      const message = structuredErrorMessage(err, "A new phone code could not be sent.");
       setPhoneTaskMessage(message);
       setPhoneTaskTone("error");
       showNotice("error", message);
@@ -4021,6 +4044,19 @@ export default function IdentityIntegrityPage() {
                       ) : null}
                     </div>
                   </div>
+                ) : null}
+                {phoneVerificationId && phoneDeliveryMode === "pending-sms" ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={handleResendPhoneVerification}
+                    disabled={phoneBusy}
+                    stableHeight={52}
+                    fullWidth
+                    debugId="identity-integrity.phone-completion-resend"
+                    style={identityTaskButtonStyle()}
+                  >
+                    Send code again
+                  </SecondaryButton>
                 ) : null}
                 <PrimaryButton
                   type="submit"

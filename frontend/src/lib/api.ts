@@ -1167,6 +1167,16 @@ export async function confirmEntryPhoneVerification(payload: {
   });
 }
 
+export async function resendEntryPhoneVerification(payload: {
+  verification_id: number | string;
+  phone_e164: string;
+}): Promise<any> {
+  return httpJson("/entry/phone/resend", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+  });
+}
+
 export async function resumeEntryPhoneVerification(payload: {
   verification_id: number | string;
   phone_e164: string;
@@ -1307,6 +1317,14 @@ export async function confirmSignedInPhoneVerification(payload: {
   return httpJson("/entry/signed-in/phone/confirm", "POST", {
     verification_id: Number(payload?.verification_id || 0),
     code: String(payload?.code || "").trim(),
+  });
+}
+
+export async function resendSignedInPhoneVerification(payload: {
+  verification_id: number | string;
+}): Promise<any> {
+  return httpJson("/entry/signed-in/phone/resend", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
   });
 }
 

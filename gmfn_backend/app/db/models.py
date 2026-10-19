@@ -2339,7 +2339,27 @@ class EntryPhoneVerification(Base):
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     phone_e164: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    code: Mapped[str] = mapped_column(String(12), nullable=False)
+    code: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)
+    code_digest: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    provider_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    provider_verification_id: Mapped[Optional[str]] = mapped_column(
+        String(128), nullable=True, index=True
+    )
+    provider_status: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    provider_response_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    provider_error_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    owner_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    provider_send_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    provider_check_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pipeline_credit_ledger_entry_id: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, index=True
+    )
+    last_provider_send_attempt_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_provider_check_attempt_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     bank_account_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
     bank_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     bank_account_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
