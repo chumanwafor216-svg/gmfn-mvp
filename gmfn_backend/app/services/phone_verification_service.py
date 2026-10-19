@@ -59,6 +59,11 @@ class PhoneVerificationServiceError(RuntimeError):
             detail['retry_after_seconds'] = self.retry_after_seconds
         return detail
 
+    def response_headers(self) -> Optional[dict[str, str]]:
+        if self.retry_after_seconds is None:
+            return None
+        return {'Retry-After': str(max(1, int(self.retry_after_seconds)))}
+
 
 class TwilioVerifyError(RuntimeError):
     def __init__(self, code: str, *, http_status: int = 502) -> None:

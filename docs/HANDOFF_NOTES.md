@@ -53,6 +53,20 @@ under `docs/` or `docs/archive/`, then link that file here.
   new `sync: false` prompts. The current Render documentation fetch returned
   no readable content in this environment, so the local bundled Render guidance
   and YAML parsing were used; Render CLI validation was unavailable.
+- Follow-up route-boundary hardening now carries service cooldowns into a
+  standard HTTP `Retry-After` header while preserving the structured
+  `retry_after_seconds` response detail. Public and signed-in start, confirm,
+  and resend boundaries all use the shared error-header mapping.
+- Mocked-provider HTTP tests now prove the public and signed-in live-provider
+  paths require a provider receipt, expose no preview code, and attach a
+  signed-in phone only after provider confirmation. Separate ownership tests
+  prove a signed-in member receives `403` before any provider confirm/resend
+  call can run against another user's session. This remains local evidence;
+  it does not prove real Twilio delivery.
+- Verification for this follow-up passed 83 relevant backend tests across the
+  phone service, new route suite, public entry, signed-in identity, and input
+  boundary files. The isolated service/route pair passed 9 tests; Python
+  compilation and scoped diff checks also passed.
 
 ## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
 

@@ -34,6 +34,22 @@ def _enable_twilio(monkeypatch) -> None:
     monkeypatch.setenv('GMFN_SECRET_KEY', 'test-phone-secret')
 
 
+def test_service_error_exposes_retry_after_without_losing_structured_detail():
+    error = service.PhoneVerificationServiceError(
+        'phone_resend_too_soon',
+        'Wait before requesting another code.',
+        status_code=429,
+        retry_after_seconds=47,
+    )
+
+    assert error.detail() == {
+        'code': 'phone_resend_too_soon',
+        'message': 'Wait before requesting another code.',
+        'retry_after_seconds': 47,
+    }
+    assert error.response_headers() == {'Retry-After': '47'}
+
+
 def test_preview_code_is_hashed_and_legacy_plaintext_is_not_needed(monkeypatch):
     monkeypatch.setenv('GMFN_SECRET_KEY', 'test-phone-secret')
     row_id = _new_row()

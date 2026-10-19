@@ -673,6 +673,7 @@ def start_signed_in_phone_verification(
             raise HTTPException(
                 status_code=exc.status_code,
                 detail=exc.detail(),
+                headers=exc.response_headers(),
             ) from exc
 
     return {
@@ -734,6 +735,7 @@ def resend_signed_in_phone_verification(
         raise HTTPException(
             status_code=exc.status_code,
             detail=exc.detail(),
+            headers=exc.response_headers(),
         ) from exc
     row.expires_at = _now() + timedelta(minutes=15)
     db.add(row)
@@ -790,6 +792,7 @@ def confirm_signed_in_phone_verification(
         raise HTTPException(
             status_code=exc.status_code,
             detail=exc.detail(),
+            headers=exc.response_headers(),
         ) from exc
     if not code_approved:
         raise HTTPException(status_code=400, detail="Verification code is not correct")

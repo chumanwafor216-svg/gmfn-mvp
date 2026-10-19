@@ -1681,6 +1681,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
                     raise HTTPException(
                         status_code=exc.status_code,
                         detail=exc.detail(),
+                        headers=exc.response_headers(),
                     ) from exc
         return {
             "ok": True,
@@ -1743,6 +1744,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
             raise HTTPException(
                 status_code=exc.status_code,
                 detail=exc.detail(),
+                headers=exc.response_headers(),
             ) from exc
 
     return {
@@ -1789,6 +1791,7 @@ def confirm_entry_phone_verification(
         raise HTTPException(
             status_code=exc.status_code,
             detail=exc.detail(),
+            headers=exc.response_headers(),
         ) from exc
     if not code_approved:
         raise HTTPException(status_code=400, detail="Verification code is not correct")
@@ -1852,6 +1855,7 @@ def resend_entry_phone_verification(
         raise HTTPException(
             status_code=exc.status_code,
             detail=exc.detail(),
+            headers=exc.response_headers(),
         ) from exc
     row.expires_at = _now() + timedelta(
         minutes=_entry_phone_session_minutes(preview_enabled=False)
