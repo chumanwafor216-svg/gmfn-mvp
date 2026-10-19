@@ -159,7 +159,7 @@ def test_normalizer_caps_decoder_filter_and_encoder_threads(
     )
     commands: list[list[str]] = []
 
-    def fake_inspect(path):
+    def fake_inspect(path, **_kwargs):
         return output_inspection if Path(path) == output else source_inspection
 
     def fake_run(command, **_kwargs):
@@ -202,6 +202,51 @@ def test_normalizer_caps_decoder_filter_and_encoder_threads(
     assert encode_command[filter_index + 1] == str(FFMPEG_THREAD_LIMIT)
     x264_index = encode_command.index("-x264-params")
     assert encode_command[x264_index + 1] == "threads=1:lookahead_threads=1"
+
+
+def test_normalizer_defers_unreliable_source_duration_until_output_is_verified(
+    tmp_path: Path,
+    monkeypatch,
+):
+    source = _make_video(tmp_path / "social-download.mp4", seconds=2)
+    output = tmp_path / "qv1_social_download.mp4"
+    real_read_frames = imageio_ffmpeg.read_frames
+
+    def read_frames_with_unknown_source_duration(path, *args, **kwargs):
+        reader = real_read_frames(path, *args, **kwargs)
+        metadata = next(reader)
+        if Path(path) == source:
+            metadata = {**metadata, "duration": 0}
+
+        def wrapped_reader():
+            try:
+                yield metadata
+            finally:
+                reader.close()
+
+        return wrapped_reader()
+
+    monkeypatch.setattr(
+        "app.services.marketplace_media_quality_service.imageio_ffmpeg.read_frames",
+        read_frames_with_unknown_source_duration,
+    )
+
+    result = normalize_marketplace_video(source, output)
+
+    assert output.is_file()
+    assert result.source.duration_seconds == 0
+    assert result.output.duration_seconds >= 1
+    assert result.kept_seconds >= 1
+
+
+def test_normalizer_still_rejects_a_genuinely_subsecond_output(tmp_path: Path):
+    source = _make_video(tmp_path / "too-short.mp4", seconds=0.4)
+    output = tmp_path / "qv1_too_short.mp4"
+
+    with pytest.raises(MediaQualityError) as exc_info:
+        normalize_marketplace_video(source, output)
+
+    assert exc_info.value.code == "video_too_short"
 
 
 def test_verified_video_url_requires_qv1_managed_file(

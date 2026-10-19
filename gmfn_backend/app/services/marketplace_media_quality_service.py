@@ -107,7 +107,11 @@ def _safe_size(value: Any) -> tuple[int, int]:
     return max(0, width), max(0, height)
 
 
-def inspect_video(path: str | Path) -> VideoInspection:
+def inspect_video(
+    path: str | Path,
+    *,
+    defer_min_duration_check: bool = False,
+) -> VideoInspection:
     source_path = Path(path)
     if not source_path.is_file() or source_path.stat().st_size <= 0:
         raise MediaQualityError(
@@ -151,17 +155,27 @@ def inspect_video(path: str | Path) -> VideoInspection:
         duration_seconds=_safe_float(metadata.get("duration")),
         codec=str(metadata.get("codec") or "").strip().lower(),
     )
-    _validate_video_quality(inspection)
+    _validate_video_quality(
+        inspection,
+        defer_min_duration_check=defer_min_duration_check,
+    )
     return inspection
 
 
-def _validate_video_quality(inspection: VideoInspection) -> None:
+def _validate_video_quality(
+    inspection: VideoInspection,
+    *,
+    defer_min_duration_check: bool = False,
+) -> None:
     if inspection.width <= 0 or inspection.height <= 0:
         raise MediaQualityError(
             "video_dimensions_unknown",
             "GSN could not read this video's picture size. Record or export it again before uploading.",
         )
-    if inspection.duration_seconds < MIN_VIDEO_DURATION_SECONDS:
+    if (
+        not defer_min_duration_check
+        and inspection.duration_seconds < MIN_VIDEO_DURATION_SECONDS
+    ):
         raise MediaQualityError(
             "video_too_short",
             "The video must be at least 1 second long.",
@@ -230,7 +244,12 @@ def normalize_marketplace_video(
 ) -> NormalizedVideo:
     input_path = Path(source_path)
     destination = Path(output_path)
-    inspection = inspect_video(input_path)
+    # Some otherwise playable phone/social-video containers expose a usable
+    # picture stream but report zero or sub-second source duration to the
+    # lightweight metadata reader. Do not accept that metadata as the final
+    # quality decision. FFmpeg prepares the source first, then the normalised
+    # MP4 is inspected below with the one-second minimum still enforced.
+    inspection = inspect_video(input_path, defer_min_duration_check=True)
 
     try:
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
@@ -349,12 +368,16 @@ def normalize_marketplace_video(
             "GSN could not keep this video within the 10-second limit. Export a shorter clip and try again.",
         )
 
+    effective_duration = max(
+        inspection.duration_seconds,
+        output_inspection.duration_seconds,
+    )
     return NormalizedVideo(
         source=inspection,
         output=output_inspection,
         source_had_audio=has_audio,
         trimmed=inspection.duration_seconds > MAX_VIDEO_DURATION_SECONDS + 0.05,
-        kept_seconds=min(inspection.duration_seconds, MAX_VIDEO_DURATION_SECONDS),
+        kept_seconds=min(effective_duration, MAX_VIDEO_DURATION_SECONDS),
         size_bytes=output_size,
     )
 
