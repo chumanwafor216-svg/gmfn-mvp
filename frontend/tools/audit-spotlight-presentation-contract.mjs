@@ -87,7 +87,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /publicShopSpotlightSelectionCycles[\s\S]*?function loadPublicShopSpotlightPresentationCycle[\s\S]*?existingCycle\?\.promise[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?requestId[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId,\s*requestId\)[\s\S]*?serving_contract_version[\s\S]*?authoritative:\s*true[\s\S]*?items:\s*\[\][\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
+  /publicShopSpotlightSelectionCycles[\s\S]*?function loadPublicShopSpotlightPresentationCycle[\s\S]*?existingCycle\?\.promise[\s\S]*?publicShopSpotlightCycleIsAuthoritative[\s\S]*?requestId[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId,\s*requestId\)[\s\S]*?serving_contract_version[\s\S]*?safeItems[\s\S]*?authoritative:\s*true[\s\S]*?\.catch\(\(error\)[\s\S]*?publicShopSpotlightSelectionCycles\.delete\(cycleKey\)[\s\S]*?throw error/,
   "Public Shop canonical presentation selection must keep one stable issuance key, cache v2 empty results authoritatively, and fail closed for the bounded stale interval."
 );
 
@@ -275,6 +275,24 @@ assertContains(
   "gmfn_backend/app/services/spotlight_pacing_state_service.py",
   /to_volatile_state[\s\S]*?next_eligible_delivery_at=self\.next_eligible_delivery_at/,
   "Persistent next-eligible pacing state must reach the planner instead of being discarded."
+);
+
+assertContains(
+  'frontend/src/components/SpotlightMediaFrame.tsx',
+  /onMediaReady\?:[\s\S]*?onMediaUnavailable\?:[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?props\.onMediaUnavailable[\s\S]*?onLoadedData=\{reportMediaReady\}[\s\S]*?onCanPlay=\{reportMediaReady\}[\s\S]*?onLoad=\{reportMediaReady\}/,
+  'Shared Spotlight media must report real image/video readiness and terminal unavailability after bounded retries.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightHasRenderableMedia[\s\S]*?spotlightMediaReadyKey !== spotlightMediaKey[\s\S]*?qualifySpotlightPresentation[\s\S]*?onMediaReady=\{\(\) =>[\s\S]*?setSpotlightMediaReadyKey\(spotlightMediaKey\)[\s\S]*?onMediaUnavailable=\{\(\) =>[\s\S]*?this showing will not be counted/,
+  'Public Shop must not qualify or record a Spotlight until its actual media has rendered, and failed media must remain uncounted.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /\.catch\(\(error\) => \{[\s\S]*?publicShopSpotlightSelectionCycles\.delete\(cycleKey\)[\s\S]*?throw error[\s\S]*?viewerSpotlightRows === undefined[\s\S]*?retainedCanonicalBroadcasts[\s\S]*?loadViewerSpotlightRowsWithFeedback[\s\S]*?setSpotlightFeedError[\s\S]*?data-spotlight-feed-error/,
+  'Canonical request errors must stay distinct from a true empty result, retain current valid rows, and disclose automatic retry.'
 );
 
 if (findings.length > 0) {

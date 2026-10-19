@@ -2,6 +2,23 @@
 
 Date: 2026-05-04
 
+## Current Supersession Note (2026-10-19)
+
+The later canonical Spotlight contract in `docs/FREEZE_POLICY.md` lines 101-108
+supersedes the older Dashboard and publisher-location statements below:
+
+- Dashboard must not fetch, rotate, synthesize, or render live Spotlight.
+- Public Shop owns governed member/visitor presentation; Shop Control owns the
+  rich owner publisher, status, preview, correction, and withdrawal controls.
+- A new or replacement Spotlight must contain one successfully prepared and
+  persisted picture or video. Product text, a price note, or a message alone is
+  not publishable media and must not consume a free allowance or paid credit.
+- A presentation may qualify only after its picture or video reports ready.
+  Missing, failed, or still-loading media is not a qualifying impression.
+
+The historic line below is retained only as provenance. Where it says media is
+optional or Dashboard displays Spotlight, this supersession note governs.
+
 ## Frozen Line
 
 The Free Spotlight line is:

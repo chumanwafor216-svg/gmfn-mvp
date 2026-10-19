@@ -149,6 +149,36 @@ assertLineNotContains(
   "The video upload slot must not be conditionally unmounted by media choice."
 );
 
+assertContains(
+  'src/pages/ShopControlPage.tsx',
+  /const spotlightHasImage = Boolean\([\s\S]*?spotlightImageUrl[\s\S]*?const spotlightHasVideo = Boolean\([\s\S]*?spotlightVideoUrl[\s\S]*?const spotlightCanContinueToPreview =[\s\S]*?spotlightHasChosenMedia[\s\S]*?spotlightMediaFeedback\?\.tone !== 'error'/,
+  'Free Spotlight preview must require prepared or saved media and remain blocked after a media preparation error.'
+);
+
+assertContains(
+  'src/pages/ShopControlPage.tsx',
+  /if \(!manualImageUrl && !manualVideoUrl && !spotlightImageFile && !spotlightVideoFile\)[\s\S]*?return;[\s\S]*?const createRes =[\s\S]*?getMarketplaceShopSpotlightStatus[\s\S]*?authoritativeSpotlight[\s\S]*?could not verify the saved media[\s\S]*?clearSpotlightDraft\(\)/,
+  'Free Spotlight publish must reject media-less drafts and verify the authoritative saved media before clearing the draft.'
+);
+
+assertContains(
+  'src/pages/shopControl/ShopControlSpotlightWorkflow.tsx',
+  /data-spotlight-media-feedback[\s\S]*?disabled=\{creatingSpotlight \|\| !spotlightCanContinueToPreview\}/,
+  'Free Spotlight must keep media preparation feedback inline and lock Publish until the ready-media gate passes.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /const hasReadyMedia = Boolean\(imageFile \|\| videoFile\)[\s\S]*?if \(!hasReadyMedia \|\| mediaPreparationFailed\)[\s\S]*?getMarketplaceShopSpotlightStatus[\s\S]*?authoritativeSpotlight[\s\S]*?could not verify the saved media[\s\S]*?setMessage\(/,
+  'Subscription Spotlight must require ready media and verify authoritative persistence before clearing its draft.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /data-subscription-spotlight-media-feedback[\s\S]*?disabled=\{[\s\S]*?!hasReadyMedia[\s\S]*?mediaPreparationFailed/,
+  'Subscription Spotlight must keep media preparation feedback inline and disable Publish without ready media.'
+);
+
 if (findings.length > 0) {
   console.error("Spotlight controls audit failed:");
   for (const finding of findings) {

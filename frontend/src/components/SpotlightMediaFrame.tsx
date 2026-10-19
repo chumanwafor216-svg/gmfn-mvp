@@ -22,6 +22,8 @@ type SpotlightMediaFrameProps = {
   audioUnlockOffLabel?: string;
   audioUnlockErrorLabel?: string;
   audioUnlockStyle?: React.CSSProperties;
+  onMediaReady?: () => void;
+  onMediaUnavailable?: () => void;
 };
 
 function safeStr(value: unknown): string {
@@ -54,8 +56,12 @@ export default function SpotlightMediaFrame(
   const [audioError, setAudioError] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastAudioToggleRef = useRef(0);
+  const mediaReportRef = useRef<'pending' | 'ready' | 'unavailable'>(
+    'pending'
+  );
 
   useEffect(() => {
+    mediaReportRef.current = 'pending';
     setImageIndex(0);
     setVideoFailed(false);
     setImageFailed(false);
@@ -63,6 +69,31 @@ export default function SpotlightMediaFrame(
     setAudioUnlocked(false);
     setAudioError("");
   }, [imageCandidateKey, props.videoUrl]);
+
+  useEffect(() => {
+    const hasVideo = Boolean(safeStr(props.videoUrl));
+    const hasImage = imageCandidates.length > 0;
+    const videoUnavailable = !hasVideo || videoFailed;
+    const imageUnavailable =
+      !hasImage ||
+      (imageFailed && imageRetryCount >= IMAGE_AUTO_RETRY_LIMIT);
+
+    if (
+      videoUnavailable &&
+      imageUnavailable &&
+      mediaReportRef.current === 'pending'
+    ) {
+      mediaReportRef.current = 'unavailable';
+      props.onMediaUnavailable?.();
+    }
+  }, [
+    imageCandidates.length,
+    imageFailed,
+    imageRetryCount,
+    props.onMediaUnavailable,
+    props.videoUrl,
+    videoFailed,
+  ]);
 
   useEffect(() => {
     if (
@@ -144,6 +175,12 @@ export default function SpotlightMediaFrame(
   function stopMediaControlEvent(event?: React.SyntheticEvent) {
     event?.preventDefault();
     event?.stopPropagation();
+  }
+
+  function reportMediaReady() {
+    if (mediaReportRef.current === 'ready') return;
+    mediaReportRef.current = 'ready';
+    props.onMediaReady?.();
   }
 
   function toggleAudio(event?: React.SyntheticEvent) {
@@ -401,6 +438,8 @@ export default function SpotlightMediaFrame(
             playsInline
             preload="metadata"
             onError={() => setVideoFailed(true)}
+            onLoadedData={reportMediaReady}
+            onCanPlay={reportMediaReady}
             onLoadedMetadata={(event) => {
               const video = event.currentTarget;
               const shouldMute = props.mutedVideo ?? false;
@@ -455,6 +494,7 @@ export default function SpotlightMediaFrame(
           <img
             src={imageSrc}
             alt={props.alt}
+            onLoad={reportMediaReady}
             onError={() => {
               setImageIndex((prev) => {
                 const next = prev + 1;

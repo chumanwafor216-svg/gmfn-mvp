@@ -125,6 +125,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     currentActiveSpotlight,
     firstTruthy,
     spotlightPublishFeedback,
+    spotlightMediaFeedback,
     innerCard,
     labelWithIcon,
     shopName,
@@ -165,11 +166,13 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightImageInputKey,
     handleSpotlightImagePicked,
     spotlightImageFile,
+    spotlightHasImage,
     formatFileSize,
     preparingSpotlightVideo,
     spotlightVideoInputKey,
     handleSpotlightVideoPicked,
     spotlightVideoFile,
+    spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,
@@ -696,6 +699,17 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
                   {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
                 </div>
+                {spotlightMediaFeedback ? (
+                  <div
+                    data-spotlight-media-feedback={spotlightMediaFeedback.tone}
+                    style={{
+                      marginTop: 10,
+                      ...noticeCard(spotlightMediaFeedback.tone),
+                    }}
+                  >
+                    {spotlightMediaFeedback.text}
+                  </div>
+                ) : null}
                 <div
                   style={{
                     marginTop: 12,
@@ -777,7 +791,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   }}
                   style={{ display: "none" }}
                 />
-                {spotlightImageFile || spotlightVideoFile ? (
+                {spotlightHasImage || spotlightHasVideo ? (
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {spotlightImageFile ? (
                       <span style={badge(true)}>
@@ -790,6 +804,16 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                         {spotlightVideoDurationSeconds != null
                           ? ` - ${spotlightVideoDurationSeconds.toFixed(1)}s`
                           : ""}
+                      </span>
+                    ) : null}
+                    {spotlightHasImage && !spotlightImageFile ? (
+                      <span style={badge(true)}>
+                        {labelWithIcon('check', 'Saved picture ready')}
+                      </span>
+                    ) : null}
+                    {spotlightHasVideo && !spotlightVideoFile ? (
+                      <span style={badge(true)}>
+                        {labelWithIcon('check', 'Saved video ready')}
                       </span>
                     ) : null}
                   </div>
@@ -918,7 +942,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               <PrimaryButton
                 type="button"
                 onClick={() => handleCreateSpotlight()}
-                disabled={creatingSpotlight}
+                disabled={creatingSpotlight || !spotlightCanContinueToPreview}
                 busy={creatingSpotlight}
                 busyLabel="Publishing..."
                 fullWidth

@@ -26,6 +26,7 @@ import {
   getMe,
   getMarketplaceShopByGmfnId,
   getMarketplaceShopAttentionSummary,
+  getMarketplaceShopSpotlightStatus,
   listMarketplaceRequests,
   recordMarketplaceAttentionEvent,
   getMyMarketplaceShop,
@@ -3715,6 +3716,8 @@ export default function ShopControlPage() {
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<ShopControlSpotlightPriorityMode>("free");
   const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
     useState<SpotlightFeedbackState>(null);
+  const [spotlightMediaFeedback, setSpotlightMediaFeedback] =
+    useState<SpotlightFeedbackState>(null);
   const [spotlightFlowStep, setSpotlightFlowStep] = useState<SpotlightFlowStep>("upload");
   const [spotlightMediaChoice, setSpotlightMediaChoice] =
     useState<SpotlightMediaChoice>("image");
@@ -4061,6 +4064,7 @@ export default function ShopControlPage() {
     setSpotlightFlowStep("upload");
     setSpotlightMediaChoice("image");
     setSpotlightPublishFeedback(null);
+    setSpotlightMediaFeedback(null);
   }
 
   const loadPage = useCallback(async (options?: { background?: boolean; preferredClanId?: number | null }) => {
@@ -4158,6 +4162,7 @@ export default function ShopControlPage() {
 
         const [
           broadcastsRes,
+          spotlightStatusRes,
           vaultLinksRes,
           privateProductsRes,
           expectedRes,
@@ -4172,6 +4177,7 @@ export default function ShopControlPage() {
           apiJson<any>(
             `/api/marketplace/broadcasts?clan_id=${shopContextClanId || 0}&limit=20`
           ).catch(() => ({ items: [] })),
+          getMarketplaceShopSpotlightStatus(shopItem.id).catch(() => null),
           listVaultShopAccessLinks(shopItem.id).catch(() => []),
           apiJson<any>(
             `/api/marketplace/products?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
@@ -4197,13 +4203,41 @@ export default function ShopControlPage() {
               (item) => Number(item?.shop_id || 0) === Number(shopItem.id)
             )
           : [];
+        const ownerSpotlightInspection =
+          spotlightStatusRes?.owner_spotlight_inspection || null;
+        const ownerSpotlightState = safeStr(
+          ownerSpotlightInspection?.state
+        ).toLowerCase();
+        const ownerSpotlightItem = ownerSpotlightInspection?.item || null;
+        const ownerSpotlightCampaign = ownerSpotlightInspection?.campaign || null;
+        const correctionHoldSpotlight =
+          ownerSpotlightState === 'correction_hold' &&
+          Number(ownerSpotlightCampaign?.campaign_id || 0) > 0
+            ? {
+                id: -Number(ownerSpotlightCampaign.campaign_id),
+                shop_id: Number(shopItem.id),
+                spotlight_campaign_id: Number(ownerSpotlightCampaign.campaign_id),
+                serving_status: 'correction_hold',
+                campaign_serving_status: 'correction_hold',
+                content_version: Number(ownerSpotlightCampaign?.content_version || 0),
+                activated_at: ownerSpotlightCampaign?.activated_at || null,
+                authorized_expires_at:
+                  ownerSpotlightCampaign?.authorized_expires_at || null,
+                expires_at: ownerSpotlightCampaign?.authorized_expires_at || null,
+              }
+            : null;
+        const authoritativeSpotlights = spotlightStatusRes
+          ? [ownerSpotlightItem || correctionHoldSpotlight].filter(
+              Boolean
+            ) as BroadcastRecord[]
+          : visibleSpotlights;
 
         const privateManagedProducts = Array.isArray(privateProductsRes?.items)
           ? (privateProductsRes.items as ProductRecord[])
           : [];
 
         setProducts(privateManagedProducts.length > 0 ? privateManagedProducts : shopProducts);
-        setSpotlights(visibleSpotlights);
+        setSpotlights(authoritativeSpotlights);
         setVaultLinks(
           Array.isArray(vaultLinksRes) ? (vaultLinksRes as VaultLinkRecord[]) : []
         );
@@ -5579,8 +5613,12 @@ export default function ShopControlPage() {
     safeStr(latestSpotlightPayment?.confirmed_at) && activePaidSpotlights.length === 0
   );
 
-  const spotlightHasImage = Boolean(spotlightImageFile);
-  const spotlightHasVideo = Boolean(spotlightVideoFile);
+  const spotlightHasImage = Boolean(
+    spotlightImageFile || safeStr(spotlightImageUrl)
+  );
+  const spotlightHasVideo = Boolean(
+    spotlightVideoFile || safeStr(spotlightVideoUrl)
+  );
   const spotlightHasChosenMedia =
     spotlightHasImage || spotlightHasVideo;
   const spotlightHasProductText = Boolean(
@@ -5589,12 +5627,16 @@ export default function ShopControlPage() {
       safeStr(spotlightMessage)
   );
   const spotlightCanContinueToPreview =
-    spotlightHasProductText ||
+    spotlightHasChosenMedia &&
+    !preparingSpotlightImage &&
+    !preparingSpotlightVideo &&
+    spotlightMediaFeedback?.tone !== 'error' &&
+    (spotlightHasChosenMedia || spotlightHasProductText ||
     (spotlightMediaChoice === "both"
       ? spotlightHasChosenMedia
       : spotlightMediaChoice === "image"
       ? spotlightHasImage
-      : spotlightHasVideo);
+      : spotlightHasVideo));
 
   function pinShopControlLinkSection(sectionId?: string | null) {
     const targetId = safeStr(sectionId);
@@ -6459,6 +6501,7 @@ export default function ShopControlPage() {
 
     const validationIssue = validateSpotlightImageFile(file, false);
     if (validationIssue) {
+      setSpotlightMediaFeedback({ tone: 'error', text: validationIssue });
       showNotice("error", validationIssue);
       setSpotlightImageInputKey((prev) => prev + 1);
       return;
@@ -6466,6 +6509,10 @@ export default function ShopControlPage() {
 
     try {
       setPreparingSpotlightImage(true);
+      setSpotlightMediaFeedback({
+        tone: 'info',
+        text: 'Preparing the selected picture. Preview stays locked until it is ready.',
+      });
       const prepared = await prepareSpotlightImageFile(file, {
         maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
       });
@@ -6474,6 +6521,10 @@ export default function ShopControlPage() {
 
       const preparedValidationIssue = validateSpotlightImageFile(prepared.file, true);
       if (preparedValidationIssue) {
+        setSpotlightMediaFeedback({
+          tone: 'error',
+          text: preparedValidationIssue,
+        });
         showNotice("error", preparedValidationIssue);
         setSpotlightImageInputKey((prev) => prev + 1);
         return;
@@ -6489,8 +6540,18 @@ export default function ShopControlPage() {
           `${safeStr(prepared.file.name) || "Selected image"} is ready for spotlight publish.`
         );
       }
+      setSpotlightMediaFeedback({
+        tone: 'success',
+        text: `${safeStr(prepared.file.name) || 'Selected picture'} is ready for Spotlight.`,
+      });
     } catch (err: any) {
       if (spotlightImagePrepJobRef.current !== prepJob) return;
+      setSpotlightMediaFeedback({
+        tone: 'error',
+        text:
+          safeStr(err?.message) ||
+          'This picture could not be prepared. Choose a JPG, PNG, or WebP image; for an iPhone HEIC photo, save a JPEG or use a screenshot.',
+      });
       showNotice(
         "error",
         safeStr(err?.message) || "This image could not be prepared for spotlight publish."
@@ -6516,6 +6577,7 @@ export default function ShopControlPage() {
 
     const validationIssue = validateSpotlightVideoFile(file, false);
     if (validationIssue) {
+      setSpotlightMediaFeedback({ tone: 'error', text: validationIssue });
       showNotice("error", validationIssue);
       setSpotlightVideoInputKey((prev) => prev + 1);
       return;
@@ -6523,6 +6585,10 @@ export default function ShopControlPage() {
 
     try {
       setPreparingSpotlightVideo(true);
+      setSpotlightMediaFeedback({
+        tone: 'info',
+        text: 'Preparing the selected video. Preview stays locked until it is ready.',
+      });
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
         maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
@@ -6532,6 +6598,10 @@ export default function ShopControlPage() {
 
       const preparedValidationIssue = validateSpotlightVideoFile(prepared.file, true);
       if (preparedValidationIssue) {
+        setSpotlightMediaFeedback({
+          tone: 'error',
+          text: preparedValidationIssue,
+        });
         showNotice("error", preparedValidationIssue);
         setSpotlightVideoInputKey((prev) => prev + 1);
         return;
@@ -6548,8 +6618,18 @@ export default function ShopControlPage() {
           `${safeStr(prepared.file.name) || "Selected video"} is ready for spotlight publish.`
         );
       }
+      setSpotlightMediaFeedback({
+        tone: 'success',
+        text: `${safeStr(prepared.file.name) || 'Selected video'} is ready for Spotlight.`,
+      });
     } catch (err: any) {
       if (spotlightVideoPrepJobRef.current !== prepJob) return;
+      setSpotlightMediaFeedback({
+        tone: 'error',
+        text:
+          safeStr(err?.message) ||
+          'This video could not be prepared. Choose a playable MP4, WebM, or MOV file.',
+      });
       showNotice(
         "error",
         safeStr(err?.message) || "This video could not be prepared for spotlight publish."
@@ -6649,9 +6729,13 @@ export default function ShopControlPage() {
     const manualImageUrl = safeStr(spotlightImageUrl);
     const manualVideoUrl = safeStr(spotlightVideoUrl);
 
-    if (!message && !manualImageUrl && !manualVideoUrl && !spotlightImageFile && !spotlightVideoFile) {
+    if (!manualImageUrl && !manualVideoUrl && !spotlightImageFile && !spotlightVideoFile) {
+      setSpotlightMediaFeedback({
+        tone: 'error',
+        text: 'Add a ready picture or short video before publishing. Spotlight never publishes a blank media card.',
+      });
       const emptyMessage =
-        "Add product details, price, picture, or short video first, then tap Publish.";
+        'Add a ready picture or short video first, then tap Publish.';
       setSpotlightPublishFeedback({ tone: "error", text: emptyMessage });
       showNotice("error", emptyMessage);
       return;
@@ -6771,7 +6855,32 @@ export default function ShopControlPage() {
             idempotency_key: publicationIdempotencyKey,
           });
 
+      const authoritativeStatus = await getMarketplaceShopSpotlightStatus(
+        Number(activeShop.id)
+      );
+      const authoritativeInspection =
+        authoritativeStatus?.owner_spotlight_inspection || null;
+      const authoritativeState = safeStr(
+        authoritativeInspection?.state
+      ).toLowerCase();
+      const authoritativeSpotlight = authoritativeInspection?.item || null;
+      const authoritativeImageUrl = safeStr(authoritativeSpotlight?.image_url);
+      const authoritativeVideoUrl = safeStr(authoritativeSpotlight?.video_url);
+
+      if (
+        !authoritativeSpotlight ||
+        !['live', 'delivery_exhausted'].includes(authoritativeState) ||
+        (!authoritativeImageUrl && !authoritativeVideoUrl) ||
+        (imageUrl && !authoritativeImageUrl) ||
+        (videoUrl && !authoritativeVideoUrl)
+      ) {
+        throw new Error(
+          'GSN accepted the publish request but could not verify the saved media. Your draft has been kept. Refresh Spotlight status before trying again.'
+        );
+      }
+
       const createdSpotlight =
+        authoritativeSpotlight ||
         (createRes as any)?.item ||
         (Array.isArray((createRes as any)?.items)
           ? (createRes as any).items?.[0]
@@ -6808,12 +6917,7 @@ export default function ShopControlPage() {
           `${videoUrl ? " with short video." : "."}`;
 
       clearSpotlightDraft();
-      if (!replacingHeldContent) {
-        setSpotlights((prev) => [
-          optimisticSpotlight,
-          ...prev.filter((item) => Number(item?.id || 0) !== Number(optimisticSpotlight.id)),
-        ]);
-      }
+      setSpotlights([optimisticSpotlight]);
       setSpotlightPublishFeedback({
         tone: "success",
         text: successMessage,
@@ -7013,6 +7117,7 @@ export default function ShopControlPage() {
     currentActiveSpotlight,
     firstTruthy,
     spotlightPublishFeedback,
+    spotlightMediaFeedback,
     innerCard,
     labelWithIcon,
     shopName,
@@ -7056,11 +7161,13 @@ export default function ShopControlPage() {
     spotlightImageInputKey,
     handleSpotlightImagePicked,
     spotlightImageFile,
+    spotlightHasImage,
     formatFileSize,
     preparingSpotlightVideo,
     spotlightVideoInputKey,
     handleSpotlightVideoPicked,
     spotlightVideoFile,
+    spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,

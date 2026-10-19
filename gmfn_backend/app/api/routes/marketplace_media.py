@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import secrets
 import shutil
+from io import BytesIO
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import JSONResponse
+from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -52,6 +54,12 @@ CONTENT_TYPE_ALIASES = {
 }
 
 GENERIC_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
+
+IMAGE_FORMAT_EXTENSIONS = {
+    "JPEG": {".jpg", ".jpeg"},
+    "PNG": {".png"},
+    "WEBP": {".webp"},
+}
 
 
 def _is_admin(user: Any) -> bool:
@@ -182,6 +190,31 @@ def _validate_ext(media_type: str, ext: str) -> None:
                 detail="Unsupported video format. Use mp4, webm, or mov.",
             )
         return
+
+
+def _validate_decodable_image(data: bytes, *, ext: str) -> None:
+    try:
+        with Image.open(BytesIO(data)) as image:
+            detected_format = str(image.format or "").strip().upper()
+            image.verify()
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_image_file",
+                "message": "This picture could not be read. Choose a valid JPG, PNG, or WebP image.",
+            },
+        )
+
+    expected_extensions = IMAGE_FORMAT_EXTENSIONS.get(detected_format)
+    if expected_extensions is None or ext not in expected_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "image_format_mismatch",
+                "message": "The picture contents do not match its file extension.",
+            },
+        )
 
 
 def _max_bytes_for(media_type: str) -> int:
@@ -405,6 +438,9 @@ async def upload_marketplace_file_direct(
             detail=f"File is too large. Maximum allowed is {max_bytes // (1024 * 1024)}MB.",
         )
 
+    if media_type == "image":
+        _validate_decodable_image(raw, ext=ext)
+
     filepath = _upload_path_for(kind, filename)
     filepath.write_bytes(raw)
 
@@ -435,6 +471,8 @@ async def upload_marketplace_image(
     data = await _read_limited_bytes(file, MAX_IMAGE_BYTES)
     if not data:
         raise HTTPException(status_code=400, detail="Image file is empty.")
+
+    _validate_decodable_image(data, ext=ext)
 
     filename = _random_name(ext)
     filepath = _image_upload_dir() / filename

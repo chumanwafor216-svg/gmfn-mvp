@@ -61,6 +61,8 @@ class UserOut(BaseModel):
     cci_class: Optional[str] = None
     cci_reason: Optional[str] = None
     cci_tone: Optional[str] = None
+    cci_risk_flags: list[str] = Field(default_factory=list)
+    cci_requires_attention: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -472,6 +474,11 @@ def _build_cci_reason(
     return "Recent signals suggest caution before depending heavily on this record."
 
 
+def _cci_requires_attention(risk_flags: list[Any]) -> bool:
+    adverse_flags = {"default_history", "high_trust_volatility"}
+    return any(str(flag or "").strip().lower() in adverse_flags for flag in risk_flags)
+
+
 def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
     """
     Global CCI is tied to the PERSON identity (User.id / GMFN ID),
@@ -520,12 +527,15 @@ def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
             strengths=[str(x) for x in strengths],
             pressures=[str(x) for x in pressures],
         )
+        cci_risk_flags = [str(flag) for flag in (cci.get("risk_flags") or [])]
 
         return {
             "cci_score": round(score, 2) if score is not None else None,
             "cci_class": cci_class,
             "cci_reason": cci_reason,
             "cci_tone": cci_tone,
+            "cci_risk_flags": cci_risk_flags,
+            "cci_requires_attention": _cci_requires_attention(cci_risk_flags),
         }
 
     except Exception:
@@ -534,6 +544,8 @@ def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
             "cci_class": "Pending",
             "cci_reason": "Your community integrity reading is not ready yet.",
             "cci_tone": "neutral",
+            "cci_risk_flags": [],
+            "cci_requires_attention": False,
         }
 
 
@@ -616,6 +628,8 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
         "cci_class": cci_payload.get("cci_class"),
         "cci_reason": cci_payload.get("cci_reason"),
         "cci_tone": cci_payload.get("cci_tone"),
+        "cci_risk_flags": cci_payload.get("cci_risk_flags") or [],
+        "cci_requires_attention": bool(cci_payload.get("cci_requires_attention")),
     }
 
 

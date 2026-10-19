@@ -684,25 +684,6 @@ export function buildDashboardTrustAttentionCore(params: {
     };
   }
 
-  if (params.actNowCount > 0 || params.unreadCount > 0) {
-    const waitingCount = Math.max(params.actNowCount, params.unreadCount);
-    return {
-      helpingText,
-      careText: `${withCount(waitingCount, "notification")} ${
-        waitingCount === 1 ? "is" : "are"
-      } still waiting for your response. When people do not get a reply, the evidence reading weakens, wider consistency can also suffer, and your response habit starts to look poor.`,
-      problemText: `${withCount(waitingCount, "notification")} ${
-        waitingCount === 1 ? "is" : "are"
-      } still waiting for your response.`,
-      consequenceText:
-        "When people do not get a reply, community evidence can weaken. If it keeps happening, your wider consistency and response habit can also suffer.",
-      actionText:
-        nextPlain ||
-        `Open ${routeLabel} now and reply to the person or item still waiting.`,
-      connectionText: `${baseConnectionText} Right now the waiting reply is the visible problem. It weakens local evidence in your community, can later affect wider consistency outside your community, and makes your TrustSlip evidence look weaker because your response habit is not clear.`,
-    };
-  }
-
   if (params.urgentDemandCount > 0) {
     return {
       helpingText,
@@ -888,9 +869,6 @@ export function buildDashboardTrustJourneyCopy(params: {
   } else if (params.pendingRequestsCount > 0) {
     connectionSummary =
       "Right now the waiting request is the visible problem. When people are left waiting, the evidence reading weakens first, wider consistency can also suffer later, and your TrustSlip evidence does not look as strong.";
-  } else if (params.actNowCount > 0 || params.unreadCount > 0) {
-    connectionSummary =
-      "Right now the waiting notification or reply is the visible problem. If you do not answer, the evidence reading can weaken, wider consistency can also drop, and your record stops looking steady.";
   } else if (!cleanText(params.trustSlipCode)) {
     connectionSummary =
       "Right now the missing TrustSlip is the visible gap. Without that record, people cannot easily confirm your evidence summary even if some other parts look healthy.";

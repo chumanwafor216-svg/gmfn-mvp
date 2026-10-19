@@ -471,6 +471,36 @@ def _media_url_available(media_url: Any) -> bool:
     return bool(_local_upload_exists(media_url))
 
 
+def _require_usable_spotlight_media(
+    *,
+    image_url: Any,
+    video_url: Any,
+    allowed_legacy_video_values: tuple[Any, ...] = (),
+) -> tuple[Optional[str], Optional[str]]:
+    normalized_image_url = _safe_str(image_url) or None
+    normalized_video_url = _require_verified_marketplace_video(
+        video_url,
+        allowed_legacy_values=allowed_legacy_video_values,
+    )
+    if normalized_image_url is None and normalized_video_url is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "spotlight_media_required",
+                "message": "Add a ready picture or verified short video before publishing Spotlight.",
+            },
+        )
+    if normalized_image_url is not None and not _media_url_available(normalized_image_url):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "spotlight_media_not_ready",
+                "message": "The Spotlight picture is not ready. Upload it again before publishing.",
+            },
+        )
+    return normalized_image_url, normalized_video_url
+
+
 def _safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
@@ -540,7 +570,7 @@ def _resolve_repost_target_clan(db: Session, payload: Any) -> Clan:
         )
 
     status = _safe_str(getattr(clan, "status", None)).lower()
-    if status and status not in {"active", "open", "approved"}:
+    if status != "active":
         raise HTTPException(
             status_code=400,
             detail="Target community is not open for Network Spotlight placement.",
@@ -1473,6 +1503,47 @@ def _get_active_clan_ids_for_user(
     seen: set[int] = set()
     for row in rows:
         clan_id = int(row.clan_id)
+        if clan_id not in seen:
+            out.append(clan_id)
+            seen.add(clan_id)
+    return out
+
+
+def _require_active_spotlight_clan(*, db: Session, clan_id: int) -> Clan:
+    clan = db.query(Clan).filter(Clan.id == int(clan_id)).first()
+    if clan is None:
+        raise HTTPException(status_code=404, detail="Community not found")
+    if _safe_str(getattr(clan, "status", None)).lower() != "active":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "spotlight_community_inactive",
+                "message": "Spotlight can only be published into an active community.",
+            },
+        )
+    return clan
+
+
+def _get_active_spotlight_clan_ids_for_user(
+    *,
+    db: Session,
+    user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership.clan_id)
+        .join(Clan, Clan.id == ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+            func.lower(Clan.status) == "active",
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .all()
+    )
+    out: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        clan_id = int(row[0])
         if clan_id not in seen:
             out.append(clan_id)
             seen.add(clan_id)
@@ -6239,6 +6310,12 @@ def repost_marketplace_product(
         )
     ):
         _reject_delivery_exhausted_campaign()
+    if active_campaign is not None and not _spotlight_campaign_content_matches(
+        active_campaign,
+        content_kind=SPOTLIGHT_CONTENT_KIND_PRODUCT,
+        content_fingerprint=content_fingerprint,
+    ):
+        _raise_spotlight_campaign_content_mismatch()
     campaign: Optional[SpotlightCampaign] = None
     if active_campaign is None or _spotlight_campaign_content_matches(
         active_campaign,
@@ -6672,7 +6749,21 @@ def create_marketplace_broadcast(
 ) -> Dict[str, Any]:
     priority_mode = _resolve_priority_mode(payload.priority_mode)
     visibility_scope = _safe_str(payload.visibility_scope, "direct_communities").lower()
-    _require_verified_marketplace_video(payload.video_url)
+    if visibility_scope != "direct_communities":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "unsupported_spotlight_visibility_scope",
+                "message": (
+                    "Direct Spotlight publication supports direct communities only. "
+                    "Use Network Repost for marketplace repost placement."
+                ),
+            },
+        )
+    image_url, video_url = _require_usable_spotlight_media(
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+    )
 
     shop = None
     if payload.shop_id:
@@ -6683,6 +6774,14 @@ def create_marketplace_broadcast(
         )
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
+        if not bool(getattr(shop, "is_active", True)):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "spotlight_shop_inactive",
+                    "message": "Spotlight can only be published from an active shop.",
+                },
+            )
 
         if not _shop_owner_can_manage(current_user=current_user, shop=shop):
             raise HTTPException(
@@ -6706,6 +6805,7 @@ def create_marketplace_broadcast(
         )
         resolved_clan_id = int(requested_clan_id)
 
+    _require_active_spotlight_clan(db=db, clan_id=resolved_clan_id)
     _require_active_membership(
         db=db,
         user_id=int(current_user.id),
@@ -6720,7 +6820,7 @@ def create_marketplace_broadcast(
         if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":
             target_clan_ids = [
                 int(clan_id)
-                for clan_id in _get_active_clan_ids_for_user(
+                for clan_id in _get_active_spotlight_clan_ids_for_user(
                     db=db,
                     user_id=int(current_user.id),
                 )
@@ -6729,7 +6829,7 @@ def create_marketplace_broadcast(
         else:
             target_clan_ids = [int(resolved_clan_id)]
     else:
-        target_clan_ids = _get_active_clan_ids_for_user(
+        target_clan_ids = _get_active_spotlight_clan_ids_for_user(
             db=db,
             user_id=int(current_user.id),
         )
@@ -6744,8 +6844,8 @@ def create_marketplace_broadcast(
         target_clan_ids=target_clan_ids,
         shop_id=(int(shop.id) if shop is not None else None),
         message=payload.message,
-        image_url=payload.image_url,
-        video_url=payload.video_url,
+        image_url=image_url,
+        video_url=video_url,
         priority_mode=priority_mode,
         visibility_scope=visibility_scope,
     )
@@ -6805,8 +6905,8 @@ def create_marketplace_broadcast(
                 target_clan_ids=target_clan_ids,
                 shop_id=int(shop.id),
                 message=payload.message,
-                image_url=payload.image_url,
-                video_url=payload.video_url,
+                image_url=image_url,
+                video_url=video_url,
                 priority_mode=priority_mode,
                 visibility_scope=visibility_scope,
             )
@@ -6840,8 +6940,8 @@ def create_marketplace_broadcast(
         shop_id=int(shop.id) if shop is not None else None,
         origin_clan_id=resolved_clan_id,
         message=payload.message,
-        image_url=payload.image_url,
-        video_url=payload.video_url,
+        image_url=image_url,
+        video_url=video_url,
     )
     campaign = _ensure_active_spotlight_campaign(
         db=db,
@@ -6869,8 +6969,8 @@ def create_marketplace_broadcast(
             author_user_id=int(current_user.id),
             shop_id=int(shop.id) if shop is not None else None,
             message=_safe_str(payload.message),
-            image_url=_safe_str(payload.image_url) or None,
-            video_url=_safe_str(payload.video_url) or None,
+            image_url=image_url,
+            video_url=video_url,
             priority_mode=priority_mode,
             visibility_scope=visibility_scope,
             expires_at=expires_at,
@@ -6892,8 +6992,8 @@ def create_marketplace_broadcast(
             target_clan_ids=target_clan_ids,
             shop_id=(int(shop.id) if shop is not None else None),
             message=payload.message,
-            image_url=payload.image_url,
-            video_url=payload.video_url,
+            image_url=image_url,
+            video_url=video_url,
             priority_mode=priority_mode,
             visibility_scope=visibility_scope,
         )
@@ -7127,9 +7227,10 @@ def replace_spotlight_correction(
             .all()
         )
     )
-    _require_verified_marketplace_video(
-        payload.video_url,
-        allowed_legacy_values=existing_campaign_video_urls,
+    image_url, video_url = _require_usable_spotlight_media(
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+        allowed_legacy_video_values=existing_campaign_video_urls,
     )
     content_kind = (
         SPOTLIGHT_CONTENT_KIND_PRODUCT
@@ -7141,8 +7242,8 @@ def replace_spotlight_correction(
         shop_id=campaign.shop_id,
         origin_clan_id=campaign.origin_clan_id,
         message=payload.message,
-        image_url=payload.image_url,
-        video_url=payload.video_url,
+        image_url=image_url,
+        video_url=video_url,
         source_product_id=payload.source_product_id,
     )
     try:
@@ -7152,8 +7253,8 @@ def replace_spotlight_correction(
             content_kind=content_kind,
             content_fingerprint=fingerprint,
             message=payload.message,
-            image_url=_safe_str(payload.image_url) or None,
-            video_url=_safe_str(payload.video_url) or None,
+            image_url=image_url,
+            video_url=video_url,
             source_product_id=payload.source_product_id,
         )
         db.commit()

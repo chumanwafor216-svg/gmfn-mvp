@@ -54,7 +54,7 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /if shop is not None:[\s\S]*?if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":[\s\S]*?target_clan_ids = \[[\s\S]*?_get_active_clan_ids_for_user\([\s\S]*?user_id=int\(current_user\.id\)[\s\S]*?if _shop_is_visible_in_clan\(db, shop=shop, clan_id=int\(clan_id\)\)/,
+  /if shop is not None:[\s\S]*?if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":[\s\S]*?target_clan_ids = \[[\s\S]*?_get_active_spotlight_clan_ids_for_user\([\s\S]*?user_id=int\(current_user\.id\)[\s\S]*?if _shop_is_visible_in_clan\(db, shop=shop, clan_id=int\(clan_id\)\)/,
   "Free shop Spotlight must target every active community where the one-shop owner is visible, not only the shop's original or selected community."
 );
 
@@ -129,7 +129,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const viewerBroadcasts = Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts[\s\S]*?const spotlightBroadcasts = ownerSpotlightInspectionMode[\s\S]*?\? \[ownerInspectionBroadcast, \.\.\.viewerBroadcasts\]\.filter\(Boolean\)[\s\S]*?: viewerBroadcasts/,
+  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const spotlightRequestFailed = viewerSpotlightRows === undefined[\s\S]*?const viewerBroadcasts = spotlightRequestFailed[\s\S]*?\? \[\][\s\S]*?: Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts[\s\S]*?const spotlightBroadcasts = ownerSpotlightInspectionMode[\s\S]*?\? \[ownerInspectionBroadcast, \.\.\.viewerBroadcasts\]\.filter\(Boolean\)[\s\S]*?: viewerBroadcasts/,
   "Public Shop must merge the authenticated non-delivery owner item with the governed viewer feed instead of replacing other members' Spotlights."
 );
 
@@ -615,7 +615,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /const canRequestCanonicalPresentation =[\s\S]*?!ownerSpotlightPreviewAuthorized[\s\S]*?viewerSpotlightRows = await loadViewerSpotlightRows\(cleanedGmfnId\)[\s\S]*?miniSpotlightIsOwnerInspection[\s\S]*?qualifySpotlightPresentation/,
+  /const canRequestCanonicalPresentation =[\s\S]*?!ownerSpotlightPreviewAuthorized[\s\S]*?viewerSpotlightRows = await loadViewerSpotlightRowsWithFeedback\([\s\S]*?cleanedGmfnId[\s\S]*?miniSpotlightIsOwnerInspection[\s\S]*?qualifySpotlightPresentation/,
   "An ordinary owner must request and qualify other members' governed presentations, while the owner's own inspection item remains excluded."
 );
 

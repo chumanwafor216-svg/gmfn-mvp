@@ -7,6 +7,7 @@ import {
   createMarketplaceBroadcast,
   getAccessToken,
   getMarketplaceShopByGmfnId,
+  getMarketplaceShopSpotlightStatus,
   getMe,
   getMyIdentityRisk,
   getSelectedClanId,
@@ -146,6 +147,10 @@ type SpotlightStatusRecord = {
   available_paid_credits?: number | string | null;
   active_paid_spotlights?: number | string | null;
   can_publish_paid_spotlight?: boolean | null;
+  owner_spotlight_inspection?: {
+    state?: string | null;
+    item?: BroadcastRecord | null;
+  } | null;
 };
 
 const SPOTLIGHT_CREDIT_LIMIT = 6;
@@ -466,6 +471,7 @@ export default function SubscriptionSpotlightPage() {
   const [preparingImage, setPreparingImage] = useState(false);
   const [preparingVideo, setPreparingVideo] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [mediaFeedback, setMediaFeedback] = useState<Notice>(null);
   const mountedRef = useRef(false);
   const loadSeqRef = useRef(0);
   const imagePrepRef = useRef(0);
@@ -587,16 +593,25 @@ export default function SubscriptionSpotlightPage() {
       const [expectedRes, broadcastsRes, spotlightStatusRes] = await Promise.all([
         apiJson<any>(expectedPath).catch(() => []),
         apiJson<any>(`/api/marketplace/broadcasts?clan_id=${clanId}&limit=40`).catch(() => ({ items: [] })),
-        apiJson<any>(`/api/marketplace/shops/${shopItem.id}/spotlight-status`).catch(() => null),
+        getMarketplaceShopSpotlightStatus(shopItem.id).catch(() => null),
       ]);
 
       if (!canApplyLoad(loadSeq)) return;
       setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
       setSpotlightStatus((spotlightStatusRes || null) as SpotlightStatusRecord | null);
+      const authoritativeSpotlight =
+        spotlightStatusRes?.owner_spotlight_inspection?.item || null;
+      const authoritativePaidSpotlight =
+        safeStr(authoritativeSpotlight?.priority_mode).toLowerCase() === 'paid'
+          ? authoritativeSpotlight
+          : null;
+      const fallbackSpotlights = rowsOf<BroadcastRecord>(broadcastsRes).filter(
+        (item) => Number(item?.shop_id || 0) === Number(shopItem.id)
+      );
       setSpotlights(
-        rowsOf<BroadcastRecord>(broadcastsRes).filter(
-          (item) => Number(item?.shop_id || 0) === Number(shopItem.id)
-        )
+        authoritativePaidSpotlight
+          ? [authoritativePaidSpotlight as BroadcastRecord]
+          : fallbackSpotlights
       );
     } finally {
       if (!background && canApplyLoad(loadSeq)) setLoading(false);
@@ -739,7 +754,8 @@ export default function SubscriptionSpotlightPage() {
       ? activePaidCount
       : activePaidSpotlights.length;
   const canPublishPaid = Boolean(shop?.id) && usableCredits > 0 && effectiveActivePaidCount === 0;
-  const hasDraft = Boolean(firstTruthy(message) || imageFile || videoFile);
+  const hasReadyMedia = Boolean(imageFile || videoFile);
+  const mediaPreparationFailed = mediaFeedback?.tone === 'error';
 
   async function createPaymentInstruction() {
     if (!shop?.id) {
@@ -766,7 +782,9 @@ export default function SubscriptionSpotlightPage() {
           visibility_scope: "direct_communities",
         }),
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        return;
+      }
       setCreatedInstruction(result as ExpectedPaymentRecord);
       const reference = firstTruthy(result?.reference_display, result?.reference);
       if (reference) safeCopy(reference);
@@ -825,19 +843,48 @@ export default function SubscriptionSpotlightPage() {
     const job = imagePrepRef.current;
     if (!file) {
       setImageFile(null);
+      setMediaFeedback(null);
+      return;
+    }
+    const imageType = safeStr(file.type).toLowerCase();
+    const imageExtension = safeStr(file.name).toLowerCase().split('.').pop() || '';
+    const supportedImage =
+      ['image/jpeg', 'image/png', 'image/webp'].includes(imageType) ||
+      ((!imageType || imageType === 'application/octet-stream') &&
+        ['jpg', 'jpeg', 'png', 'webp'].includes(imageExtension));
+    if (!supportedImage) {
+      setImageFile(null);
+      setMediaFeedback({
+        tone: 'error',
+        text: 'Choose a JPG, PNG, or WebP picture. For an iPhone HEIC photo, save a JPEG or use a screenshot first.',
+      });
       return;
     }
     try {
       setPreparingImage(true);
+      setMediaFeedback({
+        tone: 'info',
+        text: 'Preparing the selected picture. Publishing stays locked until it is ready.',
+      });
       const prepared = await prepareSpotlightImageFile(file, {
         maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
       });
       if (!mountedRef.current || imagePrepRef.current !== job) return;
       setImageFile(prepared.file);
+      setMediaFeedback({
+        tone: 'success',
+        text: `${safeStr(prepared.file.name) || 'Selected picture'} is ready for Subscription Spotlight.`,
+      });
       showNotice("info", prepared.message || "Picture ready for Subscription Spotlight.");
     } catch (err: any) {
       if (!mountedRef.current || imagePrepRef.current !== job) return;
       setImageFile(null);
+      setMediaFeedback({
+        tone: 'error',
+        text:
+          safeStr(err?.message) ||
+          'This picture could not be prepared. Choose a JPG, PNG, or WebP image; for an iPhone HEIC photo, save a JPEG or use a screenshot.',
+      });
       showNotice("error", safeStr(err?.message) || "This picture could not be prepared.");
     } finally {
       if (mountedRef.current && imagePrepRef.current === job) setPreparingImage(false);
@@ -850,10 +897,15 @@ export default function SubscriptionSpotlightPage() {
     if (!file) {
       setVideoFile(null);
       setVideoDurationSeconds(null);
+      setMediaFeedback(null);
       return;
     }
     try {
       setPreparingVideo(true);
+      setMediaFeedback({
+        tone: 'info',
+        text: 'Preparing the selected video. Publishing stays locked until it is ready.',
+      });
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
         maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
@@ -861,11 +913,21 @@ export default function SubscriptionSpotlightPage() {
       if (!mountedRef.current || videoPrepRef.current !== job) return;
       setVideoFile(prepared.file);
       setVideoDurationSeconds(prepared.durationSeconds ?? null);
+      setMediaFeedback({
+        tone: 'success',
+        text: `${safeStr(prepared.file.name) || 'Selected video'} is ready for Subscription Spotlight.`,
+      });
       showNotice("info", prepared.message || "Video ready for Subscription Spotlight.");
     } catch (err: any) {
       if (!mountedRef.current || videoPrepRef.current !== job) return;
       setVideoFile(null);
       setVideoDurationSeconds(null);
+      setMediaFeedback({
+        tone: 'error',
+        text:
+          safeStr(err?.message) ||
+          'This video could not be prepared. Choose a playable MP4, WebM, or MOV file.',
+      });
       showNotice("error", safeStr(err?.message) || "This video could not be prepared.");
     } finally {
       if (mountedRef.current && videoPrepRef.current === job) setPreparingVideo(false);
@@ -903,7 +965,11 @@ export default function SubscriptionSpotlightPage() {
       showNotice("info", "Please wait while GSN prepares the selected media, then publish again.");
       return;
     }
-    if (!hasDraft) {
+    if (!hasReadyMedia || mediaPreparationFailed) {
+      setMediaFeedback({
+        tone: 'error',
+        text: 'Add a ready picture or short video before publishing. Subscription Spotlight never publishes a blank media card.',
+      });
       showNotice("error", "Add a short message, picture, or video before publishing.");
       return;
     }
@@ -932,11 +998,37 @@ export default function SubscriptionSpotlightPage() {
         priority_mode: "paid",
         visibility_scope: "direct_communities",
       });
+      const authoritativeStatus = await getMarketplaceShopSpotlightStatus(
+        Number(shop?.id || 0)
+      );
+      const authoritativeInspection =
+        authoritativeStatus?.owner_spotlight_inspection || null;
+      const authoritativeState = safeStr(
+        authoritativeInspection?.state
+      ).toLowerCase();
+      const authoritativeSpotlight = authoritativeInspection?.item || null;
+      const authoritativeImageUrl = safeStr(authoritativeSpotlight?.image_url);
+      const authoritativeVideoUrl = safeStr(authoritativeSpotlight?.video_url);
+
+      if (
+        !authoritativeSpotlight ||
+        !['live', 'delivery_exhausted'].includes(authoritativeState) ||
+        (!authoritativeImageUrl && !authoritativeVideoUrl) ||
+        (imageUrl && !authoritativeImageUrl) ||
+        (videoUrl && !authoritativeVideoUrl)
+      ) {
+        throw new Error(
+          'GSN accepted the publish request but could not verify the saved media. Your draft has been kept. Refresh Spotlight status before trying again.'
+        );
+      }
       if (!mountedRef.current) return;
       setMessage("");
       setImageFile(null);
       setVideoFile(null);
       setVideoDurationSeconds(null);
+      setMediaFeedback(null);
+      setSpotlightStatus(authoritativeStatus as SpotlightStatusRecord);
+      setSpotlights([authoritativeSpotlight as BroadcastRecord]);
       await loadPage(true);
       if (!mountedRef.current) return;
       showNotice("success", videoUrl ? "Subscription Spotlight published with video." : "Subscription Spotlight published.");
@@ -1238,7 +1330,7 @@ export default function SubscriptionSpotlightPage() {
               type="file"
               data-gmfn-action-root="true"
               data-cta-id="subscription-spotlight.image-file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               onChange={(event) => void prepareImage(event.target.files?.[0] || null)}
               style={inputStyle()}
             />
@@ -1253,12 +1345,23 @@ export default function SubscriptionSpotlightPage() {
             <div style={{ ...brandHelperText(), fontSize: 12 }}>
               {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
             </div>
+            <div style={{ ...brandHelperText(), fontSize: 12, fontWeight: 850 }}>
+              A ready picture or short video is required. The publish button stays locked until media preparation succeeds.
+            </div>
+            {mediaFeedback ? (
+              <div
+                data-subscription-spotlight-media-feedback={mediaFeedback.tone}
+                style={noticeCard(mediaFeedback.tone)}
+              >
+                {mediaFeedback.text}
+              </div>
+            ) : null}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={brandBadge(Boolean(imageFile))}>
-                {labelWithIcon("image", imageFile ? "Picture ready" : "Picture optional")}
+                {labelWithIcon('image', imageFile ? 'Picture ready' : 'Add a picture')}
               </span>
               <span style={brandBadge(Boolean(videoFile))}>
-                {labelWithIcon("video", videoFile ? "Video ready" : "Video optional")}
+                {labelWithIcon('video', videoFile ? 'Video ready' : 'Add a video')}
               </span>
               {(preparingImage || preparingVideo) ? (
                 <span style={brandBadge(false)}>{labelWithIcon("refresh", "Preparing media")}</span>
@@ -1267,7 +1370,14 @@ export default function SubscriptionSpotlightPage() {
             <PrimaryButton
               type="button"
               onClick={() => void publishSpotlight()}
-              disabled={publishing || spotlightFeatureOff}
+              disabled={
+                publishing ||
+                spotlightFeatureOff ||
+                preparingImage ||
+                preparingVideo ||
+                !hasReadyMedia ||
+                mediaPreparationFailed
+              }
               busy={publishing}
               busyLabel="Publishing..."
               stableHeight={58}

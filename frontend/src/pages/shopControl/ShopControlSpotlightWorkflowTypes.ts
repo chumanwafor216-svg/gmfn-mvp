@@ -102,6 +102,7 @@ export type ShopControlSpotlightWorkflowProps = {
   currentActiveSpotlight: ShopControlSpotlightBroadcast | null;
   firstTruthy: (...values: unknown[]) => string;
   spotlightPublishFeedback: ShopControlSpotlightFeedback;
+  spotlightMediaFeedback: ShopControlSpotlightFeedback;
   innerCard: (bg?: string) => CSSProperties;
   labelWithIcon: (
     name: GsnIconName,
@@ -155,11 +156,13 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightImageInputKey: number;
   handleSpotlightImagePicked: (file: File | null) => Promise<void>;
   spotlightImageFile: File | null;
+  spotlightHasImage: boolean;
   formatFileSize: (bytes: number) => string;
   preparingSpotlightVideo: boolean;
   spotlightVideoInputKey: number;
   handleSpotlightVideoPicked: (file: File | null) => Promise<void>;
   spotlightVideoFile: File | null;
+  spotlightHasVideo: boolean;
   spotlightVideoDurationSeconds: number | null;
   spotlightCanContinueToPreview: boolean;
   setSpotlightFlowStep: Dispatch<SetStateAction<ShopControlSpotlightFlowStep>>;

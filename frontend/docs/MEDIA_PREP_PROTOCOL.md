@@ -26,6 +26,10 @@ Do not ask normal users to understand file sizes before they can continue.
 ## Current Backend Limits
 
 - Marketplace images currently upload through `/marketplace/media/image`.
+- Local/direct Marketplace image uploads must decode successfully as the JPG,
+  PNG, or WebP format claimed by the file extension before any bytes are
+  persisted. A filename or browser-declared content type is not proof that a
+  picture is readable.
 - Marketplace videos currently upload through `/marketplace/media/video`.
 - Public product gallery storage still has an underlying cover field, but the user-facing block must accept either picture or video. When a user chooses only video, the frontend creates the cover frame automatically.
 

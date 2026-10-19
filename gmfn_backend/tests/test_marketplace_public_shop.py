@@ -2236,6 +2236,7 @@ def test_marketplace_spotlight_broadcast_respects_disabled_community_domain_spot
             "clan_id": 1,
             "shop_id": 982,
             "message": "This should not publish while Spotlight is off.",
+            "image_url": "https://cdn.example.test/spotlight/domain-disabled.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4413,7 +4414,7 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Fresh spotlight - N90k - Available today for delivery",
-            "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
+            "image_url": "https://cdn.example.test/spotlight/live-spotlight.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4544,7 +4545,7 @@ def test_shop_broadcast_publish_notifies_visible_followers_only(
             "clan_id": 1,
             "shop_id": 1,
             "message": "New rice bundle - N25k - Ready today",
-            "image_url": "/uploads/marketplace/images/broadcast-rice.jpg",
+            "image_url": "https://cdn.example.test/spotlight/broadcast-rice.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4668,7 +4669,7 @@ def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_dai
             "clan_id": 1,
             "shop_id": 1,
             "message": "Fresh spotlight",
-            "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
+            "image_url": "https://cdn.example.test/spotlight/live-capacity.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4737,7 +4738,7 @@ def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_dai
             "clan_id": 1,
             "shop_id": 1,
             "message": "Second free spotlight",
-            "image_url": "/uploads/marketplace/images/second-live-spotlight.jpg",
+            "image_url": "https://cdn.example.test/spotlight/second-live-capacity.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4802,7 +4803,7 @@ def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
             "clan_id": 2,
             "shop_id": 1,
             "message": "Fresh spotlight",
-            "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
+            "image_url": "https://cdn.example.test/spotlight/live-stale-clan.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4887,7 +4888,7 @@ def test_free_spotlight_daily_identity_limit_blocks_same_author_test_week_overri
             "clan_id": 3,
             "shop_id": 1,
             "message": "Test-week free spotlight",
-            "image_url": "/uploads/marketplace/images/test-week.jpg",
+            "image_url": "https://cdn.example.test/spotlight/test-week.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -4973,6 +4974,7 @@ def test_paid_spotlight_requires_unused_subscription_credit(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Paid spotlight",
+            "image_url": "https://cdn.example.test/spotlight/paid-first.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5012,6 +5014,7 @@ def test_paid_spotlight_requires_unused_subscription_credit(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Paid spotlight",
+            "image_url": "https://cdn.example.test/spotlight/paid-published.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5032,6 +5035,7 @@ def test_paid_spotlight_requires_unused_subscription_credit(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Second paid spotlight",
+            "image_url": "https://cdn.example.test/spotlight/paid-second.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5462,7 +5466,7 @@ def test_paid_direct_rejects_different_content_when_campaign_active(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Fence painting service",
-            "image_url": "/uploads/marketplace/images/fence.jpg",
+            "image_url": "https://cdn.example.test/spotlight/different-fence.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -5476,7 +5480,7 @@ def test_paid_direct_rejects_different_content_when_campaign_active(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Used laptop for sale",
-            "image_url": "/uploads/marketplace/images/laptop.jpg",
+            "image_url": "https://cdn.example.test/spotlight/different-laptop.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5567,7 +5571,7 @@ def test_paid_direct_same_content_extends_active_direct_campaign(
         "clan_id": 1,
         "shop_id": 1,
         "message": "Fence painting service",
-        "image_url": "/uploads/marketplace/images/fence.jpg",
+        "image_url": "https://cdn.example.test/spotlight/same-fence.jpg",
         "priority_mode": "free",
         "visibility_scope": "direct_communities",
     }
@@ -5601,7 +5605,7 @@ def test_paid_direct_same_content_extends_active_direct_campaign(
     assert int(broadcast_count) == 2
 
 
-def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
+def test_unrelated_network_repost_is_rejected_before_credit_consumption(
     client,
     monkeypatch,
 ):
@@ -5693,7 +5697,7 @@ def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Fence painting service",
-            "image_url": "/uploads/marketplace/images/fence.jpg",
+            "image_url": "https://cdn.example.test/spotlight/fence.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },
@@ -5706,9 +5710,8 @@ def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
         json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert repost.status_code == 200, repost.text
-    assert repost.json()["broadcast"]["visibility_scope"] == "marketplace_repost"
-    assert repost.json()["broadcast"]["spotlight_campaign_id"] is None
+    assert repost.status_code == 400, repost.text
+    assert "different Spotlight campaign" in repost.json()["detail"]
 
     viewer_token = create_access_token({"sub": "viewer@example.com"})
     target_feed = client.get(
@@ -5716,10 +5719,7 @@ def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
         headers={"Authorization": f"Bearer {viewer_token}"},
     )
     assert target_feed.status_code == 200, target_feed.text
-    target_items = target_feed.json()["items"]
-    assert len(target_items) == 1
-    assert target_items[0]["visibility_scope"] == "marketplace_repost"
-    assert target_items[0]["spotlight_campaign_id"] is None
+    assert target_feed.json()["items"] == []
 
     with engine.begin() as conn:
         active_campaign = conn.execute(
@@ -5752,8 +5752,126 @@ def test_unrelated_network_repost_remains_unlinked_to_active_direct_campaign(
         None,
     )
     assert broadcasts[0][2] == active_campaign_id
-    assert broadcasts[1][1:] == ("marketplace_repost", None)
-    assert int(used) == 1
+    assert len(broadcasts) == 1
+    assert int(used) == 0
+
+
+def test_direct_spotlight_rejects_invalid_media_scope_shop_and_community_without_writes(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user',
+                    'GMFN-U-SPOTLIGHT-GUARDS'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, marketplace_name, invite_code, status
+                ) VALUES (
+                    1, 'Guard Community', 'Guard Marketplace', 'GUARD1', 'active'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Guard Shop', 'Spotlight validation shop', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-GUARDS'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    base_payload = {
+        "clan_id": 1,
+        "shop_id": 1,
+        "message": "Guarded paid Spotlight",
+        "image_url": "https://cdn.example.test/spotlight/guard.jpg",
+        "priority_mode": "paid",
+        "visibility_scope": "direct_communities",
+    }
+
+    missing_media = dict(base_payload)
+    missing_media.pop("image_url")
+    response = client.post("/marketplace/broadcasts", json=missing_media)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "spotlight_media_required"
+
+    unready_media = dict(base_payload)
+    unready_media["image_url"] = "/uploads/marketplace/images/not-uploaded.jpg"
+    response = client.post("/marketplace/broadcasts", json=unready_media)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "spotlight_media_not_ready"
+
+    invalid_scope = dict(base_payload)
+    invalid_scope["visibility_scope"] = "marketplace_repost"
+    response = client.post("/marketplace/broadcasts", json=invalid_scope)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "unsupported_spotlight_visibility_scope"
+
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE marketplace_shops SET is_active = 0 WHERE id = 1"))
+    response = client.post("/marketplace/broadcasts", json=base_payload)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "spotlight_shop_inactive"
+
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE marketplace_shops SET is_active = 1 WHERE id = 1"))
+        conn.execute(text("UPDATE clans SET status = 'inactive' WHERE id = 1"))
+    response = client.post("/marketplace/broadcasts", json=base_payload)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "spotlight_community_inactive"
+
+    with engine.begin() as conn:
+        broadcasts = conn.execute(text("SELECT COUNT(*) FROM marketplace_broadcasts")).scalar_one()
+        campaigns = conn.execute(text("SELECT COUNT(*) FROM spotlight_campaigns")).scalar_one()
+        used = conn.execute(text("SELECT quantity_used FROM feature_entitlements WHERE id = 1")).scalar_one()
+    assert int(broadcasts) == 0
+    assert int(campaigns) == 0
+    assert int(used) == 0
 
 
 def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
@@ -5827,6 +5945,7 @@ def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Paid spotlight",
+            "image_url": "https://cdn.example.test/spotlight/paid-cap-first.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5839,6 +5958,7 @@ def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Second paid spotlight",
+            "image_url": "https://cdn.example.test/spotlight/paid-cap-second.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -5969,7 +6089,7 @@ def test_competing_publish_reuses_existing_same_content_campaign_without_orphan(
         "clan_id": 1,
         "shop_id": 1,
         "message": "Race-safe spotlight",
-        "image_url": "/uploads/marketplace/images/race.jpg",
+        "image_url": "https://cdn.example.test/spotlight/race.jpg",
         "priority_mode": "free",
         "visibility_scope": "direct_communities",
     }
@@ -6265,6 +6385,7 @@ def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
             "clan_id": 1,
             "shop_id": 1,
             "message": "First paid campaign",
+            "image_url": "https://cdn.example.test/spotlight/takedown-first.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -6301,6 +6422,7 @@ def test_paid_spotlight_takedown_ends_campaign_and_allows_new_paid_campaign(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Second paid campaign",
+            "image_url": "https://cdn.example.test/spotlight/takedown-second.jpg",
             "priority_mode": "paid",
             "visibility_scope": "direct_communities",
         },
@@ -6387,6 +6509,7 @@ def test_flags_off_marketplace_broadcast_delete_soft_withdraws_only_matching_pro
             "clan_id": 1,
             "shop_id": 1,
             "message": "Same message",
+            "image_url": "https://cdn.example.test/spotlight/delete-siblings.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
         },

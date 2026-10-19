@@ -169,3 +169,75 @@ def test_attention_spine_is_read_only_for_notifications(
         ).scalar_one()
 
     assert unread_count == 1
+
+
+def test_informational_marketplace_notifications_do_not_become_attention_work(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    now = datetime.now(timezone.utc)
+    informational_kinds = (
+        "marketplace.shop.broadcast_created",
+        "marketplace.shop.product_created",
+        "demand_posted",
+    )
+    with engine.begin() as conn:
+        for index, kind in enumerate(informational_kinds, start=1):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO notifications (
+                        user_id,
+                        kind,
+                        title,
+                        message,
+                        action_url,
+                        action_label,
+                        is_read,
+                        created_at
+                    )
+                    VALUES (
+                        1,
+                        :kind,
+                        :title,
+                        'A marketplace update was published.',
+                        '/app/marketplace',
+                        'Open Marketplace',
+                        0,
+                        :created_at
+                    )
+                    """
+                ),
+                {
+                    "kind": kind,
+                    "title": f"Marketplace update {index}",
+                    "created_at": now,
+                },
+            )
+
+    attention_response = client.get("/attention-spine/me")
+    assert attention_response.status_code == 200, attention_response.text
+    attention_body = attention_response.json()
+    notification_signals = [
+        signal
+        for signal in attention_body["signals"]
+        if signal["source"] == "action_inbox"
+    ]
+
+    assert len(notification_signals) == 3
+    assert all(signal["kind"] == "condition" for signal in notification_signals)
+    assert all(signal["urgency"] == "green" for signal in notification_signals)
+    assert all(signal["countInPulse"] is False for signal in notification_signals)
+    assert attention_body["summary"]["workCount"] == 0
+    assert attention_body["summary"]["counts"]["red"] == 0
+    assert attention_body["summary"]["counts"]["yellow"] == 0
+
+    notification_response = client.get("/notifications/me")
+    assert notification_response.status_code == 200, notification_response.text
+    notification_items = notification_response.json()["items"]
+    matching_items = [
+        item for item in notification_items if item["kind"] in informational_kinds
+    ]
+    assert len(matching_items) == 3
+    assert all(item["attention_actionable"] is False for item in matching_items)

@@ -66,6 +66,10 @@ import {
   markDashboardAttentionShown,
   normalizeDashboardAttentionStoredState,
 } from "../lib/dashboardAttentionEngine";
+import {
+  classifyDashboardTrustEvidence,
+  dashboardNotificationRequiresAttention,
+} from "../lib/dashboardTrustSemantics";
 import { prepareSpotlightImageFile as prepareDashboardAvatarImageFile } from "../lib/spotlightMediaPrep";
 
 
@@ -121,6 +125,7 @@ type NoticeItem = {
   action_label?: string | null;
   is_read?: boolean;
   created_at?: string | null;
+  attention_actionable?: boolean;
 };
 
 type ReadingState = {
@@ -161,6 +166,7 @@ type DashboardNoticeItem = {
   source: string;
   bucket: "actNow" | "dueSoon" | "watch";
   score: number;
+  attentionActionable: boolean;
 };
 
 type DashboardNoticeSummary = {
@@ -174,6 +180,7 @@ type DashboardNoticeSummary = {
     dueSoon: number;
     watch: number;
     unread: number;
+    actionable: number;
   };
 };
 
@@ -1985,6 +1992,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       : Number(rawScore);
 
   const classText = String(rawClass || "").trim().toUpperCase();
+  const cciRequiresAttention = me?.cci_requires_attention;
 
   if (classText) {
     if (classText === "A" || classText === "A+") {
@@ -2026,6 +2034,25 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         statusText: "Needs attention",
         whyText: String(
           rawWhy || "A few clearer recent actions can strengthen the visible evidence."
+        ),
+      };
+    }
+
+    if (
+      (classText === "D" || classText === "E") &&
+      cciRequiresAttention === false
+    ) {
+      return {
+        classText,
+        postureSource:
+          scoreNum === null || Number.isNaN(scoreNum)
+            ? "-"
+            : formatReadingScore(rawScore, scoreNum),
+        tone: "neutral",
+        statusText: "Cross-community evidence is building",
+        whyText: String(
+          rawWhy ||
+            "GSN does not show default or volatility pressure. The wider record is still too thin for a strong reading."
         ),
       };
     }
@@ -2177,6 +2204,11 @@ function getOpenTrustState(
     me?.trust_reason
   );
 
+  const trustEvidenceState = classifyDashboardTrustEvidence({
+    rawClass,
+    trustExplanation,
+  });
+
   if (rawClass) {
     const rawClassLower = rawClass.toLowerCase();
     if (
@@ -2270,6 +2302,29 @@ function getOpenTrustState(
         whyText:
           rawWhy ||
           "Your current community reading suggests some areas need attention.",
+      };
+    }
+
+    if (
+      trustEvidenceState === "starter_building" ||
+      trustEvidenceState === "insufficient"
+    ) {
+      const starterBuilding = trustEvidenceState === "starter_building";
+      return {
+        classText: rawClass,
+        postureSource:
+          rawScore === null || Number.isNaN(rawScore)
+            ? "-"
+            : String(Math.round(rawScore)),
+        tone: "neutral",
+        statusText: starterBuilding
+          ? "Starter evidence is building"
+          : "Not enough scored evidence yet",
+        whyText:
+          rawWhy ||
+          (starterBuilding
+            ? "Recorded starter evidence is building your community record. No adverse evidence is currently shown."
+            : "GSN does not yet have enough scored evidence to describe this as an adverse reading."),
       };
     }
 
@@ -4164,6 +4219,7 @@ export default function DashboardPage() {
       source: string;
       bucket: "actNow" | "dueSoon" | "watch";
       scoreBoost?: number;
+      attentionActionable?: boolean;
     }): DashboardNoticeItem {
       const unread = Boolean(params.unread);
       const normalizedTarget = normalizeActionTargetPath(params.ctaTo);
@@ -4179,6 +4235,8 @@ export default function DashboardPage() {
         unread,
         source: safeStr(params.source || "General"),
         bucket: params.bucket,
+        attentionActionable:
+          params.attentionActionable ?? params.bucket === "actNow",
         score:
           dashboardNoticeScore(params.bucket, unread, params.source) +
           Number(params.scoreBoost || 0),
@@ -4199,6 +4257,10 @@ export default function DashboardPage() {
           unread: item.unread,
           source,
           bucket: "actNow",
+          attentionActionable: dashboardNotificationRequiresAttention(
+            item,
+            "actNow"
+          ),
         })
       );
     }
@@ -4299,6 +4361,10 @@ export default function DashboardPage() {
           unread: !item.is_read,
           source,
           bucket,
+          attentionActionable: dashboardNotificationRequiresAttention(
+            item,
+            bucket
+          ),
         })
       );
     }
@@ -4350,6 +4416,7 @@ export default function DashboardPage() {
           source: "Your DemandBox",
           bucket: urgentCount > 0 ? "actNow" : "dueSoon",
           scoreBoost: urgentCount > 0 ? 14 : 8,
+          attentionActionable: urgentCount > 0,
         })
       );
     }
@@ -4395,6 +4462,7 @@ export default function DashboardPage() {
         source: "Your Finance",
         bucket: "watch",
         scoreBoost: -10,
+        attentionActionable: false,
       })
     );
 
@@ -4481,6 +4549,7 @@ export default function DashboardPage() {
     const unread = sortDashboardNoticeItems(
       allRows.filter((item) => item.unread)
     );
+    const actionable = allRows.filter((item) => item.attentionActionable);
 
     return {
       allRows,
@@ -4493,6 +4562,7 @@ export default function DashboardPage() {
         dueSoon: dueSoon.length,
         watch: watch.length,
         unread: Math.max(unread.length, unreadCount),
+        actionable: actionable.length,
       },
     };
   }, [
@@ -4794,6 +4864,14 @@ export default function DashboardPage() {
   const dashboardNoticeSourceTitles = useMemo(
     () => dashboardNoticeSourceGroups.map((group) => safeStr(group.title)).filter(Boolean),
     [dashboardNoticeSourceGroups]
+  );
+
+  const dashboardAttentionActionableRows = useMemo(
+    () =>
+      dashboardNoticeSummary.allRows.filter(
+        (item) => item.attentionActionable
+      ),
+    [dashboardNoticeSummary.allRows]
   );
 
   const urgentDemandItems = useMemo(
@@ -5388,11 +5466,15 @@ export default function DashboardPage() {
 
   const dashboardPulseSummary = useMemo(() => {
     const signals: AttentionSpineSignal[] = [...serverAttentionSignals];
-    const hasServerActionInboxSignals = serverAttentionSignals.some(
-      (signal) => signal.source === "action_inbox"
+    const hasServerActionInboxAction = serverAttentionSignals.some(
+      (signal) =>
+        signal.source === "action_inbox" && signal.kind === "action"
     );
 
-    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.actNow > 0) {
+    if (
+      !hasServerActionInboxAction &&
+      dashboardNoticeSummary.counts.actionable > 0
+    ) {
       signals.push({
         id: "action-inbox:act-now",
         source: "action_inbox",
@@ -5404,17 +5486,17 @@ export default function DashboardPage() {
         actionLabel: "Open Action Inbox",
         actionTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         groupLabel: "action waiting",
-        weight: dashboardNoticeSummary.counts.actNow,
+        weight: dashboardNoticeSummary.counts.actionable,
         sortBoost: 16,
       });
     }
 
-    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.dueSoon > 0) {
+    if (!hasServerActionInboxAction && dashboardNoticeSummary.counts.dueSoon > 0) {
       signals.push({
         id: "action-inbox:due-soon",
         source: "action_inbox",
         scope: "personal",
-        kind: "action",
+        kind: "condition",
         urgency: "yellow",
         summary: "Due-soon alert",
         detail: "Action Inbox has items due soon.",
@@ -5426,20 +5508,20 @@ export default function DashboardPage() {
       });
     }
 
-    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.unread > 0) {
+    if (!hasServerActionInboxAction && dashboardNoticeSummary.counts.unread > 0) {
       signals.push({
         id: "action-inbox:unread",
         source: "action_inbox",
         scope: "personal",
         kind: "condition",
-        urgency: dashboardNoticeSummary.counts.actNow > 0 ? "red" : "yellow",
+        urgency: dashboardNoticeSummary.counts.actionable > 0 ? "red" : "yellow",
         summary: "Unread alert",
         detail: "New alerts are waiting in Action Inbox.",
         actionLabel: "Open Action Inbox",
         actionTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         groupLabel: "unread alert",
         weight: dashboardNoticeSummary.counts.unread,
-        countInPulse: dashboardNoticeSummary.counts.actNow === 0,
+        countInPulse: dashboardNoticeSummary.counts.actionable === 0,
         sortBoost: 6,
       });
     }
@@ -5501,6 +5583,7 @@ export default function DashboardPage() {
     combinedFocusBehindCount,
     combinedFocusWatchCount,
     dashboardNoticeSummary.counts.actNow,
+    dashboardNoticeSummary.counts.actionable,
     dashboardNoticeSummary.counts.dueSoon,
     dashboardNoticeSummary.counts.unread,
     focusSummary.nextReviewLabel,
@@ -5636,6 +5719,17 @@ export default function DashboardPage() {
         totalNotifications: dashboardNoticeTotalCount,
         actNowCount: dashboardNoticeSummary.counts.actNow,
         unreadCount: dashboardNoticeSummary.counts.unread,
+        actionableCount: dashboardNoticeSummary.counts.actionable,
+        issueKeys: dashboardAttentionActionableRows.map((item) => item.id),
+        scopeKey: [
+          selectedClanId || "no-community",
+          openTrust.classText,
+          openTrust.tone,
+          openTrust.whyText,
+          cci.classText,
+          cci.tone,
+          cci.whyText,
+        ].join("|"),
         sourceTitles: dashboardNoticeSourceTitles,
         focusBehindCount: focusSummary.behindCount,
         focusWatchCount: focusSummary.watchCount,
@@ -5652,6 +5746,11 @@ export default function DashboardPage() {
       dashboardNoticeTotalCount,
       dashboardNoticeSummary.counts.actNow,
       dashboardNoticeSummary.counts.unread,
+      dashboardNoticeSummary.counts.actionable,
+      dashboardAttentionActionableRows,
+      selectedClanId,
+      openTrust,
+      cci,
       dashboardNoticeSourceTitles,
       focusSummary.behindCount,
       focusSummary.watchCount,
@@ -5696,7 +5795,7 @@ export default function DashboardPage() {
   );
 
   const attentionDisplaySignal = useMemo(() => {
-    if (!attentionSignal.active || attentionSignal.sourceKind === "seller") {
+    if (!attentionSignal.active || attentionSignal.sourceKind !== "repair") {
       return attentionSignal;
     }
 

@@ -799,3 +799,54 @@ under `docs/` or `docs/archive/`, then link that file here.
   archival. No historical section was deliberately deleted.
 - The active handoff is now this compact index, following the repository's
   existing handoff-size rule.
+
+## Local Spotlight media, delivery, and Attention truth repair - 2026-10-19
+
+- This batch is verified locally only. It is not committed, pushed, promoted
+  to `main`, or deployed. Production remains on commit
+  `bab697155e74c355a8fef901b8b3901cf8695105` until the owner gives a separate
+  ready-to-publish approval under `docs/FREEZE_POLICY.md`.
+- Production evidence showed that campaign `326` was created without an upload
+  request or usable media, consumed one qualified round, and was later
+  withdrawn. Current active campaigns `324` and `325` had media at audit time;
+  the old media-less row was not rewritten or deleted.
+- New direct free/paid Spotlight and correction replacement now require a
+  ready image or verified video before any quota, campaign, entitlement, or
+  paid-credit mutation. Managed image uploads are decoded and checked against
+  their extension before persistence. Invalid/inactive shops or communities,
+  unsupported direct scopes, and conflicting paid repost campaigns fail before
+  mutation.
+- Owner publishers retain their draft until the authoritative Spotlight status
+  endpoint confirms the saved item, serving state, and media. Shop Control now
+  reads that authoritative status instead of inferring current state from the
+  latest twenty broadcasts. Media-preparation errors remain inline, and a
+  successful retry clears stale publish failure text.
+- Public Shop no longer treats an auth/network failure as an authoritative
+  empty Spotlight feed. It retains only a still-current canonical item, shows a
+  retry explanation, and retries. A presentation is qualified and counted only
+  after the shared media frame reports that the image or video rendered; blank
+  or terminally failed media remains uncounted. Stale or inactive reservation
+  candidates are skipped so another valid candidate can be selected.
+- The reported red Trust warning was a separate semantic defect. Starter Open
+  Trust `D` with zero adverse evidence and thin-network CCI `D/E` are now
+  neutral. Broadcast-created, product-created, and demand-posted notices are
+  informational; generic unread volume and elapsed time alone cannot claim
+  repeated evidence harm. Genuine approval, missed-focus, default, volatility,
+  or adverse-evidence work remains actionable. Frozen Dashboard Market Wisdom
+  presentation was not changed.
+- Frozen delivery economics remain unchanged: ten global qualifying showings,
+  two per viewer, the existing spacing window, self-delivery exclusion, and the
+  current paid/free ordering are preserved.
+- Verification: the backend Spotlight agent suite passed 156 relevant tests;
+  an independent combined root run passed 109 focused backend tests (104 in the
+  sandbox plus five temporary-directory tests outside it); focused Trust tests
+  passed 6; Python compilation passed; Dashboard semantic/audit checks passed;
+  Spotlight control, presentation, system-feed, and media-quality audits passed;
+  the ten-scenario real-browser Spotlight smoke passed; and the frontend
+  production build passed with 291 modules.
+- Residual truth: remote HTTP image URLs are not fetched server-side because an
+  unrestricted fetch would introduce SSRF risk; legacy product media inherited
+  by Network Repost is not newly backfilled; mixed-community policy remains
+  all-or-nothing; old media-less database history remains historical; and no
+  authenticated production-phone replay can be completed until this batch is
+  deployed.

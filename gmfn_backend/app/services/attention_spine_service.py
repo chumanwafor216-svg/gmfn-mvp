@@ -11,6 +11,7 @@ from app.db.notification_models import Notification
 from app.services.community_meeting_service import list_community_meetings
 from app.services.notification_service import (
     ensure_join_review_notifications,
+    notification_requires_attention,
     normalize_notification_action,
 )
 
@@ -222,6 +223,7 @@ def _notification_signals(db: Session, *, user_id: int, limit: int) -> List[Dict
     )
     signals: List[Dict[str, Any]] = []
     for row in rows:
+        attention_actionable = notification_requires_attention(kind=row.kind)
         action_url, action_label = normalize_notification_action(
             kind=row.kind,
             title=row.title,
@@ -234,14 +236,15 @@ def _notification_signals(db: Session, *, user_id: int, limit: int) -> List[Dict
                 "id": f"notification:{int(row.id)}",
                 "source": "action_inbox",
                 "scope": "personal",
-                "kind": "action",
-                "urgency": _notification_urgency(row),
+                "kind": "action" if attention_actionable else "condition",
+                "urgency": _notification_urgency(row) if attention_actionable else "green",
                 "summary": _safe_str(row.title, "Unread Action Inbox item"),
                 "detail": _safe_str(row.message, "A GSN item needs your attention."),
                 "actionLabel": _safe_str(action_label, "Open Action Inbox"),
                 "actionTo": _safe_str(action_url, "/app/notifications"),
-                "groupLabel": "Action Inbox item",
-                "sortBoost": 20,
+                "groupLabel": "Action Inbox item" if attention_actionable else "Information",
+                "sortBoost": 20 if attention_actionable else 0,
+                "countInPulse": attention_actionable,
                 "meta": {
                     "notificationId": int(row.id),
                     "notificationKind": _safe_str(row.kind),

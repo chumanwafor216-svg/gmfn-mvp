@@ -33,6 +33,9 @@ export type DashboardAttentionInput = {
   totalNotifications: number;
   actNowCount: number;
   unreadCount: number;
+  actionableCount: number;
+  issueKeys?: string[];
+  scopeKey?: string;
   sourceTitles: string[];
   focusBehindCount: number;
   focusWatchCount: number;
@@ -162,10 +165,6 @@ function buildAttentionStage(ageHours: number): {
   stage: DashboardAttentionStage;
   intervalHours: number;
 } {
-  if (ageHours >= 96) {
-    return { stage: "persistent", intervalHours: 1 };
-  }
-
   if (ageHours >= 48) {
     return { stage: "followup", intervalHours: 2 };
   }
@@ -191,7 +190,7 @@ function pickSourceKind(input: DashboardAttentionInput): DashboardAttentionSourc
   if (input.userClass === "demand" || input.nextRouteKey === "demand-box") {
     return "demand";
   }
-  if (input.totalNotifications > 0 || input.unreadCount > 0) {
+  if (input.actionableCount > 0) {
     return "notifications";
   }
   if (input.userClass === "seller" || input.nextRouteKey === "shop") {
@@ -204,14 +203,7 @@ function buildAttentionSignature(
   input: DashboardAttentionInput,
   sourceKind: DashboardAttentionSourceKind
 ): string {
-  const notificationPressure =
-    input.actNowCount > 0
-      ? "act-now"
-      : input.unreadCount > 0
-      ? "unread"
-      : input.totalNotifications > 0
-      ? "general"
-      : "quiet";
+  const notificationPressure = input.actionableCount > 0 ? "actionable" : "quiet";
   const focusPressure =
     input.focusBehindCount > 0
       ? "behind"
@@ -225,6 +217,8 @@ function buildAttentionSignature(
     cleanText(input.nextRouteKey),
     notificationPressure,
     focusPressure,
+    cleanText(input.scopeKey || ""),
+    [...(input.issueKeys || [])].map(cleanText).filter(Boolean).sort().join(","),
   ].join("|");
 }
 
@@ -345,7 +339,7 @@ function buildAttentionCopy(
           ? "The app has linked a live issue to the evidence reading and is explaining it before it gets heavier."
           : stage === "followup"
           ? "This is no longer only a warning. The same evidence concern is still unresolved."
-          : "This is now a repeated evidence warning because the same problem is still open.",
+          : "Open the evidence source to check its current status before acting.",
       ctaLabel: `Open ${nextRouteLabel}`,
       ctaTo: input.nextRouteTo,
       ...notificationsSecondary,
@@ -519,9 +513,7 @@ export function buildDashboardAttentionSignal(
   const sourceKind = pickSourceKind(input);
   const active =
     input.focusBehindCount > 0 ||
-    input.totalNotifications > 0 ||
-    input.actNowCount > 0 ||
-    input.unreadCount > 0;
+    input.actionableCount > 0;
 
   if (!active) {
     return {

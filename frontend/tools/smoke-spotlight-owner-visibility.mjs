@@ -10,6 +10,9 @@ const ownerGsnId = "GSN-U-SPOTOWNER";
 const visitorGsnId = "GSN-U-SPOTVISITOR";
 const activatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const authorizedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+const syntheticSpotlightImagePath = '/synthetic-spotlight.svg';
+const syntheticSpotlightImage =
+  `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f5fb7'/></svg>`;
 const shop = {
   id: 101,
   shop_id: 101,
@@ -107,6 +110,7 @@ function spotlightItem({
   presentationExpiresInMs = 25_000,
   priorityMode = "free",
   rotationWeight,
+  imageUrl = syntheticSpotlightImagePath,
 } = {}) {
   const canonicalOffset = Math.max(Number(streamIndex || 1) - 1, 0);
   return {
@@ -119,7 +123,7 @@ function spotlightItem({
     source_shop_name: canonical ? `Eligible visitor source ${streamIndex}` : "Owner Visibility Shop",
     source_shop_whatsapp: "+441234567890",
     message: label,
-    image_url: null,
+    image_url: imageUrl,
     video_url: null,
     priority_mode: priorityMode,
     rotation_weight: rotationWeight,
@@ -213,6 +217,13 @@ async function newPage(browser, identity = "") {
 
 async function installMocks(page, scenario) {
   await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).pathname === syntheticSpotlightImagePath) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'image/svg+xml',
+        body: syntheticSpotlightImage,
+      });
+    }
     if (!isApi(route.request().url())) return route.continue();
     const path = apiPath(route.request().url());
     if (path === `/marketplace/public/shop/${ownerGsnId}`) {
@@ -288,6 +299,7 @@ async function installMocks(page, scenario) {
             : `Community Spotlight ${streamIndex}`,
         canonical: true,
         streamIndex,
+        imageUrl: scenario.mediaUnavailable ? null : undefined,
         presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
       });
       const items = [item];
@@ -567,6 +579,45 @@ async function testVisitorCannotForceOwnerPreview(browser, baseUrl) {
   if (scenario.qualifyCalls < 1 || scenario.impressionCalls < 1) {
     throw new Error(
       `Visitor presentation did not retain qualifying exposure handling: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
+async function testMediaLessSpotlightNeverQualifies(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    mediaUnavailable: true,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.locator('#public-shop-spotlight').scrollIntoViewIfNeeded();
+  await page
+    .getByText('This Spotlight does not have ready media. GSN will not count this showing.', {
+      exact: true,
+    })
+    .waitFor({ state: 'visible', timeout: 15_000 });
+  await page.waitForTimeout(1_500);
+  if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
+    throw new Error(
+      `Media-less Spotlight counted exposure: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
     );
   }
   await context.close();
@@ -892,6 +943,7 @@ try {
     await testOwnerReopenPreviewBackAndResume(browser, baseUrl),
     await testDelayedOwnerAuthentication(browser, baseUrl),
     await testVisitorCannotForceOwnerPreview(browser, baseUrl),
+    await testMediaLessSpotlightNeverQualifies(browser, baseUrl),
     await testProductMediaRequiresVisibleDwell(browser, baseUrl),
     await testExpiredOwnerContentFailsClosed(browser, baseUrl),
     await testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(

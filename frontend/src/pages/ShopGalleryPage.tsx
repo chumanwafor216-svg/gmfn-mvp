@@ -534,15 +534,12 @@ async function loadPublicShopSpotlightPresentationCycle(
       }
       return null;
     })
-    .catch(() => {
-      publicShopSpotlightSelectionCycles.set(cycleKey, {
-        items: [],
-        authoritative: true,
-        requestId,
-        selectedAtMs: requestStartedAtMs,
-        expiresAtMs: requestStartedAtMs + SPOTLIGHT_PILOT_REFRESH_MS,
-      });
-      return [];
+    .catch((error) => {
+      const currentCycle = publicShopSpotlightSelectionCycles.get(cycleKey);
+      if (!currentCycle || currentCycle.promise === requestPromise) {
+        publicShopSpotlightSelectionCycles.delete(cycleKey);
+      }
+      throw error;
     });
 
   publicShopSpotlightSelectionCycles.set(cycleKey, {
@@ -1913,6 +1910,10 @@ export default function ShopGalleryPage() {
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
   const [spotlightInteractionPausedUntil, setSpotlightInteractionPausedUntil] = useState(0);
   const [spotlightReducedMotion, setSpotlightReducedMotion] = useState(false);
+  const [spotlightFeedError, setSpotlightFeedError] = useState('');
+  const [spotlightMediaReadyKey, setSpotlightMediaReadyKey] = useState('');
+  const [spotlightMediaUnavailableKey, setSpotlightMediaUnavailableKey] =
+    useState('');
   const galleryRevealFrameRef = useRef<number | null>(null);
   const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
@@ -2149,7 +2150,10 @@ export default function ShopGalleryPage() {
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
       const ownerInspectionBroadcast = normalizeBroadcast(ownerInspection?.item);
-      const viewerBroadcasts = Array.isArray(viewerSpotlightRows)
+      const spotlightRequestFailed = viewerSpotlightRows === undefined;
+      const viewerBroadcasts = spotlightRequestFailed
+        ? []
+        : Array.isArray(viewerSpotlightRows)
         ? viewerSpotlightRows
         : publicBroadcasts;
       const spotlightBroadcasts = ownerSpotlightInspectionMode
@@ -2368,6 +2372,24 @@ export default function ShopGalleryPage() {
       return items.length > 0 ? items : null;
     }
 
+    async function loadViewerSpotlightRowsWithFeedback(cleanedGmfnId: string) {
+      try {
+        const rows = await loadViewerSpotlightRows(cleanedGmfnId);
+        if (alive) setSpotlightFeedError('');
+        return rows;
+      } catch (err: any) {
+        if (alive) {
+          const status = Number(err?.status || 0);
+          setSpotlightFeedError(
+            status === 401
+              ? 'Your sign-in could not refresh community Spotlight. The last valid showing is kept while GSN retries; sign in again if this continues.'
+              : 'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
+          );
+        }
+        return undefined;
+      }
+    }
+
     async function loadOwnerSpotlightInspection(
       publicShopRes: any
     ): Promise<OwnerSpotlightInspection | null> {
@@ -2483,7 +2505,7 @@ export default function ShopGalleryPage() {
           ? await getCurrentClan().catch(() => null)
           : null;
         let publicShopRes: any = null;
-        let viewerSpotlightRows: any[] | null = null;
+        let viewerSpotlightRows: any[] | null | undefined = null;
         let publicDiaryRows: ShopDiaryEntryRecord[] | null = null;
         let ownerInspection: OwnerSpotlightInspection | null = null;
 
@@ -2492,7 +2514,9 @@ export default function ShopGalleryPage() {
           if (ownerSpotlightInspectionMode) {
             ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
           }
-          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          viewerSpotlightRows = await loadViewerSpotlightRowsWithFeedback(
+            cleanedGmfnId
+          );
           publicDiaryRows = await loadPublicShopDiaryRows(cleanedGmfnId, publicShopRes);
         } catch (err: any) {
           const message = safeStr(err?.message);
@@ -2508,7 +2532,9 @@ export default function ShopGalleryPage() {
               if (ownerSpotlightInspectionMode) {
                 ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
               }
-              viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+              viewerSpotlightRows = await loadViewerSpotlightRowsWithFeedback(
+                cleanedGmfnId
+              );
               publicDiaryRows = await loadPublicShopDiaryRows(
                 cleanedGmfnId,
                 publicShopRes,
@@ -2559,7 +2585,9 @@ export default function ShopGalleryPage() {
           if (ownerSpotlightInspectionMode) {
             ownerInspection = await loadOwnerSpotlightInspection(publicShopRes);
           }
-          viewerSpotlightRows = await loadViewerSpotlightRows(cleanedGmfnId);
+          viewerSpotlightRows = await loadViewerSpotlightRowsWithFeedback(
+            cleanedGmfnId
+          );
           publicDiaryRows = await loadPublicShopDiaryRows(effectiveGmfnId, publicShopRes);
           if (alive) {
             setNotice({
@@ -3460,6 +3488,22 @@ export default function ShopGalleryPage() {
     };
   }, [miniSpotlight]);
 
+  const spotlightMediaKey = miniSpotlight
+    ? [
+        spotlightBroadcastKey(miniSpotlight),
+        miniSpotlightView.imageUrl,
+        miniSpotlightView.videoUrl,
+      ].join('|')
+    : '';
+  const spotlightHasRenderableMedia = Boolean(
+    miniSpotlightView.imageUrl || miniSpotlightView.videoUrl
+  );
+
+  useEffect(() => {
+    setSpotlightMediaReadyKey('');
+    setSpotlightMediaUnavailableKey('');
+  }, [spotlightMediaKey]);
+
   const ownerSpotlightStatusView = useMemo(() => {
     if (!ownerSpotlightInspectionMode) return null;
     if (miniSpotlight && !miniSpotlightIsOwnerInspection) return null;
@@ -3546,7 +3590,10 @@ export default function ShopGalleryPage() {
       error ||
       !miniSpotlight ||
       miniSpotlightIsOwnerInspection ||
-      ownerSpotlightPreviewAuthorized
+      ownerSpotlightPreviewAuthorized ||
+      !spotlightHasRenderableMedia ||
+      !spotlightMediaKey ||
+      spotlightMediaReadyKey !== spotlightMediaKey
     ) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
@@ -3774,6 +3821,9 @@ export default function ShopGalleryPage() {
     miniSpotlightIsOwnerInspection,
     ownerSpotlightPreviewAuthorized,
     requestNextCanonicalSpotlight,
+    spotlightHasRenderableMedia,
+    spotlightMediaKey,
+    spotlightMediaReadyKey,
     trackMarketplaceAttention,
   ]);
 
@@ -6420,6 +6470,35 @@ export default function ShopGalleryPage() {
                     ? miniSpotlightView.title
                     : "Discover what's new"}
                 </div>
+                {spotlightFeedError ? (
+                  <div
+                    data-spotlight-feed-error='true'
+                    style={{
+                      marginTop: 7,
+                      color: '#8A4B08',
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      fontWeight: 820,
+                    }}
+                  >
+                    {spotlightFeedError}
+                  </div>
+                ) : null}
+                {spotlightMediaUnavailableKey === spotlightMediaKey &&
+                spotlightMediaKey ? (
+                  <div
+                    data-spotlight-media-status='unavailable'
+                    style={{
+                      marginTop: 7,
+                      color: '#8A4B08',
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      fontWeight: 820,
+                    }}
+                  >
+                    Media could not be shown. GSN will not count this showing and will retry automatically.
+                  </div>
+                ) : null}
                 {isCompact && ownerSpotlightStatusView?.detail ? (
                   <div
                     data-owner-spotlight-status-detail="true"
@@ -6477,10 +6556,44 @@ export default function ShopGalleryPage() {
               >
                 {miniSpotlightView.imageUrl || miniSpotlightView.videoUrl ? (
                   <SpotlightMediaFrame
+                    key={spotlightMediaKey}
                     imageUrl={miniSpotlightView.imageUrl}
                     videoUrl={miniSpotlightView.videoUrl}
                     videoPoster={miniSpotlightView.imageUrl}
                     alt={miniSpotlightView.title}
+                    onMediaReady={() => {
+                      if (!spotlightMediaKey) return;
+                      setSpotlightMediaUnavailableKey('');
+                      setSpotlightMediaReadyKey(spotlightMediaKey);
+                    }}
+                    onMediaUnavailable={() => {
+                      if (!spotlightMediaKey) return;
+                      setSpotlightMediaReadyKey('');
+                      setSpotlightMediaUnavailableKey(spotlightMediaKey);
+                    }}
+                    fallback={
+                      <div
+                        data-spotlight-media-unavailable='true'
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          minHeight: isCompact ? 318 : 340,
+                          display: 'grid',
+                          placeItems: 'center',
+                          padding: 18,
+                          boxSizing: 'border-box',
+                          color: '#173A5C',
+                          background:
+                            'linear-gradient(180deg, #F8FBFF 0%, #EAF4FF 100%)',
+                          fontSize: 13,
+                          fontWeight: 850,
+                          lineHeight: 1.45,
+                          textAlign: 'center',
+                        }}
+                      >
+                        This Spotlight media is not available yet. GSN will retry, and this showing will not be counted.
+                      </div>
+                    }
                     contentPadding={0}
                     showVideoControls={false}
                     autoPlayVideo={Boolean(miniSpotlightView.videoUrl)}
@@ -6515,7 +6628,7 @@ export default function ShopGalleryPage() {
                       objectPosition: "center",
                     }}
                   />
-                ) : heroImage && !ownerSpotlightStatusView ? (
+                ) : heroImage && !ownerSpotlightStatusView && !miniSpotlight ? (
                   <img
                     src={heroImage}
                     alt={shopNameText}
@@ -6542,7 +6655,13 @@ export default function ShopGalleryPage() {
                       padding: isCompact ? 10 : 16,
                     }}
                   >
-                    <GsnRealisticIcon name="shop-storefront" size={isCompact ? 42 : 52} decorative />
+                    {miniSpotlight ? (
+                      <span data-spotlight-media-missing='true'>
+                        This Spotlight does not have ready media. GSN will not count this showing.
+                      </span>
+                    ) : (
+                      <GsnRealisticIcon name="shop-storefront" size={isCompact ? 42 : 52} decorative />
+                    )}
                   </div>
                 )}
               </div>

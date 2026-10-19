@@ -448,6 +448,65 @@ def test_active_reservation_retries_the_next_paced_candidate():
     assert leases == [1, 2]
 
 
+def test_missing_placement_retries_the_next_paced_candidate():
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, role, gmfn_id,
+                    display_name, trust_score, trust_band,
+                    trust_score_updated_at
+                ) VALUES (
+                    3, 'phase4e2-owner-3@example.com', 'hashed', 'member',
+                    'GSN-P4E2-OWNER-3', 'Phase 4E2 Owner 3',
+                    70, 'B', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (3, 1, 3, 'member', 0)
+                """
+            )
+        )
+    _seed_campaign_and_broadcast(campaign_id=1, owner_user_id=2)
+    _seed_campaign_and_broadcast(campaign_id=2, owner_user_id=3)
+    with engine.begin() as conn:
+        shared_activation = _now() - timedelta(hours=1)
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET created_at = :shared_activation,
+                    activated_at = :shared_activation
+                """
+            ),
+            {"shared_activation": shared_activation},
+        )
+        conn.execute(text("DELETE FROM marketplace_broadcasts WHERE spotlight_campaign_id = 1"))
+
+    with SessionLocal() as db:
+        selection = select_spotlight_presentation(
+            db,
+            viewer_user_id=1,
+            now=_now(),
+            issuance_key="retry-after-missing-placement",
+        )
+
+    assert selection.selected is True
+    assert selection.candidate is not None
+    assert selection.candidate.campaign_id == 2
+    assert selection.pacing_result is not None
+    assert selection.pacing_result.blocked_campaign_ids == (1,)
+    assert selection.pacing_result.consumed_campaign_ids == ()
+
+
 def test_visible_presentation_qualifies_once_and_retry_dedupes(client, override_current_user_user):
     _seed_users_and_clans()
     _seed_campaign_and_broadcast()

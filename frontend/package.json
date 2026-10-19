@@ -142,6 +142,7 @@
     "smoke:support-helpdesk-simple-phone": "node tools/smoke-support-helpdesk-simple-phone.mjs",
     "smoke:demand-box-simple-phone": "node tools/smoke-demand-box-simple-phone.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
+    "test:dashboard-attention-semantics": "node tools/test-dashboard-attention-semantics.mjs",
     "audit:dashboard-button-inventory": "node tools/audit-dashboard-button-inventory.mjs",
     "audit:dashboard-phone-buttons": "node tools/audit-dashboard-phone-buttons.mjs",
     "audit:market-wisdom-contracts": "node tools/audit-market-wisdom-contracts.mjs",

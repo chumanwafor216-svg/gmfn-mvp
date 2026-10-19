@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import shutil
+from io import BytesIO
 from pathlib import Path
 
 import pytest
+from PIL import Image
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
@@ -20,6 +22,12 @@ def _upload_root() -> Path:
     root = Path("test_uploads") / f"marketplace_media_boundaries_{os.getpid()}"
     shutil.rmtree(root, ignore_errors=True)
     return root
+
+
+def _png_bytes() -> bytes:
+    output = BytesIO()
+    Image.new("RGB", (8, 8), color=(17, 42, 75)).save(output, format="PNG")
+    return output.getvalue()
 
 
 def test_marketplace_upload_url_rejects_malformed_text_controls(
@@ -84,6 +92,69 @@ def test_marketplace_upload_url_valid_image_still_returns_direct_upload_contract
     assert body["max_bytes"] > 0
     assert (upload_root / "marketplace" / "images").is_dir()
     assert (upload_root / "marketplace" / "videos").is_dir()
+
+    shutil.rmtree(upload_root, ignore_errors=True)
+
+
+def test_marketplace_image_upload_rejects_unreadable_image_before_writing(
+    client,
+    monkeypatch,
+    override_current_user,
+):
+    upload_root = _upload_root()
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    response = client.post(
+        "/marketplace/media/image",
+        files={"file": ("broken.jpg", b"not-an-image", "image/jpeg")},
+    )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "invalid_image_file"
+    assert list((upload_root / "marketplace" / "images").glob("*")) == []
+
+    shutil.rmtree(upload_root, ignore_errors=True)
+
+
+def test_marketplace_direct_image_upload_rejects_format_extension_mismatch(
+    client,
+    monkeypatch,
+    override_current_user,
+):
+    upload_root = _upload_root()
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    response = client.put(
+        "/marketplace/media/upload-direct/images/claimed.jpg",
+        content=_png_bytes(),
+        headers={"content-type": "image/jpeg"},
+    )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "image_format_mismatch"
+    assert not (upload_root / "marketplace" / "images" / "claimed.jpg").exists()
+
+    shutil.rmtree(upload_root, ignore_errors=True)
+
+
+def test_marketplace_image_upload_writes_verified_image(
+    client,
+    monkeypatch,
+    override_current_user,
+):
+    upload_root = _upload_root()
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    response = client.post(
+        "/marketplace/media/image",
+        files={"file": ("ready.png", _png_bytes(), "image/png")},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["ok"] is True
+    assert body["url"].endswith(".png")
+    assert len(list((upload_root / "marketplace" / "images").glob("*.png"))) == 1
 
     shutil.rmtree(upload_root, ignore_errors=True)
 

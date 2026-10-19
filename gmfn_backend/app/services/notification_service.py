@@ -13,6 +13,13 @@ from app.services.web_push_service import dispatch_web_push_for_notification
 
 NOTIFICATION_VISIBLE_LIMIT_DEFAULT = 20
 NOTIFICATION_VISIBLE_LIMIT_MAX = 20
+ATTENTION_INFORMATIONAL_NOTIFICATION_KINDS = frozenset(
+    {
+        "marketplace.shop.broadcast_created",
+        "marketplace.shop.product_created",
+        "demand_posted",
+    }
+)
 
 
 def _now_utc() -> datetime:
@@ -70,6 +77,12 @@ def _community_code(clan_id: int) -> str:
 
 def _safe_str(value: Any) -> str:
     return str(value or "").strip()
+
+
+def notification_requires_attention(*, kind: Any) -> bool:
+    """Separate announcements from notifications that represent pending work."""
+
+    return _safe_str(kind).lower() not in ATTENTION_INFORMATIONAL_NOTIFICATION_KINDS
 
 
 def _join_request_id_from_action_url(action_url: Any) -> int:
@@ -511,6 +524,7 @@ def list_my_notifications(
                 "action_url": normalized_action_url,
                 "action_label": normalized_action_label,
                 "is_read": bool(r.is_read),
+                "attention_actionable": notification_requires_attention(kind=r.kind),
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "read_at": r.read_at.isoformat() if r.read_at else None,
                 **(

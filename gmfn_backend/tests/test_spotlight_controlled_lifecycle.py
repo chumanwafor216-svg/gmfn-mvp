@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import text
 
+from app.core.security import create_access_token
 from app.db.database import SessionLocal, engine
 from app.db.models import (
     MarketplaceBroadcast,
@@ -156,6 +157,46 @@ def test_authorized_day_is_elapsed_time_from_activation() -> None:
     assert activation_expiry(afternoon, authorized_days=3) == datetime(
         2026, 10, 19, 15, 30, tzinfo=timezone.utc
     )
+
+
+def test_correction_replacement_requires_media_without_mutating_campaign(client, monkeypatch) -> None:
+    monkeypatch.setenv('GSN_SPOTLIGHT_LIFECYCLE_WRITES_ENABLED', '1')
+    monkeypatch.setenv('SECRET_KEY', 'pytest-spotlight-correction-media-secret')
+    _seed_foundation()
+    activated_at = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(hours=1)
+    campaign_id = _seed_campaign(
+        activated_at=activated_at,
+        campaign_expiry=activated_at + timedelta(hours=24),
+        placement_expiries=(activated_at + timedelta(hours=24),),
+    )
+    token = create_access_token({'sub': 'spotlight-owner@example.com'})
+    headers = {'Authorization': f'Bearer {token}'}
+
+    held = client.post(
+        f'/marketplace/spotlight-campaigns/{campaign_id}/correction-hold',
+        headers=headers,
+    )
+    assert held.status_code == 200, held.text
+
+    rejected = client.post(
+        f'/marketplace/spotlight-campaigns/{campaign_id}/replace',
+        headers=headers,
+        json={'message': 'Replacement without media'},
+    )
+    assert rejected.status_code == 400, rejected.text
+    assert rejected.json()['detail']['code'] == 'spotlight_media_required'
+
+    with SessionLocal() as db:
+        campaign = db.get(SpotlightCampaign, campaign_id)
+        placement = (
+            db.query(MarketplaceBroadcast)
+            .filter(MarketplaceBroadcast.spotlight_campaign_id == campaign_id)
+            .one()
+        )
+        assert campaign.content_version == 1
+        assert campaign.serving_status == SPOTLIGHT_CORRECTION_HOLD
+        assert placement.message == 'Original placement 1'
+        assert placement.serving_status == SPOTLIGHT_CORRECTION_HOLD
 
 
 def test_correction_preserves_entitlement_rounds_and_per_placement_expiry(monkeypatch) -> None:
@@ -545,6 +586,7 @@ def test_publish_ignores_caller_expiry_and_exhausted_paid_retry_consumes_no_cred
         'clan_id': 1,
         'shop_id': 1,
         'message': 'Same paid and free content',
+        'image_url': 'https://cdn.example.test/spotlight/paid-and-free.jpg',
         'priority_mode': 'free',
         'visibility_scope': 'direct_communities',
         'expires_at': '2035-01-01T00:00:00Z',

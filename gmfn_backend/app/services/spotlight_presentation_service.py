@@ -467,12 +467,8 @@ def select_spotlight_presentation(
                     .one_or_none()
                 )
                 if campaign is None or str(getattr(campaign, "status", "") or "") != "active":
-                    return SpotlightPresentationSelection(
-                        selected=False,
-                        pacing_result=pacing,
-                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-                        rejection_code=PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE,
-                        policy=policy,
+                    raise _SpotlightReservationUnavailable(
+                        PRESENTATION_REJECTION_CAMPAIGN_NOT_ACTIVE
                     )
 
                 pacing_blocked_reason = spotlight_delivery_round_blocked_reason(
@@ -492,12 +488,8 @@ def select_spotlight_presentation(
                     lock_for_update=True,
                 )
                 if placement is None:
-                    return SpotlightPresentationSelection(
-                        selected=False,
-                        pacing_result=pacing,
-                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-                        rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
-                        policy=policy,
+                    raise _SpotlightReservationUnavailable(
+                        PRESENTATION_REJECTION_STALE_CANDIDATE
                     )
                 deadlines = [current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS)]
                 for deadline in (
@@ -509,12 +501,8 @@ def select_spotlight_presentation(
                         deadlines.append(deadline)
                 token_expires_at = min(deadlines)
                 if token_expires_at <= current_time:
-                    return SpotlightPresentationSelection(
-                        selected=False,
-                        pacing_result=pacing,
-                        frequency_suppressed_campaign_ids=frequency_suppressed_campaign_ids,
-                        rejection_code=PRESENTATION_REJECTION_STALE_CANDIDATE,
-                        policy=policy,
+                    raise _SpotlightReservationUnavailable(
+                        PRESENTATION_REJECTION_STALE_CANDIDATE
                     )
                 content_version = int(getattr(campaign, 'content_version', 1) or 1)
                 active_reservation = (

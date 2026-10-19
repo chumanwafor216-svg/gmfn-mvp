@@ -17,6 +17,7 @@ const dashboardSectionFiles = [
   "src/components/dashboard/DashboardInboxSection.tsx",
 ];
 const attentionEngineFile = "src/lib/dashboardAttentionEngine.ts";
+const trustSemanticsFile = "src/lib/dashboardTrustSemantics.ts";
 const dashboardText = read(dashboardFile);
 const dashboardSectionTexts = dashboardSectionFiles.map((file) => [
   file,
@@ -24,6 +25,7 @@ const dashboardSectionTexts = dashboardSectionFiles.map((file) => [
 ]);
 const dashboardCompositeText = [dashboardText, ...dashboardSectionTexts.map(([, text]) => text)].join("\n");
 const attentionEngineText = read(attentionEngineFile);
+const trustSemanticsText = read(trustSemanticsFile);
 
 function assertContains(pattern, message) {
   if (!pattern.test(dashboardCompositeText)) {
@@ -223,6 +225,45 @@ assertEngineContains(
   "Dashboard attention engine must keep a secondary Open notifications CTA when the primary next step is not notifications."
 );
 
+assertContains(
+  /actionableCount: dashboardNoticeSummary\.counts\.actionable[\s\S]*?issueKeys: dashboardAttentionActionableRows\.map/,
+  "Dashboard attention must activate from explicitly actionable rows, not notification volume."
+);
+
+assertContains(
+  /for \(const item of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
+  "Dashboard guidance duplicates must preserve informational notification semantics."
+);
+
+assertContains(
+  /const hasServerActionInboxAction = serverAttentionSignals\.some[\s\S]*?signal\.kind === "action"[\s\S]*?dashboardNoticeSummary\.counts\.actionable > 0/,
+  "Dashboard pulse fallback must only promote real Action Inbox work."
+);
+
+assertContains(
+  /cciRequiresAttention === false[\s\S]*?tone: "neutral"[\s\S]*?Cross-community evidence is building/,
+  "Dashboard must not turn thin cross-community evidence into an adverse warning."
+);
+
+assertEngineContains(
+  /const active =[\s\S]*?input\.focusBehindCount > 0 \|\|[\s\S]*?input\.actionableCount > 0/,
+  "Dashboard attention engine must require a real actionable item or missed focus commitment."
+);
+
+assertEngineNotContains(
+  /if \(ageHours >= 96\)[\s\S]*?stage: "persistent"/,
+  "Dashboard attention must not infer a persistent urgent problem from elapsed time alone."
+);
+
+if (!/marketplace\.shop\.broadcast_created[\s\S]*?demand_posted/.test(trustSemanticsText)) {
+  findings.push({
+    file: trustSemanticsFile,
+    line: 1,
+    message: "Marketplace broadcasts, product announcements, and demand posts must stay informational.",
+    text: "Expected informational notification kinds were not found.",
+  });
+}
+
 assertEngineContains(
   /if \(sourceKind === "notifications"\) \{[\s\S]*?ctaTo: input\.nextRouteTo[\s\S]*?secondaryCtaLabel: "Open notifications"[\s\S]*?secondaryCtaTo: input\.notificationsTo/,
   "Dashboard attention engine must keep notifications-source alerts tied back to the notifications page."
@@ -295,8 +336,8 @@ assertNotContains(
 );
 
 assertEngineContains(
-  /evidence concern[\s\S]*?affecting the evidence reading[\s\S]*?evidence warning[\s\S]*?the evidence reading can fall[\s\S]*?evidence concerns/,
-  "Dashboard attention engine must frame unresolved issues as evidence concerns, not trust verdicts."
+  /evidence concern[\s\S]*?affecting the evidence reading[\s\S]*?the evidence reading can fall[\s\S]*?evidence concerns/,
+  "Dashboard attention engine must frame verified unresolved work as evidence concerns, not trust verdicts."
 );
 assertEngineNotContains(
   /trust issue|trust problems|affecting trust|weakening trust|hurting trust|trust warning|trust can fall|trust it can cost|hurt trust|live issue to trust/i,
