@@ -487,7 +487,11 @@ def _require_usable_spotlight_media(
             status_code=400,
             detail={
                 "code": "spotlight_media_required",
-                "message": "Add a ready picture or verified short video before publishing Spotlight.",
+                "message": (
+                    "Add a ready picture or verified short video before publishing Spotlight. "
+                    "If this page reached Publish while saying no media is ready, close and "
+                    "reopen GSN, then choose Add video and wait for Video ready."
+                ),
             },
         )
     if normalized_image_url is not None and not _media_url_available(normalized_image_url):

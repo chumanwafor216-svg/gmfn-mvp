@@ -182,6 +182,18 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/pwaInstall.ts",
+  /function shellUpdateShouldWait\(\)[\s\S]*?\[aria-busy="true"\][\s\S]*?input\[type="file"\][\s\S]*?input\.files\?\.length[\s\S]*?function offerIosShellUpdate\(latestSignature: string\)[\s\S]*?SHELL_DISMISSED_SIGNATURE_KEY[\s\S]*?window\.confirm\([\s\S]*?Finish any upload first[\s\S]*?reloadForFreshShell\(latestSignature\)/,
+  "An installed iPhone shortcut must offer one explicit fresh-shell update without interrupting a selected file or busy action."
+);
+
+assertContains(
+  "src/lib/pwaInstall.ts",
+  /controllerchange[\s\S]*?if \(isIosInstalledShortcut\(\)\) return;[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
+  "The iPhone update prompt must not restore the automatic controller-change or skip-waiting reload loop."
+);
+
+assertContains(
   "src/components/GsnInstallPrompt.tsx",
   /return \[\s*"If you are inside WhatsApp, open this page in Safari first\.",\s*"Tap Share\.",\s*"Tap Add to Home Screen\. Old icon still cropped or blank\? Remove that shortcut and add GSN again\.",\s*\];[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon-ios-180-v14\.png[\s\S]*?objectFit: "contain"/,
   "The GSN shortcut prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions, including old iPhone icon cache recovery, without triggering native Android install."

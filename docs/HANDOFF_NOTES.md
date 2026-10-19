@@ -8,6 +8,32 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight video stale-iPhone recovery - 2026-10-19
+
+- Status: repaired and verified locally; not committed, pushed, or deployed.
+- Root cause: the affected installed iPhone shortcut was still running an old
+  frontend bundle that allowed a Spotlight draft to reach Publish with no ready
+  media. The current frontend correctly requires ready picture/video media, and
+  the current backend correctly rejected the stale client's blank publish.
+- `frontend/src/lib/pwaInstall.ts` now checks the deployed shell signature on
+  installed iOS shortcuts and offers one explicit update/reload prompt instead
+  of silently excluding iOS. It preserves the anti-reload-loop protections,
+  does not reload without acceptance, and postpones prompting while a file is
+  selected, an action is busy, or the page is hidden.
+- The Marketplace Spotlight missing-media error now tells stale clients to
+  close and reopen GSN, choose Add video, and wait for Video ready. Static
+  frontend and backend regression assertions cover both recovery paths.
+- Verification passed: frontend production build, focused PWA lint and syntax
+  checks, Spotlight controls audit, media-quality audit, two focused backend
+  tests, Python compilation, and scoped whitespace checking. The broad link
+  audit remains blocked by an unrelated pre-existing Community Home expectation;
+  the Web Push readiness audit remains blocked by unrelated existing manifest
+  display-mode changes.
+- Unabated truth: an already-running stale iPhone bundle cannot receive this
+  new prompt until it is closed and reopened once. Automated checks do not
+  prove Safari/iOS lifecycle behavior on the affected physical phone, so a
+  real-device upload remains the final post-deploy acceptance test.
+
 ## Verified local live phone-verification foundation - 2026-10-19
 
 - Status: implemented, verified, and committed locally in the OTP work commit;

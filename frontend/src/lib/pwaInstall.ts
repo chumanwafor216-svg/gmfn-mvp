@@ -15,10 +15,12 @@ let serviceWorkerControllerReloading = false;
 let installedThisSession = false;
 let shellFreshnessRegistered = false;
 let shellFreshnessChecking = false;
+let iosShellUpdatePromptOpen = false;
 
 const SHELL_FRESHNESS_INTERVAL_MS = 5 * 60 * 1000;
 const SHELL_FRESHNESS_TIMEOUT_MS = 10000;
 const SHELL_RELOAD_SIGNATURE_KEY = "gsn.pwa.shellReloadSignature";
+const SHELL_DISMISSED_SIGNATURE_KEY = "gsn.pwa.shellDismissedSignature";
 const SHELL_ASSET_PATTERN = /\/assets\/[^"'<> ]+\.(?:js|css)/g;
 
 function notifyInstallListeners(): void {
@@ -166,10 +168,60 @@ function reloadForFreshShell(latestSignature: string): void {
   window.location.reload();
 }
 
+function shellUpdateShouldWait(): boolean {
+  if (typeof document === "undefined") return true;
+  if (document.visibilityState === "hidden") return true;
+
+  if (document.querySelector('[aria-busy="true"]')) {
+    return true;
+  }
+
+  return Array.from(
+    document.querySelectorAll<HTMLInputElement>('input[type="file"]')
+  ).some((input) => Boolean(input.files?.length));
+}
+
+function offerIosShellUpdate(latestSignature: string): void {
+  if (!isIosInstalledShortcut()) return;
+  if (iosShellUpdatePromptOpen || shellUpdateShouldWait()) return;
+
+  try {
+    if (
+      window.sessionStorage?.getItem(SHELL_DISMISSED_SIGNATURE_KEY) ===
+      latestSignature
+    ) {
+      return;
+    }
+  } catch {
+    // The prompt remains safe when session storage is unavailable.
+  }
+
+  iosShellUpdatePromptOpen = true;
+  try {
+    const accepted = window.confirm(
+      "A newer GSN update is ready. Update now? The current page will reload. Finish any upload first if you need to keep it."
+    );
+    if (accepted) {
+      reloadForFreshShell(latestSignature);
+      return;
+    }
+
+    try {
+      window.sessionStorage?.setItem(
+        SHELL_DISMISSED_SIGNATURE_KEY,
+        latestSignature
+      );
+    } catch {
+      // A declined prompt must never block the current app session.
+    }
+  } finally {
+    iosShellUpdatePromptOpen = false;
+  }
+}
+
 async function checkForFreshInstalledShell(): Promise<void> {
   if (typeof window === "undefined") return;
   if (!isGsnStandaloneDisplay()) return;
-  if (isIosInstalledShortcut()) return;
   if (document.visibilityState === "hidden") return;
   if (shellFreshnessChecking) return;
 
@@ -202,7 +254,11 @@ async function checkForFreshInstalledShell(): Promise<void> {
 
     const latestSignature = shellSignatureFromHtml(await response.text());
     if (latestSignature && latestSignature !== currentSignature) {
-      reloadForFreshShell(latestSignature);
+      if (isIosInstalledShortcut()) {
+        offerIosShellUpdate(latestSignature);
+      } else {
+        reloadForFreshShell(latestSignature);
+      }
     }
   } catch {
     // Installed shortcut freshness is helpful, but the app must still open offline.
@@ -223,7 +279,6 @@ function registerInstalledShellFreshnessChecks(
   registration: ServiceWorkerRegistration
 ): void {
   if (shellFreshnessRegistered || typeof window === "undefined") return;
-  if (isIosInstalledShortcut()) return;
   shellFreshnessRegistered = true;
 
   const requestFreshnessCheck = () => {

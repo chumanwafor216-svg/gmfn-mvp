@@ -5839,6 +5839,8 @@ def test_direct_spotlight_rejects_invalid_media_scope_shop_and_community_without
     response = client.post("/marketplace/broadcasts", json=missing_media)
     assert response.status_code == 400, response.text
     assert response.json()["detail"]["code"] == "spotlight_media_required"
+    assert "close and reopen GSN" in response.json()["detail"]["message"]
+    assert "wait for Video ready" in response.json()["detail"]["message"]
 
     unready_media = dict(base_payload)
     unready_media["image_url"] = "/uploads/marketplace/images/not-uploaded.jpg"
