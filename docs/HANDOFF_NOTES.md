@@ -12,11 +12,17 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Status: application commit `573da206` was pushed unchanged to
   `codex/spotlight-rotation-continuity` and `main`. GitHub Render workflow
-  `39293129304` completed successfully for that exact commit. Render frontend
-  deploy `dep-dbb52b2gjjms73d2akt0` and API deploy
-  `dep-dbb538qfngtc739utnpg` both reached `live`. The workflow verified the
-  public frontend build and live API contracts; an independent check returned
-  HTTP 200 from the frontend and `{"ok":true,"dev_mode":false}` from `/health`.
+  `39293129304` completed successfully for that exact commit. Frontend deploy
+  `dep-dbb52b2gjjms73d2akt0` reached `live`, then the workflow's second
+  exact-commit request superseded it with current live deploy
+  `dep-dbb52bc768vs73auuqa0`. API deploy `dep-dbb538qfngtc739utnpg` remains
+  `live`. The workflow verified the public frontend build and live API
+  contracts; an independent check returned HTTP 200 from the frontend and
+  `{"ok":true,"dev_mode":false}` from `/health`.
+- Immediate post-deploy monitoring found one live API instance, no error-level
+  logs, and no HTTP 5xx after rollout. Memory settled near 279 MB of 512 MiB
+  and CPU was low. This is a clean short observation window, not proof against
+  a later phone-specific or traffic-dependent failure.
 - Production evidence before the fix showed campaign `329` active and serving
   with valid media and a 2026-10-20 16:27:35 UTC authorization deadline, but
   still at zero of ten rounds. Viewer `13` had an issued presentation lease
