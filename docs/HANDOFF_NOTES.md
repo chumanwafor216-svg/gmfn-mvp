@@ -10,7 +10,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Spotlight video stale-iPhone recovery - 2026-10-19
 
-- Status: repaired and verified locally; not committed, pushed, or deployed.
+- Status: deployed from application commit `10a900c6` on
+  `codex/spotlight-rotation-continuity` and `main`. GitHub workflow
+  `39255800176` completed successfully. Render reports frontend deploy
+  `dep-dbb16dlttamc738s52dg` and API deploy
+  `dep-dbb17nrncjis73aphbog` as live.
 - Root cause: the affected installed iPhone shortcut was still running an old
   frontend bundle that allowed a Spotlight draft to reach Publish with no ready
   media. The current frontend correctly requires ready picture/video media, and
@@ -29,6 +33,10 @@ under `docs/` or `docs/archive/`, then link that file here.
   audit remains blocked by an unrelated pre-existing Community Home expectation;
   the Web Push readiness audit remains blocked by unrelated existing manifest
   display-mode changes.
+- Post-deploy verification passed: the exact frontend and API Render deploys
+  reached `live`, the public frontend check passed, the live API contract audit
+  passed, the main-branch backend test workflow passed, and the public main
+  bundle contains the new iPhone update-prompt marker.
 - Unabated truth: an already-running stale iPhone bundle cannot receive this
   new prompt until it is closed and reopened once. Automated checks do not
   prove Safari/iOS lifecycle behavior on the affected physical phone, so a
