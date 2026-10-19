@@ -10,6 +10,9 @@ from app.api.routes import marketplace as marketplace_routes
 from app.db.database import engine
 
 
+READY_IMAGE_URL = "https://cdn.example.test/spotlight-ready.jpg"
+
+
 def _seed_owner_shop(*, target_clan: bool = False, entitlement: bool = False) -> None:
     now = datetime.now(timezone.utc)
     with engine.begin() as conn:
@@ -103,6 +106,7 @@ def test_direct_spotlight_campaign_stores_offer_metadata_on_campaign_not_broadca
             "clan_id": 1,
             "shop_id": 1,
             "message": "Accounting consultation slots open",
+            "image_url": READY_IMAGE_URL,
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
             "opportunity_intent": "offer",
@@ -150,6 +154,7 @@ def test_direct_spotlight_campaign_can_store_need_metadata(client, override_curr
             "clan_id": 1,
             "shop_id": 1,
             "message": "Need volunteers for Saturday food packing",
+            "image_url": READY_IMAGE_URL,
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
             "opportunity_intent": "need",
@@ -187,6 +192,7 @@ def test_direct_spotlight_rejects_invalid_opportunity_metadata(
         "clan_id": 1,
         "shop_id": 1,
         "message": "Metadata validation post",
+        "image_url": READY_IMAGE_URL,
         "priority_mode": "free",
         "visibility_scope": "direct_communities",
     }
@@ -264,6 +270,7 @@ def test_multiple_broadcast_placements_share_one_campaign_opportunity_meaning(
             "clan_id": 1,
             "shop_id": 1,
             "message": "Remote bookkeeping help available",
+            "image_url": READY_IMAGE_URL,
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
             "opportunity_intent": "offer",
@@ -349,6 +356,7 @@ def test_direct_metadata_does_not_fabricate_product_linkage_and_availability_is_
             "clan_id": 1,
             "shop_id": 1,
             "message": "Workshop no longer has seats but leave history intact",
+            "image_url": READY_IMAGE_URL,
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
             "expires_at": campaign_expires_at,
