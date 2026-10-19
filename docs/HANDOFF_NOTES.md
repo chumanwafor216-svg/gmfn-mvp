@@ -12,10 +12,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Status: application commit `c7761bb8` was pushed to
   `codex/spotlight-rotation-continuity` and `main`. Render API deploy
-  `dep-dbb3k4ks728c73a9jodg` reached `live` from that exact commit at
-  15:43:59 UTC. The live `/health` contract returned
+  `dep-dbb3k4ks728c73a9jodg` first reached `live` from that exact commit at
+  15:43:59 UTC. A second exact-commit deploy,
+  `dep-dbb3kd93brkc73ba59d0`, had already been accepted and superseded it at
+  15:47:14 UTC. The final live `/health` contract returned
   `{"ok":true,"dev_mode":false}`; Render recorded `server_available` and
-  successful `deploy_ended` events with no new failure or OOM event.
+  successful `deploy_ended` events with no new failure or OOM event. The API
+  briefly closed a health connection only while the second instance was
+  actively replacing the first.
 - The owner-provided Render email was a real infrastructure failure, not merely
   confusing browser copy. Render recorded two `gmfn-api` out-of-memory kills
   against its 512 MiB limit at 12:46:44 UTC and 14:52:53 UTC. The second
@@ -38,8 +42,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: all 12 media-quality/backend tests, including real
   `576x1296` normalization and the new decoder/filter/encoder thread-cap
   regression; all 72 Marketplace Public Shop tests; Python compilation; and
-  scoped whitespace checks. Immediately after rollout the new instance used
-  about 206 MB of its 512 MiB limit and had no error-level logs.
+  scoped whitespace checks. After the final rollout settled, the new instance
+  used about 260 MB of its 512 MiB limit, reported one live instance, and had
+  no error-level logs.
 - Residual truth: this is evidence-based containment, not proof that the whole
   API can never exceed 512 MiB. A single authenticated phone retry is still
   required. If OOM recurs with the thread cap, stop retries and either isolate
