@@ -724,7 +724,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     onClick={() => {
                       setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
                       const input = document.getElementById("shop-control-spotlight-image-file") as HTMLInputElement | null;
-                      input?.click();
+                      if (input) {
+                        input.value = "";
+                        input.click();
+                      }
                     }}
                     disabled={preparingSpotlightImage || creatingSpotlight}
                     busy={preparingSpotlightImage}
@@ -740,7 +743,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     onClick={() => {
                       setSpotlightMediaChoice(spotlightImageFile ? "both" : "video");
                       const input = document.getElementById("shop-control-spotlight-video-file") as HTMLInputElement | null;
-                      input?.click();
+                      if (input) {
+                        input.value = "";
+                        input.click();
+                      }
                     }}
                     disabled={preparingSpotlightVideo || creatingSpotlight}
                     busy={preparingSpotlightVideo}

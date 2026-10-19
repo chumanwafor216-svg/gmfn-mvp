@@ -672,6 +672,20 @@ const SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
 const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
 const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
 
+function isSpotlightVideoFile(file: File): boolean {
+  const ext = spotlightMediaExtension(file.name);
+  if (SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS.includes(ext)) return true;
+  if (SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS.includes(ext)) return false;
+  return safeStr(file.type).toLowerCase().startsWith("video/");
+}
+
+function isSpotlightImageFile(file: File): boolean {
+  const ext = spotlightMediaExtension(file.name);
+  if (SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS.includes(ext)) return true;
+  if (SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS.includes(ext)) return false;
+  return safeStr(file.type).toLowerCase().startsWith("image/");
+}
+
 function firstTruthy(...values: unknown[]): string {
   for (const value of values) {
     const text = safeStr(value);
@@ -6499,6 +6513,13 @@ export default function ShopControlPage() {
       return;
     }
 
+    if (isSpotlightVideoFile(file)) {
+      setSpotlightImageInputKey((prev) => prev + 1);
+      setSpotlightMediaChoice(spotlightImageFile ? "both" : "video");
+      await handleSpotlightVideoPicked(file);
+      return;
+    }
+
     const validationIssue = validateSpotlightImageFile(file, false);
     if (validationIssue) {
       setSpotlightMediaFeedback({ tone: 'error', text: validationIssue });
@@ -6572,6 +6593,13 @@ export default function ShopControlPage() {
 
     if (!file) {
       setSpotlightVideoInputKey((prev) => prev + 1);
+      return;
+    }
+
+    if (isSpotlightImageFile(file)) {
+      setSpotlightVideoInputKey((prev) => prev + 1);
+      setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
+      await handleSpotlightImagePicked(file);
       return;
     }
 

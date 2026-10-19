@@ -67,14 +67,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /<StableButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => \{[\s\S]*?setSpotlightMediaChoice\(spotlightImageFile \? "both" : "video"\)[\s\S]*?shop-control-spotlight-video-file[\s\S]*?input\?\.click\(\)[\s\S]*?debugId="shop-control\.spotlight\.media\.video"/,
-  "The Free Spotlight video media selector must be an explicit button action, not a submit/navigation fallthrough."
+  /<StableButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => \{[\s\S]*?setSpotlightMediaChoice\(spotlightImageFile \? "both" : "video"\)[\s\S]*?shop-control-spotlight-video-file[\s\S]*?input\.value = ""[\s\S]*?input\.click\(\)[\s\S]*?debugId="shop-control\.spotlight\.media\.video"/,
+  "The Free Spotlight video selector must reset before opening so choosing the same phone file again still fires the media handler."
 );
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
   /<PrimaryButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => handleCreateSpotlight\(\)\}[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"/,
   "The Free Spotlight publish control must be an explicit button action, not a submit/navigation fallthrough."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /function isSpotlightVideoFile\([\s\S]*?SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS\.includes\(ext\)[\s\S]*?startsWith\("video\/"\)[\s\S]*?function isSpotlightImageFile\([\s\S]*?SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS\.includes\(ext\)[\s\S]*?startsWith\("image\/"\)[\s\S]*?handleSpotlightImagePicked[\s\S]*?isSpotlightVideoFile\(file\)[\s\S]*?handleSpotlightVideoPicked\(file\)[\s\S]*?handleSpotlightVideoPicked[\s\S]*?isSpotlightImageFile\(file\)[\s\S]*?handleSpotlightImagePicked\(file\)/,
+  "Spotlight must recover when a phone returns a selected video through the picture input or a picture through the video input."
 );
 
 assertContains(
