@@ -10,8 +10,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Usable social-video quality correction - 2026-10-19
 
-- Status: implemented and verified locally; not yet committed, pushed, or
-  deployed.
+- Status: committed as `4a1ecef6`, pushed to the working branch and `main`,
+  and deployed to both Render services from that exact commit.
 - Real-device evidence from My family my pride showed that the shared media
   gate rejected a clear `576x1296` downloaded portrait solely because its
   short edge was below the former 720-pixel rule. That same file would then
@@ -31,6 +31,11 @@ under `docs/` or `docs/archive/`, then link that file here.
   audit; Spotlight controls audit; full protected-button freeze audit;
   production frontend build; focused lint; Python compilation; and scoped
   whitespace checks.
+- GitHub Backend Tests run `39264309841` passed for `4a1ecef6`. Trigger Render
+  Deploy run `39264321311` then confirmed frontend deploy
+  `dep-dbb22m72d8hs73e7uk80` and API deploy `dep-dbb2403rjlhs73b4rshg` live,
+  verified the public frontend build marker, and passed the live API identity
+  contract checks.
 - Unabated truth: the generated regression matches the reported dimensions and
   processing path, but the exact Sweetlove source file is not in the workspace.
   Retrying that file on the phone remains the final acceptance test after
