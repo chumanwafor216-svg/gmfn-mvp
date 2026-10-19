@@ -1944,14 +1944,42 @@ def _count_free_spotlight_runs_for_author_today(
     now: Optional[datetime] = None,
 ) -> int:
     start, end = _free_spotlight_day_bounds(now)
-    return (
+    rows = (
         db.query(MarketplaceBroadcast)
         .filter(MarketplaceBroadcast.author_user_id == int(author_user_id))
         .filter(MarketplaceBroadcast.priority_mode != SPOTLIGHT_PAID)
         .filter(MarketplaceBroadcast.created_at >= start)
         .filter(MarketplaceBroadcast.created_at < end)
-        .count()
+        .filter(
+            (
+                MarketplaceBroadcast.image_url.isnot(None)
+                & (MarketplaceBroadcast.image_url != "")
+            )
+            | (
+                MarketplaceBroadcast.video_url.isnot(None)
+                & (MarketplaceBroadcast.video_url != "")
+            )
+        )
+        .with_entities(
+            MarketplaceBroadcast.id,
+            MarketplaceBroadcast.spotlight_campaign_id,
+            MarketplaceBroadcast.publication_key,
+        )
+        .all()
     )
+    # One publish can create a placement row in every eligible community. The
+    # daily rule applies to that publication/campaign, not to each placement.
+    # Legacy rows without media are intentionally excluded: current writes
+    # reject them, and an older invalid row must not consume a usable free run.
+    publication_runs: set[tuple[str, Any]] = set()
+    for row_id, campaign_id, publication_key in rows:
+        if campaign_id is not None:
+            publication_runs.add(("campaign", int(campaign_id)))
+        elif _safe_str(publication_key):
+            publication_runs.add(("publication", _safe_str(publication_key)))
+        else:
+            publication_runs.add(("legacy_row", int(row_id)))
+    return len(publication_runs)
 
 
 def _count_active_paid_spotlights_for_shop(
@@ -6930,7 +6958,7 @@ def create_marketplace_broadcast(
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "Your free Spotlight for today is already active. "
+                    "Your free Spotlight for today has already been used. "
                     "Wait until the next UTC day or use paid Spotlight."
                 ),
             )

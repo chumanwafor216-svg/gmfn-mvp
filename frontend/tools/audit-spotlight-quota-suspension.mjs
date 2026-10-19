@@ -69,7 +69,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /if priority_mode == SPOTLIGHT_PAID:[\s\S]*?active_paid_count = _count_active_paid_spotlights_for_shop[\s\S]*?else:[\s\S]*?daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today is already active/,
+  /if priority_mode == SPOTLIGHT_PAID:[\s\S]*?active_paid_count = _count_active_paid_spotlights_for_shop[\s\S]*?else:[\s\S]*?daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today has already been used/,
   "Paid Spotlight active-run guards must stay separate from the Free Spotlight daily identity limit."
 );
 

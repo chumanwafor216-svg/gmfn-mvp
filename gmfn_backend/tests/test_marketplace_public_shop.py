@@ -4744,7 +4744,96 @@ def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_dai
         },
     )
     assert second_res.status_code == 400, second_res.text
-    assert "free Spotlight for today is already active" in second_res.text
+    assert "free Spotlight for today has already been used" in second_res.text
+
+
+def test_legacy_media_less_spotlight_does_not_consume_daily_free_run(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    _ensure_marketplace_tables()
+    fixed_now = datetime(2026, 10, 19, 14, 30, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(marketplace_routes, "_now_utc", lambda: fixed_now)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user',
+                    'GMFN-U-MEDIALESS'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (
+                    1, 'Media Repair Clan', 'Media Repair Marketplace',
+                    'MEDIAREPAIR1'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'MEDIA REPAIR SHOP', 'Legacy invalid Spotlight', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message,
+                    image_url, video_url, priority_mode, visibility_scope,
+                    serving_status, expires_at, authorized_expires_at, created_at
+                ) VALUES (
+                    1, 1, 1, 1, 'Legacy media-less Spotlight',
+                    NULL, NULL, 'free', 'direct_communities',
+                    'withdrawn', :expires_at, :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "created_at": fixed_now - timedelta(hours=1),
+                "expires_at": fixed_now + timedelta(hours=23),
+            },
+        )
+
+    res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Replacement with usable media",
+            "image_url": "https://cdn.example.test/spotlight/repaired.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+
+    assert res.status_code == 200, res.text
+    assert res.json()["free_spotlight_used_today_before_publish"] == 0
 
 
 def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
@@ -4869,10 +4958,10 @@ def test_free_spotlight_daily_identity_limit_blocks_same_author_test_week_overri
                 """
                 INSERT INTO marketplace_broadcasts (
                     id, clan_id, author_user_id, shop_id, message, image_url,
-                    priority_mode, visibility_scope, expires_at, created_at
+                    priority_mode, visibility_scope, serving_status, expires_at, created_at
                 ) VALUES (
                     1, 3, 1, 1, 'Already live', '/uploads/marketplace/images/live.jpg',
-                    'free', 'direct_communities', :expires_at, :created_at
+                    'free', 'direct_communities', 'withdrawn', :expires_at, :created_at
                 )
                 """
             ),
@@ -4894,7 +4983,7 @@ def test_free_spotlight_daily_identity_limit_blocks_same_author_test_week_overri
         },
     )
     assert res.status_code == 400, res.text
-    assert "free Spotlight for today is already active" in res.text
+    assert "free Spotlight for today has already been used" in res.text
 
     with engine.begin() as conn:
         broadcast_count = conn.execute(

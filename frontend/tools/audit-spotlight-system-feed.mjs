@@ -66,7 +66,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today\([\s\S]*?author_user_id=int\(current_user\.id\)[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today is already active/,
+  /daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today\([\s\S]*?author_user_id=int\(current_user\.id\)[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today has already been used/,
   "Free Spotlight publish must block a second same-day run for the same global member identity."
 );
 
