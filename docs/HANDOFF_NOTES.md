@@ -8,6 +8,48 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight API memory containment - 2026-10-19
+
+- Status: application commit `c7761bb8` was pushed to
+  `codex/spotlight-rotation-continuity` and `main`. Render API deploy
+  `dep-dbb3k4ks728c73a9jodg` reached `live` from that exact commit at
+  15:43:59 UTC. The live `/health` contract returned
+  `{"ok":true,"dev_mode":false}`; Render recorded `server_available` and
+  successful `deploy_ended` events with no new failure or OOM event.
+- The owner-provided Render email was a real infrastructure failure, not merely
+  confusing browser copy. Render recorded two `gmfn-api` out-of-memory kills
+  against its 512 MiB limit at 12:46:44 UTC and 14:52:53 UTC. The second
+  occurred immediately after an API rollout; the first had no completed
+  request log, so it may have died during an in-flight request.
+- The evidence does not prove that the reported video alone caused both kills.
+  The one completed production video upload at 14:16:12 UTC returned 200 and
+  the three following publish attempts returned the already-repaired 400 quota
+  response. Nevertheless, FFmpeg previously sized decoder, filter, and x264
+  thread pools from available CPUs while the Python API commonly sat around
+  300-340 MB, leaving unsafe transient headroom on a 512 MiB service.
+- Video inspection, audio probing, filtering, and H.264 encoding are now
+  explicitly limited to one FFmpeg worker thread. This contains transient
+  memory without lowering the approved hard-quality floor, forcing 720p,
+  removing audio, changing the 10-second public clip, or changing the
+  1280-pixel output cap.
+- Production data inspection found no partial new Spotlight campaign from the
+  failed attempts. Campaign 326 remains the historical withdrawn media-less
+  row; no later campaign exists for that owner.
+- Verification passed: all 12 media-quality/backend tests, including real
+  `576x1296` normalization and the new decoder/filter/encoder thread-cap
+  regression; all 72 Marketplace Public Shop tests; Python compilation; and
+  scoped whitespace checks. Immediately after rollout the new instance used
+  about 206 MB of its 512 MiB limit and had no error-level logs.
+- Residual truth: this is evidence-based containment, not proof that the whole
+  API can never exceed 512 MiB. A single authenticated phone retry is still
+  required. If OOM recurs with the thread cap, stop retries and either isolate
+  video preparation into a worker or approve a larger instance after profiling;
+  do not keep blaming the browser or silently raise media-quality rejection.
+- GitHub Backend Tests run `39278746231` and Trigger Render Deploy run
+  `39279689499` were still queued without runners at handoff time. The direct
+  Render deploy was used because API auto-deploy is disabled and returned the
+  exact deploy id above.
+
 ## Spotlight same-file phone-picker recovery - 2026-10-19
 
 - Status: application commit `0a9de704` was pushed to
