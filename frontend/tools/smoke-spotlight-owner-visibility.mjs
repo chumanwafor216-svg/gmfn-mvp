@@ -1,4 +1,4 @@
-/* global console, document, localStorage, window, URL, Event, CustomEvent */
+/* global console, document, localStorage, window, URL, Event, CustomEvent, HTMLDetailsElement, HTMLElement */
 
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
@@ -273,6 +273,15 @@ async function installMocks(page, scenario) {
           Number(scenario.explicitPreviewCanonicalCalls || 0) + 1;
       }
       scenario.canonicalCalls += 1;
+      if (
+        scenario.canonicalCalls > Number(scenario.canonicalFailureAfterCalls || 0) &&
+        Number(scenario.canonicalFailuresRemaining || 0) > 0
+      ) {
+        scenario.canonicalFailuresRemaining -= 1;
+        return route.fulfill(
+          json({ detail: 'Synthetic canonical refresh outage.' }, 503)
+        );
+      }
       const streamIndex = scenario.canonicalCalls;
       if (streamIndex > scenario.streamLimit) {
         if (scenario.replayAfterStream) {
@@ -993,6 +1002,55 @@ async function testRejectedQualificationRetriesBeforeAttention(browser, baseUrl)
   return scenario;
 }
 
+async function testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    canonicalFailureAfterCalls: 1,
+    canonicalFailuresRemaining: 4,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.getByText(/Community Spotlight could not refresh/).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.waitForTimeout(13_000);
+  if (
+    !(await page.getByText('Visitor eligible Spotlight', { exact: true }).count())
+  ) {
+    throw new Error('A transient refresh outage erased the last valid Spotlight.');
+  }
+  if (scenario.canonicalCalls !== 5 || scenario.canonicalFailuresRemaining !== 0) {
+    throw new Error(
+      `Canonical refresh retry was not bounded: calls=${scenario.canonicalCalls}, remaining=${scenario.canonicalFailuresRemaining}`
+    );
+  }
+  if (scenario.qualifyCalls !== 1 || scenario.impressionCalls !== 1) {
+    throw new Error(
+      `Refresh retry changed impression accounting: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
 async function testPresentationExpiryRemovesContact(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
@@ -1057,6 +1115,7 @@ try {
     ),
     await testFreshLeaseWinsOverWeightedReplay(browser, baseUrl),
     await testRejectedQualificationRetriesBeforeAttention(browser, baseUrl),
+    await testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl),
     await testPresentationExpiryRemovesContact(browser, baseUrl),
   ];
   console.log(

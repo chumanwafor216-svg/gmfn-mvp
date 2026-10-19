@@ -64,6 +64,9 @@ import {
   PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS,
 } from "../lib/spotlightPresentationPolicy";
 
+const SPOTLIGHT_REFRESH_RETRY_DELAY_MS = 2000;
+const SPOTLIGHT_REFRESH_RETRY_LIMIT = 3;
+
 type ShopProfile = {
   id?: number;
   clanId?: number;
@@ -158,11 +161,13 @@ type ShopBroadcast = {
   rotationWeight?: number;
   isCanonicalOpportunity?: boolean;
   isCanonicalReplay?: boolean;
+  isCanonicalVisibility?: boolean;
   opportunityCampaignId?: number;
   opportunityPresentationId?: string;
   opportunityPresentationToken?: string;
   opportunityPresentationExpiresAt?: string;
   opportunityReplayExpiresAt?: string;
+  opportunityVisibilityExpiresAt?: string;
   opportunityPresentationSurface?: string;
   opportunityCountsAsDelivery?: boolean;
   opportunityCountsAsExposure?: boolean;
@@ -359,6 +364,10 @@ function publicShopSpotlightRowIsCanonical(row: any): boolean {
     src?.opportunity_replay_expires_at,
     src?.opportunityReplayExpiresAt
   );
+  const visibilityExpiresAt = firstMeaningful(
+    src?.opportunity_visibility_expires_at,
+    src?.opportunityVisibilityExpiresAt
+  );
   const countsAsDelivery =
     src?.opportunity_counts_as_delivery ?? src?.opportunityCountsAsDelivery;
   const countsAsExposure =
@@ -370,9 +379,16 @@ function publicShopSpotlightRowIsCanonical(row: any): boolean {
       countsAsDelivery === false &&
       countsAsExposure === false
   );
+  const canonicalVisibility = Boolean(
+    (src?.is_canonical_visibility || src?.isCanonicalVisibility) &&
+      !presentationToken &&
+      visibilityExpiresAt &&
+      countsAsDelivery === false &&
+      countsAsExposure === false
+  );
   return Boolean(
     src?.is_canonical_opportunity &&
-      (presentationToken || canonicalReplay)
+      (presentationToken || canonicalReplay || canonicalVisibility)
   );
 }
 
@@ -383,7 +399,7 @@ function publicShopSpotlightRowsAreCanonical(items: any[] | null | undefined): b
 function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): boolean {
   if (!item?.isCanonicalOpportunity) return false;
   const deadlineMs = publicShopSpotlightPresentationDeadlineMs(item);
-  if (item.isCanonicalReplay) {
+  if (item.isCanonicalReplay || item.isCanonicalVisibility) {
     if (
       item.opportunityPresentationToken ||
       item.opportunityCountsAsDelivery !== false ||
@@ -398,6 +414,9 @@ function publicShopSpotlightPresentationIsCurrent(item: ShopBroadcast | null): b
 }
 
 function publicShopSpotlightPresentationDeadlineMs(item: ShopBroadcast): number {
+  if (item.isCanonicalVisibility) {
+    return new Date(item.opportunityVisibilityExpiresAt || '').getTime();
+  }
   return new Date(
     item.isCanonicalReplay
       ? item.opportunityReplayExpiresAt || ""
@@ -412,8 +431,10 @@ async function loadNextPublicShopSpotlightPresentations(
   const response = await getPublicShopSpotlightOpportunity(
     cleanedGmfnId,
     newSpotlightPresentationRequestId()
-  ).catch(() => null);
-  if (Number(response?.serving_contract_version || 0) < 2) return [];
+  );
+  if (Number(response?.serving_contract_version || 0) < 2) {
+    throw new Error('Spotlight serving contract is unavailable.');
+  }
   return publicShopSpotlightResponseItems(response)
     .filter((row) => publicShopSpotlightRowIsCanonical(row))
     .map((row) => normalizeBroadcast(row))
@@ -432,7 +453,9 @@ function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): n
           src?.opportunity_presentation_expires_at,
           src?.opportunityPresentationExpiresAt,
           src?.opportunity_replay_expires_at,
-          src?.opportunityReplayExpiresAt
+          src?.opportunityReplayExpiresAt,
+          src?.opportunity_visibility_expires_at,
+          src?.opportunityVisibilityExpiresAt
         )
       ).getTime();
     })
@@ -1268,6 +1291,9 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     isCanonicalReplay: Boolean(
       src?.is_canonical_replay || src?.isCanonicalReplay
     ),
+    isCanonicalVisibility: Boolean(
+      src?.is_canonical_visibility || src?.isCanonicalVisibility
+    ),
     opportunityCampaignId:
       positiveNumber(src?.opportunity_campaign_id || src?.opportunityCampaignId) ||
       positiveNumber(src?.spotlight_campaign_id || src?.spotlightCampaignId) ||
@@ -1287,6 +1313,10 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     opportunityReplayExpiresAt: firstMeaningful(
       src?.opportunity_replay_expires_at,
       src?.opportunityReplayExpiresAt
+    ),
+    opportunityVisibilityExpiresAt: firstMeaningful(
+      src?.opportunity_visibility_expires_at,
+      src?.opportunityVisibilityExpiresAt
     ),
     opportunityPresentationSurface: firstMeaningful(
       src?.opportunity_presentation_surface,
@@ -1909,6 +1939,8 @@ export default function ShopGalleryPage() {
   const productMediaQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
   const spotlightNextRequestPendingRef = useRef(false);
   const spotlightNextEmptyUntilRef = useRef(0);
+  const spotlightRefreshRetryTimerRef = useRef<number | null>(null);
+  const spotlightRefreshRetryCountRef = useRef(0);
   const spotlightInteractionPausedUntilRef = useRef(0);
   const spotlightRefreshGenerationRef = useRef(0);
   const [spotlightPresentationActivated, setSpotlightPresentationActivated] =
@@ -1917,6 +1949,7 @@ export default function ShopGalleryPage() {
   const [spotlightInteractionPausedUntil, setSpotlightInteractionPausedUntil] = useState(0);
   const [spotlightReducedMotion, setSpotlightReducedMotion] = useState(false);
   const [spotlightFeedError, setSpotlightFeedError] = useState('');
+  const [spotlightRefreshRetryTick, setSpotlightRefreshRetryTick] = useState(0);
   const [spotlightMediaReadyKey, setSpotlightMediaReadyKey] = useState('');
   const [spotlightMediaUnavailableKey, setSpotlightMediaUnavailableKey] =
     useState('');
@@ -2786,6 +2819,11 @@ export default function ShopGalleryPage() {
     spotlightQualificationInFlightKeysRef.current.clear();
     spotlightNextRequestPendingRef.current = false;
     spotlightNextEmptyUntilRef.current = 0;
+    spotlightRefreshRetryCountRef.current = 0;
+    if (spotlightRefreshRetryTimerRef.current !== null) {
+      window.clearTimeout(spotlightRefreshRetryTimerRef.current);
+      spotlightRefreshRetryTimerRef.current = null;
+    }
   }, [gmfnId]);
 
   useEffect(() => {
@@ -3115,6 +3153,12 @@ export default function ShopGalleryPage() {
       const nextItems = await loadNextPublicShopSpotlightPresentations(
         cleanedGmfnId
       );
+      spotlightRefreshRetryCountRef.current = 0;
+      if (spotlightRefreshRetryTimerRef.current !== null) {
+        window.clearTimeout(spotlightRefreshRetryTimerRef.current);
+        spotlightRefreshRetryTimerRef.current = null;
+      }
+      setSpotlightFeedError('');
       if (nextItems.length <= 0) {
         spotlightNextEmptyUntilRef.current = Date.now() + SPOTLIGHT_PILOT_REFRESH_MS;
         return;
@@ -3213,10 +3257,49 @@ export default function ShopGalleryPage() {
             ]
           : circularQueue;
       });
+    } catch (err: any) {
+      const status = Number(err?.status || 0);
+      setSpotlightFeedError(
+        status === 401
+          ? 'Your sign-in could not refresh community Spotlight. The last valid showing is kept; sign in again if this continues.'
+          : 'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
+      );
+      spotlightRefreshRetryCountRef.current += 1;
+      const retryNumber = spotlightRefreshRetryCountRef.current;
+      if (
+        typeof window !== 'undefined' &&
+        retryNumber <= SPOTLIGHT_REFRESH_RETRY_LIMIT
+      ) {
+        if (spotlightRefreshRetryTimerRef.current !== null) {
+          window.clearTimeout(spotlightRefreshRetryTimerRef.current);
+        }
+        spotlightNextEmptyUntilRef.current =
+          Date.now() + SPOTLIGHT_REFRESH_RETRY_DELAY_MS * retryNumber;
+        spotlightRefreshRetryTimerRef.current = window.setTimeout(() => {
+          spotlightRefreshRetryTimerRef.current = null;
+          spotlightNextEmptyUntilRef.current = 0;
+          setSpotlightRefreshRetryTick((current) => current + 1);
+        }, SPOTLIGHT_REFRESH_RETRY_DELAY_MS * retryNumber);
+      }
     } finally {
       spotlightNextRequestPendingRef.current = false;
     }
   }, [gmfnId, ownerSpotlightInspectionMode, ownerSpotlightPreviewAuthorized]);
+
+  useEffect(() => {
+    if (spotlightRefreshRetryTick <= 0) return;
+    void requestNextCanonicalSpotlight();
+  }, [requestNextCanonicalSpotlight, spotlightRefreshRetryTick]);
+
+  useEffect(
+    () => () => {
+      if (spotlightRefreshRetryTimerRef.current !== null) {
+        window.clearTimeout(spotlightRefreshRetryTimerRef.current);
+        spotlightRefreshRetryTimerRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3754,7 +3837,10 @@ export default function ShopGalleryPage() {
 
     // A canonical replay is continuity for a presentation already qualified by
     // this viewer. It must not qualify again or emit a second attention event.
-    if (activeSpotlight.isCanonicalReplay) return;
+    if (
+      activeSpotlight.isCanonicalReplay ||
+      activeSpotlight.isCanonicalVisibility
+    ) return;
 
     const target = spotlightRailRef.current;
     if (!target) return;

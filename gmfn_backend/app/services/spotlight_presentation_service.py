@@ -51,6 +51,8 @@ SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
 SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000
 SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000
 SPOTLIGHT_PRESENTATION_REPLAY_LIMIT = 4
+SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT = 4
+SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT = 64
 SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER = 2
 
 PRESENTATION_REJECTION_NO_CANDIDATES = "no_canonical_candidates"
@@ -177,6 +179,28 @@ class SpotlightPresentationReplay:
             "counts_as_delivery": False,
             "counts_as_exposure": False,
             "privacy": "private_same_viewer_canonical_replay",
+        }
+
+
+@dataclass(frozen=True)
+class SpotlightPresentationVisibility:
+    '''A short-lived, accounting-neutral view of an eligible live campaign.'''
+
+    candidate: SpotlightOpportunityCandidate
+    campaign: SpotlightCampaign
+    placement_broadcast_id: int
+    content_version: int
+    visibility_expires_at: datetime
+
+    def to_internal_dict(self) -> dict[str, Any]:
+        return {
+            'campaign_id': int(self.candidate.campaign_id),
+            'placement_broadcast_id': int(self.placement_broadcast_id),
+            'content_version': int(self.content_version),
+            'visibility_expires_at': self.visibility_expires_at.isoformat(),
+            'counts_as_delivery': False,
+            'counts_as_exposure': False,
+            'privacy': 'private_canonical_non_counting_visibility',
         }
 
 
@@ -344,6 +368,161 @@ def list_spotlight_presentation_replays(
             break
 
     return replays
+
+
+def list_spotlight_presentation_visibility(
+    db: Session,
+    *,
+    viewer_user_id: int,
+    now: Optional[datetime] = None,
+    limit: int = SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT,
+    exclude_campaign_ids: Optional[set[int]] = None,
+) -> list[SpotlightPresentationVisibility]:
+    '''Return bounded live content without reserving or spending delivery.
+
+    Delivery pacing and frequency caps decide which presentation may count.
+    They must not make otherwise eligible live content disappear from the
+    Public Shop rail. Every row is revalidated through the canonical candidate
+    and placement rules and expires quickly so membership, lifecycle, route,
+    or content changes take effect promptly.
+    '''
+    current_time = _as_aware_utc(now) or _now_utc()
+    viewer_id = int(viewer_user_id or 0)
+    safe_limit = max(min(int(limit), SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT), 0)
+    if viewer_id <= 0 or safe_limit <= 0:
+        return []
+
+    excluded = {
+        int(value)
+        for value in (exclude_campaign_ids or set())
+        if int(value or 0) > 0
+    }
+    campaign_query = (
+        db.query(SpotlightCampaign.id)
+        .filter(SpotlightCampaign.status == 'active')
+        .filter(SpotlightCampaign.serving_status == 'serving')
+        .filter(SpotlightCampaign.owner_user_id != viewer_id)
+        .filter(
+            (SpotlightCampaign.authorized_expires_at > current_time)
+            | (
+                SpotlightCampaign.authorized_expires_at.is_(None)
+                & (
+                    SpotlightCampaign.expires_at.is_(None)
+                    | (SpotlightCampaign.expires_at > current_time)
+                )
+            )
+        )
+        .filter(
+            SpotlightCampaign.opportunity_expires_at.is_(None)
+            | (SpotlightCampaign.opportunity_expires_at > current_time)
+        )
+    )
+    if excluded:
+        campaign_query = campaign_query.filter(
+            ~SpotlightCampaign.id.in_(sorted(excluded))
+        )
+    campaign_count = int(campaign_query.count())
+    if campaign_count <= 0:
+        return []
+
+    scan_limit = min(
+        campaign_count,
+        max(safe_limit * 8, 32),
+        SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT,
+    )
+    bucket = int(current_time.timestamp()) // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
+    seed = int.from_bytes(
+        hashlib.sha256(f'visibility:{viewer_id}'.encode('utf-8')).digest()[:4],
+        'big',
+    )
+    offset = (seed + (bucket * scan_limit)) % campaign_count
+    ordered_campaign_query = campaign_query.order_by(
+        SpotlightCampaign.activated_at.desc(),
+        SpotlightCampaign.created_at.desc(),
+        SpotlightCampaign.id.asc(),
+    )
+    campaign_rows = ordered_campaign_query.offset(offset).limit(scan_limit).all()
+    if len(campaign_rows) < scan_limit:
+        campaign_rows.extend(
+            ordered_campaign_query.limit(scan_limit - len(campaign_rows)).all()
+        )
+    campaign_ids = [int(row.id) for row in campaign_rows]
+    if not campaign_ids:
+        return []
+
+    # The explicit active set intentionally bypasses delivery-pacing discovery
+    # while retaining lifecycle, self-delivery, membership, route,
+    # availability, and Community Domain eligibility checks.
+    candidates = build_spotlight_opportunity_candidates(
+        db,
+        viewer_user_id=viewer_id,
+        campaign_ids=campaign_ids,
+        limit=None,
+        now=current_time,
+    )
+    if not candidates:
+        return []
+    diversity = allocate_spotlight_opportunity_candidates(
+        db,
+        viewer_user_id=viewer_id,
+        candidates=candidates,
+    )
+    ordered = list(diversity.candidates)
+    if len(ordered) > 1:
+        # Rotate the bounded window every replay TTL so a large live inventory
+        # cannot permanently hide rows beyond the response limit.
+        bucket = int(current_time.timestamp()) // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
+        digest = hashlib.sha256(f'{viewer_id}:{bucket}'.encode('utf-8')).digest()
+        offset = int.from_bytes(digest[:4], 'big') % len(ordered)
+        ordered = [*ordered[offset:], *ordered[:offset]]
+
+    visible: list[SpotlightPresentationVisibility] = []
+    for candidate in ordered:
+        campaign_id = int(candidate.campaign_id)
+        if campaign_id in excluded:
+            continue
+        campaign = db.get(SpotlightCampaign, campaign_id)
+        placement = _placement_for_candidate(
+            db,
+            candidate=candidate,
+            campaign_id=campaign_id,
+            now=current_time,
+        )
+        if campaign is None or placement is None:
+            continue
+        if not row_is_serving(campaign, now=current_time):
+            continue
+
+        content_version = int(getattr(campaign, 'content_version', 1) or 1)
+        if int(getattr(placement, 'content_version', 1) or 1) != content_version:
+            continue
+        deadlines = [
+            current_time + timedelta(seconds=SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS)
+        ]
+        for deadline in (
+            authorized_expiry(campaign),
+            authorized_expiry(placement),
+            _as_aware_utc(getattr(campaign, 'opportunity_expires_at', None)),
+        ):
+            if deadline is not None:
+                deadlines.append(deadline)
+        visibility_expires_at = min(deadlines)
+        if visibility_expires_at <= current_time:
+            continue
+
+        visible.append(
+            SpotlightPresentationVisibility(
+                candidate=candidate,
+                campaign=campaign,
+                placement_broadcast_id=int(placement.id),
+                content_version=content_version,
+                visibility_expires_at=visibility_expires_at,
+            )
+        )
+        if len(visible) >= safe_limit:
+            break
+
+    return visible
 
 
 def select_spotlight_presentation(

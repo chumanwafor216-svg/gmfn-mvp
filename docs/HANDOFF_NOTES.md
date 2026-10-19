@@ -1163,3 +1163,54 @@ under `docs/` or `docs/archive/`, then link that file here.
   opportunity requests, but the authenticated response payload was not
   captured. That replay/delivery path still requires a distinct eligible
   member phone test and request/qualification evidence.
+
+## System-level Spotlight visibility continuity - 2026-10-19
+
+- Status: implemented and verified locally on
+  `codex/spotlight-rotation-continuity`; not pushed or deployed at the time of
+  this note.
+- Production read-only evidence identified the remaining system defect. A
+  viewer could have active, route-eligible campaigns in shared communities yet
+  receive an empty or incomplete rail because persistent pacing and that
+  viewer's counted frequency cap were also being used as visibility filters.
+  This explained the asymmetric report where one member could see Family Pride
+  while Family Pride could not see the other member, and why some campaigns
+  flashed once and then disappeared.
+- The canonical Public Shop endpoint now separates counted delivery from live
+  visibility. Fresh signed presentations and qualified same-viewer replays
+  retain their existing accounting rules. Any remaining bounded response slots
+  may contain short-lived, tokenless canonical visibility rows for otherwise
+  eligible active campaigns. Those rows revalidate community route and active
+  membership, self-exclusion, availability, lifecycle, placement, and content
+  version, and they create no round, lease, exposure, or Marketplace attention
+  event.
+- Visibility discovery is deliberately memory-bounded: it scans no more than
+  64 campaign identifiers at a time and rotates both the scan window and the
+  bounded result window. This avoids turning continuity into another Render
+  memory-pressure path while preventing a larger inventory from being
+  permanently hidden.
+- Public Shop no longer converts a canonical API/contract failure into a
+  successful empty result. It preserves the last still-current row, shows an
+  honest refresh explanation, and makes only three scheduled retries after the
+  failed request. A genuine successful empty response retains the ordinary
+  30-second empty cooldown.
+- Frozen economics are unchanged: ten global counted qualifying showings, two
+  counted showings per viewer, persistent spacing, self-delivery exclusion,
+  lifecycle/media checks, paid/free ordering, and Public-Shop-only live
+  presentation remain intact. The new visibility rows do not restore legacy
+  fallback or permit cross-silo discovery.
+- Verification passed: 238 distinct backend tests across presentation,
+  pacing, frequency, candidate, eligibility, diversity, exposure, delivery,
+  transaction, lifecycle, and Public Shop contracts; the focused 17-test
+  presentation suite after the bounded-scan review; Python compilation; the
+  291-module production frontend build; targeted ESLint; Spotlight controls,
+  quota, system-feed, and presentation audits; the complete protected-button
+  freeze audit; and the 12-scenario real-browser phone smoke. The added 503
+  scenario proved four failed refresh requests leave the last valid Spotlight
+  visible, stop retrying at the bound, and keep qualification/impression counts
+  at exactly one.
+- Remaining production truth: local and synthetic verification cannot prove
+  the real Family Pride handset result. After deployment, test two distinct
+  eligible member accounts in both directions and confirm the live endpoint
+  returns all currently eligible campaign ids as fresh, replay, or non-counting
+  visibility rows before declaring the pilot incident closed.

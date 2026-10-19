@@ -83,6 +83,7 @@ from app.services.spotlight_presentation_service import (
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     PRESENTATION_REJECTION_OWNER_PREVIEW,
     list_spotlight_presentation_replays,
+    list_spotlight_presentation_visibility,
     presentation_policy,
     record_spotlight_presentation_qualification,
     revalidate_spotlight_presentation,
@@ -4156,6 +4157,7 @@ def get_public_shop_spotlight_opportunity(
         "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
         "max_stale_display_seconds": SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
         "fallback_allowed": False,
+        'non_counting_visibility_allowed': True,
     }
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
@@ -4250,7 +4252,49 @@ def get_public_shop_spotlight_opportunity(
         replay_item["opportunity_counts_as_exposure"] = False
         items.append(replay_item)
 
+    visible_campaign_ids = {
+        int(item.get('opportunity_campaign_id') or 0)
+        for item in items
+        if int(item.get('opportunity_campaign_id') or 0) > 0
+    }
+    visibility = list_spotlight_presentation_visibility(
+        db,
+        viewer_user_id=int(current_user.id),
+        exclude_campaign_ids=visible_campaign_ids,
+        limit=max(5 - len(items), 0),
+    )
+    for visible in visibility:
+        broadcast = db.get(
+            MarketplaceBroadcast,
+            int(visible.placement_broadcast_id),
+        )
+        if broadcast is None:
+            continue
+        visible_item = _broadcast_out(db, broadcast)
+        visible_item['is_canonical_opportunity'] = True
+        visible_item['is_canonical_replay'] = False
+        visible_item['is_canonical_visibility'] = True
+        visible_item['opportunity_campaign_id'] = int(visible.candidate.campaign_id)
+        visible_item['opportunity_presentation_id'] = None
+        visible_item['opportunity_presentation_token'] = None
+        visible_item['opportunity_presentation_expires_at'] = None
+        visible_item['opportunity_replay_expires_at'] = None
+        visible_item['opportunity_visibility_expires_at'] = (
+            visible.visibility_expires_at.isoformat()
+        )
+        visible_item['opportunity_presentation_surface'] = (
+            SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+        )
+        visible_item['opportunity_counts_as_delivery'] = False
+        visible_item['opportunity_counts_as_exposure'] = False
+        items.append(visible_item)
+
     return {
+        'canonical_visibility': {
+            'count': len(visibility),
+            'counts_as_delivery': False,
+            'counts_as_exposure': False,
+        },
         **serving_contract,
         "ok": True,
         "item": items[0] if items else None,

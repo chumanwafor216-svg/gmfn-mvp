@@ -160,6 +160,39 @@ def _set_next_delivery_now(campaign_id: int, when: datetime) -> None:
         )
 
 
+def _seed_pacing_state(
+    campaign_id: int,
+    *,
+    next_eligible_at: datetime | None,
+    consumed_rounds: int = 0,
+    max_rounds: int = 10,
+    exhausted: bool = False,
+) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                '''
+                INSERT INTO spotlight_campaign_pacing_states (
+                    campaign_id, max_delivery_rounds, consumed_delivery_rounds,
+                    next_eligible_delivery_at, pacing_profile, exhausted, version,
+                    created_at, updated_at
+                ) VALUES (
+                    :campaign_id, :max_rounds, :consumed_rounds,
+                    :next_eligible_at, 'neutral', :exhausted, 0,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                '''
+            ),
+            {
+                'campaign_id': campaign_id,
+                'max_rounds': max_rounds,
+                'consumed_rounds': consumed_rounds,
+                'next_eligible_at': next_eligible_at,
+                'exhausted': exhausted,
+            },
+        )
+
+
 def _signed_presentation_token(*, presentation_id: str, campaign_id: int = 1, viewer_user_id: int = 1) -> str:
     return create_access_token(
         {
@@ -791,6 +824,136 @@ def test_unlinked_repost_fallback_stays_outside_canonical_ledger(client, overrid
     assert body["item"] is None
     assert body["fallback"] is None
     assert body["serving_contract_version"] == 2
+    assert _consumed_rounds() == 0
+    assert _ledger_count() == 0
+
+
+def test_pacing_gap_keeps_unseen_active_spotlight_visible_without_counting(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+    _seed_pacing_state(
+        1,
+        next_eligible_at=_now() + timedelta(hours=2),
+    )
+
+    response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity'
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['presentation'] is None
+    assert body['non_counting_visibility_allowed'] is True
+    assert body['canonical_visibility']['count'] == 1
+    item = body['item']
+    assert item['is_canonical_opportunity'] is True
+    assert item['is_canonical_replay'] is False
+    assert item['is_canonical_visibility'] is True
+    assert item['opportunity_presentation_token'] is None
+    assert item['opportunity_counts_as_delivery'] is False
+    assert item['opportunity_counts_as_exposure'] is False
+    assert datetime.fromisoformat(item['opportunity_visibility_expires_at']) > _now()
+    assert _consumed_rounds() == 0
+    assert _ledger_count() == 0
+    with engine.begin() as conn:
+        assert int(
+            conn.execute(
+                text('SELECT COUNT(*) FROM spotlight_presentation_leases')
+            ).scalar_one()
+        ) == 0
+
+
+def test_exhausted_delivery_budget_keeps_live_spotlight_visible_without_counting(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    _seed_campaign_and_broadcast()
+    _seed_pacing_state(
+        1,
+        next_eligible_at=None,
+        consumed_rounds=10,
+        max_rounds=10,
+        exhausted=True,
+    )
+
+    response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity'
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['presentation'] is None
+    assert body['item']['is_canonical_visibility'] is True
+    assert body['item']['opportunity_counts_as_delivery'] is False
+    assert body['item']['opportunity_counts_as_exposure'] is False
+    assert _consumed_rounds() == 10
+    assert _ledger_count() == 0
+
+
+def test_multiple_paced_campaigns_share_bounded_non_counting_rotation(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                '''
+                INSERT INTO users (
+                    id, email, hashed_password, role, gmfn_id,
+                    display_name, trust_score, trust_band, trust_score_updated_at
+                ) VALUES
+                    (3, 'visibility-owner-3@example.com', 'hashed', 'member',
+                     'GSN-VISIBILITY-3', 'Visibility Owner 3', 70, 'B', CURRENT_TIMESTAMP),
+                    (4, 'visibility-owner-4@example.com', 'hashed', 'member',
+                     'GSN-VISIBILITY-4', 'Visibility Owner 4', 70, 'B', CURRENT_TIMESTAMP)
+                '''
+            )
+        )
+        conn.execute(
+            text(
+                '''
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES
+                    (3, 1, 3, 'member', 0),
+                    (4, 1, 4, 'member', 0)
+                '''
+            )
+        )
+    for campaign_id, owner_user_id in ((1, 2), (2, 3), (3, 4)):
+        _seed_campaign_and_broadcast(
+            campaign_id=campaign_id,
+            owner_user_id=owner_user_id,
+        )
+        _seed_pacing_state(
+            campaign_id,
+            next_eligible_at=_now() + timedelta(hours=2),
+        )
+
+    response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity'
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['presentation'] is None
+    assert body['canonical_visibility']['count'] == 3
+    assert {int(item['opportunity_campaign_id']) for item in body['items']} == {
+        1,
+        2,
+        3,
+    }
+    assert all(item['is_canonical_visibility'] is True for item in body['items'])
+    assert all(
+        item['opportunity_counts_as_delivery'] is False
+        and item['opportunity_counts_as_exposure'] is False
+        for item in body['items']
+    )
     assert _consumed_rounds() == 0
     assert _ledger_count() == 0
 

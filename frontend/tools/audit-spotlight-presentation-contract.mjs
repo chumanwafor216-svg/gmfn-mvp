@@ -93,7 +93,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /publicShopSpotlightCycleExpiryMs[\s\S]*?opportunity_replay_expires_at[\s\S]*?currentCanonicalItems[\s\S]*?expiryMs > requestFinishedAtMs[\s\S]*?\? currentCanonicalItems[\s\S]*?: \[\]/,
+  /publicShopSpotlightCycleExpiryMs[\s\S]*?opportunity_replay_expires_at[\s\S]*?opportunity_visibility_expires_at[\s\S]*?currentCanonicalItems[\s\S]*?expiryMs > requestFinishedAtMs[\s\S]*?\? currentCanonicalItems[\s\S]*?: \[\]/,
   "Elapsed server presentation deadlines must survive parsing so delayed responses fail closed instead of receiving a fresh client lease."
 );
 
@@ -225,7 +225,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /if \(activeSpotlight\.isCanonicalReplay\) return;[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?trackMarketplaceAttention\(/,
+  /activeSpotlight\.isCanonicalReplay \|\|[\s\S]*?activeSpotlight\.isCanonicalVisibility[\s\S]*?return;[\s\S]*?spotlightQualifiedKeysRef\.current\.add\(presentationKey\)[\s\S]*?trackMarketplaceAttention\(/,
   "Canonical replay must exit before qualification bookkeeping and owner attention analytics."
 );
 
@@ -329,6 +329,36 @@ assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
   /source_shop_whatsapp[^]*?sourceShopWhatsApp[^]*?spotlightWhatsAppAvailable/,
   'Spotlight normalization must retain an already-normalized WhatsApp contact.'
+);
+
+assertContains(
+  'gmfn_backend/app/services/spotlight_presentation_service.py',
+  /SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT[^]*?class SpotlightPresentationVisibility[^]*?counts_as_delivery[^]*?False[^]*?counts_as_exposure[^]*?False[^]*?list_spotlight_presentation_visibility[^]*?scan_limit[^]*?build_spotlight_opportunity_candidates[^]*?allocate_spotlight_opportunity_candidates[^]*?_placement_for_candidate/,
+  'Live eligible Spotlight visibility must remain canonical, bounded, revalidated, and accounting-neutral outside delivery pacing.'
+);
+
+assertContains(
+  'gmfn_backend/app/api/routes/marketplace.py',
+  /list_spotlight_presentation_visibility[^]*?is_canonical_visibility[^]*?opportunity_presentation_token[^]*?None[^]*?opportunity_counts_as_delivery[^]*?False[^]*?opportunity_counts_as_exposure[^]*?False/,
+  'Public Shop visibility rows must be tokenless and explicitly excluded from delivery and exposure accounting.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /loadNextPublicShopSpotlightPresentations[^]*?throw new Error[^]*?catch \(err: any\)[^]*?last valid showing is kept[^]*?SPOTLIGHT_REFRESH_RETRY_LIMIT/,
+  'A failed Spotlight refresh must remain distinct from a genuine empty response, preserve valid content, and retry only within a bound.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testCanonicalRefreshFailureKeepsCurrentSpotlight[^]*?transient refresh outage erased[^]*?canonicalCalls !== 5[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
+  'The phone smoke must prove a transient canonical outage preserves the last valid Spotlight and cannot alter accounting.'
+);
+
+assertContains(
+  'gmfn_backend/tests/test_spotlight_presentation_contract.py',
+  /pacing_gap_keeps_unseen_active_spotlight_visible_without_counting[^]*?exhausted_delivery_budget_keeps_live_spotlight_visible_without_counting[^]*?multiple_paced_campaigns_share_bounded_non_counting_rotation/,
+  'Backend regressions must prove continuous visibility through pacing gaps, exhausted budgets, and multi-campaign rotation without accounting changes.'
 );
 
 if (findings.length > 0) {
