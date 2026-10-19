@@ -14,9 +14,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   `codex/spotlight-rotation-continuity` and `main`. Direct Render API deploy
   `dep-dbb3sj0473hc73chpk2g` reached `live` from exact commit
   `d4a97502d872a3590bf5e81c67252ed340e71272` at 16:02:05 UTC. The live
-  `/health` response was `{"ok":true,"dev_mode":false}`, post-deploy memory
-  was about 264 MB of 512 MiB with one live instance, and no error-level log
-  followed the rollout.
+  `/health` response was `{"ok":true,"dev_mode":false}`. Initial
+  post-deploy memory was about 264 MB of 512 MiB with one live instance.
 - The owner screenshot showed a clearly playable multi-second preview alongside
   `The video must be at least 1 second long.` Production logs independently
   confirmed `POST /marketplace/media/video` returned HTTP 400 at 15:52:24 UTC
@@ -34,11 +33,21 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: 14 focused media-quality tests, including unreliable
   source-duration recovery and genuine sub-second rejection; all 72
   Marketplace Public Shop tests; Python compilation; and scoped diff checks.
-- Residual truth: the production logic is deployed, but the exact member file
-  is not available in the repository. One controlled phone retry with that
-  same video is still required to prove its container is handled end to end.
-  GitHub Backend Tests run `39281965910` was queued at handoff time; direct
-  Render deployment was used because API auto-deploy is disabled.
+- The controlled real-phone retry succeeded. Production recorded video upload,
+  publication, authoritative status refresh, and MP4 range playback as HTTP
+  200/206 at 16:09 UTC. Campaigns `327` and `328` were then active and
+  serving with six and three video-backed placements respectively; both had
+  already recorded one qualified showing out of ten and had exact 24-hour
+  authorization deadlines.
+- Post-success monitoring showed one stable instance, no restart/OOM event and
+  no HTTP 5xx after rollout. Memory rose during the two phone video workflows
+  and then held flat near 326 MB, about 61% of the 512 MiB limit. The only
+  error-level log family was the pre-existing trapped bcrypt version warning,
+  not a Spotlight or media-processing failure. Continued observation remains
+  appropriate because this short stable window is not proof against a slow
+  leak. GitHub Backend Tests run `39281965910` was still queued at the prior
+  handoff; direct Render deployment was used because API auto-deploy is
+  disabled.
 
 ## Spotlight API memory containment - 2026-10-19
 
