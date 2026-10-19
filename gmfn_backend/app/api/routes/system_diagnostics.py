@@ -15,6 +15,8 @@ from app.core.auth import get_current_user
 from app.core.constants import PROTOCOL_VERSION
 from app.db.database import get_db
 from app.db.models import MarketplaceProduct, MarketplaceShop, User
+from app.services.payment_operations_policy import payment_operations_enabled
+from app.services.pipeline_credit_spend_gate import provider_spend_gate_status
 from app.services.phone_verification_service import phone_provider_readiness_payload
 
 router = APIRouter(prefix="/system", tags=["system"])
@@ -304,6 +306,7 @@ def _readiness_item(
 
 @router.get("/diagnostics/api-readiness")
 def api_readiness_diagnostics(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
@@ -362,21 +365,31 @@ def api_readiness_diagnostics(
         r2_status = "missing_r2_env"
     phone_delivery_mode = _env_mode("GMFN_ENTRY_PHONE_DELIVERY", "record-only")
     phone_live_requested = phone_delivery_mode in {"sms", "live", "provider", "pending-sms"}
-    phone_credit_meter_ready = _pipeline_credit_meter_env_ready(
+    phone_credit_meter = provider_spend_gate_status(
+        db,
         provider_key="phone.sms_or_verify",
         workflow_key="phone.sms_or_verify.delivery",
+        label="SMS or phone verification provider delivery",
+        integration_status="wired_disabled_by_default",
     )
+    phone_credit_meter_ready = phone_credit_meter.get("status") == "meter_ready"
     phone_provider = phone_provider_readiness_payload()
     phone_provider_ready = bool(phone_provider.get("ready"))
+    phone_payment_operations_ready = payment_operations_enabled()
     phone_live_ready = bool(
-        phone_live_requested and phone_provider_ready and phone_credit_meter_ready
+        phone_live_requested
+        and phone_provider_ready
+        and phone_credit_meter_ready
+        and phone_payment_operations_ready
     )
     if phone_live_ready:
         phone_status = "live_ready"
     elif phone_live_requested and not phone_provider_ready:
         phone_status = "blocked_provider_disabled_or_incomplete"
     elif phone_live_requested and not phone_credit_meter_ready:
-        phone_status = "blocked_missing_pipeline_credit_meter"
+        phone_status = str(phone_credit_meter.get("status") or "blocked_missing_pipeline_credit_config")
+    elif phone_live_requested and not phone_payment_operations_ready:
+        phone_status = "blocked_payment_operations_disabled"
     else:
         phone_status = "record_only_or_preview"
     callback_mode = _env_mode("GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE", "disabled")
@@ -474,13 +487,14 @@ def api_readiness_diagnostics(
                 "GMFN_ENTRY_PHONE_DELIVERY",
                 "GSN_PHONE_VERIFICATION_ENABLED",
                 "GSN_PHONE_VERIFICATION_PROVIDER",
+                "GSN_PAYMENT_OPERATIONS_ENABLED",
                 "TWILIO_VERIFY_SERVICE_SID_present",
                 "TWILIO_API_KEY_and_TWILIO_API_SECRET_or_account_credentials_present",
                 "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY_or_fallback_present",
                 "GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY_or_fallback_present",
             ],
             boundary=(
-                "Twilio Verify delivery is fail-closed and disabled by default. GSN reports delivery only after a provider receipt and records ownership only after provider approval."
+                "Twilio Verify delivery is fail-closed and disabled by default. Live readiness also requires the payment-operations switch because Pipeline Credit must be debited before provider delivery. GSN reports delivery only after a provider receipt and records ownership only after provider approval."
             ),
             next_step="Configure Twilio Verify, the kill switch, and the Pipeline Credit account/cost together; then run a controlled-number sandbox test before changing the delivery mode.",
         ),
@@ -585,6 +599,7 @@ def api_readiness_diagnostics(
             "verification_mode": verification_mode,
             "gb_bank_provider": gb_bank_provider or None,
             "phone_delivery_mode": phone_delivery_mode,
+            "payment_operations_enabled": payment_operations_enabled(),
             "callback_delivery_mode": callback_mode,
         },
         "counts": counts,

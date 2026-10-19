@@ -2,13 +2,26 @@ from __future__ import annotations
 
 from sqlalchemy import text
 
-from app.db.database import engine
+from app.db.database import SessionLocal, engine
 from app.db.models import MarketplaceProduct, MarketplaceShop
+from app.services.pipeline_credit_service import allocate_pipeline_credits
 
 
 def _ensure_marketplace_tables() -> None:
     MarketplaceShop.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
+
+
+def _fund_phone_pipeline_credits(idempotency_key: str) -> int:
+    with SessionLocal() as db:
+        entry = allocate_pipeline_credits(
+            db,
+            owner_type="platform",
+            amount="5.00",
+            idempotency_key=idempotency_key,
+            note="Fund phone readiness diagnostic test",
+        )
+        return int(entry.account_id)
 
 
 def test_public_shop_identity_diagnostics_finds_alias_ready_shop(
@@ -271,8 +284,12 @@ def test_api_readiness_diagnostics_sms_meter_ready_still_not_live_without_provid
     override_current_user,
     monkeypatch,
 ):
+    account_id = _fund_phone_pipeline_credits("fund-phone-provider-disabled")
     monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
-    monkeypatch.setenv("GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY", "1")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        str(account_id),
+    )
     monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
 
     res = client.get("/system/diagnostics/api-readiness")
@@ -292,13 +309,18 @@ def test_api_readiness_diagnostics_phone_live_requires_provider_and_meter(
     override_current_user,
     monkeypatch,
 ):
+    account_id = _fund_phone_pipeline_credits("fund-phone-live-ready")
     monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
     monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
     monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
     monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
     monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
     monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
-    monkeypatch.setenv("GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY", "1")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        str(account_id),
+    )
     monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
 
     res = client.get("/system/diagnostics/api-readiness")
@@ -311,3 +333,126 @@ def test_api_readiness_diagnostics_phone_live_requires_provider_and_meter(
     assert phone["live_ready"] is True
     assert phone["status"] == "live_ready"
     assert "secret-token" not in res.text
+
+
+def test_api_readiness_diagnostics_phone_live_requires_payment_operations(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    account_id = _fund_phone_pipeline_credits("fund-phone-payment-disabled")
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
+    monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        str(account_id),
+    )
+    monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
+    monkeypatch.delenv("GSN_PAYMENT_OPERATIONS_ENABLED", raising=False)
+
+    res = client.get("/system/diagnostics/api-readiness")
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    phone = {item["key"]: item for item in body["services"]}["phone.sms_or_verify"]
+    assert body["mode"]["payment_operations_enabled"] is False
+    assert phone["configured"] is True
+    assert phone["live_ready"] is False
+    assert phone["status"] == "blocked_payment_operations_disabled"
+    assert "secret-token" not in res.text
+
+
+def test_api_readiness_diagnostics_phone_rejects_missing_credit_account(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
+    monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        "999999",
+    )
+    monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
+
+    res = client.get("/system/diagnostics/api-readiness")
+
+    assert res.status_code == 200, res.text
+    phone = {item["key"]: item for item in res.json()["services"]}["phone.sms_or_verify"]
+    assert phone["live_ready"] is False
+    assert phone["status"] == "blocked_configured_account_missing"
+    assert "secret-token" not in res.text
+
+
+def test_api_readiness_diagnostics_phone_rejects_invalid_credit_cost(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    account_id = _fund_phone_pipeline_credits("fund-phone-invalid-cost")
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
+    monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        str(account_id),
+    )
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY",
+        "not-a-decimal",
+    )
+
+    res = client.get("/system/diagnostics/api-readiness")
+
+    assert res.status_code == 200, res.text
+    phone = {item["key"]: item for item in res.json()["services"]}["phone.sms_or_verify"]
+    assert phone["live_ready"] is False
+    assert phone["status"] == "blocked_invalid_pipeline_credit_cost"
+
+
+def test_api_readiness_diagnostics_phone_requires_one_attempt_of_credit(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    with SessionLocal() as db:
+        entry = allocate_pipeline_credits(
+            db,
+            owner_type="platform",
+            amount="0.05",
+            idempotency_key="fund-phone-under-cost",
+            note="Underfund phone readiness diagnostic test",
+        )
+        account_id = int(entry.account_id)
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_ENABLED", "1")
+    monkeypatch.setenv("GSN_PHONE_VERIFICATION_PROVIDER", "twilio_verify")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "AC-test-account")
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "secret-token")
+    monkeypatch.setenv("TWILIO_VERIFY_SERVICE_SID", "VA-test-service")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv(
+        "GSN_PIPELINE_CREDIT_ACCOUNT_ID_PHONE_SMS_OR_VERIFY_DELIVERY",
+        str(account_id),
+    )
+    monkeypatch.setenv("GSN_PIPELINE_CREDIT_COST_PHONE_SMS_OR_VERIFY_DELIVERY", "0.12")
+
+    res = client.get("/system/diagnostics/api-readiness")
+
+    assert res.status_code == 200, res.text
+    phone = {item["key"]: item for item in res.json()["services"]}["phone.sms_or_verify"]
+    assert phone["live_ready"] is False
+    assert phone["status"] == "blocked_insufficient_pipeline_credits"

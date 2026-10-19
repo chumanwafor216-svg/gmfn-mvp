@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -257,13 +258,25 @@ def provider_spend_gate_status(
     cost = _cost_for(provider_key, workflow_key)
     account = get_pipeline_credit_account(db, account_id=account_id) if account_id is not None else None
     balance = pipeline_credit_balance(db, account_id=int(account.id)) if account is not None else None
+    normalized_cost: Optional[Decimal] = None
+    if cost:
+        try:
+            candidate_cost = Decimal(str(cost)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if candidate_cost > Decimal("0.00"):
+                normalized_cost = candidate_cost
+        except (InvalidOperation, ValueError):
+            normalized_cost = None
 
     if account_id is None or not cost:
         status = "blocked_missing_pipeline_credit_config"
+    elif normalized_cost is None:
+        status = "blocked_invalid_pipeline_credit_cost"
     elif account is None:
         status = "blocked_configured_account_missing"
     elif balance is not None and balance <= 0:
         status = "blocked_no_pipeline_credit_balance"
+    elif balance is not None and balance < normalized_cost:
+        status = "blocked_insufficient_pipeline_credits"
     elif integration_status == "not_wired":
         status = "meter_configured_but_provider_not_wired"
     else:
@@ -279,6 +292,7 @@ def provider_spend_gate_status(
         "cost_configured": bool(cost),
         "account_id": account_id,
         "account_exists": account is not None,
+        "cost_valid": normalized_cost is not None,
         "currency": getattr(account, "currency", None) if account is not None else None,
         "balance": f"{balance:.2f}" if balance is not None else None,
         "cost_per_attempt": str(cost) if cost else None,

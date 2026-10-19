@@ -67,6 +67,22 @@ under `docs/` or `docs/archive/`, then link that file here.
   phone service, new route suite, public entry, signed-in identity, and input
   boundary files. The isolated service/route pair passed 9 tests; Python
   compilation and scoped diff checks also passed.
+- Activation-preflight review then found and closed a reporting gap: the admin
+  API-readiness diagnostic could say phone delivery was `live_ready` while the
+  global payment-operations switch was off, even though the mandatory Pipeline
+  Credit debit would block every provider call. Phone readiness now also
+  requires `GSN_PAYMENT_OPERATIONS_ENABLED=1` and otherwise reports
+  `blocked_payment_operations_disabled`. This is diagnostic truth only; the
+  switch remains off and no provider or payment operation was activated.
+- Phone `live_ready` also now requires the configured Pipeline Credit account
+  to exist, the configured cost to be a valid positive monetary amount, and
+  the ledger balance to cover at least one attempt—not merely non-empty account
+  and cost environment variables. Missing accounts, invalid costs, and
+  insufficient balances retain an exact spend-gate status instead of being
+  mislabeled ready.
+- The combined phone, public-entry, signed-in identity, diagnostics, and
+  Pipeline Credit regression band passed 115 tests after these preflight
+  corrections.
 
 ## Verified local My GSN/Profile clarity and resilience batch - 2026-10-18
 
