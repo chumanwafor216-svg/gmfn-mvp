@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import imageio_ffmpeg
 import pytest
@@ -11,11 +12,13 @@ from fastapi import HTTPException
 from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited_upload
 from app.api.routes.marketplace import _require_verified_marketplace_video
 from app.services.marketplace_media_quality_service import (
+    FFMPEG_THREAD_LIMIT,
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
     MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
+    VideoInspection,
     inspect_video,
     is_verified_marketplace_video_url,
     normalize_marketplace_video,
@@ -131,6 +134,74 @@ def test_normalizer_physically_trims_and_standardises_video(tmp_path: Path):
     assert result.output.fps >= 20
     assert result.output.codec == "h264"
     assert result.size_bytes == output.stat().st_size
+
+
+def test_normalizer_caps_decoder_filter_and_encoder_threads(
+    tmp_path: Path,
+    monkeypatch,
+):
+    source = tmp_path / "source.mp4"
+    output = tmp_path / "qv1_output.mp4"
+    source.write_bytes(b"source")
+    source_inspection = VideoInspection(
+        width=576,
+        height=1296,
+        fps=30.0,
+        duration_seconds=8.0,
+        codec="h264",
+    )
+    output_inspection = VideoInspection(
+        width=568,
+        height=1280,
+        fps=30.0,
+        duration_seconds=8.0,
+        codec="h264",
+    )
+    commands: list[list[str]] = []
+
+    def fake_inspect(path):
+        return output_inspection if Path(path) == output else source_inspection
+
+    def fake_run(command, **_kwargs):
+        commands.append(command)
+        if "-c:v" in command:
+            Path(command[-1]).write_bytes(b"normalised")
+            return SimpleNamespace(returncode=0, stderr="")
+        return SimpleNamespace(returncode=1, stderr="")
+
+    monkeypatch.setattr(
+        "app.services.marketplace_media_quality_service.inspect_video",
+        fake_inspect,
+    )
+    monkeypatch.setattr(
+        "app.services.marketplace_media_quality_service.imageio_ffmpeg.get_ffmpeg_exe",
+        lambda: "ffmpeg",
+    )
+    monkeypatch.setattr(
+        "app.services.marketplace_media_quality_service.subprocess.run",
+        fake_run,
+    )
+
+    normalize_marketplace_video(source, output)
+
+    encode_command = next(command for command in commands if "-c:v" in command)
+    input_index = encode_command.index("-i")
+    codec_index = encode_command.index("-c:v")
+    thread_indexes = [
+        index for index, value in enumerate(encode_command) if value == "-threads"
+    ]
+    assert len(thread_indexes) == 2
+    assert thread_indexes[0] < input_index
+    assert thread_indexes[1] > codec_index
+    assert all(
+        encode_command[index + 1] == str(FFMPEG_THREAD_LIMIT)
+        for index in thread_indexes
+    )
+    filter_index = encode_command.index("-filter_threads")
+    assert filter_index < input_index
+    assert encode_command[filter_index + 1] == str(FFMPEG_THREAD_LIMIT)
+    x264_index = encode_command.index("-x264-params")
+    assert encode_command[x264_index + 1] == "threads=1:lookahead_threads=1"
 
 
 def test_verified_video_url_requires_qv1_managed_file(

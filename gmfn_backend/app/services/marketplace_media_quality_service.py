@@ -26,6 +26,12 @@ MAX_VIDEO_LONG_EDGE = 1280
 MAX_SOURCE_VIDEO_BYTES = 100 * 1024 * 1024
 MAX_NORMALIZED_VIDEO_BYTES = 15 * 1024 * 1024
 VIDEO_PROCESS_TIMEOUT_SECONDS = 50
+# The production API currently runs inside a 512 MiB Render instance. FFmpeg
+# otherwise sizes its decoder, filter, and encoder thread pools from the host
+# CPU count, which can create a short but fatal memory spike even for a useful
+# 10-second phone clip. One worker is slower but keeps preparation predictable;
+# this does not lower the accepted resolution or the encoded picture quality.
+FFMPEG_THREAD_LIMIT = 1
 
 _MANAGED_VIDEO_PATH = re.compile(
     r"^/uploads/marketplace/videos/qv1_[A-Za-z0-9_-]+[.]mp4$"
@@ -111,7 +117,16 @@ def inspect_video(path: str | Path) -> VideoInspection:
 
     reader = None
     try:
-        reader = imageio_ffmpeg.read_frames(str(source_path))
+        reader = imageio_ffmpeg.read_frames(
+            str(source_path),
+            input_params=[
+                "-threads",
+                str(FFMPEG_THREAD_LIMIT),
+                "-filter_threads",
+                str(FFMPEG_THREAD_LIMIT),
+            ],
+            output_params=["-threads", str(FFMPEG_THREAD_LIMIT)],
+        )
         metadata = next(reader)
     except Exception as exc:
         raise MediaQualityError(
@@ -179,7 +194,15 @@ def _validate_video_quality(inspection: VideoInspection) -> None:
 def _source_has_audio(ffmpeg_exe: str, source_path: Path) -> bool:
     try:
         probe = subprocess.run(
-            [ffmpeg_exe, "-hide_banner", "-nostdin", "-i", str(source_path)],
+            [
+                ffmpeg_exe,
+                "-hide_banner",
+                "-nostdin",
+                "-threads",
+                str(FFMPEG_THREAD_LIMIT),
+                "-i",
+                str(source_path),
+            ],
             capture_output=True,
             text=True,
             timeout=12,
@@ -228,6 +251,10 @@ def normalize_marketplace_video(
         "-nostdin",
         "-v",
         "error",
+        "-threads",
+        str(FFMPEG_THREAD_LIMIT),
+        "-filter_threads",
+        str(FFMPEG_THREAD_LIMIT),
         "-i",
         str(input_path),
         "-t",
@@ -245,6 +272,10 @@ def normalize_marketplace_video(
             f"{output_fps:g}",
             "-c:v",
             "libx264",
+            "-threads",
+            str(FFMPEG_THREAD_LIMIT),
+            "-x264-params",
+            f"threads={FFMPEG_THREAD_LIMIT}:lookahead_threads={FFMPEG_THREAD_LIMIT}",
             "-preset",
             "veryfast",
             "-crf",
