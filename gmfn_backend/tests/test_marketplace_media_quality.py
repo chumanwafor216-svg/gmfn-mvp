@@ -14,6 +14,7 @@ from app.services.marketplace_media_quality_service import (
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
+    MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
     inspect_video,
     is_verified_marketplace_video_url,
@@ -77,14 +78,29 @@ def _make_video(
     return path
 
 
-def test_quality_gate_rejects_video_below_720p(tmp_path: Path):
-    source = _make_video(tmp_path / "low.mp4", size="640x360")
+def test_quality_gate_rejects_only_genuinely_tiny_video(tmp_path: Path):
+    source = _make_video(tmp_path / "low.mp4", size="568x320")
 
     with pytest.raises(MediaQualityError) as exc_info:
         inspect_video(source)
 
     assert exc_info.value.code == "video_resolution_too_low"
-    assert "720p" in str(exc_info.value)
+    assert "too small" in str(exc_info.value)
+
+
+def test_quality_gate_accepts_usable_576x1296_social_portrait(tmp_path: Path):
+    source = _make_video(tmp_path / "social-portrait.mp4", size="576x1296")
+    output = tmp_path / "qv1_social_portrait.mp4"
+
+    inspection = inspect_video(source)
+    result = normalize_marketplace_video(source, output)
+
+    assert inspection.width == 576
+    assert inspection.height == 1296
+    assert inspection.short_edge >= MIN_VIDEO_SHORT_EDGE
+    assert output.is_file()
+    assert result.output.short_edge >= MIN_VIDEO_SHORT_EDGE
+    assert result.output.long_edge <= 1280
 
 
 def test_quality_gate_rejects_extra_wide_video(tmp_path: Path):
@@ -111,7 +127,7 @@ def test_normalizer_physically_trims_and_standardises_video(tmp_path: Path):
     assert result.source_had_audio is True
     assert result.source.duration_seconds >= 11.9
     assert result.output.duration_seconds <= MAX_VIDEO_DURATION_SECONDS + 0.1
-    assert result.output.short_edge >= 720
+    assert result.output.short_edge >= MIN_VIDEO_SHORT_EDGE
     assert result.output.fps >= 20
     assert result.output.codec == "h264"
     assert result.size_bytes == output.stat().st_size

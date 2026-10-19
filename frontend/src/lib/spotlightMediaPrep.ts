@@ -4,8 +4,8 @@ export type PreparedSpotlightMedia = {
   durationSeconds?: number | null;
 };
 
-const DEFAULT_MIN_VIDEO_SHORT_EDGE = 720;
-const DEFAULT_MAX_VIDEO_ASPECT_RATIO = 1.85;
+const DEFAULT_MIN_VIDEO_SHORT_EDGE = 360;
+const DEFAULT_MAX_VIDEO_ASPECT_RATIO = 2.4;
 const DEFAULT_MIN_VIDEO_DURATION_SECONDS = 1;
 
 function safeStr(value: unknown): string {
@@ -189,14 +189,14 @@ function validateVideoQuality(
     throw new Error(
       `This video is ${Math.round(width)}x${Math.round(
         height
-      )}. GSN requires clear 720p or better video. Record or export a higher-quality version.`
+      )}. It is too small to remain clear after GSN prepares it. Choose a clearer copy or record it again.`
     );
   }
 
   const aspectRatio = Math.max(width, height) / Math.max(shortEdge, 1);
   if (aspectRatio > options.maxAspectRatio) {
     throw new Error(
-      "Use a normal portrait, square, or landscape video. Very narrow or extra-wide video is not accepted."
+      "This video is extremely narrow or wide and cannot be prepared reliably. Choose a normal portrait, square, or landscape copy."
     );
   }
 

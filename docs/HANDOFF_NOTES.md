@@ -8,6 +8,34 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Usable social-video quality correction - 2026-10-19
+
+- Status: implemented and verified locally; not yet committed, pushed, or
+  deployed.
+- Real-device evidence from My family my pride showed that the shared media
+  gate rejected a clear `576x1296` downloaded portrait solely because its
+  short edge was below the former 720-pixel rule. That same file would then
+  have failed the former 1.85:1 shape rule.
+- Owner-approved behavior now treats 720p as guidance rather than a hard
+  requirement. The authoritative hard-rejection floor is a 360-pixel short
+  edge, 15 fps, and maximum 2.4:1 aspect ratio. This accepts the reported
+  `576x1296` social portrait while still rejecting genuinely tiny, very
+  choppy, extremely narrow/wide, unreadable, or unprocessable media.
+- Server preparation remains mandatory and unchanged in purpose: inspect the
+  real file, retain only the opening 10 seconds, cap the long edge without
+  upscaling, re-encode to web-safe MP4/H.264, bound the result to 15 MB, and
+  modestly normalise existing audio. It improves compatibility and consistency
+  but does not recreate missing image detail or claim AI enhancement.
+- Verification passed: all 11 focused FFmpeg/backend media-quality tests,
+  including generated `576x1296` acceptance and normalization; media-quality
+  audit; Spotlight controls audit; full protected-button freeze audit;
+  production frontend build; focused lint; Python compilation; and scoped
+  whitespace checks.
+- Unabated truth: the generated regression matches the reported dimensions and
+  processing path, but the exact Sweetlove source file is not in the workspace.
+  Retrying that file on the phone remains the final acceptance test after
+  deployment.
+
 ## Spotlight video stale-iPhone recovery - 2026-10-19
 
 - Status: deployed from application commit `10a900c6` on

@@ -171,7 +171,7 @@ def _require_verified_marketplace_video(
             "code": "verified_video_required",
             "message": (
                 "This video has not passed the GSN quality gate. "
-                "Upload a clear 720p-or-better video; GSN will keep only the first 10 seconds."
+                "Upload a clear, playable video; GSN will prepare and keep only the first 10 seconds."
             ),
         },
     )

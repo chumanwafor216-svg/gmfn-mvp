@@ -11,10 +11,13 @@ from urllib.parse import urlsplit
 import imageio_ffmpeg
 
 
-MIN_VIDEO_SHORT_EDGE = 720
-MIN_VIDEO_FPS = 20.0
+# Hard rejection floors, not preferred recording targets. Ordinary social-video
+# downloads can remain useful below HD; GSN rejects only sources that are too
+# small or too choppy to survive the required preparation step.
+MIN_VIDEO_SHORT_EDGE = 360
+MIN_VIDEO_FPS = 15.0
 MIN_VIDEO_DURATION_SECONDS = 1.0
-MAX_VIDEO_ASPECT_RATIO = 1.85
+MAX_VIDEO_ASPECT_RATIO = 2.4
 MAX_VIDEO_DURATION_SECONDS = 10.0
 MAX_VIDEO_LONG_EDGE = 1280
 # The source ceiling is deliberately higher than the published-file ceiling.
@@ -153,20 +156,22 @@ def _validate_video_quality(inspection: VideoInspection) -> None:
             "video_resolution_too_low",
             (
                 f"This video is {inspection.width}x{inspection.height}. "
-                "GSN requires clear 720p or better video. Record or export a higher-quality version."
+                "It is too small to remain clear after GSN prepares it. "
+                "Choose a clearer copy or record it again."
             ),
         )
     if inspection.aspect_ratio > MAX_VIDEO_ASPECT_RATIO:
         raise MediaQualityError(
             "video_shape_unsupported",
-            "Use a normal portrait, square, or landscape video. Very narrow or extra-wide video is not accepted.",
+            "This video is extremely narrow or wide and cannot be prepared reliably. "
+            "Choose a normal portrait, square, or landscape copy.",
         )
     if inspection.fps < MIN_VIDEO_FPS:
         raise MediaQualityError(
             "video_frame_rate_too_low",
             (
                 f"This video is about {inspection.fps:.1f} frames per second. "
-                "GSN requires at least 20 fps for clear, smooth playback."
+                "It is too choppy to prepare reliably. Choose a smoother copy or record it again."
             ),
         )
 
@@ -302,7 +307,7 @@ def normalize_marketplace_video(
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
             "video_output_too_large",
-            "The prepared video is still too large. Use a shorter or simpler 720p recording.",
+            "The prepared video is still too large. Use a shorter or less complex recording.",
         )
 
     output_inspection = inspect_video(destination)

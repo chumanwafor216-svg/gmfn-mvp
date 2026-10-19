@@ -20,7 +20,10 @@ from app.db.models import ClanMembership, User
 from app.services.marketplace_media_quality_service import (
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
+    MAX_VIDEO_ASPECT_RATIO,
     MAX_VIDEO_DURATION_SECONDS as QUALITY_MAX_VIDEO_DURATION_SECONDS,
+    MIN_VIDEO_FPS,
+    MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
     normalize_marketplace_video,
 )
@@ -527,8 +530,9 @@ async def upload_marketplace_video(
                 "code": exc.code,
                 "message": str(exc),
                 "standard": {
-                    "minimum_short_edge": 720,
-                    "minimum_fps": 20,
+                    "minimum_short_edge": MIN_VIDEO_SHORT_EDGE,
+                    "minimum_fps": MIN_VIDEO_FPS,
+                    "maximum_aspect_ratio": MAX_VIDEO_ASPECT_RATIO,
                     "maximum_public_seconds": int(MAX_VIDEO_DURATION_SECONDS),
                     "output_format": "MP4",
                 },
