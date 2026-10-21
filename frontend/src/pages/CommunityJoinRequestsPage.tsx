@@ -63,6 +63,12 @@ type JoinRequestItem = {
   } | null;
   threshold_ratio?: string;
   governance_profile?: any;
+  admission_mode?: CommunityAdmissionMode;
+  admission_mode_label?: string;
+  voting_admin_override?: boolean;
+  admin_approval_available?: boolean;
+  admin_approval_basis?: string | null;
+  reviewer_can_admin_approve?: boolean;
 };
 
 type ApprovalResult = {
@@ -98,6 +104,7 @@ type VoteResponse = {
   approved_now?: boolean;
   rejected_now?: boolean;
   pilot_override?: boolean;
+  admin_approval_basis?: string | null;
   status_already_final?: boolean;
   message?: string | null;
   approval_result?: ApprovalResult | null;
@@ -603,11 +610,23 @@ function approvalProgressText(item: JoinRequestItem | undefined | null): string 
   return `${progress.approvals} of ${progress.required} approvals recorded`;
 }
 
-function approvalNextStepText(item: JoinRequestItem | undefined | null): string {
+function approvalNextStepText(
+  item: JoinRequestItem | undefined | null,
+  canAdminApproveNow = false
+): string {
   const progress = approvalProgress(item);
   if (friendlyStatus(item?.status) === "approved") return "Access request is approved; verification can still follow.";
   if (friendlyStatus(item?.status) === "rejected") return "Request is rejected.";
   if (progress.remaining <= 0) return "The community decision is ready.";
+  if (canAdminApproveNow) {
+    return (
+      "You can approve now as admin without waiting for " +
+      progress.remaining +
+      " more vote" +
+      (progress.remaining === 1 ? "" : "s") +
+      "."
+    );
+  }
   return `${progress.remaining} more approval${progress.remaining === 1 ? "" : "s"} needed.`;
 }
 
@@ -1640,6 +1659,18 @@ export default function CommunityJoinRequestsPage() {
               (qrGuardrail.approval_posture === "market_access" ||
                 Number(item.active_member_count || 0) > 1)
           );
+          const requestAdmissionMode = safeStr(
+            item.admission_mode || admissionMode
+          ) as CommunityAdmissionMode;
+          const canAdminApproveRequest = Boolean(
+            item.reviewer_can_admin_approve ??
+              (reviewerCanPilotApprove &&
+                (requestAdmissionMode === "admin_approval" ||
+                  (requestAdmissionMode === "community_vote" &&
+                    votingAdminOverride)))
+          );
+          const canAdminApproveNow =
+            canAdminApproveRequest && !pilotOverrideBlocked;
           const isBusy = busyId === item.id;
           const applicantLabel = safeStr(
             item.applicant_name ||
@@ -1942,12 +1973,13 @@ export default function CommunityJoinRequestsPage() {
                     {iconText(
                       "clock",
                       <>
-                        {approvalProgressText(item)}. {approvalNextStepText(item)}
+                        {approvalProgressText(item)}.{" "}
+                        {approvalNextStepText(item, canAdminApproveNow)}
                       </>
                     )}
                   </div>
 
-                  {reviewerCanPilotApprove && admissionMode === "community_vote" ? (
+                  {canAdminApproveRequest && requestAdmissionMode === "community_vote" ? (
                     <div
                       style={{
                         marginTop: 12,
@@ -1970,12 +2002,14 @@ export default function CommunityJoinRequestsPage() {
                           ? qrGuardrail?.approval_posture === "market_access"
                             ? "Marketplace QR entry requires standard voting with a market, dues, stall, shop, permit, or organiser check; admin override is disabled."
                             : "Strict QR entry requires standard multi-reviewer approval here; admin override is disabled."
-                          : "The community has explicitly allowed an admin to approve without waiting for the remaining votes."}
+                          : item.admin_approval_basis === "current_community_setting"
+                            ? "The current community setting allows you to approve this pending request now without waiting for the remaining votes."
+                            : "This request allows you to approve now as admin without waiting for the remaining votes."}
                       </div>
                     </div>
                   ) : null}
 
-                  {admissionMode === "community_vote" ? <div
+                  {requestAdmissionMode === "community_vote" ? <div
                     style={{
                       marginTop: 14,
                       display: "grid",
@@ -2056,9 +2090,9 @@ export default function CommunityJoinRequestsPage() {
                     style={{
                       marginTop: 14,
                       display: "grid",
-                      gridTemplateColumns: reviewerCanPilotApprove && admissionMode === "community_vote"
-                        ? isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))"
-                        : isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "repeat(3, minmax(0, 1fr))",
                       gap: 12,
                       minHeight: 0,
                       width: "100%",
@@ -2067,11 +2101,15 @@ export default function CommunityJoinRequestsPage() {
                     <PrimaryButton
                       type="button"
                       onClick={() =>
-                        admissionMode === "admin_approval"
+                        canAdminApproveNow
                           ? handlePilotApprove(item.id)
                           : handleVote(item.id, "approve")
                       }
-                      disabled={isBusy}
+                      disabled={
+                        isBusy ||
+                        (requestAdmissionMode === "admin_approval" &&
+                          !canAdminApproveNow)
+                      }
                       busy={isBusy}
                       busyLabel="Working..."
                       stableHeight={58}
@@ -2079,10 +2117,13 @@ export default function CommunityJoinRequestsPage() {
                       style={decisionButtonStyle("approve")}
                       fullWidth
                     >
-                      {iconText("approve", "Approve")}
+                      {iconText(
+                        "approve",
+                        canAdminApproveNow ? "Approve now as admin" : "Approve"
+                      )}
                     </PrimaryButton>
 
-                    {admissionMode === "community_vote" ? <SecondaryButton
+                    {requestAdmissionMode === "community_vote" ? <SecondaryButton
                       type="button"
                       onClick={() => handleVote(item.id, "neutral")}
                       disabled={isBusy}
@@ -2110,21 +2151,6 @@ export default function CommunityJoinRequestsPage() {
                       {iconText("reject", "Reject")}
                     </SecondaryButton>
 
-                    {reviewerCanPilotApprove && admissionMode === "community_vote" ? (
-                      <SecondaryButton
-                        type="button"
-                        onClick={() => handlePilotApprove(item.id)}
-                        disabled={isBusy || pilotOverrideBlocked}
-                        busy={isBusy}
-                        busyLabel="Working..."
-                        stableHeight={58}
-                        debugId="community-join-requests.admin-approve"
-                        style={decisionButtonStyle("reject")}
-                        fullWidth
-                      >
-                        {iconText("shield", pilotOverrideBlocked ? "Standard review" : "Admin approve")}
-                      </SecondaryButton>
-                    ) : null}
                   </CardActionRow>
                 </>
               )}

@@ -830,6 +830,42 @@ def _join_request_admission_policy(
     return _community_admission_policy(db, clan=clan, invite=invite)
 
 
+def _join_request_admin_approval_authority(
+    db: Session,
+    *,
+    clan: Clan,
+    join_request: ClanJoinRequest,
+    request_policy: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Resolve whether an admin may finish a pending request now.
+
+    The invite snapshot remains the audit record for the request's original
+    voting rule. A later community setting may also grant admins authority to
+    finish an already-pending request; otherwise enabling the setting while a
+    request is open produces a misleading control that the API rejects.
+    """
+    request_policy = request_policy or _join_request_admission_policy(
+        db,
+        join_request=join_request,
+    )
+    current_policy = _community_admission_policy(db, clan=clan)
+
+    if request_policy["requires_admin_approval"]:
+        return {"allowed": True, "basis": "request_admin_approval"}
+    if request_policy.get("source") == "legacy_reviewed_default":
+        return {"allowed": True, "basis": "legacy_reviewed_default"}
+    if request_policy["requires_community_vote"] and request_policy[
+        "voting_admin_override"
+    ]:
+        return {"allowed": True, "basis": "invite_snapshot"}
+    if request_policy["requires_community_vote"] and (
+        current_policy["requires_admin_approval"]
+        or current_policy["voting_admin_override"]
+    ):
+        return {"allowed": True, "basis": "current_community_setting"}
+    return {"allowed": False, "basis": None}
+
+
 def _json_load(value: Optional[str]) -> dict[str, Any]:
     if not value:
         return {}
@@ -5551,6 +5587,17 @@ def list_join_requests(
     reviewer_is_admin = (
         _safe_str(getattr(membership, "role", None)).lower() == "admin"
     )
+    for row, item in zip(rows, items):
+        authority = _join_request_admin_approval_authority(
+            db,
+            clan=policy_clan,
+            join_request=row,
+        )
+        item["admin_approval_available"] = bool(authority["allowed"])
+        item["admin_approval_basis"] = authority["basis"]
+        item["reviewer_can_admin_approve"] = bool(
+            reviewer_is_admin and authority["allowed"]
+        )
     return {
         "items": items,
         "total": len(items),
@@ -5764,7 +5811,16 @@ def pilot_approve_join_request(
         raise HTTPException(status_code=404, detail="Join request not found")
 
     admission_policy = _join_request_admission_policy(db, join_request=req)
-    is_legacy_override = admission_policy.get("source") == "legacy_reviewed_default"
+    policy_clan = db.get(Clan, int(clan_id)) or clan
+    admin_authority = _join_request_admin_approval_authority(
+        db,
+        clan=policy_clan,
+        join_request=req,
+        request_policy=admission_policy,
+    )
+    is_legacy_override = (
+        admin_authority["basis"] == "legacy_reviewed_default"
+    )
     if admission_policy["instant_join"]:
         raise HTTPException(
             status_code=409,
@@ -5772,15 +5828,15 @@ def pilot_approve_join_request(
         )
     if (
         admission_policy["requires_community_vote"]
-        and not admission_policy["voting_admin_override"]
-        and not is_legacy_override
+        and not admin_authority["allowed"]
     ):
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "community_vote_admin_override_disabled",
                 "message": (
-                    "This community requires member voting and admin override is off."
+                    "This community requires member voting and the current "
+                    "admin-approval setting does not permit an override."
                 ),
                 "community_id": int(clan_id),
                 "community_code": _community_code(clan_id),
@@ -5793,6 +5849,7 @@ def pilot_approve_join_request(
         return {
             "ok": True,
             "admin_approval": True,
+            "admin_approval_basis": admin_authority["basis"],
             "pilot_override": bool(is_legacy_override),
             "status_already_final": True,
             "approved_now": False,
@@ -5876,6 +5933,7 @@ def pilot_approve_join_request(
     return {
         "ok": True,
         "admin_approval": True,
+        "admin_approval_basis": admin_authority["basis"],
         "pilot_override": bool(is_legacy_override),
         "approved_now": True,
         "message": "Admin review approved this join request.",

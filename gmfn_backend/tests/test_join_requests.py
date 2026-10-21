@@ -4612,3 +4612,61 @@ def test_community_vote_admin_override_must_be_explicit(
         blocked_res.json()["detail"]["code"]
         == "community_vote_admin_override_disabled"
     )
+
+
+def test_enabling_admin_override_applies_to_an_existing_pending_vote_request(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    initial_policy_res = client.patch(
+        "/clans/1/admission-policy",
+        json={
+            "admission_mode": "community_vote",
+            "voting_admin_override": False,
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert initial_policy_res.status_code == 200, initial_policy_res.text
+
+    invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    assert invite_res.status_code == 200, invite_res.text
+    invite_code = invite_res.json()["invite_code"]
+    join_res = client.post("/clans/join-requests", json=_join_payload(invite_code))
+    assert join_res.status_code == 201, join_res.text
+    request_id = int(join_res.json()["request"]["id"])
+
+    enable_override_res = client.patch(
+        "/clans/1/admission-policy",
+        json={
+            "admission_mode": "community_vote",
+            "voting_admin_override": True,
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert enable_override_res.status_code == 200, enable_override_res.text
+
+    list_res = client.get(
+        "/clans/1/join-requests",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert list_res.status_code == 200, list_res.text
+    listed_request = next(
+        item for item in list_res.json()["items"] if int(item["id"]) == request_id
+    )
+    assert listed_request["admission_mode"] == "community_vote"
+    assert listed_request["voting_admin_override"] is False
+    assert listed_request["reviewer_can_admin_approve"] is True
+    assert listed_request["admin_approval_basis"] == "current_community_setting"
+
+    approve_res = client.post(
+        f"/clans/1/join-requests/{request_id}/admin-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert approve_res.status_code == 200, approve_res.text
+    assert approve_res.json()["approved_now"] is True
+    assert (
+        approve_res.json()["admin_approval_basis"]
+        == "current_community_setting"
+    )
+    assert approve_res.json()["request"]["status"] == "approved"

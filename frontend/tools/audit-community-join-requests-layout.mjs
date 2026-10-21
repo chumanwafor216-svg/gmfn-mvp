@@ -56,7 +56,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(4, minmax\(0, 1fr\)\)"/,
+  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(5, minmax\(0, 1fr\)\)"/,
   "Join Requests stats must use a 2x2 phone grid instead of a four-card overflow row."
 );
 
@@ -108,6 +108,11 @@ assertContains(
 assertContains(
   /function approvalProgress\(item: JoinRequestItem[\s\S]*?approvals[\s\S]*?required[\s\S]*?remaining[\s\S]*?function approvalSuccessText\(res: VoteResponse[\s\S]*?status_already_final[\s\S]*?Approval successful[\s\S]*?approvalProgressText\(request\)[\s\S]*?approvalNextStepText\(request\)/,
   "Join Requests approval actions must answer with exact approval progress and must distinguish already-final requests from fresh successful approvals."
+);
+
+assertContains(
+  /reviewer_can_admin_approve[\s\S]*?canAdminApproveRequest[\s\S]*?approvalNextStepText\(item, canAdminApproveNow\)[\s\S]*?canAdminApproveNow[\s\S]*?handlePilotApprove\(item\.id\)[\s\S]*?Approve now as admin/,
+  "Join Requests must use each request's real admin authority, explain that remaining votes can be bypassed, and route the primary admin action to admin approval."
 );
 
 assertNotContains(

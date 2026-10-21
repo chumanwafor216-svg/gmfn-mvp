@@ -35,6 +35,11 @@ Every community has one admission mode:
 - New invite rows snapshot the community mode and override setting.
 - Changing the saved community policy retires all active links. A fresh link is
   required after the change.
+- A pending request keeps its invite snapshot as its audit record. If the
+  community later enables admin approval or the community-vote admin override,
+  that current admin authority may finish the pending request immediately; the
+  request response must state that the authority comes from the current
+  community setting.
 
 ## Truth boundary
 

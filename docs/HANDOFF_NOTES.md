@@ -1214,3 +1214,74 @@ under `docs/` or `docs/archive/`, then link that file here.
   eligible member accounts in both directions and confirm the live endpoint
   returns all currently eligible campaign ids as fresh, replay, or non-counting
   visibility rows before declaring the pilot incident closed.
+
+## Join Requests timeout repair - 2026-10-21
+
+- A phone screenshot at 10:55 BST showed the authenticated Join Requests page
+  aborting with the shared 30-second server-timeout message and all summary
+  counts left at zero. Render logs confirmed that production accepted
+  GET /clans/8/join-requests at 09:52:29 UTC but never logged its completion.
+- Read-only production evidence isolated the multiplier: community 8 had 11
+  historical join requests, 11 active memberships, and 7 pending-account
+  memberships. Six of those pending accounts used the legacy hashed temporary
+  password marker. List serialization recomputed reviewer eligibility for
+  every request, repeatedly running the deliberately expensive legacy hash
+  check. Community 13 showed the same smaller pattern and took 8-11 seconds.
+- The backend now computes active membership count and reviewer eligibility
+  once per community response and fetches all join-request votes in one query.
+  Per-request admission mode, thresholds, counts, eligible reviewers, QR
+  guardrails, permissions, and response shape remain unchanged. The frozen
+  Join Requests phone layout and all frontend code were untouched.
+- The reported community now performs about 7 expensive eligibility checks
+  instead of about 77. A regression test requires the list endpoint to call
+  reviewer enumeration once even when multiple requests are returned.
+- Verification passed: all 80 join-request backend tests, Python compilation,
+  scoped diff checks, and GitHub Backend Tests run 39582089963 on exact commit
+  ed46fb8da04e0b3f4c26f697373c68f270489f12.
+- Commit ed46fb8da04e0b3f4c26f697373c68f270489f12 was pushed to
+  codex/spotlight-rotation-continuity and promoted unchanged to main. Corrected
+  Render workflow run 39582356642 was dispatched with deploy_api=true and
+  completed successfully. Exact API deploy dep-dbc8vcrrjlhs73b7nbcg reached
+  live, and the public health check returned HTTP 200 with dev_mode false.
+- Remaining production truth: the exact live code and health are verified, but
+  no production credential was used to replay the private clan 8 endpoint.
+  The affected member should tap Refresh once on Join Requests. Confirm the
+  request card and non-zero summary appear, then inspect the new production
+  request completion time before calling the handset incident fully closed.
+
+## Join Requests current admin-authority alignment - 2026-10-21
+
+- Production read-only evidence confirmed a real rule/action contradiction for
+  clan 8 request 20. The request was created at 09:51 UTC from invite 173,
+  whose snapshot was community_vote with voting_admin_override=false. The
+  community setting was changed to community_vote with
+  voting_admin_override=true at 10:16 UTC, then the handset sent POST
+  /clans/8/join-requests/20/vote. That ordinary vote correctly left the request
+  pending at one of four; no /admin-approve request reached the API.
+- The page had mixed the current community setting with the request snapshot:
+  it advertised the admin option globally while its first Approve button still
+  recorded an ordinary vote. The backend admin endpoint also rejected the
+  newly enabled current authority for an already-pending request.
+- The backend now preserves the invite snapshot as audit history while also
+  resolving current admin authority for pending requests. List items expose
+  admin_approval_available, admin_approval_basis, and the viewer-specific
+  reviewer_can_admin_approve flag. Admin approval records whether authority
+  came from the request, its invite snapshot, the legacy rule, or the current
+  community setting.
+- The frozen Join Requests page now uses each request's effective authority.
+  Its progress copy says an authorised admin can approve immediately without
+  waiting for the remaining votes, and the primary button says Approve now as
+  admin and calls /admin-approve. The duplicate fourth admin button was
+  removed, leaving the existing compact three-action layout.
+- Policy documentation now states the deliberate governance rule: current
+  admin authority may finish an already-pending request without rewriting the
+  original invite snapshot. A regression test covers request creation with the
+  override off, enabling it afterward, per-item capability output, and
+  immediate admin approval.
+- Verification passed: all 81 join-request backend tests, the 291-module
+  production frontend build, the frozen Community Join Requests layout audit,
+  and scoped diff checks.
+- Remaining production truth: request 20 is still pending and no production
+  data was mutated during diagnosis. After this fix is deployed, the admin
+  must refresh Join Requests and tap Approve now as admin. Only the resulting
+  approved response and activation handoff will close the reported incident.
