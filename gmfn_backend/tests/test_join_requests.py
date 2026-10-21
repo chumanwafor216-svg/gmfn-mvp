@@ -3025,6 +3025,61 @@ def test_list_join_requests_reports_admin_reviewer_override_capability(
     assert len(data["items"]) == 1
 
 
+def test_list_join_requests_computes_reviewer_eligibility_once(
+    client,
+    override_clan_ctx_admin,
+    monkeypatch,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicants = [
+            User(
+                id=user_id,
+                email=f'pending-{user_id}@example.com',
+                hashed_password='PENDING_APPROVAL',
+                role='user',
+            )
+            for user_id in range(2, 5)
+        ]
+        db.add_all(applicants)
+        db.flush()
+        db.add_all(
+            [
+                ClanJoinRequest(
+                    id=request_id,
+                    clan_id=1,
+                    applicant_user_id=request_id + 1,
+                    invited_by_user_id=1,
+                    status='pending',
+                    created_at=datetime.now(timezone.utc),
+                )
+                for request_id in range(1, 4)
+            ]
+        )
+        db.commit()
+
+    original = clans_route._active_reviewer_memberships
+    call_count = 0
+
+    def counted_active_reviewer_memberships(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        clans_route,
+        '_active_reviewer_memberships',
+        counted_active_reviewer_memberships,
+    )
+
+    res = client.get('/clans/1/join-requests', headers={'X-Clan-Id': '1'})
+
+    assert res.status_code == 200, res.text
+    assert len(res.json()['items']) == 3
+    assert call_count == 1
+
+
 def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
     client,
     override_clan_ctx_admin,

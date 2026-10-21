@@ -2131,24 +2131,30 @@ def _current_join_status(
     db: Session,
     *,
     join_request: ClanJoinRequest,
+    active_membership_count: Optional[int] = None,
+    reviewer_rows: Optional[list[tuple[ClanMembership, User]]] = None,
+    votes: Optional[list[ClanJoinVote]] = None,
 ) -> dict[str, Any]:
     admission_policy = _join_request_admission_policy(
         db,
         join_request=join_request,
     )
-    active_membership_count = _active_clan_member_count(
-        db,
-        clan_id=int(join_request.clan_id),
-    )
-    reviewer_rows = _active_reviewer_memberships(
-        db,
-        clan_id=int(join_request.clan_id),
-    )
-    votes = (
-        db.query(ClanJoinVote)
-        .filter(ClanJoinVote.join_request_id == int(join_request.id))
-        .all()
-    )
+    if active_membership_count is None:
+        active_membership_count = _active_clan_member_count(
+            db,
+            clan_id=int(join_request.clan_id),
+        )
+    if reviewer_rows is None:
+        reviewer_rows = _active_reviewer_memberships(
+            db,
+            clan_id=int(join_request.clan_id),
+        )
+    if votes is None:
+        votes = (
+            db.query(ClanJoinVote)
+            .filter(ClanJoinVote.join_request_id == int(join_request.id))
+            .all()
+        )
 
     approvals = sum(
         1 for v in votes if str(getattr(v, "vote", "")).lower() == "approve"
@@ -2413,7 +2419,14 @@ def _mark_qr_preapproval_matched(
     )
 
 
-def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
+def _join_request_out(
+    db: Session,
+    req: ClanJoinRequest,
+    *,
+    active_membership_count: Optional[int] = None,
+    reviewer_rows: Optional[list[tuple[ClanMembership, User]]] = None,
+    votes: Optional[list[ClanJoinVote]] = None,
+) -> dict[str, Any]:
     clan = db.get(Clan, int(req.clan_id))
     inviter = (
         db.get(User, int(req.invited_by_user_id)) if req.invited_by_user_id else None
@@ -2422,7 +2435,13 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
     applicant = (
         db.get(User, int(req.applicant_user_id)) if req.applicant_user_id else None
     )
-    stats = _current_join_status(db, join_request=req)
+    stats = _current_join_status(
+        db,
+        join_request=req,
+        active_membership_count=active_membership_count,
+        reviewer_rows=reviewer_rows,
+        votes=votes,
+    )
     qr_preapproval_match = (
         db.query(ClanQrPreApproval)
         .filter(ClanQrPreApproval.matched_join_request_id == int(req.id))
@@ -5497,7 +5516,36 @@ def list_join_requests(
         .all()
     )
 
-    items = [_join_request_out(db, row) for row in rows]
+    # Reviewer activation checks include a deliberately expensive legacy
+    # password-hash comparison for older pending accounts. Compute reviewer
+    # eligibility once for the community instead of once per historical join
+    # request, and load all request votes in one query.
+    reviewer_rows = _active_reviewer_memberships(db, clan_id=int(clan_id))
+    active_membership_count = _active_clan_member_count(db, clan_id=int(clan_id))
+    votes_by_request_id: dict[int, list[ClanJoinVote]] = {
+        int(row.id): [] for row in rows
+    }
+    if votes_by_request_id:
+        vote_rows = (
+            db.query(ClanJoinVote)
+            .filter(ClanJoinVote.join_request_id.in_(votes_by_request_id))
+            .all()
+        )
+        for vote_row in vote_rows:
+            votes_by_request_id.setdefault(int(vote_row.join_request_id), []).append(
+                vote_row
+            )
+
+    items = [
+        _join_request_out(
+            db,
+            row,
+            active_membership_count=active_membership_count,
+            reviewer_rows=reviewer_rows,
+            votes=votes_by_request_id.get(int(row.id), []),
+        )
+        for row in rows
+    ]
     policy_clan = db.get(Clan, int(clan_id)) or clan
     admission_policy = _community_admission_policy(db, clan=policy_clan)
     reviewer_is_admin = (
