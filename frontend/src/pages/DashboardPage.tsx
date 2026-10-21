@@ -2983,8 +2983,7 @@ function getUserOperationalClass(params: {
 
   if (
     urgentDemandCount > 0 ||
-    params.demandItems.length > 0 ||
-    params.dashboardNoticeSummary.counts.actNow > 0
+    params.demandItems.length > 0
   ) {
     return "demand";
   }
@@ -3944,7 +3943,10 @@ export default function DashboardPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+    let refreshTimer: number | null = null;
+
+    async function refreshDemandItems() {
       const [visibleRows, myRows] = await Promise.all([
         listMarketplaceRequests({
           clan_id: selectedClanId || undefined,
@@ -3960,13 +3962,51 @@ export default function DashboardPage() {
         }).catch(() => []),
       ]);
 
+      if (!alive) return;
+
       setDemandItems(
         uniqueDashboardDemandItems([
           ...(Array.isArray(myRows) ? myRows : []),
           ...(Array.isArray(visibleRows) ? visibleRows : []),
         ])
       );
-    })();
+    }
+
+    void refreshDemandItems();
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshDemandItems();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshDemandItems();
+      }, 15000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
+
+    return () => {
+      alive = false;
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
+    };
   }, [selectedClanId]);
 
   useEffect(() => {

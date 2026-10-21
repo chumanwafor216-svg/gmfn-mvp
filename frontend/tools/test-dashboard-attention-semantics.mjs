@@ -84,6 +84,7 @@ try {
     "marketplace.shop.broadcast_created",
     "marketplace.shop.product_created",
     "demand_posted",
+    "approval_request",
   ]) {
     assert.equal(
       semantics.dashboardNotificationRequiresAttention({ kind }, "actNow"),

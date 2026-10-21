@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Dashboard completed-request Attention Guide repair - 2026-10-21
+
+- Production evidence for user `13` showed no open DemandBox request: all
+  matching requests were expired or cancelled. Join request notification `523`
+  for request `20` had also been marked read at 10:38 UTC after the decision.
+- Root cause: the dashboard treated the historical `approval_request`
+  notification as an actionable item merely because its copy contained
+  “approve”, then mapped every generic act-now notification to the `demand`
+  operating class. That produced the false “request still needs your answer” /
+  “Open Demand” guide after the join request had been handled.
+- The live pending-join-request collection is now the approval source of truth;
+  historical approval notifications no longer keep the Attention Guide active.
+  Generic act-now notifications also no longer masquerade as DemandBox work.
+- Dashboard open-demand state now refreshes on focus, visibility return, and
+  every 15 seconds, matching the existing join-request and notification refresh
+  discipline so a closed, fulfilled, cancelled, or expired demand is removed
+  without requiring a full reload.
+- Scope is limited to dashboard attention classification and refresh behavior.
+  The frozen Market Wisdom presentation was not changed.
+
 ## Spotlight visible-rotation reliability repair - 2026-10-19
 
 - Status: application commit `573da206` was pushed unchanged to

@@ -13,6 +13,10 @@ const INFORMATIONAL_NOTIFICATION_KINDS = new Set([
   "marketplace.shop.broadcast_created",
   "marketplace.shop.product_created",
   "demand_posted",
+  // The live join-request collection is the source of truth for whether an
+  // approval is still pending. The notification remains as history after a
+  // decision and must not keep the Attention Guide active by itself.
+  "approval_request",
 ]);
 
 function numberOrNull(value: unknown): number | null {
