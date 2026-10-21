@@ -2178,6 +2178,8 @@ export default function CommunityHomePage() {
   }, [routeParams.clanId]);
   useEffect(() => {
     let alive = true;
+    let refreshTimer: number | null = null;
+    let requestSequence = 0;
 
     const clanId = getClanId(selectedClan);
 
@@ -2196,19 +2198,51 @@ export default function CommunityHomePage() {
       return;
     }
 
-    setSelectedCommunityNoticeIndex(0);
-    setCommunityNoticesLoading(true);
-
-    (async () => {
+    async function refreshCommunityNotices(showLoading = false) {
+      const requestId = requestSequence + 1;
+      requestSequence = requestId;
+      if (showLoading) {
+        setCommunityNoticesLoading(true);
+      }
       const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
-      if (!alive) return;
+      if (!alive || requestId !== requestSequence) return;
 
       applyCommunityNoticeListResponse(res);
       setCommunityNoticesLoading(false);
-    })();
+    }
+
+    setSelectedCommunityNoticeIndex(0);
+    void refreshCommunityNotices(true);
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      void refreshCommunityNotices();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshCommunityNotices();
+      }, 15000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
 
     return () => {
       alive = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
     };
   }, [selectedClan, applyCommunityNoticeListResponse]);
 

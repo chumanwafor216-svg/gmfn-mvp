@@ -3831,7 +3831,7 @@ export default function DashboardPage() {
       setNoticesLoading(true);
 
       try {
-        const res = await getMyNotifications(12, false).catch(() => ({
+        const res = await getMyNotifications(12, false, { fresh: true }).catch(() => ({
           items: [],
         }));
 
@@ -3953,12 +3953,14 @@ export default function DashboardPage() {
           status: "open",
           mine_only: false,
           limit: 200,
+          fresh: true,
         }).catch(() => []),
         listMarketplaceRequests({
           clan_id: selectedClanId || undefined,
           status: "open",
           mine_only: true,
           limit: 200,
+          fresh: true,
         }).catch(() => []),
       ]);
 

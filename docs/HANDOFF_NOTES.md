@@ -8,6 +8,29 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Active app-feed freshness repair - 2026-10-21
+
+- The owner correctly reported that new posts could remain invisible until a
+  manual refresh, sign-out/sign-in, or a long wait. Source inspection confirmed
+  inconsistent behavior: some live surfaces polled, several loaded only once,
+  and some repeated reads could still receive a 15-second startup cache.
+- Community Home notices and Marketplace notices now refresh every 15 seconds
+  while visible. Marketplace demand signals, public shops/products, and
+  DemandBox rows refresh every 30 seconds. All refresh immediately when the app
+  regains focus or returns from the phone background.
+- Dashboard, Notifications, the companion alert layer, DemandBox, and Spotlight
+  refreshes can now explicitly bypass the startup cache. A successful Spotlight
+  publish also invalidates its local broadcast cache immediately.
+- This is bounded near-real-time polling, not a false claim of WhatsApp-style
+  instant server push. The repository has browser-push support, but true
+  sub-second in-app state synchronization would still require a production
+  WebSocket or Server-Sent Events channel and its operating infrastructure.
+- Background refresh updates data without repeatedly showing full-page loading
+  states. Polling runs only on mounted live surfaces and visible documents to
+  avoid reloading the whole application or generating needless hidden-tab load.
+- Scope is data freshness only. Navigation, route contracts, and frozen Market
+  Wisdom presentation were not changed.
+
 ## Dashboard completed-request Attention Guide repair - 2026-10-21
 
 - Production evidence for user `13` showed no open DemandBox request: all

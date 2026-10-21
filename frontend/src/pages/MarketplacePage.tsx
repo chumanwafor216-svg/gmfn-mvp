@@ -5186,7 +5186,7 @@ export default function MarketplacePage() {
     setNotice({ tone, text });
   }, []);
 
-  const loadMarketplaceNotices = useCallback(async () => {
+  const loadMarketplaceNotices = useCallback(async (background = false) => {
     if (!activeCommunityId) {
       setMarketplaceNotices([]);
       setMarketplaceDemandSignals([]);
@@ -5196,7 +5196,9 @@ export default function MarketplacePage() {
       return;
     }
 
-    setMarketplaceNoticesLoading(true);
+    if (!background) {
+      setMarketplaceNoticesLoading(true);
+    }
     try {
       const res = await listCommunityNotices({
         clan_id: activeCommunityId,
@@ -5215,7 +5217,9 @@ export default function MarketplacePage() {
         )
       );
     } finally {
-      setMarketplaceNoticesLoading(false);
+      if (!background) {
+        setMarketplaceNoticesLoading(false);
+      }
     }
   }, [activeCommunityId, selectedCommunity]);
 
@@ -5223,7 +5227,37 @@ export default function MarketplacePage() {
     void loadMarketplaceNotices();
   }, [loadMarketplaceNotices]);
 
-  const loadMarketplaceNeeds = useCallback(async () => {
+  useEffect(() => {
+    if (!activeCommunityId) return;
+
+    function refreshVisibleMarketplaceNotices() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      void loadMarketplaceNotices(true);
+    }
+
+    const refreshTimer = window.setInterval(
+      refreshVisibleMarketplaceNotices,
+      15000
+    );
+    window.addEventListener("focus", refreshVisibleMarketplaceNotices);
+    document.addEventListener(
+      "visibilitychange",
+      refreshVisibleMarketplaceNotices
+    );
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshVisibleMarketplaceNotices);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshVisibleMarketplaceNotices
+      );
+    };
+  }, [activeCommunityId, loadMarketplaceNotices]);
+
+  const loadMarketplaceNeeds = useCallback(async (background = false) => {
     if (!activeCommunityId) {
       setMarketplaceNeedRows([]);
       setMarketplaceMatchRows([]);
@@ -5233,8 +5267,10 @@ export default function MarketplacePage() {
       return;
     }
 
-    setMarketplaceNeedsLoading(true);
-    setMarketplaceMatchesLoading(true);
+    if (!background) {
+      setMarketplaceNeedsLoading(true);
+      setMarketplaceMatchesLoading(true);
+    }
     setMarketplaceNeedsError("");
 
     try {
@@ -5242,6 +5278,7 @@ export default function MarketplacePage() {
         clan_id: activeCommunityId,
         status: "open",
         limit: 6,
+        fresh: background,
       });
       const needRows = rowsOf<MarketplaceRequestItem>(rows).filter((row) =>
         Boolean(positiveNumber(row?.id))
@@ -5271,14 +5308,46 @@ export default function MarketplacePage() {
         )
       );
     } finally {
-      setMarketplaceNeedsLoading(false);
-      setMarketplaceMatchesLoading(false);
+      if (!background) {
+        setMarketplaceNeedsLoading(false);
+        setMarketplaceMatchesLoading(false);
+      }
     }
   }, [activeCommunityId]);
 
   useEffect(() => {
     void loadMarketplaceNeeds();
   }, [loadMarketplaceNeeds]);
+
+  useEffect(() => {
+    if (!activeCommunityId) return;
+
+    function refreshVisibleMarketplaceNeeds() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      void loadMarketplaceNeeds(true);
+    }
+
+    const refreshTimer = window.setInterval(
+      refreshVisibleMarketplaceNeeds,
+      30000
+    );
+    window.addEventListener("focus", refreshVisibleMarketplaceNeeds);
+    document.addEventListener(
+      "visibilitychange",
+      refreshVisibleMarketplaceNeeds
+    );
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshVisibleMarketplaceNeeds);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshVisibleMarketplaceNeeds
+      );
+    };
+  }, [activeCommunityId, loadMarketplaceNeeds]);
 
   function toggleSection(key: keyof SectionState) {
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
@@ -6025,6 +6094,67 @@ export default function MarketplacePage() {
   useEffect(() => {
     void loadPage();
   }, [loadPage, selectedClanId]);
+
+  const refreshMarketplaceDirectory = useCallback(async () => {
+    if (!activeCommunityId) return;
+
+    const [shopsRes, productsRes] = await Promise.all([
+      getMarketplaceShops({
+        clan_id: activeCommunityId,
+        only_active: true,
+        limit: 200,
+      }).catch(() => ({ items: [] })),
+      getMarketplaceProducts({
+        clan_id: activeCommunityId,
+        only_active: true,
+        include_reposted: false,
+        limit: 200,
+      }).catch(() => ({ items: [] })),
+    ]);
+
+    const shopRows = rowsOf<any>(shopsRes)
+      .map((row) => normalizeMarketplaceShop(row))
+      .filter(Boolean)
+      .filter(
+        (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
+      ) as MarketplaceShop[];
+    const productRows = rowsOf<any>(productsRes)
+      .map((row) => normalizeMarketplaceDirectoryProduct(row))
+      .filter(Boolean) as MarketplaceDirectoryProduct[];
+
+    setShops(shopRows);
+    setMarketplaceDirectoryProducts(productRows);
+  }, [activeCommunityId]);
+
+  useEffect(() => {
+    if (!activeCommunityId) return;
+
+    function refreshVisibleMarketplaceDirectory() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      void refreshMarketplaceDirectory();
+    }
+
+    const refreshTimer = window.setInterval(
+      refreshVisibleMarketplaceDirectory,
+      30000
+    );
+    window.addEventListener("focus", refreshVisibleMarketplaceDirectory);
+    document.addEventListener(
+      "visibilitychange",
+      refreshVisibleMarketplaceDirectory
+    );
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshVisibleMarketplaceDirectory);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshVisibleMarketplaceDirectory
+      );
+    };
+  }, [activeCommunityId, refreshMarketplaceDirectory]);
 
   async function preparePublicShopLink(): Promise<string> {
     if (publicShopPrepareInFlightRef.current) {

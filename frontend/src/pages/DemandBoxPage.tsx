@@ -961,6 +961,70 @@ export default function DemandBoxPage() {
   }, [loadPage, selectedClanId]);
 
   useEffect(() => {
+    if (!selectedClanId) return;
+
+    let alive = true;
+    let requestSequence = 0;
+
+    async function refreshVisibleDemandRows() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      const requestId = requestSequence + 1;
+      requestSequence = requestId;
+      const [myRes, visibleRes, visibleProbeRes] = await Promise.all([
+        listMarketplaceRequests({
+          clan_id: null,
+          mine_only: true,
+          status: "open",
+          limit: DEMAND_BOX_PAGE_SIZE,
+          offset: 0,
+          fresh: true,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          clan_id: selectedClanId,
+          mine_only: false,
+          status: "open",
+          limit: DEMAND_BOX_PAGE_SIZE,
+          offset: 0,
+          fresh: true,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          clan_id: selectedClanId,
+          mine_only: false,
+          status: "open",
+          limit: 1,
+          offset: DEMAND_BOX_PAGE_SIZE,
+          fresh: true,
+        }).catch(() => []),
+      ]);
+
+      if (!alive || requestId !== requestSequence) return;
+
+      const visibleAll = rowsOf<DemandRow>(visibleRes);
+      setMyOpenRows(rowsOf<DemandRow>(myRes));
+      setVisibleRows(visibleAll.filter((row) => !isMineRow(row, me)));
+      setVisibleRowsRawLoaded(visibleAll.length);
+      setHasMoreVisibleRows(rowsOf<DemandRow>(visibleProbeRes).length > 0);
+    }
+
+    const refreshTimer = window.setInterval(() => {
+      void refreshVisibleDemandRows();
+    }, 30000);
+
+    window.addEventListener("focus", refreshVisibleDemandRows);
+    document.addEventListener("visibilitychange", refreshVisibleDemandRows);
+
+    return () => {
+      alive = false;
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshVisibleDemandRows);
+      document.removeEventListener("visibilitychange", refreshVisibleDemandRows);
+    };
+  }, [me, selectedClanId]);
+
+  useEffect(() => {
     if (!selectedClanId) {
       setRelayPolicy(null);
       return;

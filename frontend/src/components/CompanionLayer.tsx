@@ -398,7 +398,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       }
       lastUrgentPollRef.current = now;
 
-      const result = await getMyNotifications(20, true).catch(() => null);
+      const result = await getMyNotifications(20, true, { fresh: true }).catch(
+        () => null
+      );
       if (!alive || !result) return;
 
       const rows = Array.isArray(result?.items) ? result.items : [];

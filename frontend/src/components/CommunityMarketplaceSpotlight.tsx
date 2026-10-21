@@ -207,6 +207,7 @@ export default function CommunityMarketplaceSpotlight() {
         clan_id: clanId,
         active_only: true,
         limit: 10,
+        fresh: true,
       }).catch(() => ({ items: [] }));
 
       const scopedFeed = Array.isArray(scopedFeedRes?.items) ? scopedFeedRes.items : [];
@@ -222,6 +223,7 @@ export default function CommunityMarketplaceSpotlight() {
           clan_id: null,
           active_only: true,
           limit: 10,
+          fresh: true,
         }).catch(() => ({ items: [] }));
 
         const fallbackFeed = Array.isArray(fallbackFeedRes?.items)

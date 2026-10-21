@@ -5738,9 +5738,13 @@ export async function postAdminCommunityDomainLifecycle(payload: {
 
 export async function getMyNotifications(
   limit: number = 20,
-  unreadOnly: boolean = false
+  unreadOnly: boolean = false,
+  options?: { fresh?: boolean }
 ): Promise<any> {
   const queryParams = { limit, unread_only: unreadOnly };
+  if (options?.fresh) {
+    clearStartupSectionCacheByLabel("getMyNotifications");
+  }
   return cachedStartupSectionRead(
     startupSectionCacheKey("getMyNotifications", queryParams),
     () =>
@@ -7233,12 +7237,14 @@ export async function createMarketplaceBroadcast(payload: {
 
   for (const body of attempts) {
     try {
-      return await httpJson(
+      const created = await httpJson(
         "/marketplace/broadcasts",
         "POST",
         body,
         options
       );
+      clearStartupSectionCacheByLabel("getMarketplaceBroadcasts");
+      return created;
     } catch (err) {
       lastError = err;
       if (!(err instanceof HttpStatusError) || err.status !== 400) {
@@ -7255,7 +7261,11 @@ export async function getMarketplaceBroadcasts(params?: {
   clan_id?: number | null;
   active_only?: boolean;
   limit?: number;
+  fresh?: boolean;
 }): Promise<any> {
+  if (params?.fresh) {
+    clearStartupSectionCacheByLabel("getMarketplaceBroadcasts");
+  }
   const effectiveClanId =
     params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
   const clanWasImplicit =
@@ -8754,7 +8764,11 @@ export async function listMarketplaceRequests(params?: {
   clan_id?: number | null;
   limit?: number;
   offset?: number;
+  fresh?: boolean;
 }): Promise<MarketplaceRequestItem[]> {
+  if (params?.fresh) {
+    clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  }
   const effectiveClanId =
     params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
 
