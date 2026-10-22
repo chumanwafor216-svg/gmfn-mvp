@@ -34,7 +34,10 @@ export type DashboardAttentionInput = {
   actNowCount: number;
   unreadCount: number;
   actionableCount: number;
+  demandActionable?: boolean;
   issueKeys?: string[];
+  issueTitle?: string;
+  issueDetail?: string;
   scopeKey?: string;
   sourceTitles: string[];
   focusBehindCount: number;
@@ -187,7 +190,10 @@ function pickSourceKind(input: DashboardAttentionInput): DashboardAttentionSourc
   if (input.userClass === "setup" || input.nextRouteKey === "trust-slip") {
     return "setup";
   }
-  if (input.userClass === "demand" || input.nextRouteKey === "demand-box") {
+  if (
+    input.demandActionable &&
+    (input.userClass === "demand" || input.nextRouteKey === "demand-box")
+  ) {
     return "demand";
   }
   if (input.actionableCount > 0) {
@@ -378,31 +384,14 @@ function buildAttentionCopy(
   }
 
   if (sourceKind === "demand") {
+    const issueTitle = cleanText(input.issueTitle || "");
+    const issueDetail = cleanText(input.issueDetail || "");
     return {
-      title: pickByShowCount(
-        stage === "early"
-          ? [
-              "A live need is still waiting.",
-              "A request still needs your answer.",
-            ]
-          : stage === "followup"
-          ? [
-              "This waiting need is now more urgent.",
-              "The unanswered need is still open.",
-            ]
-          : [
-              "This unanswered need is still affecting the evidence reading.",
-              "A waiting need is still open and may now cost confidence.",
-            ],
-        showCount
-      ),
+      title: issueTitle || "A request was sent directly to you.",
       intro:
-        stage === "early"
-          ? "A visible need is waiting, and delay can change how people read your follow-through."
-          : stage === "followup"
-          ? "The app is still seeing an open need without a clean answer."
-          : "This is now a repeated reminder because the waiting need is still unresolved.",
-      ctaLabel: `Open ${nextRouteLabel}`,
+        issueDetail ||
+        "Open the exact request to decide whether you can respond. You are not committed until you choose to answer.",
+      ctaLabel: "Open exact request",
       ctaTo: input.nextRouteTo,
       ...notificationsSecondary,
     };

@@ -180,6 +180,7 @@ def test_informational_marketplace_notifications_do_not_become_attention_work(
     informational_kinds = (
         "marketplace.shop.broadcast_created",
         "marketplace.shop.product_created",
+        "demand_new",
         "demand_posted",
     )
     with engine.begin() as conn:
@@ -225,7 +226,7 @@ def test_informational_marketplace_notifications_do_not_become_attention_work(
         if signal["source"] == "action_inbox"
     ]
 
-    assert len(notification_signals) == 3
+    assert len(notification_signals) == 4
     assert all(signal["kind"] == "condition" for signal in notification_signals)
     assert all(signal["urgency"] == "green" for signal in notification_signals)
     assert all(signal["countInPulse"] is False for signal in notification_signals)
@@ -239,5 +240,5 @@ def test_informational_marketplace_notifications_do_not_become_attention_work(
     matching_items = [
         item for item in notification_items if item["kind"] in informational_kinds
     ]
-    assert len(matching_items) == 3
+    assert len(matching_items) == 4
     assert all(item["attention_actionable"] is False for item in matching_items)

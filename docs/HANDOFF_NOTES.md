@@ -1363,3 +1363,46 @@ under `docs/` or `docs/archive/`, then link that file here.
   data was mutated during diagnosis. After this fix is deployed, the admin
   must refresh Join Requests and tap Approve now as admin. Only the resulting
   approved response and activation handoff will close the reported incident.
+
+## Demand notification meaning and exact-request repair - 2026-10-22
+
+- A pilot phone screenshot showed the Dashboard Attention Guide saying `A
+  request still needs your answer` and `delay can change how people read your
+  follow-through`, then opening the general DemandBox queue. The visible item
+  was a community request such as `Dairy juice`; it was not Shop Diary work.
+- Root cause was semantic, not visual. `demand_new` was broadcast to every
+  eligible community member and treated as personal actionable work. A second
+  synthetic Dashboard rule also promoted any high-urgency community demand to
+  a personal Attention Guide obligation. Neither condition proved that the
+  member had been asked or had promised to answer.
+- General `demand_new` and requester-side `demand_posted` notices are now
+  informational. Community-wide urgent demand remains visible as DemandBox
+  context but cannot auto-open the personal Attention Guide. Only
+  `demand_tagged` may become personal demand attention.
+- New DemandBox notification links carry the exact `demand_id`. The existing
+  DemandBox direct-link contract opens that one request card. Dashboard also
+  recovers an exact request for historic tagged notices by matching the saved
+  request title when the old URL lacks an id.
+- A tagged popup now names the exact request when available, says that the
+  member is not committed until they choose to answer, and labels the action
+  `Open exact request`. Opening it marks the originating notification read;
+  read, closed, missing, or expired tagged requests no longer count as live
+  attention work.
+- Shop Diary and the frozen Dashboard Market Wisdom presentation were not
+  changed. DemandBox remains the request-lifecycle owner; Shop Diary remains
+  the separate shop-owned activity-history surface.
+- Verification passed: 22 focused Marketplace Request/Attention Spine tests,
+  11 Notification Route/Web Push tests, Python compilation, targeted ESLint,
+  Dashboard attention semantics, Dashboard action audit, DemandBox front
+  package audit, Notifications inventory audit, the complete protected-button
+  freeze audit, the 291-module frontend production build, and the DemandBox
+  real-browser phone smoke at 390x844 and 360x780.
+- One stale Notifications audit initially rejected the already-approved fresh
+  bounded call `getMyNotifications(20, false, { fresh: true })`. Its assertion
+  was reconciled to require that exact fresh 20-row contract; no Notifications
+  page behavior changed.
+- Remaining production truth: synthetic/local verification cannot prove the
+  affected handset has refreshed its cached frontend or that the exact live
+  Dairy-juice request is still open. After deployment, reload Dashboard: a
+  general community request must not open Attention Guide; a newly tagged test
+  request must show its title, open only its card, and stay retired afterward.

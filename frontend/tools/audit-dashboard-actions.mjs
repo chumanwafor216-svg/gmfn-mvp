@@ -231,6 +231,26 @@ assertContains(
 );
 
 assertContains(
+  /targetedDemandAttentionItem[\s\S]*?kind\)\.toLowerCase\(\) === "demand_tagged"[\s\S]*?dashboardDemandIdFromTarget[\s\S]*?appendDashboardQueryParam\([\s\S]*?"demand_id"/,
+  "Dashboard must reserve personal demand attention for tagged requests and route historic notices to the exact matching request when possible."
+);
+
+assertContains(
+  /id: "synthetic-demand-box"[\s\S]*?bucket: urgentCount > 0 \? "actNow" : "dueSoon"[\s\S]*?attentionActionable: false/,
+  "Community-wide urgent demand may stay visible as context but must not become a personal Attention Guide obligation."
+);
+
+assertContains(
+  /function openAttentionTarget\([\s\S]*?attentionDisplaySignal\.sourceKind === "demand"[\s\S]*?markNotificationRead\(notificationId\)[\s\S]*?navigateWithOrigin/,
+  "Opening a tagged demand from the Attention Guide must retire the originating notification before continuing to the request."
+);
+
+assertEngineContains(
+  /input\.demandActionable &&[\s\S]*?input\.nextRouteKey === "demand-box"[\s\S]*?title: issueTitle \|\| "A request was sent directly to you\."[\s\S]*?ctaLabel: "Open exact request"/,
+  "Demand attention must require a direct tagged request, explain that answering is optional, and open the exact request."
+);
+
+assertContains(
   /for \(const item of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
   "Dashboard guidance duplicates must preserve informational notification semantics."
 );
@@ -255,11 +275,11 @@ assertEngineNotContains(
   "Dashboard attention must not infer a persistent urgent problem from elapsed time alone."
 );
 
-if (!/marketplace\.shop\.broadcast_created[\s\S]*?demand_posted/.test(trustSemanticsText)) {
+if (!/marketplace\.shop\.broadcast_created[\s\S]*?demand_new[\s\S]*?demand_posted/.test(trustSemanticsText)) {
   findings.push({
     file: trustSemanticsFile,
     line: 1,
-    message: "Marketplace broadcasts, product announcements, and demand posts must stay informational.",
+    message: "Marketplace broadcasts, product announcements, general demand notices, and demand posts must stay informational.",
     text: "Expected informational notification kinds were not found.",
   });
 }

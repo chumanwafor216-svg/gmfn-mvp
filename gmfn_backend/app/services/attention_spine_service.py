@@ -11,7 +11,7 @@ from app.db.notification_models import Notification
 from app.services.community_meeting_service import list_community_meetings
 from app.services.notification_service import (
     ensure_join_review_notifications,
-    notification_requires_attention,
+    notification_attention_actionable,
     normalize_notification_action,
 )
 
@@ -223,7 +223,7 @@ def _notification_signals(db: Session, *, user_id: int, limit: int) -> List[Dict
     )
     signals: List[Dict[str, Any]] = []
     for row in rows:
-        attention_actionable = notification_requires_attention(kind=row.kind)
+        attention_actionable = notification_attention_actionable(db, row)
         action_url, action_label = normalize_notification_action(
             kind=row.kind,
             title=row.title,

@@ -20,6 +20,7 @@ import {
   getStoredGmfnId,
   setSelectedClanId,
   listMarketplaceRequests,
+  markNotificationRead,
   removeMyProfileImage,
   recordMarketWisdomExposure,
   recordFocusCommitmentTrustEvent,
@@ -158,6 +159,8 @@ type DashboardToolsLane = {
 
 type DashboardNoticeItem = {
   id: string;
+  notificationId?: number;
+  kind?: string;
   title: string;
   detail: string;
   ctaLabel: string;
@@ -1348,6 +1351,24 @@ function sumNumericRecordValues(value: unknown): number | null {
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function dashboardNotificationId(value: unknown): number {
+  const direct = positiveNumber(value);
+  if (direct) return direct;
+  const match = safeStr(value).match(/(?:notification:|raw-)(\d+)$/i);
+  return match ? positiveNumber(match[1]) : 0;
+}
+
+function dashboardDemandIdFromTarget(value: unknown): number {
+  const target = safeStr(value);
+  if (!target) return 0;
+  try {
+    const parsed = new URL(target, "http://dashboard.local");
+    return positiveNumber(parsed.searchParams.get("demand_id"));
+  } catch {
+    return 0;
+  }
 }
 
 function isDashboardDemandMine(item: DemandItem, user: any): boolean {
@@ -4253,6 +4274,8 @@ export default function DashboardPage() {
 
     function makeItem(params: {
       id: string;
+      notificationId?: number;
+      kind?: string;
       title: string;
       detail: string;
       ctaLabel: string;
@@ -4268,6 +4291,8 @@ export default function DashboardPage() {
 
       return {
         id: params.id,
+        notificationId: positiveNumber(params.notificationId) || undefined,
+        kind: safeStr(params.kind) || undefined,
         title: safeStr(params.title || "Update"),
         detail: safeStr(
           params.detail || "Review this update and continue from the right page."
@@ -4292,6 +4317,8 @@ export default function DashboardPage() {
       pushItem(
         makeItem({
           id: `guidance-act-${safeStr(item.id) || safeStr(item.title)}`,
+          notificationId: dashboardNotificationId(item.id),
+          kind: safeStr(item.kind),
           title: item.title,
           detail: item.detail,
           ctaLabel: item.ctaLabel,
@@ -4314,6 +4341,8 @@ export default function DashboardPage() {
       pushItem(
         makeItem({
           id: `guidance-due-${safeStr(item.id) || safeStr(item.title)}`,
+          notificationId: dashboardNotificationId(item.id),
+          kind: safeStr(item.kind),
           title: item.title,
           detail: item.detail,
           ctaLabel: item.ctaLabel,
@@ -4335,6 +4364,8 @@ export default function DashboardPage() {
       pushItem(
         makeItem({
           id: `guidance-watch-${safeStr(item.id) || safeStr(item.title)}`,
+          notificationId: dashboardNotificationId(item.id),
+          kind: safeStr(item.kind),
           title: item.title,
           detail: item.detail,
           ctaLabel: item.ctaLabel,
@@ -4396,6 +4427,8 @@ export default function DashboardPage() {
       pushItem(
         makeItem({
           id: `raw-${safeStr(item.id) || title}`,
+          notificationId: dashboardNotificationId(item.id),
+          kind: safeStr(item.kind),
           title,
           detail,
           ctaLabel,
@@ -4458,7 +4491,9 @@ export default function DashboardPage() {
           source: "Your DemandBox",
           bucket: urgentCount > 0 ? "actNow" : "dueSoon",
           scoreBoost: urgentCount > 0 ? 14 : 8,
-          attentionActionable: urgentCount > 0,
+          // A community-wide urgent request is context, not a personal duty.
+          // Direct demand_tagged notifications own personal attention.
+          attentionActionable: false,
         })
       );
     }
@@ -4577,8 +4612,19 @@ export default function DashboardPage() {
       if (existing && item.unread && !existing.unread) {
         deduped.set(key, {
           ...existing,
+          notificationId: existing.notificationId || item.notificationId,
+          kind: existing.kind || item.kind,
           unread: true,
           score: existing.score + 5,
+        });
+        continue;
+      }
+
+      if (existing && !existing.notificationId && item.notificationId) {
+        deduped.set(key, {
+          ...existing,
+          notificationId: item.notificationId,
+          kind: existing.kind || item.kind,
         });
       }
     }
@@ -4915,6 +4961,55 @@ export default function DashboardPage() {
       ),
     [dashboardNoticeSummary.allRows]
   );
+
+  const targetedDemandAttentionItem = useMemo(
+    () =>
+      dashboardAttentionActionableRows.find(
+        (item) => safeStr(item.kind).toLowerCase() === "demand_tagged"
+      ) || null,
+    [dashboardAttentionActionableRows]
+  );
+
+  const targetedDemandRequest = useMemo(() => {
+    if (!targetedDemandAttentionItem) return null;
+
+    const directDemandId = dashboardDemandIdFromTarget(
+      targetedDemandAttentionItem.ctaTo
+    );
+    if (directDemandId) {
+      const directMatch = demandItems.find(
+        (item) => positiveNumber(item.id) === directDemandId
+      );
+      if (directMatch) return directMatch;
+    }
+
+    const notificationText = [
+      targetedDemandAttentionItem.title,
+      targetedDemandAttentionItem.detail,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      demandItems.find((item) => {
+        const title = safeStr(item.title).toLowerCase();
+        return Boolean(title && notificationText.includes(title));
+      }) || null
+    );
+  }, [demandItems, targetedDemandAttentionItem]);
+
+  const targetedDemandAttentionTo = useMemo(() => {
+    if (!targetedDemandAttentionItem) return "";
+    const demandId = positiveNumber(targetedDemandRequest?.id);
+    if (!demandId || dashboardDemandIdFromTarget(targetedDemandAttentionItem.ctaTo)) {
+      return targetedDemandAttentionItem.ctaTo;
+    }
+    return appendDashboardQueryParam(
+      targetedDemandAttentionItem.ctaTo,
+      "demand_id",
+      String(demandId)
+    );
+  }, [targetedDemandAttentionItem, targetedDemandRequest]);
 
   const urgentDemandItems = useMemo(
     () =>
@@ -5751,18 +5846,37 @@ export default function DashboardPage() {
   );
 
   const attentionSignal = useMemo(
-    () =>
-      buildDashboardAttentionSignal({
+    () => {
+      const useTargetedDemand =
+        priorityRoutes.primaryRoute.key === "demand-box" &&
+        Boolean(targetedDemandAttentionItem);
+      const exactDemandTitle = safeStr(targetedDemandRequest?.title);
+
+      return buildDashboardAttentionSignal({
         userClass: userOperationalClass,
         nextRouteKey: priorityRoutes.primaryRoute.key,
         nextRouteLabel: routeSurfaceLabel(priorityRoutes.primaryRoute),
-        nextRouteTo: priorityRoutes.primaryRoute.to,
+        nextRouteTo:
+          useTargetedDemand && targetedDemandAttentionTo
+            ? targetedDemandAttentionTo
+            : priorityRoutes.primaryRoute.to,
         nextRouteCopy,
         totalNotifications: dashboardNoticeTotalCount,
         actNowCount: dashboardNoticeSummary.counts.actNow,
         unreadCount: dashboardNoticeSummary.counts.unread,
         actionableCount: dashboardNoticeSummary.counts.actionable,
+        demandActionable: Boolean(targetedDemandAttentionItem),
         issueKeys: dashboardAttentionActionableRows.map((item) => item.id),
+        issueTitle: useTargetedDemand
+          ? exactDemandTitle
+            ? `Request for you: ${exactDemandTitle}`
+            : targetedDemandAttentionItem?.title
+          : undefined,
+        issueDetail: useTargetedDemand
+          ? exactDemandTitle
+            ? "This was sent directly to you. Open it to decide whether you can help; you are not committed until you answer."
+            : targetedDemandAttentionItem?.detail
+          : undefined,
         scopeKey: [
           selectedClanId || "no-community",
           openTrust.classText,
@@ -5780,7 +5894,8 @@ export default function DashboardPage() {
         notificationsTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         nowMs: attentionClockMs,
         storedState: attentionState,
-      }),
+      });
+    },
     [
       userOperationalClass,
       priorityRoutes.primaryRoute,
@@ -5790,6 +5905,9 @@ export default function DashboardPage() {
       dashboardNoticeSummary.counts.unread,
       dashboardNoticeSummary.counts.actionable,
       dashboardAttentionActionableRows,
+      targetedDemandAttentionItem,
+      targetedDemandRequest,
+      targetedDemandAttentionTo,
       selectedClanId,
       openTrust,
       cci,
@@ -6067,6 +6185,22 @@ export default function DashboardPage() {
     const nowIso = new Date().toISOString();
     setAttentionPopupVisible(false);
     setAttentionState(markDashboardAttentionActed(attentionSignal.state, nowIso));
+
+    const notificationId =
+      attentionDisplaySignal.sourceKind === "demand"
+        ? positiveNumber(targetedDemandAttentionItem?.notificationId)
+        : 0;
+    if (notificationId) {
+      setNotices((current) =>
+        current.map((item) =>
+          positiveNumber(item.id) === notificationId
+            ? { ...item, is_read: true }
+            : item
+        )
+      );
+      void markNotificationRead(notificationId).catch(() => undefined);
+    }
+
     navigateWithOrigin(navigate, to, location);
   }
 

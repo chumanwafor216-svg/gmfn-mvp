@@ -7,7 +7,15 @@ from urllib.parse import parse_qs, urlparse
 from sqlalchemy.orm import Session
 
 from app.core.auth import is_user_activation_pending
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, RoscaParticipant, RoscaRun, User
+from app.db.models import (
+    Clan,
+    ClanJoinRequest,
+    ClanMembership,
+    MarketplaceRequest,
+    RoscaParticipant,
+    RoscaRun,
+    User,
+)
 from app.db.notification_models import Notification
 from app.services.web_push_service import dispatch_web_push_for_notification
 
@@ -17,6 +25,7 @@ ATTENTION_INFORMATIONAL_NOTIFICATION_KINDS = frozenset(
     {
         "marketplace.shop.broadcast_created",
         "marketplace.shop.product_created",
+        "demand_new",
         "demand_posted",
     }
 )
@@ -83,6 +92,57 @@ def notification_requires_attention(*, kind: Any) -> bool:
     """Separate announcements from notifications that represent pending work."""
 
     return _safe_str(kind).lower() not in ATTENTION_INFORMATIONAL_NOTIFICATION_KINDS
+
+
+def _demand_request_id_from_action_url(action_url: Any) -> int:
+    raw = _safe_str(action_url)
+    if not raw or "demand_id" not in raw:
+        return 0
+
+    parsed = urlparse(raw)
+    request_values = parse_qs(parsed.query).get("demand_id") or []
+    for value in request_values:
+        try:
+            request_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if request_id > 0:
+            return request_id
+    return 0
+
+
+def notification_attention_actionable(
+    db: Session,
+    notification: Notification,
+) -> bool:
+    """Return true only while an unread notification still represents live work."""
+
+    if bool(notification.is_read):
+        return False
+
+    kind = _safe_str(notification.kind).lower()
+    if not notification_requires_attention(kind=kind):
+        return False
+
+    if kind != "demand_tagged":
+        return True
+
+    request_id = _demand_request_id_from_action_url(notification.action_url)
+    if request_id <= 0:
+        # Historic tagged notices did not carry an exact request id. Preserve
+        # their existing actionability rather than guessing at a request.
+        return True
+
+    request = db.get(MarketplaceRequest, int(request_id))
+    if not request or _safe_str(getattr(request, "status", None)).lower() != "open":
+        return False
+
+    expires_at = getattr(request, "expires_at", None)
+    if expires_at is None:
+        return True
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at.astimezone(timezone.utc) >= _now_utc()
 
 
 def _join_request_id_from_action_url(action_url: Any) -> int:
@@ -524,7 +584,7 @@ def list_my_notifications(
                 "action_url": normalized_action_url,
                 "action_label": normalized_action_label,
                 "is_read": bool(r.is_read),
-                "attention_actionable": notification_requires_attention(kind=r.kind),
+                "attention_actionable": notification_attention_actionable(db, r),
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "read_at": r.read_at.isoformat() if r.read_at else None,
                 **(

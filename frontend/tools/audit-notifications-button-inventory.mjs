@@ -332,8 +332,8 @@ assertApiContains(
 );
 
 assertContains(
-  /getMyNotifications\(20, false\)/,
-  "Notifications recent feed must request at most the bounded 20-notification pilot read."
+  /getMyNotifications\(20, false, \{ fresh: true \}\)/,
+  "Notifications recent feed must request the bounded 20-notification pilot read without accepting stale startup data."
 );
 
 assertGuidanceContains(

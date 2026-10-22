@@ -8,6 +8,10 @@ from sqlalchemy import text
 from app.api.routes import marketplace_requests, pool
 from app.db.database import SessionLocal, engine
 from app.schemas.marketplace_requests import MarketplaceRequestCreate
+from app.services.notification_service import (
+    list_my_notifications,
+    mark_notification_read,
+)
 
 
 class Obj:
@@ -481,13 +485,13 @@ def test_marketplace_request_surfaces_ask_community_routing_metadata_and_links()
             "user_id": 2,
             "kind": "demand_tagged",
             "title": "Demand tagged for you",
-            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged&demand_id=1",
         },
         {
             "user_id": 1,
             "kind": "demand_posted",
             "title": "Your request is live",
-            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community&demand_id=1",
         },
     ]
 
@@ -594,15 +598,60 @@ def test_marketplace_request_protected_target_is_only_visible_to_owner_and_match
             "user_id": 2,
             "kind": "demand_tagged",
             "title": "Private request for you",
-            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged&demand_id=1",
         },
         {
             "user_id": 1,
             "kind": "demand_posted",
             "title": "Your request is live",
-            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged&demand_id=1",
         },
     ]
+
+
+def test_tagged_demand_notification_is_actionable_only_while_unread_and_open():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        request = marketplace_requests.create_marketplace_request(
+            MarketplaceRequestCreate(
+                clan_id=1,
+                title="Need dairy juice from @GSN-U-RESPONDER",
+                description="Please confirm whether this can be supplied.",
+                category="Groceries",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        first_items = list_my_notifications(db, user_id=2)["items"]
+        tagged = next(item for item in first_items if item["kind"] == "demand_tagged")
+        assert tagged["attention_actionable"] is True
+        assert tagged["action_url"].endswith(f"&demand_id={request.id}")
+
+        mark_notification_read(
+            db,
+            user_id=2,
+            notification_id=int(tagged["id"]),
+        )
+        read_items = list_my_notifications(db, user_id=2)["items"]
+        read_tagged = next(item for item in read_items if item["id"] == tagged["id"])
+        assert read_tagged["attention_actionable"] is False
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE notifications SET is_read = 0, read_at = NULL WHERE id = :id"),
+            {"id": int(tagged["id"])},
+        )
+        conn.execute(
+            text("UPDATE marketplace_requests SET status = 'closed' WHERE id = :id"),
+            {"id": int(request.id)},
+        )
+
+    with SessionLocal() as db:
+        closed_items = list_my_notifications(db, user_id=2)["items"]
+        closed_tagged = next(item for item in closed_items if item["id"] == tagged["id"])
+        assert closed_tagged["attention_actionable"] is False
 
 
 def test_marketplace_request_rejects_protected_target_without_one_matched_member():
@@ -683,13 +732,13 @@ def test_marketplace_request_keeps_unmatched_handles_as_text_only():
             "user_id": 2,
             "kind": "demand_new",
             "title": "New request near you",
-            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community&demand_id=1",
         },
         {
             "user_id": 1,
             "kind": "demand_posted",
             "title": "Your request is live",
-            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community&demand_id=1",
         },
     ]
 

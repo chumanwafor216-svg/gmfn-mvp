@@ -468,6 +468,7 @@ def _request_routing_hint(
 
 def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> str:
     clan_id = getattr(row, "clan_id", None)
+    request_id = int(getattr(row, "id", 0) or 0)
     queue_key = queue or (
         "tagged"
         if _is_protected_target_request(row)
@@ -475,9 +476,13 @@ def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> st
         if _is_ask_community_request(row)
         else "open"
     )
+    query_parts: list[str] = []
     if clan_id:
-        return f"/app/demand-box?clan_id={int(clan_id)}&queue={queue_key}"
-    return f"/app/demand-box?queue={queue_key}"
+        query_parts.append(f"clan_id={int(clan_id)}")
+    query_parts.append(f"queue={queue_key}")
+    if request_id > 0:
+        query_parts.append(f"demand_id={request_id}")
+    return f"/app/demand-box?{'&'.join(query_parts)}"
 
 
 def _to_out(

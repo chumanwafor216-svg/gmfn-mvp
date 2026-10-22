@@ -83,6 +83,7 @@ try {
   for (const kind of [
     "marketplace.shop.broadcast_created",
     "marketplace.shop.product_created",
+    "demand_new",
     "demand_posted",
     "approval_request",
   ]) {
@@ -145,6 +146,36 @@ try {
   });
   assert.equal(actionableSignal.active, true);
   assert.equal(actionableSignal.sourceKind, "approval");
+
+  const targetedDemandSignal = engine.buildDashboardAttentionSignal({
+    ...baseInput,
+    userClass: "demand",
+    nextRouteKey: "demand-box",
+    nextRouteLabel: "DemandBox",
+    nextRouteTo: "/app/demand-box?clan_id=1&queue=tagged&demand_id=9",
+    actionableCount: 1,
+    demandActionable: true,
+    issueKeys: ["demand:9"],
+    issueTitle: "Request for you: Dairy juice",
+    issueDetail:
+      "This was sent directly to you. Open it to decide whether you can help; you are not committed until you answer.",
+  });
+  assert.equal(targetedDemandSignal.active, true);
+  assert.equal(targetedDemandSignal.sourceKind, "demand");
+  assert.equal(targetedDemandSignal.title, "Request for you: Dairy juice.");
+  assert.match(targetedDemandSignal.intro, /not committed until you answer/i);
+  assert.equal(targetedDemandSignal.ctaLabel, "Open exact request");
+  assert.match(targetedDemandSignal.ctaTo, /demand_id=9/);
+
+  const generalDemandSignal = engine.buildDashboardAttentionSignal({
+    ...baseInput,
+    userClass: "demand",
+    nextRouteKey: "demand-box",
+    actionableCount: 1,
+    demandActionable: false,
+    issueKeys: ["other:4"],
+  });
+  assert.notEqual(generalDemandSignal.sourceKind, "demand");
 
   const repairSignal = engine.buildDashboardAttentionSignal({
     ...baseInput,
