@@ -1,4 +1,4 @@
-/* global console, document, localStorage, window, URL, Event, CustomEvent, HTMLDetailsElement, HTMLElement */
+/* global console, document, localStorage, window, URL, Event, CustomEvent, HTMLDetailsElement, HTMLElement, Buffer */
 
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
@@ -11,8 +11,37 @@ const visitorGsnId = "GSN-U-SPOTVISITOR";
 const activatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const authorizedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const syntheticSpotlightImagePath = '/synthetic-spotlight.svg';
+const syntheticSpotlightAudioPrefix = '/synthetic-spotlight-audio-';
 const syntheticSpotlightImage =
   `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f5fb7'/></svg>`;
+
+function syntheticSpotlightAudio() {
+  const sampleRate = 8_000;
+  const durationSeconds = 12;
+  const sampleCount = sampleRate * durationSeconds;
+  const dataLength = sampleCount * 2;
+  const audio = Buffer.alloc(44 + dataLength);
+  audio.write('RIFF', 0, 'ascii');
+  audio.writeUInt32LE(36 + dataLength, 4);
+  audio.write('WAVE', 8, 'ascii');
+  audio.write('fmt ', 12, 'ascii');
+  audio.writeUInt32LE(16, 16);
+  audio.writeUInt16LE(1, 20);
+  audio.writeUInt16LE(1, 22);
+  audio.writeUInt32LE(sampleRate, 24);
+  audio.writeUInt32LE(sampleRate * 2, 28);
+  audio.writeUInt16LE(2, 32);
+  audio.writeUInt16LE(16, 34);
+  audio.write('data', 36, 'ascii');
+  audio.writeUInt32LE(dataLength, 40);
+  for (let index = 0; index < sampleCount; index += 1) {
+    const sample = Math.round(
+      Math.sin((2 * Math.PI * 220 * index) / sampleRate) * 900
+    );
+    audio.writeInt16LE(sample, 44 + index * 2);
+  }
+  return audio;
+}
 const shop = {
   id: 101,
   shop_id: 101,
@@ -111,6 +140,7 @@ function spotlightItem({
   priorityMode = "free",
   rotationWeight,
   imageUrl = syntheticSpotlightImagePath,
+  videoUrl = null,
 } = {}) {
   const canonicalOffset = Math.max(Number(streamIndex || 1) - 1, 0);
   return {
@@ -124,7 +154,7 @@ function spotlightItem({
     source_shop_whatsapp: "+441234567890",
     message: label,
     image_url: imageUrl,
-    video_url: null,
+    video_url: videoUrl,
     priority_mode: priorityMode,
     rotation_weight: rotationWeight,
     visibility_scope: "direct_communities",
@@ -227,7 +257,18 @@ async function revealSpotlightSurface(page) {
 
 async function installMocks(page, scenario) {
   await page.route("**/*", async (route) => {
-    if (new URL(route.request().url()).pathname === syntheticSpotlightImagePath) {
+    const requestPath = new URL(route.request().url()).pathname;
+    if (
+      requestPath.startsWith(syntheticSpotlightAudioPrefix) &&
+      requestPath.endsWith('.wav')
+    ) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'audio/wav',
+        body: syntheticSpotlightAudio(),
+      });
+    }
+    if (requestPath === syntheticSpotlightImagePath) {
       return route.fulfill({
         status: 200,
         contentType: 'image/svg+xml',
@@ -273,6 +314,11 @@ async function installMocks(page, scenario) {
           Number(scenario.explicitPreviewCanonicalCalls || 0) + 1;
       }
       scenario.canonicalCalls += 1;
+      if (scenario.expiredSession) {
+        return route.fulfill(
+          json({ detail: 'Synthetic expired Spotlight session.' }, 401)
+        );
+      }
       if (
         scenario.canonicalCalls > Number(scenario.canonicalFailureAfterCalls || 0) &&
         Number(scenario.canonicalFailuresRemaining || 0) > 0
@@ -327,6 +373,9 @@ async function installMocks(page, scenario) {
         canonical: true,
         streamIndex,
         imageUrl: scenario.mediaUnavailable ? null : undefined,
+        videoUrl: scenario.videoMedia
+          ? `${syntheticSpotlightAudioPrefix}${streamIndex}.wav`
+          : null,
         presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
       });
       const items = [item];
@@ -611,6 +660,59 @@ async function testDelayedOwnerAuthentication(browser, baseUrl) {
   return scenario;
 }
 
+async function testExpiredSpotlightSessionReturnsToSignIn(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: "live",
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    expiredSession: true,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await Promise.all([
+    page.waitForURL(/\/login\?session=expired&force=1/, {
+      timeout: 15_000,
+    }),
+    page
+      .locator('[data-public-shop-more="secondary"]')
+      .scrollIntoViewIfNeeded()
+      .catch(() => undefined),
+  ]);
+  await page
+    .getByText(
+      "Your previous sign-in expired while GSN was closed. Sign in again to continue.",
+      { exact: true }
+    )
+    .waitFor({ state: "visible", timeout: 15_000 });
+  const storedSession = await page.evaluate(() => ({
+    token: localStorage.getItem("access_token"),
+    identity: localStorage.getItem("gmfn_current_id"),
+    clan: localStorage.getItem("gmfn_selected_clan_id"),
+  }));
+  if (storedSession.token || storedSession.identity || storedSession.clan) {
+    throw new Error(
+      `Expired Public Shop session was not fully cleared: ${JSON.stringify(storedSession)}`
+    );
+  }
+  if (scenario.canonicalCalls !== 1) {
+    throw new Error(
+      `Expired Public Shop session retried instead of ending once: ${scenario.canonicalCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
 async function testVisitorCannotForceOwnerPreview(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
@@ -733,6 +835,63 @@ async function testMediaLessSpotlightNeverQualifies(browser, baseUrl) {
       `Media-less Spotlight counted exposure: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
     );
   }
+  await context.close();
+  return scenario;
+}
+
+async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 2,
+    videoMedia: true,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  const spotlightRail = page.locator('#public-shop-spotlight');
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await spotlightRail
+    .getByRole('button', { name: 'Turn video sound on' })
+    .tap();
+  await spotlightRail
+    .getByRole('button', { name: 'Turn video sound off' })
+    .waitFor({ state: 'visible', timeout: 10_000 });
+  await page.getByText('Community Spotlight 2', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await spotlightRail
+    .getByRole('button', { name: 'Turn video sound off' })
+    .waitFor({ state: 'visible', timeout: 10_000 });
+  const rotatedVideoState = await spotlightRail.locator('video').evaluate((video) => ({
+    muted: video.muted,
+    volume: video.volume,
+  }));
+  if (rotatedVideoState.muted || rotatedVideoState.volume <= 0) {
+    throw new Error(
+      `Spotlight sound did not persist across video rotation: ${JSON.stringify(rotatedVideoState)}`
+    );
+  }
+  await spotlightRail
+    .getByRole('button', { name: 'Turn video sound off' })
+    .tap();
+  await spotlightRail
+    .getByRole('button', { name: 'Turn video sound on' })
+    .waitFor({ state: 'visible', timeout: 10_000 });
   await context.close();
   return scenario;
 }
@@ -1104,9 +1263,11 @@ try {
   const results = [
     await testOwnerReopenPreviewBackAndResume(browser, baseUrl),
     await testDelayedOwnerAuthentication(browser, baseUrl),
+    await testExpiredSpotlightSessionReturnsToSignIn(browser, baseUrl),
     await testVisitorCannotForceOwnerPreview(browser, baseUrl),
     await testCanonicalIssuanceWaitsForVisibleSpotlightSurface(browser, baseUrl),
     await testMediaLessSpotlightNeverQualifies(browser, baseUrl),
+    await testSpotlightSoundPersistsAcrossRotation(browser, baseUrl),
     await testProductMediaRequiresVisibleDwell(browser, baseUrl),
     await testExpiredOwnerContentFailsClosed(browser, baseUrl),
     await testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(

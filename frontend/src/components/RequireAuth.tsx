@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, type Location as RouterLocation } from "react-router-dom";
 import { CardActionRow, StableCtaLink } from "./StableButton";
 import {
@@ -8,10 +8,8 @@ import {
   getMeWithToken,
   getMyIdentityRisk,
   getSelectedClanId,
+  logout,
   observeIdentityRisk,
-  setAccessToken,
-  setSelectedClanId,
-  setStoredGmfnId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { peekPublishRecoveryTarget } from "../lib/publishRecovery";
@@ -183,7 +181,17 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-async function getMeWithStoredTokenRetry(token: string): Promise<any> {
+async function getMeWithStoredTokenRetry(
+  token: string,
+  forceFresh = false
+): Promise<any> {
+  if (forceFresh) {
+    return getMeWithToken(token, {
+      fresh: true,
+      timeoutMs: SESSION_GATE_TIMEOUT_MS,
+    });
+  }
+
   try {
     return await getMe({ timeoutMs: SESSION_GATE_TIMEOUT_MS });
   } catch (error) {
@@ -261,9 +269,45 @@ export default function RequireAuth({ children, requireRole }: Props) {
   const [shellContext, setShellContext] =
     useState<AuthenticatedShellContext | null>(null);
   const [slowSessionCheck, setSlowSessionCheck] = useState(false);
+  const [foregroundSessionCheck, setForegroundSessionCheck] = useState(0);
+  const foregroundCheckRequestedRef = useRef(false);
+  const lastForegroundCheckAtRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    const requestForegroundSessionCheck = () => {
+      if (document.visibilityState && document.visibilityState !== "visible") {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastForegroundCheckAtRef.current < 1000) return;
+      lastForegroundCheckAtRef.current = now;
+      foregroundCheckRequestedRef.current = true;
+      setForegroundSessionCheck((version) => version + 1);
+    };
+
+    window.addEventListener("focus", requestForegroundSessionCheck);
+    window.addEventListener("online", requestForegroundSessionCheck);
+    document.addEventListener("visibilitychange", requestForegroundSessionCheck);
+
+    return () => {
+      window.removeEventListener("focus", requestForegroundSessionCheck);
+      window.removeEventListener("online", requestForegroundSessionCheck);
+      document.removeEventListener(
+        "visibilitychange",
+        requestForegroundSessionCheck
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
+    const forceFreshSessionCheck = foregroundCheckRequestedRef.current;
+    foregroundCheckRequestedRef.current = false;
 
     const finish = (nextAllowed: boolean, roleDenied = false) => {
       if (!active) return;
@@ -286,7 +330,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
         }
 
         const [meResult, currentClanResult] = await Promise.allSettled([
-          getMeWithStoredTokenRetry(tok),
+          getMeWithStoredTokenRetry(tok, forceFreshSessionCheck),
           getCurrentClan({
             timeoutMs: SESSION_GATE_TIMEOUT_MS,
           }),
@@ -303,9 +347,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
         if (!me) {
           const status = httpStatus(meError);
           if (status === 401 || status === 403) {
-            setAccessToken(null);
-            setStoredGmfnId(null);
-            setSelectedClanId(null);
+            logout();
           }
           if (!requireRole && isNetworkSessionError(meError)) {
             setContinuityBlock(null);
@@ -370,7 +412,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
     return () => {
       active = false;
     };
-  }, [location.pathname, requireRole]);
+  }, [foregroundSessionCheck, location.pathname, requireRole]);
 
   useEffect(() => {
     if (!loading) {

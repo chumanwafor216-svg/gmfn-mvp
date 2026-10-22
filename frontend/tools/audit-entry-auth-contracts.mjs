@@ -60,8 +60,20 @@ assertContains(
 
 assertContains(
   "src/components/RequireAuth.tsx",
-  /if \(status === 401 \|\| status === 403\)[\s\S]*setAccessToken\(null\);[\s\S]*setSelectedClanId\(null\);/,
+  /if \(status === 401 \|\| status === 403\)[\s\S]*logout\(\);/,
   "Invalid or unauthorized stored sessions must be cleared at the system route guard."
+);
+
+assertContains(
+  "src/components/RequireAuth.tsx",
+  /getMeWithStoredTokenRetry\([\s\S]*forceFresh[\s\S]*fresh: true[\s\S]*requestForegroundSessionCheck[\s\S]*window\.addEventListener\("focus"[\s\S]*window\.addEventListener\("online"[\s\S]*document\.addEventListener\("visibilitychange"[\s\S]*foregroundCheckRequestedRef\.current[\s\S]*getMeWithStoredTokenRetry\(tok, forceFreshSessionCheck\)/,
+  "Returning to a visible app must bypass cached identity state and revalidate the stored session."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /publishRecoveryReturnTarget[\s\S]*previous sign-in expired before GSN could finish the action[\s\S]*previous sign-in expired while GSN was closed\. Sign in again to continue\./,
+  "Expired-session sign-in must distinguish ordinary app resume from interrupted Spotlight publishing."
 );
 
 assertContains(

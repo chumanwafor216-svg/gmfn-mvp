@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
@@ -19,6 +19,7 @@ import {
   getMarketplaceShopSpotlightStatus,
   getPublicShopSpotlightOpportunity,
   listMyClans,
+  logout,
   getMe,
   getPublicMarketplaceShopByGmfnId,
   getPublicShopDiaryEntries,
@@ -1881,6 +1882,7 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const routeProductId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("product_id") || query.get("product"));
@@ -1915,6 +1917,22 @@ export default function ShopGalleryPage() {
     }`;
     return path || "/app/marketplace";
   }, [location.hash, location.pathname, location.search]);
+  const expiredSessionRecoveryStartedRef = useRef(false);
+  const recoverExpiredPublicShopSession = useCallback(() => {
+    if (expiredSessionRecoveryStartedRef.current) return;
+    expiredSessionRecoveryStartedRef.current = true;
+    logout();
+    navigate("/login?session=expired&force=1", {
+      replace: true,
+      state: {
+        from: {
+          pathname: location.pathname,
+          search: location.search,
+          hash: location.hash,
+        },
+      },
+    });
+  }, [location.hash, location.pathname, location.search, navigate]);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -1953,6 +1971,7 @@ export default function ShopGalleryPage() {
   const [spotlightMediaReadyKey, setSpotlightMediaReadyKey] = useState('');
   const [spotlightMediaUnavailableKey, setSpotlightMediaUnavailableKey] =
     useState('');
+  const [spotlightSoundEnabled, setSpotlightSoundEnabled] = useState(false);
   const galleryRevealFrameRef = useRef<number | null>(null);
   const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
@@ -2438,10 +2457,12 @@ export default function ShopGalleryPage() {
       } catch (err: any) {
         if (alive) {
           const status = Number(err?.status || 0);
+          if (status === 401) {
+            recoverExpiredPublicShopSession();
+            return undefined;
+          }
           setSpotlightFeedError(
-            status === 401
-              ? 'Your sign-in could not refresh community Spotlight. The last valid showing is kept while GSN retries; sign in again if this continues.'
-              : 'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
+            'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
           );
         }
         return undefined;
@@ -2559,9 +2580,17 @@ export default function ShopGalleryPage() {
       try {
         const cleanedGmfnId = safeStr(gmfnId || "");
         let effectiveGmfnId = cleanedGmfnId;
-        const clanRes = getAccessToken()
-          ? await getCurrentClan().catch(() => null)
-          : null;
+        let clanRes: any = null;
+        if (getAccessToken()) {
+          try {
+            clanRes = await getCurrentClan();
+          } catch (err: any) {
+            if (Number(err?.status || 0) === 401) {
+              recoverExpiredPublicShopSession();
+              return;
+            }
+          }
+        }
         let publicShopRes: any = null;
         let viewerSpotlightRows: any[] | null | undefined = null;
         let publicDiaryRows: ShopDiaryEntryRecord[] | null = null;
@@ -2723,6 +2752,7 @@ export default function ShopGalleryPage() {
     gmfnId,
     ownerSpotlightInspectionMode,
     ownerSpotlightPreviewAuthorized,
+    recoverExpiredPublicShopSession,
     routeClanId,
     routeDiaryEntryId,
     routeProductId,
@@ -3259,10 +3289,12 @@ export default function ShopGalleryPage() {
       });
     } catch (err: any) {
       const status = Number(err?.status || 0);
+      if (status === 401) {
+        recoverExpiredPublicShopSession();
+        return;
+      }
       setSpotlightFeedError(
-        status === 401
-          ? 'Your sign-in could not refresh community Spotlight. The last valid showing is kept; sign in again if this continues.'
-          : 'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
+        'Community Spotlight could not refresh. The last valid showing is kept while GSN retries automatically.'
       );
       spotlightRefreshRetryCountRef.current += 1;
       const retryNumber = spotlightRefreshRetryCountRef.current;
@@ -3284,7 +3316,12 @@ export default function ShopGalleryPage() {
     } finally {
       spotlightNextRequestPendingRef.current = false;
     }
-  }, [gmfnId, ownerSpotlightInspectionMode, ownerSpotlightPreviewAuthorized]);
+  }, [
+    gmfnId,
+    ownerSpotlightInspectionMode,
+    ownerSpotlightPreviewAuthorized,
+    recoverExpiredPublicShopSession,
+  ]);
 
   useEffect(() => {
     if (spotlightRefreshRetryTick <= 0) return;
@@ -6846,6 +6883,8 @@ export default function ShopGalleryPage() {
                     mutedVideo={Boolean(miniSpotlightView.videoUrl)}
                     loopVideo={Boolean(miniSpotlightView.videoUrl)}
                     showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
+                    audioEnabled={spotlightSoundEnabled}
+                    onAudioEnabledChange={setSpotlightSoundEnabled}
                     audioUnlockLabel="Sound on"
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"

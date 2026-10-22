@@ -553,6 +553,10 @@ export default function LoginPage() {
   const founderCommunityName = safeStr(founderContext.clan_name || "");
   const forceLogin = searchParams.get("force") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
+  const publishRecoveryReturnTarget = useMemo(
+    () => peekPublishRecoveryTarget(),
+    []
+  );
   const recoveryRequested =
     searchParams.get("recovery") === "1" || searchParams.get("mode") === "recovery";
   const recoveryPhoneFromQuery = safeStr(
@@ -562,8 +566,7 @@ export default function LoginPage() {
   const redirectTarget = useMemo(() => {
     const inviteTarget = joinRedirectFromLoginSearch(searchParams);
     if (inviteTarget) return inviteTarget;
-    const publishTarget = peekPublishRecoveryTarget();
-    if (publishTarget) return publishTarget;
+    if (publishRecoveryReturnTarget) return publishRecoveryReturnTarget;
     const nextTarget = safeAppReturnTarget(searchParams.get("next"));
     if (nextTarget) return nextTarget;
     if (routeState.from?.pathname && routeState.from.pathname !== "/login") {
@@ -572,7 +575,7 @@ export default function LoginPage() {
       }`;
     }
     return "/app/dashboard";
-  }, [routeState, searchParams]);
+  }, [publishRecoveryReturnTarget, routeState, searchParams]);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -586,7 +589,9 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(() =>
     sessionExpired
-      ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
+      ? publishRecoveryReturnTarget
+        ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
+        : "Your previous sign-in expired while GSN was closed. Sign in again to continue."
       : null
   );
   const [activationPath, setActivationPath] = useState<string | null>(null);

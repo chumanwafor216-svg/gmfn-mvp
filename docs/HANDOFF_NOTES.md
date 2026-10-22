@@ -8,6 +8,41 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Foreground session and Spotlight sound continuity repair - 2026-10-22
+
+- Status: owner approved production deployment on 2026-10-22 after the complete
+  local verification below. This handoff section ships with the application fix;
+  exact commit, workflow, and deploy identifiers belong in the deployment report.
+- Authenticated `/app/*` routes now perform a fresh `/auth/me` check when the
+  app regains focus, returns to the visible foreground, or comes back online.
+  A 401/403 performs the shared full logout cleanup and routes to sign-in
+  instead of leaving a stale authenticated shell.
+- Public Shop `/shop/:gmfnId` now applies the same stale-session outcome when
+  its protected community/Spotlight reads return 401: clear the local session,
+  open forced sign-in, and preserve the Public Shop return location. Ordinary
+  transient/network errors still keep the last valid Spotlight and use the
+  existing bounded retry behavior.
+- Login now distinguishes an ordinary expired background session from an
+  interrupted Spotlight publish. Ordinary resume says the previous sign-in
+  expired while GSN was closed; publish recovery keeps its media-reselection
+  warning and return target.
+- Public Shop owns the Spotlight sound preference above each rotating media
+  frame. After one successful Sound on tap, later video items request sound
+  automatically until the user taps Sound off. The per-item media key remains
+  intact so repeated media URLs still re-report readiness and preserve frozen
+  qualification/accounting behavior.
+- Browser truth: a fresh page/app process still starts muted because phone
+  browsers require an explicit user gesture before audible autoplay. If a
+  browser rejects audible playback for a new item, GSN remains muted and shows
+  the sound action instead of falsely claiming that audio is playing.
+- Verification passed: production frontend build; focused ESLint with zero
+  errors (two pre-existing `SpotlightMediaFrame` dependency warnings); entry
+  auth, Spotlight controls, Spotlight presentation, Public Shop button,
+  startup-root, and route-fallthrough audits; and the full 14-scenario mocked
+  phone Spotlight suite. The new phone cases prove expired Public Shop sessions
+  are fully cleared/redirected and Sound on survives a two-video rotation until
+  manually turned off.
+
 ## Active app-feed freshness repair - 2026-10-21
 
 - The owner correctly reported that new posts could remain invisible until a

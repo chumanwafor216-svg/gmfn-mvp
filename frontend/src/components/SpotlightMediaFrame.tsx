@@ -22,6 +22,8 @@ type SpotlightMediaFrameProps = {
   audioUnlockOffLabel?: string;
   audioUnlockErrorLabel?: string;
   audioUnlockStyle?: React.CSSProperties;
+  audioEnabled?: boolean;
+  onAudioEnabledChange?: (enabled: boolean) => void;
   onMediaReady?: () => void;
   onMediaUnavailable?: () => void;
 };
@@ -155,7 +157,10 @@ export default function SpotlightMediaFrame(
     const video = videoRef.current;
     if (!video) return;
 
-    const shouldMute = props.mutedVideo ?? false;
+    const shouldMute =
+      props.audioEnabled === undefined
+        ? props.mutedVideo ?? false
+        : !props.audioEnabled;
     video.muted = shouldMute;
     video.defaultMuted = shouldMute;
     if (!shouldMute) {
@@ -163,7 +168,30 @@ export default function SpotlightMediaFrame(
     }
     setAudioUnlocked(false);
     setAudioError("");
-  }, [props.mutedVideo, props.videoUrl]);
+
+    if (!shouldMute && (props.autoPlayVideo ?? false)) {
+      void video
+        .play()
+        .then(() => {
+          video.muted = false;
+          video.defaultMuted = false;
+          video.volume = 1;
+          setAudioUnlocked(true);
+          setAudioError("");
+        })
+        .catch(() => {
+          video.muted = true;
+          video.defaultMuted = true;
+          setAudioUnlocked(false);
+          setAudioError("Tap for sound");
+        });
+    }
+  }, [
+    props.audioEnabled,
+    props.autoPlayVideo,
+    props.mutedVideo,
+    props.videoUrl,
+  ]);
 
   const imageSrc = imageCandidates[imageIndex] || "";
   const videoSrc = safeStr(props.videoUrl);
@@ -224,6 +252,7 @@ export default function SpotlightMediaFrame(
       video.volume = 0;
       setAudioUnlocked(false);
       setAudioError("");
+      props.onAudioEnabledChange?.(false);
       return;
     }
 
@@ -239,6 +268,7 @@ export default function SpotlightMediaFrame(
         video.volume = 1;
         setAudioUnlocked(true);
         setAudioError("");
+        props.onAudioEnabledChange?.(true);
       })
       .catch(() => {
         video.muted = true;
@@ -458,7 +488,11 @@ export default function SpotlightMediaFrame(
             poster={backdropSrc || undefined}
             controls={props.showVideoControls ?? true}
             autoPlay={props.autoPlayVideo ?? false}
-            muted={props.mutedVideo ?? false}
+            muted={
+              props.audioEnabled === undefined
+                ? props.mutedVideo ?? false
+                : !props.audioEnabled
+            }
             loop={props.loopVideo ?? false}
             playsInline
             preload="metadata"
@@ -467,11 +501,27 @@ export default function SpotlightMediaFrame(
             onCanPlay={reportMediaReady}
             onLoadedMetadata={(event) => {
               const video = event.currentTarget;
-              const shouldMute = props.mutedVideo ?? false;
+              const shouldMute =
+                props.audioEnabled === undefined
+                  ? props.mutedVideo ?? false
+                  : !props.audioEnabled;
               video.muted = shouldMute;
               video.defaultMuted = shouldMute;
               if (!shouldMute) {
                 video.volume = 1;
+                void video
+                  .play()
+                  .then(() => {
+                    setAudioUnlocked(true);
+                    setAudioError("");
+                  })
+                  .catch(() => {
+                    video.muted = true;
+                    video.defaultMuted = true;
+                    setAudioUnlocked(false);
+                    setAudioError("Tap for sound");
+                  });
+                return;
               }
               setAudioUnlocked(false);
             }}

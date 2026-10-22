@@ -102,7 +102,7 @@ assertContains(
 
 assertContains(
   "src/components/RequireAuth.tsx",
-  /Promise\.allSettled\(\[[\s\S]*?getMeWithStoredTokenRetry\(tok\)[\s\S]*?getCurrentClan\(\{[\s\S]*?timeoutMs: SESSION_GATE_TIMEOUT_MS[\s\S]*?const currentClan =[\s\S]*?me && currentClanResult\.status === "fulfilled"/,
+  /Promise\.allSettled\(\[[\s\S]*?getMeWithStoredTokenRetry\(tok, forceFreshSessionCheck\)[\s\S]*?getCurrentClan\(\{[\s\S]*?timeoutMs: SESSION_GATE_TIMEOUT_MS[\s\S]*?const currentClan =[\s\S]*?me && currentClanResult\.status === "fulfilled"/,
   "Authenticated route guard must parallelize identity and community reads, then ignore community context when identity did not resolve."
 );
 

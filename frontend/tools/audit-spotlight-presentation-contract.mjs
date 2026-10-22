@@ -320,9 +320,33 @@ assertContains(
 );
 
 assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testSpotlightSoundPersistsAcrossRotation[^]*?Turn video sound on[^]*?Turn video sound off[^]*?Community Spotlight 2[^]*?rotatedVideoState[^]*?muted[^]*?volume[^]*?Turn video sound off[^]*?Turn video sound on/,
+  'The phone smoke must prove one sound-on tap survives video rotation and sound remains manually reversible.'
+);
+
+assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
   /imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?props[.]onMediaReady/,
   'Cached image and video readiness must still reach the Public Shop qualification and dwell gates.'
+);
+
+assertContains(
+  'frontend/src/components/SpotlightMediaFrame.tsx',
+  /audioEnabled\?: boolean[^]*?onAudioEnabledChange\?: \(enabled: boolean\)[^]*?props\.audioEnabled === undefined[^]*?!props\.audioEnabled[^]*?props\.onAudioEnabledChange\?\.\(false\)[^]*?props\.onAudioEnabledChange\?\.\(true\)/,
+  'Shared Spotlight media must support a parent-owned sound preference without changing existing uncontrolled media cards.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightSoundEnabled[^]*?audioEnabled=\{spotlightSoundEnabled\}[^]*?onAudioEnabledChange=\{setSpotlightSoundEnabled\}/,
+  'Public Shop must retain the chosen Spotlight sound state above individual rotating media frames.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /recoverExpiredPublicShopSession[^]*?logout\(\)[^]*?\/login\?session=expired&force=1[^]*?status === 401[^]*?recoverExpiredPublicShopSession\(\)[^]*?requestNextCanonicalSpotlight[^]*?status === 401[^]*?recoverExpiredPublicShopSession\(\)/,
+  'An expired authenticated Public Shop Spotlight read must clear the stale session and open sign-in instead of leaving a blank rail.'
 );
 
 assertContains(
