@@ -10,9 +10,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## GSN house batch-media queue and review recovery - 2026-10-23
 
-- Status: implementation and local verification are complete on
-  `codex/spotlight-rotation-continuity`; commit and deployment identifiers
-  belong in the publishing-session update below.
+- Status: application commit `dc969997` was pushed to
+  `codex/spotlight-rotation-continuity` and `main`, then deployed to the
+  Render frontend on 2026-10-23.
 - The existing platform-admin GSN Spotlight publisher now accepts one to ten
   pictures and/or short videos in one phone file choice. It prepares files
   sequentially, shows the accepted queue and progress, and lets the operator
@@ -42,6 +42,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   GSN-house campaign tests. The first two backend attempts reached 11 passing
   tests before Windows denied pytest temporary-directory access; the approved
   workspace-safe rerun completed all 12.
+- Trigger Render Deploy workflow `40010973522` completed successfully on exact
+  commit `dc969997`, including the public frontend marker check. Exact
+  frontend deploy `dep-dbdr88c7hfos73dkao4g` reached `live`; an independent
+  request to the public frontend returned HTTP 200. No API deployment was
+  needed because this slice changed only the existing frontend orchestration,
+  screen contract, audit, and handoff documentation.
 
 ## GSN house Spotlight multi-promotion pilot inventory - 2026-10-23
 
