@@ -1237,7 +1237,9 @@ export default function AdminGsnHouseCampaignPage() {
               style={fieldStyle(true)}
             />
           </label>
-          <div style={{ marginTop: 5, textAlign: "right", color: "#60758A", fontSize: 12 }}>{message.length}/2000</div>
+          <div style={{ marginTop: 6, color: "#60758A", fontSize: 12, lineHeight: 1.5 }}>
+            A short sentence is enough. The 2,000-character allowance is only a maximum, not a target.
+          </div>
 
           <label style={{ display: "block", marginTop: 14, ...softCard("#FFFFFF") }}>
             <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Pictures and verified short videos</span>
@@ -1258,6 +1260,36 @@ export default function AdminGsnHouseCampaignPage() {
           </label>
 
           {mediaProgress ? <div role="status" style={{ marginTop: 12, ...statusPanel("info") }}>{mediaProgress}</div> : null}
+
+          {!review ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              <div id="admin-gsn-campaign-review-readiness" role="status" style={statusPanel(reviewBlockers.length > 0 ? "info" : "success")}>
+                {reviewBlockers.length > 0 ? (
+                  <>
+                    <div style={{ fontWeight: 900 }}>Still needed before publishing:</div>
+                    <ul style={{ margin: "7px 0 0", paddingLeft: 20 }}>
+                      {reviewBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                    </ul>
+                  </>
+                ) : (
+                  `Ready to review and publish ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. The first tap opens the final check; nothing publishes until you confirm.`
+                )}
+              </div>
+              <StableButton
+                kind="primary"
+                fullWidth
+                stableHeight={54}
+                busy={reviewing || preparingMedia}
+                busyLabel={preparingMedia ? "Preparing media" : "Preparing final check"}
+                onClick={handleReview}
+                debugId="admin-gsn-campaign.review"
+                aria-label="Review and publish campaign batch"
+                aria-describedby="admin-gsn-campaign-review-readiness"
+              >
+                Review and publish {mediaQueue.length > 0 ? `${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : "campaign"}
+              </StableButton>
+            </div>
+          ) : null}
 
           {mediaQueue.length > 0 && mediaPreviewUrl ? (
             <div style={{ marginTop: 14, ...softCard("#071A2D"), color: "#FFFFFF" }}>
@@ -1294,35 +1326,6 @@ export default function AdminGsnHouseCampaignPage() {
             </div>
           ) : null}
 
-          {!review ? (
-            <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
-              <div id="admin-gsn-campaign-review-readiness" role="status" style={statusPanel(reviewBlockers.length > 0 ? "info" : "success")}>
-                {reviewBlockers.length > 0 ? (
-                  <>
-                    <div style={{ fontWeight: 900 }}>Still needed before review:</div>
-                    <ul style={{ margin: "7px 0 0", paddingLeft: 20 }}>
-                      {reviewBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
-                    </ul>
-                  </>
-                ) : (
-                  `Ready to review ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. Review uploads the prepared media but does not publish it.`
-                )}
-              </div>
-              <StableButton
-                kind="primary"
-                fullWidth
-                stableHeight={54}
-                busy={reviewing || preparingMedia}
-                busyLabel={preparingMedia ? "Preparing media" : "Preparing review"}
-                onClick={handleReview}
-                debugId="admin-gsn-campaign.review"
-                aria-label="Review campaign batch"
-                aria-describedby="admin-gsn-campaign-review-readiness"
-              >
-                Review {mediaQueue.length > 1 ? `${mediaQueue.length} promotions` : "campaign"}
-              </StableButton>
-            </div>
-          ) : null}
         </section>
       </div>
     </main>

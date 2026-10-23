@@ -1671,6 +1671,8 @@ Rules:
 - The phone may select up to ten media files in one action. Preparation and upload must run sequentially, show progress, and keep the page responsive. Before read-only review the prepared queue exists only in the current browser session, so the screen must tell the operator to keep the page open.
 - Read-only review uploads each prepared file to managed GSN storage without publishing it. Every queued media item becomes one independent GSN house campaign using the shared message and selected destinations.
 - The review action must remain tappable before the draft is ready and explain every missing requirement in the same action area. It must never appear silently disabled merely because destination, message, or media is missing.
+- On phone, the review action must appear immediately after the media picker and preparation status, before the first-media preview and prepared-media list. Its label must make the complete path obvious (`Review and publish`) while still stating that the first tap opens a final check and does not publish immediately.
+- The message field may retain the backend's 2,000-character maximum, but the screen must explain that this is only an allowance and that one short sentence is sufficient; it must not present a bare counter that looks like a writing requirement.
 - The final batch publish action must require one explicit confirmation and a distinct idempotency key for every media item. Publication runs sequentially, shows progress, preserves already-published results after a later failure, and resumes without duplicating successful campaigns.
 - Discarding an entirely unpublished batch must attempt reference-safe cleanup for every uploaded media item. Once any item has published, the page must not discard or delete media that may already be referenced.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
@@ -1682,7 +1684,7 @@ Rules:
 Primary action:
 
 ```text
-Review campaign
+Review and publish
 ```
 
 After a valid read-only review and explicit confirmation:

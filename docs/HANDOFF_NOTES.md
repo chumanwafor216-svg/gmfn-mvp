@@ -10,6 +10,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## GSN house batch-media queue and review recovery - 2026-10-23
 
+- Owner phone review found that a nine-item queue pushed the primary review
+  action below the first-media preview and the full prepared list. The follow-up
+  correction moves `Review and publish` immediately below the file picker and
+  preparation status, before any media preview/list. The first tap remains a
+  non-publishing final check; the explicit confirmation and final publish action
+  remain mandatory. The bare `0/2000` message counter was replaced with plain
+  guidance that one short sentence is enough and 2,000 characters is only the
+  maximum allowance.
 - Status: application commit `dc969997` was pushed to
   `codex/spotlight-rotation-continuity` and `main`, then deployed to the
   Render frontend on 2026-10-23.

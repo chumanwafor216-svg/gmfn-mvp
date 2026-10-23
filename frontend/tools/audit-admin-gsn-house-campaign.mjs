@@ -96,10 +96,10 @@ for (const text of [
   "destinationTitle(row)",
   "row.community_code",
   "disabled={!row.eligible || draftBusy || publishedCount > 0}",
-  "Review campaign",
+  "Review and publish",
   "MAX_GSN_HOUSE_BATCH_MEDIA = 10",
   "multiple",
-  "Still needed before review:",
+  "Still needed before publishing:",
   "Keep this page open",
   "for (let index = 0; index < mediaQueue.length; index += 1)",
   "for (let index = results.length; index < review.media.length; index += 1)",
@@ -132,6 +132,13 @@ requireOrder(
   "await previewAdminGsnHouseCampaign",
   "await createAdminGsnHouseCampaign",
   "Read-only preview must occur before final publication."
+);
+requireOrder(
+  pageFile,
+  page,
+  'debugId="admin-gsn-campaign.review"',
+  "Prepared batch",
+  "The review-and-publish action must stay above the long prepared-media preview and queue."
 );
 if (page.includes("Clan ID") || page.includes("Internal ID")) {
   findings.push({
