@@ -11,6 +11,10 @@ from app.services.spotlight_opportunity_eligibility_service import (
     REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN,
     evaluate_spotlight_eligibility,
 )
+from app.services.spotlight_pacing_state_service import (
+    SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
+    get_or_create_spotlight_campaign_pacing_state,
+)
 
 
 def _seed_house_campaign_destinations() -> None:
@@ -315,6 +319,13 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
     assert eligibility.eligible is True
     assert [route.route_clan_id for route in eligibility.routes] == [1]
 
+    with SessionLocal() as db:
+        pacing = get_or_create_spotlight_campaign_pacing_state(
+            db,
+            campaign_id=body["item"]["spotlight_campaign_id"],
+        )
+    assert pacing.max_delivery_rounds == SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -335,6 +346,191 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
 
     assert after_opt_out.eligible is False
     assert after_opt_out.rejection_code == REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN
+
+
+def test_house_campaign_inventory_allows_parallel_active_promotions(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    first = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={
+            "clan_ids": [1],
+            "message": "First launch promotion",
+            "image_url": "https://cdn.example.test/gsn/launch-one.jpg",
+            "idempotency_key": "gsn-house-inventory-0001",
+        },
+    )
+    second = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={
+            "clan_ids": [1],
+            "message": "Second launch promotion",
+            "image_url": "https://cdn.example.test/gsn/launch-two.jpg",
+            "idempotency_key": "gsn-house-inventory-0002",
+        },
+    )
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    first_id = int(first.json()["item"]["spotlight_campaign_id"])
+    second_id = int(second.json()["item"]["spotlight_campaign_id"])
+    assert first_id != second_id
+
+    operations = client.get("/marketplace/admin/gsn-house-campaigns")
+    assert operations.status_code == 200, operations.text
+    body = operations.json()
+    assert body["active_count"] == 2
+    assert {int(item["campaign_id"]) for item in body["active"]} == {first_id, second_id}
+    assert body["history"] == []
+
+
+def test_existing_house_pacing_state_moves_to_bounded_pilot_ceiling(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    published = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={
+            "clan_ids": [1],
+            "message": "Existing pacing migration promotion",
+            "image_url": "https://cdn.example.test/gsn/pacing-migration.jpg",
+            "idempotency_key": "gsn-house-pacing-migration-0001",
+        },
+    )
+    assert published.status_code == 200, published.text
+    campaign_id = int(published.json()["item"]["spotlight_campaign_id"])
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaign_pacing_states (
+                    campaign_id, max_delivery_rounds, consumed_delivery_rounds,
+                    pacing_profile, exhausted, version, created_at, updated_at
+                ) VALUES (
+                    :campaign_id, 10, 10, 'neutral', 1, 10,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"campaign_id": campaign_id},
+        )
+
+    with SessionLocal() as db:
+        pacing = get_or_create_spotlight_campaign_pacing_state(
+            db,
+            campaign_id=campaign_id,
+        )
+        assert pacing.max_delivery_rounds == SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+        assert pacing.consumed_delivery_rounds == 10
+        assert pacing.exhausted is False
+
+
+def test_house_campaign_inventory_accepts_sixty_active_promotions(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    campaign_ids: set[int] = set()
+
+    for index in range(60):
+        response = client.post(
+            "/marketplace/admin/gsn-house-campaigns",
+            json={
+                "clan_ids": [1],
+                "message": f"Launch inventory promotion {index + 1}",
+                "image_url": f"https://cdn.example.test/gsn/inventory-{index + 1}.jpg",
+                "idempotency_key": f"gsn-house-sixty-{index + 1:03d}",
+            },
+        )
+        assert response.status_code == 200, response.text
+        campaign_ids.add(int(response.json()["item"]["spotlight_campaign_id"]))
+
+    assert len(campaign_ids) == 60
+    operations = client.get(
+        "/marketplace/admin/gsn-house-campaigns",
+        params={"limit": 100},
+    )
+    assert operations.status_code == 200, operations.text
+    body = operations.json()
+    assert body["active_count"] == 60
+    assert len(body["active"]) == 60
+    assert {int(item["campaign_id"]) for item in body["active"]} == campaign_ids
+
+    with engine.begin() as conn:
+        placement_count = conn.execute(
+            text(
+                "SELECT COUNT(*) FROM marketplace_broadcasts "
+                "WHERE serving_status = 'serving'"
+            )
+        ).scalar_one()
+    assert int(placement_count) == 60
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (100, 1, 1, 'admin', 0)
+                """
+            )
+        )
+    first_batch = client.get(
+        "/marketplace/broadcasts",
+        params={"clan_id": 1, "active_only": True, "limit": 5, "offset": 0},
+    )
+    second_batch = client.get(
+        "/marketplace/broadcasts",
+        params={"clan_id": 1, "active_only": True, "limit": 5, "offset": 5},
+    )
+    assert first_batch.status_code == 200, first_batch.text
+    assert second_batch.status_code == 200, second_batch.text
+    assert first_batch.json()["next_offset"] == 5
+    assert second_batch.json()["next_offset"] == 10
+    assert {
+        int(item["id"]) for item in first_batch.json()["items"]
+    }.isdisjoint({int(item["id"]) for item in second_batch.json()["items"]})
+
+
+def test_house_campaign_inventory_stops_at_configured_pilot_limit(
+    client,
+    override_current_user,
+    monkeypatch,
+) -> None:
+    _seed_house_campaign_destinations()
+    monkeypatch.setattr(
+        marketplace_routes,
+        "GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT",
+        2,
+    )
+
+    for index in range(2):
+        response = client.post(
+            "/marketplace/admin/gsn-house-campaigns",
+            json={
+                "clan_ids": [1],
+                "message": f"Bounded pilot promotion {index + 1}",
+                "image_url": f"https://cdn.example.test/gsn/bounded-{index + 1}.jpg",
+                "idempotency_key": f"gsn-house-bounded-{index + 1:03d}",
+            },
+        )
+        assert response.status_code == 200, response.text
+
+    blocked = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={
+            "clan_ids": [1],
+            "message": "Promotion beyond the bounded pilot inventory",
+            "image_url": "https://cdn.example.test/gsn/bounded-3.jpg",
+            "idempotency_key": "gsn-house-bounded-003",
+        },
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert blocked.json()["detail"]["code"] == "gsn_house_pilot_inventory_limit_reached"
 
 
 def test_house_campaign_operations_report_and_audited_stop(

@@ -8,6 +8,54 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN house Spotlight multi-promotion pilot inventory - 2026-10-23
+
+- Status: locally implemented and verified; not yet claimed deployed in this
+  handoff entry.
+- The owner approved a simpler first-stage behaviour: automatic Spotlight
+  movement only, with no new viewer next/previous, pause, or fast-forward
+  controls. The shared community pilot rail now moves every five seconds while
+  retaining its 30-second server refresh, so presentation changes do not create
+  one API request every five seconds.
+- The reserved GSN-HOUSE system publisher may now own overlapping active house
+  promotions. The database partial unique index still enforces one active
+  campaign for ordinary member/shop publishers. A new Alembic migration applies
+  that narrow exception without changing member entitlements.
+- The Command Centre may hold up to 100 active GSN promotions during this pilot,
+  display the full active inventory, and target up to 100 explicitly opted-in
+  Community Domains per promotion. The tested requested case is 60 simultaneous
+  active promotions. Name/code search remains operator-facing; clan ids remain
+  internal transport keys.
+- The authenticated Community Marketplace rail requests five active broadcasts
+  at a time and advances a bounded offset on each 30-second refresh, wrapping to
+  the beginning after the eligible inventory is exhausted. The 60-promotion
+  regression proves consecutive five-item batches are disjoint; the handset
+  does not load the full inventory at once.
+- New GSN house promotions use a bounded 10,000 global delivery-round pilot
+  safety ceiling instead of the member default of 10. This is operational
+  campaign capacity, not a per-person impression count. Raising it requires a
+  measured capacity gate; an effectively unlimited counter was explicitly
+  rejected as unsafe. Existing GSN-only ten-round rows move to the same bounded
+  ceiling when next evaluated without losing their consumed-round history.
+- Operator language now separates issued presentation leases (`Issued by
+  GSN`) from server-accepted qualifying visibility (`Seen`) and distinct
+  viewer accounts (`People who saw it`). The screen no longer presents the
+  technical round counter as though it were an impression count. Issuance is
+  not claimed as proof that a handset received the response.
+- Community-domain central-advertising opt-in, delivery-time revalidation,
+  platform-admin-only access, 24-hour expiry, idempotency, reference-safe media
+  cleanup, non-endorsement, and audited emergency stop remain intact.
+- Verification passed: all 12 GSN inventory/publisher tests in one complete
+  run; 40 combined GSN, pacing, and
+  presentation tests in the non-media run; an explicit 60-active-promotion
+  regression; the bounded-inventory rejection test; a clean fresh-database
+  Alembic upgrade to `20261023_parallel_gsn_house`; all three relevant frontend
+  audits; and the 292-module production frontend build.
+- Still not implemented in this slice: country/region audience targeting,
+  viewer-local peak/off-peak scheduling, configurable 60/40 allocation,
+  independent CDN proof, pagination beyond the 100-item pilot, or 100/1,000
+  concurrent-viewer load results. Do not claim those capabilities yet.
+
 ## GSN house Spotlight controlled publisher - 2026-10-23
 
 - Status: implementation and local verification are complete and this section
@@ -64,12 +112,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   placements, invalidates pending presentation leases, records one deduplicated
   TrustEvent with the signed-in admin as actor and GSN-HOUSE as subject, and
   preserves campaign/report history. Retrying stop is idempotent.
-- This is a complete controlled immediate-publish path, not the complete
+- This remains a controlled immediate-publish path, not the complete
   central-advertising product. There is still no scheduler, advertiser
-  billing/refund product, regional targeting, central-specific capacity
-  product, playback/completion analytics, or independent GSN market in this
-  slice. The campaign still uses the existing canonical ten-round delivery
-  cap and one-active-campaign-per-publisher constraint.
+  billing/refund product, regional audience targeting, playback/completion
+  analytics, or independent GSN market. The multi-promotion inventory and
+  GSN-specific bounded capacity amendment are recorded in the newer handoff
+  section above.
 - Verification passed: 8 focused GSN-house tests, including one canonical
   campaign across two opted-in communities and two members; 286 surrounding Spotlight
   eligibility, presentation, and Community Domain tests; all 72 Marketplace

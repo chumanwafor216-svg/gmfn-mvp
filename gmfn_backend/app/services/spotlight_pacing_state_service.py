@@ -31,6 +31,10 @@ from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_s
 SPOTLIGHT_PACING_STATE_PRIVACY = "private_internal_persistent_campaign_pacing_state"
 SPOTLIGHT_PACING_STATE_CONFLICT = "pacing_state_version_conflict"
 SPOTLIGHT_PACING_STATE_EXPIRED_BEFORE_EXHAUSTION = "expired_before_exhaustion"
+# This is a global pilot safety ceiling for one 24-hour GSN promotion, not a
+# per-viewer impression cap. It is deliberately bounded until load tests prove
+# a larger production value.
+SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS = 10_000
 
 
 @dataclass(frozen=True)
@@ -141,16 +145,33 @@ def get_or_create_spotlight_campaign_pacing_state(
     default_delivery_window_policy: Optional[SpotlightDeliveryWindowPolicy] = None,
 ) -> SpotlightPacingStateSnapshot:
     safe_campaign_id = int(campaign_id)
-    existing = _state_for_campaign(db, campaign_id=safe_campaign_id)
-    if existing is not None:
-        return snapshot_from_pacing_state(db, existing, now=now)
-
     campaign = db.query(SpotlightCampaign).filter(SpotlightCampaign.id == safe_campaign_id).one_or_none()
     if campaign is None:
         raise ValueError(f"Spotlight campaign {safe_campaign_id} does not exist")
 
     current_time = _as_aware_utc(now) or _now_utc()
-    max_rounds = max(int(default_max_delivery_rounds), 0)
+    is_gsn_house = str(getattr(campaign, "source_kind", "") or "") == "gsn_house"
+    existing = _state_for_campaign(db, campaign_id=safe_campaign_id)
+    if existing is not None:
+        if (
+            is_gsn_house
+            and int(existing.max_delivery_rounds or 0)
+            < SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+        ):
+            existing.max_delivery_rounds = SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+            existing.exhausted = (
+                int(existing.consumed_delivery_rounds or 0)
+                >= SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+            )
+            existing.updated_at = current_time
+            db.flush()
+        return snapshot_from_pacing_state(db, existing, now=now)
+
+    max_rounds = (
+        SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+        if is_gsn_house
+        else max(int(default_max_delivery_rounds), 0)
+    )
     policy_json = _delivery_window_policy_to_json(default_delivery_window_policy)
     next_eligible = _next_permitted_time(
         raw_time=next_eligible_delivery_time(

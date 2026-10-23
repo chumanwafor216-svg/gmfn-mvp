@@ -185,6 +185,7 @@ export default function CommunityMarketplaceSpotlight() {
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const feedRef = useRef<MarketplaceFeedItem[]>([]);
   const spotlightIndexRef = useRef(0);
+  const feedOffsetRef = useRef(0);
 
   const selectedClanId = positiveNumber(getSelectedClanId());
   const communityHomeCta = useMemo(
@@ -202,15 +203,28 @@ export default function CommunityMarketplaceSpotlight() {
 
     try {
       const clanId = getSelectedClanId() || undefined;
+      const requestedOffset = feedOffsetRef.current;
 
-      const scopedFeedRes = await getMarketplaceBroadcasts({
+      let scopedFeedRes = await getMarketplaceBroadcasts({
         clan_id: clanId,
         active_only: true,
-        limit: 10,
+        limit: 5,
+        offset: requestedOffset,
         fresh: true,
       }).catch(() => ({ items: [] }));
 
-      const scopedFeed = Array.isArray(scopedFeedRes?.items) ? scopedFeedRes.items : [];
+      let scopedFeed = Array.isArray(scopedFeedRes?.items) ? scopedFeedRes.items : [];
+      if (scopedFeed.length === 0 && requestedOffset > 0) {
+        scopedFeedRes = await getMarketplaceBroadcasts({
+          clan_id: clanId,
+          active_only: true,
+          limit: 5,
+          offset: 0,
+          fresh: true,
+        }).catch(() => ({ items: [] }));
+        scopedFeed = Array.isArray(scopedFeedRes?.items) ? scopedFeedRes.items : [];
+      }
+      feedOffsetRef.current = Math.max(0, Number(scopedFeedRes?.next_offset || 0));
 
       let nextFeed = [...scopedFeed].sort((a, b) => {
         const timeDelta = spotlightFeedSortValue(b) - spotlightFeedSortValue(a);
@@ -222,13 +236,15 @@ export default function CommunityMarketplaceSpotlight() {
         const fallbackFeedRes = await getMarketplaceBroadcasts({
           clan_id: null,
           active_only: true,
-          limit: 10,
+          limit: 5,
+          offset: requestedOffset,
           fresh: true,
         }).catch(() => ({ items: [] }));
 
         const fallbackFeed = Array.isArray(fallbackFeedRes?.items)
           ? fallbackFeedRes.items
           : [];
+        feedOffsetRef.current = Math.max(0, Number(fallbackFeedRes?.next_offset || 0));
 
         nextFeed = [...(fallbackFeed.length > 0 ? fallbackFeed : scopedFeed)].sort((a, b) => {
           const timeDelta = spotlightFeedSortValue(b) - spotlightFeedSortValue(a);
@@ -263,6 +279,7 @@ export default function CommunityMarketplaceSpotlight() {
 
   useEffect(() => {
     setSpotlightIndex(0);
+    feedOffsetRef.current = 0;
   }, [selectedClanId]);
 
   useEffect(() => {

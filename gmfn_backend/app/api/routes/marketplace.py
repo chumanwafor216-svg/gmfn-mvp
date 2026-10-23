@@ -161,6 +161,7 @@ SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES = "selected_communities"
 GSN_HOUSE_PUBLISHER_EMAIL = "gsn-house-publisher@system.invalid"
 GSN_HOUSE_PUBLISHER_ID = "GSN-HOUSE"
 GSN_HOUSE_PUBLISHER_NAME = "Global Support Network"
+GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT = 100
 GSN_CENTRAL_ADVERTISING_POLICY_KEY = "domain.central_advertising"
 SPOTLIGHT_CONTENT_KIND_BROADCAST = "broadcast_snapshot"
 SPOTLIGHT_CONTENT_KIND_PRODUCT = "marketplace_product"
@@ -2919,10 +2920,17 @@ def _ensure_active_spotlight_campaign(
     created_at: Optional[datetime] = None,
 ) -> SpotlightCampaign:
     current_time = created_at or _now_utc()
-    campaign = _active_spotlight_campaign_for_owner(
-        db=db,
-        owner_user_id=int(owner_user_id),
-        now=current_time,
+    # GSN house inventory is centrally curated and may contain many independent
+    # active promotions. Member/shop campaigns retain the one-active-owner rule.
+    parallel_house_inventory = source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
+    campaign = (
+        None
+        if parallel_house_inventory
+        else _active_spotlight_campaign_for_owner(
+            db=db,
+            owner_user_id=int(owner_user_id),
+            now=current_time,
+        )
     )
     if campaign is not None:
         if not _spotlight_campaign_content_matches(
@@ -2968,6 +2976,8 @@ def _ensure_active_spotlight_campaign(
         db.flush()
     except IntegrityError:
         db.rollback()
+        if parallel_house_inventory:
+            raise
         campaign = _active_spotlight_campaign_for_owner(
             db=db,
             owner_user_id=int(owner_user_id),
@@ -3628,7 +3638,7 @@ class MarketplaceBroadcastCreateIn(BaseModel):
 
 
 class GsnHouseCampaignPreviewIn(BaseModel):
-    clan_ids: list[int] = Field(min_length=1, max_length=50)
+    clan_ids: list[int] = Field(min_length=1, max_length=100)
 
 
 class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
@@ -7251,17 +7261,17 @@ def list_gsn_house_campaigns(
         _gsn_house_campaign_report(db, campaign=campaign, now=now)
         for campaign in campaigns
     ]
-    current = next(
-        (item for item in items if item["state"] in {"live", "on_hold"}),
-        None,
-    )
+    active = [item for item in items if item["state"] in {"live", "on_hold"}]
+    current = active[0] if active else None
     return {
         "ok": True,
         "current": current,
+        "active": active,
+        "active_count": len(active),
         "history": [
             item
             for item in items
-            if current is None or int(item["campaign_id"]) != int(current["campaign_id"])
+            if item["state"] not in {"live", "on_hold"}
         ],
         "items": items,
         "returned_count": len(items),
@@ -7508,6 +7518,31 @@ def create_gsn_house_campaign(
         )
         return replay
 
+    _expire_stale_spotlight_campaigns_for_owner(
+        db=db,
+        owner_user_id=int(publisher.id),
+    )
+    active_inventory_count = (
+        db.query(func.count(SpotlightCampaign.id))
+        .filter(SpotlightCampaign.owner_user_id == int(publisher.id))
+        .filter(SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE)
+        .filter(SpotlightCampaign.status == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE)
+        .scalar()
+        or 0
+    )
+    if int(active_inventory_count) >= GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_pilot_inventory_limit_reached",
+                "message": (
+                    "The pilot inventory already has 100 active GSN promotions. "
+                    "Stop or allow one to expire before adding another. Raise this "
+                    "safety limit only after the capacity gate is passed."
+                ),
+            },
+        )
+
     current_time = _now_utc().replace(microsecond=0)
     expires_at = activation_expiry(current_time, authorized_days=1)
     content_fingerprint = _spotlight_content_fingerprint(
@@ -7651,6 +7686,7 @@ def list_marketplace_broadcasts(
     clan_id: Optional[int] = Query(default=None),
     active_only: bool = Query(default=True),
     limit: int = Query(default=100, ge=1, le=300),
+    offset: int = Query(default=0, ge=0, le=100000),
     x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -7719,6 +7755,7 @@ def list_marketplace_broadcasts(
             MarketplaceBroadcast.created_at.desc(),
             MarketplaceBroadcast.id.desc(),
         )
+        .offset(int(offset))
         .limit(int(limit))
         .all()
     )
@@ -7728,6 +7765,12 @@ def list_marketplace_broadcasts(
         "total": len(items),
         "matching_total": matching_total,
         "active_total": matching_total if active_only else None,
+        "offset": int(offset),
+        "next_offset": (
+            0
+            if matching_total <= 0 or int(offset) + len(items) >= matching_total
+            else int(offset) + len(items)
+        ),
         "video_total": video_total,
         "image_total": image_total,
         "clan_id": selected_clan_id,

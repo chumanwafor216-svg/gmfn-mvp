@@ -1644,8 +1644,8 @@ Give platform admins one controlled place to publish an official GSN Spotlight c
 Must show:
 - Command Centre header and back navigation
 - official `GSN` system-publisher identity, separate from the signed-in admin
-- compact current-campaign status with expiry and a manual refresh
-- campaign history with status, delivery-round, qualified-presentation, and unique-qualified-viewer-account counts
+- compact active-inventory status with expiry and a manual refresh
+- campaign history with status plus separate issued-for-delivery, seen, and unique-viewer counts
 - a guarded emergency stop requiring an audit reason and explicit permanent-withdrawal confirmation
 - searchable Community Domain destination chooser using visible community names and codes
 - eligible and blocked destination rows, with a plain-language reason for every blocked row
@@ -1660,7 +1660,7 @@ Must show:
 
 Rules:
 - The route and every related API action must remain platform-admin only.
-- Only one current GSN house campaign may be prepared for publication at a time; the creation workflow must stay blocked while another campaign is live or on hold.
+- GSN house promotions form a central inventory and may overlap. This exception applies only to the reserved `GSN-HOUSE` system publisher; ordinary member/shop campaigns retain the one-active-owner rule.
 - Publication identity is the reserved non-login system publisher `GSN-HOUSE`; the signed-in admin remains the audit actor.
 - Destination discovery and selection must use human-readable Community Domain names/codes; raw internal ids must not be the primary operator-facing label.
 - Only explicitly selected, active Community Domains with `domain.central_advertising.allow_gsn_house_campaigns` enabled may receive the campaign.
@@ -1670,10 +1670,10 @@ Rules:
 - Picture/video preparation and upload may happen while preparing the preview, but uploading media alone must never publish a campaign.
 - The final publish action must require explicit confirmation and an idempotency key so a retry cannot create duplicate campaigns.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
-- Operational reporting may show canonical delivery rounds, issued presentation leases, qualifying-impression events, and distinct qualified viewer accounts. It must not relabel those counts as video playback, completion, sales, or verified-human reach.
+- Operator-facing reporting must describe issued presentation leases as `issued by GSN` and qualifying visibility events as `seen`. Issuance does not prove handset receipt. Delivery-round counters remain technical pacing data and must not be presented as personal impressions. None of these counts may be relabelled as video playback, completion, sales, or verified-human reach.
 - Discarding an unpublished review may delete only a GSN-managed Marketplace upload that has no surviving database reference. Referenced media must be retained.
 - The official campaign lasts 24 hours and must not create a member shop, contact route, seller trust claim, member endorsement, or Community Domain endorsement.
-- Existing member Spotlight, Dashboard Market Wisdom, Marketplace, Public Shop, Community Home, and Owner Shop Control presentation contracts remain unchanged.
+- The pilot rail rotates automatically every five seconds without adding manual next, previous, pause, or fast-forward controls. Existing qualification, hidden-tab, reduced-motion, Dashboard Market Wisdom, Marketplace, Public Shop, Community Home, and Owner Shop Control boundaries otherwise remain unchanged.
 
 Primary action:
 

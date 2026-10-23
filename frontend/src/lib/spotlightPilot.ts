@@ -2,7 +2,7 @@
 // only tune these timing/media values here. Backend quota override lives in
 // gmfn_backend/app/api/routes/marketplace.py.
 export const SPOTLIGHT_PILOT_REFRESH_MS = 30000;
-export const SPOTLIGHT_PILOT_ROTATION_MS = 30000;
+export const SPOTLIGHT_PILOT_ROTATION_MS = 5000;
 export const SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS = 10;
 
 export const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;

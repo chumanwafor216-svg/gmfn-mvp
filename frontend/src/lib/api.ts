@@ -7257,6 +7257,8 @@ export type GsnHouseCampaignReport = {
 export type GsnHouseCampaignOperations = {
   ok: boolean;
   current?: GsnHouseCampaignReport | null;
+  active: GsnHouseCampaignReport[];
+  active_count: number;
   history: GsnHouseCampaignReport[];
   items: GsnHouseCampaignReport[];
   returned_count: number;
@@ -7275,6 +7277,8 @@ export async function listAdminGsnHouseCampaigns(
   return {
     ...out,
     current: out?.current || null,
+    active: Array.isArray(out?.active) ? out.active : out?.current ? [out.current] : [],
+    active_count: Number(out?.active_count || (out?.current ? 1 : 0)),
     history: Array.isArray(out?.history) ? out.history : [],
     items: Array.isArray(out?.items) ? out.items : [],
   };
@@ -7452,6 +7456,7 @@ export async function getMarketplaceBroadcasts(params?: {
   clan_id?: number | null;
   active_only?: boolean;
   limit?: number;
+  offset?: number;
   fresh?: boolean;
 }): Promise<any> {
   if (params?.fresh) {
@@ -7477,13 +7482,16 @@ export async function getMarketplaceBroadcasts(params?: {
           ? params.active_only
           : undefined,
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? 0,
     },
     {
       clan_id: effectiveClanId ?? undefined,
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? 0,
     },
     {
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? 0,
     },
   ];
 
@@ -7493,6 +7501,7 @@ export async function getMarketplaceBroadcasts(params?: {
       active_only:
         typeof params?.active_only === "boolean" ? params.active_only : "any",
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? 0,
       header_clan_id: options?.header_clan_id ?? "implicit",
     }),
     async () => {

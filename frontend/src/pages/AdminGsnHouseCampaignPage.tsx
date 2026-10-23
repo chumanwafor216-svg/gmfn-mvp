@@ -246,7 +246,7 @@ export default function AdminGsnHouseCampaignPage() {
   const loadOperations = useCallback(async () => {
     setLoadingOperations(true);
     try {
-      setOperations(await listAdminGsnHouseCampaigns(20));
+      setOperations(await listAdminGsnHouseCampaigns(100));
     } catch (error) {
       setFeedback({
         tone: "error",
@@ -315,10 +315,10 @@ export default function AdminGsnHouseCampaignPage() {
         delete next[row.clan_id];
         return next;
       }
-      if (Object.keys(current).length >= 50) {
+      if (Object.keys(current).length >= 100) {
         setFeedback({
           tone: "error",
-          text: "A single GSN campaign can target at most 50 Community Domains.",
+          text: "A single GSN promotion can target at most 100 Community Domains in this pilot.",
         });
         return current;
       }
@@ -573,7 +573,7 @@ export default function AdminGsnHouseCampaignPage() {
         <PageTopNav
           sectionLabel="Platform administration"
           title="GSN Spotlight publisher"
-          subtitle="Publish one official GSN campaign only into Community Domains that explicitly allow central advertising."
+          subtitle="Build a central inventory of official GSN promotions for Community Domains that explicitly allow central advertising."
           homeTo={APP_ROUTES.ADMIN_COMMAND}
           homeLabel="Command Centre"
           backTo={APP_ROUTES.ADMIN_COMMAND}
@@ -635,10 +635,10 @@ export default function AdminGsnHouseCampaignPage() {
             <div style={{ flex: "1 1 280px" }}>
               <div style={sectionLabel()}>Campaign operations</div>
               <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
-                Current status and truthful delivery report
+                Active inventory and truthful delivery report
               </h2>
               <p style={{ margin: "8px 0 0", ...helper() }}>
-                GSN reports only recorded delivery rounds and qualified visible presentations. It does not infer playback, completion, sales, or verified-human reach.
+                GSN separates promotions issued for delivery from promotions that became visibly present. It does not infer handset receipt, playback, completion, sales, or verified-human reach.
               </p>
             </div>
             <StableButton
@@ -658,7 +658,7 @@ export default function AdminGsnHouseCampaignPage() {
               <div style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
                   <div style={{ color: "#166534", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
-                    {stateLabel(operations.current.state)} now
+                    {operations.active_count} active · most recent is {stateLabel(operations.current.state)}
                   </div>
                   <h3 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 19 }}>
                     Campaign #{operations.current.campaign_id}
@@ -675,9 +675,9 @@ export default function AdminGsnHouseCampaignPage() {
                 {[
                   ["Placements", operations.current.delivery.placement_count],
                   ["Eligible now", operations.current.delivery.currently_eligible_destination_count],
-                  ["Rounds used", `${operations.current.delivery.consumed_delivery_rounds}/${operations.current.delivery.max_delivery_rounds}`],
-                  ["Qualified presentations", operations.current.delivery.qualified_presentation_count],
-                  ["Viewer accounts", operations.current.delivery.unique_qualified_viewer_accounts],
+                  ["Issued by GSN", operations.current.delivery.issued_presentation_count],
+                  ["Seen", operations.current.delivery.qualified_presentation_count],
+                  ["People who saw it", operations.current.delivery.unique_qualified_viewer_accounts],
                 ].map(([label, value]) => (
                   <div key={label} style={institutionalInnerCard("#FFFFFF")}>
                     <div style={{ color: "#64778B", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -734,9 +734,30 @@ export default function AdminGsnHouseCampaignPage() {
           ) : (
             <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900 }}>No GSN house campaign is currently serving.</div>
-              <div style={{ marginTop: 5, ...helper() }}>You can prepare one new 24-hour campaign below.</div>
+              <div style={{ marginTop: 5, ...helper() }}>You can start building the 24-hour promotion inventory below.</div>
             </div>
           )}
+
+          {operations && operations.active.length > 1 ? (
+            <details style={{ marginTop: 14, ...softCard("#F5FAFF") }}>
+              <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 900 }}>
+                Other active promotions ({operations.active.length - 1})
+              </summary>
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                {operations.active.slice(1).map((item) => (
+                  <div key={item.campaign_id} style={institutionalInnerCard("#FFFFFF")}>
+                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                      Campaign #{item.campaign_id} · {stateLabel(item.state)}
+                    </div>
+                    <div style={{ marginTop: 6, ...helper() }}>{item.content.message}</div>
+                    <div style={{ marginTop: 8, ...helper(), fontSize: 13 }}>
+                      {item.delivery.placement_count} placements · {item.delivery.issued_presentation_count} issued · {item.delivery.qualified_presentation_count} seen · expires {dateTimeLabel(item.expires_at)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
 
           <details style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
             <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 900 }}>
@@ -751,9 +772,9 @@ export default function AdminGsnHouseCampaignPage() {
                   <div style={{ marginTop: 10, display: "grid", gap: 7, ...helper() }}>
                     <div>{item.content.message}</div>
                     <div><strong>Destinations:</strong> {item.delivery.placement_count}</div>
-                    <div><strong>Delivery rounds:</strong> {item.delivery.consumed_delivery_rounds}/{item.delivery.max_delivery_rounds}</div>
-                    <div><strong>Qualified presentations:</strong> {item.delivery.qualified_presentation_count}</div>
-                    <div><strong>Unique qualified viewer accounts:</strong> {item.delivery.unique_qualified_viewer_accounts}</div>
+                    <div><strong>Issued by GSN:</strong> {item.delivery.issued_presentation_count}</div>
+                    <div><strong>Seen:</strong> {item.delivery.qualified_presentation_count}</div>
+                    <div><strong>People who saw it:</strong> {item.delivery.unique_qualified_viewer_accounts}</div>
                     {item.withdrawal_audit?.reason ? <div><strong>Stop reason:</strong> {item.withdrawal_audit.reason}</div> : null}
                   </div>
                 </details>
@@ -1015,9 +1036,9 @@ export default function AdminGsnHouseCampaignPage() {
             Use one short official message and one picture or short video. Uploading media does not publish the campaign.
           </p>
 
-          {operations?.current ? (
+          {operations?.active_count ? (
             <div style={{ marginTop: 13, ...statusPanel("info") }}>
-              Campaign #{operations.current.campaign_id} is already {stateLabel(operations.current.state)}. Stop it or wait for expiry before reviewing a different campaign.
+              {operations.active_count} promotion{operations.active_count === 1 ? " is" : "s are"} already active. This new promotion will join that inventory; it will not replace them.
             </div>
           ) : null}
 
@@ -1075,7 +1096,7 @@ export default function AdminGsnHouseCampaignPage() {
                 stableHeight={54}
                 busy={reviewing || preparingMedia}
                 busyLabel={preparingMedia ? "Preparing media" : "Preparing review"}
-                disabled={Boolean(operations?.current) || selectedRows.length === 0 || message.trim().length < 2 || !media}
+                disabled={selectedRows.length === 0 || message.trim().length < 2 || !media}
                 onClick={handleReview}
                 debugId="admin-gsn-campaign.review"
               >
