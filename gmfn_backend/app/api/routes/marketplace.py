@@ -683,9 +683,10 @@ def _gsn_house_governance_boundary() -> dict[str, Any]:
         "trust_signal": False,
         "member_advertising_credit_consumed": False,
         "plain_language": (
-            "This is a GSN-authored service announcement. Delivery into a Community "
-            "Domain means the domain opted into GSN house campaigns; it does not mean "
-            "the community endorses the message or the advertised subject."
+            "This is a GSN-authored service announcement. Active free communities "
+            "receive governed GSN advertising by default. An eligible Community Domain "
+            "may record an exclusion. Delivery never means the community endorses the "
+            "message or the advertised subject."
         ),
     }
 
@@ -742,11 +743,11 @@ def _gsn_house_destination_decision(db: Session, *, clan_id: int) -> dict[str, A
     if domain is None:
         return {
             **base,
-            "eligible": False,
-            "reason_code": "active_community_domain_required",
+            "eligible": True,
+            "reason_code": "eligible_free_community",
             "reason": (
-                "Central GSN house campaigns require an active Community Domain "
-                "with an explicit advertising opt-in."
+                "This active free community receives governed GSN advertising "
+                "unless a later community plan records an exclusion."
             ),
         }
     if _safe_str(getattr(domain, "status", None)).lower() != "active":
@@ -780,19 +781,22 @@ def _gsn_house_destination_decision(db: Session, *, clan_id: int) -> dict[str, A
         .first()
     )
     config = _json_load(getattr(policy, "config_json", None) if policy is not None else None)
-    if config.get("allow_gsn_house_campaigns") is not True:
+    if config.get("allow_gsn_house_campaigns") is False:
         return {
             **base,
             "eligible": False,
-            "reason_code": "gsn_house_campaign_opt_in_required",
-            "reason": "This Community Domain has not explicitly allowed GSN house campaigns.",
+            "reason_code": "gsn_house_campaign_excluded",
+            "reason": "This Community Domain has explicitly excluded GSN house campaigns.",
         }
 
     return {
         **base,
         "eligible": True,
         "reason_code": "eligible",
-        "reason": "The active Community Domain explicitly allows GSN house campaigns.",
+        "reason": (
+            "This active Community Domain has no central-advertising exclusion, "
+            "so governed GSN house campaigns are allowed."
+        ),
     }
 
 
@@ -829,41 +833,44 @@ def _gsn_house_destination_catalogue(
     query: Optional[str],
     limit: int,
 ) -> dict[str, Any]:
-    q = (
-        db.query(CommunityDomain)
-        .join(Clan, Clan.id == CommunityDomain.clan_id)
-        .filter(CommunityDomain.clan_id.isnot(None))
-    )
+    # Begin with communities, not Community Domains. An active community that
+    # has not completed Community Domain setup is still a valid search result;
+    # it must be shown as blocked with the reason instead of disappearing.
+    q = db.query(Clan)
     cleaned_query = _safe_str(query)
     if cleaned_query:
         pattern = f"%{cleaned_query}%"
+        matching_domain_clan_ids = (
+            db.query(CommunityDomain.clan_id)
+            .filter(CommunityDomain.clan_id.isnot(None))
+            .filter(
+                or_(
+                    CommunityDomain.display_name.ilike(pattern),
+                    CommunityDomain.domain_name.ilike(pattern),
+                )
+            )
+        )
         q = q.filter(
             or_(
-                CommunityDomain.display_name.ilike(pattern),
-                CommunityDomain.domain_name.ilike(pattern),
                 Clan.name.ilike(pattern),
                 Clan.marketplace_name.ilike(pattern),
                 Clan.community_code.ilike(pattern),
+                Clan.id.in_(matching_domain_clan_ids),
             )
         )
     matching_total = q.count()
     rows = (
         q.order_by(
-            CommunityDomain.display_name.asc(),
-            CommunityDomain.updated_at.desc(),
-            CommunityDomain.id.desc(),
+            func.lower(func.coalesce(Clan.marketplace_name, Clan.name)).asc(),
+            Clan.id.asc(),
         )
         .limit(int(limit))
         .all()
     )
-    decisions: list[dict[str, Any]] = []
-    seen_clan_ids: set[int] = set()
-    for domain in rows:
-        clan_id = _safe_int(getattr(domain, "clan_id", None), 0)
-        if clan_id <= 0 or clan_id in seen_clan_ids:
-            continue
-        seen_clan_ids.add(clan_id)
-        decisions.append(_gsn_house_destination_decision(db, clan_id=clan_id))
+    decisions = [
+        _gsn_house_destination_decision(db, clan_id=int(clan.id))
+        for clan in rows
+    ]
     return {
         "items": decisions,
         "returned_count": len(decisions),
@@ -7472,9 +7479,9 @@ def create_gsn_house_campaign(
             detail={
                 "code": "no_gsn_house_campaign_destinations",
                 "message": (
-                    "No selected community is eligible. A destination must be an active "
-                    "Community Domain with Spotlight enabled and an explicit GSN house "
-                    "campaign opt-in."
+                    "No selected community is eligible. The community must be active, "
+                    "Spotlight must remain available, and no governing Community Domain "
+                    "advertising exclusion may apply."
                 ),
                 "excluded_destinations": preview["excluded_destinations"],
             },

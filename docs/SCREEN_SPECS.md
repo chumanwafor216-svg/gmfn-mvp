@@ -1639,7 +1639,7 @@ Reply
 Route: `/app/command-center/gsn-campaigns`.
 
 Purpose:
-Give platform admins one controlled place to publish an official GSN Spotlight campaign into selected Community Domains that currently allow central GSN advertising.
+Give platform admins one controlled place to publish an official GSN Spotlight campaign into selected active communities while respecting Community Domain advertising exclusions.
 
 Must show:
 - Command Centre header and back navigation
@@ -1647,7 +1647,7 @@ Must show:
 - compact active-inventory status with expiry and a manual refresh
 - campaign history with status plus separate issued-for-delivery, seen, and unique-viewer counts
 - a guarded emergency stop requiring an audit reason and explicit permanent-withdrawal confirmation
-- searchable Community Domain destination chooser using visible community names and codes
+- searchable community destination chooser using visible community names and codes
 - eligible and blocked destination rows, with a plain-language reason for every blocked row
 - selected and excluded destination summaries before publication
 - one short campaign message
@@ -1656,16 +1656,17 @@ Must show:
 - explicit final confirmation that the campaign is official GSN communication and does not endorse a member, shop, or Community Domain
 - publication result with published and excluded destination counts
 - explicit unpublished-review discard with reference-safe uploaded-media cleanup
-- compact governance details explaining the 24-hour lifetime, destination opt-in recheck, audit record, and non-endorsement boundary
+- compact governance details explaining the 24-hour lifetime, destination exclusion recheck, audit record, and non-endorsement boundary
 
 Rules:
 - The route and every related API action must remain platform-admin only.
 - GSN house promotions form a central inventory and may overlap. This exception applies only to the reserved `GSN-HOUSE` system publisher; ordinary member/shop campaigns retain the one-active-owner rule.
 - Publication identity is the reserved non-login system publisher `GSN-HOUSE`; the signed-in admin remains the audit actor.
-- Destination discovery and selection must use human-readable Community Domain names/codes; raw internal ids must not be the primary operator-facing label.
-- Only explicitly selected, active Community Domains with `domain.central_advertising.allow_gsn_house_campaigns` enabled may receive the campaign.
-- Blocked or opted-out destinations must be visible but not selectable.
-- Eligibility must be rechecked by the backend when each destination is served. A later opt-out must stop delivery.
+- Destination discovery and selection must use human-readable community names/codes; raw internal ids must not be the primary operator-facing label.
+- An explicitly selected active free community is eligible by default. It does not need a Community Domain record before GSN advertising can enter available Spotlight space.
+- A linked Community Domain may block GSN house campaigns by recording `domain.central_advertising.allow_gsn_house_campaigns: false`. An inactive community/domain or a Domain Spotlight mode of `off` also blocks delivery.
+- Blocked or explicitly excluded destinations must be visible but not selectable.
+- Eligibility must be rechecked by the backend when each destination is served. A later advertising exclusion must stop delivery.
 - Preview must be read-only and must happen before the final publish action becomes available.
 - Picture/video preparation and upload may happen while preparing the preview, but uploading media alone must never publish a campaign.
 - The final publish action must require explicit confirmation and an idempotency key so a retry cannot create duplicate campaigns.

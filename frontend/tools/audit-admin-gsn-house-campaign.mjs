@@ -160,14 +160,14 @@ for (const functionName of [
 requireText(
   eligibilityFile,
   eligibility,
-  "REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN",
-  "The delivery-time opt-out rejection is missing."
+  "REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED",
+  "The delivery-time advertising-exclusion rejection is missing."
 );
 requireText(
   eligibilityFile,
   eligibility,
   "allow_gsn_house_campaigns",
-  "Delivery-time opt-in revalidation is missing."
+  "Delivery-time advertising-policy revalidation is missing."
 );
 
 if (findings.length > 0) {

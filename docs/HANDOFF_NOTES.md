@@ -23,10 +23,13 @@ under `docs/` or `docs/archive/`, then link that file here.
   campaign for ordinary member/shop publishers. A new Alembic migration applies
   that narrow exception without changing member entitlements.
 - The Command Centre may hold up to 100 active GSN promotions during this pilot,
-  display the full active inventory, and target up to 100 explicitly opted-in
-  Community Domains per promotion. The tested requested case is 60 simultaneous
-  active promotions. Name/code search remains operator-facing; clan ids remain
-  internal transport keys.
+  display the full active inventory, and target up to 100 selected active
+  communities per promotion. Active free communities are eligible by default;
+  they do not need a Community Domain record. A linked Community Domain may
+  block delivery through inactive lifecycle, Spotlight-off policy, or an
+  explicit central-advertising exclusion. The tested requested case is 60
+  simultaneous active promotions. Name/code search remains operator-facing;
+  clan ids remain internal transport keys.
 - The authenticated Community Marketplace rail requests five active broadcasts
   at a time and advances a bounded offset on each 30-second refresh, wrapping to
   the beginning after the eligible inventory is exhausted. The 60-promotion
@@ -43,9 +46,10 @@ under `docs/` or `docs/archive/`, then link that file here.
   viewer accounts (`People who saw it`). The screen no longer presents the
   technical round counter as though it were an impression count. Issuance is
   not claimed as proof that a handset received the response.
-- Community-domain central-advertising opt-in, delivery-time revalidation,
-  platform-admin-only access, 24-hour expiry, idempotency, reference-safe media
-  cleanup, non-endorsement, and audited emergency stop remain intact.
+- Default free-community advertising, Community Domain exclusion and
+  delivery-time revalidation, platform-admin-only access, 24-hour expiry,
+  idempotency, reference-safe media cleanup, non-endorsement, and audited
+  emergency stop remain intact.
 - Verification passed: all 12 GSN inventory/publisher tests in one complete
   run; 40 combined GSN, pacing, and
   presentation tests in the non-media run; an explicit 60-active-promotion
@@ -80,9 +84,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Added platform-admin-only operational routes:
   POST /marketplace/admin/gsn-house-campaigns/{campaign_id}/stop and
   POST /marketplace/admin/gsn-house-campaigns/media/discard.
-- The destination catalogue lets staff find Community Domains by visible name
-  or code and returns the current eligibility/reason, so the staff screen does
-  not require typing hidden community IDs.
+- The destination catalogue lets staff find all communities by visible name or
+  code and returns the current eligibility/reason, including active free
+  communities with no Community Domain row, so the staff screen does not
+  require typing hidden community IDs.
 - Registered and implemented the platform-admin-only screen
   /app/command-center/gsn-campaigns. Its Command Centre card is hidden from
   community admins and the route remains inside the inner platform-admin
@@ -98,12 +103,14 @@ under `docs/` or `docs/archive/`, then link that file here.
   review and confirmation. Discarded unpublished reviews call a reference-safe
   cleanup route: only managed unreferenced media can be deleted, while media
   referenced by a surviving record is retained.
-- Destination selection fails closed. A placement is created only for an
-  active Community Domain whose Spotlight feature is not off and whose active
+- Destination selection now follows the owner-confirmed advertising model. An
+  active free community is eligible by default and does not need a Community
+  Domain row. A linked Community Domain blocks delivery when its lifecycle is
+  inactive, its Spotlight feature is off, or its active
   domain.central_advertising policy explicitly contains
-  allow_gsn_house_campaigns: true. Preview and publish return every eligible
+  allow_gsn_house_campaigns: false. Preview and publish return every eligible
   and excluded destination with a reason. Canonical delivery eligibility
-  re-checks that opt-in, so deactivating the policy stops future delivery in
+  re-checks exclusion state, so a later exclusion stops future delivery in
   that destination without deleting campaign or audit history.
 - GSN house publication reuses the canonical Spotlight campaign, placement,
   content-version, eligibility, presentation, and evidence machinery. A

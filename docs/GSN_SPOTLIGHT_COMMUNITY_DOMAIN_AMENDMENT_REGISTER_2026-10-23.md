@@ -193,8 +193,9 @@ Code references:
 
 - GSN has a reusable canonical Spotlight engine and placements.
 - A bounded backend foundation now lets a platform administrator preview
-  eligible/excluded Community Domain destinations and publish one 24-hour GSN
-  house campaign into only explicitly opted-in destinations. It preserves the
+  eligible/excluded community destinations and publish one 24-hour GSN house
+  campaign into selected active free communities by default while respecting
+  explicit Community Domain exclusions. It preserves the
   canonical campaign, placement, content-version, eligibility, presentation,
   and TrustEvent paths.
 - It still does not have a complete authorised GSN Command Centre operation
@@ -627,10 +628,12 @@ An activation API alone is not a finished publishing channel.
 - Do not call the feature complete until public presentation, permission,
   management, withdrawal, and reporting are verified.
 - Partial implementation on 2026-10-23: platform-admin preview and immediate
-  publish now create one canonical GSN house campaign and only explicitly
-  permitted placements, with destination reasons, idempotency, institutional
-  publisher identity, actor/subject audit separation, and delivery-time opt-in
-  revalidation. An admin-only named destination catalogue now supplies the
+  publish now create one canonical GSN house campaign and selected active
+  placements, with destination reasons, idempotency, institutional publisher
+  identity, actor/subject audit separation, and delivery-time advertising-
+  exclusion revalidation. Active free communities are allowed by default;
+  Community Domain lifecycle, Spotlight-off policy, or an explicit central-
+  advertising exclusion blocks delivery. An admin-only named destination catalogue now supplies the
   selection data without requiring hidden IDs. The registered
   /app/command-center/gsn-campaigns screen now completes the controlled
   named-destination, media preparation, read-only review, explicit

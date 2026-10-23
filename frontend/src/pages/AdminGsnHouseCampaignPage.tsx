@@ -137,7 +137,7 @@ function statusPanel(tone: "error" | "success" | "info"): React.CSSProperties {
 }
 
 function destinationTitle(row: GsnHouseCampaignDestination): string {
-  return safeStr(row.community_domain_name) || safeStr(row.community_name, "Unnamed Community Domain");
+  return safeStr(row.community_domain_name) || safeStr(row.community_name, "Unnamed community");
 }
 
 function destinationContext(row: GsnHouseCampaignDestination): string {
@@ -274,7 +274,7 @@ export default function AdminGsnHouseCampaignPage() {
     } catch (error) {
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(error, "Community Domain destinations could not be loaded."),
+        text: structuredErrorMessage(error, "Community destinations could not be loaded."),
       });
     } finally {
       setLoadingCatalogue(false);
@@ -318,7 +318,7 @@ export default function AdminGsnHouseCampaignPage() {
       if (Object.keys(current).length >= 100) {
         setFeedback({
           tone: "error",
-          text: "A single GSN promotion can target at most 100 Community Domains in this pilot.",
+          text: "A single GSN promotion can target at most 100 communities in this pilot.",
         });
         return current;
       }
@@ -400,7 +400,7 @@ export default function AdminGsnHouseCampaignPage() {
     setConfirmed(false);
     const cleanMessage = message.trim();
     if (selectedRows.length === 0) {
-      setFeedback({ tone: "error", text: "Select at least one eligible Community Domain." });
+      setFeedback({ tone: "error", text: "Select at least one eligible community." });
       return;
     }
     if (cleanMessage.length < 2) {
@@ -421,7 +421,7 @@ export default function AdminGsnHouseCampaignPage() {
         setReview(null);
         setFeedback({
           tone: "error",
-          text: "None of the selected Community Domains is still eligible. Review the exclusions and choose another destination.",
+          text: "None of the selected communities is still eligible. Review the exclusions and choose another destination.",
         });
         return;
       }
@@ -573,7 +573,7 @@ export default function AdminGsnHouseCampaignPage() {
         <PageTopNav
           sectionLabel="Platform administration"
           title="GSN Spotlight publisher"
-          subtitle="Build a central inventory of official GSN promotions for Community Domains that explicitly allow central advertising."
+          subtitle="Build a central inventory of official GSN promotions for active communities, while respecting recorded advertising exclusions."
           homeTo={APP_ROUTES.ADMIN_COMMAND}
           homeLabel="Command Centre"
           backTo={APP_ROUTES.ADMIN_COMMAND}
@@ -895,7 +895,7 @@ export default function AdminGsnHouseCampaignPage() {
               Official GSN campaign is live
             </h2>
             <p style={{ margin: "8px 0 0", color: "#166534", lineHeight: 1.65 }}>
-              Published to {Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0)} currently eligible Community Domain{Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0) === 1 ? "" : "s"}. {Number(publication.excluded_count || 0)} destination{Number(publication.excluded_count || 0) === 1 ? " was" : "s were"} excluded.
+              Published to {Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0)} currently eligible communit{Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0) === 1 ? "y" : "ies"}. {Number(publication.excluded_count || 0)} destination{Number(publication.excluded_count || 0) === 1 ? " was" : "s were"} excluded.
             </p>
             <div style={{ marginTop: 13, ...softCard("#FFFFFF"), ...helper() }}>
               Publisher: <strong>Global Support Network (GSN-HOUSE)</strong><br />
@@ -917,7 +917,7 @@ export default function AdminGsnHouseCampaignPage() {
           </summary>
           <div style={{ marginTop: 13, ...helper(), display: "grid", gap: 8 }}>
             <div>The campaign expires after 24 hours.</div>
-            <div>Only explicitly selected Community Domains are considered.</div>
+            <div>Only explicitly selected communities are considered.</div>
             <div>A destination opt-out or policy change stops later delivery because eligibility is rechecked by the backend.</div>
             <div>The publication creates an audit event, not a seller trust claim, member endorsement, community endorsement, shop, or contact route.</div>
             <div>The normal member Spotlight quota and member advertising credit are not used.</div>
@@ -926,12 +926,12 @@ export default function AdminGsnHouseCampaignPage() {
         {feedback ? <div role="status" style={{ ...statusPanel(feedback.tone), order: 2 }}>{feedback.text}</div> : null}
 
         <section style={{ ...card(), order: 3 }}>
-          <div style={sectionLabel()}>1. Choose Community Domains</div>
+          <div style={sectionLabel()}>1. Choose communities</div>
           <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
             Where should this official campaign appear?
           </h2>
           <p style={{ margin: "8px 0 0", ...helper() }}>
-            Only active Community Domains with an explicit central-advertising opt-in can be selected. Blocked rows stay visible so the reason is clear.
+            Active free communities are available by default. A Community Domain is blocked only when its lifecycle, Spotlight policy, or recorded advertising exclusion prevents delivery. Blocked rows stay visible so the reason is clear.
           </p>
 
           <form
@@ -969,7 +969,7 @@ export default function AdminGsnHouseCampaignPage() {
 
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {catalogue.length === 0 && !loadingCatalogue ? (
-              <div style={softCard()}>No matching Community Domains were found.</div>
+              <div style={softCard()}>No matching communities were found.</div>
             ) : null}
             {catalogue.map((row) => {
               const checked = Boolean(selected[row.clan_id]);

@@ -47,7 +47,7 @@ REJECTION_NO_ELIGIBLE_ROUTE = "no_eligible_route"
 REJECTION_DOMAIN_SPOTLIGHT_DISABLED = "community_domain_spotlight_disabled"
 REJECTION_DOMAIN_ROUTE_NOT_PERMITTED = "community_domain_route_not_permitted"
 REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED = "community_domain_content_policy_blocked"
-REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN = "gsn_house_campaign_opt_in_withdrawn"
+REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED = "gsn_house_campaign_advertising_excluded"
 
 DISTRIBUTION_SCOPE_MARKETPLACE_REPOST = "marketplace_repost"
 DISTRIBUTION_SCOPE_COMMUNITY_DOMAIN = "community_domain"
@@ -451,13 +451,20 @@ def _gsn_house_allowed_by_clan(
 ) -> dict[int, bool]:
     out: dict[int, bool] = {}
     for clan_id in _dedupe_ints(clan_ids):
+        clan = db.get(Clan, int(clan_id))
+        if clan is None or str(clan.status or "active").strip().lower() != "active":
+            out[int(clan_id)] = False
+            continue
         domain = (
             db.query(CommunityDomain)
             .filter(CommunityDomain.clan_id == int(clan_id))
             .order_by(CommunityDomain.updated_at.desc(), CommunityDomain.id.desc())
             .first()
         )
-        if domain is None or str(domain.status or "").strip().lower() != "active":
+        if domain is None:
+            out[int(clan_id)] = True
+            continue
+        if str(domain.status or "").strip().lower() != "active":
             out[int(clan_id)] = False
             continue
         policy = (
@@ -471,7 +478,7 @@ def _gsn_house_allowed_by_clan(
         config = _safe_json_object(
             getattr(policy, "config_json", None) if policy is not None else None
         )
-        out[int(clan_id)] = config.get("allow_gsn_house_campaigns") is True
+        out[int(clan_id)] = config.get("allow_gsn_house_campaigns") is not False
     return out
 
 
@@ -595,7 +602,7 @@ def _evaluate_loaded_campaign(
                 == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
                 and not gsn_house_allowed_by_clan.get(route_clan_id, False)
             ):
-                rejected_route_codes.add(REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN)
+                rejected_route_codes.add(REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED)
                 continue
             pathway = _route_pathway_for_placement(
                 campaign=campaign,
@@ -697,10 +704,10 @@ def _evaluate_loaded_campaign(
     elif rejected_route_codes == {REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED}:
         rejection_code = REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED
         reason = "A structured Community Domain content policy blocked this Spotlight route."
-    elif rejected_route_codes == {REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN}:
-        rejection_code = REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN
+    elif rejected_route_codes == {REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED}:
+        rejection_code = REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED
         reason = (
-            "The destination Community Domain no longer permits GSN house campaigns."
+            "The destination governance explicitly excludes GSN house campaigns."
         )
     else:
         rejection_code = REJECTION_NO_ELIGIBLE_ROUTE

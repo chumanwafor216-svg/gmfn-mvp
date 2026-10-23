@@ -8,7 +8,7 @@ from sqlalchemy import text
 from app.api.routes import marketplace as marketplace_routes
 from app.db.database import SessionLocal, engine
 from app.services.spotlight_opportunity_eligibility_service import (
-    REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN,
+    REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED,
     evaluate_spotlight_eligibility,
 )
 from app.services.spotlight_pacing_state_service import (
@@ -39,7 +39,9 @@ def _seed_house_campaign_destinations() -> None:
                 ) VALUES
                     (1, 'Opted In Community', 'Opted In Market', 'GSN-C-000001', 'HOUSE-1', 'active', 0, CURRENT_TIMESTAMP),
                     (2, 'No Advertising Policy', 'No Policy Market', 'GSN-C-000002', 'HOUSE-2', 'active', 0, CURRENT_TIMESTAMP),
-                    (3, 'Spotlight Disabled', 'Disabled Market', 'GSN-C-000003', 'HOUSE-3', 'active', 0, CURRENT_TIMESTAMP)
+                    (3, 'Spotlight Disabled', 'Disabled Market', 'GSN-C-000003', 'HOUSE-3', 'active', 0, CURRENT_TIMESTAMP),
+                    (9, 'No Community Domain', 'No Domain Market', 'GMFN-C-000009', 'HOUSE-9', 'active', 0, CURRENT_TIMESTAMP),
+                    (10, 'Advertising Excluded', 'Excluded Market', 'GSN-C-000010', 'HOUSE-10', 'active', 0, CURRENT_TIMESTAMP)
                 """
             )
         )
@@ -61,7 +63,8 @@ def _seed_house_campaign_destinations() -> None:
                 ) VALUES
                     (101, 'opted-in', 'Opted In Domain', 'generic_association', 'generic_association', 2, 1, 'active', 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
                     (102, 'no-policy', 'No Policy Domain', 'generic_association', 'generic_association', 2, 2, 'active', 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                    (103, 'spotlight-off', 'Spotlight Disabled Domain', 'generic_association', 'generic_association', 2, 3, 'active', 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    (103, 'spotlight-off', 'Spotlight Disabled Domain', 'generic_association', 'generic_association', 2, 3, 'active', 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                    (110, 'advertising-excluded', 'Advertising Excluded Domain', 'generic_association', 'generic_association', 2, 10, 'active', 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
             )
         )
@@ -89,6 +92,14 @@ def _seed_house_campaign_destinations() -> None:
                 "action_key": "domain.features.configure",
                 "summary": "Disable Spotlight",
                 "config": json.dumps({"features": {"spotlight": "off"}}),
+            },
+            {
+                "id": 210,
+                "domain_id": 110,
+                "policy_key": "domain.central_advertising",
+                "action_key": "domain.central_advertising.configure",
+                "summary": "Exclude GSN house campaigns",
+                "config": json.dumps({"allow_gsn_house_campaigns": False}),
             },
         ]
         conn.execute(
@@ -162,11 +173,20 @@ def test_house_campaign_destination_catalogue_is_named_and_governed(
         "/marketplace/admin/gsn-house-campaigns/destinations",
         params={"q": "Disabled"},
     )
+    missing_domain_by_name = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"q": "No Community Domain"},
+    )
+    missing_domain_by_code = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"q": "GMFN-C-000009"},
+    )
 
     assert all_destinations.status_code == 200, all_destinations.text
     all_body = all_destinations.json()
-    assert all_body["returned_count"] == 3
-    assert all_body["eligible_count"] == 1
+    assert all_body["returned_count"] == 5
+    assert all_body["eligible_count"] == 3
+    assert all_body["excluded_count"] == 2
     assert {
         row["community_name"]: row["community_code"]
         for row in all_body["items"]
@@ -174,14 +194,18 @@ def test_house_campaign_destination_catalogue_is_named_and_governed(
         "Opted In Market": "GSN-C-000001",
         "No Policy Market": "GSN-C-000002",
         "Disabled Market": "GSN-C-000003",
+        "No Domain Market": "GMFN-C-000009",
+        "Excluded Market": "GSN-C-000010",
     }
     assert {
         row["community_name"]: row["reason_code"]
         for row in all_body["items"]
     } == {
         "Opted In Market": "eligible",
-        "No Policy Market": "gsn_house_campaign_opt_in_required",
+        "No Policy Market": "eligible",
         "Disabled Market": "community_domain_spotlight_disabled",
+        "No Domain Market": "eligible_free_community",
+        "Excluded Market": "gsn_house_campaign_excluded",
     }
 
     assert searched.status_code == 200, searched.text
@@ -190,8 +214,17 @@ def test_house_campaign_destination_catalogue_is_named_and_governed(
     assert searched_body["items"][0]["community_domain_name"] == "Spotlight Disabled Domain"
     assert searched_body["items"][0]["reason_code"] == "community_domain_spotlight_disabled"
 
+    for response in (missing_domain_by_name, missing_domain_by_code):
+        assert response.status_code == 200, response.text
+        missing_body = response.json()
+        assert missing_body["matching_total"] == 1
+        assert missing_body["returned_count"] == 1
+        assert missing_body["items"][0]["community_code"] == "GMFN-C-000009"
+        assert missing_body["items"][0]["eligible"] is True
+        assert missing_body["items"][0]["reason_code"] == "eligible_free_community"
 
-def test_house_campaign_preview_fails_closed_by_domain_policy(
+
+def test_house_campaign_preview_defaults_free_communities_and_respects_exclusions(
     client,
     override_current_user,
 ) -> None:
@@ -199,17 +232,17 @@ def test_house_campaign_preview_fails_closed_by_domain_policy(
 
     response = client.post(
         "/marketplace/admin/gsn-house-campaigns/preview",
-        json={"clan_ids": [1, 2, 3, 999]},
+        json={"clan_ids": [1, 2, 3, 9, 10, 999]},
     )
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["eligible_clan_ids"] == [1]
-    assert body["eligible_count"] == 1
+    assert body["eligible_clan_ids"] == [1, 2, 9]
+    assert body["eligible_count"] == 3
     excluded = {row["clan_id"]: row["reason_code"] for row in body["excluded_destinations"]}
     assert excluded == {
-        2: "gsn_house_campaign_opt_in_required",
         3: "community_domain_spotlight_disabled",
+        10: "gsn_house_campaign_excluded",
         999: "community_not_found",
     }
     assert body["governance_boundary"]["community_endorsement"] is False
@@ -254,8 +287,8 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
     assert first.status_code == 200, first.text
     assert replay.status_code == 200, replay.text
     body = first.json()
-    assert body["propagated_clan_ids"] == [1]
-    assert body["excluded_count"] == 2
+    assert body["propagated_clan_ids"] == [1, 2]
+    assert body["excluded_count"] == 1
     assert body["idempotent_replay"] is False
     assert replay.json()["idempotent_replay"] is True
 
@@ -301,8 +334,14 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
         "commercial_mode": "house",
         "distribution_scope": "selected_communities",
     }
-    assert placements == [{"clan_id": 1, "author_user_id": publisher["id"], "shop_id": None}]
-    assert events == [{"actor_user_id": 1, "subject_user_id": publisher["id"]}]
+    assert placements == [
+        {"clan_id": 1, "author_user_id": publisher["id"], "shop_id": None},
+        {"clan_id": 2, "author_user_id": publisher["id"], "shop_id": None},
+    ]
+    assert events == [
+        {"actor_user_id": 1, "subject_user_id": publisher["id"]},
+        {"actor_user_id": 1, "subject_user_id": publisher["id"]},
+    ]
 
     with SessionLocal() as db:
         member_quota_use = marketplace_routes._count_free_spotlight_runs_for_author_today(
@@ -331,7 +370,7 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
             text(
                 """
                 UPDATE community_domain_policies
-                SET status = 'inactive'
+                SET config_json = '{"allow_gsn_house_campaigns": false}'
                 WHERE community_domain_id = 101
                   AND policy_key = 'domain.central_advertising'
                 """
@@ -345,7 +384,7 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
         )
 
     assert after_opt_out.eligible is False
-    assert after_opt_out.rejection_code == REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN
+    assert after_opt_out.rejection_code == REJECTION_GSN_HOUSE_ADVERTISING_EXCLUDED
 
 
 def test_house_campaign_inventory_allows_parallel_active_promotions(
