@@ -10,8 +10,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## GSN house Spotlight multi-promotion pilot inventory - 2026-10-23
 
-- Status: locally implemented and verified; not yet claimed deployed in this
-  handoff entry.
+- Status: implemented, committed as application commit `6f452b7f`, pushed to
+  `codex/spotlight-rotation-continuity` and `main`, and deployed to both Render
+  services on 2026-10-23.
 - The owner approved a simpler first-stage behaviour: automatic Spotlight
   movement only, with no new viewer next/previous, pause, or fast-forward
   controls. The shared community pilot rail now moves every five seconds while
@@ -51,6 +52,15 @@ under `docs/` or `docs/archive/`, then link that file here.
   regression; the bounded-inventory rejection test; a clean fresh-database
   Alembic upgrade to `20261023_parallel_gsn_house`; all three relevant frontend
   audits; and the 292-module production frontend build.
+- GitHub Backend Tests run `40002436058` passed on the exact application
+  commit. Trigger Render Deploy run `40002968467` then completed successfully,
+  including its public frontend marker and live API identity-contract checks.
+  Exact frontend deploy `dep-dbdqckebv0ns73bobnr0` and exact API deploy
+  `dep-dbdqdvrrjlhs7381mnqg` both reached `live`; the API pre-deploy migration
+  completed before traffic moved. Independent read-only requests returned HTTP
+  200 from the frontend and an `ok = true` response from `/health`. The authenticated
+  broadcast route correctly rejected the unauthenticated diagnostic request,
+  so that request is not evidence of populated member inventory.
 - Still not implemented in this slice: country/region audience targeting,
   viewer-local peak/off-peak scheduling, configurable 60/40 allocation,
   independent CDN proof, pagination beyond the 100-item pilot, or 100/1,000
