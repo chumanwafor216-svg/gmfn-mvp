@@ -2,11 +2,12 @@
 
 ## Deployment decision
 
-Do not push or deploy this cleanup patch until it has been reviewed. The two
-19 October out-of-memory incidents are confirmed, and several risks have been
-reduced locally, but the exact allocation responsible for either fatal spike
-was not captured by Render's 30-second metrics. A successful CI run does not
-prove the production memory problem is closed.
+The product owner approved a controlled push and deployment on 23 October
+2026. Keep Spotlight retention disabled for this rollout and use the new
+telemetry to validate production behavior. The two 19 October out-of-memory
+incidents are confirmed, but the exact allocation responsible for either fatal
+spike was not captured by Render's 30-second metrics. A successful deploy does
+not prove the production memory problem is closed.
 
 ## Confirmed production evidence
 
@@ -191,8 +192,13 @@ relative comparison. They are not substitutes for production container RSS.
 
 ## Decisions requiring owner approval
 
-- Approval to commit/push/deploy this review patch. No push or deploy has been
-  performed during this investigation.
+- Commit/push/deploy approval was granted on 23 October 2026. Commit
+  `ac3844190d0ce403e0b72770bcf8aa023a24c274` is live on `gmfn-api` as Render
+  deploy `dep-dbdouipsrm7s73cfq480`; `/health` returned HTTP 200.
+- Startup telemetry confirmed production Spotlight retention is disabled, but
+  production reconciliation is enabled despite the Blueprint value `0`. Its
+  first observed run found zero communities and completed in 485 ms. Do not
+  disable this money-reconciliation process without separate owner approval.
 - Approval to run the first production retention batch, because it will remove
   expired delivery payload and managed media only after reference checks while
   preserving campaign/version fingerprints, exposure evidence, and audit rows.

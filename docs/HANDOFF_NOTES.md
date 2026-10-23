@@ -1533,6 +1533,14 @@ under `docs/` or `docs/archive/`, then link that file here.
   were rerun successfully with an approved local temp path.
 - Full evidence, ranked causes, exact file impact, rollback, and decision gates
   are in `docs/GSN_API_MEMORY_INVESTIGATION_2026-10-23.md`.
-- No commit, push, deployment, Render env change, hosting-plan change, paid
-  service, production load test, or production data/media deletion was made.
-  Owner review is required before publishing this patch or running retention.
+- Owner approved the controlled rollout. Commit
+  `ac3844190d0ce403e0b72770bcf8aa023a24c274` was pushed to the working branch
+  and `main`, Backend Tests passed, and `gmfn-api` Render deploy
+  `dep-dbdouipsrm7s73cfq480` became live at 16:49:48 UTC. `/health` returned
+  HTTP 200 and the protected GSN publisher API returned 401 without a token.
+- Live startup telemetry reported 232.5 MiB process RSS / 256.0 MiB container
+  memory against 512 MiB, Spotlight retention disabled, batch size 25, and no
+  child processes. It also exposed production reconciliation as enabled even
+  though `render.yaml` says `0`; the first run processed zero communities in
+  485 ms. Disabling reconciliation and running the first Spotlight retention
+  batch both still require separate owner approval.
