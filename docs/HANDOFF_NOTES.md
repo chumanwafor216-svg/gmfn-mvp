@@ -26,8 +26,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: 13 focused backend campaign tests, the Admin GSN House
   campaign audit, Shop Gallery button inventory audit, Spotlight presentation
   audit, the complete protected-button freeze audit, Alembic single-head check,
-  and the 292-module production frontend build. Deployment status is pending
-  commit and pilot promotion.
+  and the 292-module production frontend build. Application commit `fff24b16`
+  was pushed to `codex/spotlight-rotation-continuity` and `main`. Backend CI run
+  `40019365300` passed. Trigger Render Deploy run `40019411473` deployed the
+  exact application commit: frontend deploy `dep-dbds6m40a7sc7394jh4g` and API
+  deploy `dep-dbds7trl550s7387gv80` both reached `live`; the public frontend
+  marker and live API contract checks passed.
 
 ## GSN house batch-media queue and review recovery - 2026-10-23
 
