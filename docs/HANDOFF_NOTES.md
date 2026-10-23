@@ -8,6 +8,27 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Tomorrow: independent GSN entrepreneurs and remaining Spotlight work - 2026-10-24
+
+- The independent GSN partner/worker/entrepreneur model was not touched by the
+  2026-10-23 GSN-house campaign work. It remains a separate product and
+  engineering work package; no role authority, employment relationship,
+  commission, earnings, territory, referral attribution, payout, or campaign
+  publishing right should be inferred from the current system.
+- Tomorrow's first task is to define the role vocabulary, identity and
+  onboarding, permissions, advertiser/community approval boundaries, referral
+  evidence, commercial rules, privacy, audit, suspension, dashboard, and the
+  smallest controlled pilot before coding.
+- The same next-work record preserves every remaining Spotlight gap found in
+  this workstream: regional and branch targeting, viewer-local peak/off-peak
+  scheduling, validated active context, paid/free advertising control,
+  organisational publishing, advertiser billing/refunds, content classes,
+  actual-appearance and playback telemetry, multi-community attribution,
+  personal fatigue controls, pagination and scale/load evidence, CDN proof,
+  and real multi-user phone validation.
+- Durable checklist:
+  [`GSN_SPOTLIGHT_AND_PARTNER_NEXT_WORK_2026-10-24.md`](GSN_SPOTLIGHT_AND_PARTNER_NEXT_WORK_2026-10-24.md).
+
 ## Spotlight 19-item fair-rotation repair - 2026-10-23
 
 - Owner phone testing with 19 active GSN-house promotions exposed real queue
