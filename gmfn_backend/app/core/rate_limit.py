@@ -4,6 +4,7 @@ from __future__ import annotations
 import time
 from collections import deque
 from dataclasses import dataclass
+from threading import Lock
 from typing import Deque, Dict
 
 
@@ -24,26 +25,46 @@ class InMemoryRateLimiter:
 
     def __init__(self) -> None:
         self._hits: Dict[str, Deque[float]] = {}
+        self._largest_window_seconds = 1
+        self._last_sweep_at = 0.0
+        self._lock = Lock()
+
+    def _sweep_stale(self, now: float) -> None:
+        cutoff = now - float(self._largest_window_seconds)
+        stale_keys = [
+            key
+            for key, values in self._hits.items()
+            if not values or values[-1] < cutoff
+        ]
+        for key in stale_keys:
+            self._hits.pop(key, None)
+        self._last_sweep_at = now
 
     def check(self, *, key: str, max_requests: int, window_seconds: int) -> RateLimitResult:
         now = time.time()
-        q = self._hits.get(key)
-        if q is None:
-            q = deque()
-            self._hits[key] = q
+        window = max(1, int(window_seconds))
+        with self._lock:
+            self._largest_window_seconds = max(self._largest_window_seconds, window)
+            if now - self._last_sweep_at >= 5.0:
+                self._sweep_stale(now)
 
-        cutoff = now - float(window_seconds)
-        while q and q[0] < cutoff:
-            q.popleft()
+            q = self._hits.get(key)
+            if q is None:
+                q = deque()
+                self._hits[key] = q
 
-        if len(q) >= int(max_requests):
-            reset_in = int(max(0.0, (q[0] + float(window_seconds)) - now)) if q else int(window_seconds)
-            return RateLimitResult(ok=False, remaining=0, reset_in_seconds=reset_in)
+            cutoff = now - float(window)
+            while q and q[0] < cutoff:
+                q.popleft()
 
-        q.append(now)
-        remaining = int(max_requests) - len(q)
-        reset_in = int(max(0.0, (q[0] + float(window_seconds)) - now)) if q else int(window_seconds)
-        return RateLimitResult(ok=True, remaining=remaining, reset_in_seconds=reset_in)
+            if len(q) >= int(max_requests):
+                reset_in = int(max(0.0, (q[0] + float(window)) - now)) if q else window
+                return RateLimitResult(ok=False, remaining=0, reset_in_seconds=reset_in)
+
+            q.append(now)
+            remaining = int(max_requests) - len(q)
+            reset_in = int(max(0.0, (q[0] + float(window)) - now)) if q else window
+            return RateLimitResult(ok=True, remaining=remaining, reset_in_seconds=reset_in)
 
 
 rate_limiter = InMemoryRateLimiter()

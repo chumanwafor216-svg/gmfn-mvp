@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 import app.services.marketplace_media_cleanup_service as cleanup
 from app.db.database import SessionLocal, engine
@@ -118,7 +118,7 @@ def test_failed_media_delete_stays_queued_and_retries(
     monkeypatch.setattr(
         cleanup,
         "delete_unreferenced_marketplace_media",
-        lambda db, *, media_url: {
+        lambda db, *, media_url, **kwargs: {
             "status": "delete_failed",
             "provider": "local",
         },
@@ -146,7 +146,10 @@ def test_failed_media_delete_stays_queued_and_retries(
     monkeypatch.setattr(
         cleanup,
         "delete_unreferenced_marketplace_media",
-        lambda db, *, media_url: {"status": "deleted", "provider": "local"},
+        lambda db, *, media_url, **kwargs: {
+            "status": "deleted",
+            "provider": "local",
+        },
     )
     with SessionLocal() as db:
         second = cleanup.process_marketplace_media_deletion_tasks(db, limit=10)
@@ -157,3 +160,38 @@ def test_failed_media_delete_stays_queued_and_retries(
         assert conn.execute(
             text("SELECT COUNT(*) FROM marketplace_media_deletion_tasks")
         ).scalar_one() == 0
+
+
+def test_cleanup_batch_scans_reference_columns_once(upload_root):
+    with SessionLocal() as db:
+        queued = cleanup.queue_marketplace_media_deletions(
+            db,
+            media_urls=[
+                f"/uploads/marketplace/images/batch-{index}.jpg"
+                for index in range(50)
+            ],
+            source="bounded_scan_test",
+        )
+        db.commit()
+
+    statement_count = 0
+
+    def count_statement(*args, **kwargs):
+        nonlocal statement_count
+        statement_count += 1
+
+    event.listen(engine, "before_cursor_execute", count_statement)
+    try:
+        with SessionLocal() as db:
+            results = cleanup.process_marketplace_media_deletion_tasks(
+                db,
+                task_ids=queued["task_ids"],
+                limit=50,
+            )
+    finally:
+        event.remove(engine, "before_cursor_execute", count_statement)
+
+    assert len(results) == 50
+    # One task select, twelve reference-column scans, and bounded write work.
+    # The old per-task implementation issued 651 statements for this fixture.
+    assert statement_count <= 20

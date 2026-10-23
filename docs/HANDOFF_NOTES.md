@@ -1498,3 +1498,41 @@ under `docs/` or `docs/archive/`, then link that file here.
   Dairy-juice request is still open. After deployment, reload Dashboard: a
   general community request must not open Attention Guide; a newly tagged test
   request must show its title, open only its card, and stay retired afterward.
+
+## API memory investigation and local containment patch - 2026-10-23
+
+- Render confirmed two 512 MiB OOM kills on 19 October at 12:46:44 and
+  14:52:53 UTC. The second killed an old draining instance during a rollout;
+  sampled memory did not capture either fatal transient. No later OOM event was
+  returned through 23 October after the one-thread FFmpeg containment commit.
+- Long-lived instances still rose from about 265-276 MiB after startup to
+  roughly 378-383 MiB. That proves limited headroom, but current metrics cannot
+  distinguish a Python leak from native caches or allocator high-water memory.
+- Retention did not cause the incidents: no retention log was found and all 342
+  campaigns remain uncompacted. The live env value cannot be read directly, so
+  the local Blueprint is now fail-safe disabled pending explicit approval for
+  the first 25-campaign production batch.
+- Local review patch removes expired keys from three unbounded rate-limit maps,
+  scans 12 media-reference columns once per bounded deletion batch, delays
+  future retention startup by five minutes, defaults retention/retry work to
+  25 rows, and adds privacy-safe process/container/child RSS plus concurrency
+  and background duration/row-count telemetry.
+- Fifty media cleanup tasks improved from 651 SQL statements / 0.607 seconds to
+  14 statements / 0.147 seconds. After 50,000 keys expired, the three retained
+  maps fell from 50,001 entries each to one; current traced heaps were 1.8,
+  2.5, and 2.5 MiB instead of 40.9, 44.3, and 11.3 MiB.
+- A realistic local batch of 25 campaigns, 100 placements, 50 content versions,
+  and 50 media candidates completed in 1.186 seconds with an 8.66 MiB traced
+  Python-heap peak. Repeated health requests stabilized after 2,000 sequential
+  and another 500 at concurrency 20.
+- Verification passed: 26 focused cleanup, retention, rate-limit, upload, and
+  real FFmpeg tests; 88 affected-route limiter tests; one additional real
+  FFmpeg test with instrumentation enabled; Python compilation; and scoped diff
+  checks. The first sandboxed
+  video runs produced only pytest temporary-directory permission errors and
+  were rerun successfully with an approved local temp path.
+- Full evidence, ranked causes, exact file impact, rollback, and decision gates
+  are in `docs/GSN_API_MEMORY_INVESTIGATION_2026-10-23.md`.
+- No commit, push, deployment, Render env change, hosting-plan change, paid
+  service, production load test, or production data/media deletion was made.
+  Owner review is required before publishing this patch or running retention.

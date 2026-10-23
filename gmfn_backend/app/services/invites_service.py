@@ -20,6 +20,8 @@ from app.services.trust_service import log_invite_accepted_event
 
 _INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}
 _JOIN_BUCKET: dict[int, list[float]] = {}
+_INVITE_LAST_SWEEP_AT = 0.0
+_JOIN_LAST_SWEEP_AT = 0.0
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 SUSPENDED_PUBLIC_FRONTEND_HOSTS = {"frontend.onrender.com"}
 COMMUNITY_QR_POLICY_KEYS = {
@@ -36,22 +38,49 @@ def _bucket_prune(ts_list: list[float], window_seconds: int) -> list[float]:
     return [t for t in ts_list if t >= cutoff]
 
 
+def _sweep_bucket_map(bucket: dict, *, now: float, window_seconds: int) -> None:
+    cutoff = now - float(window_seconds)
+    stale_keys = [
+        key for key, values in bucket.items() if not values or values[-1] < cutoff
+    ]
+    for key in stale_keys:
+        bucket.pop(key, None)
+
+
 def _rate_limit_create_invite(user_id: int, clan_id: int, *, limit: int = 20, window_seconds: int = 3600) -> None:
+    global _INVITE_LAST_SWEEP_AT
+    now = time.time()
+    if now - _INVITE_LAST_SWEEP_AT >= 5.0:
+        _sweep_bucket_map(
+            _INVITE_CREATE_BUCKET,
+            now=now,
+            window_seconds=window_seconds,
+        )
+        _INVITE_LAST_SWEEP_AT = now
     key = (user_id, clan_id)
     ts_list = _INVITE_CREATE_BUCKET.get(key, [])
     ts_list = _bucket_prune(ts_list, window_seconds)
     if len(ts_list) >= limit:
         raise HTTPException(status_code=429, detail="Too many invites created. Please wait and try again.")
-    ts_list.append(time.time())
+    ts_list.append(now)
     _INVITE_CREATE_BUCKET[key] = ts_list
 
 
 def _rate_limit_join(user_id: int, *, limit: int = 10, window_seconds: int = 600) -> None:
+    global _JOIN_LAST_SWEEP_AT
+    now = time.time()
+    if now - _JOIN_LAST_SWEEP_AT >= 5.0:
+        _sweep_bucket_map(
+            _JOIN_BUCKET,
+            now=now,
+            window_seconds=window_seconds,
+        )
+        _JOIN_LAST_SWEEP_AT = now
     ts_list = _JOIN_BUCKET.get(user_id, [])
     ts_list = _bucket_prune(ts_list, window_seconds)
     if len(ts_list) >= limit:
         raise HTTPException(status_code=429, detail="Too many join attempts. Please wait and try again.")
-    ts_list.append(time.time())
+    ts_list.append(now)
     _JOIN_BUCKET[user_id] = ts_list
 
 

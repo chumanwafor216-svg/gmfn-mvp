@@ -131,21 +131,45 @@ def marketplace_media_is_referenced(db: Session, media_url: object) -> bool:
     target = canonical_marketplace_media_target(media_url)
     if target is None:
         return False
-    canonical_key = str(target["canonical_key"])
+    return str(target["canonical_key"]) in marketplace_media_reference_keys(
+        db,
+        [media_url],
+    )
 
+
+def marketplace_media_reference_keys(
+    db: Session,
+    media_urls: Iterable[object],
+) -> set[str]:
+    """Scan reference columns once for a bounded batch of managed media targets."""
+
+    target_keys = {
+        str(target["canonical_key"])
+        for media_url in media_urls
+        if (target := canonical_marketplace_media_target(media_url)) is not None
+    }
+    if not target_keys:
+        return set()
+
+    referenced_keys: set[str] = set()
     for column in _reference_columns():
         rows = db.query(column).filter(column.isnot(None)).yield_per(500)
         for (candidate_url,) in rows:
             candidate = canonical_marketplace_media_target(candidate_url)
-            if candidate is not None and candidate["canonical_key"] == canonical_key:
-                return True
-    return False
+            if candidate is not None:
+                canonical_key = str(candidate["canonical_key"])
+                if canonical_key in target_keys:
+                    referenced_keys.add(canonical_key)
+                    if referenced_keys == target_keys:
+                        return referenced_keys
+    return referenced_keys
 
 
 def delete_unreferenced_marketplace_media(
     db: Session,
     *,
     media_url: object,
+    referenced_keys: Optional[set[str]] = None,
 ) -> dict[str, Any]:
     """Attempt one canonical, reference-safe managed-object deletion."""
 
@@ -155,7 +179,13 @@ def delete_unreferenced_marketplace_media(
     target = canonical_marketplace_media_target(value)
     if target is None:
         return {"status": "unmanaged", "provider": None}
-    if marketplace_media_is_referenced(db, value):
+    canonical_key = str(target["canonical_key"])
+    is_referenced = (
+        canonical_key in referenced_keys
+        if referenced_keys is not None
+        else marketplace_media_is_referenced(db, value)
+    )
+    if is_referenced:
         return {"status": "retained_referenced", "provider": None}
 
     provider = str(target["provider"])
@@ -255,9 +285,17 @@ def process_marketplace_media_deletion_tasks(
         .with_for_update(skip_locked=True)
         .all()
     )
+    referenced_keys = marketplace_media_reference_keys(
+        db,
+        [task.media_url for task in tasks],
+    )
     results: list[dict[str, Any]] = []
     for task in tasks:
-        result = delete_unreferenced_marketplace_media(db, media_url=task.media_url)
+        result = delete_unreferenced_marketplace_media(
+            db,
+            media_url=task.media_url,
+            referenced_keys=referenced_keys,
+        )
         results.append({"media_url": task.media_url, **result})
         if result.get("status") == "delete_failed":
             task.attempts = int(task.attempts or 0) + 1

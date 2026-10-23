@@ -3,12 +3,15 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 import imageio_ffmpeg
+
+from app.core.runtime_memory import log_runtime_event, memory_snapshot
 
 
 # Hard rejection floors, not preferred recording targets. Ordinary social-video
@@ -36,6 +39,70 @@ FFMPEG_THREAD_LIMIT = 1
 _MANAGED_VIDEO_PATH = re.compile(
     r"^/uploads/marketplace/videos/qv1_[A-Za-z0-9_-]+[.]mp4$"
 )
+
+
+def _runtime_memory_logging_enabled() -> bool:
+    return str(os.getenv("GSN_RUNTIME_MEMORY_LOGGING", "")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _run_video_process(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run FFmpeg with a bounded timeout and capture its peak direct-child RSS."""
+
+    started = time.monotonic()
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    peak_child_rss_mib = 0.0
+    try:
+        while True:
+            elapsed = time.monotonic() - started
+            remaining = VIDEO_PROCESS_TIMEOUT_SECONDS - elapsed
+            if remaining <= 0:
+                process.kill()
+                stdout, stderr = process.communicate()
+                raise subprocess.TimeoutExpired(
+                    command,
+                    VIDEO_PROCESS_TIMEOUT_SECONDS,
+                    output=stdout,
+                    stderr=stderr,
+                )
+            try:
+                stdout, stderr = process.communicate(timeout=min(0.25, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                child_rss_mib = memory_snapshot().get("child_rss_mib")
+                if child_rss_mib is not None:
+                    peak_child_rss_mib = max(
+                        peak_child_rss_mib,
+                        float(child_rss_mib),
+                    )
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate()
+
+    completed = subprocess.CompletedProcess(
+        command,
+        process.returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+    if _runtime_memory_logging_enabled():
+        log_runtime_event(
+            "video_process_complete",
+            duration_ms=round((time.monotonic() - started) * 1000.0, 1),
+            return_code=int(process.returncode or 0),
+            child_peak_rss_mib=round(peak_child_rss_mib, 1),
+        )
+    return completed
 
 
 class MediaQualityError(ValueError):
@@ -327,13 +394,16 @@ def normalize_marketplace_video(
     command.append(str(destination))
 
     try:
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=VIDEO_PROCESS_TIMEOUT_SECONDS,
-            check=False,
-        )
+        if _runtime_memory_logging_enabled():
+            completed = _run_video_process(command)
+        else:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=VIDEO_PROCESS_TIMEOUT_SECONDS,
+                check=False,
+            )
     except subprocess.TimeoutExpired as exc:
         raise MediaQualityError(
             "video_processing_timeout",
