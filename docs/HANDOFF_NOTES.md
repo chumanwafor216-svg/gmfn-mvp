@@ -12,7 +12,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Status: implemented, committed as application commit `6f452b7f`, pushed to
   `codex/spotlight-rotation-continuity` and `main`, and deployed to both Render
-  services on 2026-10-23.
+  services on 2026-10-23. The destination-discovery/default-eligibility
+  correction is application commit `2244a72e`, also pushed to both branches
+  and deployed to both Render services on 2026-10-23.
 - The owner approved a simpler first-stage behaviour: automatic Spotlight
   movement only, with no new viewer next/previous, pause, or fast-forward
   controls. The shared community pilot rail now moves every five seconds while
@@ -65,6 +67,21 @@ under `docs/` or `docs/archive/`, then link that file here.
   200 from the frontend and an `ok = true` response from `/health`. The authenticated
   broadcast route correctly rejected the unauthenticated diagnostic request,
   so that request is not evidence of populated member inventory.
+- The correction for active communities without a Community Domain passed all
+  12 focused GSN-house tests, 45 related Spotlight eligibility/presentation
+  tests, the frontend admin audit, Python compilation, and the 292-module
+  frontend production build. Independent GitHub Backend Tests run
+  `40006633161` passed on exact commit `2244a72e`. Trigger Render Deploy run
+  `40007197230` completed successfully on that commit, including its public
+  frontend marker and live API identity-contract checks. Exact frontend deploy
+  `dep-dbdqr18k84hc73ea9vng` and exact API deploy
+  `dep-dbdqrofb9u1s73b7e2r0` reached `live`; independent requests returned HTTP
+  200 from the frontend and `{ok:true,dev_mode:false}` from `/health`.
+  Production data already identifies `Homeland isa` as active community code
+  `GMFN-C-000008` with no Community Domain row, which now makes it eligible by
+  default. The authenticated catalogue response still requires confirmation
+  from a signed-in platform-admin session; do not describe the public health
+  checks alone as proof of that private response.
 - Still not implemented in this slice: country/region audience targeting,
   viewer-local peak/off-peak scheduling, configurable 60/40 allocation,
   independent CDN proof, pagination beyond the 100-item pilot, or 100/1,000
