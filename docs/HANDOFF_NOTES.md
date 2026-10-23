@@ -30,8 +30,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   broader 70-test scheduler/frequency/GSN-house collection, the Spotlight
   contract audit, targeted ESLint, Python compilation, the 292-module
   production build, the complete protected-button freeze audit, and the
-  14-scenario real phone-browser Spotlight smoke. Commit/deployment status is
-  pending.
+  14-scenario real phone-browser Spotlight smoke.
+- Application commit `9c62cd0b` is on the working branch and `main`. GitHub
+  Backend Tests run `40023993824` passed. Trigger Render Deploy run
+  `40024026521` passed: frontend deploy `dep-dbdsnn2qqsrs73d7d1cg` and API
+  deploy `dep-dbdsoscs728c738d6lig` both reached `live`, and the public frontend
+  plus live API contract checks passed.
 
 ## GSN house advertiser contact route - 2026-10-23
 
