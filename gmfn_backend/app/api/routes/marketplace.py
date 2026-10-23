@@ -13,7 +13,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -22,6 +22,8 @@ from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanMembership,
+    CommunityDomain,
+    CommunityDomainPolicy,
     FeatureEntitlement,
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
@@ -35,6 +37,8 @@ from app.db.models import (
     SpotlightCampaign,
     SpotlightCampaignPacingState,
     SpotlightContentVersion,
+    SpotlightExposureEvent,
+    SpotlightPresentationLease,
     TrustEvent,
     User,
     VaultAccessLink,
@@ -48,6 +52,9 @@ from app.services.feature_entitlements_service import (
     has_active_feature,
 )
 from app.services.community_domain_feature_policy import (
+    COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
+    COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
+    community_domain_feature_mode_for_clan,
     require_domain_marketplace_shops_enabled,
     require_domain_shop_diary_enabled,
     require_domain_spotlight_enabled,
@@ -59,6 +66,8 @@ from app.services.community_domain_delegation_service import (
 )
 from app.services.notification_service import create_notification
 from app.services.marketplace_media_cleanup_service import (
+    canonical_marketplace_media_target,
+    delete_unreferenced_marketplace_media,
     process_marketplace_media_deletion_tasks,
     queue_marketplace_media_deletions,
 )
@@ -145,7 +154,14 @@ SPOTLIGHT_CAMPAIGN_STATUS_ENDED = "ended"
 SPOTLIGHT_CAMPAIGN_STATUS_EXPIRED = "expired"
 SPOTLIGHT_CAMPAIGN_SOURCE_DIRECT = "direct_broadcast"
 SPOTLIGHT_CAMPAIGN_SOURCE_REPOST = "network_repost"
+SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE = "gsn_house"
 SPOTLIGHT_CAMPAIGN_SOURCE_MIXED = "mixed"
+SPOTLIGHT_COMMERCIAL_MODE_HOUSE = "house"
+SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES = "selected_communities"
+GSN_HOUSE_PUBLISHER_EMAIL = "gsn-house-publisher@system.invalid"
+GSN_HOUSE_PUBLISHER_ID = "GSN-HOUSE"
+GSN_HOUSE_PUBLISHER_NAME = "Global Support Network"
+GSN_CENTRAL_ADVERTISING_POLICY_KEY = "domain.central_advertising"
 SPOTLIGHT_CONTENT_KIND_BROADCAST = "broadcast_snapshot"
 SPOTLIGHT_CONTENT_KIND_PRODUCT = "marketplace_product"
 SPOTLIGHT_CAMPAIGN_CONTENT_MISMATCH_DETAIL = (
@@ -633,6 +649,449 @@ def _match_repost_tokens(tokens: list[str], *values: Any) -> list[str]:
 
 def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "")).lower() == "admin"
+
+
+def _require_platform_admin(user: Any) -> None:
+    if _is_admin(user):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "platform_admin_required",
+            "message": "Only a GSN platform administrator can publish a GSN house campaign.",
+        },
+    )
+
+
+def _ordered_unique_clan_ids(values: list[int]) -> list[int]:
+    seen: set[int] = set()
+    result: list[int] = []
+    for value in values:
+        clan_id = _safe_int(value, 0)
+        if clan_id <= 0 or clan_id in seen:
+            continue
+        seen.add(clan_id)
+        result.append(clan_id)
+    return result
+
+
+def _gsn_house_governance_boundary() -> dict[str, Any]:
+    return {
+        "publisher": GSN_HOUSE_PUBLISHER_NAME,
+        "community_endorsement": False,
+        "trust_signal": False,
+        "member_advertising_credit_consumed": False,
+        "plain_language": (
+            "This is a GSN-authored service announcement. Delivery into a Community "
+            "Domain means the domain opted into GSN house campaigns; it does not mean "
+            "the community endorses the message or the advertised subject."
+        ),
+    }
+
+
+def _gsn_house_destination_decision(db: Session, *, clan_id: int) -> dict[str, Any]:
+    clan = db.get(Clan, int(clan_id))
+    if clan is None:
+        return {
+            "clan_id": int(clan_id),
+            "community_name": None,
+            "community_code": None,
+            "community_domain_id": None,
+            "community_domain_name": None,
+            "eligible": False,
+            "reason_code": "community_not_found",
+            "reason": "The selected community does not exist.",
+        }
+
+    community_name = (
+        _safe_str(getattr(clan, "marketplace_name", None))
+        or _safe_str(getattr(clan, "name", None))
+        or f"Community {int(clan_id)}"
+    )
+    community_code = _safe_str(getattr(clan, "community_code", None)) or None
+    if _safe_str(getattr(clan, "status", None), "active").lower() != "active":
+        return {
+            "clan_id": int(clan_id),
+            "community_name": community_name,
+            "community_code": community_code,
+            "community_domain_id": None,
+            "community_domain_name": None,
+            "eligible": False,
+            "reason_code": "community_not_active",
+            "reason": "GSN house campaigns can only enter active communities.",
+        }
+
+    domain = (
+        db.query(CommunityDomain)
+        .filter(CommunityDomain.clan_id == int(clan_id))
+        .order_by(CommunityDomain.updated_at.desc(), CommunityDomain.id.desc())
+        .first()
+    )
+    base = {
+        "clan_id": int(clan_id),
+        "community_name": community_name,
+        "community_code": community_code,
+        "community_domain_id": int(domain.id) if domain is not None else None,
+        "community_domain_name": (
+            _safe_str(getattr(domain, "display_name", None)) or None
+            if domain is not None
+            else None
+        ),
+    }
+    if domain is None:
+        return {
+            **base,
+            "eligible": False,
+            "reason_code": "active_community_domain_required",
+            "reason": (
+                "Central GSN house campaigns require an active Community Domain "
+                "with an explicit advertising opt-in."
+            ),
+        }
+    if _safe_str(getattr(domain, "status", None)).lower() != "active":
+        return {
+            **base,
+            "eligible": False,
+            "reason_code": "community_domain_not_active",
+            "reason": "The Community Domain is not active.",
+        }
+
+    spotlight_mode, _ = community_domain_feature_mode_for_clan(
+        db,
+        clan_id=int(clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
+        default="admin_only",
+    )
+    if spotlight_mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        return {
+            **base,
+            "eligible": False,
+            "reason_code": "community_domain_spotlight_disabled",
+            "reason": "Spotlight is disabled by this Community Domain policy.",
+        }
+
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.policy_key == GSN_CENTRAL_ADVERTISING_POLICY_KEY)
+        .filter(CommunityDomainPolicy.status == "active")
+        .order_by(CommunityDomainPolicy.updated_at.desc(), CommunityDomainPolicy.id.desc())
+        .first()
+    )
+    config = _json_load(getattr(policy, "config_json", None) if policy is not None else None)
+    if config.get("allow_gsn_house_campaigns") is not True:
+        return {
+            **base,
+            "eligible": False,
+            "reason_code": "gsn_house_campaign_opt_in_required",
+            "reason": "This Community Domain has not explicitly allowed GSN house campaigns.",
+        }
+
+    return {
+        **base,
+        "eligible": True,
+        "reason_code": "eligible",
+        "reason": "The active Community Domain explicitly allows GSN house campaigns.",
+    }
+
+
+def _gsn_house_destination_preview(db: Session, *, clan_ids: list[int]) -> dict[str, Any]:
+    requested = _ordered_unique_clan_ids(clan_ids)
+    if not requested:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "valid_community_required",
+                "message": "Select at least one valid community.",
+            },
+        )
+    decisions = [
+        _gsn_house_destination_decision(db, clan_id=clan_id)
+        for clan_id in requested
+    ]
+    eligible = [row for row in decisions if bool(row["eligible"])]
+    excluded = [row for row in decisions if not bool(row["eligible"])]
+    return {
+        "requested_clan_ids": requested,
+        "eligible_clan_ids": [int(row["clan_id"]) for row in eligible],
+        "eligible_destinations": eligible,
+        "eligible_count": len(eligible),
+        "excluded_destinations": excluded,
+        "excluded_count": len(excluded),
+        "governance_boundary": _gsn_house_governance_boundary(),
+    }
+
+
+def _gsn_house_destination_catalogue(
+    db: Session,
+    *,
+    query: Optional[str],
+    limit: int,
+) -> dict[str, Any]:
+    q = (
+        db.query(CommunityDomain)
+        .join(Clan, Clan.id == CommunityDomain.clan_id)
+        .filter(CommunityDomain.clan_id.isnot(None))
+    )
+    cleaned_query = _safe_str(query)
+    if cleaned_query:
+        pattern = f"%{cleaned_query}%"
+        q = q.filter(
+            or_(
+                CommunityDomain.display_name.ilike(pattern),
+                CommunityDomain.domain_name.ilike(pattern),
+                Clan.name.ilike(pattern),
+                Clan.marketplace_name.ilike(pattern),
+                Clan.community_code.ilike(pattern),
+            )
+        )
+    matching_total = q.count()
+    rows = (
+        q.order_by(
+            CommunityDomain.display_name.asc(),
+            CommunityDomain.updated_at.desc(),
+            CommunityDomain.id.desc(),
+        )
+        .limit(int(limit))
+        .all()
+    )
+    decisions: list[dict[str, Any]] = []
+    seen_clan_ids: set[int] = set()
+    for domain in rows:
+        clan_id = _safe_int(getattr(domain, "clan_id", None), 0)
+        if clan_id <= 0 or clan_id in seen_clan_ids:
+            continue
+        seen_clan_ids.add(clan_id)
+        decisions.append(_gsn_house_destination_decision(db, clan_id=clan_id))
+    return {
+        "items": decisions,
+        "returned_count": len(decisions),
+        "matching_total": int(matching_total),
+        "eligible_count": sum(1 for row in decisions if bool(row["eligible"])),
+        "excluded_count": sum(1 for row in decisions if not bool(row["eligible"])),
+        "query": cleaned_query or None,
+        "governance_boundary": _gsn_house_governance_boundary(),
+    }
+
+
+def _get_or_create_gsn_house_publisher(db: Session) -> User:
+    publisher = (
+        db.query(User)
+        .filter(
+            (User.email == GSN_HOUSE_PUBLISHER_EMAIL)
+            | (User.gmfn_id == GSN_HOUSE_PUBLISHER_ID)
+        )
+        .first()
+    )
+    if publisher is not None:
+        if (
+            _safe_str(getattr(publisher, "email", None)).lower()
+            != GSN_HOUSE_PUBLISHER_EMAIL
+            or _safe_str(getattr(publisher, "gmfn_id", None)) != GSN_HOUSE_PUBLISHER_ID
+            or _safe_str(getattr(publisher, "role", None)).lower() != "system"
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "gsn_house_publisher_identity_conflict",
+                    "message": (
+                        "The reserved GSN house publisher identity conflicts with an "
+                        "existing account. Publication has been stopped."
+                    ),
+                },
+            )
+        return publisher
+
+    publisher = User(
+        email=GSN_HOUSE_PUBLISHER_EMAIL,
+        hashed_password="!",
+        display_name=GSN_HOUSE_PUBLISHER_NAME,
+        role="system",
+        gmfn_id=GSN_HOUSE_PUBLISHER_ID,
+    )
+    db.add(publisher)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        publisher = (
+            db.query(User)
+            .filter(User.gmfn_id == GSN_HOUSE_PUBLISHER_ID)
+            .first()
+        )
+        if publisher is None or _safe_str(getattr(publisher, "role", None)).lower() != "system":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "gsn_house_publisher_identity_conflict",
+                    "message": "The reserved GSN house publisher identity could not be created safely.",
+                },
+            )
+    return publisher
+
+
+def _iso_or_none(value: Any) -> Optional[str]:
+    return value.isoformat() if isinstance(value, datetime) else None
+
+
+def _gsn_house_campaign_operational_state(
+    campaign: SpotlightCampaign,
+    *,
+    now: Optional[datetime] = None,
+) -> str:
+    current_time = now or _now_utc()
+    serving_status = _safe_str(
+        getattr(campaign, "serving_status", None),
+        SPOTLIGHT_SERVING,
+    ).lower()
+    if serving_status == "withdrawn":
+        return "stopped"
+    if serving_status == SPOTLIGHT_CORRECTION_HOLD:
+        return "on_hold"
+    expiry = authorized_expiry(campaign)
+    if expiry is not None and current_time >= expiry:
+        return "expired"
+    if _safe_str(getattr(campaign, "status", None)).lower() == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE:
+        return "live"
+    return _safe_str(getattr(campaign, "status", None), "ended").lower()
+
+
+def _gsn_house_campaign_withdrawal_audit(
+    db: Session,
+    *,
+    campaign_id: int,
+) -> Optional[dict[str, Any]]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == "marketplace.gsn_house_campaign.withdrawn")
+        .order_by(TrustEvent.id.desc())
+        .limit(200)
+        .all()
+    )
+    for row in rows:
+        meta = _json_load(getattr(row, "meta_json", None))
+        if _safe_int(meta.get("spotlight_campaign_id"), 0) != int(campaign_id):
+            continue
+        return {
+            "event_id": int(row.id),
+            "actor_user_id": int(row.actor_user_id),
+            "reason": _safe_str(meta.get("reason")) or None,
+            "invalidated_presentation_count": _safe_int(
+                meta.get("invalidated_presentation_count"),
+                0,
+            ),
+            "created_at": _iso_or_none(getattr(row, "created_at", None)),
+        }
+    return None
+
+
+def _gsn_house_campaign_report(
+    db: Session,
+    *,
+    campaign: SpotlightCampaign,
+    now: Optional[datetime] = None,
+) -> dict[str, Any]:
+    current_time = now or _now_utc()
+    campaign_id = int(campaign.id)
+    placements = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.spotlight_campaign_id == campaign_id)
+        .order_by(MarketplaceBroadcast.id.asc())
+        .all()
+    )
+    content = (
+        db.query(SpotlightContentVersion)
+        .filter(SpotlightContentVersion.campaign_id == campaign_id)
+        .filter(SpotlightContentVersion.version == int(campaign.content_version or 1))
+        .one_or_none()
+    )
+    first_placement = placements[0] if placements else None
+    destination_rows = [
+        _gsn_house_destination_decision(db, clan_id=int(placement.clan_id))
+        for placement in placements
+    ]
+    pacing = (
+        db.query(SpotlightCampaignPacingState)
+        .filter(SpotlightCampaignPacingState.campaign_id == campaign_id)
+        .one_or_none()
+    )
+    max_rounds = max(int(getattr(pacing, "max_delivery_rounds", 10) or 0), 0)
+    consumed_rounds = max(
+        int(getattr(pacing, "consumed_delivery_rounds", 0) or 0),
+        0,
+    )
+    qualifying_count, unique_viewer_count = (
+        db.query(
+            func.count(SpotlightExposureEvent.id),
+            func.count(func.distinct(SpotlightExposureEvent.viewer_user_id)),
+        )
+        .filter(SpotlightExposureEvent.campaign_id == campaign_id)
+        .filter(SpotlightExposureEvent.event_type == "qualifying_impression")
+        .one()
+    )
+    issued_presentations = (
+        db.query(func.count(SpotlightPresentationLease.id))
+        .filter(SpotlightPresentationLease.campaign_id == campaign_id)
+        .scalar()
+        or 0
+    )
+    state = _gsn_house_campaign_operational_state(campaign, now=current_time)
+    return {
+        "campaign_id": campaign_id,
+        "state": state,
+        "status": _safe_str(getattr(campaign, "status", None)) or None,
+        "serving_status": _safe_str(getattr(campaign, "serving_status", None)) or None,
+        "source_kind": _safe_str(getattr(campaign, "source_kind", None)) or None,
+        "publisher": GSN_HOUSE_PUBLISHER_NAME,
+        "publisher_gmfn_id": GSN_HOUSE_PUBLISHER_ID,
+        "created_at": _iso_or_none(getattr(campaign, "created_at", None)),
+        "activated_at": _iso_or_none(getattr(campaign, "activated_at", None)),
+        "expires_at": _iso_or_none(authorized_expiry(campaign)),
+        "ended_at": _iso_or_none(getattr(campaign, "ended_at", None)),
+        "can_stop": state in {"live", "on_hold"},
+        "content": {
+            "message": _safe_str(
+                getattr(content, "message", None)
+                if content is not None
+                else getattr(first_placement, "message", None)
+            ),
+            "image_url": (
+                getattr(content, "image_url", None)
+                if content is not None
+                else getattr(first_placement, "image_url", None)
+            ),
+            "video_url": (
+                getattr(content, "video_url", None)
+                if content is not None
+                else getattr(first_placement, "video_url", None)
+            ),
+        },
+        "delivery": {
+            "placement_count": len(placements),
+            "currently_eligible_destination_count": sum(
+                1 for row in destination_rows if bool(row.get("eligible"))
+            ),
+            "currently_excluded_destination_count": sum(
+                1 for row in destination_rows if not bool(row.get("eligible"))
+            ),
+            "max_delivery_rounds": max_rounds,
+            "consumed_delivery_rounds": consumed_rounds,
+            "remaining_delivery_rounds": max(max_rounds - consumed_rounds, 0),
+            "issued_presentation_count": int(issued_presentations),
+            "qualified_presentation_count": int(qualifying_count or 0),
+            "unique_qualified_viewer_accounts": int(unique_viewer_count or 0),
+        },
+        "destinations": destination_rows,
+        "withdrawal_audit": _gsn_house_campaign_withdrawal_audit(
+            db,
+            campaign_id=campaign_id,
+        ),
+        "reporting_boundary": (
+            "Qualified presentations are server-accepted visibility events. They are not "
+            "video-play, completion, click-through, sales, or verified-human reach metrics."
+        ),
+        "governance_boundary": _gsn_house_governance_boundary(),
+    }
 
 
 
@@ -3168,6 +3627,26 @@ class MarketplaceBroadcastCreateIn(BaseModel):
     idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=96)
 
 
+class GsnHouseCampaignPreviewIn(BaseModel):
+    clan_ids: list[int] = Field(min_length=1, max_length=50)
+
+
+class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
+    message: str = Field(min_length=2, max_length=2000)
+    image_url: Optional[str] = Field(default=None, max_length=4000)
+    video_url: Optional[str] = Field(default=None, max_length=4000)
+    idempotency_key: str = Field(min_length=8, max_length=96)
+
+
+class GsnHouseCampaignStopIn(BaseModel):
+    reason: str = Field(min_length=5, max_length=500)
+    confirm_withdrawal: bool = False
+
+
+class GsnHouseCampaignMediaDiscardIn(BaseModel):
+    media_url: str = Field(min_length=1, max_length=4000)
+
+
 class SpotlightPresentationQualificationIn(BaseModel):
     presentation_token: str = Field(..., min_length=20, max_length=4000)
     qualification_key: Optional[str] = Field(default=None, max_length=120)
@@ -3492,6 +3971,8 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         if item.spotlight_campaign_id is not None
         else None
     )
+    campaign_source_kind = _safe_str(getattr(campaign, "source_kind", None)) or None
+    is_gsn_house = campaign_source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
     canonical_shop = None
 
     if getattr(item, "shop_id", None):
@@ -3501,14 +3982,16 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             .first()
         )
 
-    if canonical_shop is None:
+    if canonical_shop is None and not is_gsn_house:
         canonical_shop = _get_canonical_shop_by_owner(
             db,
             owner_user_id=int(item.author_user_id),
         )
 
     author_name = None
-    if author:
+    if is_gsn_house:
+        author_name = GSN_HOUSE_PUBLISHER_NAME
+    elif author:
         author_name = _public_identity_name(
             getattr(author, "display_name", None),
             getattr(author, "nickname", None),
@@ -3531,10 +4014,12 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             fallback="Community seller",
         )
 
-    trust_score, trust_band = _public_trust_posture(author)
+    trust_score, trust_band = (None, None) if is_gsn_house else _public_trust_posture(author)
 
     author_gmfn_id = None
-    if author:
+    if is_gsn_house:
+        author_gmfn_id = GSN_HOUSE_PUBLISHER_ID
+    elif author:
         author_gmfn_id = (
             _safe_str(getattr(author, "gmfn_id", None))
             or str(author.id)
@@ -3578,7 +4063,11 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         else _stored_media_url(getattr(item, "video_url", None))
     )
     source_product_category = (
-        "Shop item" if repost_product is not None else "Spotlight update"
+        "GSN announcement"
+        if is_gsn_house
+        else "Shop item"
+        if repost_product is not None
+        else "Spotlight update"
     )
     source_product_availability = _spotlight_availability_label(
         getattr(item, "expires_at", None)
@@ -3603,6 +4092,20 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             int(item.spotlight_campaign_id)
             if getattr(item, "spotlight_campaign_id", None) is not None
             else None
+        ),
+        "campaign_source_kind": campaign_source_kind,
+        "campaign_commercial_mode": (
+            _safe_str(getattr(campaign, "commercial_mode", None)) or None
+            if campaign is not None
+            else None
+        ),
+        "campaign_distribution_scope": (
+            _safe_str(getattr(campaign, "distribution_scope", None)) or None
+            if campaign is not None
+            else None
+        ),
+        "content_class": (
+            SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE if is_gsn_house else None
         ),
         "serving_status": str(getattr(item, "serving_status", SPOTLIGHT_SERVING) or SPOTLIGHT_SERVING),
         "campaign_serving_status": (
@@ -3672,7 +4175,9 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "spotlight_contact_available": bool(
             canonical_shop and _safe_str(getattr(canonical_shop, "whatsapp_number", None))
         ),
-        "spotlight_detail_available": bool(author_gmfn_id),
+        "spotlight_detail_available": bool(author_gmfn_id) and not is_gsn_house,
+        "community_endorsement": False if is_gsn_house else None,
+        "trust_signal": False if is_gsn_house else None,
         "trust_band": trust_band,
         "trust_score": trust_score,
     }
@@ -6724,6 +7229,420 @@ def get_shop_spotlight_status(
             "counts_as_exposure": False,
             "delivery_exhausted": owner_delivery_exhausted,
         },
+    }
+
+
+@router.get("/admin/gsn-house-campaigns")
+def list_gsn_house_campaigns(
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    campaigns = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE)
+        .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .limit(int(limit))
+        .all()
+    )
+    now = _now_utc()
+    items = [
+        _gsn_house_campaign_report(db, campaign=campaign, now=now)
+        for campaign in campaigns
+    ]
+    current = next(
+        (item for item in items if item["state"] in {"live", "on_hold"}),
+        None,
+    )
+    return {
+        "ok": True,
+        "current": current,
+        "history": [
+            item
+            for item in items
+            if current is None or int(item["campaign_id"]) != int(current["campaign_id"])
+        ],
+        "items": items,
+        "returned_count": len(items),
+        "reporting_boundary": (
+            "Reports use delivery rounds and qualified visibility events already recorded "
+            "by GSN. No playback, completion, sales, or verified-human reach is inferred."
+        ),
+    }
+
+
+@router.post("/admin/gsn-house-campaigns/media/discard")
+def discard_gsn_house_campaign_review_media(
+    payload: GsnHouseCampaignMediaDiscardIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    target = canonical_marketplace_media_target(payload.media_url)
+    if target is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "managed_marketplace_media_required",
+                "message": "Only GSN-managed Marketplace review media can be discarded here.",
+            },
+        )
+    result = delete_unreferenced_marketplace_media(db, media_url=payload.media_url)
+    event_dedupe = hashlib.sha256(
+        (
+            f"gsn-house-media-discard:{int(current_user.id)}:"
+            f"{target['canonical_key']}:{result.get('status')}"
+        ).encode("utf-8")
+    ).hexdigest()
+    log_trust_event(
+        db,
+        event_type="marketplace.gsn_house_campaign.review_media_discarded",
+        clan_id=None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": "gsn_house_campaign_review",
+            "provider": target.get("provider"),
+            "canonical_key_hash": hashlib.sha256(
+                str(target["canonical_key"]).encode("utf-8")
+            ).hexdigest(),
+            "result": result.get("status"),
+            "reason": "unpublished_gsn_house_campaign_review_discarded",
+        },
+        dedupe_key=event_dedupe,
+        commit=True,
+        refresh=False,
+    )
+    return {
+        "ok": result.get("status") in {"deleted", "already_absent"},
+        **result,
+        "boundary": (
+            "Referenced media is retained. Only an unreferenced managed upload can be deleted."
+        ),
+    }
+
+
+@router.post("/admin/gsn-house-campaigns/{campaign_id}/stop")
+def stop_gsn_house_campaign(
+    campaign_id: int,
+    payload: GsnHouseCampaignStopIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    reason = _safe_str(payload.reason)
+    if len(reason) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "withdrawal_reason_required",
+                "message": "Write a clear reason of at least 5 characters before stopping the campaign.",
+            },
+        )
+    if payload.confirm_withdrawal is not True:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "withdrawal_confirmation_required",
+                "message": "Confirm that this action immediately and permanently stops delivery.",
+            },
+        )
+
+    campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.id == int(campaign_id))
+        .filter(SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE)
+        .one_or_none()
+    )
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="GSN house campaign not found.")
+
+    state_before = _gsn_house_campaign_operational_state(campaign)
+    if state_before == "stopped":
+        return {
+            "ok": True,
+            "idempotent_replay": True,
+            "campaign": _gsn_house_campaign_report(db, campaign=campaign),
+        }
+    if state_before not in {"live", "on_hold"}:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_campaign_not_stoppable",
+                "message": f"This campaign is already {state_before} and is not serving.",
+            },
+        )
+
+    invalidated_count = (
+        db.query(func.count(SpotlightPresentationLease.id))
+        .filter(SpotlightPresentationLease.campaign_id == int(campaign.id))
+        .filter(SpotlightPresentationLease.status == "issued")
+        .scalar()
+        or 0
+    )
+    target_clan_ids = [
+        int(row[0])
+        for row in (
+            db.query(MarketplaceBroadcast.clan_id)
+            .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign.id))
+            .order_by(MarketplaceBroadcast.clan_id.asc())
+            .all()
+        )
+    ]
+    permanently_withdraw(
+        db,
+        campaign=campaign,
+        existing_owner_takedown=True,
+    )
+    event_dedupe = hashlib.sha256(
+        f"gsn-house-withdrawal:{int(campaign.id)}".encode("utf-8")
+    ).hexdigest()
+    log_trust_event(
+        db,
+        event_type="marketplace.gsn_house_campaign.withdrawn",
+        clan_id=None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(campaign.owner_user_id),
+        meta={
+            "spotlight_campaign_id": int(campaign.id),
+            "target_clan_ids": target_clan_ids,
+            "invalidated_presentation_count": int(invalidated_count),
+            "reason": reason,
+            "state_before": state_before,
+            "state_after": "stopped",
+            "publisher": GSN_HOUSE_PUBLISHER_NAME,
+        },
+        dedupe_key=event_dedupe,
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(campaign)
+    return {
+        "ok": True,
+        "idempotent_replay": False,
+        "campaign": _gsn_house_campaign_report(db, campaign=campaign),
+    }
+
+
+@router.get("/admin/gsn-house-campaigns/destinations")
+def list_gsn_house_campaign_destinations(
+    q: Optional[str] = Query(default=None, max_length=120),
+    limit: int = Query(default=100, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    return _gsn_house_destination_catalogue(db, query=q, limit=int(limit))
+
+
+@router.post("/admin/gsn-house-campaigns/preview")
+def preview_gsn_house_campaign(
+    payload: GsnHouseCampaignPreviewIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    return _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
+
+
+@router.post("/admin/gsn-house-campaigns")
+def create_gsn_house_campaign(
+    payload: GsnHouseCampaignCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    preview = _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
+    target_clan_ids = list(preview["eligible_clan_ids"])
+    if not target_clan_ids:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "no_gsn_house_campaign_destinations",
+                "message": (
+                    "No selected community is eligible. A destination must be an active "
+                    "Community Domain with Spotlight enabled and an explicit GSN house "
+                    "campaign opt-in."
+                ),
+                "excluded_destinations": preview["excluded_destinations"],
+            },
+        )
+
+    image_url, video_url = _require_usable_spotlight_media(
+        image_url=payload.image_url,
+        video_url=payload.video_url,
+    )
+    publication_key = _spotlight_publication_key(payload.idempotency_key)
+    if publication_key is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "gsn_house_campaign_idempotency_key_required",
+                "message": "Provide a non-empty idempotency key before publishing.",
+            },
+        )
+    publisher = _get_or_create_gsn_house_publisher(db)
+
+    replay = _direct_publication_replay(
+        db=db,
+        owner_user_id=int(publisher.id),
+        publication_key=publication_key,
+        target_clan_ids=target_clan_ids,
+        shop_id=None,
+        message=payload.message,
+        image_url=image_url,
+        video_url=video_url,
+        priority_mode=SPOTLIGHT_FREE,
+        visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+    )
+    if replay is not None:
+        replay.update(
+            {
+                "eligible_destinations": preview["eligible_destinations"],
+                "excluded_destinations": preview["excluded_destinations"],
+                "excluded_count": preview["excluded_count"],
+                "governance_boundary": preview["governance_boundary"],
+            }
+        )
+        return replay
+
+    current_time = _now_utc().replace(microsecond=0)
+    expires_at = activation_expiry(current_time, authorized_days=1)
+    content_fingerprint = _spotlight_content_fingerprint(
+        content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        shop_id=None,
+        origin_clan_id=None,
+        message=payload.message,
+        image_url=image_url,
+        video_url=video_url,
+    )
+    campaign = _ensure_active_spotlight_campaign(
+        db=db,
+        owner_user_id=int(publisher.id),
+        shop_id=None,
+        origin_clan_id=None,
+        source_kind=SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE,
+        commercial_mode=SPOTLIGHT_COMMERCIAL_MODE_HOUSE,
+        distribution_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+        expires_at=expires_at,
+        content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
+        content_fingerprint=content_fingerprint,
+        created_at=current_time,
+    )
+    created_items: list[MarketplaceBroadcast] = []
+    for clan_id in target_clan_ids:
+        item = MarketplaceBroadcast(
+            publication_key=publication_key,
+            spotlight_campaign_id=int(campaign.id),
+            serving_status=SPOTLIGHT_SERVING,
+            content_version=int(campaign.content_version or 1),
+            clan_id=int(clan_id),
+            author_user_id=int(publisher.id),
+            shop_id=None,
+            message=_safe_str(payload.message),
+            image_url=image_url,
+            video_url=video_url,
+            priority_mode=SPOTLIGHT_FREE,
+            visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+            expires_at=expires_at,
+            authorized_expires_at=expires_at,
+            serving_status_changed_at=current_time,
+            created_at=current_time,
+        )
+        db.add(item)
+        created_items.append(item)
+
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        replay_publisher = (
+            db.query(User)
+            .filter(User.gmfn_id == GSN_HOUSE_PUBLISHER_ID)
+            .first()
+        )
+        replay = (
+            _direct_publication_replay(
+                db=db,
+                owner_user_id=int(replay_publisher.id),
+                publication_key=publication_key,
+                target_clan_ids=target_clan_ids,
+                shop_id=None,
+                message=payload.message,
+                image_url=image_url,
+                video_url=video_url,
+                priority_mode=SPOTLIGHT_FREE,
+                visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+            )
+            if replay_publisher is not None
+            else None
+        )
+        if replay is not None:
+            replay.update(
+                {
+                    "eligible_destinations": preview["eligible_destinations"],
+                    "excluded_destinations": preview["excluded_destinations"],
+                    "excluded_count": preview["excluded_count"],
+                    "governance_boundary": preview["governance_boundary"],
+                }
+            )
+            return replay
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_campaign_publication_conflict",
+                "message": (
+                    "Another matching GSN house campaign publication is completing. "
+                    "Retry with the same idempotency key."
+                ),
+            },
+        )
+
+    ensure_initial_content_version(db, campaign=campaign, placement=created_items[0])
+    for item in created_items:
+        event_dedupe = hashlib.sha256(
+            f"gsn-house:{publication_key}:{int(item.clan_id)}".encode("utf-8")
+        ).hexdigest()
+        log_trust_event(
+            db,
+            event_type="marketplace.gsn_house_campaign.published",
+            clan_id=int(item.clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(publisher.id),
+            meta={
+                "broadcast_id": int(item.id),
+                "spotlight_campaign_id": int(campaign.id),
+                "publisher": GSN_HOUSE_PUBLISHER_NAME,
+                "source_kind": SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE,
+                "commercial_mode": SPOTLIGHT_COMMERCIAL_MODE_HOUSE,
+                "distribution_scope": SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+                "community_endorsement": False,
+                "trust_signal": False,
+                "member_advertising_credit_consumed": False,
+                "reason": "gsn_house_campaign_published",
+            },
+            dedupe_key=event_dedupe,
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+    for item in created_items:
+        db.refresh(item)
+
+    return {
+        "ok": True,
+        "item": _broadcast_out(db, created_items[0]),
+        "items": [_broadcast_out(db, item) for item in created_items],
+        "propagated_clan_ids": target_clan_ids,
+        "propagated_count": len(created_items),
+        "eligible_destinations": preview["eligible_destinations"],
+        "excluded_destinations": preview["excluded_destinations"],
+        "excluded_count": preview["excluded_count"],
+        "governance_boundary": preview["governance_boundary"],
+        "idempotent_replay": False,
+        "member_advertising_credit_consumed": False,
     }
 
 

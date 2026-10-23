@@ -8,6 +8,98 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN house Spotlight controlled publisher - 2026-10-23
+
+- Status: implementation and local verification are complete and this section
+  ships with the fix. Exact commit, workflow, and deploy identifiers belong in
+  the deployment report for the publishing session.
+- Added platform-admin-only preview and publish routes for one 24-hour
+  GSN-authored house campaign:
+  GET /marketplace/admin/gsn-house-campaigns,
+  GET /marketplace/admin/gsn-house-campaigns/destinations,
+  POST /marketplace/admin/gsn-house-campaigns/preview and
+  POST /marketplace/admin/gsn-house-campaigns.
+- Added platform-admin-only operational routes:
+  POST /marketplace/admin/gsn-house-campaigns/{campaign_id}/stop and
+  POST /marketplace/admin/gsn-house-campaigns/media/discard.
+- The destination catalogue lets staff find Community Domains by visible name
+  or code and returns the current eligibility/reason, so the staff screen does
+  not require typing hidden community IDs.
+- Registered and implemented the platform-admin-only screen
+  /app/command-center/gsn-campaigns. Its Command Centre card is hidden from
+  community admins and the route remains inside the inner platform-admin
+  guard. The screen uses the official GSN-HOUSE publisher hero, named
+  destination search, eligible/blocked rows, one message, one prepared picture
+  or verified short video, read-only review, explicit non-endorsement
+  confirmation, final publish, current status, compact campaign history,
+  truthful recorded-delivery metrics, an audited emergency stop, and a
+  compact result/governance boundary.
+- Media upload can occur while review is prepared but cannot publish by
+  itself. A reviewed draft receives one idempotency identity that is reused on
+  retry. Editing the message, destination set, or media invalidates the
+  review and confirmation. Discarded unpublished reviews call a reference-safe
+  cleanup route: only managed unreferenced media can be deleted, while media
+  referenced by a surviving record is retained.
+- Destination selection fails closed. A placement is created only for an
+  active Community Domain whose Spotlight feature is not off and whose active
+  domain.central_advertising policy explicitly contains
+  allow_gsn_house_campaigns: true. Preview and publish return every eligible
+  and excluded destination with a reason. Canonical delivery eligibility
+  re-checks that opt-in, so deactivating the policy stops future delivery in
+  that destination without deleting campaign or audit history.
+- GSN house publication reuses the canonical Spotlight campaign, placement,
+  content-version, eligibility, presentation, and evidence machinery. A
+  reserved non-login GSN-HOUSE system publisher keeps the institutional
+  publisher separate from the accountable platform-admin actor.
+- Public payloads identify the content class and campaign provenance, label
+  the publisher Global Support Network, expose no member shop/contact/detail
+  action, carry no member trust signal or community endorsement, and consume
+  no member free/paid advertising entitlement.
+- Operational reporting exposes placement counts, current destination-policy
+  decisions, canonical delivery rounds, issued presentation leases,
+  qualifying-impression events, and distinct qualified viewer accounts. The
+  API and screen explicitly do not relabel these as playback, completion,
+  sales, or verified-human reach.
+- Emergency stop permanently withdraws the canonical campaign and all of its
+  placements, invalidates pending presentation leases, records one deduplicated
+  TrustEvent with the signed-in admin as actor and GSN-HOUSE as subject, and
+  preserves campaign/report history. Retrying stop is idempotent.
+- This is a complete controlled immediate-publish path, not the complete
+  central-advertising product. There is still no scheduler, advertiser
+  billing/refund product, regional targeting, central-specific capacity
+  product, playback/completion analytics, or independent GSN market in this
+  slice. The campaign still uses the existing canonical ten-round delivery
+  cap and one-active-campaign-per-publisher constraint.
+- Verification passed: 8 focused GSN-house tests, including one canonical
+  campaign across two opted-in communities and two members; 286 surrounding Spotlight
+  eligibility, presentation, and Community Domain tests; all 72 Marketplace
+  Public Shop tests; Python compilation; Spotlight controls, system-feed, and
+  presentation audits; the 292-module production frontend build; targeted
+  ESLint; the focused GSN-house frontend contract audit; admin route-guard,
+  raw-action, and mobile route-coverage audits; and the complete
+  protected-button freeze audit.
+- Deployment was authorised after the verified implementation. The publishing
+  session must stage only the files named by this work package, promote the
+  same commit to main, verify Render acceptance, and run safe live checks.
+
+## Q4 Spotlight and Community Domain amendment register - 2026-10-23
+
+- The product owner asked that the complete Spotlight, Community Domain,
+  organisational publishing, central advertising, playback, repetition, and
+  campaign-capacity findings be preserved before assessing further ideas.
+- The durable working register is
+  [`GSN_SPOTLIGHT_COMMUNITY_DOMAIN_AMENDMENT_REGISTER_2026-10-23.md`](GSN_SPOTLIGHT_COMMUNITY_DOMAIN_AMENDMENT_REGISTER_2026-10-23.md).
+- It separates confirmed current behaviour, verified gaps, owner directions,
+  trial proposals, open decisions, rejected interpretations, staged work, and
+  later acceptance scenarios. It specifically preserves existing member
+  entitlements, qualification accounting, payment controls, evidence integrity,
+  Community Domain visibility, and frozen Spotlight surfaces until an explicit
+  amendment is approved and tested.
+- The register began as documentation only. The bounded GSN house backend
+  foundation above now implements part of its selected-community Stage 7
+  workflow without changing schema, billing, member entitlement, delivery
+  accounting, frozen frontend surfaces, or deployment state.
+
 ## Foreground session and Spotlight sound continuity repair - 2026-10-22
 
 - Status: owner approved production deployment on 2026-10-22 after the complete

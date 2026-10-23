@@ -140,6 +140,9 @@ const AdminIncompleteLoansPage = React.lazy(
   () => import("./pages/AdminIncompleteLoansPage")
 );
 const AdminSupportPage = React.lazy(() => import("./pages/AdminSupportPage"));
+const AdminGsnHouseCampaignPage = React.lazy(
+  () => import("./pages/AdminGsnHouseCampaignPage")
+);
 const BankConsolePage = React.lazy(() => import("./pages/BankConsolePage"));
 const RevenueAllocationPage = React.lazy(
   () => import("./pages/RevenueAllocationPage")
@@ -1282,6 +1285,7 @@ export default function App() {
             <Route path="community-ownership" element={<AdminCommunityOwnershipPage />} />
             <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
             <Route path="support" element={<AdminSupportPage />} />
+            <Route path="gsn-campaigns" element={<AdminGsnHouseCampaignPage />} />
             <Route path="system-operations" element={<SystemOperationsPage />} />
             <Route path="trust-graph" element={<AdminTrustGraphPage />} />
           </Route>

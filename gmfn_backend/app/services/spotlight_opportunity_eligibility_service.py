@@ -47,12 +47,15 @@ REJECTION_NO_ELIGIBLE_ROUTE = "no_eligible_route"
 REJECTION_DOMAIN_SPOTLIGHT_DISABLED = "community_domain_spotlight_disabled"
 REJECTION_DOMAIN_ROUTE_NOT_PERMITTED = "community_domain_route_not_permitted"
 REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED = "community_domain_content_policy_blocked"
+REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN = "gsn_house_campaign_opt_in_withdrawn"
 
 DISTRIBUTION_SCOPE_MARKETPLACE_REPOST = "marketplace_repost"
 DISTRIBUTION_SCOPE_COMMUNITY_DOMAIN = "community_domain"
+SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE = "gsn_house"
 
 SPOTLIGHT_DOMAIN_POLICY_SECTION = "spotlight"
 SPOTLIGHT_DOMAIN_ROUTE_POLICY_KEY = "cross_community_domain_eligibility"
+GSN_CENTRAL_ADVERTISING_POLICY_KEY = "domain.central_advertising"
 
 
 @dataclass(frozen=True)
@@ -441,6 +444,37 @@ def _spotlight_enabled_by_clan(
     return out
 
 
+def _gsn_house_allowed_by_clan(
+    db: Session,
+    *,
+    clan_ids: Iterable[int],
+) -> dict[int, bool]:
+    out: dict[int, bool] = {}
+    for clan_id in _dedupe_ints(clan_ids):
+        domain = (
+            db.query(CommunityDomain)
+            .filter(CommunityDomain.clan_id == int(clan_id))
+            .order_by(CommunityDomain.updated_at.desc(), CommunityDomain.id.desc())
+            .first()
+        )
+        if domain is None or str(domain.status or "").strip().lower() != "active":
+            out[int(clan_id)] = False
+            continue
+        policy = (
+            db.query(CommunityDomainPolicy)
+            .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+            .filter(CommunityDomainPolicy.policy_key == GSN_CENTRAL_ADVERTISING_POLICY_KEY)
+            .filter(CommunityDomainPolicy.status == "active")
+            .order_by(CommunityDomainPolicy.updated_at.desc(), CommunityDomainPolicy.id.desc())
+            .first()
+        )
+        config = _safe_json_object(
+            getattr(policy, "config_json", None) if policy is not None else None
+        )
+        out[int(clan_id)] = config.get("allow_gsn_house_campaigns") is True
+    return out
+
+
 def _campaign_status_rejection(
     campaign: SpotlightCampaign,
     *,
@@ -518,6 +552,7 @@ def _evaluate_loaded_campaign(
     placements: list[MarketplaceBroadcast],
     domain_route_candidates: list[_CommunityDomainRouteCandidate],
     spotlight_enabled_by_clan: dict[int, bool],
+    gsn_house_allowed_by_clan: dict[int, bool],
     now: datetime,
 ) -> SpotlightEligibilityResult:
     campaign_id = int(campaign.id)
@@ -554,6 +589,13 @@ def _evaluate_loaded_campaign(
                 continue
             if not spotlight_enabled_by_clan.get(route_clan_id, True):
                 rejected_route_codes.add(REJECTION_DOMAIN_SPOTLIGHT_DISABLED)
+                continue
+            if (
+                str(getattr(campaign, "source_kind", "") or "").strip().lower()
+                == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
+                and not gsn_house_allowed_by_clan.get(route_clan_id, False)
+            ):
+                rejected_route_codes.add(REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN)
                 continue
             pathway = _route_pathway_for_placement(
                 campaign=campaign,
@@ -655,6 +697,11 @@ def _evaluate_loaded_campaign(
     elif rejected_route_codes == {REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED}:
         rejection_code = REJECTION_DOMAIN_CONTENT_POLICY_BLOCKED
         reason = "A structured Community Domain content policy blocked this Spotlight route."
+    elif rejected_route_codes == {REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN}:
+        rejection_code = REJECTION_GSN_HOUSE_OPT_IN_WITHDRAWN
+        reason = (
+            "The destination Community Domain no longer permits GSN house campaigns."
+        )
     else:
         rejection_code = REJECTION_NO_ELIGIBLE_ROUTE
         reason = "No active direct membership, linked canonical placement, or permitted Community Domain route is valid for this viewer."
@@ -719,6 +766,10 @@ def evaluate_spotlight_eligibility_batch(
             route_clan_ids.add(int(candidate.owner_branch_clan_id))
             route_clan_ids.add(int(candidate.viewer_branch_clan_id))
     spotlight_enabled_by_clan = _spotlight_enabled_by_clan(db, clan_ids=route_clan_ids)
+    gsn_house_allowed_by_clan = _gsn_house_allowed_by_clan(
+        db,
+        clan_ids=route_clan_ids,
+    )
 
     results: list[SpotlightEligibilityResult] = []
     for campaign_id in safe_campaign_ids:
@@ -742,6 +793,7 @@ def evaluate_spotlight_eligibility_batch(
                 placements=placements_by_campaign.get(int(campaign.id), []),
                 domain_route_candidates=domain_routes_by_owner.get(int(campaign.owner_user_id), []),
                 spotlight_enabled_by_clan=spotlight_enabled_by_clan,
+                gsn_house_allowed_by_clan=gsn_house_allowed_by_clan,
                 now=current_time,
             )
         )

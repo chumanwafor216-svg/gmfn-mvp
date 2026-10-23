@@ -119,6 +119,7 @@
     "audit:finance-secondary-route-tools": "node tools/audit-finance-secondary-route-tools.mjs",
     "audit:finance-signals-readiness-lane": "node tools/audit-finance-signals-readiness-lane.mjs",
     "audit:admin-route-guards": "node tools/audit-admin-route-guards.mjs",
+    "audit:admin-gsn-house-campaign": "node tools/audit-admin-gsn-house-campaign.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
     "audit:my-pipeline-credits": "node tools/audit-my-pipeline-credits.mjs",

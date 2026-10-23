@@ -69,6 +69,7 @@ for (const routePath of [
   "community-ownership",
   "incomplete-loans",
   "support",
+  "gsn-campaigns",
   "system-operations",
   "trust-graph",
 ]) {

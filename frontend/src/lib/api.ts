@@ -7158,6 +7158,197 @@ export async function addProtectedTradeEvent(
   );
 }
 
+export type GsnHouseCampaignDestination = {
+  clan_id: number;
+  community_name: string;
+  community_code?: string | null;
+  community_domain_id?: number | null;
+  community_domain_name?: string | null;
+  eligible: boolean;
+  reason_code: string;
+  reason: string;
+};
+
+export type GsnHouseCampaignGovernanceBoundary = {
+  publisher?: string;
+  publisher_gmfn_id?: string;
+  duration_hours?: number;
+  community_endorsement?: boolean;
+  trust_signal?: boolean;
+  member_advertising_credit_consumed?: boolean;
+  [key: string]: unknown;
+};
+
+export type GsnHouseCampaignDestinationCatalogue = {
+  items: GsnHouseCampaignDestination[];
+  returned_count: number;
+  matching_total: number;
+  eligible_count: number;
+  excluded_count: number;
+  query?: string | null;
+  governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+};
+
+export type GsnHouseCampaignPreview = {
+  requested_clan_ids: number[];
+  eligible_clan_ids: number[];
+  eligible_destinations: GsnHouseCampaignDestination[];
+  eligible_count: number;
+  excluded_destinations: GsnHouseCampaignDestination[];
+  excluded_count: number;
+  governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+};
+
+export type GsnHouseCampaignPublication = {
+  ok: boolean;
+  item?: Record<string, any> | null;
+  items?: Array<Record<string, any>>;
+  propagated_clan_ids?: number[];
+  propagated_count?: number;
+  eligible_destinations?: GsnHouseCampaignDestination[];
+  excluded_destinations?: GsnHouseCampaignDestination[];
+  excluded_count?: number;
+  governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+  idempotent_replay?: boolean;
+  member_advertising_credit_consumed?: boolean;
+};
+
+export type GsnHouseCampaignReport = {
+  campaign_id: number;
+  state: "live" | "on_hold" | "stopped" | "expired" | string;
+  status?: string | null;
+  serving_status?: string | null;
+  source_kind?: string | null;
+  publisher: string;
+  publisher_gmfn_id: string;
+  created_at?: string | null;
+  activated_at?: string | null;
+  expires_at?: string | null;
+  ended_at?: string | null;
+  can_stop: boolean;
+  content: {
+    message: string;
+    image_url?: string | null;
+    video_url?: string | null;
+  };
+  delivery: {
+    placement_count: number;
+    currently_eligible_destination_count: number;
+    currently_excluded_destination_count: number;
+    max_delivery_rounds: number;
+    consumed_delivery_rounds: number;
+    remaining_delivery_rounds: number;
+    issued_presentation_count: number;
+    qualified_presentation_count: number;
+    unique_qualified_viewer_accounts: number;
+  };
+  destinations: GsnHouseCampaignDestination[];
+  withdrawal_audit?: {
+    event_id: number;
+    actor_user_id: number;
+    reason?: string | null;
+    invalidated_presentation_count: number;
+    created_at?: string | null;
+  } | null;
+  reporting_boundary: string;
+  governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+};
+
+export type GsnHouseCampaignOperations = {
+  ok: boolean;
+  current?: GsnHouseCampaignReport | null;
+  history: GsnHouseCampaignReport[];
+  items: GsnHouseCampaignReport[];
+  returned_count: number;
+  reporting_boundary: string;
+};
+
+export async function listAdminGsnHouseCampaigns(
+  limit = 20
+): Promise<GsnHouseCampaignOperations> {
+  const out = await httpJson(
+    `/marketplace/admin/gsn-house-campaigns${buildQuery({ limit })}`,
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+  return {
+    ...out,
+    current: out?.current || null,
+    history: Array.isArray(out?.history) ? out.history : [],
+    items: Array.isArray(out?.items) ? out.items : [],
+  };
+}
+
+export async function stopAdminGsnHouseCampaign(
+  campaignId: number,
+  payload: { reason: string; confirm_withdrawal: boolean }
+): Promise<{ ok: boolean; idempotent_replay: boolean; campaign: GsnHouseCampaignReport }> {
+  return httpJson(
+    `/marketplace/admin/gsn-house-campaigns/${encodeURIComponent(String(campaignId))}/stop`,
+    "POST",
+    payload,
+    { header_clan_id: null }
+  );
+}
+
+export async function discardAdminGsnHouseCampaignReviewMedia(
+  mediaUrl: string
+): Promise<{ ok: boolean; status: string; provider?: string | null; boundary?: string }> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/media/discard",
+    "POST",
+    { media_url: mediaUrl },
+    { header_clan_id: null }
+  );
+}
+
+export async function listAdminGsnHouseCampaignDestinations(params?: {
+  q?: string | null;
+  limit?: number;
+}): Promise<GsnHouseCampaignDestinationCatalogue> {
+  const out = await httpJson(
+    `/marketplace/admin/gsn-house-campaigns/destinations${buildQuery({
+      q: String(params?.q || "").trim() || undefined,
+      limit: params?.limit ?? 100,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+
+  return {
+    ...out,
+    items: Array.isArray(out?.items) ? out.items : [],
+  };
+}
+
+export async function previewAdminGsnHouseCampaign(payload: {
+  clan_ids: number[];
+}): Promise<GsnHouseCampaignPreview> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/preview",
+    "POST",
+    payload,
+    { header_clan_id: null }
+  );
+}
+
+export async function createAdminGsnHouseCampaign(payload: {
+  clan_ids: number[];
+  message: string;
+  image_url?: string | null;
+  video_url?: string | null;
+  idempotency_key: string;
+}): Promise<GsnHouseCampaignPublication> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns",
+    "POST",
+    payload,
+    { header_clan_id: null }
+  );
+}
+
 export async function createMarketplaceBroadcast(payload: {
   clan_id?: number | null;
   shop_id?: number | null;

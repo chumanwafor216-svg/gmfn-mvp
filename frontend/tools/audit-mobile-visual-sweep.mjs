@@ -66,6 +66,7 @@ const routes = [
   "/app/command-center/trust-analytics",
   "/app/command-center/trust-events",
   "/app/command-center/identity-risk",
+  "/app/command-center/gsn-campaigns",
   "/app/command-center/system-operations",
   "/app/command-center/trust-graph",
   "/t/TS-MOBILE-QC/card",

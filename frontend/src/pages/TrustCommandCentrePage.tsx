@@ -520,6 +520,7 @@ function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
 
 function routeIcon(label: string): GsnIconName {
   const key = label.toLowerCase();
+  if (key.includes("campaign") || key.includes("spotlight")) return "megaphone";
   if (key.includes("analytics")) return "chart";
   if (key.includes("events")) return "document";
   if (key.includes("operations")) return "shield";
@@ -712,6 +713,7 @@ export default function TrustCommandCentrePage() {
       trustGraph: routeTarget("trustGraph", selectedClanId, "trust-command.route.trust-graph"),
       identityRisk: routeTarget("identityRisk", selectedClanId, "trust-command.route.identity-risk"),
       communityOwnership: "/app/command-center/community-ownership",
+      gsnCampaigns: "/app/command-center/gsn-campaigns",
       incompleteLoans: routeTarget("incompleteLoans", selectedClanId, "trust-command.route.incomplete-loans"),
       exposure: routeTarget("exposureAdmin", selectedClanId, "trust-command.route.exposure"),
       bankConsole: routeTarget("bankConsole", selectedClanId, "trust-command.route.bank-console"),
@@ -1106,6 +1108,11 @@ export default function TrustCommandCentrePage() {
           detail: "Check live system activity and operational health.",
         },
         {
+          label: "GSN Spotlight Campaigns",
+          to: routes.gsnCampaigns,
+          detail: "Publish official GSN campaigns into opted-in Community Domains.",
+        },
+        {
           label: "Trust Graph",
           to: routes.trustGraph,
           detail: "Read relationship structure and trust shape.",
@@ -1152,6 +1159,7 @@ export default function TrustCommandCentrePage() {
     isPlatformAdmin,
     routes.bankConsole,
     routes.exposure,
+    routes.gsnCampaigns,
     routes.identityRisk,
     routes.communityOwnership,
     routes.incompleteLoans,

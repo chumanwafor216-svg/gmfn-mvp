@@ -45,6 +45,7 @@ export const APP_ROUTES = {
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   GUIDE: "/app/my-gmfn-and-i",
   ADMIN_COMMAND: "/app/command-center",
+  GSN_CAMPAIGNS: "/app/command-center/gsn-campaigns",
   SYSTEM_OPERATIONS: "/app/command-center/system-operations",
   BANK_CONSOLE: "/app/command-center/bank-console",
   INCOMPLETE_LOANS: "/app/command-center/incomplete-loans",
