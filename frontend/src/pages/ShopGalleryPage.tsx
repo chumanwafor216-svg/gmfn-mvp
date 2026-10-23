@@ -60,6 +60,7 @@ import {
 import {
   PUBLIC_SHOP_SPOTLIGHT_INTERACTION_PAUSE_MS,
   PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO,
+  PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS,
   publicShopSpotlightRotationMs,
   PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
   PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS,
@@ -3747,6 +3748,37 @@ export default function ShopGalleryPage() {
     let lastTickAt = Date.now();
     let timer: number | null = null;
 
+    const advancePastActiveOccurrence = () => {
+      const activeRows = communitySpotlightsRef.current;
+      if (activeRows.length <= 1) return false;
+      const activeIndex = Math.min(
+        Math.max(miniSpotlightIndexRef.current, 0),
+        activeRows.length - 1
+      );
+      const nextRows = activeRows.filter((_, index) => index !== activeIndex);
+      const nextIndex = nextRows.length > 0 ? activeIndex % nextRows.length : 0;
+      communitySpotlightsRef.current = nextRows;
+      miniSpotlightIndexRef.current = nextIndex;
+      setCommunitySpotlights(nextRows);
+      setMiniSpotlightIndex(nextIndex);
+      return true;
+    };
+
+    const activeDeadlineMs = miniSpotlight?.isCanonicalOpportunity
+      ? publicShopSpotlightPresentationDeadlineMs(miniSpotlight)
+      : Number.NaN;
+    const minimumSafeStartMs = Math.min(
+      spotlightRotationDelayMs,
+      PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS
+    );
+    if (
+      Number.isFinite(activeDeadlineMs) &&
+      activeDeadlineMs - Date.now() < minimumSafeStartMs
+    ) {
+      advancePastActiveOccurrence();
+      return;
+    }
+
     const tick = () => {
       const now = Date.now();
       const hidden =
@@ -3764,10 +3796,10 @@ export default function ShopGalleryPage() {
       lastTickAt = now;
 
       if (remainingVisibleMs <= 0) {
-        const activeRows = communitySpotlightsRef.current;
-        if (activeRows.length > 1) {
-          setMiniSpotlightIndex((prev) => (prev + 1) % activeRows.length);
-        }
+        // Consume this occurrence after one complete dwell. Circularly keeping
+        // it allowed early promotions to repeat while later server windows had
+        // not yet reached the handset.
+        advancePastActiveOccurrence();
         return;
       }
 
@@ -3785,6 +3817,7 @@ export default function ShopGalleryPage() {
     spotlightRotationDelayMs,
     spotlightRotationHasMultipleItems,
     spotlightRotationMediaSettled,
+    miniSpotlight,
   ]);
 
   const ownerSpotlightStatusView = useMemo(() => {

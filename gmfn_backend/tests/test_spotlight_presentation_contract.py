@@ -958,6 +958,28 @@ def test_multiple_paced_campaigns_share_bounded_non_counting_rotation(
     assert _ledger_count() == 0
 
 
+def test_nineteen_item_visibility_windows_advance_before_wrapping():
+    candidate_count = 19
+    batch_size = 5
+    flattened: list[int] = []
+
+    for bucket in range(100, 104):
+        offset = presentations._spotlight_visibility_window_offset(
+            viewer_user_id=1,
+            bucket=bucket,
+            candidate_count=candidate_count,
+            batch_size=batch_size,
+        )
+        window = [
+            (offset + index) % candidate_count
+            for index in range(batch_size)
+        ]
+        assert len(set(window)) == batch_size
+        flattened.extend(window)
+
+    assert len(set(flattened[:candidate_count])) == candidate_count
+
+
 def test_qualified_presentation_replays_without_new_delivery_or_exposure(
     client,
     override_current_user_user,

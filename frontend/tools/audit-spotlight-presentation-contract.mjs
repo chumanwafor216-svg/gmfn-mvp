@@ -309,7 +309,7 @@ assertContains(
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /spotlightRotationActiveKey[^]*?remainingVisibleMs = spotlightRotationDelayMs[^]*?!spotlightPresentationVisibleRef[.]current[^]*?remainingVisibleMs -=[^]*?setMiniSpotlightIndex/,
+  /spotlightRotationActiveKey[^]*?remainingVisibleMs = spotlightRotationDelayMs[^]*?!spotlightPresentationVisibleRef[.]current[^]*?remainingVisibleMs -=[^]*?advancePastActiveOccurrence/,
   'Every active Spotlight item must receive its own complete visible dwell before rotation advances.'
 );
 
@@ -371,6 +371,30 @@ assertContains(
   'gmfn_backend/app/api/routes/marketplace.py',
   /list_spotlight_presentation_visibility[^]*?is_canonical_visibility[^]*?opportunity_presentation_token[^]*?None[^]*?opportunity_counts_as_delivery[^]*?False[^]*?opportunity_counts_as_exposure[^]*?False/,
   'Public Shop visibility rows must be tokenless and explicitly excluded from delivery and exposure accounting.'
+);
+
+assertContains(
+  'gmfn_backend/app/api/routes/marketplace.py',
+  /replay_candidates = list_spotlight_presentation_replays[^]*?replay_campaign_ids[^]*?visibility = list_spotlight_presentation_visibility[^]*?exclude_campaign_ids=visible_campaign_ids \| replay_campaign_ids[^]*?Recent qualified replays are continuity-only fallbacks[^]*?replays = replay_candidates\[:max\(5 - len\(items\), 0\)\]/,
+  'Eligible bounded visibility must fill the phone batch before recent qualified replays are allowed to use leftover slots.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /advancePastActiveOccurrence[^]*?activeRows\.filter\(\(_, index\) => index !== activeIndex\)[^]*?Consume this occurrence after one complete dwell[^]*?advancePastActiveOccurrence\(\)/,
+  'Public Shop must consume each queued occurrence after one complete dwell instead of circularly repeating early promotions.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /minimumSafeStartMs = Math\.min\([^]*?PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS[^]*?activeDeadlineMs - Date\.now\(\) < minimumSafeStartMs/,
+  'The server-deadline guard must protect one standard readable dwell without dropping reduced-motion presentations immediately.'
+);
+
+assertContains(
+  'gmfn_backend/tests/test_spotlight_presentation_contract.py',
+  /test_nineteen_item_visibility_windows_advance_before_wrapping[^]*?candidate_count = 19[^]*?len\(set\(flattened\[:candidate_count\]\)\) == candidate_count/,
+  'The backend regression must prove four bounded windows cover a 19-item inventory before wrapping.'
 );
 
 assertContains(

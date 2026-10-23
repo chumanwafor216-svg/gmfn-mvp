@@ -4801,50 +4801,30 @@ def get_public_shop_spotlight_opportunity(
         else:
             rejection_code = "canonical_broadcast_snapshot_missing"
 
-    replays = list_spotlight_presentation_replays(
+    visible_campaign_ids = {
+        int(item.get('opportunity_campaign_id') or 0)
+        for item in items
+        if int(item.get('opportunity_campaign_id') or 0) > 0
+    }
+    replay_candidates = list_spotlight_presentation_replays(
         db,
         viewer_user_id=int(current_user.id),
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
-        exclude_campaign_ids=selected_campaign_ids,
+        exclude_campaign_ids=visible_campaign_ids,
         allow_due_campaign_ids=(
             set(selection.frequency_suppressed_campaign_ids)
             if not selection.selected
             else set()
         ),
     )
-    for replay in replays:
-        broadcast = db.get(
-            MarketplaceBroadcast,
-            int(replay.placement_broadcast_id),
-        )
-        if broadcast is None:
-            continue
-        replay_item = _broadcast_out(db, broadcast)
-        replay_item["is_canonical_opportunity"] = True
-        replay_item["is_canonical_replay"] = True
-        replay_item["opportunity_campaign_id"] = int(replay.candidate.campaign_id)
-        replay_item["opportunity_presentation_id"] = replay.presentation_id
-        replay_item["opportunity_presentation_token"] = None
-        replay_item["opportunity_presentation_expires_at"] = None
-        replay_item["opportunity_replay_expires_at"] = (
-            replay.replay_expires_at.isoformat()
-        )
-        replay_item["opportunity_presentation_surface"] = (
-            SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
-        )
-        replay_item["opportunity_counts_as_delivery"] = False
-        replay_item["opportunity_counts_as_exposure"] = False
-        items.append(replay_item)
-
-    visible_campaign_ids = {
-        int(item.get('opportunity_campaign_id') or 0)
-        for item in items
-        if int(item.get('opportunity_campaign_id') or 0) > 0
+    replay_campaign_ids = {
+        int(replay.candidate.campaign_id)
+        for replay in replay_candidates
     }
     visibility = list_spotlight_presentation_visibility(
         db,
         viewer_user_id=int(current_user.id),
-        exclude_campaign_ids=visible_campaign_ids,
+        exclude_campaign_ids=visible_campaign_ids | replay_campaign_ids,
         limit=max(5 - len(items), 0),
     )
     for visible in visibility:
@@ -4872,6 +4852,34 @@ def get_public_shop_spotlight_opportunity(
         visible_item['opportunity_counts_as_delivery'] = False
         visible_item['opportunity_counts_as_exposure'] = False
         items.append(visible_item)
+
+    # Recent qualified replays are continuity-only fallbacks. They must not
+    # occupy four of five phone slots while other eligible live campaigns are
+    # waiting for the bounded visibility window.
+    replays = replay_candidates[:max(5 - len(items), 0)]
+    for replay in replays:
+        broadcast = db.get(
+            MarketplaceBroadcast,
+            int(replay.placement_broadcast_id),
+        )
+        if broadcast is None:
+            continue
+        replay_item = _broadcast_out(db, broadcast)
+        replay_item["is_canonical_opportunity"] = True
+        replay_item["is_canonical_replay"] = True
+        replay_item["opportunity_campaign_id"] = int(replay.candidate.campaign_id)
+        replay_item["opportunity_presentation_id"] = replay.presentation_id
+        replay_item["opportunity_presentation_token"] = None
+        replay_item["opportunity_presentation_expires_at"] = None
+        replay_item["opportunity_replay_expires_at"] = (
+            replay.replay_expires_at.isoformat()
+        )
+        replay_item["opportunity_presentation_surface"] = (
+            SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+        )
+        replay_item["opportunity_counts_as_delivery"] = False
+        replay_item["opportunity_counts_as_exposure"] = False
+        items.append(replay_item)
 
     return {
         'canonical_visibility': {

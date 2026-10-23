@@ -208,6 +208,25 @@ def presentation_policy() -> SpotlightPresentationPolicy:
     return SpotlightPresentationPolicy()
 
 
+def _spotlight_visibility_window_offset(
+    *,
+    viewer_user_id: int,
+    bucket: int,
+    candidate_count: int,
+    batch_size: int,
+) -> int:
+    """Advance a viewer's bounded visibility window instead of reshuffling it."""
+    safe_count = max(int(candidate_count), 0)
+    if safe_count <= 0:
+        return 0
+    safe_batch_size = max(int(batch_size), 1)
+    seed = int.from_bytes(
+        hashlib.sha256(f'visibility:{int(viewer_user_id)}'.encode('utf-8')).digest()[:4],
+        'big',
+    )
+    return (seed + (int(bucket) * safe_batch_size)) % safe_count
+
+
 def list_spotlight_presentation_replays(
     db: Session,
     *,
@@ -469,11 +488,15 @@ def list_spotlight_presentation_visibility(
     )
     ordered = list(diversity.candidates)
     if len(ordered) > 1:
-        # Rotate the bounded window every replay TTL so a large live inventory
-        # cannot permanently hide rows beyond the response limit.
+        # Advance one bounded window every replay TTL. Adjacent windows move by
+        # their own size instead of independently reshuffling.
         bucket = int(current_time.timestamp()) // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
-        digest = hashlib.sha256(f'{viewer_id}:{bucket}'.encode('utf-8')).digest()
-        offset = int.from_bytes(digest[:4], 'big') % len(ordered)
+        offset = _spotlight_visibility_window_offset(
+            viewer_user_id=viewer_id,
+            bucket=bucket,
+            candidate_count=len(ordered),
+            batch_size=safe_limit,
+        )
         ordered = [*ordered[offset:], *ordered[:offset]]
 
     visible: list[SpotlightPresentationVisibility] = []

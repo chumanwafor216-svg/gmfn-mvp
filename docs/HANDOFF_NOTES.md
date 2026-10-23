@@ -8,6 +8,31 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight 19-item fair-rotation repair - 2026-10-23
+
+- Owner phone testing with 19 active GSN-house promotions exposed real queue
+  starvation: up to four recent qualified replays could occupy a five-item
+  response, the bounded visibility window independently reshuffled on each
+  30-second bucket, and the browser circularly reused early rows while their
+  leases remained current. That combination allowed repeated early media,
+  short near-expiry flashes, and unseen later promotions.
+- The server now advances deterministic adjacent visibility windows, reserves
+  recent qualified replays only as fallbacks, and lets other eligible live
+  campaigns fill the bounded phone response first. The single-campaign replay
+  contract remains intact and all replay/visibility rows remain accounting
+  neutral.
+- Public Shop now treats each bounded queue as one pass: an occurrence is
+  removed after its complete visible dwell instead of wrapping immediately to
+  the start. A row with less than one standard readable dwell remaining is
+  skipped; reduced-motion presentation still respects the authoritative server
+  deadline. The handset remains bounded and never downloads the full inventory.
+- Verification passed locally: 18 focused presentation-contract tests, a
+  broader 70-test scheduler/frequency/GSN-house collection, the Spotlight
+  contract audit, targeted ESLint, Python compilation, the 292-module
+  production build, the complete protected-button freeze audit, and the
+  14-scenario real phone-browser Spotlight smoke. Commit/deployment status is
+  pending.
+
 ## GSN house advertiser contact route - 2026-10-23
 
 - The platform-admin GSN Spotlight publisher now requires one advertiser phone
