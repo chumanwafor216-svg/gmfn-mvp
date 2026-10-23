@@ -95,13 +95,20 @@ for (const text of [
   'data-screen="admin-gsn-house-campaign"',
   "destinationTitle(row)",
   "row.community_code",
-  "disabled={!row.eligible}",
+  "disabled={!row.eligible || draftBusy || publishedCount > 0}",
   "Review campaign",
+  "MAX_GSN_HOUSE_BATCH_MEDIA = 10",
+  "multiple",
+  "Still needed before review:",
+  "Keep this page open",
+  "for (let index = 0; index < mediaQueue.length; index += 1)",
+  "for (let index = results.length; index < review.media.length; index += 1)",
+  "Continue publishing batch",
   "I confirm this is an official GSN publication",
   "Publish GSN campaign",
   "idempotencyKey: makeIdempotencyKey()",
-  "idempotency_key: review.idempotencyKey",
-  "Uploading media does not publish the campaign",
+  "idempotency_key: item.idempotencyKey",
+  "Preparation and review do not publish anything",
   "Active inventory and truthful delivery report",
   "Issued by GSN",
   '"Seen"',
@@ -112,6 +119,12 @@ for (const text of [
   "discardAdminGsnHouseCampaignReviewMedia",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
+}
+if (/disabled=\{selectedRows\.length === 0[^}]*\}/.test(page)) {
+  findings.push({
+    file: pageFile,
+    message: "Review must explain missing requirements instead of becoming silently disabled.",
+  });
 }
 requireOrder(
   pageFile,

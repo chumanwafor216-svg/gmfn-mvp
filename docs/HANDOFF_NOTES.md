@@ -8,6 +8,41 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN house batch-media queue and review recovery - 2026-10-23
+
+- Status: implementation and local verification are complete on
+  `codex/spotlight-rotation-continuity`; commit and deployment identifiers
+  belong in the publishing-session update below.
+- The existing platform-admin GSN Spotlight publisher now accepts one to ten
+  pictures and/or short videos in one phone file choice. It prepares files
+  sequentially, shows the accepted queue and progress, and lets the operator
+  remove an item before review. The queue is browser-session memory until
+  review, so the page truthfully tells the operator to keep it open.
+- One shared official message and one selected destination set apply to the
+  batch. Read-only review uploads each prepared item sequentially to managed
+  GSN storage but publishes nothing. Every reviewed media item receives its own
+  publication idempotency key and becomes one independent 24-hour GSN-HOUSE
+  campaign when the batch is confirmed.
+- Final publication is sequential and progress-visible. If a later item fails,
+  already-published campaigns remain recorded, the draft locks against unsafe
+  edits, and retry resumes from the next item without duplicating successful
+  campaigns. Discard cleans every wholly unpublished uploaded item through the
+  existing reference-safe backend route; referenced media is never deleted.
+- The formerly silent disabled `Review campaign` action is now tappable before
+  readiness and the same action area lists the exact missing destination,
+  message, media, or preparation step.
+- This is an operator-efficiency repair, not the global-audience architecture.
+  The current pilot still stores explicit placements for at most 100 selected
+  communities. Millions of destinations must later use a persisted
+  global/country/region/free-tier audience rule evaluated during delivery,
+  rather than creating millions of per-community attachments.
+- Verification passed: targeted ESLint, the Admin GSN campaign contract audit,
+  the complete protected-button freeze audit including phone visual checks,
+  the 292-module production frontend build, and all 12 focused backend
+  GSN-house campaign tests. The first two backend attempts reached 11 passing
+  tests before Windows denied pytest temporary-directory access; the approved
+  workspace-safe rerun completed all 12.
+
 ## GSN house Spotlight multi-promotion pilot inventory - 2026-10-23
 
 - Status: implemented, committed as application commit `6f452b7f`, pushed to

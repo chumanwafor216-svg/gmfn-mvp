@@ -34,19 +34,34 @@ import {
 import { structuredErrorMessage } from "../lib/structuredErrors";
 
 type PreparedMedia = {
+  key: string;
   kind: "image" | "video";
   file: File;
   durationSeconds?: number | null;
   preparationMessage?: string | null;
 };
 
-type CampaignReview = {
-  message: string;
+type CampaignReviewMedia = {
+  key: string;
+  fileName: string;
   mediaKind: "image" | "video";
   mediaUrl: string;
   idempotencyKey: string;
+};
+
+type CampaignReview = {
+  message: string;
+  media: CampaignReviewMedia[];
   preview: GsnHouseCampaignPreview;
 };
+
+type BatchPublication = {
+  results: GsnHouseCampaignPublication[];
+  total: number;
+  complete: boolean;
+};
+
+const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
 
 function safeStr(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
@@ -168,6 +183,27 @@ function makeIdempotencyKey(): string {
   );
 }
 
+function mediaFileKey(file: File): string {
+  return [file.name, file.size, file.lastModified].join(":");
+}
+
+function mediaFileKind(file: File): "image" | "video" | null {
+  const lowerName = safeStr(file.name).toLowerCase();
+  if (
+    safeStr(file.type).toLowerCase().startsWith("video/") ||
+    /[.](mp4|mov|webm|m4v)$/.test(lowerName)
+  ) {
+    return "video";
+  }
+  if (
+    safeStr(file.type).toLowerCase().startsWith("image/") ||
+    /[.](jpe?g|png|webp)$/.test(lowerName)
+  ) {
+    return "image";
+  }
+  return null;
+}
+
 function dateTimeLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   const parsed = new Date(value);
@@ -188,12 +224,14 @@ export default function AdminGsnHouseCampaignPage() {
   });
   const [selected, setSelected] = useState<Record<number, GsnHouseCampaignDestination>>({});
   const [message, setMessage] = useState("");
-  const [media, setMedia] = useState<PreparedMedia | null>(null);
+  const [mediaQueue, setMediaQueue] = useState<PreparedMedia[]>([]);
   const [mediaInputKey, setMediaInputKey] = useState(0);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
+  const [mediaProgress, setMediaProgress] = useState("");
   const [review, setReview] = useState<CampaignReview | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [publication, setPublication] = useState<GsnHouseCampaignPublication | null>(null);
+  const [publication, setPublication] = useState<BatchPublication | null>(null);
+  const [publishingProgress, setPublishingProgress] = useState("");
   const [operations, setOperations] = useState<GsnHouseCampaignOperations | null>(null);
   const [stopReason, setStopReason] = useState("");
   const [stopConfirmed, setStopConfirmed] = useState(false);
@@ -208,12 +246,22 @@ export default function AdminGsnHouseCampaignPage() {
     text: string;
   } | null>(null);
   const reviewRef = useRef<CampaignReview | null>(null);
-  const publicationRef = useRef<GsnHouseCampaignPublication | null>(null);
+  const publicationRef = useRef<BatchPublication | null>(null);
 
   const selectedRows = useMemo(
     () => Object.values(selected).sort((a, b) => destinationTitle(a).localeCompare(destinationTitle(b))),
     [selected]
   );
+  const publishedCount = publication?.results.length || 0;
+  const draftBusy = preparingMedia || reviewing || publishing;
+  const reviewBlockers = useMemo(() => {
+    const blockers: string[] = [];
+    if (selectedRows.length === 0) blockers.push("Choose at least one eligible community.");
+    if (message.trim().length < 2) blockers.push("Write the official GSN message.");
+    if (mediaQueue.length === 0) blockers.push("Add at least one picture or short video.");
+    if (preparingMedia) blockers.push("Wait for media preparation to finish.");
+    return blockers;
+  }, [mediaQueue.length, message, preparingMedia, selectedRows.length]);
 
   useEffect(() => {
     reviewRef.current = review;
@@ -221,26 +269,35 @@ export default function AdminGsnHouseCampaignPage() {
   }, [publication, review]);
 
   const discardUnpublishedReview = useCallback(async (candidate: CampaignReview) => {
-    try {
-      await discardAdminGsnHouseCampaignReviewMedia(candidate.mediaUrl);
-    } catch (error) {
+    const results = await Promise.allSettled(
+      candidate.media.map((item) =>
+        discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl)
+      )
+    );
+    if (results.some((result) => result.status === "rejected")) {
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(
-          error,
-          "The unpublished review was cleared, but its uploaded media could not be removed automatically."
-        ),
+        text: "The unpublished review was cleared, but some uploaded media could not be removed automatically.",
       });
     }
   }, []);
 
   const invalidateReview = useCallback(() => {
+    if (publication?.results.length) {
+      setFeedback({
+        tone: "error",
+        text: "This batch has started publishing and is locked. Finish the remaining promotions or prepare another batch afterward.",
+      });
+      return false;
+    }
     if (review && !publication) {
       void discardUnpublishedReview(review);
     }
     setReview(null);
     setConfirmed(false);
     setPublication(null);
+    setPublishingProgress("");
+    return true;
   }, [discardUnpublishedReview, publication, review]);
 
   const loadOperations = useCallback(async () => {
@@ -289,26 +346,34 @@ export default function AdminGsnHouseCampaignPage() {
   useEffect(
     () => () => {
       const abandoned = reviewRef.current;
-      if (abandoned && !publicationRef.current) {
-        void discardAdminGsnHouseCampaignReviewMedia(abandoned.mediaUrl).catch(() => undefined);
+      const completed = publicationRef.current?.results.length || 0;
+      if (abandoned && completed < abandoned.media.length) {
+        for (const item of abandoned.media.slice(completed)) {
+          void discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl).catch(() => undefined);
+        }
       }
     },
     []
   );
 
   useEffect(() => {
-    if (!media) {
+    const firstMedia = mediaQueue[0];
+    if (!firstMedia) {
       setMediaPreviewUrl("");
       return;
     }
-    const objectUrl = URL.createObjectURL(media.file);
+    const objectUrl = URL.createObjectURL(firstMedia.file);
     setMediaPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [media]);
+  }, [mediaQueue]);
 
   function toggleDestination(row: GsnHouseCampaignDestination) {
     if (!row.eligible) return;
-    invalidateReview();
+    if (draftBusy) {
+      setFeedback({ tone: "info", text: "Wait for the current batch step to finish before changing destinations." });
+      return;
+    }
+    if (!invalidateReview()) return;
     setSelected((current) => {
       if (current[row.clan_id]) {
         const next = { ...current };
@@ -326,71 +391,97 @@ export default function AdminGsnHouseCampaignPage() {
     });
   }
 
-  async function handleMediaPicked(file: File | null) {
-    invalidateReview();
-    setMedia(null);
-    setFeedback(null);
-    if (!file) return;
+  function removePreparedMedia(key: string) {
+    if (draftBusy) return;
+    if (!invalidateReview()) return;
+    setMediaQueue((current) => current.filter((item) => item.key !== key));
+    setMediaInputKey((current) => current + 1);
+    setFeedback({ tone: "info", text: "The media item was removed from this batch." });
+  }
 
-    const lowerName = safeStr(file.name).toLowerCase();
-    const isVideo =
-      safeStr(file.type).toLowerCase().startsWith("video/") ||
-      /.(mp4|mov|webm|m4v)$/.test(lowerName);
-    const isImage =
-      safeStr(file.type).toLowerCase().startsWith("image/") ||
-      /.(jpe?g|png|webp)$/.test(lowerName);
-    if (!isVideo && !isImage) {
+  async function handleMediaPicked(files: File[]) {
+    if (!invalidateReview()) return;
+    setFeedback(null);
+    if (files.length === 0) return;
+
+    const existingKeys = new Set(mediaQueue.map((item) => item.key));
+    const additions = files.filter((file) => !existingKeys.has(mediaFileKey(file)));
+    if (mediaQueue.length + additions.length > MAX_GSN_HOUSE_BATCH_MEDIA) {
       setFeedback({
         tone: "error",
-        text: "Choose a JPG, PNG, or WebP picture, or a playable MP4, MOV, or WebM video.",
+        text: `A batch can hold at most ${MAX_GSN_HOUSE_BATCH_MEDIA} media items. Remove an item or choose a smaller group.`,
       });
+      setMediaInputKey((current) => current + 1);
+      return;
+    }
+    if (additions.length === 0) {
+      setFeedback({ tone: "info", text: "Those media files are already in this batch." });
       setMediaInputKey((current) => current + 1);
       return;
     }
 
     setPreparingMedia(true);
-    setFeedback({
-      tone: "info",
-      text: "Preparing the selected media. Review stays locked until it is ready.",
-    });
+    const preparedItems: PreparedMedia[] = [];
+    const failedNames: string[] = [];
     try {
-      if (isVideo) {
-        const prepared = await prepareSpotlightVideoFile(file, {
-          maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
-          maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
-        });
-        setMedia({
-          kind: "video",
-          file: prepared.file,
-          durationSeconds: prepared.durationSeconds,
-          preparationMessage: prepared.message,
-        });
+      for (let index = 0; index < additions.length; index += 1) {
+        const file = additions[index];
+        const kind = mediaFileKind(file);
+        setMediaProgress(`Preparing ${index + 1} of ${additions.length}: ${file.name}`);
+        if (!kind) {
+          failedNames.push(file.name);
+          continue;
+        }
+        try {
+          if (kind === "video") {
+            const prepared = await prepareSpotlightVideoFile(file, {
+              maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+              maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+            });
+            preparedItems.push({
+              key: mediaFileKey(file),
+              kind,
+              file: prepared.file,
+              durationSeconds: prepared.durationSeconds,
+              preparationMessage: prepared.message,
+            });
+          } else {
+            const prepared = await prepareSpotlightImageFile(file, {
+              maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+            });
+            preparedItems.push({
+              key: mediaFileKey(file),
+              kind,
+              file: prepared.file,
+              preparationMessage: prepared.message,
+            });
+          }
+          setMediaQueue([...mediaQueue, ...preparedItems]);
+        } catch {
+          failedNames.push(file.name);
+        }
+      }
+      if (preparedItems.length > 0) {
         setFeedback({
-          tone: "success",
-          text: prepared.message || "The verified short video is ready for the read-only review.",
+          tone: failedNames.length > 0 ? "info" : "success",
+          text: `${preparedItems.length} media item${preparedItems.length === 1 ? "" : "s"} added. ${failedNames.length > 0 ? `${failedNames.length} could not be prepared: ${failedNames.join(", ")}.` : "The batch is ready for review preparation."}`,
         });
       } else {
-        const prepared = await prepareSpotlightImageFile(file, {
-          maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
-        });
-        setMedia({
-          kind: "image",
-          file: prepared.file,
-          preparationMessage: prepared.message,
-        });
         setFeedback({
-          tone: "success",
-          text: prepared.message || "The picture is ready for the read-only review.",
+          tone: "error",
+          text: "None of the selected media could be prepared. Use JPG, PNG, WebP, MP4, MOV, or WebM files that meet the Spotlight limits.",
         });
       }
     } catch (error) {
       setMediaInputKey((current) => current + 1);
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(error, "The selected media could not be prepared for Spotlight."),
+        text: structuredErrorMessage(error, "The selected media batch could not be prepared for Spotlight."),
       });
     } finally {
       setPreparingMedia(false);
+      setMediaProgress("");
+      setMediaInputKey((current) => current + 1);
     }
   }
 
@@ -399,6 +490,10 @@ export default function AdminGsnHouseCampaignPage() {
     setPublication(null);
     setConfirmed(false);
     const cleanMessage = message.trim();
+    if (preparingMedia) {
+      setFeedback({ tone: "info", text: "Wait for media preparation to finish before reviewing." });
+      return;
+    }
     if (selectedRows.length === 0) {
       setFeedback({ tone: "error", text: "Select at least one eligible community." });
       return;
@@ -407,8 +502,8 @@ export default function AdminGsnHouseCampaignPage() {
       setFeedback({ tone: "error", text: "Write the official GSN campaign message before reviewing." });
       return;
     }
-    if (!media) {
-      setFeedback({ tone: "error", text: "Add one prepared picture or verified short video before reviewing." });
+    if (mediaQueue.length === 0) {
+      setFeedback({ tone: "error", text: "Add at least one prepared picture or verified short video before reviewing." });
       return;
     }
 
@@ -426,32 +521,51 @@ export default function AdminGsnHouseCampaignPage() {
         return;
       }
 
-      const response =
-        media.kind === "video"
-          ? await uploadMarketplaceVideoFile(
-              media.file,
-              media.durationSeconds != null &&
-                media.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
-                ? media.durationSeconds
-                : null,
-              null
-            )
-          : await uploadMarketplaceImageFile(media.file, null);
-      const readyMediaUrl = uploadUrl(response, media.kind);
-      if (!readyMediaUrl) {
-        throw new Error("Media preparation completed, but GSN did not return a usable media link.");
+      const uploadedMedia: CampaignReviewMedia[] = [];
+      try {
+        for (let index = 0; index < mediaQueue.length; index += 1) {
+          const item = mediaQueue[index];
+          setMediaProgress(`Uploading ${index + 1} of ${mediaQueue.length}: ${item.file.name}`);
+          const response =
+            item.kind === "video"
+              ? await uploadMarketplaceVideoFile(
+                  item.file,
+                  item.durationSeconds != null &&
+                    item.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
+                    ? item.durationSeconds
+                    : null,
+                  null
+                )
+              : await uploadMarketplaceImageFile(item.file, null);
+          const readyMediaUrl = uploadUrl(response, item.kind);
+          if (!readyMediaUrl) {
+            throw new Error("GSN did not return a usable media link.");
+          }
+          uploadedMedia.push({
+            key: item.key,
+            fileName: item.file.name,
+            mediaKind: item.kind,
+            mediaUrl: readyMediaUrl,
+            idempotencyKey: makeIdempotencyKey(),
+          });
+        }
+      } catch (error) {
+        await Promise.allSettled(
+          uploadedMedia.map((item) =>
+            discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl)
+          )
+        );
+        throw error;
       }
 
       setReview({
         message: cleanMessage,
-        mediaKind: media.kind,
-        mediaUrl: readyMediaUrl,
-        idempotencyKey: makeIdempotencyKey(),
+        media: uploadedMedia,
         preview: destinationPreview,
       });
       setFeedback({
         tone: "success",
-        text: "Read-only review is ready. Nothing has been published. Check the official message, media, destinations, and final confirmation.",
+        text: `Read-only review is ready for ${uploadedMedia.length} promotion${uploadedMedia.length === 1 ? "" : "s"}. Nothing has been published.`,
       });
     } catch (error) {
       setReview(null);
@@ -461,6 +575,7 @@ export default function AdminGsnHouseCampaignPage() {
       });
     } finally {
       setReviewing(false);
+      setMediaProgress("");
     }
   }
 
@@ -479,32 +594,50 @@ export default function AdminGsnHouseCampaignPage() {
 
     setPublishing(true);
     setFeedback(null);
+    const results = [...(publication?.results || [])];
     try {
-      const response = await createAdminGsnHouseCampaign({
-        clan_ids: review.preview.requested_clan_ids,
-        message: review.message,
-        image_url: review.mediaKind === "image" ? review.mediaUrl : null,
-        video_url: review.mediaKind === "video" ? review.mediaUrl : null,
-        idempotency_key: review.idempotencyKey,
+      for (let index = results.length; index < review.media.length; index += 1) {
+        const item = review.media[index];
+        setPublishingProgress(
+          `Publishing ${index + 1} of ${review.media.length}: ${item.fileName}`
+        );
+        const response = await createAdminGsnHouseCampaign({
+          clan_ids: review.preview.requested_clan_ids,
+          message: review.message,
+          image_url: item.mediaKind === "image" ? item.mediaUrl : null,
+          video_url: item.mediaKind === "video" ? item.mediaUrl : null,
+          idempotency_key: item.idempotencyKey,
+        });
+        results.push(response);
+        setPublication({
+          results: [...results],
+          total: review.media.length,
+          complete: false,
+        });
+      }
+      setPublication({
+        results: [...results],
+        total: review.media.length,
+        complete: true,
       });
-      setPublication(response);
       await loadOperations();
       setFeedback({
         tone: "success",
-        text: response.idempotent_replay
-          ? "The existing GSN campaign result was safely recovered; no duplicate was created."
-          : "The official GSN campaign has been published to the currently eligible destinations.",
+        text: `${results.length} official GSN promotion${results.length === 1 ? "" : "s"} published to the currently eligible destinations.`,
       });
     } catch (error) {
+      await loadOperations();
+      const failure = structuredErrorMessage(
+        error,
+        "The next promotion could not be published."
+      );
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(
-          error,
-          "The GSN campaign could not be published. The same safe publication identity will be reused if you retry."
-        ),
+        text: `${failure} ${results.length} of ${review.media.length} promotions published. Tap publish again to continue from the next item; completed promotions will not be duplicated.`,
       });
     } finally {
       setPublishing(false);
+      setPublishingProgress("");
     }
   }
 
@@ -559,11 +692,13 @@ export default function AdminGsnHouseCampaignPage() {
   function resetCampaign() {
     setSelected({});
     setMessage("");
-    setMedia(null);
+    setMediaQueue([]);
+    setMediaProgress("");
     setMediaInputKey((current) => current + 1);
     setReview(null);
     setConfirmed(false);
     setPublication(null);
+    setPublishingProgress("");
     setFeedback(null);
   }
 
@@ -620,7 +755,7 @@ export default function AdminGsnHouseCampaignPage() {
               ["Publisher", "GSN-HOUSE"],
               ["Duration", "24 hours"],
               ["Selected", String(selectedRows.length)],
-              ["Media", media ? (media.kind === "video" ? "Verified video" : "Prepared picture") : "Not ready"],
+              ["Media", mediaQueue.length > 0 ? `${mediaQueue.length} prepared` : "Not ready"],
             ].map(([label, value]) => (
               <div key={label} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
                 <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -790,7 +925,7 @@ export default function AdminGsnHouseCampaignPage() {
               Nothing is published yet
             </h2>
             <p style={{ margin: "8px 0 0", ...helper() }}>
-              Check the exact official message, uploaded media, eligible destinations, and exclusions. Changing any draft field invalidates this review and removes its unreferenced uploaded media.
+              Check the shared official message, {review.media.length} uploaded media item{review.media.length === 1 ? "" : "s"}, eligible destinations, and exclusions. Each media item will become one promotion.
             </p>
 
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 12 }}>
@@ -804,6 +939,7 @@ export default function AdminGsnHouseCampaignPage() {
                 <div style={sectionLabel()}>Publication facts</div>
                 <div style={{ marginTop: 9, display: "grid", gap: 7, ...helper() }}>
                   <div><strong>Publisher:</strong> Global Support Network (GSN-HOUSE)</div>
+                  <div><strong>Promotions:</strong> {review.media.length}</div>
                   <div><strong>Eligible now:</strong> {review.preview.eligible_count}</div>
                   <div><strong>Excluded now:</strong> {review.preview.excluded_count}</div>
                   <div><strong>Lifetime:</strong> 24 hours</div>
@@ -836,12 +972,22 @@ export default function AdminGsnHouseCampaignPage() {
               </div>
             ) : null}
 
-            <div style={{ marginTop: 12, ...softCard("#071A2D"), color: "#FFFFFF" }}>
-              {review.mediaKind === "image" ? (
-                <img src={review.mediaUrl} alt="Official GSN campaign review" style={{ width: "100%", maxHeight: 390, objectFit: "cover", borderRadius: 16 }} />
-              ) : (
-                <video src={review.mediaUrl} controls playsInline style={{ width: "100%", maxHeight: 390, borderRadius: 16, background: "#000000" }} />
-              )}
+            <div style={{ marginTop: 12, ...softCard("#071A2D"), color: "#FFFFFF", display: "grid", gap: 9 }}>
+              <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
+                Media batch ({review.media.length})
+              </div>
+              {review.media.map((item, index) => (
+                <details key={item.key} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.14)" }}>
+                  <summary style={{ cursor: "pointer", color: "#FFFFFF", fontWeight: 850 }}>
+                    {index + 1}. {item.fileName} · {item.mediaKind === "video" ? "Verified video" : "Prepared picture"}
+                  </summary>
+                  {item.mediaKind === "image" ? (
+                    <img src={item.mediaUrl} alt={`Official GSN promotion ${index + 1}`} style={{ marginTop: 10, width: "100%", maxHeight: 390, objectFit: "cover", borderRadius: 16 }} />
+                  ) : (
+                    <video src={item.mediaUrl} controls playsInline style={{ marginTop: 10, width: "100%", maxHeight: 390, borderRadius: 16, background: "#000000" }} />
+                  )}
+                </details>
+              ))}
             </div>
 
             <label style={{ marginTop: 14, ...softCard("#FFFFFF"), display: "flex", gap: 11, alignItems: "flex-start", cursor: "pointer" }}>
@@ -856,33 +1002,36 @@ export default function AdminGsnHouseCampaignPage() {
               </span>
             </label>
 
-            {!publication ? (
+            {!publication?.complete ? (
               <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+                {publishingProgress ? <div role="status" style={statusPanel("info")}>{publishingProgress}</div> : null}
                 <StableButton
                   kind="primary"
                   fullWidth
                   stableHeight={54}
                   busy={publishing}
                   busyLabel="Publishing safely"
-                  disabled={!confirmed}
                   onClick={handlePublish}
                   debugId="admin-gsn-campaign.publish"
+                  aria-label="Publish GSN campaign batch"
                 >
-                  Publish GSN campaign
+                  {publishedCount > 0 ? "Continue publishing batch" : `Publish ${review.media.length} GSN promotion${review.media.length === 1 ? "" : "s"}`}
                 </StableButton>
-                <StableButton
-                  kind="danger"
-                  onClick={() => {
-                    invalidateReview();
-                    setFeedback({
-                      tone: "info",
-                      text: "The unpublished review was discarded. GSN is removing its uploaded media if no live record references it.",
-                    });
-                  }}
-                  debugId="admin-gsn-campaign.review-discard"
-                >
-                  Discard unpublished review
-                </StableButton>
+                {publishedCount === 0 ? (
+                  <StableButton
+                    kind="danger"
+                    onClick={() => {
+                      invalidateReview();
+                      setFeedback({
+                        tone: "info",
+                        text: "The unpublished review was discarded. GSN is removing every unreferenced uploaded media item.",
+                      });
+                    }}
+                    debugId="admin-gsn-campaign.review-discard"
+                  >
+                    Discard unpublished review
+                  </StableButton>
+                ) : null}
               </div>
             ) : null}
           </section>
@@ -892,22 +1041,55 @@ export default function AdminGsnHouseCampaignPage() {
           <section style={{ ...card("#ECFDF3"), order: 6 }}>
             <div style={sectionLabel()}>Publication result</div>
             <h2 style={{ margin: "8px 0 0", color: "#14532D", fontSize: 24 }}>
-              Official GSN campaign is live
+              {publication.complete
+                ? `${publication.results.length} official GSN promotion${publication.results.length === 1 ? " is" : "s are"} live`
+                : `${publication.results.length} of ${publication.total} promotions are live`}
             </h2>
             <p style={{ margin: "8px 0 0", color: "#166534", lineHeight: 1.65 }}>
-              Published to {Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0)} currently eligible communit{Number(publication.propagated_count || publication.propagated_clan_ids?.length || 0) === 1 ? "y" : "ies"}. {Number(publication.excluded_count || 0)} destination{Number(publication.excluded_count || 0) === 1 ? " was" : "s were"} excluded.
+              {publication.complete
+                ? "The full reviewed batch has finished publishing."
+                : "The completed promotions are preserved. Use Continue publishing batch to resume safely from the next item."}
             </p>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: 9 }}>
+              {[
+                ["Promotions live", publication.results.length],
+                ["Batch total", publication.total],
+                [
+                  "Community placements",
+                  publication.results.reduce(
+                    (total, item) =>
+                      total +
+                      Number(item.propagated_count || item.propagated_clan_ids?.length || 0),
+                    0
+                  ),
+                ],
+                [
+                  "Excluded decisions",
+                  publication.results.reduce(
+                    (total, item) => total + Number(item.excluded_count || 0),
+                    0
+                  ),
+                ],
+              ].map(([label, value]) => (
+                <div key={String(label)} style={institutionalInnerCard("#FFFFFF")}>
+                  <div style={{ color: "#64778B", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
+                  <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>{value}</div>
+                </div>
+              ))}
+            </div>
             <div style={{ marginTop: 13, ...softCard("#FFFFFF"), ...helper() }}>
               Publisher: <strong>Global Support Network (GSN-HOUSE)</strong><br />
               Member advertising credit used: <strong>No</strong><br />
               Community endorsement created: <strong>No</strong><br />
               Audit actor: <strong>Your signed-in platform-admin identity</strong>
             </div>
-            <div style={{ marginTop: 14 }}>
-              <StableButton onClick={resetCampaign} debugId="admin-gsn-campaign.reset">
-                Prepare another campaign
-              </StableButton>
-            </div>
+            {publication.complete ? (
+              <div style={{ marginTop: 14 }}>
+                <StableButton onClick={resetCampaign} debugId="admin-gsn-campaign.reset">
+                  Prepare another batch
+                </StableButton>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -988,7 +1170,7 @@ export default function AdminGsnHouseCampaignPage() {
                   <input
                     type="checkbox"
                     checked={checked}
-                    disabled={!row.eligible}
+                    disabled={!row.eligible || draftBusy || publishedCount > 0}
                     onChange={() => toggleDestination(row)}
                     style={{ width: 20, height: 20, marginTop: 2, accentColor: "#0B63D1" }}
                   />
@@ -1033,7 +1215,7 @@ export default function AdminGsnHouseCampaignPage() {
             Prepare the compact billboard
           </h2>
           <p style={{ margin: "8px 0 0", ...helper() }}>
-            Use one short official message and one picture or short video. Uploading media does not publish the campaign.
+            Use one short official message and add up to {MAX_GSN_HOUSE_BATCH_MEDIA} pictures or short videos. Each media item becomes one promotion. Preparation and review do not publish anything.
           </p>
 
           {operations?.active_count ? (
@@ -1046,9 +1228,9 @@ export default function AdminGsnHouseCampaignPage() {
             <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Official GSN message</span>
             <textarea
               value={message}
+              disabled={draftBusy || publishedCount > 0}
               onChange={(event) => {
-                setMessage(event.target.value);
-                invalidateReview();
+                if (invalidateReview()) setMessage(event.target.value);
               }}
               maxLength={2000}
               placeholder="Write the official service announcement or campaign message."
@@ -1058,49 +1240,86 @@ export default function AdminGsnHouseCampaignPage() {
           <div style={{ marginTop: 5, textAlign: "right", color: "#60758A", fontSize: 12 }}>{message.length}/2000</div>
 
           <label style={{ display: "block", marginTop: 14, ...softCard("#FFFFFF") }}>
-            <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Picture or verified short video</span>
+            <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Pictures and verified short videos</span>
             <input
               key={mediaInputKey}
               type="file"
               data-gmfn-action-root="true"
               data-cta-id="admin-gsn-campaign.media"
               accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,.m4v"
-              disabled={preparingMedia}
-              onChange={(event) => void handleMediaPicked(event.target.files?.[0] || null)}
+              multiple
+              disabled={draftBusy || publishedCount > 0}
+              onChange={(event) => void handleMediaPicked(Array.from(event.target.files || []))}
               style={{ width: "100%", color: "#0B1F33", font: "inherit" }}
             />
             <span style={{ display: "block", marginTop: 9, ...helper(), fontSize: 13 }}>
-              Pictures are prepared up to 10 MB. Videos are quality-checked and reduced to the opening {SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS} seconds.
+              Choose up to {MAX_GSN_HOUSE_BATCH_MEDIA} files. GSN prepares them one at a time. Keep this page open: before review, the queue exists only in this phone session. Review uploads each file to GSN storage without publishing it.
             </span>
           </label>
 
-          {media && mediaPreviewUrl ? (
+          {mediaProgress ? <div role="status" style={{ marginTop: 12, ...statusPanel("info") }}>{mediaProgress}</div> : null}
+
+          {mediaQueue.length > 0 && mediaPreviewUrl ? (
             <div style={{ marginTop: 14, ...softCard("#071A2D"), color: "#FFFFFF" }}>
-              <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>Ready media</div>
-              {media.kind === "image" ? (
-                <img src={mediaPreviewUrl} alt="Prepared GSN campaign" style={{ marginTop: 10, width: "100%", maxHeight: 360, objectFit: "cover", borderRadius: 16 }} />
+              <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
+                Prepared batch · {mediaQueue.length} of {MAX_GSN_HOUSE_BATCH_MEDIA}
+              </div>
+              {mediaQueue[0].kind === "image" ? (
+                <img src={mediaPreviewUrl} alt="First prepared GSN promotion" style={{ marginTop: 10, width: "100%", maxHeight: 360, objectFit: "cover", borderRadius: 16 }} />
               ) : (
                 <video src={mediaPreviewUrl} controls playsInline style={{ marginTop: 10, width: "100%", maxHeight: 360, borderRadius: 16, background: "#000000" }} />
               )}
               <div style={{ marginTop: 10, color: "#D7E3EF", fontSize: 13 }}>
-                {media.file.name} · {media.kind === "video" ? "Verified short video" : "Prepared picture"}
+                First item: {mediaQueue[0].file.name} · {mediaQueue[0].kind === "video" ? "Verified short video" : "Prepared picture"}
+              </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                {mediaQueue.map((item, index) => (
+                  <div key={item.key} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", padding: "9px 10px", borderRadius: 12, background: "rgba(255,255,255,0.08)" }}>
+                    <span style={{ minWidth: 0, color: "#FFFFFF", fontSize: 13, lineHeight: 1.45, overflowWrap: "anywhere" }}>
+                      {index + 1}. {item.file.name} · {item.kind === "video" ? "Video" : "Picture"}
+                    </span>
+                    <StableButton
+                      disabled={draftBusy || publishedCount > 0}
+                      onClick={() => removePreparedMedia(item.key)}
+                      debugId={`admin-gsn-campaign.media-remove-${index + 1}`}
+                      stableHeight={36}
+                      minWidth={76}
+                      style={{ flex: "0 0 auto", borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.10)", color: "#FFFFFF", fontSize: 12 }}
+                    >
+                      Remove
+                    </StableButton>
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}
 
           {!review ? (
-            <div style={{ marginTop: 18 }}>
+            <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
+              <div id="admin-gsn-campaign-review-readiness" role="status" style={statusPanel(reviewBlockers.length > 0 ? "info" : "success")}>
+                {reviewBlockers.length > 0 ? (
+                  <>
+                    <div style={{ fontWeight: 900 }}>Still needed before review:</div>
+                    <ul style={{ margin: "7px 0 0", paddingLeft: 20 }}>
+                      {reviewBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                    </ul>
+                  </>
+                ) : (
+                  `Ready to review ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. Review uploads the prepared media but does not publish it.`
+                )}
+              </div>
               <StableButton
                 kind="primary"
                 fullWidth
                 stableHeight={54}
                 busy={reviewing || preparingMedia}
                 busyLabel={preparingMedia ? "Preparing media" : "Preparing review"}
-                disabled={selectedRows.length === 0 || message.trim().length < 2 || !media}
                 onClick={handleReview}
                 debugId="admin-gsn-campaign.review"
+                aria-label="Review campaign batch"
+                aria-describedby="admin-gsn-campaign-review-readiness"
               >
-                Review campaign
+                Review {mediaQueue.length > 1 ? `${mediaQueue.length} promotions` : "campaign"}
               </StableButton>
             </div>
           ) : null}

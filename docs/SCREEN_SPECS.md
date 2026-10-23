@@ -1650,8 +1650,8 @@ Must show:
 - searchable community destination chooser using visible community names and codes
 - eligible and blocked destination rows, with a plain-language reason for every blocked row
 - selected and excluded destination summaries before publication
-- one short campaign message
-- one prepared picture or verified short video
+- one short campaign message shared by the prepared batch
+- a compact queue of one to ten prepared pictures and/or verified short videos
 - read-only campaign preview before publication
 - explicit final confirmation that the campaign is official GSN communication and does not endorse a member, shop, or Community Domain
 - publication result with published and excluded destination counts
@@ -1668,8 +1668,11 @@ Rules:
 - Blocked or explicitly excluded destinations must be visible but not selectable.
 - Eligibility must be rechecked by the backend when each destination is served. A later advertising exclusion must stop delivery.
 - Preview must be read-only and must happen before the final publish action becomes available.
-- Picture/video preparation and upload may happen while preparing the preview, but uploading media alone must never publish a campaign.
-- The final publish action must require explicit confirmation and an idempotency key so a retry cannot create duplicate campaigns.
+- The phone may select up to ten media files in one action. Preparation and upload must run sequentially, show progress, and keep the page responsive. Before read-only review the prepared queue exists only in the current browser session, so the screen must tell the operator to keep the page open.
+- Read-only review uploads each prepared file to managed GSN storage without publishing it. Every queued media item becomes one independent GSN house campaign using the shared message and selected destinations.
+- The review action must remain tappable before the draft is ready and explain every missing requirement in the same action area. It must never appear silently disabled merely because destination, message, or media is missing.
+- The final batch publish action must require one explicit confirmation and a distinct idempotency key for every media item. Publication runs sequentially, shows progress, preserves already-published results after a later failure, and resumes without duplicating successful campaigns.
+- Discarding an entirely unpublished batch must attempt reference-safe cleanup for every uploaded media item. Once any item has published, the page must not discard or delete media that may already be referenced.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
 - Operator-facing reporting must describe issued presentation leases as `issued by GSN` and qualifying visibility events as `seen`. Issuance does not prove handset receipt. Delivery-round counters remain technical pacing data and must not be presented as personal impressions. None of these counts may be relabelled as video playback, completion, sales, or verified-human reach.
 - Discarding an unpublished review may delete only a GSN-managed Marketplace upload that has no surviving database reference. Referenced media must be retained.
