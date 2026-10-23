@@ -51,6 +51,7 @@ type CampaignReviewMedia = {
 
 type CampaignReview = {
   message: string;
+  contactPhone: string;
   media: CampaignReviewMedia[];
   preview: GsnHouseCampaignPreview;
 };
@@ -204,6 +205,11 @@ function mediaFileKind(file: File): "image" | "video" | null {
   return null;
 }
 
+function canonicalAdvertiserPhone(value: unknown): string {
+  const compact = safeStr(value).replace(/[\s().-]+/g, "");
+  return /^\+[1-9][0-9]{7,14}$/.test(compact) ? compact : "";
+}
+
 function dateTimeLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   const parsed = new Date(value);
@@ -224,6 +230,7 @@ export default function AdminGsnHouseCampaignPage() {
   });
   const [selected, setSelected] = useState<Record<number, GsnHouseCampaignDestination>>({});
   const [message, setMessage] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [mediaQueue, setMediaQueue] = useState<PreparedMedia[]>([]);
   const [mediaInputKey, setMediaInputKey] = useState(0);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
@@ -258,10 +265,15 @@ export default function AdminGsnHouseCampaignPage() {
     const blockers: string[] = [];
     if (selectedRows.length === 0) blockers.push("Choose at least one eligible community.");
     if (message.trim().length < 2) blockers.push("Write the official GSN message.");
+    if (!contactPhone.trim()) {
+      blockers.push("Add the advertiser's public contact phone number.");
+    } else if (!canonicalAdvertiserPhone(contactPhone)) {
+      blockers.push("Use an international contact number such as +234....");
+    }
     if (mediaQueue.length === 0) blockers.push("Add at least one picture or short video.");
     if (preparingMedia) blockers.push("Wait for media preparation to finish.");
     return blockers;
-  }, [mediaQueue.length, message, preparingMedia, selectedRows.length]);
+  }, [contactPhone, mediaQueue.length, message, preparingMedia, selectedRows.length]);
 
   useEffect(() => {
     reviewRef.current = review;
@@ -490,6 +502,7 @@ export default function AdminGsnHouseCampaignPage() {
     setPublication(null);
     setConfirmed(false);
     const cleanMessage = message.trim();
+    const cleanContactPhone = canonicalAdvertiserPhone(contactPhone);
     if (preparingMedia) {
       setFeedback({ tone: "info", text: "Wait for media preparation to finish before reviewing." });
       return;
@@ -500,6 +513,13 @@ export default function AdminGsnHouseCampaignPage() {
     }
     if (cleanMessage.length < 2) {
       setFeedback({ tone: "error", text: "Write the official GSN campaign message before reviewing." });
+      return;
+    }
+    if (!cleanContactPhone) {
+      setFeedback({
+        tone: "error",
+        text: "Add the advertiser's public international phone number, beginning with + and the country code.",
+      });
       return;
     }
     if (mediaQueue.length === 0) {
@@ -560,6 +580,7 @@ export default function AdminGsnHouseCampaignPage() {
 
       setReview({
         message: cleanMessage,
+        contactPhone: cleanContactPhone,
         media: uploadedMedia,
         preview: destinationPreview,
       });
@@ -606,6 +627,7 @@ export default function AdminGsnHouseCampaignPage() {
           message: review.message,
           image_url: item.mediaKind === "image" ? item.mediaUrl : null,
           video_url: item.mediaKind === "video" ? item.mediaUrl : null,
+          advertiser_contact_phone: review.contactPhone,
           idempotency_key: item.idempotencyKey,
         });
         results.push(response);
@@ -692,6 +714,7 @@ export default function AdminGsnHouseCampaignPage() {
   function resetCampaign() {
     setSelected({});
     setMessage("");
+    setContactPhone("");
     setMediaQueue([]);
     setMediaProgress("");
     setMediaInputKey((current) => current + 1);
@@ -806,6 +829,11 @@ export default function AdminGsnHouseCampaignPage() {
               <p style={{ margin: "12px 0 0", color: "#0B1F33", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
                 {operations.current.content.message}
               </p>
+              {operations.current.content.advertiser_contact_phone ? (
+                <div style={{ marginTop: 8, ...helper() }}>
+                  <strong>Advertiser contact:</strong> {operations.current.content.advertiser_contact_phone}
+                </div>
+              ) : null}
               <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: 9 }}>
                 {[
                   ["Placements", operations.current.delivery.placement_count],
@@ -885,6 +913,11 @@ export default function AdminGsnHouseCampaignPage() {
                       Campaign #{item.campaign_id} · {stateLabel(item.state)}
                     </div>
                     <div style={{ marginTop: 6, ...helper() }}>{item.content.message}</div>
+                    {item.content.advertiser_contact_phone ? (
+                      <div style={{ marginTop: 6, ...helper(), fontSize: 13 }}>
+                        <strong>Advertiser contact:</strong> {item.content.advertiser_contact_phone}
+                      </div>
+                    ) : null}
                     <div style={{ marginTop: 8, ...helper(), fontSize: 13 }}>
                       {item.delivery.placement_count} placements · {item.delivery.issued_presentation_count} issued · {item.delivery.qualified_presentation_count} seen · expires {dateTimeLabel(item.expires_at)}
                     </div>
@@ -906,6 +939,7 @@ export default function AdminGsnHouseCampaignPage() {
                   </summary>
                   <div style={{ marginTop: 10, display: "grid", gap: 7, ...helper() }}>
                     <div>{item.content.message}</div>
+                    {item.content.advertiser_contact_phone ? <div><strong>Advertiser contact:</strong> {item.content.advertiser_contact_phone}</div> : null}
                     <div><strong>Destinations:</strong> {item.delivery.placement_count}</div>
                     <div><strong>Issued by GSN:</strong> {item.delivery.issued_presentation_count}</div>
                     <div><strong>Seen:</strong> {item.delivery.qualified_presentation_count}</div>
@@ -939,6 +973,7 @@ export default function AdminGsnHouseCampaignPage() {
                 <div style={sectionLabel()}>Publication facts</div>
                 <div style={{ marginTop: 9, display: "grid", gap: 7, ...helper() }}>
                   <div><strong>Publisher:</strong> Global Support Network (GSN-HOUSE)</div>
+                  <div><strong>Advertiser contact:</strong> {review.contactPhone}</div>
                   <div><strong>Promotions:</strong> {review.media.length}</div>
                   <div><strong>Eligible now:</strong> {review.preview.eligible_count}</div>
                   <div><strong>Excluded now:</strong> {review.preview.excluded_count}</div>
@@ -1101,7 +1136,7 @@ export default function AdminGsnHouseCampaignPage() {
             <div>The campaign expires after 24 hours.</div>
             <div>Only explicitly selected communities are considered.</div>
             <div>A destination opt-out or policy change stops later delivery because eligibility is rechecked by the backend.</div>
-            <div>The publication creates an audit event, not a seller trust claim, member endorsement, community endorsement, shop, or contact route.</div>
+            <div>The supplied advertiser phone is a public contact route for this promotion. It does not create a shop, seller trust claim, member endorsement, or Community Domain endorsement.</div>
             <div>The normal member Spotlight quota and member advertising credit are not used.</div>
           </div>
         </details>
@@ -1223,6 +1258,26 @@ export default function AdminGsnHouseCampaignPage() {
               {operations.active_count} promotion{operations.active_count === 1 ? " is" : "s are"} already active. This new promotion will join that inventory; it will not replace them.
             </div>
           ) : null}
+
+          <label style={{ display: "block", marginTop: 16 }}>
+            <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Advertiser contact phone</span>
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={contactPhone}
+              disabled={draftBusy || publishedCount > 0}
+              onChange={(event) => {
+                if (invalidateReview()) setContactPhone(event.target.value);
+              }}
+              maxLength={40}
+              placeholder="Example: +2348012345678"
+              style={fieldStyle()}
+            />
+          </label>
+          <div style={{ marginTop: 6, color: "#60758A", fontSize: 12, lineHeight: 1.5 }}>
+            This number will be public on every promotion in this batch so viewers can call the advertiser. Include + and the country code.
+          </div>
 
           <label style={{ display: "block", marginTop: 16 }}>
             <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Official GSN message</span>

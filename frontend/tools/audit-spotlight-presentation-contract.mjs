@@ -356,6 +356,12 @@ assertContains(
 );
 
 assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /advertiser_contact_phone[^]*?advertiserContactPhone[^]*?spotlightAdvertiserCallUrl[^]*?spotlightContactAvailable[^]*?shop-gallery\.spotlight\.contact-advertiser[^]*?Call advertiser/,
+  'GSN-house Spotlight must retain its explicit advertiser phone and expose one call action without adding another competing button.'
+);
+
+assertContains(
   'gmfn_backend/app/services/spotlight_presentation_service.py',
   /SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT[^]*?class SpotlightPresentationVisibility[^]*?counts_as_delivery[^]*?False[^]*?counts_as_exposure[^]*?False[^]*?list_spotlight_presentation_visibility[^]*?scan_limit[^]*?build_spotlight_opportunity_candidates[^]*?allocate_spotlight_opportunity_candidates[^]*?_placement_for_candidate/,
   'Live eligible Spotlight visibility must remain canonical, bounded, revalidated, and accounting-neutral outside delivery pacing.'

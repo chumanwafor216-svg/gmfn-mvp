@@ -7230,6 +7230,7 @@ export type GsnHouseCampaignReport = {
     message: string;
     image_url?: string | null;
     video_url?: string | null;
+    advertiser_contact_phone?: string | null;
   };
   delivery: {
     placement_count: number;
@@ -7343,6 +7344,7 @@ export async function createAdminGsnHouseCampaign(payload: {
   message: string;
   image_url?: string | null;
   video_url?: string | null;
+  advertiser_contact_phone: string;
   idempotency_key: string;
 }): Promise<GsnHouseCampaignPublication> {
   return httpJson(

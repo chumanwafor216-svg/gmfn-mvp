@@ -1073,6 +1073,12 @@ def _gsn_house_campaign_report(
                 if content is not None
                 else getattr(first_placement, "video_url", None)
             ),
+            "advertiser_contact_phone": (
+                _safe_str(
+                    getattr(first_placement, "advertiser_contact_phone", None)
+                )
+                or None
+            ),
         },
         "delivery": {
             "placement_count": len(placements),
@@ -2512,6 +2518,43 @@ def _spotlight_publication_key(value: Any) -> Optional[str]:
     return key or None
 
 
+def _normalize_advertiser_contact_phone(value: Any) -> str:
+    raw = _safe_str(value)
+    if not raw:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "advertiser_contact_phone_required",
+                "message": (
+                    "Add the advertiser's public international phone number before publishing."
+                ),
+            },
+        )
+    if not re.fullmatch(r"[+0-9().\s-]+", raw):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_advertiser_contact_phone",
+                "message": (
+                    "Use an international phone number beginning with +, for example +234...."
+                ),
+            },
+        )
+    compact = re.sub(r"[\s().-]+", "", raw)
+    if not re.fullmatch(r"\+[1-9][0-9]{7,14}", compact):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_advertiser_contact_phone",
+                "message": (
+                    "Use an international phone number beginning with + and its country code, "
+                    "for example +234...."
+                ),
+            },
+        )
+    return compact
+
+
 def _direct_publication_replay(
     *,
     db: Session,
@@ -2524,6 +2567,7 @@ def _direct_publication_replay(
     video_url: Optional[str],
     priority_mode: str,
     visibility_scope: str,
+    advertiser_contact_phone: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     if not publication_key:
         return None
@@ -2544,6 +2588,11 @@ def _direct_publication_replay(
         and all(_safe_str(row.message) == _safe_str(message) for row in rows)
         and all(_safe_str(row.image_url) == _safe_str(image_url) for row in rows)
         and all(_safe_str(row.video_url) == _safe_str(video_url) for row in rows)
+        and all(
+            _safe_str(getattr(row, "advertiser_contact_phone", None))
+            == _safe_str(advertiser_contact_phone)
+            for row in rows
+        )
         and all(_safe_str(row.priority_mode) == priority_mode for row in rows)
         and all(_safe_str(row.visibility_scope) == visibility_scope for row in rows)
     )
@@ -2818,6 +2867,7 @@ def _spotlight_content_fingerprint(
     image_url: Optional[str] = None,
     video_url: Optional[str] = None,
     source_product_id: Optional[int] = None,
+    advertiser_contact_phone: Optional[str] = None,
 ) -> str:
     if content_kind == SPOTLIGHT_CONTENT_KIND_PRODUCT:
         canonical: dict[str, Any] = {
@@ -2835,6 +2885,10 @@ def _spotlight_content_fingerprint(
             "image_url": _safe_str(image_url),
             "video_url": _safe_str(video_url),
         }
+        if _safe_str(advertiser_contact_phone):
+            canonical["advertiser_contact_phone"] = _safe_str(
+                advertiser_contact_phone
+            )
     payload = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -3652,6 +3706,7 @@ class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
     message: str = Field(min_length=2, max_length=2000)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
+    advertiser_contact_phone: Optional[str] = Field(default=None, max_length=40)
     idempotency_key: str = Field(min_length=8, max_length=96)
 
 
@@ -4145,6 +4200,9 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "message": item.message,
         "image_url": _stored_media_url(getattr(item, "image_url", None)),
         "video_url": _stored_media_url(getattr(item, "video_url", None)),
+        "advertiser_contact_phone": (
+            _safe_str(getattr(item, "advertiser_contact_phone", None)) or None
+        ),
         "image_url_available": _media_url_available(getattr(item, "image_url", None)),
         "video_url_available": _media_url_available(getattr(item, "video_url", None)),
         "priority_mode": _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE),
@@ -4190,7 +4248,11 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "spotlight_owner": shop_display_name or author_name,
         "spotlight_community": clan_display_name,
         "spotlight_contact_available": bool(
-            canonical_shop and _safe_str(getattr(canonical_shop, "whatsapp_number", None))
+            (
+                canonical_shop
+                and _safe_str(getattr(canonical_shop, "whatsapp_number", None))
+            )
+            or _safe_str(getattr(item, "advertiser_contact_phone", None))
         ),
         "spotlight_detail_available": bool(author_gmfn_id) and not is_gsn_house,
         "community_endorsement": False if is_gsn_house else None,
@@ -7471,6 +7533,9 @@ def create_gsn_house_campaign(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_platform_admin(current_user)
+    advertiser_contact_phone = _normalize_advertiser_contact_phone(
+        payload.advertiser_contact_phone
+    )
     preview = _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
     target_clan_ids = list(preview["eligible_clan_ids"])
     if not target_clan_ids:
@@ -7513,6 +7578,7 @@ def create_gsn_house_campaign(
         video_url=video_url,
         priority_mode=SPOTLIGHT_FREE,
         visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+        advertiser_contact_phone=advertiser_contact_phone,
     )
     if replay is not None:
         replay.update(
@@ -7559,6 +7625,7 @@ def create_gsn_house_campaign(
         message=payload.message,
         image_url=image_url,
         video_url=video_url,
+        advertiser_contact_phone=advertiser_contact_phone,
     )
     campaign = _ensure_active_spotlight_campaign(
         db=db,
@@ -7586,6 +7653,7 @@ def create_gsn_house_campaign(
             message=_safe_str(payload.message),
             image_url=image_url,
             video_url=video_url,
+            advertiser_contact_phone=advertiser_contact_phone,
             priority_mode=SPOTLIGHT_FREE,
             visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
             expires_at=expires_at,
@@ -7617,6 +7685,7 @@ def create_gsn_house_campaign(
                 video_url=video_url,
                 priority_mode=SPOTLIGHT_FREE,
                 visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
+                advertiser_contact_phone=advertiser_contact_phone,
             )
             if replay_publisher is not None
             else None
@@ -7663,6 +7732,8 @@ def create_gsn_house_campaign(
                 "community_endorsement": False,
                 "trust_signal": False,
                 "member_advertising_credit_consumed": False,
+                "advertiser_contact_method": "phone",
+                "advertiser_contact_phone_last4": advertiser_contact_phone[-4:],
                 "reason": "gsn_house_campaign_published",
             },
             dedupe_key=event_dedupe,

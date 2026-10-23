@@ -1651,6 +1651,7 @@ Must show:
 - eligible and blocked destination rows, with a plain-language reason for every blocked row
 - selected and excluded destination summaries before publication
 - one short campaign message shared by the prepared batch
+- one public advertiser contact phone shared by the prepared batch
 - a compact queue of one to ten prepared pictures and/or verified short videos
 - read-only campaign preview before publication
 - explicit final confirmation that the campaign is official GSN communication and does not endorse a member, shop, or Community Domain
@@ -1673,12 +1674,13 @@ Rules:
 - The review action must remain tappable before the draft is ready and explain every missing requirement in the same action area. It must never appear silently disabled merely because destination, message, or media is missing.
 - On phone, the review action must appear immediately after the media picker and preparation status, before the first-media preview and prepared-media list. Its label must make the complete path obvious (`Review and publish`) while still stating that the first tap opens a final check and does not publish immediately.
 - The message field may retain the backend's 2,000-character maximum, but the screen must explain that this is only an allowance and that one short sentence is sufficient; it must not present a bare counter that looks like a writing requirement.
+- Every new GSN house promotion must store an admin-supplied public advertiser phone in international `+country-code` format. The same phone applies to every media item in the reviewed batch, appears in read-only review and campaign history, and becomes the live `Call advertiser` action. Older records without the field remain readable but do not manufacture a contact route.
 - The final batch publish action must require one explicit confirmation and a distinct idempotency key for every media item. Publication runs sequentially, shows progress, preserves already-published results after a later failure, and resumes without duplicating successful campaigns.
 - Discarding an entirely unpublished batch must attempt reference-safe cleanup for every uploaded media item. Once any item has published, the page must not discard or delete media that may already be referenced.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
 - Operator-facing reporting must describe issued presentation leases as `issued by GSN` and qualifying visibility events as `seen`. Issuance does not prove handset receipt. Delivery-round counters remain technical pacing data and must not be presented as personal impressions. None of these counts may be relabelled as video playback, completion, sales, or verified-human reach.
 - Discarding an unpublished review may delete only a GSN-managed Marketplace upload that has no surviving database reference. Referenced media must be retained.
-- The official campaign lasts 24 hours and must not create a member shop, contact route, seller trust claim, member endorsement, or Community Domain endorsement.
+- The official campaign lasts 24 hours. Its explicit advertiser phone is a public contact route only; it must not create a member shop, seller trust claim, member endorsement, or Community Domain endorsement.
 - The pilot rail rotates automatically every five seconds without adding manual next, previous, pause, or fast-forward controls. Existing qualification, hidden-tab, reduced-motion, Dashboard Market Wisdom, Marketplace, Public Shop, Community Home, and Owner Shop Control boundaries otherwise remain unchanged.
 
 Primary action:

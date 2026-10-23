@@ -100,6 +100,9 @@ for (const text of [
   "MAX_GSN_HOUSE_BATCH_MEDIA = 10",
   "multiple",
   "Still needed before publishing:",
+  "Advertiser contact phone",
+  "canonicalAdvertiserPhone",
+  "advertiser_contact_phone: review.contactPhone",
   "Keep this page open",
   "for (let index = 0; index < mediaQueue.length; index += 1)",
   "for (let index = results.length; index < review.media.length; index += 1)",
@@ -150,6 +153,8 @@ if (page.includes("Clan ID") || page.includes("Internal ID")) {
 for (const text of [
   'GSN_HOUSE_PUBLISHER_ID = "GSN-HOUSE"',
   'role="system"',
+  "advertiser_contact_phone",
+  "_normalize_advertiser_contact_phone",
   "def list_gsn_house_campaign_destinations",
   "def list_gsn_house_campaigns",
   "def preview_gsn_house_campaign",

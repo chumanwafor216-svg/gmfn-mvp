@@ -149,6 +149,7 @@ type ShopBroadcast = {
   sourceProductVideoUrl: string;
   sourceShopName: string;
   sourceShopWhatsApp: string;
+  advertiserContactPhone: string;
   sourceClanName: string;
   sourceClanId?: number;
   trustBand: string;
@@ -1264,6 +1265,10 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       src?.sourceShopWhatsApp,
       src?.shop_whatsapp_number,
       src?.whatsapp_number
+    ),
+    advertiserContactPhone: firstMeaningful(
+      src?.advertiser_contact_phone,
+      src?.advertiserContactPhone
     ),
     sourceClanName: firstMeaningful(src?.source_clan_name, src?.sourceClanName),
     sourceClanId:
@@ -3658,6 +3663,7 @@ export default function ShopGalleryPage() {
         detail: "No live community spotlight is attached to this shop context yet.",
         priceLabel: "",
         sourceShopWhatsApp: "",
+        advertiserContactPhone: "",
         imageUrl: "",
         videoUrl: "",
       };
@@ -3685,6 +3691,9 @@ export default function ShopGalleryPage() {
         miniSpotlight?.sourceProductPrice
       ),
       sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
+      advertiserContactPhone: firstMeaningful(
+        miniSpotlight?.advertiserContactPhone
+      ),
       imageUrl: firstMeaningful(
         miniSpotlight?.sourceProductImageUrl,
         miniSpotlight?.imageUrl
@@ -4108,6 +4117,12 @@ export default function ShopGalleryPage() {
   const spotlightWhatsAppAvailable = Boolean(
     publicShopSpotlightActive &&
       normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
+  );
+  const spotlightAdvertiserCallUrl = publicShopSpotlightActive
+    ? buildPhoneCallUrl(miniSpotlightView.advertiserContactPhone)
+    : "";
+  const spotlightContactAvailable = Boolean(
+    spotlightWhatsAppAvailable || spotlightAdvertiserCallUrl
   );
 
   useEffect(() => {
@@ -4805,6 +4820,28 @@ export default function ShopGalleryPage() {
     setNotice({
       tone: "error",
       text: "This Spotlight does not expose an owner contact path yet.",
+    });
+  }
+
+  function contactSpotlightAdvertiser() {
+    if (spotlightWhatsAppAvailable) {
+      contactSpotlightOwnerByWhatsApp();
+      return;
+    }
+
+    pauseSpotlightPresentationRotation();
+    if (!spotlightAdvertiserCallUrl || typeof window === "undefined") {
+      setNotice({
+        tone: "error",
+        text: "This Spotlight does not expose an advertiser contact path yet.",
+      });
+      return;
+    }
+
+    window.location.href = spotlightAdvertiserCallUrl;
+    setNotice({
+      tone: "success",
+      text: "Your phone dialler is opening with the advertiser's number.",
     });
   }
 
@@ -6690,13 +6727,13 @@ export default function ShopGalleryPage() {
                       data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
                     />
                   ) : null}
-                  {spotlightWhatsAppAvailable ? (
+                  {spotlightContactAvailable ? (
                     <PrimaryButton
-                      onClick={contactSpotlightOwnerByWhatsApp}
+                      onClick={contactSpotlightAdvertiser}
                       minWidth={0}
                       fullWidth={false}
                       stableHeight={isCompact ? 34 : 52}
-                      debugId="shop-gallery.spotlight.whatsapp-chat"
+                      debugId="shop-gallery.spotlight.contact-advertiser"
                       style={{
                         ...primaryBtn(false),
                         gridColumn: isCompact ? "1 / -1" : undefined,
@@ -6708,9 +6745,12 @@ export default function ShopGalleryPage() {
                         padding: isCompact ? "5px 9px" : "10px 16px",
                         fontSize: isCompact ? 11 : 14,
                         whiteSpace: "nowrap",
-                        background:
-                          "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
-                        border: "1px solid rgba(37,211,102,0.38)",
+                        background: spotlightWhatsAppAvailable
+                          ? "linear-gradient(180deg, #25D366 0%, #128C4A 100%)"
+                          : "linear-gradient(180deg, #0B63D1 0%, #084A9C 100%)",
+                        border: spotlightWhatsAppAvailable
+                          ? "1px solid rgba(37,211,102,0.38)"
+                          : "1px solid rgba(11,99,209,0.38)",
                         boxShadow: isCompact
                           ? "0 8px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18)"
                           : undefined,
@@ -6724,7 +6764,7 @@ export default function ShopGalleryPage() {
                         }}
                       >
                         {inlineShopIcon("phone", "#FFFFFF", isCompact ? 11 : 15)}
-                        WhatsApp
+                        {spotlightWhatsAppAvailable ? "WhatsApp" : "Call advertiser"}
                       </span>
                     </PrimaryButton>
                   ) : null}

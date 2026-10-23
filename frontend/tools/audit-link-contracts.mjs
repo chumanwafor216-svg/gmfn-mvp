@@ -1096,8 +1096,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?sourceShopWhatsApp: firstMeaningful\(miniSpotlight\?\.sourceShopWhatsApp\)[\s\S]*?function contactSpotlightOwnerByWhatsApp\(\)[\s\S]*?miniSpotlightView\.sourceShopWhatsApp[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"/,
-  "Public Shop Spotlight must preserve broadcast source community/product/block fields and attach the single WhatsApp action to the rotating source shop instead of the retired Open/Explore redirect."
+  /advertiserContactPhone: string;[\s\S]*?advertiserContactPhone: firstMeaningful\([\s\S]*?src\?\.advertiser_contact_phone[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?sourceShopWhatsApp: firstMeaningful\(miniSpotlight\?\.sourceShopWhatsApp\)[\s\S]*?function contactSpotlightAdvertiser\(\)[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"/,
+  "Public Shop Spotlight must preserve source fields and attach one rotating advertiser contact action, using source-shop WhatsApp or the explicit GSN-house phone instead of the retired Open/Explore redirect."
 );
 
 assertNotContains(

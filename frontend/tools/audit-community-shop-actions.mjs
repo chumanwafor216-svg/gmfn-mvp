@@ -252,14 +252,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
-  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, single Spotlight WhatsApp, Vault request, and Vault-request copy controls."
+  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
+  "Public Shop visitor actions must keep traceable Share, Verify, owner contact, one rotating Spotlight contact, Vault request, and Vault-request copy controls."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /sourceShopWhatsApp[\s\S]*?source_shop_whatsapp_number[\s\S]*?buildWhatsAppChatUrl[\s\S]*?function contactSpotlightOwnerByWhatsApp\(\)[\s\S]*?miniSpotlightView\.sourceShopWhatsApp[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"/,
-  "Public Shop live Spotlight must attach WhatsApp contact to the rotating source shop, not only the current page shop."
+  /sourceShopWhatsApp[\s\S]*?source_shop_whatsapp_number[\s\S]*?advertiserContactPhone[\s\S]*?advertiser_contact_phone[\s\S]*?function contactSpotlightAdvertiser\(\)[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"/,
+  "Public Shop live Spotlight must attach the rotating source shop WhatsApp or explicit GSN-house advertiser phone to one contact action."
 );
 
 assertContains(

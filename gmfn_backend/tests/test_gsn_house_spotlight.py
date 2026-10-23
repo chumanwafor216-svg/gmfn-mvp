@@ -148,6 +148,7 @@ def test_house_campaign_routes_require_platform_admin(
             "clan_ids": [1],
             "message": "GSN service announcement",
             "image_url": "https://cdn.example.test/gsn/house.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-permission-check",
         },
     )
@@ -261,12 +262,40 @@ def test_house_campaign_rejects_whitespace_only_idempotency_key(
             "clan_ids": [1],
             "message": "GSN service announcement",
             "image_url": "https://cdn.example.test/gsn/house.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "        ",
         },
     )
 
     assert response.status_code == 400, response.text
     assert response.json()["detail"]["code"] == "gsn_house_campaign_idempotency_key_required"
+
+
+def test_house_campaign_requires_public_international_advertiser_phone(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+
+    base_payload = {
+        "clan_ids": [1],
+        "message": "GSN service announcement",
+        "image_url": "https://cdn.example.test/gsn/house.jpg",
+        "idempotency_key": "gsn-house-contact-check",
+    }
+    missing = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json=base_payload,
+    )
+    invalid = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={**base_payload, "advertiser_contact_phone": "0801 234 5678"},
+    )
+
+    assert missing.status_code == 400, missing.text
+    assert missing.json()["detail"]["code"] == "advertiser_contact_phone_required"
+    assert invalid.status_code == 400, invalid.text
+    assert invalid.json()["detail"]["code"] == "invalid_advertiser_contact_phone"
 
 
 def test_house_campaign_publishes_canonically_without_member_quota_or_shop_identity(
@@ -278,6 +307,7 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
         "clan_ids": [1, 2, 3],
         "message": "GSN service announcement",
         "image_url": "https://cdn.example.test/gsn/house.jpg",
+        "advertiser_contact_phone": "+234 801 234 5678",
         "idempotency_key": "gsn-house-publish-0001",
     }
 
@@ -296,7 +326,8 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
     assert item["author_name"] == "Global Support Network"
     assert item["author_gmfn_id"] == "GSN-HOUSE"
     assert item["source_shop_name"] is None
-    assert item["spotlight_contact_available"] is False
+    assert item["advertiser_contact_phone"] == "+2348012345678"
+    assert item["spotlight_contact_available"] is True
     assert item["spotlight_detail_available"] is False
     assert item["campaign_source_kind"] == "gsn_house"
     assert item["campaign_commercial_mode"] == "house"
@@ -315,7 +346,10 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
             )
         ).mappings().one()
         placements = conn.execute(
-            text("SELECT clan_id, author_user_id, shop_id FROM marketplace_broadcasts")
+            text(
+                "SELECT clan_id, author_user_id, shop_id, advertiser_contact_phone "
+                "FROM marketplace_broadcasts"
+            )
         ).mappings().all()
         events = conn.execute(
             text(
@@ -335,8 +369,18 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
         "distribution_scope": "selected_communities",
     }
     assert placements == [
-        {"clan_id": 1, "author_user_id": publisher["id"], "shop_id": None},
-        {"clan_id": 2, "author_user_id": publisher["id"], "shop_id": None},
+        {
+            "clan_id": 1,
+            "author_user_id": publisher["id"],
+            "shop_id": None,
+            "advertiser_contact_phone": "+2348012345678",
+        },
+        {
+            "clan_id": 2,
+            "author_user_id": publisher["id"],
+            "shop_id": None,
+            "advertiser_contact_phone": "+2348012345678",
+        },
     ]
     assert events == [
         {"actor_user_id": 1, "subject_user_id": publisher["id"]},
@@ -398,6 +442,7 @@ def test_house_campaign_inventory_allows_parallel_active_promotions(
             "clan_ids": [1],
             "message": "First launch promotion",
             "image_url": "https://cdn.example.test/gsn/launch-one.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-inventory-0001",
         },
     )
@@ -407,6 +452,7 @@ def test_house_campaign_inventory_allows_parallel_active_promotions(
             "clan_ids": [1],
             "message": "Second launch promotion",
             "image_url": "https://cdn.example.test/gsn/launch-two.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-inventory-0002",
         },
     )
@@ -436,6 +482,7 @@ def test_existing_house_pacing_state_moves_to_bounded_pilot_ceiling(
             "clan_ids": [1],
             "message": "Existing pacing migration promotion",
             "image_url": "https://cdn.example.test/gsn/pacing-migration.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-pacing-migration-0001",
         },
     )
@@ -482,6 +529,7 @@ def test_house_campaign_inventory_accepts_sixty_active_promotions(
                 "clan_ids": [1],
                 "message": f"Launch inventory promotion {index + 1}",
                 "image_url": f"https://cdn.example.test/gsn/inventory-{index + 1}.jpg",
+                "advertiser_contact_phone": "+2348012345678",
                 "idempotency_key": f"gsn-house-sixty-{index + 1:03d}",
             },
         )
@@ -554,6 +602,7 @@ def test_house_campaign_inventory_stops_at_configured_pilot_limit(
                 "clan_ids": [1],
                 "message": f"Bounded pilot promotion {index + 1}",
                 "image_url": f"https://cdn.example.test/gsn/bounded-{index + 1}.jpg",
+                "advertiser_contact_phone": "+2348012345678",
                 "idempotency_key": f"gsn-house-bounded-{index + 1:03d}",
             },
         )
@@ -565,6 +614,7 @@ def test_house_campaign_inventory_stops_at_configured_pilot_limit(
             "clan_ids": [1],
             "message": "Promotion beyond the bounded pilot inventory",
             "image_url": "https://cdn.example.test/gsn/bounded-3.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-bounded-003",
         },
     )
@@ -583,6 +633,7 @@ def test_house_campaign_operations_report_and_audited_stop(
             "clan_ids": [1],
             "message": "Pilot operations announcement",
             "image_url": "https://cdn.example.test/gsn/operations.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-operations-0001",
         },
     )
@@ -648,6 +699,7 @@ def test_house_campaign_operations_report_and_audited_stop(
     assert current["campaign_id"] == campaign_id
     assert current["state"] == "live"
     assert current["content"]["message"] == "Pilot operations announcement"
+    assert current["content"]["advertiser_contact_phone"] == "+2348012345678"
     assert current["delivery"] == {
         "placement_count": 1,
         "currently_eligible_destination_count": 1,
@@ -748,6 +800,7 @@ def test_house_campaign_review_media_discard_is_reference_safe(
             "clan_ids": [1],
             "message": "Reference-safe media announcement",
             "image_url": published_url,
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-media-reference-0001",
         },
     )
@@ -838,6 +891,7 @@ def test_house_campaign_keeps_one_campaign_across_multiple_members_and_communiti
             "clan_ids": [1, 4],
             "message": "Two-community pilot announcement",
             "image_url": "https://cdn.example.test/gsn/two-community.jpg",
+            "advertiser_contact_phone": "+2348012345678",
             "idempotency_key": "gsn-house-two-community-0001",
         },
     )

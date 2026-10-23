@@ -202,7 +202,7 @@ const expectedActionOrder = [
   "shop-gallery.verify-shop.open-community-record",
   "shop-gallery.owner-contact.whatsapp-chat",
   "shop-gallery.owner-contact.phone-call",
-  "shop-gallery.spotlight.whatsapp-chat",
+  "shop-gallery.spotlight.contact-advertiser",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
   "shop-gallery.reconnect-owner-shop",
@@ -497,8 +497,8 @@ assertNotContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?firstMeaningful\(miniSpotlightView\.priceLabel, "Spotlight"\)[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?WhatsApp/,
-  "Public Shop Spotlight must keep only the optional price badge and one WhatsApp contact handle for the active Spotlight owner."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?firstMeaningful\(miniSpotlightView\.priceLabel, "Spotlight"\)[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
+  "Public Shop Spotlight must keep only the optional price badge and one source-aware contact handle for the active promotion."
 );
 
 assertNotContains(
@@ -536,8 +536,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact && \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?!isCompact && \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one contact action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
 );
 
 assertContains(

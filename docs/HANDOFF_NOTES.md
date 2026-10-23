@@ -8,6 +8,27 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN house advertiser contact route - 2026-10-23
+
+- The platform-admin GSN Spotlight publisher now requires one advertiser phone
+  number in international format for each reviewed batch. The number is
+  normalized once, copied to every independent placement in that batch, and
+  retained in campaign review, history, and operations reporting.
+- Public Spotlight delivery now exposes one source-aware contact action. An
+  ordinary shop promotion keeps its existing WhatsApp action; an official
+  GSN-HOUSE promotion with the new structured contact opens the phone dialler as
+  `Call advertiser`. This does not manufacture a shop, trust relationship, or
+  GSN endorsement, and the frozen Dashboard Market Wisdom area is untouched.
+- A nullable `marketplace_broadcasts.advertiser_contact_phone` column preserves
+  readability of older rows. New GSN-house publications reject missing or
+  local-only numbers; historic campaigns without a stored number remain visible
+  but correctly have no invented contact route.
+- Verification passed: 13 focused backend campaign tests, the Admin GSN House
+  campaign audit, Shop Gallery button inventory audit, Spotlight presentation
+  audit, the complete protected-button freeze audit, Alembic single-head check,
+  and the 292-module production frontend build. Deployment status is pending
+  commit and pilot promotion.
+
 ## GSN house batch-media queue and review recovery - 2026-10-23
 
 - Follow-up status: application commit `4319f369` was pushed to
