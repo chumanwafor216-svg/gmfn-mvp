@@ -840,7 +840,8 @@ def test_pacing_gap_keeps_unseen_active_spotlight_visible_without_counting(
     )
 
     response = client.get(
-        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity'
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+        headers={'X-Spotlight-Visibility-Window': '7'},
     )
 
     assert response.status_code == 200, response.text
@@ -848,6 +849,7 @@ def test_pacing_gap_keeps_unseen_active_spotlight_visible_without_counting(
     assert body['presentation'] is None
     assert body['non_counting_visibility_allowed'] is True
     assert body['canonical_visibility']['count'] == 1
+    assert body['canonical_visibility']['window_sequence'] == 7
     item = body['item']
     assert item['is_canonical_opportunity'] is True
     assert item['is_canonical_replay'] is False
@@ -958,12 +960,12 @@ def test_multiple_paced_campaigns_share_bounded_non_counting_rotation(
     assert _ledger_count() == 0
 
 
-def test_nineteen_item_visibility_windows_advance_before_wrapping():
-    candidate_count = 19
-    batch_size = 5
+def test_thirty_item_visibility_windows_advance_before_wrapping():
+    candidate_count = 30
+    batch_size = 4
     flattened: list[int] = []
 
-    for bucket in range(100, 104):
+    for bucket in range(8):
         offset = presentations._spotlight_visibility_window_offset(
             viewer_user_id=1,
             bucket=bucket,

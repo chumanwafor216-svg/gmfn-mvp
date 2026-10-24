@@ -305,6 +305,10 @@ async function installMocks(page, scenario) {
       );
     }
     if (path.endsWith("/spotlight-opportunity")) {
+      scenario.visibilityWindows = scenario.visibilityWindows || [];
+      scenario.visibilityWindows.push(
+        Number(route.request().headers()['x-spotlight-visibility-window'] || 0)
+      );
       if (
         String(route.request().headers().referer || '').includes(
           'owner_spotlight_preview=1'
@@ -565,6 +569,13 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   if (scenario.canonicalCalls < 4 || scenario.qualifyCalls < 4) {
     throw new Error(
       `Just-in-time feed did not advance through four governed members: canonical=${scenario.canonicalCalls}, qualify=${scenario.qualifyCalls}`
+    );
+  }
+  const firstVisibilityWindows = scenario.visibilityWindows.slice(0, 4);
+  if (firstVisibilityWindows.join(',') !== '0,1,2,3') {
+    throw new Error(
+      'Governed Spotlight visibility windows did not advance in order: ' +
+        JSON.stringify(firstVisibilityWindows)
     );
   }
 
@@ -1168,7 +1179,7 @@ async function testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl
     ownerStatusCalls: 0,
     canonicalCalls: 0,
     canonicalFailureAfterCalls: 1,
-    canonicalFailuresRemaining: 4,
+    canonicalFailuresRemaining: 3,
     legacyBroadcastCalls: 0,
     qualifyCalls: 0,
     impressionCalls: 0,

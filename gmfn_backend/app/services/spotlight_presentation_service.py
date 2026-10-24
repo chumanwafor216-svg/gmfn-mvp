@@ -396,6 +396,7 @@ def list_spotlight_presentation_visibility(
     now: Optional[datetime] = None,
     limit: int = SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT,
     exclude_campaign_ids: Optional[set[int]] = None,
+    window_sequence: Optional[int] = None,
 ) -> list[SpotlightPresentationVisibility]:
     '''Return bounded live content without reserving or spending delivery.
 
@@ -449,12 +450,29 @@ def list_spotlight_presentation_visibility(
         max(safe_limit * 8, 32),
         SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT,
     )
-    bucket = int(current_time.timestamp()) // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
     seed = int.from_bytes(
         hashlib.sha256(f'visibility:{viewer_id}'.encode('utf-8')).digest()[:4],
         'big',
     )
-    offset = (seed + (bucket * scan_limit)) % campaign_count
+    requested_window = (
+        max(int(window_sequence), 0)
+        if window_sequence is not None
+        else None
+    )
+    if requested_window is None:
+        scan_cycle = (
+            int(current_time.timestamp())
+            // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
+        )
+        window_position = scan_cycle
+    else:
+        windows_per_scan = max(
+            (scan_limit + safe_limit - 1) // safe_limit,
+            1,
+        )
+        scan_cycle = requested_window // windows_per_scan
+        window_position = requested_window % windows_per_scan
+    offset = (seed + (scan_cycle * scan_limit)) % campaign_count
     ordered_campaign_query = campaign_query.order_by(
         SpotlightCampaign.activated_at.desc(),
         SpotlightCampaign.created_at.desc(),
@@ -488,12 +506,12 @@ def list_spotlight_presentation_visibility(
     )
     ordered = list(diversity.candidates)
     if len(ordered) > 1:
-        # Advance one bounded window every replay TTL. Adjacent windows move by
-        # their own size instead of independently reshuffling.
-        bucket = int(current_time.timestamp()) // SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
+        # Explicit client sequences advance as soon as the handset consumes a
+        # bounded window. Older clients fall back to the replay-TTL bucket.
+        # Adjacent windows move by their own size instead of reshuffling.
         offset = _spotlight_visibility_window_offset(
             viewer_user_id=viewer_id,
-            bucket=bucket,
+            bucket=window_position,
             candidate_count=len(ordered),
             batch_size=safe_limit,
         )

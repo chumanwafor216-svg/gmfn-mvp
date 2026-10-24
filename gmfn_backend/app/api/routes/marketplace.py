@@ -4732,6 +4732,10 @@ def _presentation_broadcast_for_candidate(
 def get_public_shop_spotlight_opportunity(
     gmfn_id: str,
     x_spotlight_request_id: Optional[str] = Header(default=None, alias='X-Spotlight-Presentation-Request-Id'),
+    x_spotlight_visibility_window: Optional[int] = Header(
+        default=None,
+        alias='X-Spotlight-Visibility-Window',
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -4826,6 +4830,11 @@ def get_public_shop_spotlight_opportunity(
         viewer_user_id=int(current_user.id),
         exclude_campaign_ids=visible_campaign_ids | replay_campaign_ids,
         limit=max(5 - len(items), 0),
+        window_sequence=(
+            max(int(x_spotlight_visibility_window), 0)
+            if x_spotlight_visibility_window is not None
+            else None
+        ),
     )
     for visible in visibility:
         broadcast = db.get(
@@ -4886,6 +4895,11 @@ def get_public_shop_spotlight_opportunity(
             'count': len(visibility),
             'counts_as_delivery': False,
             'counts_as_exposure': False,
+            'window_sequence': (
+                max(int(x_spotlight_visibility_window), 0)
+                if x_spotlight_visibility_window is not None
+                else None
+            ),
         },
         **serving_contract,
         "ok": True,

@@ -8,6 +8,46 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight 30-plus phone rotation and transition repair - 2026-10-24
+
+- The owner's 5:09 iPhone recording and report of more than 30 live media
+  disproved the completeness of the 2026-10-23 fair-rotation claim below.
+  Repeated campaigns, unseen campaigns, two-to-three-second appearances,
+  long final-item holds, and navy gaps were real implementation defects rather
+  than a recording-background illusion.
+- Four causes were repaired on the Public Shop route only: the final queue row
+  could not advance until its 30-second server expiry; repeated requests inside
+  one server time bucket could receive the same visibility window; a general
+  30-second page refresh could replace the queue during a dwell; and the next
+  image/video was not mounted until the previous media had disappeared.
+- The endpoint now accepts an optional ordered visibility-window cursor while
+  preserving the old time-bucket fallback for older clients. Public Shop keeps
+  its active queue during unrelated page refreshes, appends unseen refill rows
+  behind already-waiting campaigns, starts refill before the final row, and
+  consumes every occurrence after one complete visible dwell.
+- Public Shop now double-buffers the next media with video preload, holds the
+  current media until the next one is ready, bounds a hung preload at eight
+  seconds, skips unavailable next media, and explicitly starts a preloaded
+  video when it is promoted. Visibility and replay rows remain tokenless and
+  accounting-neutral. Dashboard and frozen Market Wisdom were not changed.
+- Changed implementation and regression files:
+  frontend/src/pages/ShopGalleryPage.tsx,
+  frontend/src/components/SpotlightMediaFrame.tsx, frontend/src/lib/api.ts,
+  gmfn_backend/app/api/routes/marketplace.py,
+  gmfn_backend/app/services/spotlight_presentation_service.py,
+  gmfn_backend/tests/test_spotlight_presentation_contract.py, and the two
+  Spotlight audit/smoke tools.
+- Local verification passed: 18 focused backend presentation tests, the
+  Spotlight contract audit, the 14-scenario 390x844 phone-browser smoke
+  including ordered windows 0,1,2,3, targeted ESLint with zero errors, the
+  complete protected-button freeze audit, and the 292-module production build.
+- Unabated remaining truth: this is not yet production proof. The exact live
+  30-plus inventory and the owner's physical iPhone still need a post-deploy
+  five-minute recording. The owner explicitly released the batch freeze and
+  authorised deployment on 2026-10-24. Publication must use the same verified
+  commit for the working branch, main, frontend, and API; a trigger alone is
+  not evidence that either Render service became live.
+
 ## Tomorrow: independent GSN entrepreneurs and remaining Spotlight work - 2026-10-24
 
 - The independent GSN partner/worker/entrepreneur model was not touched by the

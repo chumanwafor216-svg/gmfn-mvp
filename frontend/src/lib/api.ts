@@ -6905,7 +6905,8 @@ export async function recordMarketplaceAttentionEvent(payload: {
 
 export async function getPublicShopSpotlightOpportunity(
   gmfnId: string,
-  presentationRequestId: string
+  presentationRequestId: string,
+  visibilityWindow = 0
 ): Promise<any> {
   return httpJson(
     `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}/spotlight-opportunity`,
@@ -6916,6 +6917,9 @@ export async function getPublicShopSpotlightOpportunity(
       quiet: true,
       timeoutMs: 8000,
       headers: {
+        'X-Spotlight-Visibility-Window': String(
+          Math.max(0, Math.floor(Number(visibilityWindow) || 0))
+        ),
         "X-Spotlight-Presentation-Request-Id": presentationRequestId,
       },
     }

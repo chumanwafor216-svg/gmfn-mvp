@@ -16,6 +16,7 @@ type SpotlightMediaFrameProps = {
   autoPlayVideo?: boolean;
   mutedVideo?: boolean;
   loopVideo?: boolean;
+  preloadVideo?: 'none' | 'metadata' | 'auto';
   maxVideoSeconds?: number | null;
   showAudioUnlock?: boolean;
   audioUnlockLabel?: string;
@@ -169,7 +170,22 @@ export default function SpotlightMediaFrame(
     setAudioUnlocked(false);
     setAudioError("");
 
+    if (!(props.autoPlayVideo ?? false)) {
+      video.pause();
+      return;
+    }
+
+    // A preloaded Spotlight video can be promoted without remounting. Start it
+    // explicitly when autoplay changes from false to true; changing the DOM
+    // autoplay attribute alone is not reliable on mobile Safari.
+    if (shouldMute) {
+      video.currentTime = 0;
+      void video.play().catch(() => undefined);
+      return;
+    }
+
     if (!shouldMute && (props.autoPlayVideo ?? false)) {
+      video.currentTime = 0;
       void video
         .play()
         .then(() => {
@@ -495,7 +511,7 @@ export default function SpotlightMediaFrame(
             }
             loop={props.loopVideo ?? false}
             playsInline
-            preload="metadata"
+            preload={props.preloadVideo || 'metadata'}
             onError={() => setVideoFailed(true)}
             onLoadedData={reportMediaReady}
             onCanPlay={reportMediaReady}

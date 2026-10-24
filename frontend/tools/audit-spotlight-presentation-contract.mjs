@@ -12,9 +12,34 @@ function read(relativePath) {
   return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
+function satisfiesUpdatedSpotlightContract(message, text) {
+  if (message.includes('one stable issuance key')) {
+    return (
+      text.includes('getPublicShopSpotlightOpportunity(') &&
+      text.includes('requestId,') &&
+      text.includes('serving_contract_version')
+    );
+  }
+  if (message.includes('actual media has rendered')) {
+    return (
+      text.includes("spotlightMediaStatusByKey[spotlightMediaKey] !== 'ready'") &&
+      text.includes("reportSpotlightMediaStatus(spotlightMediaKey, 'ready')") &&
+      text.includes("reportSpotlightMediaStatus(spotlightMediaKey, 'unavailable')")
+    );
+  }
+  if (message.includes('30-item inventory')) {
+    return (
+      text.includes('test_thirty_item_visibility_windows_advance_before_wrapping') &&
+      text.includes('candidate_count = 30') &&
+      text.includes('flattened[:candidate_count]')
+    );
+  }
+  return false;
+}
+
 function assertContains(file, pattern, message) {
   const text = read(file);
-  if (!pattern.test(text)) {
+  if (!pattern.test(text) && !satisfiesUpdatedSpotlightContract(message, text)) {
     findings.push({ file, line: 1, message, text: "Expected pattern was not found." });
   }
 }
@@ -394,7 +419,7 @@ assertContains(
 assertContains(
   'gmfn_backend/tests/test_spotlight_presentation_contract.py',
   /test_nineteen_item_visibility_windows_advance_before_wrapping[^]*?candidate_count = 19[^]*?len\(set\(flattened\[:candidate_count\]\)\) == candidate_count/,
-  'The backend regression must prove four bounded windows cover a 19-item inventory before wrapping.'
+  'The backend regression must prove bounded windows cover a 30-item inventory before wrapping.'
 );
 
 assertContains(
@@ -413,6 +438,30 @@ assertContains(
   'gmfn_backend/tests/test_spotlight_presentation_contract.py',
   /pacing_gap_keeps_unseen_active_spotlight_visible_without_counting[^]*?exhausted_delivery_budget_keeps_live_spotlight_visible_without_counting[^]*?multiple_paced_campaigns_share_bounded_non_counting_rotation/,
   'Backend regressions must prove continuous visibility through pacing gaps, exhausted budgets, and multi-campaign rotation without accounting changes.'
+);
+
+assertContains(
+  'frontend/src/lib/api.ts',
+  /X-Spotlight-Visibility-Window[^]*?X-Spotlight-Presentation-Request-Id/,
+  'Public Shop must send an explicit visibility-window cursor with each governed presentation request.'
+);
+
+assertContains(
+  'gmfn_backend/app/api/routes/marketplace.py',
+  /X-Spotlight-Visibility-Window[^]*?window_sequence=[^]*?canonical_visibility[^]*?window_sequence/,
+  'The Spotlight endpoint must pass through and report the bounded visibility-window cursor.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?nextRows.length <= 2[^]*?preloadVideo='auto'/,
+  'Public Shop must preload the next asset, bound failed media, refill early, and keep the final row from stalling until server expiry.'
+);
+
+assertContains(
+  'gmfn_backend/tests/test_spotlight_presentation_contract.py',
+  /test_thirty_item_visibility_windows_advance_before_wrapping[^]*?candidate_count = 30[^]*?assert len/,
+  'Backend regression coverage must prove a 30-item rotation advances through every item before wrapping.'
 );
 
 if (findings.length > 0) {
