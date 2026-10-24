@@ -4749,9 +4749,24 @@ def get_public_shop_spotlight_opportunity(
     }
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
+    visibility = list_spotlight_presentation_visibility(
+        db,
+        viewer_user_id=int(current_user.id),
+        limit=4,
+        window_sequence=(
+            max(int(x_spotlight_visibility_window), 0)
+            if x_spotlight_visibility_window is not None
+            else None
+        ),
+    )
+    window_campaign_ids = [
+        int(visible.candidate.campaign_id)
+        for visible in visibility
+    ]
     selection = select_spotlight_presentation(
         db,
         viewer_user_id=int(current_user.id),
+        candidate_campaign_ids=window_campaign_ids,
         requested_delivery_slots=1,
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
         issuance_key=x_spotlight_request_id,
@@ -4821,22 +4836,42 @@ def get_public_shop_spotlight_opportunity(
             else set()
         ),
     )
-    replay_campaign_ids = {
-        int(replay.candidate.campaign_id)
+    replay_by_campaign_id = {
+        int(replay.candidate.campaign_id): replay
         for replay in replay_candidates
     }
-    visibility = list_spotlight_presentation_visibility(
-        db,
-        viewer_user_id=int(current_user.id),
-        exclude_campaign_ids=visible_campaign_ids | replay_campaign_ids,
-        limit=max(5 - len(items), 0),
-        window_sequence=(
-            max(int(x_spotlight_visibility_window), 0)
-            if x_spotlight_visibility_window is not None
-            else None
-        ),
-    )
+    rendered_visibility_count = 0
+    rendered_replays: list[Any] = []
     for visible in visibility:
+        campaign_id = int(visible.candidate.campaign_id)
+        if campaign_id in visible_campaign_ids:
+            continue
+        replay = replay_by_campaign_id.get(campaign_id)
+        if replay is not None:
+            broadcast = db.get(
+                MarketplaceBroadcast,
+                int(replay.placement_broadcast_id),
+            )
+            if broadcast is None:
+                continue
+            replay_item = _broadcast_out(db, broadcast)
+            replay_item['is_canonical_opportunity'] = True
+            replay_item['is_canonical_replay'] = True
+            replay_item['opportunity_campaign_id'] = campaign_id
+            replay_item['opportunity_presentation_id'] = replay.presentation_id
+            replay_item['opportunity_presentation_token'] = None
+            replay_item['opportunity_presentation_expires_at'] = None
+            replay_item['opportunity_replay_expires_at'] = (
+                replay.replay_expires_at.isoformat()
+            )
+            replay_item['opportunity_presentation_surface'] = (
+                SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
+            )
+            replay_item['opportunity_counts_as_delivery'] = False
+            replay_item['opportunity_counts_as_exposure'] = False
+            items.append(replay_item)
+            rendered_replays.append(replay)
+            continue
         broadcast = db.get(
             MarketplaceBroadcast,
             int(visible.placement_broadcast_id),
@@ -4861,11 +4896,26 @@ def get_public_shop_spotlight_opportunity(
         visible_item['opportunity_counts_as_delivery'] = False
         visible_item['opportunity_counts_as_exposure'] = False
         items.append(visible_item)
+        rendered_visibility_count += 1
 
-    # Recent qualified replays are continuity-only fallbacks. They must not
-    # occupy four of five phone slots while other eligible live campaigns are
-    # waiting for the bounded visibility window.
-    replays = replay_candidates[:max(5 - len(items), 0)]
+    # Recent qualified replays are continuity-only fallbacks. A replay that is
+    # still eligible is rendered when its campaign reaches the stable window
+    # above; it must not be pulled into every earlier residual slot while
+    # unseen campaigns are waiting.
+    response_campaign_ids = {
+        int(item.get('opportunity_campaign_id') or 0)
+        for item in items
+        if int(item.get('opportunity_campaign_id') or 0) > 0
+    }
+    replays = (
+        []
+        if visibility
+        else [
+            replay
+            for replay in replay_candidates
+            if int(replay.candidate.campaign_id) not in response_campaign_ids
+        ][:max(5 - len(items), 0)]
+    )
     for replay in replays:
         broadcast = db.get(
             MarketplaceBroadcast,
@@ -4889,10 +4939,11 @@ def get_public_shop_spotlight_opportunity(
         replay_item["opportunity_counts_as_delivery"] = False
         replay_item["opportunity_counts_as_exposure"] = False
         items.append(replay_item)
+        rendered_replays.append(replay)
 
     return {
         'canonical_visibility': {
-            'count': len(visibility),
+            'count': rendered_visibility_count,
             'counts_as_delivery': False,
             'counts_as_exposure': False,
             'window_sequence': (
@@ -4907,7 +4958,7 @@ def get_public_shop_spotlight_opportunity(
         "items": items,
         "presentation": presentation,
         "canonical_replays": {
-            "count": len(replays),
+            "count": len(rendered_replays),
             "counts_as_delivery": False,
             "counts_as_exposure": False,
         },

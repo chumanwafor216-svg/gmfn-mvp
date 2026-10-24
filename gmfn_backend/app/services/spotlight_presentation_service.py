@@ -437,10 +437,12 @@ def list_spotlight_presentation_visibility(
             | (SpotlightCampaign.opportunity_expires_at > current_time)
         )
     )
-    if excluded:
-        campaign_query = campaign_query.filter(
-            ~SpotlightCampaign.id.in_(sorted(excluded))
-        )
+    # Keep the cursor coordinate system independent of transient response
+    # exclusions. The fresh presentation and recent replay set can change on
+    # every request; removing them before count/offset made the same adjacent
+    # window sequence point at a different inventory and could skip campaigns
+    # while repeating others. Exclusions are applied below, after the stable
+    # active-campaign window has been selected and ordered.
     campaign_count = int(campaign_query.count())
     if campaign_count <= 0:
         return []
@@ -518,7 +520,12 @@ def list_spotlight_presentation_visibility(
         ordered = [*ordered[offset:], *ordered[:offset]]
 
     visible: list[SpotlightPresentationVisibility] = []
-    for candidate in ordered:
+    # One cursor step owns one bounded slice of the stable ordered inventory.
+    # Do not pull rows from the following slice merely because this response
+    # already contains the same campaign as a fresh presentation. Pulling
+    # forward caused that following slice to repeat the borrowed row and could
+    # leave another campaign unseen.
+    for candidate in ordered[:safe_limit]:
         campaign_id = int(candidate.campaign_id)
         if campaign_id in excluded:
             continue
@@ -570,6 +577,7 @@ def select_spotlight_presentation(
     db: Session,
     *,
     viewer_user_id: int,
+    candidate_campaign_ids: Optional[list[int]] = None,
     requested_delivery_slots: int = 1,
     now: Optional[datetime] = None,
     surface: str = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
@@ -583,6 +591,7 @@ def select_spotlight_presentation(
         viewer_user_id=viewer_id,
         surface=surface,
         requested_delivery_slots=max(int(requested_delivery_slots), 1),
+        candidate_campaign_ids=candidate_campaign_ids,
     )
     if safe_issuance_key:
         replay = _replay_existing_lease(
@@ -596,9 +605,21 @@ def select_spotlight_presentation(
         )
         if replay is not None:
             return replay
+    scoped_campaign_ids = (
+        [int(value) for value in candidate_campaign_ids if int(value or 0) > 0]
+        if candidate_campaign_ids is not None
+        else None
+    )
+    if scoped_campaign_ids is not None and not scoped_campaign_ids:
+        return SpotlightPresentationSelection(
+            selected=False,
+            rejection_code=PRESENTATION_REJECTION_NO_CANDIDATES,
+            policy=policy,
+        )
     candidates = build_spotlight_opportunity_candidates(
         db,
         viewer_user_id=viewer_id,
+        campaign_ids=scoped_campaign_ids,
         # Pacing must see the complete eligible set. Candidate discovery was
         # already unbounded here historically; making that intent explicit
         # avoids discarding a due campaign after relevance sorting.
@@ -1247,13 +1268,25 @@ def _persist_presentation_lease(db: Session, *, lease: SpotlightPresentationLeas
 
 
 def _presentation_issuance_fingerprint(
-    *, viewer_user_id: int, surface: str, requested_delivery_slots: int
+    *,
+    viewer_user_id: int,
+    surface: str,
+    requested_delivery_slots: int,
+    candidate_campaign_ids: Optional[list[int]] = None,
 ) -> str:
     payload = {
         'requested_delivery_slots': int(requested_delivery_slots),
         'surface': str(surface),
         'viewer_user_id': int(viewer_user_id),
     }
+    if candidate_campaign_ids is not None:
+        payload['candidate_campaign_ids'] = sorted(
+            {
+                int(value)
+                for value in candidate_campaign_ids
+                if int(value or 0) > 0
+            }
+        )
     encoded = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8')
     return hashlib.sha256(encoded).hexdigest()
 

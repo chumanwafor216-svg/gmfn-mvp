@@ -135,7 +135,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function loadPublicShopSpotlightPresentationCycle\([\s\S]*?existingCycle\?\.promise[\s\S]*?getPublicShopSpotlightOpportunity\(cleanedGmfnId, requestId\)[\s\S]*?publicShopSpotlightCycleIsAuthoritative/,
+  /function loadPublicShopSpotlightPresentationCycle\([\s\S]*?existingCycle\?\.promise[\s\S]*?getPublicShopSpotlightOpportunity\(\s*cleanedGmfnId,\s*requestId,\s*0\s*\)[\s\S]*?publicShopSpotlightCycleIsAuthoritative/,
   "Signed-in Public Shop Spotlight must use one guarded canonical presentation selector per request cycle."
 );
 
@@ -609,8 +609,8 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const weightedViewerRotationBroadcasts = buildSpotlightRotationQueue[\s\S]*?const viewerRotationBroadcasts =[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.viewerRotationBroadcasts\][\s\S]*?: viewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
-  "Ordinary owner entry must rotate the owner's non-delivery item with other eligible members while explicit Preview remains owner-only."
+  /rotationWeight\?: number[\s\S]*?dedupePublicShopSpotlightRows[\s\S]*?seenCanonicalCampaignIds[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const viewerRotationBroadcasts = normalizedBroadcasts\.filter[\s\S]*?const orderedViewerRotationBroadcasts =[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.orderedViewerRotationBroadcasts\][\s\S]*?: orderedViewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  "Canonical Public Shop rows must be campaign-deduped and single-occurrence while ordinary owner inspection and explicit Preview remain intact."
 );
 
 assertContains(

@@ -53,7 +53,6 @@ import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
-  buildSpotlightRotationQueue,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
 } from "../lib/spotlightPilot";
@@ -63,7 +62,6 @@ import {
   PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS,
   publicShopSpotlightRotationMs,
   PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
-  PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS,
 } from "../lib/spotlightPresentationPolicy";
 
 const SPOTLIGHT_REFRESH_RETRY_DELAY_MS = 2000;
@@ -1401,6 +1399,32 @@ function spotlightBroadcastSortValue(item: ShopBroadcast | null): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function dedupePublicShopSpotlightRows(
+  items: ShopBroadcast[]
+): ShopBroadcast[] {
+  const seenCanonicalCampaignIds = new Set<number>();
+  const seenPresentationKeys = new Set<string>();
+
+  return items.filter((item) => {
+    const campaignId = positiveNumber(item.opportunityCampaignId);
+    if (item.isCanonicalOpportunity && campaignId > 0) {
+      if (seenCanonicalCampaignIds.has(campaignId)) return false;
+      seenCanonicalCampaignIds.add(campaignId);
+      return true;
+    }
+
+    const presentationKey = firstMeaningful(
+      item.opportunityPresentationId,
+      spotlightBroadcastKey(item)
+    );
+    if (!presentationKey || seenPresentationKeys.has(presentationKey)) {
+      return false;
+    }
+    seenPresentationKeys.add(presentationKey);
+    return true;
+  });
+}
+
 function formatSpotlightInspectionTime(value: unknown): string {
   const timestamp = new Date(String(value || "")).getTime();
   if (!Number.isFinite(timestamp)) return "";
@@ -2318,17 +2342,9 @@ export default function ShopGalleryPage() {
             : "";
         })
       );
-      const normalizedBroadcastKeys = new Set<string>();
-      const normalizedBroadcasts = normalizedBroadcastCandidates
-        .filter((item) => {
-          const key = firstMeaningful(
-            item.opportunityPresentationId,
-            spotlightBroadcastKey(item)
-          );
-          if (!key || normalizedBroadcastKeys.has(key)) return false;
-          normalizedBroadcastKeys.add(key);
-          return true;
-        })
+      const normalizedBroadcasts = dedupePublicShopSpotlightRows(
+        normalizedBroadcastCandidates
+      )
         .sort((a, b) => {
           const weightDelta =
             Number(b?.rotationWeight || 1) - Number(a?.rotationWeight || 1);
@@ -2344,30 +2360,31 @@ export default function ShopGalleryPage() {
           ) || relevantBroadcast
         : null;
       const ownerInspectionKey = spotlightBroadcastKey(ownerInspectionSpotlight);
-      const weightedViewerRotationBroadcasts = buildSpotlightRotationQueue(
-        normalizedBroadcasts.filter(
-          (item) => spotlightBroadcastKey(item) !== ownerInspectionKey
-        )
+      // Canonical Public Shop rows get one queue occurrence each. Rotation
+      // metadata remains available for reporting and future governed policy,
+      // but must not let an early paid row starve unseen campaigns on-device.
+      const viewerRotationBroadcasts = normalizedBroadcasts.filter(
+        (item) => spotlightBroadcastKey(item) !== ownerInspectionKey
       );
       const freshPresentationIndex = freshPresentationKey
-        ? weightedViewerRotationBroadcasts.findIndex(
+        ? viewerRotationBroadcasts.findIndex(
             (item) => item.opportunityPresentationId === freshPresentationKey
           )
         : -1;
-      const viewerRotationBroadcasts = freshPresentationIndex > 0
+      const orderedViewerRotationBroadcasts = freshPresentationIndex > 0
         ? [
-            weightedViewerRotationBroadcasts[freshPresentationIndex],
-            ...weightedViewerRotationBroadcasts.slice(0, freshPresentationIndex),
-            ...weightedViewerRotationBroadcasts.slice(freshPresentationIndex + 1),
+            viewerRotationBroadcasts[freshPresentationIndex],
+            ...viewerRotationBroadcasts.slice(0, freshPresentationIndex),
+            ...viewerRotationBroadcasts.slice(freshPresentationIndex + 1),
           ]
-        : weightedViewerRotationBroadcasts;
+        : viewerRotationBroadcasts;
       const rotationBroadcasts = ownerSpotlightPreviewAuthorized
         ? ownerInspectionSpotlight
           ? [ownerInspectionSpotlight]
           : []
         : ownerInspectionSpotlight
-        ? [ownerInspectionSpotlight, ...viewerRotationBroadcasts]
-        : viewerRotationBroadcasts;
+        ? [ownerInspectionSpotlight, ...orderedViewerRotationBroadcasts]
+        : orderedViewerRotationBroadcasts;
       const currentSpotlight =
         communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
         communitySpotlightsRef.current[0] ||
@@ -2914,6 +2931,11 @@ export default function ShopGalleryPage() {
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
+    miniSpotlightIndexRef.current = 0;
+    setCommunitySpotlights([]);
+    communitySpotlightsRef.current = [];
+    setSpotlightMediaStatusByKey({});
+    spotlightMediaStatusByKeyRef.current = {};
     spotlightPresentationAutoOpenedRef.current = false;
     spotlightPresentationVisibleRef.current = false;
     setSpotlightPresentationActivated(false);
@@ -3271,10 +3293,12 @@ export default function ShopGalleryPage() {
       }
       spotlightNextEmptyUntilRef.current = 0;
       setCommunitySpotlights((current) => {
-        const retained = current.filter(
-          (item) =>
-            !item.isCanonicalOpportunity ||
-            publicShopSpotlightPresentationIsCurrent(item)
+        const retained = dedupePublicShopSpotlightRows(
+          current.filter(
+            (item) =>
+              !item.isCanonicalOpportunity ||
+              publicShopSpotlightPresentationIsCurrent(item)
+          )
         );
         const seenCampaignIds = new Set(
           retained
@@ -3291,28 +3315,30 @@ export default function ShopGalleryPage() {
             )
             .filter(Boolean)
         );
-        const unseenNextItems = nextItems.filter((item) => {
-          const campaignId = positiveNumber(item.opportunityCampaignId);
-          const presentationId = firstMeaningful(
-            item.opportunityPresentationId,
-            spotlightBroadcastKey(item)
-          );
-          if (
-            (campaignId > 0 && seenCampaignIds.has(campaignId)) ||
-            (presentationId && seenPresentationIds.has(presentationId))
-          ) {
-            return false;
+        const unseenNextItems = dedupePublicShopSpotlightRows(nextItems).filter(
+          (item) => {
+            const campaignId = positiveNumber(item.opportunityCampaignId);
+            const presentationId = firstMeaningful(
+              item.opportunityPresentationId,
+              spotlightBroadcastKey(item)
+            );
+            if (
+              (campaignId > 0 && seenCampaignIds.has(campaignId)) ||
+              (presentationId && seenPresentationIds.has(presentationId))
+            ) {
+              return false;
+            }
+            if (campaignId > 0) seenCampaignIds.add(campaignId);
+            if (presentationId) seenPresentationIds.add(presentationId);
+            return true;
           }
-          if (campaignId > 0) seenCampaignIds.add(campaignId);
-          if (presentationId) seenPresentationIds.add(presentationId);
-          return true;
-        });
+        );
         // Never let a newly fetched server window jump ahead of campaigns that
         // are already waiting on this handset. Append unseen rows in their
         // governed order so refill cannot starve an older queued campaign.
         const nextQueue = [
           ...retained,
-          ...buildSpotlightRotationQueue(unseenNextItems),
+          ...unseenNextItems,
         ];
         const activeItem = current[miniSpotlightIndexRef.current];
         const activeKey = firstMeaningful(
@@ -3803,9 +3829,12 @@ export default function ShopGalleryPage() {
   const spotlightRotationMediaSettled =
     !spotlightHasRenderableMedia ||
     Boolean(spotlightMediaStatusByKey[spotlightMediaKey]);
-  const spotlightRotationDelayMs = spotlightReducedMotion
-    ? PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS
-    : publicShopSpotlightRotationMs(spotlightRotationItemCount);
+  // Reduced Motion changes presentation motion, not queue fairness. Keeping
+  // the same dwell prevents device accessibility settings from turning a
+  // two-minute 30-item pass into a fifteen-minute pass.
+  const spotlightRotationDelayMs = publicShopSpotlightRotationMs(
+    spotlightRotationItemCount
+  );
   const spotlightRotationCanAdvance =
     communitySpotlights.length > 1 ||
     Boolean(
@@ -7102,9 +7131,13 @@ export default function ShopGalleryPage() {
                     }
                     contentPadding={0}
                     showVideoControls={false}
-                    autoPlayVideo={Boolean(miniSpotlightView.videoUrl)}
+                    autoPlayVideo={
+                      Boolean(miniSpotlightView.videoUrl) && !spotlightReducedMotion
+                    }
                     mutedVideo={Boolean(miniSpotlightView.videoUrl)}
-                    loopVideo={Boolean(miniSpotlightView.videoUrl)}
+                    loopVideo={
+                      Boolean(miniSpotlightView.videoUrl) && !spotlightReducedMotion
+                    }
                     preloadVideo='auto'
                     showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
                     audioEnabled={spotlightSoundEnabled}

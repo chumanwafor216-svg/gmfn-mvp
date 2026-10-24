@@ -34,6 +34,17 @@ function satisfiesUpdatedSpotlightContract(message, text) {
       text.includes('flattened[:candidate_count]')
     );
   }
+  if (message.includes('one stable four-campaign window')) {
+    return (
+      text.includes('visibility = list_spotlight_presentation_visibility(') &&
+      text.includes('limit=4,') &&
+      text.includes('window_campaign_ids = [') &&
+      text.includes('candidate_campaign_ids=window_campaign_ids,') &&
+      text.includes('for visible in visibility:') &&
+      text.includes('replay = replay_by_campaign_id.get(campaign_id)') &&
+      text.includes('if visibility')
+    );
+  }
   return false;
 }
 
@@ -148,8 +159,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /prefers-reduced-motion: reduce[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS[\s\S]*?publicShopSpotlightRotationMs\(spotlightRotationItemCount\)[\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation/,
-  "Public Shop rotation must respect reduced motion, keyboard focus, and interaction pause."
+  /prefers-reduced-motion: reduce[\s\S]*?spotlightRotationDelayMs = publicShopSpotlightRotationMs\([\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation[\s\S]*?autoPlayVideo=\{[\s\S]*?!spotlightReducedMotion/,
+  "Public Shop rotation must disable media motion without lengthening fair dwell, while respecting keyboard focus and interaction pause."
+);
+
+assertNotContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /PUBLIC_SHOP_SPOTLIGHT_REDUCED_MOTION_ROTATION_MS|buildSpotlightRotationQueue/,
+  "Canonical Public Shop rotation must not apply a device-specific 30-second dwell or weighted client duplication."
 );
 
 assertContains(
@@ -280,7 +297,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /freshPresentationKey[\s\S]*?freshPresentationIndex[\s\S]*?weightedViewerRotationBroadcasts\[freshPresentationIndex\][\s\S]*?nextExpiryMs[\s\S]*?publicShopSpotlightPresentationIsCurrent[\s\S]*?requestNextCanonicalSpotlight/,
+  /freshPresentationKey[\s\S]*?freshPresentationIndex[\s\S]*?orderedViewerRotationBroadcasts[\s\S]*?viewerRotationBroadcasts\[freshPresentationIndex\][\s\S]*?nextExpiryMs[\s\S]*?publicShopSpotlightPresentationIsCurrent[\s\S]*?requestNextCanonicalSpotlight/,
   "Fresh governed presentations must be prioritized and canonical rows must be removed and replenished at their server expiry."
 );
 
@@ -401,7 +418,7 @@ assertContains(
 assertContains(
   'gmfn_backend/app/api/routes/marketplace.py',
   /replay_candidates = list_spotlight_presentation_replays[^]*?replay_campaign_ids[^]*?visibility = list_spotlight_presentation_visibility[^]*?exclude_campaign_ids=visible_campaign_ids \| replay_campaign_ids[^]*?Recent qualified replays are continuity-only fallbacks[^]*?replays = replay_candidates\[:max\(5 - len\(items\), 0\)\]/,
-  'Eligible bounded visibility must fill the phone batch before recent qualified replays are allowed to use leftover slots.'
+  'Public Shop must select and render from one stable four-campaign window, with replays occupying their natural window position instead of residual slots.'
 );
 
 assertContains(

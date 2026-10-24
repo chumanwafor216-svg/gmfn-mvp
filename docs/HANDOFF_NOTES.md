@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight weighted-starvation and stable-window repair - 2026-10-24
+
+- The owner's follow-up report disproved the prior completion claim. The exact
+  3:1 client weighting was real, and transient fresh/replay exclusions also
+  shifted the server cursor, allowing repeated campaigns while others starved.
+- Canonical Public Shop now uses one client occurrence per campaign, campaign
+  deduplication, the normal reduced-motion dwell, and route-state clearing.
+  The server first creates a fixed four-campaign stable window, then limits
+  fresh selection to that window; replays appear only in their natural window
+  position, with fallback use only when no stable visibility window exists.
+- Owner inspection and independent per-viewer sequences remain unchanged:
+  owners may inspect their own shop, while each viewer still receives an
+  independently seeded sequence based on their eligible community portfolio.
+- Local checks passed: 19 presentation tests, 21 Public Shop Spotlight tests,
+  the 32-campaign real-endpoint regression with no repeats and zero accounting,
+  both Spotlight audits, targeted ESLint, the protected freeze audit, the
+  292-module production build, and the phone smoke.
+- Unabated truth: production and physical-iPhone proof remain pending until
+  this exact revision is deployed and verified on the live services.
+
 ## Spotlight 30-plus phone rotation and transition repair - 2026-10-24
 
 - The owner's 5:09 iPhone recording and report of more than 30 live media

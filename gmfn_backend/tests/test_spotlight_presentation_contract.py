@@ -982,6 +982,90 @@ def test_thirty_item_visibility_windows_advance_before_wrapping():
     assert len(set(flattened[:candidate_count])) == candidate_count
 
 
+def test_thirty_two_campaign_endpoint_windows_cover_all_before_wrapping(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        for owner_user_id in range(3, 34):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO users (
+                        id, email, hashed_password, role, gmfn_id,
+                        display_name, trust_score, trust_band,
+                        trust_score_updated_at
+                    ) VALUES (
+                        :owner_user_id, :email, 'hashed', 'member', :gmfn_id,
+                        :display_name, 70, 'B', CURRENT_TIMESTAMP
+                    )
+                    """
+                ),
+                {
+                    "owner_user_id": owner_user_id,
+                    "email": f"rotation-owner-{owner_user_id}@example.com",
+                    "gmfn_id": f"GSN-ROTATION-OWNER-{owner_user_id}",
+                    "display_name": f"Rotation Owner {owner_user_id}",
+                },
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO clan_memberships (
+                        id, clan_id, user_id, role, personal_pool_balance
+                    ) VALUES (
+                        :membership_id, 1, :owner_user_id, 'member', 0
+                    )
+                    """
+                ),
+                {
+                    "membership_id": owner_user_id,
+                    "owner_user_id": owner_user_id,
+                },
+            )
+    for campaign_id in range(1, 33):
+        _seed_campaign_and_broadcast(
+            campaign_id=campaign_id,
+            owner_user_id=campaign_id + 1,
+        )
+    with engine.begin() as conn:
+        shared_activation = _now() - timedelta(hours=1)
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET created_at = :shared_activation,
+                    activated_at = :shared_activation
+                """
+            ),
+            {"shared_activation": shared_activation},
+        )
+
+    all_campaign_ids: list[int] = []
+    for sequence in range(8):
+        response = client.get(
+            '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+            headers={
+                'X-Spotlight-Request-ID': f'rotation-window-{sequence}',
+                'X-Spotlight-Visibility-Window': str(sequence),
+            },
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        campaign_ids = [
+            int(item['opportunity_campaign_id'])
+            for item in body['items']
+        ]
+        assert len(campaign_ids) == len(set(campaign_ids)) == 4
+        all_campaign_ids.extend(campaign_ids)
+
+    assert len(all_campaign_ids) == len(set(all_campaign_ids)) == 32
+    assert set(all_campaign_ids) == set(range(1, 33))
+    assert _consumed_rounds() == 0
+    assert _ledger_count() == 0
+
+
 def test_qualified_presentation_replays_without_new_delivery_or_exposure(
     client,
     override_current_user_user,
