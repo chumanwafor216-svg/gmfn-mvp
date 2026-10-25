@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import {
   createAdminGsnHouseCampaign,
   discardAdminGsnHouseCampaignReviewMedia,
@@ -9,12 +9,14 @@ import {
   listAdminGsnHouseCampaignDestinations,
   previewAdminGsnHouseCampaign,
   stopAdminGsnHouseCampaign,
+  stopAdminGsnHouseCampaignDestination,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
   type GsnHouseCampaignDestination,
   type GsnHouseCampaignOperations,
   type GsnHouseCampaignPreview,
   type GsnHouseCampaignPublication,
+  type GsnHouseCampaignReport,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -244,6 +246,38 @@ function stateLabel(value: string): string {
   return safeStr(value, "unknown").replace(/_/g, " ");
 }
 
+function destinationIsServing(row: GsnHouseCampaignDestination): boolean {
+  const placementState = safeStr(row.placement_serving_status).toLowerCase();
+  return placementState ? placementState === "serving" : row.delivery_eligible === true;
+}
+
+function destinationStatusLabel(row: GsnHouseCampaignDestination): string {
+  const placementState = safeStr(row.placement_serving_status).toLowerCase();
+  if (placementState === "withdrawn") return "Stopped here";
+  if (row.delivery_eligible === true) return "Showing here";
+  if (row.policy_eligible === false || row.eligible === false) return "Blocked by community policy";
+  if (placementState && placementState !== "serving") return stateLabel(placementState);
+  return "Not showing now";
+}
+
+function replaceCampaignReport(
+  operations: GsnHouseCampaignOperations,
+  report: GsnHouseCampaignReport
+): GsnHouseCampaignOperations {
+  const replace = (row: GsnHouseCampaignReport) =>
+    row.campaign_id === report.campaign_id ? report : row;
+  return {
+    ...operations,
+    current:
+      operations.current?.campaign_id === report.campaign_id
+        ? report
+        : operations.current,
+    active: operations.active.map(replace),
+    history: operations.history.map(replace),
+    items: operations.items.map(replace),
+  };
+}
+
 export default function AdminGsnHouseCampaignPage() {
   const [query, setQuery] = useState("");
   const [catalogue, setCatalogue] = useState<GsnHouseCampaignDestination[]>([]);
@@ -267,12 +301,28 @@ export default function AdminGsnHouseCampaignPage() {
   const [operations, setOperations] = useState<GsnHouseCampaignOperations | null>(null);
   const [stopReason, setStopReason] = useState("");
   const [stopConfirmed, setStopConfirmed] = useState(false);
+  const [destinationStopTarget, setDestinationStopTarget] = useState<{
+    campaignId: number;
+    clanId: number;
+  } | null>(null);
+  const [destinationStopSelection, setDestinationStopSelection] = useState<{
+    campaignId: number;
+    clanId: number;
+  } | null>(null);
+  const [destinationStopReason, setDestinationStopReason] = useState("");
+  const [destinationStopConfirmed, setDestinationStopConfirmed] = useState(false);
+  const [destinationStopFeedback, setDestinationStopFeedback] = useState<{
+    campaignId: number;
+    tone: "error" | "success" | "info";
+    text: string;
+  } | null>(null);
   const [loadingCatalogue, setLoadingCatalogue] = useState(false);
   const [loadingOperations, setLoadingOperations] = useState(false);
   const [preparingMedia, setPreparingMedia] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [stoppingCampaign, setStoppingCampaign] = useState(false);
+  const [stoppingDestination, setStoppingDestination] = useState(false);
   const [feedback, setFeedback] = useState<{
     tone: "error" | "success" | "info";
     text: string;
@@ -746,6 +796,118 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }
 
+  function beginDestinationStop(
+    campaign: GsnHouseCampaignReport,
+    destination: GsnHouseCampaignDestination
+  ) {
+    setDestinationStopTarget({
+      campaignId: campaign.campaign_id,
+      clanId: destination.clan_id,
+    });
+    setDestinationStopReason("");
+    setDestinationStopConfirmed(false);
+    setDestinationStopFeedback(null);
+  }
+
+  function beginSelectedDestinationStop(campaign: GsnHouseCampaignReport) {
+    const selectedClanId =
+      destinationStopSelection?.campaignId === campaign.campaign_id
+        ? destinationStopSelection.clanId
+        : 0;
+    const destination = campaign.destinations.find(
+      (row) => row.clan_id === selectedClanId && destinationIsServing(row)
+    );
+    if (!destination) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "error",
+        text: "Choose the community where future delivery must stop.",
+      });
+      return;
+    }
+    beginDestinationStop(campaign, destination);
+  }
+
+  function cancelDestinationStop() {
+    setDestinationStopTarget(null);
+    setDestinationStopSelection(null);
+    setDestinationStopReason("");
+    setDestinationStopConfirmed(false);
+    setDestinationStopFeedback(null);
+  }
+
+  async function handleStopCampaignDestination(
+    campaign: GsnHouseCampaignReport,
+    destination: GsnHouseCampaignDestination
+  ) {
+    const reason = destinationStopReason.trim();
+    if (!destinationIsServing(destination)) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "info",
+        text: `${destinationTitle(destination)} is already unavailable for future delivery.`,
+      });
+      return;
+    }
+    if (campaign.destinations.filter(destinationIsServing).length <= 1) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "error",
+        text: "This is the final serving destination. Use Emergency campaign stop so the whole campaign closes clearly.",
+      });
+      return;
+    }
+    if (reason.length < 5) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "error",
+        text: "Write a clear reason of at least 5 characters for the destination audit record.",
+      });
+      return;
+    }
+    if (!destinationStopConfirmed) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "error",
+        text: "Confirm that future delivery must stop in this community while the campaign continues elsewhere.",
+      });
+      return;
+    }
+
+    setStoppingDestination(true);
+    setDestinationStopFeedback(null);
+    try {
+      const response = await stopAdminGsnHouseCampaignDestination(
+        campaign.campaign_id,
+        destination.clan_id,
+        { reason, confirm_withdrawal: true }
+      );
+      setOperations((current) =>
+        current ? replaceCampaignReport(current, response.campaign) : current
+      );
+      cancelDestinationStop();
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "success",
+        text: response.idempotent_replay
+          ? `${destinationTitle(destination)} was already stopped. The existing audited result was recovered.`
+          : `Future delivery stopped in ${destinationTitle(destination)}. Other permitted destinations continue and campaign history is preserved.`,
+      });
+      await loadOperations();
+    } catch (error) {
+      setDestinationStopFeedback({
+        campaignId: campaign.campaign_id,
+        tone: "error",
+        text: structuredErrorMessage(
+          error,
+          "GSN could not stop delivery in this community."
+        ),
+      });
+    } finally {
+      setStoppingDestination(false);
+    }
+  }
+
   function resetCampaign() {
     setSelected({});
     setExpiryInput(defaultExpiryInputValue());
@@ -759,6 +921,249 @@ export default function AdminGsnHouseCampaignPage() {
     setPublication(null);
     setPublishingProgress("");
     setFeedback(null);
+  }
+
+  function renderCampaignDestinations(campaign: GsnHouseCampaignReport) {
+    const destinations = Array.isArray(campaign.destinations)
+      ? campaign.destinations
+      : [];
+    if (destinations.length === 0) return null;
+
+    const servingCount = destinations.filter(destinationIsServing).length;
+    const activeTarget =
+      destinationStopTarget?.campaignId === campaign.campaign_id
+        ? destinationStopTarget
+        : null;
+    const displayedDestinations = activeTarget
+      ? destinations.filter((row) => row.clan_id === activeTarget.clanId)
+      : destinations;
+    const campaignFeedback =
+      destinationStopFeedback?.campaignId === campaign.campaign_id
+        ? destinationStopFeedback
+        : null;
+    const selectedClanId =
+      destinationStopSelection?.campaignId === campaign.campaign_id
+        ? destinationStopSelection.clanId
+        : 0;
+
+    return (
+      <details
+        style={{ marginTop: 14, ...institutionalInnerCard("#FFFFFF") }}
+        open={activeTarget || campaignFeedback || selectedClanId > 0 ? true : undefined}
+        data-campaign-destinations={campaign.campaign_id}
+      >
+        <StableDisclosureSummary
+          debugId={`admin-gsn-campaign.destinations.${campaign.campaign_id}`}
+          style={{ color: "#0B1F33", fontWeight: 900 }}
+          onClick={() => {
+            if (activeTarget) return;
+            if (selectedClanId > 0) setDestinationStopSelection(null);
+            if (campaignFeedback) setDestinationStopFeedback(null);
+          }}
+        >
+          Destinations ({destinations.length}) · {servingCount} still serving
+        </StableDisclosureSummary>
+        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+          <div style={helper()}>
+            Stop one community here without ending delivery in the campaign&apos;s other permitted communities. The original publication and audit history remain recorded.
+          </div>
+
+          {!activeTarget && servingCount > 1 && !destinationStopTarget ? (
+            <div style={{ ...institutionalInnerCard("#F8FBFF"), display: "grid", gap: 10 }}>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>
+                  Community to stop
+                </span>
+                <select
+                  value={
+                    selectedClanId || ""
+                  }
+                  onChange={(event) => {
+                    const clanId = Number(event.target.value || 0);
+                    setDestinationStopSelection(
+                      clanId > 0
+                        ? { campaignId: campaign.campaign_id, clanId }
+                        : null
+                    );
+                    setDestinationStopFeedback(null);
+                  }}
+                  style={fieldStyle()}
+                  data-gmfn-field={`admin-gsn-campaign.destination-stop-choice.${campaign.campaign_id}`}
+                >
+                  <option value="">Choose one serving community</option>
+                  {destinations.filter(destinationIsServing).map((destination) => (
+                    <option key={destination.clan_id} value={destination.clan_id}>
+                      {destinationTitle(destination)}
+                      {destination.community_code ? ` · ${destination.community_code}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <StableButton
+                kind="danger"
+                stableHeight={48}
+                onClick={() => beginSelectedDestinationStop(campaign)}
+                debugId={`admin-gsn-campaign.destination-stop.review.${campaign.campaign_id}`}
+              >
+                Review destination stop
+              </StableButton>
+            </div>
+          ) : !activeTarget && destinationStopTarget ? (
+            <div style={statusPanel("info")}>
+              Finish or close the open destination action first.
+            </div>
+          ) : null}
+
+          {campaignFeedback ? (
+            <div role="status" style={statusPanel(campaignFeedback.tone)}>
+              {campaignFeedback.text}
+            </div>
+          ) : null}
+
+          {displayedDestinations.map((destination) => {
+            const isTarget = activeTarget?.clanId === destination.clan_id;
+            const serving = destinationIsServing(destination);
+            const finalServingDestination = serving && servingCount <= 1;
+            const status = destinationStatusLabel(destination);
+            const statusColor =
+              safeStr(destination.placement_serving_status).toLowerCase() === "withdrawn"
+                ? "#7F1D1D"
+                : destination.delivery_eligible === true
+                  ? "#166534"
+                  : "#8A4B12";
+
+            return (
+              <div
+                key={destination.clan_id}
+                style={institutionalInnerCard(isTarget ? "#FFF7F7" : "#F8FBFF")}
+                data-campaign-destination={destination.clan_id}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                      {destinationTitle(destination)}
+                    </div>
+                    {destinationContext(destination) ? (
+                      <div style={{ marginTop: 3, ...helper(), fontSize: 13 }}>
+                        {destinationContext(destination)}
+                      </div>
+                    ) : null}
+                  </div>
+                  <span
+                    style={{
+                      borderRadius: 999,
+                      padding: "6px 9px",
+                      background: "#FFFFFF",
+                      color: statusColor,
+                      border: `1px solid ${statusColor}33`,
+                      fontSize: 11,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {status}
+                  </span>
+                </div>
+
+                <div style={{ marginTop: 8, display: "grid", gap: 5, ...helper(), fontSize: 13 }}>
+                  <div>
+                    <strong>Authorised until:</strong>{" "}
+                    {dateTimeLabel(
+                      destination.placement_authorized_expires_at || campaign.expires_at
+                    )}
+                  </div>
+                  {destination.policy_eligible === false || destination.eligible === false ? (
+                    <div><strong>Current policy:</strong> {destination.reason}</div>
+                  ) : null}
+                  {destination.destination_withdrawal_audit?.reason ? (
+                    <div>
+                      <strong>Why it stopped here:</strong>{" "}
+                      {destination.destination_withdrawal_audit.reason}
+                    </div>
+                  ) : null}
+                </div>
+
+                {isTarget ? (
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    <div style={{ color: "#7F1D1D", fontSize: 14, lineHeight: 1.6 }}>
+                      Future delivery will stop in this community. Other permitted destinations continue. This does not erase prior publication or delivery evidence.
+                    </div>
+                    <label>
+                      <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>
+                        Required audit reason
+                      </span>
+                      <textarea
+                        value={destinationStopReason}
+                        onChange={(event) => {
+                          setDestinationStopReason(event.target.value);
+                          setDestinationStopConfirmed(false);
+                        }}
+                        maxLength={500}
+                        placeholder="Explain why GSN must stop delivery in this community."
+                        style={fieldStyle(true)}
+                        data-gmfn-field="admin-gsn-campaign.destination-stop-reason"
+                      />
+                    </label>
+                    <label
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "flex-start",
+                        color: "#7F1D1D",
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        fontWeight: 800,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={destinationStopConfirmed}
+                        onChange={(event) =>
+                          setDestinationStopConfirmed(event.target.checked)
+                        }
+                        style={{ width: 20, height: 20, marginTop: 1, accentColor: "#991B1B" }}
+                      />
+                      I confirm that future delivery must stop in this community while the campaign continues elsewhere.
+                    </label>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <StableButton
+                        kind="danger"
+                        busy={stoppingDestination}
+                        busyLabel="Stopping here"
+                        onClick={() =>
+                          handleStopCampaignDestination(campaign, destination)
+                        }
+                        debugId={`admin-gsn-campaign.destination-stop.confirm.${campaign.campaign_id}.${destination.clan_id}`}
+                      >
+                        Stop in this community
+                      </StableButton>
+                      <StableButton
+                        onClick={cancelDestinationStop}
+                        debugId={`admin-gsn-campaign.destination-stop.cancel.${campaign.campaign_id}.${destination.clan_id}`}
+                      >
+                        Back to destinations
+                      </StableButton>
+                    </div>
+                  </div>
+                ) : finalServingDestination ? (
+                  <div style={{ marginTop: 9, ...helper(), color: "#7F1D1D" }}>
+                    This is the final serving destination. Use Emergency campaign stop to end it.
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </details>
+    );
   }
 
   return (
@@ -886,6 +1291,8 @@ export default function AdminGsnHouseCampaignPage() {
                 ))}
               </div>
 
+              {renderCampaignDestinations(operations.current)}
+
               {operations.current.can_stop ? (
                 <details style={{ marginTop: 14, ...institutionalInnerCard("#FFF7F7"), borderColor: "rgba(153,27,27,0.18)" }}>
                   <summary style={{ cursor: "pointer", color: "#991B1B", fontWeight: 900 }}>
@@ -958,6 +1365,7 @@ export default function AdminGsnHouseCampaignPage() {
                     <div style={{ marginTop: 8, ...helper(), fontSize: 13 }}>
                       {item.delivery.placement_count} placements · {item.delivery.issued_presentation_count} issued · {item.delivery.qualified_presentation_count} seen · expires {dateTimeLabel(item.expires_at)}
                     </div>
+                    {renderCampaignDestinations(item)}
                   </div>
                 ))}
               </div>

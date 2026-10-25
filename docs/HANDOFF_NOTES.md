@@ -30,15 +30,22 @@ under `docs/` or `docs/archive/`, then link that file here.
   from actual delivery eligibility, identifies withdrawn destinations and
   their withdrawal evidence, and reports the approved 10,000-round GSN-HOUSE
   pilot ceiling even before a pacing row is materialised.
+- The registered `/app/command-center/gsn-campaigns` screen now exposes that
+  backend authority inside each live campaign's collapsed Destinations area.
+  Staff see visible community names/codes, policy and delivery status, expiry,
+  and any prior withdrawal reason. One serving-community selector opens one
+  focused reason-and-confirmation task; the final serving destination directs
+  staff to the existing whole-campaign emergency stop.
 - Verification passed locally: Python compilation, `git diff --check`, all 16
   focused GSN-house tests, 81 adjacent Spotlight presentation, pacing,
   eligibility, and delivery tests (97 tests total), the admin GSN-house audit,
-  and the Spotlight system-feed audit.
-- Unabated truth: this is backend infrastructure only, verified locally and
-  not deployed. No staff-facing per-destination withdrawal control was added,
-  and paid campaign orders, scheduling, reach commitments, entrepreneur
-  economics, seller-payment automation, and unresolved policy values remain
-  outside this slice. Git publication remains in owner-controlled batch mode.
+  the Spotlight system-feed audit, targeted frontend ESLint, the complete
+  protected-button freeze audit, and the 292-module production build.
+- Unabated truth: the backend and staff workflow are verified locally but are
+  not deployed or live-phone proven. Paid campaign orders, scheduling, reach
+  commitments, entrepreneur economics, seller-payment automation, and
+  unresolved policy values remain outside this slice. Git publication remains
+  in owner-controlled batch mode.
 
 ## GSN advert-group expiry control - 2026-10-25
 

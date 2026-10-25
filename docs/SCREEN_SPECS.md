@@ -1648,6 +1648,7 @@ Must show:
 - compact active-inventory status with expiry and a manual refresh
 - campaign history with status plus separate issued-for-delivery, seen, and unique-viewer counts
 - a guarded emergency stop requiring an audit reason and explicit permanent-withdrawal confirmation
+- compact per-campaign destination status with a guarded one-community stop requiring an audit reason and explicit confirmation
 - searchable community destination chooser using visible community names and codes
 - eligible and blocked destination rows, with a plain-language reason for every blocked row
 - selected and excluded destination summaries before publication
@@ -1681,6 +1682,9 @@ Rules:
 - The final batch publish action must require one explicit confirmation and a distinct idempotency key for every media item. Publication runs sequentially, shows progress, preserves already-published results after a later failure, and resumes without duplicating successful campaigns.
 - Discarding an entirely unpublished batch must attempt reference-safe cleanup for every uploaded media item. Once any item has published, the page must not discard or delete media that may already be referenced.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
+- Destination management must stay inside the selected campaign's operations details. It must show each community by visible name/code, distinguish current policy permission from actual delivery status, and preserve a withdrawn destination plus its reason in the campaign record.
+- Stopping one destination must require a reason and confirmation, stop only that community's future delivery, preserve prior evidence, and keep other permitted destinations live. The final serving destination must direct the operator to the whole-campaign emergency stop instead of disguising full closure as a partial change.
+- Only one destination-stop task may be open at a time. Use one serving-community selector and one review action instead of placing a destructive button on every destination row. Its success or blocker must appear in the same campaign area, and the action must not create advertising consent, payment, member credit, entrepreneur rights, or endorsement.
 - Operator-facing reporting must describe issued presentation leases as `issued by GSN` and qualifying visibility events as `seen`. Issuance does not prove handset receipt. Delivery-round counters remain technical pacing data and must not be presented as personal impressions. None of these counts may be relabelled as video playback, completion, sales, or verified-human reach.
 - Discarding an unpublished review may delete only a GSN-managed Marketplace upload that has no surviving database reference. Referenced media must be retained.
 - An official campaign expires at its persisted advert-group timestamp, currently bounded to no more than 24 hours after publication. Its explicit advertiser phone is a public contact route only; it must not create a member shop, seller trust claim, member endorsement, or Community Domain endorsement.

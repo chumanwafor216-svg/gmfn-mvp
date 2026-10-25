@@ -86,6 +86,7 @@ for (const endpoint of [
   "/marketplace/admin/gsn-house-campaigns/preview",
   "/marketplace/admin/gsn-house-campaigns",
   "/marketplace/admin/gsn-house-campaigns/media/discard",
+  "/destinations/${encodeURIComponent(String(clanId))}/stop",
   "/stop",
 ]) {
   requireText(apiFile, api, endpoint, "Missing typed API binding for " + endpoint + ".");
@@ -119,6 +120,12 @@ for (const text of [
   "Emergency campaign stop",
   "Discard unpublished review",
   "await stopAdminGsnHouseCampaign",
+  "await stopAdminGsnHouseCampaignDestination",
+  "Stop in this community",
+  "Other permitted destinations continue",
+  "debugId={`admin-gsn-campaign.destination-stop.review.${campaign.campaign_id}`}",
+  "debugId={`admin-gsn-campaign.destination-stop.confirm.${campaign.campaign_id}.${destination.clan_id}`}",
+  "debugId={`admin-gsn-campaign.destination-stop.cancel.${campaign.campaign_id}.${destination.clan_id}`}",
   "discardAdminGsnHouseCampaignReviewMedia",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
@@ -132,6 +139,21 @@ for (const text of [
   requireText(pageFile, page, text, 'Missing advert-group expiry screen contract: ' + text + '.');
 }
 requireText(apiFile, api, 'expires_at: string;', 'The typed GSN campaign request must require the reviewed expiry.');
+for (const text of [
+  "placement_serving_status?: string | null",
+  "policy_eligible?: boolean",
+  "delivery_eligible?: boolean",
+  "destination_withdrawal_audit?",
+]) {
+  requireText(apiFile, api, text, "Missing typed destination-management contract: " + text + ".");
+}
+for (const text of [
+  "compact per-campaign destination status",
+  "Stopping one destination must require a reason and confirmation",
+  "The final serving destination must direct the operator",
+]) {
+  requireText(specsFile, specs, text, "Missing destination-management screen rule: " + text + ".");
+}
 for (const text of [
   'expires_at: Optional[datetime] = None',
   'def _resolve_gsn_house_campaign_expiry',
@@ -178,6 +200,8 @@ for (const text of [
   "def preview_gsn_house_campaign",
   "def create_gsn_house_campaign",
   "def stop_gsn_house_campaign",
+  "def stop_gsn_house_campaign_destination",
+  'event_type="marketplace.gsn_house_campaign.destination_withdrawn"',
   "def discard_gsn_house_campaign_review_media",
   "Qualified presentations are server-accepted visibility events",
   '"community_code": community_code',
@@ -190,6 +214,7 @@ for (const functionName of [
   "def preview_gsn_house_campaign",
   "def create_gsn_house_campaign",
   "def stop_gsn_house_campaign",
+  "def stop_gsn_house_campaign_destination",
   "def discard_gsn_house_campaign_review_media",
 ]) {
   const functionBlock = section(backend, functionName, "@router");

@@ -7171,6 +7171,21 @@ export type GsnHouseCampaignDestination = {
   eligible: boolean;
   reason_code: string;
   reason: string;
+  placement_broadcast_id?: number | null;
+  placement_serving_status?: string | null;
+  placement_authorized_expires_at?: string | null;
+  policy_eligible?: boolean;
+  delivery_eligible?: boolean;
+  destination_withdrawal_audit?: {
+    event_id: number;
+    actor_user_id: number;
+    clan_id: number;
+    placement_broadcast_id?: number | null;
+    reason?: string | null;
+    invalidated_presentation_count: number;
+    remaining_serving_destination_count: number;
+    created_at?: string | null;
+  } | null;
 };
 
 export type GsnHouseCampaignGovernanceBoundary = {
@@ -7240,6 +7255,8 @@ export type GsnHouseCampaignReport = {
     placement_count: number;
     currently_eligible_destination_count: number;
     currently_excluded_destination_count: number;
+    currently_policy_eligible_destination_count?: number;
+    withdrawn_destination_count?: number;
     max_delivery_rounds: number;
     consumed_delivery_rounds: number;
     remaining_delivery_rounds: number;
@@ -7295,6 +7312,24 @@ export async function stopAdminGsnHouseCampaign(
 ): Promise<{ ok: boolean; idempotent_replay: boolean; campaign: GsnHouseCampaignReport }> {
   return httpJson(
     `/marketplace/admin/gsn-house-campaigns/${encodeURIComponent(String(campaignId))}/stop`,
+    "POST",
+    payload,
+    { header_clan_id: null }
+  );
+}
+
+export async function stopAdminGsnHouseCampaignDestination(
+  campaignId: number,
+  clanId: number,
+  payload: { reason: string; confirm_withdrawal: boolean }
+): Promise<{
+  ok: boolean;
+  idempotent_replay: boolean;
+  destination_withdrawal_audit?: GsnHouseCampaignDestination["destination_withdrawal_audit"];
+  campaign: GsnHouseCampaignReport;
+}> {
+  return httpJson(
+    `/marketplace/admin/gsn-house-campaigns/${encodeURIComponent(String(campaignId))}/destinations/${encodeURIComponent(String(clanId))}/stop`,
     "POST",
     payload,
     { header_clan_id: null }
