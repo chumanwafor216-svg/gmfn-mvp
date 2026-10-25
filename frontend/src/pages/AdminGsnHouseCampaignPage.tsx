@@ -324,7 +324,7 @@ function stateLabel(value: string): string {
 function campaignRequestError(error: unknown, fallback: string): string {
   const detail = structuredErrorMessage(error, fallback).trim();
   if (/^(failed to fetch|load failed|networkerror(?: when attempting to fetch resource[.])?)$/i.test(detail)) {
-    return `${fallback} GSN could not reach the server. Check the internet connection and try again.`;
+    return `${fallback} The connection ended before GSN could confirm this step. Keep this page open and try again.`;
   }
   return detail;
 }
@@ -383,6 +383,7 @@ export default function AdminGsnHouseCampaignPage() {
   const [mediaPreviewKey, setMediaPreviewKey] = useState("");
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
   const [mediaProgress, setMediaProgress] = useState("");
+  const [stagedReviewMedia, setStagedReviewMedia] = useState<Record<string, CampaignReviewMedia>>({});
   const [review, setReview] = useState<CampaignReview | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [publication, setPublication] = useState<BatchPublication | null>(null);
@@ -418,6 +419,7 @@ export default function AdminGsnHouseCampaignPage() {
   } | null>(null);
   const reviewRef = useRef<CampaignReview | null>(null);
   const publicationRef = useRef<BatchPublication | null>(null);
+  const stagedReviewMediaRef = useRef<Record<string, CampaignReviewMedia>>({});
 
   const selectedRows = useMemo(
     () => Object.values(selected).sort((a, b) => destinationTitle(a).localeCompare(destinationTitle(b))),
@@ -429,6 +431,7 @@ export default function AdminGsnHouseCampaignPage() {
   );
   const previewMedia = previewMediaIndex >= 0 ? mediaQueue[previewMediaIndex] : null;
   const publishedCount = publication?.results.length || 0;
+  const stagedReviewCount = mediaQueue.filter((item) => stagedReviewMedia[item.key]).length;
   const draftBusy = preparingMedia || reviewing || publishing;
   const reviewBlockers = useMemo(() => {
     const blockers: string[] = [];
@@ -470,11 +473,12 @@ export default function AdminGsnHouseCampaignPage() {
   useEffect(() => {
     reviewRef.current = review;
     publicationRef.current = publication;
-  }, [publication, review]);
+    stagedReviewMediaRef.current = stagedReviewMedia;
+  }, [publication, review, stagedReviewMedia]);
 
-  const discardUnpublishedReview = useCallback(async (candidate: CampaignReview) => {
+  const discardReviewMediaItems = useCallback(async (items: CampaignReviewMedia[]) => {
     const results = await Promise.allSettled(
-      candidate.media.map((item) =>
+      items.map((item) =>
         discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl)
       )
     );
@@ -486,6 +490,11 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }, []);
 
+  const discardUnpublishedReview = useCallback(
+    async (candidate: CampaignReview) => discardReviewMediaItems(candidate.media),
+    [discardReviewMediaItems]
+  );
+
   const invalidateReview = useCallback(() => {
     if (publication?.results.length) {
       setFeedback({
@@ -496,13 +505,16 @@ export default function AdminGsnHouseCampaignPage() {
     }
     if (review && !publication) {
       void discardUnpublishedReview(review);
+    } else if (Object.keys(stagedReviewMedia).length > 0) {
+      void discardReviewMediaItems(Object.values(stagedReviewMedia));
     }
+    setStagedReviewMedia({});
     setReview(null);
     setConfirmed(false);
     setPublication(null);
     setPublishingProgress("");
     return true;
-  }, [discardUnpublishedReview, publication, review]);
+  }, [discardReviewMediaItems, discardUnpublishedReview, publication, review, stagedReviewMedia]);
 
   const loadOperations = useCallback(async (silent = false): Promise<boolean> => {
     setLoadingOperations(true);
@@ -573,8 +585,11 @@ export default function AdminGsnHouseCampaignPage() {
     () => () => {
       const abandoned = reviewRef.current;
       const completed = publicationRef.current?.results.length || 0;
-      if (abandoned && completed < abandoned.media.length) {
-        for (const item of abandoned.media.slice(completed)) {
+      const abandonedMedia = abandoned
+        ? abandoned.media.slice(completed)
+        : Object.values(stagedReviewMediaRef.current);
+      if (abandonedMedia.length > 0) {
+        for (const item of abandonedMedia) {
           void discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl).catch(() => undefined);
         }
       }
@@ -806,42 +821,67 @@ export default function AdminGsnHouseCampaignPage() {
       }
 
       const uploadedMedia: CampaignReviewMedia[] = [];
+      let failedItem: PreparedMedia | null = null;
       try {
         for (let index = 0; index < mediaQueue.length; index += 1) {
           const item = mediaQueue[index];
+          const retained = stagedReviewMedia[item.key];
+          if (retained) {
+            uploadedMedia.push(retained);
+            setMediaProgress(`Keeping ${index + 1} of ${mediaQueue.length}: ${item.file.name}`);
+            continue;
+          }
           setMediaProgress(`Uploading ${index + 1} of ${mediaQueue.length}: ${item.file.name}`);
-          const response =
-            item.kind === "video"
-              ? await uploadMarketplaceVideoFile(
-                  item.file,
-                  item.durationSeconds != null &&
-                    item.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
-                    ? item.durationSeconds
-                    : null,
-                  null
-                )
-              : await uploadMarketplaceImageFile(item.file, null);
+          let response: any;
+          try {
+            response =
+              item.kind === "video"
+                ? await uploadMarketplaceVideoFile(
+                    item.file,
+                    item.durationSeconds != null &&
+                      item.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
+                      ? item.durationSeconds
+                      : null,
+                    null
+                  )
+                : await uploadMarketplaceImageFile(item.file, null);
+          } catch (error) {
+            failedItem = item;
+            throw error;
+          }
           const readyMediaUrl = uploadUrl(response, item.kind);
           if (!readyMediaUrl) {
+            failedItem = item;
             throw new Error("GSN did not return a usable media link.");
           }
-          uploadedMedia.push({
+          const preparedReviewMedia = {
             key: item.key,
             fileName: item.file.name,
             mediaKind: item.kind,
             mediaUrl: readyMediaUrl,
             idempotencyKey: makeIdempotencyKey(),
-          });
+          } satisfies CampaignReviewMedia;
+          uploadedMedia.push(preparedReviewMedia);
+          setStagedReviewMedia((current) => ({
+            ...current,
+            [item.key]: preparedReviewMedia,
+          }));
         }
       } catch (error) {
-        await Promise.allSettled(
-          uploadedMedia.map((item) =>
-            discardAdminGsnHouseCampaignReviewMedia(item.mediaUrl)
-          )
-        );
-        throw error;
+        setReview(null);
+        setFeedback({
+          tone: "error",
+          text: `${campaignRequestError(
+            error,
+            `${failedItem?.file.name || "The next media item"} could not be prepared.`
+          )} ${uploadedMedia.length} of ${mediaQueue.length} media items remain safely prepared on GSN. Tap Continue final check to resume from the unfinished item; the completed uploads will not be repeated.`,
+        });
+        return;
       }
 
+      setStagedReviewMedia(
+        Object.fromEntries(uploadedMedia.map((item) => [item.key, item]))
+      );
       setReview({
         message: cleanMessage,
         contactPhone: cleanContactPhone,
@@ -1118,6 +1158,7 @@ export default function AdminGsnHouseCampaignPage() {
     setMediaQueue([]);
     setMediaPreviewKey("");
     setMediaProgress("");
+    setStagedReviewMedia({});
     setMediaInputKey((current) => current + 1);
     setReview(null);
     setConfirmed(false);
@@ -2140,7 +2181,9 @@ export default function AdminGsnHouseCampaignPage() {
                     </ul>
                   </>
                 ) : (
-                  `Ready to open the final check for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. Nothing publishes until you approve the review and tap Publish.`
+                  stagedReviewCount > 0
+                    ? `${stagedReviewCount} of ${mediaQueue.length} media items are already prepared on GSN. Continue the final check to resume without repeating them.`
+                    : `Ready to open the final check for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. Nothing publishes until you approve the review and tap Publish.`
                 )}
               </div>
               <StableButton
@@ -2154,7 +2197,9 @@ export default function AdminGsnHouseCampaignPage() {
                 aria-label="Open final campaign check"
                 aria-describedby="admin-gsn-campaign-review-readiness"
               >
-                Open final check {mediaQueue.length > 0 ? `for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : ""}
+                {stagedReviewCount > 0
+                  ? `Continue final check · ${stagedReviewCount} of ${mediaQueue.length} prepared`
+                  : `Open final check${mediaQueue.length > 0 ? ` for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : ""}`}
               </StableButton>
             </div>
           ) : null}
