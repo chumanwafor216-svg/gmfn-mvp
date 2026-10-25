@@ -171,7 +171,7 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
-  /navigator\.serviceWorker[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?registerInstalledShellFreshnessChecks\(registration\)[\s\S]*?registration\.update\(\)/,
+  /navigator\.serviceWorker[\s\S]*?\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)[\s\S]*?registerInstalledShellFreshnessChecks\(registration\)[\s\S]*?registration\.update\(\)/,
   "The GSN service worker registration must ask the browser to check for a fresh installed-shell update."
 );
 
@@ -189,7 +189,7 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
-  /controllerchange[\s\S]*?if \(isIosInstalledShortcut\(\)\) return;[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
+  /controllerchange[\s\S]*?if \(isIosInstalledShortcut\(\)\) return;[\s\S]*?\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
   "The iPhone update prompt must not restore the automatic controller-change or skip-waiting reload loop."
 );
 

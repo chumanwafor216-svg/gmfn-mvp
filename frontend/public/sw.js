@@ -1,6 +1,6 @@
 /* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v19";
+const CACHE_VERSION = "gsn-pwa-shell-v20";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -67,9 +67,19 @@ self.addEventListener("fetch", (event) => {
     }
 
     event.respondWith(
-      fetch(request, { cache: "no-store" }).catch(() =>
-        caches.match("/cover").then((res) => res || caches.match("/"))
-      ),
+      fetch(request, { cache: "no-store" })
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => {
+              cache.put("/cover", copy).catch(() => undefined);
+            });
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match("/cover").then((res) => res || caches.match("/"))
+        ),
     );
     return;
   }
@@ -83,24 +93,30 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".webmanifest")
   ) {
     event.respondWith(
-      fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_VERSION).then((cache) => {
-          cache.put(request, copy).catch(() => undefined);
-        });
-        return response;
-      }).catch(() =>
-        caches.match(request).then((cached) => {
-          if (cached) return cached;
-          return fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
             const copy = response.clone();
             caches.open(CACHE_VERSION).then((cache) => {
               cache.put(request, copy).catch(() => undefined);
             });
-            return response;
-          });
-        }),
-      ),
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            return fetch(request).then((response) => {
+              if (response.ok) {
+                const copy = response.clone();
+                caches.open(CACHE_VERSION).then((cache) => {
+                  cache.put(request, copy).catch(() => undefined);
+                });
+              }
+              return response;
+            });
+          }),
+        ),
     );
   }
 });

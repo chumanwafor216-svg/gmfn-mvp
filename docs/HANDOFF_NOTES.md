@@ -8,6 +8,49 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Pre-React phone shortcut startup recovery - 2026-10-25
+
+- Trigger: an older Android home-screen icon opened a white body between the
+  navy system bars, while the current Chrome-badged shortcut and ordinary
+  Chrome page still opened correctly.
+- Confirmed cause boundary: production and the current built bundle were
+  healthy, but the existing installed-shell freshness check begins only after
+  React loads. It therefore could not help when a legacy shortcut failed while
+  loading the entry JavaScript itself.
+- Implemented locally, not published:
+  - `frontend/index.html` now watches startup before React. A standalone phone
+    shell gets one bounded automatic recovery attempt; a second failure or an
+    ordinary browser failure shows a plain `GSN could not start` card with one
+    `Refresh GSN` action and an old-icon remove/re-add fallback.
+  - recovery deletes only cache names beginning `gsn-pwa-shell-`, requests a
+    service-worker update and reloads with a cache-busting query. It does not
+    clear local storage, sign-in storage, drafts or server records, and it does
+    not unregister the service worker.
+  - `frontend/public/sw.js` advances the shell cache from v19 to v20, caches
+    only successful asset responses, and refreshes the `/cover` fallback after
+    every successful online navigation.
+  - `frontend/src/lib/pwaInstall.ts` now registers `/sw.js` with
+    `updateViaCache: "none"` so update checks bypass the browser HTTP cache.
+  - focused static and Playwright guards were added through
+    `audit:pwa-boot-recovery` and `smoke:pwa-boot-recovery`.
+- Verification passed: focused recovery audit, production build, recovery
+  browser smoke (healthy boot plus deliberately blocked standalone JavaScript,
+  one automatic retry, manual refresh and local-storage retention), icon
+  protocol, entry/auth contract and
+  the full protected-button freeze suite. `git diff --check` passed for the
+  scoped files.
+- Existing unrelated verification gap: `audit:link-contracts` still reports
+  current Community Home `Manage shop` and Login publish-return expectations.
+  Neither page was changed by this repair; the PWA assertions in that audit did
+  pass before those two later checks failed.
+- Unabated truth: this is not deployed yet. An already-open legacy shell cannot
+  execute recovery code it has never downloaded. After publication, the v20
+  worker and network-first navigation improve the next-open recovery path, but
+  the specific physical phone must still be tested. A very old icon that never
+  accepts the new shell may still need to be removed and added again. Current
+  Android policy intentionally uses a browser shortcut (`display: browser`),
+  so this work does not promise a new no-Chrome standalone icon.
+
 ## Advertising share, network attribution and Clear Finish deployment - 2026-10-25
 
 - The owner-approved batch containing consent-bound network-growth attribution,

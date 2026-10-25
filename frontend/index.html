@@ -86,6 +86,127 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        var key = "gsn_pwa_boot_recovery_attempt_v1";
+        var panelId = "gsn-boot-recovery";
+        var timer;
+        var observer;
+        var refreshing = false;
+
+        function root() {
+          return document.getElementById("root");
+        }
+
+        function started() {
+          var target = root();
+          return Boolean(
+            target && target.children.length && !document.getElementById(panelId)
+          );
+        }
+
+        function stopWatching() {
+          window.clearTimeout(timer);
+          if (observer) observer.disconnect();
+          try {
+            window.sessionStorage.removeItem(key);
+          } catch (_) {
+            // Blocked session storage must not stop GSN.
+          }
+        }
+
+        function showPanel(inProgress) {
+          var target = root();
+          if (!target || started()) return;
+          target.innerHTML =
+            '<main id="' + panelId + '" role="alert" style="box-sizing:border-box;min-height:100vh;background:#061827;padding:32px 20px;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif">' +
+            '<section style="box-sizing:border-box;width:min(100%,430px);background:#fffdf7;border:1px solid #c49a37;border-radius:28px;padding:30px 24px;box-shadow:0 20px 54px rgba(0,0,0,.25)">' +
+            '<p style="margin:0 0 10px;color:#9b7220;font-size:14px;font-weight:800;letter-spacing:.12em">GSN</p>' +
+            '<h1 style="margin:0 0 14px;color:#071d30;font-size:30px;line-height:1.12">' +
+            (inProgress ? 'Refreshing GSN' : 'GSN could not start') +
+            '</h1><p style="margin:0 0 22px;color:#42576a;font-size:18px;line-height:1.55">' +
+            (inProgress
+              ? 'GSN is clearing only its saved app shell and loading the current version.'
+              : 'The saved phone copy of GSN may be out of date or may not have finished loading. Refresh GSN to load the current version. Your sign-in and saved GSN records will not be deleted.') +
+            '</p>' +
+            (inProgress
+              ? '<p style="margin:0;color:#7c5c1c;font-weight:700">Please keep this screen open.</p>'
+              : '<button id="gsn-boot-refresh" type="button" style="width:100%;min-height:52px;border:0;border-radius:16px;background:#b88928;color:#071d30;font-size:18px;font-weight:800">Refresh GSN</button><p style="margin:18px 0 0;color:#607184;font-size:15px;line-height:1.5">If the old phone icon remains blank, remove that old icon and add GSN again from Chrome.</p>') +
+            '</section></main>';
+          var button = document.getElementById("gsn-boot-refresh");
+          if (button) button.addEventListener("click", recover);
+        }
+
+        function reload() {
+          try {
+            var url = new URL(window.location.href);
+            url.searchParams.set("gsn_recovery", String(Date.now()));
+            window.location.replace(url.toString());
+          } catch (_) {
+            window.location.reload();
+          }
+        }
+
+        function recover() {
+          if (refreshing) return;
+          refreshing = true;
+          try {
+            window.sessionStorage.setItem(key, "attempted");
+          } catch (_) {
+            // Recovery still works when session storage is blocked.
+          }
+          showPanel(true);
+          if ("caches" in window) {
+            void window.caches.keys().then(function (names) {
+              names.forEach(function (name) {
+                if (name.indexOf("gsn-pwa-shell-") === 0) {
+                  void window.caches.delete(name);
+                }
+              });
+            }).catch(function () {});
+          }
+          if ("serviceWorker" in window.navigator) {
+            void window.navigator.serviceWorker.getRegistrations().then(function (items) {
+              items.forEach(function (item) {
+                void item.update().catch(function () {});
+                if (item.waiting) item.waiting.postMessage({ type: "GSN_SKIP_WAITING" });
+              });
+            }).catch(function () {});
+          }
+          window.setTimeout(reload, 1200);
+        }
+
+        function fail() {
+          if (started() || refreshing) return;
+          var attempted = true;
+          try {
+            attempted = window.sessionStorage.getItem(key) === "attempted";
+          } catch (_) {
+            attempted = true;
+          }
+          var standalone =
+            (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+            window.navigator.standalone === true;
+          if (standalone && !attempted) recover();
+          else showPanel(false);
+        }
+
+        window.addEventListener("error", function (event) {
+          var target = event.target;
+          var tag = target && String(target.tagName || "").toLowerCase();
+          var rel = target && String(target.rel || "").toLowerCase();
+          if (tag === "script" || (tag === "link" && (rel === "stylesheet" || rel === "modulepreload"))) fail();
+        }, true);
+
+        if ("MutationObserver" in window) {
+          observer = new MutationObserver(function () {
+            if (started()) stopWatching();
+          });
+          observer.observe(root(), { childList: true });
+        }
+        timer = window.setTimeout(fail, 15000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

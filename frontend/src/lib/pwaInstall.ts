@@ -322,7 +322,7 @@ export function registerGsnServiceWorker(): void {
 
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/sw.js", { updateViaCache: "none" })
       .then((registration) => {
         if (!isIosInstalledShortcut()) {
           nudgeWaitingServiceWorker(registration);
