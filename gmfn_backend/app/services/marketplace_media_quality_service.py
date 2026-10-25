@@ -252,6 +252,7 @@ def inspect_video(
     path: str | Path,
     *,
     defer_min_duration_check: bool = False,
+    defer_unknown_fps_check: bool = False,
 ) -> VideoInspection:
     source_path = Path(path)
     if not source_path.is_file() or source_path.stat().st_size <= 0:
@@ -299,6 +300,7 @@ def inspect_video(
     _validate_video_quality(
         inspection,
         defer_min_duration_check=defer_min_duration_check,
+        defer_unknown_fps_check=defer_unknown_fps_check,
     )
     return inspection
 
@@ -307,6 +309,7 @@ def _validate_video_quality(
     inspection: VideoInspection,
     *,
     defer_min_duration_check: bool = False,
+    defer_unknown_fps_check: bool = False,
 ) -> None:
     if inspection.width <= 0 or inspection.height <= 0:
         raise MediaQualityError(
@@ -335,6 +338,13 @@ def _validate_video_quality(
             "video_shape_unsupported",
             "This video is extremely narrow or wide and cannot be prepared reliably. "
             "Choose a normal portrait, square, or landscape copy.",
+        )
+    if inspection.fps <= 0:
+        if defer_unknown_fps_check:
+            return
+        raise MediaQualityError(
+            "video_frame_rate_unknown",
+            "GSN could not confirm this video's frame rate. Record or export it again before uploading.",
         )
     if inspection.fps < MIN_VIDEO_FPS:
         raise MediaQualityError(
@@ -388,11 +398,15 @@ def normalize_marketplace_video(
     input_path = Path(source_path)
     destination = Path(output_path)
     # Some otherwise playable phone/social-video containers expose a usable
-    # picture stream but report zero or sub-second source duration to the
-    # lightweight metadata reader. Do not accept that metadata as the final
-    # quality decision. FFmpeg prepares the source first, then the normalised
-    # MP4 is inspected below with the one-second minimum still enforced.
-    inspection = inspect_video(input_path, defer_min_duration_check=True)
+    # picture stream but report zero source duration or frame rate to the
+    # lightweight metadata reader. Do not accept missing metadata as a low-
+    # quality measurement. FFmpeg prepares the source first, then the
+    # normalised MP4 is inspected below with both minimums still enforced.
+    inspection = inspect_video(
+        input_path,
+        defer_min_duration_check=True,
+        defer_unknown_fps_check=True,
+    )
 
     try:
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()

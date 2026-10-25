@@ -17,6 +17,7 @@ from app.services.marketplace_media_quality_service import (
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
+    MIN_VIDEO_FPS,
     MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
     VideoFinishProfile,
@@ -261,6 +262,50 @@ def test_normalizer_defers_unreliable_source_duration_until_output_is_verified(
     assert result.source.duration_seconds == 0
     assert result.output.duration_seconds >= 1
     assert result.kept_seconds >= 1
+
+
+def test_normalizer_defers_unknown_source_fps_until_output_is_verified(
+    tmp_path: Path,
+    monkeypatch,
+):
+    source = _make_video(tmp_path / "phone-video.mp4", seconds=2)
+    output = tmp_path / "qv1_phone_video.mp4"
+    real_read_frames = imageio_ffmpeg.read_frames
+
+    def read_frames_with_unknown_source_fps(path, *args, **kwargs):
+        reader = real_read_frames(path, *args, **kwargs)
+        metadata = next(reader)
+        if Path(path) == source:
+            metadata = {**metadata, "fps": 0}
+
+        def wrapped_reader():
+            try:
+                yield metadata
+            finally:
+                reader.close()
+
+        return wrapped_reader()
+
+    monkeypatch.setattr(
+        "app.services.marketplace_media_quality_service.imageio_ffmpeg.read_frames",
+        read_frames_with_unknown_source_fps,
+    )
+
+    result = normalize_marketplace_video(source, output)
+
+    assert output.is_file()
+    assert result.source.fps == 0
+    assert result.output.fps >= MIN_VIDEO_FPS
+
+
+def test_normalizer_still_rejects_genuinely_low_source_fps(tmp_path: Path):
+    source = _make_video(tmp_path / "genuinely-choppy.mp4", fps=10, seconds=2)
+    output = tmp_path / "qv1_genuinely_choppy.mp4"
+
+    with pytest.raises(MediaQualityError) as exc_info:
+        normalize_marketplace_video(source, output)
+
+    assert exc_info.value.code == "video_frame_rate_too_low"
 
 
 def test_normalizer_still_rejects_a_genuinely_subsecond_output(tmp_path: Path):

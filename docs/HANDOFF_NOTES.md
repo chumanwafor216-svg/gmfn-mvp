@@ -10,6 +10,19 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## GSN campaign batch preview, expiry and network recovery - 2026-10-25
 
+- A 16:45 physical-phone retest exposed a separate first-video rejection: the
+  server reported 0.0 frames per second, called the video choppy, and retained
+  0 of 10 items. Source inspection confirmed that the lightweight metadata
+  reader's unknown/zero frame rate was incorrectly treated as a measured low
+  frame rate before FFmpeg could prepare the phone video.
+- Unknown source frame rate now follows the same bounded trust boundary as
+  unreliable source duration: FFmpeg may prepare it, but the normalised MP4
+  must still report and pass the 15-fps floor before acceptance. A genuinely
+  measured 10-fps source remains rejected. Verification passed all 17 focused
+  media-quality tests, all 18 GSN-house campaign tests, the media-quality
+  source audit, and scoped diff checks. Deployment and a retry of the same
+  physical-phone batch remain pending.
+
 - Follow-up expiry correction: the former 24-hour frontend `max` and matching API rejection were an actual fixed ceiling, not merely a default. The reviewed expiry is now any explicit future timestamp; 24 hours remains only the initial value and the legacy fallback when a trusted caller omits expiry. Normal-rotation quotation-only accounting now rounds the selected start-to-expiry span up to chargeable days, so a 90-day, two-promotion, one-community preview reports 90 days and 180 repost-equivalent credits. The screen states that expiry does not prove payment, payer authority, or settlement.
 - Expiry verification passed: all 18 GSN-house backend tests, the focused four-test expiry/timed-schedule slice, the Admin GSN campaign source audit, targeted frontend lint, the 292-module production build, and the complete protected-button freeze audit. The first protected-audit attempt encountered a temporary local port-5173 collision; its clean rerun passed every protected gate.
 - Expiry deployment status: application commit `8228b47f` was pushed unchanged to `codex/spotlight-rotation-continuity` and `main`. Frontend-and-API workflow `40211094249` completed successfully. Render frontend deploy `dep-dbf2o1jsp5es73cfuukg` and API deploy `dep-dbf2oo7b9u1s73bdsssg` both reached `live` from that exact commit. The public campaign chunk returned HTTP 200 with the multi-month/admin-selected contract and without the former 24-hour-maximum wording; API health returned HTTP 200 with production mode, and post-deploy API error-level logs were empty.
