@@ -8,6 +8,45 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Network growth attribution spine v1 - 2026-10-25
+
+- Implemented an additive, consent-bound backend foundation for recording who
+  says they introduced an existing GSN member and through which source. The
+  authenticated API is rooted at `/network-growth/attributions`: a claimant can
+  submit a claim, each member can read claims involving them, and only the
+  named participant can accept or challenge an incoming claim.
+- The canonical record separates participant and claimant, records source kind,
+  optional community/invite context, evidence status, participant kind, state,
+  acceptance time and challenge evidence. Exact Community Invite/QR claims are
+  marked `verified_invite_record` only when existing invite ownership and the
+  participant's membership row prove the link; every other source remains a
+  `claimant_statement` until the participant accepts it.
+- Multiple unconfirmed statements may be shown to the participant so the first
+  unsupported claimant cannot lock the record. A partial unique database index
+  permits only one accepted attribution per participant. Accepting one claim
+  atomically supersedes competing pending statements; a participant may later
+  challenge the accepted claim. Identical resubmissions are idempotent by a
+  stored SHA-256 claim fingerprint, and each claimant is capped at 20 pending
+  claims.
+- The participant-only response derives four factual milestones from existing
+  records: community membership, shop creation, non-house Spotlight activation,
+  and protected-trade participation. Claimants do not receive those later
+  activity details. The API explicitly says the milestones do not prove reward
+  eligibility, payment, sale, or causal credit.
+- Hard boundary: this slice creates no Independent Entrepreneur role,
+  onboarding approval, trial clock, NGN 12,000 reward, commission, residual,
+  payout, territory, employment, advertising authority, payment movement, or
+  pricing change. It does not yet provide an ordinary-member frontend screen;
+  the canonical My GSN surface is frozen and no approved placement was defined,
+  so `mine`, `accept`, and `challenge` are API capabilities only in this slice.
+- Changed backend files: `app/db/models.py`, migration
+  `20261025_network_growth_attribution.py`, schema/route/service files named
+  `network_growth.py` / `network_growth_service.py`, API router registration,
+  and `tests/test_network_growth_attribution.py`.
+- Verification: migration graph has one head (`20261025_network_growth`), Python
+  compilation passed, and all 6 focused attribution tests passed. Status is
+  local only: not committed, pushed, deployed, or live-phone verified.
+
 ## GSN campaign batch preview, expiry and network recovery - 2026-10-25
 
 - A 16:45 physical-phone retest exposed a separate first-video rejection: the

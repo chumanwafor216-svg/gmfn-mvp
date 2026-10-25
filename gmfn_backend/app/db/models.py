@@ -204,6 +204,98 @@ class ClanMembership(Base):
     )
 
 
+class NetworkGrowthAttribution(Base):
+    """Consent-bound introduction evidence with no financial entitlement."""
+
+    __tablename__ = "network_growth_attributions"
+    __table_args__ = (
+        CheckConstraint(
+            "source_kind IN ('community_invite', 'community_qr', "
+            "'social_campaign', 'direct_referral', 'community_event', 'other')",
+            name="ck_network_growth_attributions_source_kind",
+        ),
+        CheckConstraint(
+            "participant_kind IN ('member', 'seller', 'advertiser', "
+            "'community_founder', 'other')",
+            name="ck_network_growth_attributions_participant_kind",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'challenged', 'superseded')",
+            name="ck_network_growth_attributions_status",
+        ),
+        CheckConstraint(
+            "source_evidence_status IN ('claimant_statement', 'verified_invite_record')",
+            name="ck_network_growth_attributions_evidence_status",
+        ),
+        CheckConstraint(
+            "participant_user_id <> claimant_user_id",
+            name="ck_network_growth_attributions_distinct_people",
+        ),
+        UniqueConstraint(
+            "claim_fingerprint",
+            name="uq_network_growth_attributions_fingerprint",
+        ),
+        Index(
+            "uq_network_growth_attributions_one_accepted_participant",
+            "participant_user_id",
+            unique=True,
+            sqlite_where=text("status = 'accepted'"),
+            postgresql_where=text("status = 'accepted'"),
+        ),
+        Index(
+            "ix_network_growth_attributions_participant_status",
+            "participant_user_id",
+            "status",
+        ),
+        Index(
+            "ix_network_growth_attributions_claimant_status",
+            "claimant_user_id",
+            "status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    claim_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    participant_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    claimant_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+    source_kind: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    participant_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="member", server_default="member"
+    )
+    source_reference: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    evidence_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_evidence_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="claimant_statement",
+        server_default="claimant_statement"
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"), nullable=True
+    )
+    invite_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clan_invites.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", server_default="pending"
+    )
+    challenge_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    challenged_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow,
+        server_default=func.now(), onupdate=utcnow
+    )
+
 class CommunityFollower(Base):
     __tablename__ = "community_followers"
 
