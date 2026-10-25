@@ -1658,6 +1658,7 @@ Must show:
 - one short campaign message shared by the prepared batch
 - one public advertiser contact phone shared by the prepared batch
 - one required advert-group expiry date and time shared by the prepared batch
+- one optional timed delivery mode with an absolute start/end window, named time basis, and interval shared by the prepared batch
 - a compact queue of one to ten prepared pictures and/or verified short videos
 - read-only campaign preview before publication
 - explicit final confirmation that the campaign is official GSN communication and does not endorse a member, shop, or Community Domain
@@ -1677,6 +1678,10 @@ Rules:
 - Preview must be read-only and must happen before the final publish action becomes available.
 - Preview audience uses the distinct union of active membership accounts across currently eligible selected communities, not a sum that double-counts a member in two communities. It is an addressable-account fact, not a guaranteed view or online-presence claim.
 - Repost equivalence is planning/reporting only. It must reuse the existing Subscription Spotlight credit pricing function and must not create a MarketplaceProductRepost, payer, shop, payment instruction, debit, or beneficiary record for a GSN-HOUSE campaign.
+- Normal rotation remains the default and must preserve the existing Spotlight pacing and selection behavior. Timed delivery is an additive, GSN-HOUSE-only choice for one campaign; it must not change ordinary member/shop rotation.
+- A timed interval means one network-wide eligible qualifying-presentation opportunity at each anchored slot while the selected window is open. It is not a guaranteed clock-time playback, audience-wide broadcast, handset receipt, unique reach, sale, or delivery to every selected community. If no eligible viewer has Spotlight open, the board must report the due opportunity as unfilled instead of shifting the entire schedule or claiming delivery.
+- Timed windows must end on or before the reviewed advert-group expiry. The backend must anchor later slots to the original start time, cap the interval to 5-1,440 minutes, persist the schedule in the existing campaign pacing authority, and expose requested, due, qualified, and unfilled-due counts without adding a second serving engine.
+- Repost-equivalent timed quotation uses promotion count x eligible destinations x scheduled opportunities. The additional peak-time surcharge rate remains policy-undecided, must be labelled unquoted, and must not move money or credits.
 - The phone may select up to ten media files in one action. Preparation and upload must run sequentially, show progress, and keep the page responsive. Before read-only review the prepared queue exists only in the current browser session, so the screen must tell the operator to keep the page open.
 - Read-only review uploads each prepared file to managed GSN storage without publishing it. Every queued media item becomes one independent GSN house campaign using the shared message and selected destinations.
 - The operator must select one expiry date and time before read-only review. The exact reviewed timestamp applies to every independent campaign created from that media group, is sent with every sequential publication request, and appears in review and campaign history. The backend rejects an expired timestamp or one beyond the current 24-hour pilot maximum. Older trusted callers that omit it retain the authoritative server-assigned 24-hour expiry so no house campaign becomes unbounded.

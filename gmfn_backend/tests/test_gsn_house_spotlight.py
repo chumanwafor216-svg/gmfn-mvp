@@ -14,8 +14,116 @@ from app.services.spotlight_opportunity_eligibility_service import (
 )
 from app.services.spotlight_pacing_state_service import (
     SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
+    consume_spotlight_delivery_round,
     get_or_create_spotlight_campaign_pacing_state,
 )
+
+
+def test_house_timed_schedule_is_quoted_persisted_and_anchored(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    starts_at = now + timedelta(minutes=10)
+    ends_at = starts_at + timedelta(minutes=60)
+    expires_at = ends_at + timedelta(minutes=10)
+    schedule = {
+        'starts_at': starts_at.isoformat(),
+        'ends_at': ends_at.isoformat(),
+        'interval_minutes': 20,
+        'timezone_label': 'Africa/Lagos',
+    }
+
+    preview = client.post(
+        '/marketplace/admin/gsn-house-campaigns/preview',
+        json={
+            'clan_ids': [1],
+            'promotion_count': 2,
+            'expires_at': expires_at.isoformat(),
+            'schedule': schedule,
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+    assert preview_body['schedule']['mode'] == 'timed_interval'
+    assert preview_body['schedule']['requested_slot_count'] == 3
+    assert preview_body['commercial_equivalence']['repost_equivalent_credits'] == 6
+    assert preview_body['commercial_equivalence']['financial_effect'] == 'none'
+    assert (
+        preview_body['commercial_equivalence']['peak_time_surcharge_status']
+        == 'policy_undecided_not_quoted'
+    )
+
+    published = client.post(
+        '/marketplace/admin/gsn-house-campaigns',
+        json={
+            'clan_ids': [1],
+            'message': 'Timed GSN service announcement',
+            'image_url': 'https://cdn.example.test/gsn/timed.jpg',
+            'advertiser_contact_phone': '+2348012345678',
+            'expires_at': expires_at.isoformat(),
+            'schedule': schedule,
+            'idempotency_key': 'gsn-house-timed-schedule-0001',
+        },
+    )
+    assert published.status_code == 200, published.text
+    campaign_id = int(published.json()['item']['spotlight_campaign_id'])
+    assert published.json()['schedule']['requested_slot_count'] == 3
+
+    with SessionLocal() as db:
+        snapshot = get_or_create_spotlight_campaign_pacing_state(
+            db,
+            campaign_id=campaign_id,
+            now=starts_at,
+        )
+        assert snapshot.pacing_profile == 'peak'
+        assert snapshot.max_delivery_rounds == 3
+        assert snapshot.next_eligible_delivery_at == starts_at
+
+        late_delivery = consume_spotlight_delivery_round(
+            db,
+            campaign_id=campaign_id,
+            now=starts_at + timedelta(minutes=45),
+        )
+        assert late_delivery.consumed is True
+        assert late_delivery.consumed_rounds_after == 3
+        assert late_delivery.exhausted is True
+        db.rollback()
+
+    operations = client.get('/marketplace/admin/gsn-house-campaigns')
+    assert operations.status_code == 200, operations.text
+    report = operations.json()['current']
+    assert report['schedule']['mode'] == 'timed_interval'
+    assert report['schedule']['requested_slot_count'] == 3
+    assert report['schedule']['guarantee'] == (
+        'eligible_presentation_opportunity_not_clock_playback_or_reach'
+    )
+    assert report['commercial_equivalence']['repost_equivalent_credits'] == 3
+
+
+def test_house_timed_schedule_cannot_outlive_advert_group(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    expires_at = now + timedelta(hours=1)
+    response = client.post(
+        '/marketplace/admin/gsn-house-campaigns/preview',
+        json={
+            'clan_ids': [1],
+            'expires_at': expires_at.isoformat(),
+            'schedule': {
+                'starts_at': (now + timedelta(minutes=10)).isoformat(),
+                'ends_at': (expires_at + timedelta(minutes=1)).isoformat(),
+                'interval_minutes': 20,
+                'timezone_label': 'Africa/Lagos',
+            },
+        },
+    )
+    assert response.status_code == 400, response.text
+    assert response.json()['detail']['code'] == 'gsn_house_schedule_exceeds_campaign_expiry'
 
 
 def _seed_house_campaign_destinations() -> None:

@@ -155,6 +155,7 @@ def get_or_create_spotlight_campaign_pacing_state(
     if existing is not None:
         if (
             is_gsn_house
+            and str(existing.pacing_profile or "neutral") == SPOTLIGHT_PACING_PROFILE_NEUTRAL
             and int(existing.max_delivery_rounds or 0)
             < SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
         ):
@@ -393,9 +394,17 @@ def consume_spotlight_delivery_round(
 
     consumed_before = int(row.consumed_delivery_rounds)
     version_before = int(row.version)
-    consumed_after = consumed_before + 1
+    consumed_after = _consumed_rounds_after_delivery(
+        consumed_before=consumed_before,
+        consumed_at=current_time,
+        policy=policy,
+    )
+    consumed_after = min(max(consumed_after, consumed_before + 1), int(row.max_delivery_rounds))
     exhausted_after = consumed_after >= int(row.max_delivery_rounds)
-    raw_next = next_eligible_delivery_time(
+    raw_next = _scheduled_next_eligible_time(
+        consumed_rounds=consumed_after,
+        policy=policy,
+    ) or next_eligible_delivery_time(
         activated_at=_campaign_activation_time(campaign, fallback=current_time),
         expires_at=expires_at,
         max_delivery_rounds=int(row.max_delivery_rounds),
@@ -543,6 +552,12 @@ def _next_permitted_time(*, raw_time: Optional[datetime], policy: Optional[Spotl
     if candidate is None:
         return None
     safe_policy = policy or SpotlightDeliveryWindowPolicy()
+    schedule_start = _as_aware_utc(safe_policy.schedule_starts_at)
+    schedule_end = _as_aware_utc(safe_policy.schedule_ends_at)
+    if schedule_start is not None and candidate < schedule_start:
+        candidate = schedule_start
+    if schedule_end is not None and candidate >= schedule_end:
+        return None
     if evaluate_spotlight_delivery_window(now=candidate, policy=safe_policy).active:
         return candidate
     # Deterministic small-step search; policy windows are minute-based and this avoids a second schedule formula.
@@ -573,7 +588,61 @@ def _delivery_window_policy_from_json(value: Optional[str]) -> Optional[Spotligh
         timezone_identifier=payload.get("timezone_identifier"),
         utc_offset_minutes=payload.get("utc_offset_minutes"),
         policy_name=str(payload.get("policy_name") or SPOTLIGHT_PACING_PROFILE_NEUTRAL),
+        schedule_starts_at=_as_aware_utc(_datetime_from_json(payload.get("schedule_starts_at"))),
+        schedule_ends_at=_as_aware_utc(_datetime_from_json(payload.get("schedule_ends_at"))),
+        interval_minutes=(
+            max(int(payload.get("interval_minutes")), 1)
+            if payload.get("interval_minutes") is not None
+            else None
+        ),
+        timezone_label=(str(payload.get("timezone_label") or "").strip() or None),
     )
+
+
+def _scheduled_next_eligible_time(
+    *,
+    consumed_rounds: int,
+    policy: Optional[SpotlightDeliveryWindowPolicy],
+) -> Optional[datetime]:
+    if policy is None:
+        return None
+    starts_at = _as_aware_utc(policy.schedule_starts_at)
+    ends_at = _as_aware_utc(policy.schedule_ends_at)
+    interval_minutes = int(policy.interval_minutes or 0)
+    if starts_at is None or ends_at is None or interval_minutes <= 0:
+        return None
+    candidate = starts_at + timedelta(minutes=interval_minutes * max(int(consumed_rounds), 0))
+    return candidate if candidate < ends_at else None
+
+
+def _consumed_rounds_after_delivery(
+    *,
+    consumed_before: int,
+    consumed_at: datetime,
+    policy: Optional[SpotlightDeliveryWindowPolicy],
+) -> int:
+    if policy is None:
+        return int(consumed_before) + 1
+    starts_at = _as_aware_utc(policy.schedule_starts_at)
+    interval_minutes = int(policy.interval_minutes or 0)
+    current_time = _as_aware_utc(consumed_at) or _now_utc()
+    if starts_at is None or interval_minutes <= 0 or current_time < starts_at:
+        return int(consumed_before) + 1
+    elapsed_seconds = max((current_time - starts_at).total_seconds(), 0.0)
+    current_slot_index = int(elapsed_seconds // (interval_minutes * 60))
+    return max(int(consumed_before) + 1, current_slot_index + 1)
+
+
+def _datetime_from_json(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        return value
+    cleaned = str(value or "").strip()
+    if not cleaned:
+        return None
+    try:
+        return datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def _campaign_activation_time(campaign: SpotlightCampaign, *, fallback: datetime) -> datetime:

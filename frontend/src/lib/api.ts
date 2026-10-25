@@ -7209,6 +7209,22 @@ export type GsnHouseCampaignDestinationCatalogue = {
   governance_boundary?: GsnHouseCampaignGovernanceBoundary;
 };
 
+export type GsnHouseCampaignSchedule = {
+  mode: 'normal' | 'timed_interval' | string;
+  timed: boolean;
+  state?: 'upcoming' | 'active' | 'ended' | string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  interval_minutes?: number | null;
+  timezone_label?: string | null;
+  requested_slot_count?: number;
+  due_slot_count?: number;
+  qualified_slot_count?: number;
+  unfilled_due_slot_count?: number;
+  guarantee?: string;
+  premium_pricing_status?: string;
+};
+
 export type GsnHouseCampaignPreview = {
   requested_clan_ids: number[];
   eligible_clan_ids: number[];
@@ -7217,6 +7233,7 @@ export type GsnHouseCampaignPreview = {
   excluded_destinations: GsnHouseCampaignDestination[];
   excluded_count: number;
   governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+  schedule?: GsnHouseCampaignSchedule;
   audience?: {
     metric: string;
     distinct_accounts: number;
@@ -7228,10 +7245,12 @@ export type GsnHouseCampaignPreview = {
     promotion_count: number;
     eligible_destination_count: number;
     chargeable_days: number;
+    scheduled_opportunities_per_promotion?: number;
     repost_equivalent_credits: number;
     quoted_amount_gbp: string;
     formula?: string;
     financial_effect: string;
+    peak_time_surcharge_status?: string;
   };
 };
 
@@ -7247,6 +7266,7 @@ export type GsnHouseCampaignPublication = {
   governance_boundary?: GsnHouseCampaignGovernanceBoundary;
   idempotent_replay?: boolean;
   member_advertising_credit_consumed?: boolean;
+  schedule?: GsnHouseCampaignSchedule;
 };
 
 export type GsnHouseCampaignReport = {
@@ -7281,6 +7301,7 @@ export type GsnHouseCampaignReport = {
     qualified_presentation_count: number;
     unique_qualified_viewer_accounts: number;
   };
+  schedule?: GsnHouseCampaignSchedule;
   destinations: GsnHouseCampaignDestination[];
   audience?: GsnHouseCampaignPreview['audience'];
   commercial_equivalence?: GsnHouseCampaignPreview['commercial_equivalence'];
@@ -7389,6 +7410,13 @@ export async function listAdminGsnHouseCampaignDestinations(params?: {
 export async function previewAdminGsnHouseCampaign(payload: {
   clan_ids: number[];
   promotion_count?: number;
+  expires_at?: string | null;
+  schedule?: {
+    starts_at: string;
+    ends_at: string;
+    interval_minutes: number;
+    timezone_label?: string | null;
+  } | null;
 }): Promise<GsnHouseCampaignPreview> {
   return httpJson(
     "/marketplace/admin/gsn-house-campaigns/preview",
@@ -7405,6 +7433,12 @@ export async function createAdminGsnHouseCampaign(payload: {
   video_url?: string | null;
   advertiser_contact_phone: string;
   expires_at: string;
+  schedule?: {
+    starts_at: string;
+    ends_at: string;
+    interval_minutes: number;
+    timezone_label?: string | null;
+  } | null;
   idempotency_key: string;
 }): Promise<GsnHouseCampaignPublication> {
   return httpJson(

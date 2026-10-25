@@ -453,6 +453,68 @@ def test_valid_delivery_opportunity_consumes_one_round_and_default_max_is_config
     assert decision.rounds_remaining_after == 1
 
 
+def test_timed_delivery_plan_stays_anchored_when_an_earlier_slot_was_unfilled():
+    _basic_setup(campaign_count=1)
+    starts_at = BASE_TIME + timedelta(minutes=10)
+    policy = SpotlightDeliveryWindowPolicy(
+        policy_name=SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+        schedule_starts_at=starts_at,
+        schedule_ends_at=starts_at + timedelta(minutes=60),
+        interval_minutes=20,
+        timezone_label='Africa/Lagos',
+    )
+    state = SpotlightCampaignPacingState(
+        campaign_id=1,
+        consumed_rounds=0,
+        max_delivery_rounds=3,
+        next_eligible_delivery_at=starts_at,
+        delivery_window_policy=policy,
+        pacing_profile=SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+    )
+
+    result = _pacing_result(
+        [1],
+        pacing_states=[state],
+        now=starts_at + timedelta(minutes=45),
+    )
+    decision = _decision(result, 1)
+
+    assert decision.scheduled is True
+    assert decision.consumed_rounds_before == 0
+    assert decision.consumed_rounds_after == 3
+    assert decision.rounds_remaining_after == 0
+    assert decision.next_eligible_after_admission is None
+    assert decision.delivery_window.timezone_mode == 'absolute_scheduled_window'
+
+
+def test_timed_delivery_plan_is_quiet_before_and_after_its_absolute_window():
+    _basic_setup(campaign_count=1)
+    starts_at = BASE_TIME + timedelta(hours=2)
+    ends_at = starts_at + timedelta(hours=1)
+    policy = SpotlightDeliveryWindowPolicy(
+        policy_name=SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+        schedule_starts_at=starts_at,
+        schedule_ends_at=ends_at,
+        interval_minutes=20,
+    )
+    state = SpotlightCampaignPacingState(
+        campaign_id=1,
+        consumed_rounds=0,
+        max_delivery_rounds=3,
+        next_eligible_delivery_at=starts_at,
+        delivery_window_policy=policy,
+        pacing_profile=SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+    )
+
+    before = _pacing_result([1], pacing_states=[state], now=starts_at - timedelta(minutes=1))
+    after = _pacing_result([1], pacing_states=[state], now=ends_at)
+
+    assert _decision(before, 1).blocked_reason == SPOTLIGHT_PACING_REASON_QUIET_WINDOW
+    assert _decision(after, 1).blocked_reason == SPOTLIGHT_PACING_REASON_QUIET_WINDOW
+    assert before.scheduled_campaign_ids == ()
+    assert after.scheduled_campaign_ids == ()
+
+
 def test_ten_rounds_exhaust_pacing_without_deleting_or_mutating_campaign_identity():
     _basic_setup(campaign_count=1)
     with engine.begin() as conn:

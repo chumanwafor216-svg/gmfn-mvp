@@ -55,6 +55,12 @@ type CampaignReview = {
   message: string;
   contactPhone: string;
   expiresAt: string;
+  schedule: {
+    startsAt: string;
+    endsAt: string;
+    intervalMinutes: number;
+    timezoneLabel: string;
+  } | null;
   media: CampaignReviewMedia[];
   preview: GsnHouseCampaignPreview;
 };
@@ -67,6 +73,7 @@ type BatchPublication = {
 
 const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
 const GSN_HOUSE_MAX_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES = 5;
 
 function dateTimeInputValue(date: Date): string {
   const localTime = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
@@ -75,6 +82,26 @@ function dateTimeInputValue(date: Date): string {
 
 function defaultExpiryInputValue(): string {
   return dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_MAX_LIFETIME_MS));
+}
+
+function scheduleInputValue(
+  date: Date,
+  timezone: 'device' | 'africa_lagos'
+): string {
+  if (timezone === 'device') return dateTimeInputValue(date);
+  return new Date(date.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function defaultScheduleStartInputValue(
+  timezone: 'device' | 'africa_lagos' = 'africa_lagos'
+): string {
+  return scheduleInputValue(new Date(Date.now() + 30 * 60 * 1000), timezone);
+}
+
+function defaultScheduleEndInputValue(
+  timezone: 'device' | 'africa_lagos' = 'africa_lagos'
+): string {
+  return scheduleInputValue(new Date(Date.now() + 90 * 60 * 1000), timezone);
 }
 
 function campaignExpiryIso(value: string): string {
@@ -87,6 +114,45 @@ function campaignExpiryProblem(value: string): string {
   if (!value || Number.isNaN(expiryTime)) return 'Choose the date and time when this advert group should stop.';
   if (expiryTime <= Date.now()) return 'Choose an advert-group expiry in the future.';
   if (expiryTime > Date.now() + GSN_HOUSE_MAX_LIFETIME_MS) return 'The current pilot allows an advert group to run for at most 24 hours.';
+  return '';
+}
+
+function dateTimeInSelectedZoneIso(value: string, timezone: 'device' | 'africa_lagos'): string {
+  if (!value) return '';
+  if (timezone === 'device') return campaignExpiryIso(value);
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return '';
+  const [, year, month, day, hour, minute] = match;
+  const utcTime = Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute)
+  ) - 60 * 60 * 1000;
+  return new Date(utcTime).toISOString();
+}
+
+function scheduleProblem(input: {
+  mode: 'normal' | 'timed';
+  startsAtInput: string;
+  endsAtInput: string;
+  intervalMinutes: string;
+  timezone: 'device' | 'africa_lagos';
+  expiresAt: string;
+}): string {
+  if (input.mode === 'normal') return '';
+  const startsAt = new Date(dateTimeInSelectedZoneIso(input.startsAtInput, input.timezone)).getTime();
+  const endsAt = new Date(dateTimeInSelectedZoneIso(input.endsAtInput, input.timezone)).getTime();
+  const expiry = new Date(input.expiresAt).getTime();
+  const interval = Number(input.intervalMinutes);
+  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) return 'Choose a valid timed start and end.';
+  if (startsAt <= Date.now()) return 'Choose a timed start in the future so review and publication can finish first.';
+  if (endsAt <= startsAt) return 'The timed window must end after it starts.';
+  if (Number.isFinite(expiry) && endsAt > expiry) return 'The timed window must end on or before the advert-group expiry.';
+  if (!Number.isInteger(interval) || interval < GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES || interval > 1440) {
+    return 'Choose a whole-number interval from 5 to 1,440 minutes.';
+  }
   return '';
 }
 
@@ -242,6 +308,15 @@ function dateTimeLabel(value?: string | null): string {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
 }
 
+function scheduledDateTimeLabel(value: string, timezoneLabel: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  if (timezoneLabel.startsWith('Africa/Lagos')) {
+    return parsed.toLocaleString(undefined, { timeZone: 'Africa/Lagos' });
+  }
+  return parsed.toLocaleString();
+}
+
 function stateLabel(value: string): string {
   return safeStr(value, "unknown").replace(/_/g, " ");
 }
@@ -288,6 +363,11 @@ export default function AdminGsnHouseCampaignPage() {
   });
   const [selected, setSelected] = useState<Record<number, GsnHouseCampaignDestination>>({});
   const [expiryInput, setExpiryInput] = useState(defaultExpiryInputValue);
+  const [scheduleMode, setScheduleMode] = useState<'normal' | 'timed'>('normal');
+  const [scheduleStartInput, setScheduleStartInput] = useState(defaultScheduleStartInputValue);
+  const [scheduleEndInput, setScheduleEndInput] = useState(defaultScheduleEndInputValue);
+  const [scheduleIntervalMinutes, setScheduleIntervalMinutes] = useState('20');
+  const [scheduleTimezone, setScheduleTimezone] = useState<'device' | 'africa_lagos'>('africa_lagos');
   const [message, setMessage] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [mediaQueue, setMediaQueue] = useState<PreparedMedia[]>([]);
@@ -339,6 +419,14 @@ export default function AdminGsnHouseCampaignPage() {
   const reviewBlockers = useMemo(() => {
     const blockers: string[] = [];
     const expiryProblem = campaignExpiryProblem(expiryInput);
+    const timingProblem = scheduleProblem({
+      mode: scheduleMode,
+      startsAtInput: scheduleStartInput,
+      endsAtInput: scheduleEndInput,
+      intervalMinutes: scheduleIntervalMinutes,
+      timezone: scheduleTimezone,
+      expiresAt: campaignExpiryIso(expiryInput),
+    });
     if (selectedRows.length === 0) blockers.push("Choose at least one eligible community.");
     if (message.trim().length < 2) blockers.push("Write the official GSN message.");
     if (!contactPhone.trim()) {
@@ -349,8 +437,21 @@ export default function AdminGsnHouseCampaignPage() {
     if (mediaQueue.length === 0) blockers.push("Add at least one picture or short video.");
     if (preparingMedia) blockers.push("Wait for media preparation to finish.");
     if (expiryProblem) blockers.push(expiryProblem);
+    if (timingProblem) blockers.push(timingProblem);
     return blockers;
-  }, [contactPhone, expiryInput, mediaQueue.length, message, preparingMedia, selectedRows.length]);
+  }, [
+    contactPhone,
+    expiryInput,
+    mediaQueue.length,
+    message,
+    preparingMedia,
+    scheduleEndInput,
+    scheduleIntervalMinutes,
+    scheduleMode,
+    scheduleStartInput,
+    scheduleTimezone,
+    selectedRows.length,
+  ]);
 
   useEffect(() => {
     reviewRef.current = review;
@@ -582,6 +683,24 @@ export default function AdminGsnHouseCampaignPage() {
     const cleanContactPhone = canonicalAdvertiserPhone(contactPhone);
     const expiryProblem = campaignExpiryProblem(expiryInput);
     const expiresAt = campaignExpiryIso(expiryInput);
+    const timingProblem = scheduleProblem({
+      mode: scheduleMode,
+      startsAtInput: scheduleStartInput,
+      endsAtInput: scheduleEndInput,
+      intervalMinutes: scheduleIntervalMinutes,
+      timezone: scheduleTimezone,
+      expiresAt,
+    });
+    const timedSchedule = scheduleMode === 'timed'
+      ? {
+          startsAt: dateTimeInSelectedZoneIso(scheduleStartInput, scheduleTimezone),
+          endsAt: dateTimeInSelectedZoneIso(scheduleEndInput, scheduleTimezone),
+          intervalMinutes: Number(scheduleIntervalMinutes),
+          timezoneLabel: scheduleTimezone === 'africa_lagos'
+            ? 'Africa/Lagos (UTC+1)'
+            : Intl.DateTimeFormat().resolvedOptions().timeZone || 'Device time',
+        }
+      : null;
     if (preparingMedia) {
       setFeedback({ tone: "info", text: "Wait for media preparation to finish before reviewing." });
       return;
@@ -605,6 +724,10 @@ export default function AdminGsnHouseCampaignPage() {
       setFeedback({ tone: 'error', text: expiryProblem || 'Choose a valid advert-group expiry.' });
       return;
     }
+    if (timingProblem) {
+      setFeedback({ tone: 'error', text: timingProblem });
+      return;
+    }
     if (mediaQueue.length === 0) {
       setFeedback({ tone: "error", text: "Add at least one prepared picture or verified short video before reviewing." });
       return;
@@ -615,6 +738,15 @@ export default function AdminGsnHouseCampaignPage() {
       const destinationPreview = await previewAdminGsnHouseCampaign({
         clan_ids: selectedRows.map((row) => row.clan_id),
         promotion_count: mediaQueue.length,
+        expires_at: expiresAt,
+        schedule: timedSchedule
+          ? {
+              starts_at: timedSchedule.startsAt,
+              ends_at: timedSchedule.endsAt,
+              interval_minutes: timedSchedule.intervalMinutes,
+              timezone_label: timedSchedule.timezoneLabel,
+            }
+          : null,
       });
       if (Number(destinationPreview.eligible_count || 0) <= 0) {
         setReview(null);
@@ -666,6 +798,7 @@ export default function AdminGsnHouseCampaignPage() {
         message: cleanMessage,
         contactPhone: cleanContactPhone,
         expiresAt,
+        schedule: timedSchedule,
         media: uploadedMedia,
         preview: destinationPreview,
       });
@@ -714,6 +847,14 @@ export default function AdminGsnHouseCampaignPage() {
           video_url: item.mediaKind === "video" ? item.mediaUrl : null,
           advertiser_contact_phone: review.contactPhone,
           expires_at: review.expiresAt,
+          schedule: review.schedule
+            ? {
+                starts_at: review.schedule.startsAt,
+                ends_at: review.schedule.endsAt,
+                interval_minutes: review.schedule.intervalMinutes,
+                timezone_label: review.schedule.timezoneLabel,
+              }
+            : null,
           idempotency_key: item.idempotencyKey,
         });
         results.push(response);
@@ -912,6 +1053,11 @@ export default function AdminGsnHouseCampaignPage() {
   function resetCampaign() {
     setSelected({});
     setExpiryInput(defaultExpiryInputValue());
+    setScheduleMode('normal');
+    setScheduleStartInput(defaultScheduleStartInputValue());
+    setScheduleEndInput(defaultScheduleEndInputValue());
+    setScheduleIntervalMinutes('20');
+    setScheduleTimezone('africa_lagos');
     setMessage("");
     setContactPhone("");
     setMediaQueue([]);
@@ -1222,6 +1368,7 @@ export default function AdminGsnHouseCampaignPage() {
               ["Selected", String(selectedRows.length)],
               ["Media", mediaQueue.length > 0 ? `${mediaQueue.length} prepared` : "Not ready"],
               ['Group expiry', dateTimeLabel(campaignExpiryIso(expiryInput))],
+              ['Timing', scheduleMode === 'timed' ? `Every ${scheduleIntervalMinutes || '?'} min` : 'Normal rotation'],
             ].map(([label, value]) => (
               <div key={label} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
                 <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -1286,6 +1433,10 @@ export default function AdminGsnHouseCampaignPage() {
                   ["People who saw it", operations.current.delivery.unique_qualified_viewer_accounts],
                   ["Addressable accounts", operations.current.audience?.distinct_accounts ?? 0],
                   ["Repost-equivalent credits", operations.current.commercial_equivalence?.repost_equivalent_credits ?? 0],
+                  ["Timing", operations.current.schedule?.timed ? `Every ${operations.current.schedule.interval_minutes} min` : 'Normal'],
+                  ["Due / unfilled", operations.current.schedule?.timed
+                    ? `${operations.current.schedule.due_slot_count ?? 0} / ${operations.current.schedule.unfilled_due_slot_count ?? 0}`
+                    : 'Not applicable'],
                 ].map(([label, value]) => (
                   <div key={label} style={institutionalInnerCard("#FFFFFF")}>
                     <div style={{ color: "#64778B", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -1293,6 +1444,23 @@ export default function AdminGsnHouseCampaignPage() {
                   </div>
                 ))}
               </div>
+
+              {operations.current.schedule?.timed ? (
+                <div style={{ marginTop: 12, ...softCard('#FFFDF6'), ...helper() }}>
+                  <strong>Timed window:</strong>{' '}
+                  {scheduledDateTimeLabel(
+                    operations.current.schedule.starts_at || '',
+                    operations.current.schedule.timezone_label || 'Device time'
+                  )} to{' '}
+                  {scheduledDateTimeLabel(
+                    operations.current.schedule.ends_at || '',
+                    operations.current.schedule.timezone_label || 'Device time'
+                  )} · every{' '}
+                  {operations.current.schedule.interval_minutes} minutes ·{' '}
+                  {operations.current.schedule.timezone_label || 'Recorded time basis'}.
+                  {' '}Unfilled due slots do not prove a fault: they mean no qualifying presentation filled that due opportunity. Peak-time surcharge policy remains undecided and no charge is made here.
+                </div>
+              ) : null}
 
               {renderCampaignDestinations(operations.current)}
 
@@ -1434,6 +1602,15 @@ export default function AdminGsnHouseCampaignPage() {
                   <div><strong>Repost-equivalent credits:</strong> {review.preview.commercial_equivalence?.repost_equivalent_credits ?? 0}</div>
                   <div><strong>Quotation:</strong> £{review.preview.commercial_equivalence?.quoted_amount_gbp ?? '0.00'} (no charge or credit movement)</div>
                   <div><strong>Group expiry:</strong> {dateTimeLabel(review.expiresAt)}</div>
+                  <div><strong>Timing:</strong> {review.schedule
+                    ? `Every ${review.schedule.intervalMinutes} minutes from ${scheduledDateTimeLabel(review.schedule.startsAt, review.schedule.timezoneLabel)} until ${scheduledDateTimeLabel(review.schedule.endsAt, review.schedule.timezoneLabel)} (${review.schedule.timezoneLabel})`
+                    : 'Normal Spotlight rotation'}</div>
+                  {review.schedule ? (
+                    <div><strong>Timed opportunity boundary:</strong> One eligible network-wide presentation opportunity per interval; not guaranteed playback, reach, or sale.</div>
+                  ) : null}
+                  {review.schedule ? (
+                    <div><strong>Peak-time surcharge:</strong> Policy undecided; not included and no charge occurs here.</div>
+                  ) : null}
                   <div><strong>Maximum lifetime:</strong> 24 hours</div>
                 </div>
               </div>
@@ -1590,7 +1767,9 @@ export default function AdminGsnHouseCampaignPage() {
             Governance and delivery boundary
           </summary>
           <div style={{ marginTop: 13, ...helper(), display: "grid", gap: 8 }}>
-            <div>The campaign expires after 24 hours.</div>
+            <div>The campaign expires at the admin-selected time, no later than 24 hours after publication.</div>
+            <div>Optional timed delivery changes only that campaign. Normal Spotlight rotation remains unchanged for ordinary campaigns.</div>
+            <div>A timed interval is an eligible presentation opportunity, not guaranteed clock-time playback, audience-wide broadcast, reach, or sale.</div>
             <div>Only explicitly selected communities are considered.</div>
             <div>A destination opt-out or policy change stops later delivery because eligibility is rechecked by the backend.</div>
             <div>The supplied advertiser phone is a public contact route for this promotion. It does not create a shop, seller trust claim, member endorsement, or Community Domain endorsement.</div>
@@ -1752,6 +1931,109 @@ export default function AdminGsnHouseCampaignPage() {
           </label>
           <div style={{ marginTop: 6, color: '#60758A', fontSize: 12, lineHeight: 1.5 }}>
             Every picture and video in this reviewed group receives this same expiry. The current pilot maximum is 24 hours.
+          </div>
+
+          <div style={{ marginTop: 16, ...softCard('#F8FBFF'), display: 'grid', gap: 12 }}>
+            <label>
+              <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Delivery timing</span>
+              <select
+                value={scheduleMode}
+                disabled={draftBusy || publishedCount > 0}
+                onChange={(event) => {
+                  if (!invalidateReview()) return;
+                  const nextMode = event.target.value === 'timed' ? 'timed' : 'normal';
+                  setScheduleMode(nextMode);
+                  if (nextMode === 'timed') {
+                    setScheduleStartInput(defaultScheduleStartInputValue(scheduleTimezone));
+                    setScheduleEndInput(defaultScheduleEndInputValue(scheduleTimezone));
+                  }
+                }}
+                style={fieldStyle()}
+                data-gmfn-field='admin-gsn-campaign.schedule-mode'
+              >
+                <option value='normal'>Normal Spotlight rotation</option>
+                <option value='timed'>Specific window and interval</option>
+              </select>
+            </label>
+
+            {scheduleMode === 'timed' ? (
+              <>
+                <div style={{ ...statusPanel('info'), fontWeight: 700 }}>
+                  Timed delivery creates one network-wide eligible presentation opportunity at each interval. It cannot guarantee clock-time playback, a particular viewer, reach, or a sale because an eligible member must have Spotlight open.
+                </div>
+                <label>
+                  <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Time basis</span>
+                  <select
+                    value={scheduleTimezone}
+                    disabled={draftBusy || publishedCount > 0}
+                    onChange={(event) => {
+                      if (!invalidateReview()) return;
+                      const nextTimezone = event.target.value === 'device' ? 'device' : 'africa_lagos';
+                      setScheduleTimezone(nextTimezone);
+                      setScheduleStartInput(defaultScheduleStartInputValue(nextTimezone));
+                      setScheduleEndInput(defaultScheduleEndInputValue(nextTimezone));
+                    }}
+                    style={fieldStyle()}
+                    data-gmfn-field='admin-gsn-campaign.schedule-timezone'
+                  >
+                    <option value='africa_lagos'>Nigeria time (Africa/Lagos, UTC+1)</option>
+                    <option value='device'>This device&apos;s local time</option>
+                  </select>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                  <label>
+                    <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Window starts</span>
+                    <input
+                      type='datetime-local'
+                      value={scheduleStartInput}
+                      disabled={draftBusy || publishedCount > 0}
+                      onChange={(event) => {
+                        if (invalidateReview()) setScheduleStartInput(event.target.value);
+                      }}
+                      style={fieldStyle()}
+                      data-gmfn-field='admin-gsn-campaign.schedule-start'
+                    />
+                  </label>
+                  <label>
+                    <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Window ends</span>
+                    <input
+                      type='datetime-local'
+                      value={scheduleEndInput}
+                      disabled={draftBusy || publishedCount > 0}
+                      onChange={(event) => {
+                        if (invalidateReview()) setScheduleEndInput(event.target.value);
+                      }}
+                      style={fieldStyle()}
+                      data-gmfn-field='admin-gsn-campaign.schedule-end'
+                    />
+                  </label>
+                  <label>
+                    <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Opportunity every</span>
+                    <input
+                      type='number'
+                      min={GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES}
+                      max={1440}
+                      step={1}
+                      value={scheduleIntervalMinutes}
+                      disabled={draftBusy || publishedCount > 0}
+                      onChange={(event) => {
+                        if (invalidateReview()) setScheduleIntervalMinutes(event.target.value);
+                      }}
+                      style={fieldStyle()}
+                      data-gmfn-field='admin-gsn-campaign.schedule-interval'
+                    />
+                    <span style={{ display: 'block', marginTop: 6, color: '#60758A', fontSize: 12 }}>Minutes; minimum 5.</span>
+                  </label>
+                </div>
+                <div style={{ ...helper(), fontSize: 13 }}>
+                  Repost-equivalent opportunities are quoted now. The additional peak-time surcharge remains policy-undecided and is not charged by this board.
+                </div>
+              </>
+            ) : (
+              <div style={{ ...helper(), fontSize: 13 }}>
+                Existing normal rotation remains unchanged. No timed window or interval is applied.
+              </div>
+            )}
           </div>
 
           <label style={{ display: "block", marginTop: 16 }}>

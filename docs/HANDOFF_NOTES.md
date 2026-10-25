@@ -8,6 +8,17 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN-HOUSE timed campaign opportunities - 2026-10-25
+
+- Status: implemented and verified locally on `codex/spotlight-rotation-continuity`; not pushed or deployed at the time of this note.
+- The existing Command Centre GSN publisher now offers an optional `Specific window and interval` mode. Normal rotation remains the default and its current Spotlight behavior is unchanged.
+- Timed campaigns persist an absolute start/end window and anchored interval in the existing campaign pacing record. No new serving engine or database migration was added. A late qualifying presentation closes elapsed schedule slots and keeps the next opportunity anchored to the original start instead of drifting the whole schedule.
+- The operations board reports requested, due, qualified and unfilled-due slots. One slot means one network-wide eligible qualifying-presentation opportunity; it does not guarantee clock-time playback, every-community delivery, handset receipt, reach, completion or sale.
+- Preview quotes `promotion count x eligible destinations x scheduled opportunities` with the existing paid-repost function. The extra peak-time surcharge remains explicitly policy-undecided and unquoted. No repost, credit, payment, payer or beneficiary record is created.
+- The first UI time bases are Nigeria (`Africa/Lagos`, UTC+1) and the admin device's local time. The timed window must finish before the reviewed campaign expiry; interval bounds are 5-1,440 minutes and the existing 24-hour campaign maximum remains.
+- Verification passed: Python compilation; 72 focused GSN/pacing/presentation tests plus the separately rerun temp-directory media-safety case; four new timed-schedule/window tests; TypeScript; the 292-module production frontend build; the Admin GSN campaign audit; and the complete protected-button freeze audit. The first combined run had one Windows pytest temporary-directory permission error, then the exact case passed with approved normal temp access.
+- Remaining truth: this is locally verified source behavior only. It is not pushed or deployed. It cannot create playback when no eligible member has Spotlight open. Regional/global targeting and a monetary peak-time surcharge remain unimplemented because authoritative location and approved price policy are still absent.
+
 ## GSN campaign board + Natural Finish - 2026-10-25
 
 - The existing Spotlight serving engine was deliberately not changed: rotation, dwell, pacing, replay, qualification, ordinary frequency limits, GSN-HOUSE delivery rounds, audio continuity, placement eligibility, quota and credit consumption remain as before.

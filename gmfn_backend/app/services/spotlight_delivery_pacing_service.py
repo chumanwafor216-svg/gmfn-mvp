@@ -75,6 +75,10 @@ class SpotlightDeliveryWindowPolicy:
     timezone_identifier: Optional[str] = None
     utc_offset_minutes: Optional[int] = None
     policy_name: str = SPOTLIGHT_PACING_PROFILE_NEUTRAL
+    schedule_starts_at: Optional[datetime] = None
+    schedule_ends_at: Optional[datetime] = None
+    interval_minutes: Optional[int] = None
+    timezone_label: Optional[str] = None
 
     def to_internal_dict(self) -> dict[str, Any]:
         return {
@@ -83,6 +87,10 @@ class SpotlightDeliveryWindowPolicy:
             "timezone_identifier": self.timezone_identifier,
             "utc_offset_minutes": self.utc_offset_minutes,
             "policy_name": self.policy_name,
+            "schedule_starts_at": _iso_or_none(self.schedule_starts_at),
+            "schedule_ends_at": _iso_or_none(self.schedule_ends_at),
+            "interval_minutes": self.interval_minutes,
+            "timezone_label": self.timezone_label,
         }
 
 
@@ -353,11 +361,24 @@ def schedule_spotlight_delivery_opportunities(
         if bool(row["pacing_eligible"]) and not scheduled:
             blocked_reason = SPOTLIGHT_PACING_REASON_SLOT_COMPETITION
         consumed_before = int(row["consumed_before"])
-        consumed_after = consumed_before + 1 if scheduled else consumed_before
+        consumed_after = (
+            _scheduled_consumed_rounds_after_opportunity(
+                consumed_before=consumed_before,
+                now=current_time,
+                policy=row["window"].policy,
+            )
+            if scheduled
+            else consumed_before
+        )
+        consumed_after = min(consumed_after, int(row["max_rounds"]))
         max_rounds = int(row["max_rounds"])
         remaining_after = max(max_rounds - consumed_after, 0)
         next_after = (
-            next_eligible_delivery_time(
+            _scheduled_next_eligible_time(
+                consumed_rounds=consumed_after,
+                policy=row["window"].policy,
+            )
+            or next_eligible_delivery_time(
                 activated_at=row["activated_at"],
                 expires_at=row["expires_at"],
                 max_delivery_rounds=max_rounds,
@@ -424,6 +445,22 @@ def evaluate_spotlight_delivery_window(
 ) -> SpotlightDeliveryWindowEvaluation:
     current_time = _as_aware_utc(now) or _now_utc()
     safe_policy = policy or SpotlightDeliveryWindowPolicy()
+    schedule_start = _as_aware_utc(safe_policy.schedule_starts_at)
+    schedule_end = _as_aware_utc(safe_policy.schedule_ends_at)
+    if schedule_start is not None or schedule_end is not None:
+        active = bool(
+            schedule_start is not None
+            and schedule_end is not None
+            and schedule_start <= current_time < schedule_end
+        )
+        return SpotlightDeliveryWindowEvaluation(
+            active=active,
+            quiet=not active,
+            always_active_fallback=False,
+            timezone_mode="absolute_scheduled_window",
+            local_minute=None,
+            policy=safe_policy,
+        )
     if safe_policy.active_start_minute is None or safe_policy.active_end_minute is None:
         return SpotlightDeliveryWindowEvaluation(
             active=True,
@@ -482,6 +519,36 @@ def next_eligible_delivery_time(
     else:
         interval = (expiry - active_start) / max_rounds
     return active_start + (interval * consumed)
+
+
+def _scheduled_consumed_rounds_after_opportunity(
+    *,
+    consumed_before: int,
+    now: datetime,
+    policy: SpotlightDeliveryWindowPolicy,
+) -> int:
+    starts_at = _as_aware_utc(policy.schedule_starts_at)
+    interval_minutes = int(policy.interval_minutes or 0)
+    current_time = _as_aware_utc(now) or _now_utc()
+    if starts_at is None or interval_minutes <= 0 or current_time < starts_at:
+        return int(consumed_before) + 1
+    elapsed_seconds = max((current_time - starts_at).total_seconds(), 0.0)
+    current_slot_index = int(elapsed_seconds // (interval_minutes * 60))
+    return max(int(consumed_before) + 1, current_slot_index + 1)
+
+
+def _scheduled_next_eligible_time(
+    *,
+    consumed_rounds: int,
+    policy: SpotlightDeliveryWindowPolicy,
+) -> Optional[datetime]:
+    starts_at = _as_aware_utc(policy.schedule_starts_at)
+    ends_at = _as_aware_utc(policy.schedule_ends_at)
+    interval_minutes = int(policy.interval_minutes or 0)
+    if starts_at is None or ends_at is None or interval_minutes <= 0:
+        return None
+    candidate = starts_at + timedelta(minutes=interval_minutes * max(int(consumed_rounds), 0))
+    return candidate if candidate < ends_at else None
 
 
 def _campaigns_by_id(db: Session, campaign_ids: Iterable[int]) -> dict[int, SpotlightCampaign]:

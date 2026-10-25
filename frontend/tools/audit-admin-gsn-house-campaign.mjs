@@ -37,6 +37,7 @@ const specsFile = "../docs/SCREEN_SPECS.md";
 const backendFile = "../gmfn_backend/app/api/routes/marketplace.py";
 const eligibilityFile =
   "../gmfn_backend/app/services/spotlight_opportunity_eligibility_service.py";
+const pacingFile = "../gmfn_backend/app/services/spotlight_pacing_state_service.py";
 
 const app = read(appFile);
 const page = read(pageFile);
@@ -47,6 +48,7 @@ const registry = read(registryFile);
 const specs = read(specsFile);
 const backend = read(backendFile);
 const eligibility = read(eligibilityFile);
+const pacing = read(pacingFile);
 
 const commandRoutes = section(
   app,
@@ -131,12 +133,48 @@ for (const text of [
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
 }
 for (const text of [
+  "Specific window and interval",
+  "Normal Spotlight rotation",
+  "eligible presentation opportunity",
+  "schedule: review.schedule",
+  "peak-time surcharge",
+  "admin-gsn-campaign.schedule-start",
+  "admin-gsn-campaign.schedule-end",
+  "admin-gsn-campaign.schedule-interval",
+]) {
+  requireText(pageFile, page, text, "Missing timed campaign screen contract: " + text + ".");
+}
+for (const text of [
+  "GsnHouseCampaignSchedule",
+  "scheduled_opportunities_per_promotion",
+  "peak_time_surcharge_status",
+]) {
+  requireText(apiFile, api, text, "Missing timed campaign API contract: " + text + ".");
+}
+for (const text of [
   'Advert group expiry',
   'expires_at: review.expiresAt',
   'Every picture and video in this reviewed group receives this same expiry',
   'Group expiry:',
 ]) {
   requireText(pageFile, page, text, 'Missing advert-group expiry screen contract: ' + text + '.');
+}
+for (const text of [
+  "class GsnHouseCampaignScheduleIn",
+  "def _resolve_gsn_house_campaign_schedule",
+  "def _configure_gsn_house_campaign_schedule",
+  "eligible_presentation_opportunity_not_clock_playback_or_reach",
+  "peak_time_surcharge_policy_undecided",
+]) {
+  requireText(backendFile, backend, text, "Missing backend timed campaign contract: " + text + ".");
+}
+for (const text of [
+  "_consumed_rounds_after_delivery",
+  "_scheduled_next_eligible_time",
+  "schedule_starts_at",
+  "schedule_ends_at",
+]) {
+  requireText(pacingFile, pacing, text, "Missing anchored timed pacing contract: " + text + ".");
 }
 requireText(apiFile, api, 'expires_at: string;', 'The typed GSN campaign request must require the reviewed expiry.');
 for (const text of [

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
-from math import floor
+from math import ceil, floor
 import os
 from pathlib import Path
 import re
@@ -102,6 +102,10 @@ from app.services.spotlight_presentation_service import (
 from app.services.spotlight_pacing_state_service import (
     SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
 )
+from app.services.spotlight_delivery_pacing_service import (
+    SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+    SpotlightDeliveryWindowPolicy,
+)
 from app.services.spotlight_lifecycle_service import (
     SPOTLIGHT_CORRECTION_HOLD,
     SPOTLIGHT_SERVING,
@@ -166,6 +170,8 @@ GSN_HOUSE_PUBLISHER_EMAIL = "gsn-house-publisher@system.invalid"
 GSN_HOUSE_PUBLISHER_ID = "GSN-HOUSE"
 GSN_HOUSE_PUBLISHER_NAME = "Global Support Network"
 GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT = 100
+GSN_HOUSE_SCHEDULE_MIN_INTERVAL_MINUTES = 5
+GSN_HOUSE_SCHEDULE_MAX_INTERVAL_MINUTES = 24 * 60
 GSN_CENTRAL_ADVERTISING_POLICY_KEY = "domain.central_advertising"
 SPOTLIGHT_CONTENT_KIND_BROADCAST = "broadcast_snapshot"
 SPOTLIGHT_CONTENT_KIND_PRODUCT = "marketplace_product"
@@ -809,6 +815,7 @@ def _gsn_house_destination_preview(
     *,
     clan_ids: list[int],
     promotion_count: int = 1,
+    schedule: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     requested = _ordered_unique_clan_ids(clan_ids)
     if not requested:
@@ -846,7 +853,16 @@ def _gsn_house_destination_preview(
         .filter(ClanMembership.left_at.is_(None))
         .scalar()
     )
-    chargeable_units = max(1, int(promotion_count)) * len(eligible_ids)
+    scheduled_opportunities = (
+        max(1, int(schedule.get('requested_slot_count') or 1))
+        if schedule is not None
+        else 1
+    )
+    chargeable_units = (
+        max(1, int(promotion_count))
+        * len(eligible_ids)
+        * scheduled_opportunities
+    )
     quoted_amount = calc_spotlight_subscription_amount(chargeable_units)
     return {
         "requested_clan_ids": requested,
@@ -867,11 +883,40 @@ def _gsn_house_destination_preview(
             "promotion_count": max(1, int(promotion_count)),
             "eligible_destination_count": len(eligible_ids),
             "chargeable_days": 1,
+            "scheduled_opportunities_per_promotion": scheduled_opportunities,
             "repost_equivalent_credits": chargeable_units,
             "quoted_amount_gbp": format(quoted_amount, '.2f'),
-            "formula": "promotion count x eligible destinations x chargeable days",
+            "formula": (
+                "promotion count x eligible destinations x scheduled opportunities"
+                if schedule is not None
+                else "promotion count x eligible destinations x chargeable days"
+            ),
             "financial_effect": "none",
+            "peak_time_surcharge_status": (
+                "policy_undecided_not_quoted"
+                if schedule is not None
+                else "not_applicable"
+            ),
         },
+        "schedule": (
+            {
+                "mode": "timed_interval",
+                "timed": True,
+                "starts_at": _iso_or_none(schedule.get('starts_at')),
+                "ends_at": _iso_or_none(schedule.get('ends_at')),
+                "interval_minutes": int(schedule.get('interval_minutes') or 0),
+                "timezone_label": _safe_str(schedule.get('timezone_label')) or None,
+                "requested_slot_count": scheduled_opportunities,
+                "guarantee": "eligible_presentation_opportunity_not_clock_playback_or_reach",
+                "premium_pricing_status": "peak_time_surcharge_policy_undecided",
+            }
+            if schedule is not None
+            else {
+                "mode": "normal",
+                "timed": False,
+                "premium_pricing_status": "not_applicable",
+            }
+        ),
     }
 
 
@@ -1223,6 +1268,11 @@ def _gsn_house_campaign_report(
         .scalar()
         or 0
     )
+    schedule_report = _gsn_house_schedule_from_pacing(
+        pacing,
+        now=current_time,
+        qualified_presentations=int(qualifying_count or 0),
+    )
     currently_eligible_clan_ids = [
         int(row['clan_id'])
         for row in destination_rows
@@ -1235,7 +1285,11 @@ def _gsn_house_campaign_report(
         .scalar()
         or 0
     )
-    repost_equivalent_credits = len(placements)
+    scheduled_opportunities = max(
+        1,
+        int(schedule_report.get('requested_slot_count') or 1),
+    )
+    repost_equivalent_credits = len(placements) * scheduled_opportunities
     repost_equivalent_amount = calc_spotlight_subscription_amount(repost_equivalent_credits)
     state = _gsn_house_campaign_operational_state(campaign, now=current_time)
     return {
@@ -1298,6 +1352,7 @@ def _gsn_house_campaign_report(
             "qualified_presentation_count": int(qualifying_count or 0),
             "unique_qualified_viewer_accounts": int(unique_viewer_count or 0),
         },
+        "schedule": schedule_report,
         "destinations": destination_rows,
         "audience": {
             "metric": "addressable_active_member_accounts",
@@ -1310,9 +1365,20 @@ def _gsn_house_campaign_report(
             "promotion_count": 1,
             "eligible_destination_count": len(placements),
             "chargeable_days": 1,
+            "scheduled_opportunities_per_promotion": scheduled_opportunities,
             "repost_equivalent_credits": repost_equivalent_credits,
             "quoted_amount_gbp": format(repost_equivalent_amount, '.2f'),
+            "formula": (
+                "promotion count x eligible destinations x scheduled opportunities"
+                if bool(schedule_report.get('timed'))
+                else "promotion count x eligible destinations x chargeable days"
+            ),
             "financial_effect": "none",
+            "peak_time_surcharge_status": (
+                "policy_undecided_not_quoted"
+                if bool(schedule_report.get('timed'))
+                else "not_applicable"
+            ),
         },
         "withdrawal_audit": _gsn_house_campaign_withdrawal_audit(
             db,
@@ -2886,6 +2952,169 @@ def _resolve_gsn_house_campaign_expiry(
     return requested_expiry
 
 
+def _resolve_gsn_house_campaign_schedule(
+    value: Optional[GsnHouseCampaignScheduleIn],
+    *,
+    expires_at: datetime,
+    current_time: datetime,
+) -> Optional[dict[str, Any]]:
+    if value is None:
+        return None
+    starts_at = _as_aware_utc(value.starts_at)
+    ends_at = _as_aware_utc(value.ends_at)
+    campaign_expiry = _as_aware_utc(expires_at)
+    if starts_at is None or ends_at is None or ends_at <= starts_at:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                'code': 'gsn_house_schedule_window_invalid',
+                'message': 'The timed window must end after it starts.',
+            },
+        )
+    if ends_at <= current_time:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                'code': 'gsn_house_schedule_window_ended',
+                'message': 'The timed window has already ended. Choose a future end time.',
+            },
+        )
+    if campaign_expiry is not None and ends_at > campaign_expiry:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                'code': 'gsn_house_schedule_exceeds_campaign_expiry',
+                'message': 'The timed window must end on or before the advert-group expiry.',
+            },
+        )
+    interval_minutes = int(value.interval_minutes)
+    duration_seconds = (ends_at - starts_at).total_seconds()
+    requested_slot_count = max(
+        1,
+        int(ceil(duration_seconds / max(interval_minutes * 60, 1))),
+    )
+    return {
+        'mode': 'timed_interval',
+        'starts_at': starts_at,
+        'ends_at': ends_at,
+        'interval_minutes': interval_minutes,
+        'requested_slot_count': requested_slot_count,
+        'timezone_label': _safe_str(value.timezone_label) or 'UTC offset supplied by admin',
+    }
+
+
+def _configure_gsn_house_campaign_schedule(
+    db: Session,
+    *,
+    campaign: SpotlightCampaign,
+    schedule: dict[str, Any],
+    current_time: datetime,
+) -> SpotlightCampaignPacingState:
+    campaign_id = int(campaign.id)
+    row = (
+        db.query(SpotlightCampaignPacingState)
+        .filter(SpotlightCampaignPacingState.campaign_id == campaign_id)
+        .one_or_none()
+    )
+    if row is not None and int(row.consumed_delivery_rounds or 0) > 0:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                'code': 'gsn_house_schedule_already_in_delivery',
+                'message': 'A timed schedule cannot replace pacing after delivery has started.',
+            },
+        )
+    policy = SpotlightDeliveryWindowPolicy(
+        policy_name=SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK,
+        schedule_starts_at=schedule['starts_at'],
+        schedule_ends_at=schedule['ends_at'],
+        interval_minutes=int(schedule['interval_minutes']),
+        timezone_label=_safe_str(schedule.get('timezone_label')) or None,
+    )
+    slot_count = int(schedule['requested_slot_count'])
+    if row is None:
+        row = SpotlightCampaignPacingState(
+            campaign_id=campaign_id,
+            created_at=current_time,
+        )
+        db.add(row)
+    row.max_delivery_rounds = slot_count
+    row.consumed_delivery_rounds = 0
+    row.last_delivery_opportunity_at = None
+    row.next_eligible_delivery_at = schedule['starts_at']
+    row.pacing_profile = SPOTLIGHT_PACING_FUTURE_PROFILE_PEAK
+    row.delivery_window_policy_json = json.dumps(policy.to_internal_dict(), sort_keys=True)
+    row.exhausted = slot_count <= 0
+    row.version = int(row.version or 0) + 1
+    row.updated_at = current_time
+    db.flush()
+    return row
+
+
+def _gsn_house_schedule_from_pacing(
+    pacing: Optional[SpotlightCampaignPacingState],
+    *,
+    now: datetime,
+    qualified_presentations: int = 0,
+) -> dict[str, Any]:
+    policy = _json_load(
+        getattr(pacing, 'delivery_window_policy_json', None)
+        if pacing is not None
+        else None
+    )
+    starts_at = _as_aware_utc(_parse_iso_datetime(policy.get('schedule_starts_at')))
+    ends_at = _as_aware_utc(_parse_iso_datetime(policy.get('schedule_ends_at')))
+    interval_minutes = _safe_int(policy.get('interval_minutes'), 0)
+    if starts_at is None or ends_at is None or interval_minutes <= 0:
+        return {
+            'mode': 'normal',
+            'timed': False,
+            'premium_pricing_status': 'not_applicable',
+        }
+    current_time = _as_aware_utc(now) or _now_utc()
+    requested_slot_count = max(int(getattr(pacing, 'max_delivery_rounds', 0) or 0), 0)
+    if current_time < starts_at:
+        state = 'upcoming'
+        due_slot_count = 0
+    elif current_time >= ends_at:
+        state = 'ended'
+        due_slot_count = requested_slot_count
+    else:
+        state = 'active'
+        elapsed_seconds = max((current_time - starts_at).total_seconds(), 0.0)
+        due_slot_count = min(
+            requested_slot_count,
+            int(elapsed_seconds // (interval_minutes * 60)) + 1,
+        )
+    return {
+        'mode': 'timed_interval',
+        'timed': True,
+        'state': state,
+        'starts_at': _iso_or_none(starts_at),
+        'ends_at': _iso_or_none(ends_at),
+        'interval_minutes': interval_minutes,
+        'timezone_label': _safe_str(policy.get('timezone_label')) or None,
+        'requested_slot_count': requested_slot_count,
+        'due_slot_count': due_slot_count,
+        'qualified_slot_count': min(max(int(qualified_presentations), 0), requested_slot_count),
+        'unfilled_due_slot_count': max(due_slot_count - int(qualified_presentations), 0),
+        'guarantee': 'eligible_presentation_opportunity_not_clock_playback_or_reach',
+        'premium_pricing_status': 'peak_time_surcharge_policy_undecided',
+    }
+
+
+def _parse_iso_datetime(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        return value
+    cleaned = _safe_str(value)
+    if not cleaned:
+        return None
+    try:
+        return datetime.fromisoformat(cleaned.replace('Z', '+00:00'))
+    except ValueError:
+        return None
+
+
 def _expire_stale_spotlight_campaigns_for_owner(
     *,
     db: Session,
@@ -3955,9 +4184,21 @@ class MarketplaceBroadcastCreateIn(BaseModel):
     idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=96)
 
 
+class GsnHouseCampaignScheduleIn(BaseModel):
+    starts_at: datetime
+    ends_at: datetime
+    interval_minutes: int = Field(
+        ge=GSN_HOUSE_SCHEDULE_MIN_INTERVAL_MINUTES,
+        le=GSN_HOUSE_SCHEDULE_MAX_INTERVAL_MINUTES,
+    )
+    timezone_label: Optional[str] = Field(default=None, max_length=80)
+
+
 class GsnHouseCampaignPreviewIn(BaseModel):
     clan_ids: list[int] = Field(min_length=1, max_length=100)
     promotion_count: int = Field(default=1, ge=1, le=10)
+    expires_at: Optional[datetime] = None
+    schedule: Optional[GsnHouseCampaignScheduleIn] = None
 
 
 class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
@@ -8049,10 +8290,21 @@ def preview_gsn_house_campaign(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_platform_admin(current_user)
+    current_time = _now_utc().replace(microsecond=0)
+    expires_at = _resolve_gsn_house_campaign_expiry(
+        payload.expires_at,
+        current_time=current_time,
+    )
+    schedule = _resolve_gsn_house_campaign_schedule(
+        payload.schedule,
+        expires_at=expires_at,
+        current_time=current_time,
+    )
     return _gsn_house_destination_preview(
         db,
         clan_ids=payload.clan_ids,
         promotion_count=payload.promotion_count,
+        schedule=schedule,
     )
 
 
@@ -8071,7 +8323,16 @@ def create_gsn_house_campaign(
         payload.expires_at,
         current_time=current_time,
     )
-    preview = _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
+    schedule = _resolve_gsn_house_campaign_schedule(
+        payload.schedule,
+        expires_at=expires_at,
+        current_time=current_time,
+    )
+    preview = _gsn_house_destination_preview(
+        db,
+        clan_ids=payload.clan_ids,
+        schedule=schedule,
+    )
     target_clan_ids = list(preview["eligible_clan_ids"])
     if not target_clan_ids:
         raise HTTPException(
@@ -8117,6 +8378,42 @@ def create_gsn_house_campaign(
         expires_at=expires_at if payload.expires_at is not None else None,
     )
     if replay is not None:
+        replay_campaign_id = _safe_int(
+            (replay.get('item') or {}).get('spotlight_campaign_id'),
+            0,
+        )
+        replay_pacing = (
+            db.query(SpotlightCampaignPacingState)
+            .filter(SpotlightCampaignPacingState.campaign_id == replay_campaign_id)
+            .one_or_none()
+            if replay_campaign_id > 0
+            else None
+        )
+        replay_schedule = _gsn_house_schedule_from_pacing(
+            replay_pacing,
+            now=current_time,
+        )
+        if bool(schedule is not None) != bool(replay_schedule.get('timed')):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    'code': 'spotlight_idempotency_key_reused',
+                    'message': 'This publication key already belongs to a different Spotlight schedule.',
+                },
+            )
+        if schedule is not None and (
+            _iso_or_none(schedule.get('starts_at')) != replay_schedule.get('starts_at')
+            or _iso_or_none(schedule.get('ends_at')) != replay_schedule.get('ends_at')
+            or int(schedule.get('interval_minutes') or 0)
+            != int(replay_schedule.get('interval_minutes') or 0)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    'code': 'spotlight_idempotency_key_reused',
+                    'message': 'This publication key already belongs to a different Spotlight schedule.',
+                },
+            )
         replay.update(
             {
                 "eligible_destinations": preview["eligible_destinations"],
@@ -8174,6 +8471,13 @@ def create_gsn_house_campaign(
         content_fingerprint=content_fingerprint,
         created_at=current_time,
     )
+    if schedule is not None:
+        _configure_gsn_house_campaign_schedule(
+            db,
+            campaign=campaign,
+            schedule=schedule,
+            current_time=current_time,
+        )
     created_items: list[MarketplaceBroadcast] = []
     for clan_id in target_clan_ids:
         item = MarketplaceBroadcast(
@@ -8277,6 +8581,18 @@ def create_gsn_house_campaign(
                 getattr(campaign, "activated_at", None)
             ),
             "authorized_expires_at": _iso_or_none(expires_at),
+            "delivery_schedule": (
+                {
+                    "mode": "timed_interval",
+                    "starts_at": _iso_or_none(schedule.get('starts_at')),
+                    "ends_at": _iso_or_none(schedule.get('ends_at')),
+                    "interval_minutes": int(schedule.get('interval_minutes') or 0),
+                    "requested_slot_count": int(schedule.get('requested_slot_count') or 0),
+                    "timezone_label": _safe_str(schedule.get('timezone_label')) or None,
+                }
+                if schedule is not None
+                else {"mode": "normal"}
+            ),
             "member_advertising_credit_consumed": False,
             "advertiser_contact_method": "phone",
             "advertiser_contact_phone_last4": advertiser_contact_phone[-4:],
@@ -8312,6 +8628,9 @@ def create_gsn_house_campaign(
                 "advertiser_contact_method": "phone",
                 "advertiser_contact_phone_last4": advertiser_contact_phone[-4:],
                 "authorized_expires_at": _iso_or_none(expires_at),
+                "delivery_schedule_mode": (
+                    "timed_interval" if schedule is not None else "normal"
+                ),
                 "reason": "gsn_house_campaign_published",
             },
             dedupe_key=event_dedupe,
@@ -8334,6 +8653,21 @@ def create_gsn_house_campaign(
         "governance_boundary": preview["governance_boundary"],
         "idempotent_replay": False,
         "member_advertising_credit_consumed": False,
+        "schedule": (
+            {
+                "mode": "timed_interval",
+                "timed": True,
+                "starts_at": _iso_or_none(schedule.get('starts_at')),
+                "ends_at": _iso_or_none(schedule.get('ends_at')),
+                "interval_minutes": int(schedule.get('interval_minutes') or 0),
+                "requested_slot_count": int(schedule.get('requested_slot_count') or 0),
+                "timezone_label": _safe_str(schedule.get('timezone_label')) or None,
+                "guarantee": "eligible_presentation_opportunity_not_clock_playback_or_reach",
+                "premium_pricing_status": "peak_time_surcharge_policy_undecided",
+            }
+            if schedule is not None
+            else {"mode": "normal", "timed": False}
+        ),
     }
 
 
