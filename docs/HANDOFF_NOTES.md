@@ -8,6 +8,36 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Advertising share, network attribution and Clear Finish deployment - 2026-10-25
+
+- The owner-approved batch containing consent-bound network-growth attribution,
+  advertising community-share accounting, and automatic verified-media `GSN
+  Clear Finish` was pushed to `codex/spotlight-rotation-continuity` and `main`.
+  Final application revision `02e9b4c3` is live on both Render services.
+- The first API attempt for application revision `158cd9a4` built successfully
+  but failed transactionally during pre-deploy migration. Production PostgreSQL
+  rejected the legacy-bootstrap `canonical` Boolean column's integer default:
+  `column "canonical" is of type boolean but default expression is of type
+  integer`. The existing API remained live and the transactional migration did
+  not partially apply.
+- Corrective revision `02e9b4c3` changes only that migration default from
+  `sa.text("0")` to portable `sa.false()`. SQLAlchemy PostgreSQL compilation now
+  emits `DEFAULT false`; SQLite emits `DEFAULT 0`. All 38 focused advertising
+  and media tests passed, and the isolated Alembic blank -> head -> previous ->
+  head cycle ended at `20261025_ad_share`.
+- Successful deployment evidence: GitHub workflow `40224932275` completed every
+  step for exact SHA `02e9b4c3c174e00cb830e3ff02a0c920f409fa44`.
+  Frontend deploy `dep-dbf59cta647c73eo46i0` and API deploy
+  `dep-dbf5a329lscs738s25a0` both reached `live`; the workflow's public frontend
+  marker and live API identity-contract audits passed. Independent checks
+  returned frontend HTTP 200 and API health `{"ok":true,"dev_mode":false}`;
+  immediate post-rollout API error-level logs were empty.
+- No payment settings or real financial activity were changed. Advertising
+  payment instruction remains fail-closed until the explicit settlement and
+  banking configuration is supplied. Community payouts remain prepared/manual
+  records rather than automatic bank transfers. Physical Android/iPhone media
+  upload comparison remains the next live-user quality check.
+
 ## Network growth attribution spine v1 - 2026-10-25
 
 - Implemented an additive, consent-bound backend foundation for recording who
