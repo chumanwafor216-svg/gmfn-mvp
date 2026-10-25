@@ -2032,3 +2032,64 @@ under `docs/` or `docs/archive/`, then link that file here.
   `dep-dbf3si8n74is73bevfm0` are live at the same revision. The public API
   health check returned HTTP 200, the live route bundles contained the new
   commerce and sound controls, and the post-start API error log was empty.
+
+## Community advertising share and Clear Finish foundation - 2026-10-25
+
+- GSN house advertising now has a separate accounting lifecycle rather than
+  reusing the loan revenue-allocation model: campaign settlement draft,
+  expected advertiser payment, reconciled receipt, finalized Spotlight
+  delivery evidence, per-community earnings, beneficiary mandate, payout
+  preparation, and externally completed payout recording.
+- The default community pool is 500 basis points (5%) of distributable net
+  advertising revenue. Distributable net deducts only tax, refunds,
+  chargebacks, payment-processing fees, and campaign-specific delivery costs;
+  general salaries, rent, and unrelated GSN overhead are explicitly excluded.
+  The pool is split once across eligible paid communities in proportion to
+  qualifying impressions, with exact integer-cent largest-remainder rounding.
+- Paid-community eligibility is checked at each impression timestamp against
+  the existing active `community_domain` entitlement. A later payment does not
+  retroactively make earlier impressions eligible. Free communities retain
+  delivery evidence but receive no allocation from this paid-community pool.
+- Founder, operator, advertiser payer, and payout beneficiary remain separate
+  authorities. A community owner/admin appoints a beneficiary; the beneficiary
+  must accept using their own saved payout destination. This grants payout
+  authority only and never grants ownership, operation, payer, or advertising-
+  consent rights.
+- Earnings accrue even when no beneficiary is ready. Payout preparation is
+  blocked until the destination belongs to the accepted beneficiary, has
+  phone-verified non-placeholder bank details, and uses the same currency as
+  the earnings. Preparation snapshots the destination and creates an
+  instruction only. GSN does not claim provider execution or bank-account
+  ownership verification; a platform admin may record a payout as paid only
+  after an external transfer and real transaction reference exist.
+- Advertiser payment uses the existing expected-payment and bank-reconciliation
+  spine. Advertising settlement confirmation additionally requires a fully
+  paid expected balance and the matching canonical incoming bank event.
+- The current activation knobs are
+  `GSN_ADVERTISING_COMMUNITY_SHARE_BPS` (defaults to `500`),
+  `GSN_ADVERTISING_SETTLEMENT_CLAN_ID`, the existing country settlement-bank
+  configuration, and the existing `GSN_PAYMENT_OPERATIONS_ENABLED` safety
+  gate. No real payment or payout was initiated in this work.
+- Remaining truth: the complete accounting/admin API is connected, but there
+  is no automatic payout-provider execution and no new revenue-share UI yet.
+  Operations can use the authenticated API after the settlement community ID
+  and bank configuration are approved. Currency conversion, tax/legal policy,
+  payout thresholds, reversal recovery, and a provider-verified payout rail
+  remain later controlled work; they are not disguised as a missing number.
+- All current product-screen image uploads now use the authenticated image
+  route. The dormant/legacy direct R2 presign remains explicitly outside the
+  verified contract until a post-upload inspection worker exists. `GSN Clear
+  Finish` corrects orientation, never upscales, caps images at 1920px/4 MB,
+  preserves transparency, strips metadata, and applies only conservative
+  non-generative tonal/colour/sharpness preparation.
+- Every verified video now also receives conservative Clear Finish before its
+  bounded MP4 is published. The existing optional branded `GSN Natural
+  Finish`, sound editor, duration, size, Spotlight serving, rotation, pacing,
+  expiry, payment, and entitlement behavior remain unchanged.
+- Verification passed: 83 focused accounting/bank/payment/Spotlight/media
+  integration tests, a final 38-test real-media/accounting regression run, the
+  media-quality contract audit, Python compilation, the 293-module frontend
+  production build, scoped diff checks, and a fresh Alembic upgrade -> previous
+  revision -> head rehearsal ending at `20261025_ad_share`.
+- This batch is local only. It has not been pushed or deployed because the
+  repository freeze still requires an explicit owner batch-ready instruction.

@@ -42,7 +42,6 @@ import {
   type ProtectedTradeRecord,
   type ShopDiaryEntryRecord,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
-  uploadMarketplaceFileToR2 as uploadMarketplaceFileToR2Api,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
   type MarketplaceVideoSoundOptions,
 } from "../lib/api";
@@ -662,16 +661,8 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-function shopAssetsR2UploadsEnabled(): boolean {
-  const env = (typeof import.meta !== "undefined" && (import.meta as any)?.env) || {};
-  const raw = String(env.VITE_GSN_SHOP_ASSETS_R2_UPLOADS || "").trim().toLowerCase();
-  return ["1", "true", "yes", "on"].includes(raw);
-}
-
 async function uploadMarketplaceImageFile(file: File, clanId?: number | null): Promise<string> {
-  const data = shopAssetsR2UploadsEnabled()
-    ? await uploadMarketplaceFileToR2Api({ file, media_type: "image", clan_id: clanId ?? null })
-    : await uploadMarketplaceImageFileApi(file, clanId ?? null);
+  const data = await uploadMarketplaceImageFileApi(file, clanId ?? null);
   const url =
     firstTruthy(
       data?.image_url,

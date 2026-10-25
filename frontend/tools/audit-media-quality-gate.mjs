@@ -48,7 +48,10 @@ const shopControlSpotlightWorkflow = readFrontend(
 const subscription = readFrontend("src/pages/SubscriptionSpotlightPage.tsx");
 
 requirePattern(requirements, /^imageio-ffmpeg==0\.6\.0$/m, "The bundled FFmpeg dependency must stay pinned.");
+requirePattern(service, /MAX_IMAGE_LONG_EDGE = 1920[\s\S]*?MAX_NORMALIZED_IMAGE_BYTES = 4 \* 1024 \* 1024[\s\S]*?def normalize_marketplace_image/, "The server must retain the bounded conservative image finish.");
+requirePattern(mediaRoute, /@router\.post\("\/image"\)[\s\S]*?normalize_marketplace_image[\s\S]*?quality_verified": True[\s\S]*?"finish": "gsn_clear"/, "The authenticated image endpoint must prepare and mark only verified output.");
 requirePattern(service, /MIN_VIDEO_SHORT_EDGE = 360[\s\S]*?MIN_VIDEO_FPS = 15\.0[\s\S]*?MAX_VIDEO_ASPECT_RATIO = 2\.4[\s\S]*?MAX_VIDEO_DURATION_SECONDS = 10\.0/, "The server must keep a practical hard-rejection floor without restoring the rigid 720p gate.");
+requirePattern(service, /visual_preparation: str = "gsn_clear"[\s\S]*?hqdn3d=1\.0:0\.8:1\.5:1\.0[\s\S]*?eq=brightness=0\.01:contrast=1\.02:saturation=1\.015[\s\S]*?unsharp=5:5:0\.20:3:3:0/, "Every verified video must retain the conservative non-generative Clear Finish.");
 requirePattern(service, /MAX_SOURCE_VIDEO_BYTES = 100 \* 1024 \* 1024[\s\S]*?MAX_NORMALIZED_VIDEO_BYTES = 15 \* 1024 \* 1024/, "Large phone sources and bounded published outputs must retain separate ceilings.");
 requirePattern(service, /"-t", str\(finish_seconds\)[\s\S]*?"libx264"[\s\S]*?"yuv420p"[\s\S]*?"\+faststart"/, "The server must physically trim to the bounded target and produce web-safe H.264 MP4.");
 requirePattern(service, /"aac"[\s\S]*?"loudnorm=I=-16:TP=-1\.5:LRA=11"/, "Existing audio must keep modest AAC loudness normalisation.");
@@ -73,6 +76,7 @@ for (const [source, name] of [
   requirePattern(source, /VideoSoundEditor/, name + " must expose the shared Add sound editor.");
 }
 requirePattern(screenSpecs, /practical hard-rejection floor[\s\S]*?576x1296[\s\S]*?must not require 720p/, "Screen specs must record the owner-approved usable-social-video correction.");
+requirePattern(screenSpecs, /GSN Clear Finish[\s\S]*?EXIF orientation correction[\s\S]*?under 4 MB[\s\S]*?must not generate or invent detail/, "Screen specs must record the owner-approved non-generative image finish.");
 requirePattern(freezePolicy, /Media Quality Gate v1 usable-social-video correction[\s\S]*?576x1296[\s\S]*?must not require 720p/, "Freeze policy must record the owner-approved quality-gate correction.");
 requirePattern(api, /j\.detail\.message \|\| j\.detail\.explanation \|\| j\.detail\.error/, "Structured server rejections must surface their plain corrective message.");
 requirePattern(shopAssets, /shop-assets\.product\.remove-video[\s\S]*?New pasted video links are not accepted/, "Shop Assets must keep removal and reject pasted video links.");

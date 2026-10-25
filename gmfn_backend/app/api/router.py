@@ -23,6 +23,7 @@ from app.api.routes.opportunity_relays import router as opportunity_relays_route
 from app.api.routes.daily_insight import router as daily_insight_router
 from app.api.routes.member_credits import router as member_credits_router
 from app.api.routes.network_growth import router as network_growth_router
+from app.api.routes.advertising_revenue import router as advertising_revenue_router
 
 # =========================
 # Trust Core
@@ -147,6 +148,7 @@ api_router.include_router(opportunity_relays_router)
 api_router.include_router(daily_insight_router)
 api_router.include_router(member_credits_router)
 api_router.include_router(network_growth_router)
+api_router.include_router(advertising_revenue_router)
 
 # TRUST CORE
 api_router.include_router(trust_router)

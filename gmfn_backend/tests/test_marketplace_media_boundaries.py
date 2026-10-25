@@ -154,9 +154,15 @@ def test_marketplace_image_upload_writes_verified_image(
     body = response.json()
     assert body["ok"] is True
     assert body["kind"] == "image"
-    assert "finish" not in body
-    assert body["url"].endswith(".png")
-    assert len(list((upload_root / "marketplace" / "images").glob("*.png"))) == 1
+    assert body["finish"] == "gsn_clear"
+    assert body["quality_verified"] is True
+    assert body["preparation"]["source_format"] == "PNG"
+    assert body["preparation"]["output_format"] == "JPEG"
+    assert body["url"].endswith(".jpg")
+    assert body["size_bytes"] <= 4 * 1024 * 1024
+    assert len(
+        list((upload_root / "marketplace" / "images").glob("qi1_*.jpg"))
+    ) == 1
 
     shutil.rmtree(upload_root, ignore_errors=True)
 

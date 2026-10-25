@@ -28,6 +28,7 @@ from app.services.marketplace_media_quality_service import (
     MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
     VideoFinishProfile,
+    normalize_marketplace_image,
     normalize_marketplace_video,
 )
 from app.services.storage_service import StorageServiceError, create_presigned_upload
@@ -432,7 +433,7 @@ async def create_marketplace_r2_upload_url(
         "max_bytes": _max_bytes_for(media_type),
         "pipeline_credit_gate": result.get("pipeline_credit_gate"),
         "spend_account_scope": "community" if use_community_credit_account else "configured_provider_account",
-        "boundary": "This creates a credit-metered R2 upload URL only. It does not migrate existing local upload routes or confirm that a client uploaded the file.",
+        "boundary": "This legacy presigned route does not migrate existing local upload routes and does not provide the verified GSN image finish. Current product screens must use the authenticated /marketplace/media/image route.",
     }
 
 
@@ -512,18 +513,31 @@ async def upload_marketplace_image(
 
     _validate_decodable_image(data, ext=ext)
 
-    filename = _random_name(ext)
+    temporary_path = _image_upload_dir() / f".{_random_name('.processing')}"
+    try:
+        normalized = normalize_marketplace_image(data, temporary_path)
+    except MediaQualityError as exc:
+        temporary_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=400,
+            detail={"code": exc.code, "message": str(exc)},
+        ) from exc
+    filename = f"qi1_{_random_name(normalized.extension)}"
     filepath = _image_upload_dir() / filename
-    filepath.write_bytes(data)
+    temporary_path.replace(filepath)
 
     return {
         "ok": True,
         "kind": "image",
         "filename": filename,
-        "content_type": content_type,
-        "size_bytes": len(data),
+        "content_type": normalized.content_type,
+        "size_bytes": normalized.size_bytes,
         "url": _public_url_for("images", filename),
         "clan_id": clan_id,
+        "quality_verified": True,
+        "finish": "gsn_clear",
+        "preparation": normalized.as_dict(),
+        "boundary": "GSN applied a conservative non-generative finish; it did not invent detail or change product identity.",
     }
 
 
@@ -693,6 +707,10 @@ async def upload_marketplace_video(
         "trimmed": normalized.trimmed,
         "quality_verified": True,
         "quality": normalized.as_dict(),
+        "visual_preparation": {
+            "profile": normalized.visual_preparation,
+            "truth_boundary": "Conservative non-generative preparation only; GSN does not invent detail or change product identity or condition.",
+        },
         "url": _public_url_for("videos", filename),
         "clan_id": clan_id,
         "finish": (

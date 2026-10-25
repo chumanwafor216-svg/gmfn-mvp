@@ -4,13 +4,14 @@ import os
 import re
 import subprocess
 import time
+from io import BytesIO
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 import imageio_ffmpeg
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps, ImageStat, UnidentifiedImageError
 
 from app.core.runtime_memory import log_runtime_event, memory_snapshot
 
@@ -18,6 +19,8 @@ from app.core.runtime_memory import log_runtime_event, memory_snapshot
 # Hard rejection floors, not preferred recording targets. Ordinary social-video
 # downloads can remain useful below HD; GSN rejects only sources that are too
 # small or too choppy to survive the required preparation step.
+MAX_IMAGE_LONG_EDGE = 1920
+MAX_NORMALIZED_IMAGE_BYTES = 4 * 1024 * 1024
 MIN_VIDEO_SHORT_EDGE = 360
 MIN_VIDEO_FPS = 15.0
 MIN_VIDEO_DURATION_SECONDS = 1.0
@@ -138,6 +141,36 @@ class VideoInspection:
 
 
 @dataclass(frozen=True)
+class NormalizedImage:
+    source_width: int
+    source_height: int
+    output_width: int
+    output_height: int
+    source_size_bytes: int
+    size_bytes: int
+    source_format: str
+    output_format: str
+    content_type: str
+    extension: str
+    resized: bool
+    orientation_normalized: bool
+    transparency_preserved: bool
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def _image_has_transparency(image: Image.Image) -> bool:
+    if image.mode in {"RGBA", "LA"}:
+        return True
+    return image.mode == "P" and "transparency" in image.info
+
+
+def _image_resample_filter() -> Any:
+    return getattr(Image, "Resampling", Image).LANCZOS
+
+
+@dataclass(frozen=True)
 class VideoFinishProfile:
     duration_seconds: int
     brand_name: str
@@ -154,6 +187,7 @@ class NormalizedVideo:
     trimmed: bool
     kept_seconds: float
     size_bytes: int
+    visual_preparation: str = "gsn_clear"
     finish_profile: str | None = None
     added_sound: bool = False
     sound_mode: str | None = None
@@ -167,11 +201,156 @@ class NormalizedVideo:
             "trimmed": self.trimmed,
             "kept_seconds": self.kept_seconds,
             "size_bytes": self.size_bytes,
+            "visual_preparation": self.visual_preparation,
             "finish_profile": self.finish_profile,
             "added_sound": self.added_sound,
             "sound_mode": self.sound_mode,
             "output_has_audio": self.output_has_audio,
         }
+
+
+def normalize_marketplace_image(
+    source: bytes | bytearray,
+    output_path: str | Path,
+) -> NormalizedImage:
+    """Create a bounded, web-ready product image without inventing product detail.
+
+    This is deliberately a conservative photographic finish, not generative
+    editing: orientation is corrected, oversized pictures are reduced, and
+    only mild tonal/colour/sharpness adjustments are applied. Tiny sources are
+    never enlarged and animation is rejected rather than silently flattened.
+    """
+
+    raw = bytes(source or b"")
+    if not raw:
+        raise MediaQualityError(
+            "image_empty",
+            "This picture is empty or could not be read. Choose another picture.",
+        )
+
+    try:
+        with Image.open(BytesIO(raw)) as opened:
+            source_format = str(opened.format or "").strip().upper()
+            source_width, source_height = opened.size
+            if bool(getattr(opened, "is_animated", False)) and int(
+                getattr(opened, "n_frames", 1) or 1
+            ) > 1:
+                raise MediaQualityError(
+                    "animated_image_unsupported",
+                    "Use a still JPG, PNG, or WebP picture. Animated pictures are not prepared as product photos.",
+                )
+            opened.load()
+            had_transparency = _image_has_transparency(opened)
+            original_orientation = opened.getexif().get(274)
+            prepared = ImageOps.exif_transpose(opened).copy()
+    except MediaQualityError:
+        raise
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError) as exc:
+        raise MediaQualityError(
+            "invalid_image_file",
+            "This picture could not be read. Choose a valid JPG, PNG, or WebP image.",
+        ) from exc
+
+    if source_width <= 0 or source_height <= 0:
+        raise MediaQualityError(
+            "image_dimensions_unknown",
+            "GSN could not read this picture's dimensions. Save or export it again.",
+        )
+
+    orientation_normalized = original_orientation not in {None, 1}
+    width, height = prepared.size
+    longest_edge = max(width, height)
+    resized = longest_edge > MAX_IMAGE_LONG_EDGE
+    if resized:
+        scale = MAX_IMAGE_LONG_EDGE / max(longest_edge, 1)
+        width = max(1, int(round(width * scale)))
+        height = max(1, int(round(height * scale)))
+        prepared = prepared.resize((width, height), _image_resample_filter())
+
+    alpha: Image.Image | None = None
+    if had_transparency:
+        rgba = prepared.convert("RGBA")
+        alpha = rgba.getchannel("A")
+        rgb = rgba.convert("RGB")
+    else:
+        rgb = prepared.convert("RGB")
+
+    # The adjustment ceiling is intentionally small. It improves ordinary
+    # phone images while preserving truthful product colour and condition.
+    sample = ImageOps.grayscale(rgb.copy())
+    sample.thumbnail((256, 256), _image_resample_filter())
+    luminance = float(ImageStat.Stat(sample).mean[0] or 0.0)
+    brightness_factor = 1.02 if luminance < 105 else (1.01 if luminance < 145 else 1.0)
+    rgb = ImageEnhance.Brightness(rgb).enhance(brightness_factor)
+    rgb = ImageEnhance.Contrast(rgb).enhance(1.03)
+    rgb = ImageEnhance.Color(rgb).enhance(1.02)
+    rgb = ImageEnhance.Sharpness(rgb).enhance(1.10)
+
+    if alpha is not None:
+        prepared_output = rgb.convert("RGBA")
+        prepared_output.putalpha(alpha)
+        output_format = "WEBP"
+        content_type = "image/webp"
+        extension = ".webp"
+    else:
+        prepared_output = rgb
+        output_format = "JPEG"
+        content_type = "image/jpeg"
+        extension = ".jpg"
+
+    encoded: bytes | None = None
+    attempt = prepared_output
+    quality_steps = (88, 82, 76, 70, 64)
+    for size_step in range(5):
+        for quality in quality_steps:
+            buffer = BytesIO()
+            save_options: dict[str, Any] = {
+                "format": output_format,
+                "quality": quality,
+                "optimize": True,
+            }
+            if output_format == "JPEG":
+                save_options.update({"progressive": True, "subsampling": "4:2:0"})
+            else:
+                save_options.update({"method": 4})
+            attempt.save(buffer, **save_options)
+            candidate = buffer.getvalue()
+            if len(candidate) <= MAX_NORMALIZED_IMAGE_BYTES:
+                encoded = candidate
+                break
+        if encoded is not None:
+            break
+        next_width = max(360, int(round(attempt.width * 0.82)))
+        next_height = max(360, int(round(attempt.height * 0.82)))
+        if next_width >= attempt.width and next_height >= attempt.height:
+            break
+        attempt = attempt.resize((next_width, next_height), _image_resample_filter())
+        resized = True
+
+    if not encoded:
+        raise MediaQualityError(
+            "image_output_too_large",
+            "GSN could not prepare this picture below 4 MB. Choose a simpler or smaller picture.",
+        )
+
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(encoded)
+    return NormalizedImage(
+        source_width=int(source_width),
+        source_height=int(source_height),
+        output_width=int(attempt.width),
+        output_height=int(attempt.height),
+        source_size_bytes=len(raw),
+        size_bytes=len(encoded),
+        source_format=source_format,
+        output_format=output_format,
+        content_type=content_type,
+        extension=extension,
+        resized=resized,
+        orientation_normalized=orientation_normalized,
+        transparency_preserved=had_transparency,
+    )
 
 
 def _font(size: int) -> ImageFont.ImageFont:
@@ -492,7 +671,12 @@ def normalize_marketplace_video(
     command.extend(
         [
             "-vf",
-            f"scale={width}:{height}",
+            (
+                f"scale={width}:{height},"
+                "hqdn3d=1.0:0.8:1.5:1.0,"
+                "eq=brightness=0.01:contrast=1.02:saturation=1.015,"
+                "unsharp=5:5:0.20:3:3:0"
+            ),
             "-r",
             f"{output_fps:g}",
             "-c:v",

@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import asyncio
 import subprocess
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
 import imageio_ffmpeg
 import pytest
 from fastapi import HTTPException
+from PIL import Image
 
 from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited_upload
 from app.api.routes.marketplace import _require_verified_marketplace_video
 from app.services.marketplace_media_quality_service import (
     FFMPEG_THREAD_LIMIT,
     MAX_GSN_NATURAL_FINISH_BYTES,
+    MAX_NORMALIZED_IMAGE_BYTES,
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
@@ -24,6 +27,7 @@ from app.services.marketplace_media_quality_service import (
     VideoInspection,
     inspect_video,
     is_verified_marketplace_video_url,
+    normalize_marketplace_image,
     normalize_marketplace_video,
 )
 
@@ -36,6 +40,63 @@ class _ChunkedUpload:
     async def read(self, size: int) -> bytes:
         self.read_sizes.append(size)
         return self.chunks.pop(0) if self.chunks else b""
+
+
+def _image_bytes(
+    *,
+    size: tuple[int, int] = (2400, 1600),
+    mode: str = "RGB",
+    image_format: str = "JPEG",
+) -> bytes:
+    output = BytesIO()
+    colour = (38, 70, 105, 180) if mode == "RGBA" else (38, 70, 105)
+    Image.new(mode, size, colour).save(output, format=image_format)
+    return output.getvalue()
+
+
+def test_image_finish_is_bounded_web_ready_and_does_not_upscale(tmp_path: Path):
+    source = _image_bytes(size=(2400, 1600))
+    output = tmp_path / "prepared"
+
+    result = normalize_marketplace_image(source, output)
+
+    assert output.is_file()
+    assert result.output_format == "JPEG"
+    assert result.content_type == "image/jpeg"
+    assert result.output_width == 1920
+    assert result.output_height == 1280
+    assert result.resized is True
+    assert result.size_bytes <= MAX_NORMALIZED_IMAGE_BYTES
+
+    small_output = tmp_path / "small"
+    small = normalize_marketplace_image(
+        _image_bytes(size=(320, 240)), small_output
+    )
+    assert small.output_width == 320
+    assert small.output_height == 240
+    assert small.resized is False
+
+
+def test_image_finish_preserves_transparency_with_webp(tmp_path: Path):
+    output = tmp_path / "transparent"
+    result = normalize_marketplace_image(
+        _image_bytes(size=(700, 500), mode="RGBA", image_format="PNG"),
+        output,
+    )
+
+    assert result.output_format == "WEBP"
+    assert result.content_type == "image/webp"
+    assert result.transparency_preserved is True
+    with Image.open(output) as prepared:
+        assert prepared.mode == "RGBA"
+        assert prepared.getchannel("A").getextrema() == (180, 180)
+
+
+def test_image_finish_rejects_unreadable_input(tmp_path: Path):
+    with pytest.raises(MediaQualityError) as exc_info:
+        normalize_marketplace_image(b"not an image", tmp_path / "bad")
+
+    assert exc_info.value.code == "invalid_image_file"
 
 
 def _make_video(
@@ -297,6 +358,10 @@ def test_normalizer_caps_decoder_filter_and_encoder_threads(
     x264_index = encode_command.index("-x264-params")
     assert encode_command[x264_index + 1] == "threads=1:lookahead_threads=1"
 
+    visual_filter = encode_command[encode_command.index("-vf") + 1]
+    assert "hqdn3d=1.0:0.8:1.5:1.0" in visual_filter
+    assert "eq=brightness=0.01:contrast=1.02:saturation=1.015" in visual_filter
+    assert "unsharp=5:5:0.20:3:3:0" in visual_filter
 
 def test_normalizer_defers_unreliable_source_duration_until_output_is_verified(
     tmp_path: Path,
