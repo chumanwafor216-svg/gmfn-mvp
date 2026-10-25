@@ -1193,8 +1193,7 @@ function parsedMarketplaceErrorDetail(err: any): MarketplaceErrorDetail | null {
 
 function marketplaceErrorMessage(err: any, fallback: string): string {
   const detail = parsedMarketplaceErrorDetail(err);
-
-  return firstTruthy(
+  const message = firstTruthy(
     gsnGovernanceErrorMessage(err, ""),
     detail?.message,
     detail?.error,
@@ -1204,6 +1203,10 @@ function marketplaceErrorMessage(err: any, fallback: string): string {
     err?.message,
     fallback
   );
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return "GSN could not reach the server. Check your connection, then refresh before repeating any save or publish action so you can confirm whether it already completed.";
+  }
+  return message;
 }
 
 function normalizeIntentText(value: any): string {

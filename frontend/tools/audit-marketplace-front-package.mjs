@@ -109,6 +109,13 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
+  /refresh before repeating any save or publish action/,
+  "Marketplace network failures must replace raw browser errors with safe refresh-before-retry guidance."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
   /function marketplaceOsRowIconStyle\(bg: string, isCompact = false\): React\.CSSProperties \{[\s\S]*?background:\s*"linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?border: "1px solid rgba\(13,95,168,0\.12\)"[\s\S]*?inset 4px 0 0 rgba\(214,170,69,0\.16\)/,
   "Marketplace row icons must use light embossed tiles by default, not heavy color shields."
 );

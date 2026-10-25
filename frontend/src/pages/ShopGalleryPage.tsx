@@ -585,6 +585,10 @@ async function loadPublicShopSpotlightPresentationCycle(
 }
 
 function publicShopReconnectErrorMessage(message: string): string {
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return "GSN could not load or reconnect this shop. Check the internet connection, then reopen this shop. Do not create another shop first; GSN will look for the existing shop when it reconnects.";
+  }
+
   if (/no active clan selected/i.test(message)) {
     return "GSN found your owner sign-in, but it could not find an active community for this shop yet. Open Marketplace or Community Home once while signed in, then this public shop page can reconnect Products & Services.";
   }

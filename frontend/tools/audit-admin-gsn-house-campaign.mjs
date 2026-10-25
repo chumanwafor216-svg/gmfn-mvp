@@ -99,7 +99,7 @@ for (const text of [
   "destinationTitle(row)",
   "row.community_code",
   "disabled={!row.eligible || draftBusy || publishedCount > 0}",
-  "Review and publish",
+  "Open final check",
   "MAX_GSN_HOUSE_BATCH_MEDIA = 10",
   "multiple",
   "Still needed before publishing:",
@@ -129,6 +129,13 @@ for (const text of [
   "debugId={`admin-gsn-campaign.destination-stop.confirm.${campaign.campaign_id}.${destination.clan_id}`}",
   "debugId={`admin-gsn-campaign.destination-stop.cancel.${campaign.campaign_id}.${destination.clan_id}`}",
   "discardAdminGsnHouseCampaignReviewMedia",
+  "setMediaQueue((current) => [...current, preparedItem])",
+  "setMediaPreviewKey(preparedItem.key)",
+  "setMediaPreviewKey(item.key)",
+  "showing {previewMediaIndex + 1} of {mediaQueue.length}",
+  "nextExpiry - Date.now() + 250",
+  "Do not publish again. Check the connection, then tap Refresh status.",
+  "tap Refresh status first",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
 }
@@ -219,7 +226,7 @@ requireOrder(
   page,
   'debugId="admin-gsn-campaign.review"',
   "Prepared batch",
-  "The review-and-publish action must stay above the long prepared-media preview and queue."
+  "The final-check action must stay above the long prepared-media preview and queue."
 );
 if (page.includes("Clan ID") || page.includes("Internal ID")) {
   findings.push({

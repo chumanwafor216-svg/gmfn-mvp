@@ -153,6 +153,8 @@ def test_marketplace_image_upload_writes_verified_image(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["ok"] is True
+    assert body["kind"] == "image"
+    assert "finish" not in body
     assert body["url"].endswith(".png")
     assert len(list((upload_root / "marketplace" / "images").glob("*.png"))) == 1
 

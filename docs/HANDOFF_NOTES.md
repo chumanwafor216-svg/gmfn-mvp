@@ -8,6 +8,17 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN campaign batch preview, expiry and network recovery - 2026-10-25
+
+- Status: implemented and verified locally on `codex/spotlight-rotation-continuity`; this repair is not pushed or deployed. The previously deployed revision therefore does not yet contain it.
+- `/app/command-center/gsn-campaigns` no longer fixes the prepared-media preview to the first file. Each successfully prepared file becomes the visible preview, and the admin can reopen any queued item with its explicit `Preview` control.
+- The pre-publication action is now truthfully labelled `Open final check`. It uploads review media but publishes nothing; the existing read-only review, approval checkbox and separate Publish action remain the publication boundary.
+- The operations board schedules a server refresh at the nearest active campaign expiry, so an expired advert leaves active inventory and returns only in the collapsed campaign history. Public Shop already filtered and replenished expired canonical presentations; its rotation, dwell, pacing and accounting were not changed.
+- Raw browser `Failed to fetch` text is replaced on the GSN publisher, Marketplace shop preparation and Public Shop reconnect paths. Ambiguous publication failures tell the operator to refresh status before retrying; existing idempotency keys remain the duplicate-publication safeguard. Shop reconnect guidance tells the member to look for the existing shop before attempting another creation.
+- Read-only Render evidence then separated two complaints. The live API accepted video uploads but returned HTTP 500 for six observed `POST /marketplace/media/image` requests. Source inspection found a video-finish response block accidentally placed in the image route, where it referenced undefined `selected_finish` after writing the file. The block now belongs to the video response; verified image uploads again return normally.
+- Verification passed: Admin GSN campaign audit, Marketplace front-package audit, Spotlight presentation-contract audit, the complete protected-button freeze audit, scoped diff checks, two successful 292-module production builds, all 9 marketplace-media boundary tests and all 15 media-quality tests.
+- Remaining truth: the image-upload failure is evidenced and repaired locally, but the member's separate shop-creation failure did not appear as a `POST /marketplace/shops` in the inspected live window. The physical-phone/browser cause therefore remains unproven; recovery copy is safer, but a retest after deployment is still required. Failed pre-fix uploads may have left unreferenced image files because the crash happened after disk write; no destructive cleanup was attempted. Git publishing remains in owner-controlled batch mode.
+
 ## GSN-HOUSE timed campaign opportunities - 2026-10-25
 
 - Status: implemented and verified locally on `codex/spotlight-rotation-continuity`; not pushed or deployed at the time of this note.

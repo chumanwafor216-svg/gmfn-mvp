@@ -337,6 +337,7 @@ def test_video_upload_is_server_verified_and_ignores_claimed_short_duration(
     assert body["source_duration_seconds"] >= 11.9
     assert body["duration_seconds"] <= MAX_VIDEO_DURATION_SECONDS + 0.1
     assert body["content_type"] == "video/mp4"
+    assert body["finish"] is None
     assert body["filename"].startswith("qv1_")
     assert body["filename"].endswith(".mp4")
     assert (upload_root / "marketplace" / "videos" / body["filename"]).is_file()

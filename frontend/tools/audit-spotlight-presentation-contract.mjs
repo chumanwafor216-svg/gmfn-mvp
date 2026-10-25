@@ -302,6 +302,12 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /Do not create another shop first/,
+  "Public Shop reconnect failures must replace raw browser errors and prevent accidental duplicate-shop attempts."
+);
+
+assertContains(
   "frontend/src/lib/spotlightPilot.ts",
   /maximumSafeOccurrences[\s\S]*?entry\.item !== previous[\s\S]*?queue\[0\] === queue\[queue\.length - 1\][\s\S]*?queue\.pop\(\)/,
   "Weighted rotation must not manufacture consecutive identical presentations or a duplicate cycle boundary."

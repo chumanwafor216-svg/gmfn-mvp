@@ -321,6 +321,14 @@ function stateLabel(value: string): string {
   return safeStr(value, "unknown").replace(/_/g, " ");
 }
 
+function campaignRequestError(error: unknown, fallback: string): string {
+  const detail = structuredErrorMessage(error, fallback).trim();
+  if (/^(failed to fetch|load failed|networkerror(?: when attempting to fetch resource[.])?)$/i.test(detail)) {
+    return `${fallback} GSN could not reach the server. Check the internet connection and try again.`;
+  }
+  return detail;
+}
+
 function destinationIsServing(row: GsnHouseCampaignDestination): boolean {
   const placementState = safeStr(row.placement_serving_status).toLowerCase();
   return placementState ? placementState === "serving" : row.delivery_eligible === true;
@@ -372,6 +380,7 @@ export default function AdminGsnHouseCampaignPage() {
   const [contactPhone, setContactPhone] = useState("");
   const [mediaQueue, setMediaQueue] = useState<PreparedMedia[]>([]);
   const [mediaInputKey, setMediaInputKey] = useState(0);
+  const [mediaPreviewKey, setMediaPreviewKey] = useState("");
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
   const [mediaProgress, setMediaProgress] = useState("");
   const [review, setReview] = useState<CampaignReview | null>(null);
@@ -414,6 +423,11 @@ export default function AdminGsnHouseCampaignPage() {
     () => Object.values(selected).sort((a, b) => destinationTitle(a).localeCompare(destinationTitle(b))),
     [selected]
   );
+  const previewMediaIndex = useMemo(
+    () => mediaQueue.findIndex((item) => item.key === mediaPreviewKey),
+    [mediaPreviewKey, mediaQueue]
+  );
+  const previewMedia = previewMediaIndex >= 0 ? mediaQueue[previewMediaIndex] : null;
   const publishedCount = publication?.results.length || 0;
   const draftBusy = preparingMedia || reviewing || publishing;
   const reviewBlockers = useMemo(() => {
@@ -490,15 +504,22 @@ export default function AdminGsnHouseCampaignPage() {
     return true;
   }, [discardUnpublishedReview, publication, review]);
 
-  const loadOperations = useCallback(async () => {
+  const loadOperations = useCallback(async (silent = false): Promise<boolean> => {
     setLoadingOperations(true);
     try {
       setOperations(await listAdminGsnHouseCampaigns(100));
+      return true;
     } catch (error) {
-      setFeedback({
-        tone: "error",
-        text: structuredErrorMessage(error, "GSN campaign status and history could not be loaded."),
-      });
+      if (!silent) {
+        setFeedback({
+          tone: "error",
+          text: campaignRequestError(
+            error,
+            "GSN campaign status and history could not be refreshed. Existing information may be out of date."
+          ),
+        });
+      }
+      return false;
     } finally {
       setLoadingOperations(false);
     }
@@ -521,7 +542,7 @@ export default function AdminGsnHouseCampaignPage() {
     } catch (error) {
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(error, "Community destinations could not be loaded."),
+        text: campaignRequestError(error, "Community destinations could not be loaded."),
       });
     } finally {
       setLoadingCatalogue(false);
@@ -532,6 +553,21 @@ export default function AdminGsnHouseCampaignPage() {
     void loadDestinations("");
     void loadOperations();
   }, [loadDestinations, loadOperations]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !operations?.active.length) return;
+    const now = Date.now();
+    const nextExpiry = operations.active
+      .map((item) => new Date(item.expires_at || "").getTime())
+      .filter((value) => Number.isFinite(value) && value > now)
+      .sort((a, b) => a - b)[0];
+    if (!nextExpiry) return;
+
+    const timer = window.setTimeout(() => {
+      void loadOperations();
+    }, Math.max(nextExpiry - Date.now() + 250, 250));
+    return () => window.clearTimeout(timer);
+  }, [loadOperations, operations?.active]);
 
   useEffect(
     () => () => {
@@ -547,15 +583,24 @@ export default function AdminGsnHouseCampaignPage() {
   );
 
   useEffect(() => {
-    const firstMedia = mediaQueue[0];
-    if (!firstMedia) {
+    if (mediaQueue.length === 0) {
+      setMediaPreviewKey("");
+      return;
+    }
+    if (!previewMedia) {
+      setMediaPreviewKey(mediaQueue[mediaQueue.length - 1].key);
+    }
+  }, [mediaQueue, previewMedia]);
+
+  useEffect(() => {
+    if (!previewMedia) {
       setMediaPreviewUrl("");
       return;
     }
-    const objectUrl = URL.createObjectURL(firstMedia.file);
+    const objectUrl = URL.createObjectURL(previewMedia.file);
     setMediaPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [mediaQueue]);
+  }, [previewMedia]);
 
   function toggleDestination(row: GsnHouseCampaignDestination) {
     if (!row.eligible) return;
@@ -623,30 +668,33 @@ export default function AdminGsnHouseCampaignPage() {
           continue;
         }
         try {
+          let preparedItem: PreparedMedia;
           if (kind === "video") {
             const prepared = await prepareSpotlightVideoFile(file, {
               maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
               maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
             });
-            preparedItems.push({
+            preparedItem = {
               key: mediaFileKey(file),
               kind,
               file: prepared.file,
               durationSeconds: prepared.durationSeconds,
               preparationMessage: prepared.message,
-            });
+            };
           } else {
             const prepared = await prepareSpotlightImageFile(file, {
               maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
             });
-            preparedItems.push({
+            preparedItem = {
               key: mediaFileKey(file),
               kind,
               file: prepared.file,
               preparationMessage: prepared.message,
-            });
+            };
           }
-          setMediaQueue([...mediaQueue, ...preparedItems]);
+          preparedItems.push(preparedItem);
+          setMediaQueue((current) => [...current, preparedItem]);
+          setMediaPreviewKey(preparedItem.key);
         } catch {
           failedNames.push(file.name);
         }
@@ -810,7 +858,7 @@ export default function AdminGsnHouseCampaignPage() {
       setReview(null);
       setFeedback({
         tone: "error",
-        text: structuredErrorMessage(error, "The campaign review could not be prepared."),
+        text: campaignRequestError(error, "The campaign review could not be prepared."),
       });
     } finally {
       setReviewing(false);
@@ -869,20 +917,27 @@ export default function AdminGsnHouseCampaignPage() {
         total: review.media.length,
         complete: true,
       });
-      await loadOperations();
-      setFeedback({
-        tone: "success",
-        text: `${results.length} official GSN promotion${results.length === 1 ? "" : "s"} published to the currently eligible destinations.`,
-      });
+      const statusRefreshed = await loadOperations(true);
+      setFeedback(
+        statusRefreshed
+          ? {
+              tone: "success",
+              text: `${results.length} official GSN promotion${results.length === 1 ? "" : "s"} published to the currently eligible destinations.`,
+            }
+          : {
+              tone: "info",
+              text: `${results.length} official GSN promotion${results.length === 1 ? "" : "s"} published, but GSN could not refresh the status report. Do not publish again. Check the connection, then tap Refresh status.`,
+            }
+      );
     } catch (error) {
-      await loadOperations();
-      const failure = structuredErrorMessage(
+      const statusRefreshed = await loadOperations(true);
+      const failure = campaignRequestError(
         error,
-        "The next promotion could not be published."
+        "GSN could not confirm the next promotion."
       );
       setFeedback({
         tone: "error",
-        text: `${failure} ${results.length} of ${review.media.length} promotions published. Tap publish again to continue from the next item; completed promotions will not be duplicated.`,
+        text: `${failure} ${results.length} of ${review.media.length} promotions were confirmed in this session. ${statusRefreshed ? "Check the refreshed status below." : "Check the connection and tap Refresh status first."} If the next promotion is absent, Continue publishing safely; completed promotions use the same publication key and will not be duplicated.`,
       });
     } finally {
       setPublishing(false);
@@ -1061,6 +1116,7 @@ export default function AdminGsnHouseCampaignPage() {
     setMessage("");
     setContactPhone("");
     setMediaQueue([]);
+    setMediaPreviewKey("");
     setMediaProgress("");
     setMediaInputKey((current) => current + 1);
     setReview(null);
@@ -2084,7 +2140,7 @@ export default function AdminGsnHouseCampaignPage() {
                     </ul>
                   </>
                 ) : (
-                  `Ready to review and publish ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. The first tap opens the final check; nothing publishes until you confirm.`
+                  `Ready to open the final check for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}. Nothing publishes until you approve the review and tap Publish.`
                 )}
               </div>
               <StableButton
@@ -2095,26 +2151,26 @@ export default function AdminGsnHouseCampaignPage() {
                 busyLabel={preparingMedia ? "Preparing media" : "Preparing final check"}
                 onClick={handleReview}
                 debugId="admin-gsn-campaign.review"
-                aria-label="Review and publish campaign batch"
+                aria-label="Open final campaign check"
                 aria-describedby="admin-gsn-campaign-review-readiness"
               >
-                Review and publish {mediaQueue.length > 0 ? `${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : "campaign"}
+                Open final check {mediaQueue.length > 0 ? `for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : ""}
               </StableButton>
             </div>
           ) : null}
 
-          {mediaQueue.length > 0 && mediaPreviewUrl ? (
+          {mediaQueue.length > 0 && previewMedia && mediaPreviewUrl ? (
             <div style={{ marginTop: 14, ...softCard("#071A2D"), color: "#FFFFFF" }}>
               <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
-                Prepared batch · {mediaQueue.length} of {MAX_GSN_HOUSE_BATCH_MEDIA}
+                Prepared batch · showing {previewMediaIndex + 1} of {mediaQueue.length}
               </div>
-              {mediaQueue[0].kind === "image" ? (
-                <img src={mediaPreviewUrl} alt="First prepared GSN promotion" style={{ marginTop: 10, width: "100%", maxHeight: 360, objectFit: "cover", borderRadius: 16 }} />
+              {previewMedia.kind === "image" ? (
+                <img src={mediaPreviewUrl} alt={`Prepared GSN promotion ${previewMediaIndex + 1}`} style={{ marginTop: 10, width: "100%", maxHeight: 360, objectFit: "cover", borderRadius: 16 }} />
               ) : (
                 <video src={mediaPreviewUrl} controls playsInline style={{ marginTop: 10, width: "100%", maxHeight: 360, borderRadius: 16, background: "#000000" }} />
               )}
               <div style={{ marginTop: 10, color: "#D7E3EF", fontSize: 13 }}>
-                First item: {mediaQueue[0].file.name} · {mediaQueue[0].kind === "video" ? "Verified short video" : "Prepared picture"}
+                {previewMedia.file.name} · {previewMedia.kind === "video" ? "Verified short video" : "Prepared picture"}
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                 {mediaQueue.map((item, index) => (
@@ -2122,16 +2178,28 @@ export default function AdminGsnHouseCampaignPage() {
                     <span style={{ minWidth: 0, color: "#FFFFFF", fontSize: 13, lineHeight: 1.45, overflowWrap: "anywhere" }}>
                       {index + 1}. {item.file.name} · {item.kind === "video" ? "Video" : "Picture"}
                     </span>
-                    <StableButton
-                      disabled={draftBusy || publishedCount > 0}
-                      onClick={() => removePreparedMedia(item.key)}
-                      debugId={`admin-gsn-campaign.media-remove-${index + 1}`}
-                      stableHeight={36}
-                      minWidth={76}
-                      style={{ flex: "0 0 auto", borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.10)", color: "#FFFFFF", fontSize: 12 }}
-                    >
-                      Remove
-                    </StableButton>
+                    <div style={{ display: "flex", gap: 7, flex: "0 0 auto" }}>
+                      <StableButton
+                        disabled={draftBusy}
+                        onClick={() => setMediaPreviewKey(item.key)}
+                        debugId={`admin-gsn-campaign.media-preview-${index + 1}`}
+                        stableHeight={36}
+                        minWidth={76}
+                        style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: item.key === previewMedia.key ? "rgba(244,215,126,0.24)" : "rgba(255,255,255,0.10)", color: "#FFFFFF", fontSize: 12 }}
+                      >
+                        {item.key === previewMedia.key ? "Showing" : "Preview"}
+                      </StableButton>
+                      <StableButton
+                        disabled={draftBusy || publishedCount > 0}
+                        onClick={() => removePreparedMedia(item.key)}
+                        debugId={`admin-gsn-campaign.media-remove-${index + 1}`}
+                        stableHeight={36}
+                        minWidth={76}
+                        style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.10)", color: "#FFFFFF", fontSize: 12 }}
+                      >
+                        Remove
+                      </StableButton>
+                    </div>
                   </div>
                 ))}
               </div>

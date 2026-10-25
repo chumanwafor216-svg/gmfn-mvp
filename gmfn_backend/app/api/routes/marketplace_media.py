@@ -509,20 +509,6 @@ async def upload_marketplace_image(
         "size_bytes": len(data),
         "url": _public_url_for("images", filename),
         "clan_id": clan_id,
-        "finish": (
-            {
-                "profile": "gsn_natural",
-                "duration_seconds": int(selected_finish.duration_seconds),
-                "brand_name": selected_finish.brand_name,
-                "title": selected_finish.title,
-                "public_contact_present": bool(selected_finish.public_contact),
-                "logo_applied": bool(selected_finish.logo_path),
-                "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
-                "truth_boundary": "Presentation only: GSN does not certify the product or alter its claimed condition.",
-            }
-            if selected_finish is not None
-            else None
-        ),
     }
 
 
@@ -625,6 +611,20 @@ async def upload_marketplace_video(
         "quality": normalized.as_dict(),
         "url": _public_url_for("videos", filename),
         "clan_id": clan_id,
+        "finish": (
+            {
+                "profile": "gsn_natural",
+                "duration_seconds": int(selected_finish.duration_seconds),
+                "brand_name": selected_finish.brand_name,
+                "title": selected_finish.title,
+                "public_contact_present": bool(selected_finish.public_contact),
+                "logo_applied": bool(selected_finish.logo_path),
+                "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
+                "truth_boundary": "Presentation only: GSN does not certify the product or alter its claimed condition.",
+            }
+            if selected_finish is not None
+            else None
+        ),
     }
 
 
