@@ -17,7 +17,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   healthy, but the existing installed-shell freshness check begins only after
   React loads. It therefore could not help when a legacy shortcut failed while
   loading the entry JavaScript itself.
-- Implemented locally, not published:
+- Implemented and published in application revision `bd14b6d2`:
   - `frontend/index.html` now watches startup before React. A standalone phone
     shell gets one bounded automatic recovery attempt; a second failure or an
     ordinary browser failure shows a plain `GSN could not start` card with one
@@ -43,13 +43,21 @@ under `docs/` or `docs/archive/`, then link that file here.
   current Community Home `Manage shop` and Login publish-return expectations.
   Neither page was changed by this repair; the PWA assertions in that audit did
   pass before those two later checks failed.
-- Unabated truth: this is not deployed yet. An already-open legacy shell cannot
-  execute recovery code it has never downloaded. After publication, the v20
-  worker and network-first navigation improve the next-open recovery path, but
-  the specific physical phone must still be tested. A very old icon that never
-  accepts the new shell may still need to be removed and added again. Current
-  Android policy intentionally uses a browser shortcut (`display: browser`),
-  so this work does not promise a new no-Chrome standalone icon.
+- Deployment evidence: owner-authorised frontend-only workflow
+  `40227579138` completed successfully for exact SHA
+  `bd14b6d2118255733f36a88bf1e58bbdfbc3fbc5`. Render deploy
+  `dep-dbf5p1jphbkc73a7kv5g` reached `live`; the workflow's public-build check
+  passed. Independent requests returned HTTP 200 for the live index, v20
+  service worker and every index asset, and confirmed both the recovery marker
+  and `GSN could not start` copy in production. The API was intentionally not
+  deployed because this batch contains no backend change.
+- Unabated truth: an already-open legacy shell cannot execute recovery code it
+  has never downloaded. The v20 worker and network-first navigation improve
+  the next-open recovery path, but the specific physical phone must still be
+  tested. A very old icon that never accepts the new shell may still need to be
+  removed and added again. Current Android policy intentionally uses a browser
+  shortcut (`display: browser`), so this work does not promise a new no-Chrome
+  standalone icon.
 
 ## Advertising share, network attribution and Clear Finish deployment - 2026-10-25
 
