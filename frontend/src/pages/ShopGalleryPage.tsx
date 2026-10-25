@@ -7095,7 +7095,12 @@ export default function ShopGalleryPage() {
                 {miniSpotlightView.imageUrl || miniSpotlightView.videoUrl ? (
                   <>
                   <SpotlightMediaFrame
-                    key={spotlightMediaKey}
+                    // Keep one active media element across rotations. Mobile
+                    // Safari associates the viewer's sound gesture with the
+                    // element; promoting a different preloaded <video> can
+                    // lose that permission even though the shared preference
+                    // still says sound is on.
+                    key='public-shop-spotlight-active-media'
                     imageUrl={miniSpotlightView.imageUrl}
                     videoUrl={miniSpotlightView.videoUrl}
                     videoPoster={miniSpotlightView.imageUrl}
@@ -7142,6 +7147,7 @@ export default function ShopGalleryPage() {
                     showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
                     audioEnabled={spotlightSoundEnabled}
                     onAudioEnabledChange={setSpotlightSoundEnabled}
+                    preserveVideoElement={true}
                     audioUnlockLabel="Sound on"
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"
@@ -7178,7 +7184,7 @@ export default function ShopGalleryPage() {
                   (nextMiniSpotlightView.imageUrl ||
                     nextMiniSpotlightView.videoUrl) ? (
                     <SpotlightMediaFrame
-                      key={nextSpotlightMediaKey}
+                      key={`public-shop-spotlight-preload-${nextSpotlightMediaKey}`}
                       imageUrl={nextMiniSpotlightView.imageUrl}
                       videoUrl={nextMiniSpotlightView.videoUrl}
                       videoPoster={nextMiniSpotlightView.imageUrl}

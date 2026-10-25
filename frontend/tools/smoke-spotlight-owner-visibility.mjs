@@ -377,7 +377,9 @@ async function installMocks(page, scenario) {
         canonical: true,
         streamIndex,
         imageUrl: scenario.mediaUnavailable ? null : undefined,
-        videoUrl: scenario.videoMedia
+        videoUrl: (Array.isArray(scenario.videoMediaPattern)
+          ? scenario.videoMediaPattern[streamIndex - 1] === 'video'
+          : scenario.videoMedia)
           ? `${syntheticSpotlightAudioPrefix}${streamIndex}.wav`
           : null,
         presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
@@ -860,8 +862,8 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
-    streamLimit: 2,
-    videoMedia: true,
+    streamLimit: 3,
+    videoMediaPattern: ['video', 'image', 'video'],
   };
   const { context, page } = await newPage(browser, visitorGsnId);
   await installMocks(page, scenario);
@@ -881,9 +883,18 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   await spotlightRail
     .getByRole('button', { name: 'Turn video sound off' })
     .waitFor({ state: 'visible', timeout: 10_000 });
+  const activeVideo = spotlightRail.locator('video').first();
+  const firstVideoSource = await activeVideo.getAttribute('src');
+  await activeVideo.evaluate((video) => {
+    video.dataset.gsnSoundGestureElement = 'retained';
+  });
   await page.getByText('Community Spotlight 2', { exact: true }).waitFor({
     state: 'visible',
     timeout: 15_000,
+  });
+  await page.getByText('Community Spotlight 3', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
   });
   await spotlightRail
     .getByRole('button', { name: 'Turn video sound off' })
@@ -891,7 +902,23 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   const rotatedVideoState = await spotlightRail.locator('video').evaluate((video) => ({
     muted: video.muted,
     volume: video.volume,
+    source: video.getAttribute('src'),
+    soundGestureElement: video.dataset.gsnSoundGestureElement,
   }));
+  if (
+    !firstVideoSource ||
+    !rotatedVideoState.source ||
+    firstVideoSource === rotatedVideoState.source
+  ) {
+    throw new Error(
+      `Spotlight sound test did not observe a real media rotation: ${JSON.stringify({ firstVideoSource, rotatedVideoState })}`
+    );
+  }
+  if (rotatedVideoState.soundGestureElement !== 'retained') {
+    throw new Error(
+      `Spotlight replaced the sound-authorized media element during rotation: ${JSON.stringify(rotatedVideoState)}`
+    );
+  }
   if (rotatedVideoState.muted || rotatedVideoState.volume <= 0) {
     throw new Error(
       `Spotlight sound did not persist across video rotation: ${JSON.stringify(rotatedVideoState)}`

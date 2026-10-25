@@ -8,6 +8,36 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Spotlight iPhone sound continuity - 2026-10-25
+
+- The intended Public Shop contract is now explicit: one viewer tap turns
+  sound on for subsequent Spotlight videos, and one later tap turns it off for
+  subsequent videos. The preference remains local to that open Public Shop
+  session; it does not change another member's phone or bypass the phone's
+  silent-volume settings.
+- The existing parent-owned sound preference was not the whole iPhone fix.
+  Rotation previously replaced the active video with a separately preloaded
+  video element. Chromium accepted that path, but mobile Safari can associate
+  the sound-authorising gesture with the original media element and stop or
+  re-mute the replacement.
+- Public Shop now retains one active `SpotlightMediaFrame` and its underlying
+  video element while changing sources, including while an image-only advert
+  appears between two videos. The hidden next-media preload remains separate
+  and muted, and is no longer promoted as the active element.
+- The focused phone-browser smoke now proves a video -> image -> video
+  sequence: the video source really changes, the sound-authorised active
+  element survives the image, and its `muted`/`volume` state remains audible
+  and reversible.
+- Verification passed locally: the 14-scenario Public Shop/Spotlight
+  real-browser smoke, Spotlight presentation and system-feed audits, Public
+  Shop button inventory, targeted ESLint (two pre-existing hook-dependency
+  warnings and no errors), the complete protected-button freeze audit, the
+  292-module production build, and scoped diff checks.
+- Unabated truth: the automated smoke is Chromium-based and proves the DOM and
+  sound-state contract, not physical iPhone audio output. Chika's iPhone must
+  reload the deployed bundle and complete one sound-on/rotation/sound-off
+  observation before the Apple-phone complaint can be called live-verified.
+
 ## GSN selected-destination withdrawal and activation evidence - 2026-10-25
 
 - The first bounded infrastructure slice from the independent-entrepreneur and

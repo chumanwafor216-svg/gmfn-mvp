@@ -25,6 +25,7 @@ type SpotlightMediaFrameProps = {
   audioUnlockStyle?: React.CSSProperties;
   audioEnabled?: boolean;
   onAudioEnabledChange?: (enabled: boolean) => void;
+  preserveVideoElement?: boolean;
   onMediaReady?: () => void;
   onMediaUnavailable?: () => void;
 };
@@ -59,6 +60,7 @@ export default function SpotlightMediaFrame(
   const [audioError, setAudioError] = useState("");
   const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const retainedVideoSrcRef = useRef("");
   const lastAudioToggleRef = useRef(0);
   const mediaReportRef = useRef<'pending' | 'ready' | 'unavailable'>(
     'pending'
@@ -211,6 +213,9 @@ export default function SpotlightMediaFrame(
 
   const imageSrc = imageCandidates[imageIndex] || "";
   const videoSrc = safeStr(props.videoUrl);
+  useEffect(() => {
+    if (videoSrc) retainedVideoSrcRef.current = videoSrc;
+  }, [videoSrc]);
   const backdropSrc = safeStr(props.videoPoster) || imageSrc;
   const maxVideoSeconds = Number(props.maxVideoSeconds || 0);
   const shouldShowAudioUnlock =
@@ -492,85 +497,146 @@ export default function SpotlightMediaFrame(
     </SecondaryButton>
   ) : null;
 
+  const videoIsVisible = Boolean(videoSrc && !videoFailed);
+  const retainedVideoSrc =
+    videoSrc ||
+    (props.preserveVideoElement ? retainedVideoSrcRef.current : "");
+  const videoMediaElement = (
+    <video
+      data-media-control="true"
+      ref={videoRef}
+      src={retainedVideoSrc || undefined}
+      poster={backdropSrc || undefined}
+      controls={videoIsVisible && (props.showVideoControls ?? true)}
+      autoPlay={videoIsVisible && (props.autoPlayVideo ?? false)}
+      muted={
+        props.audioEnabled === undefined
+          ? props.mutedVideo ?? false
+          : !props.audioEnabled
+      }
+      loop={videoIsVisible && (props.loopVideo ?? false)}
+      playsInline
+      preload={props.preloadVideo || 'metadata'}
+      onError={() => {
+        if (videoSrc) setVideoFailed(true);
+      }}
+      onLoadedData={() => {
+        if (videoIsVisible) reportMediaReady();
+      }}
+      onCanPlay={() => {
+        if (videoIsVisible) reportMediaReady();
+      }}
+      onLoadedMetadata={(event) => {
+        if (!videoIsVisible) return;
+        const video = event.currentTarget;
+        const shouldMute =
+          props.audioEnabled === undefined
+            ? props.mutedVideo ?? false
+            : !props.audioEnabled;
+        video.muted = shouldMute;
+        video.defaultMuted = shouldMute;
+        if (!shouldMute) {
+          video.volume = 1;
+          void video
+            .play()
+            .then(() => {
+              setAudioUnlocked(true);
+              setAudioError("");
+            })
+            .catch(() => {
+              video.muted = true;
+              video.defaultMuted = true;
+              setAudioUnlocked(false);
+              setAudioError("Tap for sound");
+            });
+          return;
+        }
+        setAudioUnlocked(false);
+      }}
+      onPlay={(event) => {
+        const video = event.currentTarget;
+        if (videoIsVisible && !video.muted && video.volume > 0) {
+          setAudioUnlocked(true);
+        }
+      }}
+      onVolumeChange={(event) => {
+        const video = event.currentTarget;
+        if (
+          videoIsVisible &&
+          !video.muted &&
+          video.volume > 0 &&
+          !video.paused
+        ) {
+          setAudioUnlocked(true);
+        }
+      }}
+      onTimeUpdate={(event) => {
+        if (
+          !videoIsVisible ||
+          !Number.isFinite(maxVideoSeconds) ||
+          maxVideoSeconds <= 0
+        ) {
+          return;
+        }
+
+        const video = event.currentTarget;
+        if (video.currentTime < maxVideoSeconds) return;
+
+        if (props.loopVideo ?? false) {
+          video.currentTime = 0;
+          void video.play().catch(() => undefined);
+          return;
+        }
+
+        video.pause();
+      }}
+      style={videoIsVisible ? mediaStyle : { display: "none" }}
+    />
+  );
+
+  const imageMediaElement = imageSrc && !imageFailed ? (
+    <img
+      ref={imageRef}
+      src={imageSrc}
+      alt={props.alt}
+      onLoad={reportMediaReady}
+      onError={() => {
+        setImageIndex((prev) => {
+          const next = prev + 1;
+          if (next < imageCandidates.length) {
+            return next;
+          }
+
+          setImageFailed(true);
+          return prev;
+        });
+      }}
+      style={mediaStyle}
+    />
+  ) : null;
+
+  if (props.preserveVideoElement) {
+    return (
+      <div style={frameStyle}>
+        {backdrop}
+        <div style={foregroundStyle}>
+          {videoMediaElement}
+          {!videoIsVisible
+            ? imageMediaElement || props.fallback || null
+            : null}
+        </div>
+        {audioUnlockButton}
+        {fallbackNotice}
+      </div>
+    );
+  }
+
   if (videoSrc && !videoFailed) {
     return (
       <div style={frameStyle}>
         {backdrop}
         <div style={foregroundStyle}>
-          <video
-            data-media-control="true"
-            ref={videoRef}
-            src={videoSrc}
-            poster={backdropSrc || undefined}
-            controls={props.showVideoControls ?? true}
-            autoPlay={props.autoPlayVideo ?? false}
-            muted={
-              props.audioEnabled === undefined
-                ? props.mutedVideo ?? false
-                : !props.audioEnabled
-            }
-            loop={props.loopVideo ?? false}
-            playsInline
-            preload={props.preloadVideo || 'metadata'}
-            onError={() => setVideoFailed(true)}
-            onLoadedData={reportMediaReady}
-            onCanPlay={reportMediaReady}
-            onLoadedMetadata={(event) => {
-              const video = event.currentTarget;
-              const shouldMute =
-                props.audioEnabled === undefined
-                  ? props.mutedVideo ?? false
-                  : !props.audioEnabled;
-              video.muted = shouldMute;
-              video.defaultMuted = shouldMute;
-              if (!shouldMute) {
-                video.volume = 1;
-                void video
-                  .play()
-                  .then(() => {
-                    setAudioUnlocked(true);
-                    setAudioError("");
-                  })
-                  .catch(() => {
-                    video.muted = true;
-                    video.defaultMuted = true;
-                    setAudioUnlocked(false);
-                    setAudioError("Tap for sound");
-                  });
-                return;
-              }
-              setAudioUnlocked(false);
-            }}
-            onPlay={(event) => {
-              const video = event.currentTarget;
-              if (!video.muted && video.volume > 0) {
-                setAudioUnlocked(true);
-              }
-            }}
-            onVolumeChange={(event) => {
-              const video = event.currentTarget;
-              if (!video.muted && video.volume > 0 && !video.paused) {
-                setAudioUnlocked(true);
-              }
-            }}
-            onTimeUpdate={(event) => {
-              if (!Number.isFinite(maxVideoSeconds) || maxVideoSeconds <= 0) {
-                return;
-              }
-
-              const video = event.currentTarget;
-              if (video.currentTime < maxVideoSeconds) return;
-
-              if (props.loopVideo ?? false) {
-                video.currentTime = 0;
-                void video.play().catch(() => undefined);
-                return;
-              }
-
-              video.pause();
-            }}
-            style={mediaStyle}
-          />
+          {videoMediaElement}
         </div>
         {audioUnlockButton}
       </div>
@@ -582,24 +648,7 @@ export default function SpotlightMediaFrame(
       <div style={frameStyle}>
         {backdrop}
         <div style={foregroundStyle}>
-          <img
-            ref={imageRef}
-            src={imageSrc}
-            alt={props.alt}
-            onLoad={reportMediaReady}
-            onError={() => {
-              setImageIndex((prev) => {
-                const next = prev + 1;
-                if (next < imageCandidates.length) {
-                  return next;
-                }
-
-                setImageFailed(true);
-                return prev;
-              });
-            }}
-            style={mediaStyle}
-          />
+          {imageMediaElement}
         </div>
         {fallbackNotice}
       </div>

@@ -34,7 +34,7 @@ const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
-const expectedMediaFrameInvocations = 2;
+const expectedMediaFrameInvocations = 3;
 const expectedSharedMediaAudioActionTemplates = 1;
 const expectedSocialTagActionTemplates = 2;
 const expectedWholeRouteActionFamilies =
@@ -410,6 +410,11 @@ assertContains(
 );
 
 assertContains(
+  /key='public-shop-spotlight-active-media'[\s\S]*?audioEnabled=\{spotlightSoundEnabled\}[\s\S]*?key=\{`public-shop-spotlight-preload-\$\{nextSpotlightMediaKey\}`\}[\s\S]*?autoPlayVideo=\{false\}[\s\S]*?mutedVideo=\{true\}[\s\S]*?showAudioUnlock=\{false\}/,
+  "Public Shop must keep one sound-authorized active Spotlight frame plus one separate muted, non-interactive preload frame."
+);
+
+assertContains(
   /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight[\s\S]*?height: diaryMediaControlHeight[\s\S]*?maxHeight: diaryMediaControlHeight[\s\S]*?background: "rgba\(6,24,39,0\.74\)"/,
   "Public Shop Products & Services media audio controls must stay compact, circular, low-obstruction, and tied to each product card."
 );
@@ -432,7 +437,7 @@ assertContains(
 );
 
 assertContains(
-  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.toggle\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-share\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement\`\}[\s\S]*?label=\{\`Manage media for \$\{displayTitle\}\`\}[\s\S]*?debugId=\{\`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage\`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?label=\{`Manage media for \$\{displayTitle\}`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Expanded owner product cards must keep four fixed actions in order: close, Share, Repost, and the owner-only manage-media plus."
 );
 

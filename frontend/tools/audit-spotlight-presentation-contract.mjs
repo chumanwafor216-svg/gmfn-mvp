@@ -321,7 +321,7 @@ assertContains(
 
 assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
-  /onMediaReady\?:[\s\S]*?onMediaUnavailable\?:[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?props\.onMediaUnavailable[\s\S]*?onLoadedData=\{reportMediaReady\}[\s\S]*?onCanPlay=\{reportMediaReady\}[\s\S]*?onLoad=\{reportMediaReady\}/,
+  /onMediaReady\?:[\s\S]*?onMediaUnavailable\?:[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?props\.onMediaUnavailable[\s\S]*?onLoadedData=\{\(\) => \{[\s\S]*?videoIsVisible[\s\S]*?reportMediaReady\(\)[\s\S]*?onCanPlay=\{\(\) => \{[\s\S]*?videoIsVisible[\s\S]*?reportMediaReady\(\)[\s\S]*?onLoad=\{reportMediaReady\}/,
   'Shared Spotlight media must report real image/video readiness and terminal unavailability after bounded retries.'
 );
 
@@ -363,8 +363,8 @@ assertContains(
 
 assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
-  /testSpotlightSoundPersistsAcrossRotation[^]*?Turn video sound on[^]*?Turn video sound off[^]*?Community Spotlight 2[^]*?rotatedVideoState[^]*?muted[^]*?volume[^]*?Turn video sound off[^]*?Turn video sound on/,
-  'The phone smoke must prove one sound-on tap survives video rotation and sound remains manually reversible.'
+  /testSpotlightSoundPersistsAcrossRotation[^]*?videoMediaPattern: \['video', 'image', 'video'\][^]*?Turn video sound on[^]*?gsnSoundGestureElement = 'retained'[^]*?Community Spotlight 2[^]*?Community Spotlight 3[^]*?rotatedVideoState[^]*?soundGestureElement[^]*?firstVideoSource === rotatedVideoState[.]source[^]*?soundGestureElement !== 'retained'[^]*?muted[^]*?volume[^]*?Turn video sound off[^]*?Turn video sound on/,
+  'The phone smoke must prove one sound-on tap stays on the same media element across video-image-video rotation and remains manually reversible.'
 );
 
 assertContains(
@@ -380,9 +380,21 @@ assertContains(
 );
 
 assertContains(
+  'frontend/src/components/SpotlightMediaFrame.tsx',
+  /preserveVideoElement\?: boolean[^]*?retainedVideoSrcRef[^]*?if \(videoSrc\) retainedVideoSrcRef[.]current = videoSrc[^]*?videoSrc \|\|[^]*?props[.]preserveVideoElement \? retainedVideoSrcRef[.]current[^]*?if \(props[.]preserveVideoElement\)[^]*?videoMediaElement[^]*?imageMediaElement/,
+  'Shared Spotlight media must be able to retain its sound-authorized video element while image-only items are active.'
+);
+
+assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /spotlightSoundEnabled[^]*?audioEnabled=\{spotlightSoundEnabled\}[^]*?onAudioEnabledChange=\{setSpotlightSoundEnabled\}/,
+  /spotlightSoundEnabled[^]*?audioEnabled=\{spotlightSoundEnabled\}[^]*?onAudioEnabledChange=\{setSpotlightSoundEnabled\}[^]*?preserveVideoElement=\{true\}/,
   'Public Shop must retain the chosen Spotlight sound state above individual rotating media frames.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /key='public-shop-spotlight-active-media'[^]*?key=\{`public-shop-spotlight-preload-\$\{nextSpotlightMediaKey\}`\}/,
+  'Public Shop must preserve the sound-authorized active media element across rotations instead of promoting a different preloaded element.'
 );
 
 assertContains(
