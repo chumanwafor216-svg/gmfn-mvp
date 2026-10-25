@@ -7349,6 +7349,7 @@ export async function createAdminGsnHouseCampaign(payload: {
   image_url?: string | null;
   video_url?: string | null;
   advertiser_contact_phone: string;
+  expires_at: string;
   idempotency_key: string;
 }): Promise<GsnHouseCampaignPublication> {
   return httpJson(

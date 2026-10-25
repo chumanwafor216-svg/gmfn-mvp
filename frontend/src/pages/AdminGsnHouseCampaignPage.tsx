@@ -52,6 +52,7 @@ type CampaignReviewMedia = {
 type CampaignReview = {
   message: string;
   contactPhone: string;
+  expiresAt: string;
   media: CampaignReviewMedia[];
   preview: GsnHouseCampaignPreview;
 };
@@ -63,6 +64,29 @@ type BatchPublication = {
 };
 
 const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
+const GSN_HOUSE_MAX_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+function dateTimeInputValue(date: Date): string {
+  const localTime = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
+  return new Date(localTime).toISOString().slice(0, 16);
+}
+
+function defaultExpiryInputValue(): string {
+  return dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_MAX_LIFETIME_MS));
+}
+
+function campaignExpiryIso(value: string): string {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+}
+
+function campaignExpiryProblem(value: string): string {
+  const expiryTime = new Date(value).getTime();
+  if (!value || Number.isNaN(expiryTime)) return 'Choose the date and time when this advert group should stop.';
+  if (expiryTime <= Date.now()) return 'Choose an advert-group expiry in the future.';
+  if (expiryTime > Date.now() + GSN_HOUSE_MAX_LIFETIME_MS) return 'The current pilot allows an advert group to run for at most 24 hours.';
+  return '';
+}
 
 function safeStr(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
@@ -229,6 +253,7 @@ export default function AdminGsnHouseCampaignPage() {
     excludedCount: 0,
   });
   const [selected, setSelected] = useState<Record<number, GsnHouseCampaignDestination>>({});
+  const [expiryInput, setExpiryInput] = useState(defaultExpiryInputValue);
   const [message, setMessage] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [mediaQueue, setMediaQueue] = useState<PreparedMedia[]>([]);
@@ -263,6 +288,7 @@ export default function AdminGsnHouseCampaignPage() {
   const draftBusy = preparingMedia || reviewing || publishing;
   const reviewBlockers = useMemo(() => {
     const blockers: string[] = [];
+    const expiryProblem = campaignExpiryProblem(expiryInput);
     if (selectedRows.length === 0) blockers.push("Choose at least one eligible community.");
     if (message.trim().length < 2) blockers.push("Write the official GSN message.");
     if (!contactPhone.trim()) {
@@ -272,8 +298,9 @@ export default function AdminGsnHouseCampaignPage() {
     }
     if (mediaQueue.length === 0) blockers.push("Add at least one picture or short video.");
     if (preparingMedia) blockers.push("Wait for media preparation to finish.");
+    if (expiryProblem) blockers.push(expiryProblem);
     return blockers;
-  }, [contactPhone, mediaQueue.length, message, preparingMedia, selectedRows.length]);
+  }, [contactPhone, expiryInput, mediaQueue.length, message, preparingMedia, selectedRows.length]);
 
   useEffect(() => {
     reviewRef.current = review;
@@ -503,6 +530,8 @@ export default function AdminGsnHouseCampaignPage() {
     setConfirmed(false);
     const cleanMessage = message.trim();
     const cleanContactPhone = canonicalAdvertiserPhone(contactPhone);
+    const expiryProblem = campaignExpiryProblem(expiryInput);
+    const expiresAt = campaignExpiryIso(expiryInput);
     if (preparingMedia) {
       setFeedback({ tone: "info", text: "Wait for media preparation to finish before reviewing." });
       return;
@@ -520,6 +549,10 @@ export default function AdminGsnHouseCampaignPage() {
         tone: "error",
         text: "Add the advertiser's public international phone number, beginning with + and the country code.",
       });
+      return;
+    }
+    if (expiryProblem || !expiresAt) {
+      setFeedback({ tone: 'error', text: expiryProblem || 'Choose a valid advert-group expiry.' });
       return;
     }
     if (mediaQueue.length === 0) {
@@ -581,6 +614,7 @@ export default function AdminGsnHouseCampaignPage() {
       setReview({
         message: cleanMessage,
         contactPhone: cleanContactPhone,
+        expiresAt,
         media: uploadedMedia,
         preview: destinationPreview,
       });
@@ -628,6 +662,7 @@ export default function AdminGsnHouseCampaignPage() {
           image_url: item.mediaKind === "image" ? item.mediaUrl : null,
           video_url: item.mediaKind === "video" ? item.mediaUrl : null,
           advertiser_contact_phone: review.contactPhone,
+          expires_at: review.expiresAt,
           idempotency_key: item.idempotencyKey,
         });
         results.push(response);
@@ -713,6 +748,7 @@ export default function AdminGsnHouseCampaignPage() {
 
   function resetCampaign() {
     setSelected({});
+    setExpiryInput(defaultExpiryInputValue());
     setMessage("");
     setContactPhone("");
     setMediaQueue([]);
@@ -776,9 +812,10 @@ export default function AdminGsnHouseCampaignPage() {
           <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
             {[
               ["Publisher", "GSN-HOUSE"],
-              ["Duration", "24 hours"],
+              ["Maximum lifetime", "24 hours"],
               ["Selected", String(selectedRows.length)],
               ["Media", mediaQueue.length > 0 ? `${mediaQueue.length} prepared` : "Not ready"],
+              ['Group expiry', dateTimeLabel(campaignExpiryIso(expiryInput))],
             ].map(([label, value]) => (
               <div key={label} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
                 <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -941,6 +978,7 @@ export default function AdminGsnHouseCampaignPage() {
                     <div>{item.content.message}</div>
                     {item.content.advertiser_contact_phone ? <div><strong>Advertiser contact:</strong> {item.content.advertiser_contact_phone}</div> : null}
                     <div><strong>Destinations:</strong> {item.delivery.placement_count}</div>
+                    <div><strong>Expires:</strong> {dateTimeLabel(item.expires_at)}</div>
                     <div><strong>Issued by GSN:</strong> {item.delivery.issued_presentation_count}</div>
                     <div><strong>Seen:</strong> {item.delivery.qualified_presentation_count}</div>
                     <div><strong>People who saw it:</strong> {item.delivery.unique_qualified_viewer_accounts}</div>
@@ -977,7 +1015,8 @@ export default function AdminGsnHouseCampaignPage() {
                   <div><strong>Promotions:</strong> {review.media.length}</div>
                   <div><strong>Eligible now:</strong> {review.preview.eligible_count}</div>
                   <div><strong>Excluded now:</strong> {review.preview.excluded_count}</div>
-                  <div><strong>Lifetime:</strong> 24 hours</div>
+                  <div><strong>Group expiry:</strong> {dateTimeLabel(review.expiresAt)}</div>
+                  <div><strong>Maximum lifetime:</strong> 24 hours</div>
                 </div>
               </div>
             </div>
@@ -1277,6 +1316,24 @@ export default function AdminGsnHouseCampaignPage() {
           </label>
           <div style={{ marginTop: 6, color: "#60758A", fontSize: 12, lineHeight: 1.5 }}>
             This number will be public on every promotion in this batch so viewers can call the advertiser. Include + and the country code.
+          </div>
+
+          <label style={{ display: 'block', marginTop: 16 }}>
+            <span style={{ ...sectionLabel(), display: 'block', marginBottom: 7 }}>Advert group expiry</span>
+            <input
+              type='datetime-local'
+              value={expiryInput}
+              min={dateTimeInputValue(new Date())}
+              max={dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_MAX_LIFETIME_MS))}
+              disabled={draftBusy || publishedCount > 0}
+              onChange={(event) => {
+                if (invalidateReview()) setExpiryInput(event.target.value);
+              }}
+              style={fieldStyle()}
+            />
+          </label>
+          <div style={{ marginTop: 6, color: '#60758A', fontSize: 12, lineHeight: 1.5 }}>
+            Every picture and video in this reviewed group receives this same expiry. The current pilot maximum is 24 hours.
           </div>
 
           <label style={{ display: "block", marginTop: 16 }}>

@@ -2568,6 +2568,7 @@ def _direct_publication_replay(
     priority_mode: str,
     visibility_scope: str,
     advertiser_contact_phone: Optional[str] = None,
+    expires_at: Optional[datetime] = None,
 ) -> Optional[Dict[str, Any]]:
     if not publication_key:
         return None
@@ -2595,6 +2596,13 @@ def _direct_publication_replay(
         )
         and all(_safe_str(row.priority_mode) == priority_mode for row in rows)
         and all(_safe_str(row.visibility_scope) == visibility_scope for row in rows)
+        and (
+            expires_at is None
+            or all(
+                _as_aware_utc(authorized_expiry(row)) == _as_aware_utc(expires_at)
+                for row in rows
+            )
+        )
     )
     if not matches:
         raise HTTPException(
@@ -2627,6 +2635,37 @@ def _as_aware_utc(value: Optional[datetime]) -> Optional[datetime]:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
+
+
+def _resolve_gsn_house_campaign_expiry(
+    value: Optional[datetime],
+    *,
+    current_time: datetime,
+) -> datetime:
+    maximum_expiry = activation_expiry(current_time, authorized_days=1).replace(
+        microsecond=0
+    )
+    requested_expiry = _as_aware_utc(value)
+    if requested_expiry is None:
+        return maximum_expiry
+    requested_expiry = requested_expiry.replace(microsecond=0)
+    if requested_expiry <= current_time:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                'code': 'gsn_house_campaign_expiry_must_be_future',
+                'message': 'Choose a GSN campaign expiry date and time in the future.',
+            },
+        )
+    if requested_expiry > maximum_expiry:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                'code': 'gsn_house_campaign_expiry_exceeds_pilot_limit',
+                'message': 'The current GSN house-campaign pilot allows at most 24 hours.',
+            },
+        )
+    return requested_expiry
 
 
 def _expire_stale_spotlight_campaigns_for_owner(
@@ -3707,6 +3746,7 @@ class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
     advertiser_contact_phone: Optional[str] = Field(default=None, max_length=40)
+    expires_at: Optional[datetime] = None
     idempotency_key: str = Field(min_length=8, max_length=96)
 
 
@@ -7609,6 +7649,11 @@ def create_gsn_house_campaign(
     advertiser_contact_phone = _normalize_advertiser_contact_phone(
         payload.advertiser_contact_phone
     )
+    current_time = _now_utc().replace(microsecond=0)
+    expires_at = _resolve_gsn_house_campaign_expiry(
+        payload.expires_at,
+        current_time=current_time,
+    )
     preview = _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
     target_clan_ids = list(preview["eligible_clan_ids"])
     if not target_clan_ids:
@@ -7652,6 +7697,7 @@ def create_gsn_house_campaign(
         priority_mode=SPOTLIGHT_FREE,
         visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
         advertiser_contact_phone=advertiser_contact_phone,
+        expires_at=expires_at if payload.expires_at is not None else None,
     )
     if replay is not None:
         replay.update(
@@ -7689,8 +7735,6 @@ def create_gsn_house_campaign(
             },
         )
 
-    current_time = _now_utc().replace(microsecond=0)
-    expires_at = activation_expiry(current_time, authorized_days=1)
     content_fingerprint = _spotlight_content_fingerprint(
         content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
         shop_id=None,
@@ -7759,6 +7803,7 @@ def create_gsn_house_campaign(
                 priority_mode=SPOTLIGHT_FREE,
                 visibility_scope=SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES,
                 advertiser_contact_phone=advertiser_contact_phone,
+                expires_at=expires_at if payload.expires_at is not None else None,
             )
             if replay_publisher is not None
             else None

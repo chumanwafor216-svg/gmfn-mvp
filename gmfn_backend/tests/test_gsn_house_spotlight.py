@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import text
@@ -296,6 +297,112 @@ def test_house_campaign_requires_public_international_advertiser_phone(
     assert missing.json()["detail"]["code"] == "advertiser_contact_phone_required"
     assert invalid.status_code == 400, invalid.text
     assert invalid.json()["detail"]["code"] == "invalid_advertiser_contact_phone"
+
+
+def test_house_campaign_group_expiry_is_shared_and_replay_safe(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    group_expiry = (datetime.now(timezone.utc) + timedelta(hours=6)).replace(
+        microsecond=0
+    )
+    base_payload = {
+        'clan_ids': [1],
+        'message': 'GSN grouped advert announcement',
+        'advertiser_contact_phone': '+2348012345678',
+        'expires_at': group_expiry.isoformat(),
+    }
+    first_payload = {
+        **base_payload,
+        'image_url': 'https://cdn.example.test/gsn/group-one.jpg',
+        'idempotency_key': 'gsn-house-group-expiry-0001',
+    }
+    second_payload = {
+        **base_payload,
+        'image_url': 'https://cdn.example.test/gsn/group-two.jpg',
+        'idempotency_key': 'gsn-house-group-expiry-0002',
+    }
+
+    first = client.post('/marketplace/admin/gsn-house-campaigns', json=first_payload)
+    second = client.post('/marketplace/admin/gsn-house-campaigns', json=second_payload)
+    replay = client.post('/marketplace/admin/gsn-house-campaigns', json=first_payload)
+    changed_expiry = client.post(
+        '/marketplace/admin/gsn-house-campaigns',
+        json={
+            **first_payload,
+            'expires_at': (group_expiry - timedelta(hours=1)).isoformat(),
+        },
+    )
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    assert replay.status_code == 200, replay.text
+    assert replay.json()['idempotent_replay'] is True
+    assert changed_expiry.status_code == 409, changed_expiry.text
+    assert changed_expiry.json()['detail']['code'] == 'spotlight_idempotency_key_reused'
+    expected_expiry = group_expiry.isoformat()
+    assert first.json()['item']['authorized_expires_at'] == expected_expiry
+    assert second.json()['item']['authorized_expires_at'] == expected_expiry
+
+    with engine.begin() as conn:
+        campaigns = conn.execute(
+            text('SELECT expires_at FROM spotlight_campaigns ORDER BY id')
+        ).scalars().all()
+        placements = conn.execute(
+            text('SELECT authorized_expires_at FROM marketplace_broadcasts ORDER BY id')
+        ).scalars().all()
+
+    assert [
+        marketplace_routes._as_aware_utc(datetime.fromisoformat(str(value)))
+        for value in campaigns
+    ] == [
+        group_expiry,
+        group_expiry,
+    ]
+    assert [
+        marketplace_routes._as_aware_utc(datetime.fromisoformat(str(value)))
+        for value in placements
+    ] == [
+        group_expiry,
+        group_expiry,
+    ]
+
+
+def test_house_campaign_rejects_invalid_group_expiry(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    now = datetime.now(timezone.utc)
+    base_payload = {
+        'clan_ids': [1],
+        'message': 'GSN expiry validation announcement',
+        'image_url': 'https://cdn.example.test/gsn/expiry.jpg',
+        'advertiser_contact_phone': '+2348012345678',
+    }
+
+    expired = client.post(
+        '/marketplace/admin/gsn-house-campaigns',
+        json={
+            **base_payload,
+            'expires_at': (now - timedelta(minutes=1)).isoformat(),
+            'idempotency_key': 'gsn-house-expired-group-0001',
+        },
+    )
+    over_limit = client.post(
+        '/marketplace/admin/gsn-house-campaigns',
+        json={
+            **base_payload,
+            'expires_at': (now + timedelta(hours=25)).isoformat(),
+            'idempotency_key': 'gsn-house-over-limit-0001',
+        },
+    )
+
+    assert expired.status_code == 400, expired.text
+    assert expired.json()['detail']['code'] == 'gsn_house_campaign_expiry_must_be_future'
+    assert over_limit.status_code == 400, over_limit.text
+    assert over_limit.json()['detail']['code'] == 'gsn_house_campaign_expiry_exceeds_pilot_limit'
 
 
 def test_house_campaign_publishes_canonically_without_member_quota_or_shop_identity(

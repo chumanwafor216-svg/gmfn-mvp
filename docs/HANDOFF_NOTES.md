@@ -8,6 +8,27 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN advert-group expiry control - 2026-10-25
+
+- Before this change, each GSN-HOUSE campaign already received a server-set
+  24-hour expiry, but the platform admin could not choose or review one exact
+  expiry shared by a multi-media advert group.
+- The GSN Spotlight publisher now requires one future expiry date/time before
+  review, locks its UTC timestamp into the review, sends it unchanged for every
+  sequential media publication, and shows it in review, summary, and history.
+- The backend persists the timestamp on the canonical campaign and all
+  placements, rejects past or over-24-hour pilot values, and treats a changed
+  expiry on the same idempotency key as a conflicting request. Older trusted
+  callers still receive the authoritative 24-hour default, so no legacy GSN
+  house publication becomes unbounded.
+- Verification passed locally: 15 focused backend tests, focused campaign and
+  Spotlight audits, targeted ESLint, Python compilation, the complete
+  protected-button freeze audit, the 292-module production build, and
+  `git diff --check`.
+- Unabated truth: this change is verified locally but is not deployed. Git
+  publishing remains in owner-controlled batch mode until the owner explicitly
+  releases the current batch.
+
 ## Spotlight weighted-starvation and stable-window repair - 2026-10-24
 
 - The owner's follow-up report disproved the prior completion claim. The exact

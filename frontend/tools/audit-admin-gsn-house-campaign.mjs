@@ -123,6 +123,24 @@ for (const text of [
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
 }
+for (const text of [
+  'Advert group expiry',
+  'expires_at: review.expiresAt',
+  'Every picture and video in this reviewed group receives this same expiry',
+  'Group expiry:',
+]) {
+  requireText(pageFile, page, text, 'Missing advert-group expiry screen contract: ' + text + '.');
+}
+requireText(apiFile, api, 'expires_at: string;', 'The typed GSN campaign request must require the reviewed expiry.');
+for (const text of [
+  'expires_at: Optional[datetime] = None',
+  'def _resolve_gsn_house_campaign_expiry',
+  'gsn_house_campaign_expiry_must_be_future',
+  'gsn_house_campaign_expiry_exceeds_pilot_limit',
+]) {
+  requireText(backendFile, backend, text, 'Missing backend advert-group expiry contract: ' + text + '.');
+}
+
 if (/disabled=\{selectedRows\.length === 0[^}]*\}/.test(page)) {
   findings.push({
     file: pageFile,

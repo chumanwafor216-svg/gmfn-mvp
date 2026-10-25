@@ -1653,12 +1653,13 @@ Must show:
 - selected and excluded destination summaries before publication
 - one short campaign message shared by the prepared batch
 - one public advertiser contact phone shared by the prepared batch
+- one required advert-group expiry date and time shared by the prepared batch
 - a compact queue of one to ten prepared pictures and/or verified short videos
 - read-only campaign preview before publication
 - explicit final confirmation that the campaign is official GSN communication and does not endorse a member, shop, or Community Domain
 - publication result with published and excluded destination counts
 - explicit unpublished-review discard with reference-safe uploaded-media cleanup
-- compact governance details explaining the 24-hour lifetime, destination exclusion recheck, audit record, and non-endorsement boundary
+- compact governance details explaining the selected group expiry, current 24-hour maximum, destination exclusion recheck, audit record, and non-endorsement boundary
 
 Rules:
 - The route and every related API action must remain platform-admin only.
@@ -1672,6 +1673,7 @@ Rules:
 - Preview must be read-only and must happen before the final publish action becomes available.
 - The phone may select up to ten media files in one action. Preparation and upload must run sequentially, show progress, and keep the page responsive. Before read-only review the prepared queue exists only in the current browser session, so the screen must tell the operator to keep the page open.
 - Read-only review uploads each prepared file to managed GSN storage without publishing it. Every queued media item becomes one independent GSN house campaign using the shared message and selected destinations.
+- The operator must select one expiry date and time before read-only review. The exact reviewed timestamp applies to every independent campaign created from that media group, is sent with every sequential publication request, and appears in review and campaign history. The backend rejects an expired timestamp or one beyond the current 24-hour pilot maximum. Older trusted callers that omit it retain the authoritative server-assigned 24-hour expiry so no house campaign becomes unbounded.
 - The review action must remain tappable before the draft is ready and explain every missing requirement in the same action area. It must never appear silently disabled merely because destination, message, or media is missing.
 - On phone, the review action must appear immediately after the media picker and preparation status, before the first-media preview and prepared-media list. Its label must make the complete path obvious (`Review and publish`) while still stating that the first tap opens a final check and does not publish immediately.
 - The message field may retain the backend's 2,000-character maximum, but the screen must explain that this is only an allowance and that one short sentence is sufficient; it must not present a bare counter that looks like a writing requirement.
@@ -1681,7 +1683,7 @@ Rules:
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.
 - Operator-facing reporting must describe issued presentation leases as `issued by GSN` and qualifying visibility events as `seen`. Issuance does not prove handset receipt. Delivery-round counters remain technical pacing data and must not be presented as personal impressions. None of these counts may be relabelled as video playback, completion, sales, or verified-human reach.
 - Discarding an unpublished review may delete only a GSN-managed Marketplace upload that has no surviving database reference. Referenced media must be retained.
-- The official campaign lasts 24 hours. Its explicit advertiser phone is a public contact route only; it must not create a member shop, seller trust claim, member endorsement, or Community Domain endorsement.
+- An official campaign expires at its persisted advert-group timestamp, currently bounded to no more than 24 hours after publication. Its explicit advertiser phone is a public contact route only; it must not create a member shop, seller trust claim, member endorsement, or Community Domain endorsement.
 - The pilot rail rotates automatically every five seconds without adding manual next, previous, pause, or fast-forward controls. Existing qualification, hidden-tab, reduced-motion, Dashboard Market Wisdom, Marketplace, Public Shop, Community Home, and Owner Shop Control boundaries otherwise remain unchanged.
 
 Primary action:
