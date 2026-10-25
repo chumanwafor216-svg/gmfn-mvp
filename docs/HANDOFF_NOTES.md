@@ -43,9 +43,10 @@ under `docs/` or `docs/archive/`, then link that file here.
   `20261025_network_growth_attribution.py`, schema/route/service files named
   `network_growth.py` / `network_growth_service.py`, API router registration,
   and `tests/test_network_growth_attribution.py`.
-- Verification: migration graph has one head (`20261025_network_growth`), Python
-  compilation passed, and all 6 focused attribution tests passed. Status is
-  local only: not committed, pushed, deployed, or live-phone verified.
+- Verification: migration graph has one head (`20261025_network_growth`), its
+  blank -> head -> previous -> head round trip passed, Python compilation
+  passed, and all 6 focused attribution tests passed. Status is local commit
+  `3681e00d`; it is not pushed, deployed, or live-phone verified.
 
 ## GSN campaign batch preview, expiry and network recovery - 2026-10-25
 
