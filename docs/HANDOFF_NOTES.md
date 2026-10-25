@@ -20,8 +20,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   must still report and pass the 15-fps floor before acceptance. A genuinely
   measured 10-fps source remains rejected. Verification passed all 17 focused
   media-quality tests, all 18 GSN-house campaign tests, the media-quality
-  source audit, and scoped diff checks. Deployment and a retry of the same
-  physical-phone batch remain pending.
+  source audit, and scoped diff checks. Application commit 2a9061dc passed the
+  full GitHub backend workflow and was pushed unchanged to the pilot branch and
+  main. Backend-enabled deployment workflow 40214270425 succeeded; Render API
+  deploy dep-dbf3c7dg1s2s73eb2ecg reached live from the exact commit, public API
+  health returned HTTP 200 in production mode, and post-rollout API error-level
+  logs were empty. A retry of the same physical-phone batch remains pending.
 
 - Follow-up expiry correction: the former 24-hour frontend `max` and matching API rejection were an actual fixed ceiling, not merely a default. The reviewed expiry is now any explicit future timestamp; 24 hours remains only the initial value and the legacy fallback when a trusted caller omits expiry. Normal-rotation quotation-only accounting now rounds the selected start-to-expiry span up to chargeable days, so a 90-day, two-promotion, one-community preview reports 90 days and 180 repost-equivalent credits. The screen states that expiry does not prove payment, payer authority, or settlement.
 - Expiry verification passed: all 18 GSN-house backend tests, the focused four-test expiry/timed-schedule slice, the Admin GSN campaign source audit, targeted frontend lint, the 292-module production build, and the complete protected-button freeze audit. The first protected-audit attempt encountered a temporary local port-5173 collision; its clean rerun passed every protected gate.
