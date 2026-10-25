@@ -492,12 +492,14 @@ def test_house_campaign_group_expiry_is_shared_and_replay_safe(
     ]
 
 
-def test_house_campaign_rejects_invalid_group_expiry(
+def test_house_campaign_rejects_expired_group_expiry_and_accepts_multi_month_period(
     client,
     override_current_user,
+    monkeypatch,
 ) -> None:
     _seed_house_campaign_destinations()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    monkeypatch.setattr(marketplace_routes, '_now_utc', lambda: now)
     base_payload = {
         'clan_ids': [1],
         'message': 'GSN expiry validation announcement',
@@ -513,19 +515,34 @@ def test_house_campaign_rejects_invalid_group_expiry(
             'idempotency_key': 'gsn-house-expired-group-0001',
         },
     )
-    over_limit = client.post(
-        '/marketplace/admin/gsn-house-campaigns',
+    multi_month_preview = client.post(
+        '/marketplace/admin/gsn-house-campaigns/preview',
         json={
-            **base_payload,
-            'expires_at': (now + timedelta(hours=25)).isoformat(),
-            'idempotency_key': 'gsn-house-over-limit-0001',
+            'clan_ids': [1],
+            'promotion_count': 2,
+            'expires_at': (now + timedelta(days=90)).isoformat(),
         },
     )
 
     assert expired.status_code == 400, expired.text
     assert expired.json()['detail']['code'] == 'gsn_house_campaign_expiry_must_be_future'
-    assert over_limit.status_code == 400, over_limit.text
-    assert over_limit.json()['detail']['code'] == 'gsn_house_campaign_expiry_exceeds_pilot_limit'
+    assert multi_month_preview.status_code == 200, multi_month_preview.text
+    commercial = multi_month_preview.json()['commercial_equivalence']
+    assert commercial['chargeable_days'] == 90
+    assert commercial['repost_equivalent_credits'] == 180
+
+    published = client.post(
+        '/marketplace/admin/gsn-house-campaigns',
+        json={
+            **base_payload,
+            'expires_at': (now + timedelta(days=90)).isoformat(),
+            'idempotency_key': 'gsn-house-multi-month-0001',
+        },
+    )
+    assert published.status_code == 200, published.text
+    report = client.get('/marketplace/admin/gsn-house-campaigns').json()['current']
+    assert report['commercial_equivalence']['chargeable_days'] == 90
+    assert report['commercial_equivalence']['repost_equivalent_credits'] == 90
 
 
 def test_house_campaign_publishes_canonically_without_member_quota_or_shop_identity(

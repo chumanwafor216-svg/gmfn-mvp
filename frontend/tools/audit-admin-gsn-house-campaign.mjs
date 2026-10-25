@@ -166,6 +166,9 @@ for (const text of [
   'Advert group expiry',
   'expires_at: review.expiresAt',
   'Every picture and video in this reviewed group receives this same expiry',
+  'including a multi-month campaign',
+  'The expiry does not itself confirm payment',
+  'Twenty-four hours is the starting default, not a maximum',
   'Group expiry:',
 ]) {
   requireText(pageFile, page, text, 'Missing advert-group expiry screen contract: ' + text + '.');
@@ -207,9 +210,19 @@ for (const text of [
   'expires_at: Optional[datetime] = None',
   'def _resolve_gsn_house_campaign_expiry',
   'gsn_house_campaign_expiry_must_be_future',
-  'gsn_house_campaign_expiry_exceeds_pilot_limit',
+  'def _gsn_house_campaign_chargeable_days',
+  '"chargeable_days": chargeable_days',
 ]) {
   requireText(backendFile, backend, text, 'Missing backend advert-group expiry contract: ' + text + '.');
+}
+for (const [file, source, forbidden] of [
+  [pageFile, page, 'GSN_HOUSE_MAX_LIFETIME_MS'],
+  [pageFile, page, 'current pilot maximum is 24 hours'],
+  [backendFile, backend, 'gsn_house_campaign_expiry_exceeds_pilot_limit'],
+]) {
+  if (source.includes(forbidden)) {
+    findings.push({ file, message: 'Removed fixed expiry ceiling returned: ' + forbidden + '.' });
+  }
 }
 
 if (/disabled=\{selectedRows\.length === 0[^}]*\}/.test(page)) {

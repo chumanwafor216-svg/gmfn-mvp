@@ -816,6 +816,8 @@ def _gsn_house_destination_preview(
     clan_ids: list[int],
     promotion_count: int = 1,
     schedule: Optional[dict[str, Any]] = None,
+    expires_at: Optional[datetime] = None,
+    current_time: Optional[datetime] = None,
 ) -> dict[str, Any]:
     requested = _ordered_unique_clan_ids(clan_ids)
     if not requested:
@@ -858,10 +860,21 @@ def _gsn_house_destination_preview(
         if schedule is not None
         else 1
     )
+    chargeable_days = (
+        _gsn_house_campaign_chargeable_days(
+            starts_at=current_time,
+            expires_at=expires_at,
+        )
+        if current_time is not None and expires_at is not None
+        else 1
+    )
+    commercial_units_per_promotion = (
+        scheduled_opportunities if schedule is not None else chargeable_days
+    )
     chargeable_units = (
         max(1, int(promotion_count))
         * len(eligible_ids)
-        * scheduled_opportunities
+        * commercial_units_per_promotion
     )
     quoted_amount = calc_spotlight_subscription_amount(chargeable_units)
     return {
@@ -882,7 +895,7 @@ def _gsn_house_destination_preview(
             "status": "quotation_only",
             "promotion_count": max(1, int(promotion_count)),
             "eligible_destination_count": len(eligible_ids),
-            "chargeable_days": 1,
+            "chargeable_days": chargeable_days,
             "scheduled_opportunities_per_promotion": scheduled_opportunities,
             "repost_equivalent_credits": chargeable_units,
             "quoted_amount_gbp": format(quoted_amount, '.2f'),
@@ -1289,7 +1302,21 @@ def _gsn_house_campaign_report(
         1,
         int(schedule_report.get('requested_slot_count') or 1),
     )
-    repost_equivalent_credits = len(placements) * scheduled_opportunities
+    campaign_started_at = _as_aware_utc(
+        getattr(campaign, "activated_at", None)
+        or getattr(campaign, "created_at", None)
+    ) or current_time
+    campaign_expires_at = _as_aware_utc(authorized_expiry(campaign))
+    chargeable_days = _gsn_house_campaign_chargeable_days(
+        starts_at=campaign_started_at,
+        expires_at=campaign_expires_at,
+    )
+    commercial_units_per_promotion = (
+        scheduled_opportunities
+        if bool(schedule_report.get('timed'))
+        else chargeable_days
+    )
+    repost_equivalent_credits = len(placements) * commercial_units_per_promotion
     repost_equivalent_amount = calc_spotlight_subscription_amount(repost_equivalent_credits)
     state = _gsn_house_campaign_operational_state(campaign, now=current_time)
     return {
@@ -1364,7 +1391,7 @@ def _gsn_house_campaign_report(
             "status": "quotation_only",
             "promotion_count": 1,
             "eligible_destination_count": len(placements),
-            "chargeable_days": 1,
+            "chargeable_days": chargeable_days,
             "scheduled_opportunities_per_promotion": scheduled_opportunities,
             "repost_equivalent_credits": repost_equivalent_credits,
             "quoted_amount_gbp": format(repost_equivalent_amount, '.2f'),
@@ -2921,17 +2948,29 @@ def _as_aware_utc(value: Optional[datetime]) -> Optional[datetime]:
     return value.astimezone(timezone.utc)
 
 
+def _gsn_house_campaign_chargeable_days(
+    *,
+    starts_at: Optional[datetime],
+    expires_at: Optional[datetime],
+) -> int:
+    start = _as_aware_utc(starts_at)
+    expiry = _as_aware_utc(expires_at)
+    if start is None or expiry is None or expiry <= start:
+        return 1
+    return max(1, int(ceil((expiry - start).total_seconds() / 86_400)))
+
+
 def _resolve_gsn_house_campaign_expiry(
     value: Optional[datetime],
     *,
     current_time: datetime,
 ) -> datetime:
-    maximum_expiry = activation_expiry(current_time, authorized_days=1).replace(
+    default_expiry = activation_expiry(current_time, authorized_days=1).replace(
         microsecond=0
     )
     requested_expiry = _as_aware_utc(value)
     if requested_expiry is None:
-        return maximum_expiry
+        return default_expiry
     requested_expiry = requested_expiry.replace(microsecond=0)
     if requested_expiry <= current_time:
         raise HTTPException(
@@ -2939,14 +2978,6 @@ def _resolve_gsn_house_campaign_expiry(
             detail={
                 'code': 'gsn_house_campaign_expiry_must_be_future',
                 'message': 'Choose a GSN campaign expiry date and time in the future.',
-            },
-        )
-    if requested_expiry > maximum_expiry:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                'code': 'gsn_house_campaign_expiry_exceeds_pilot_limit',
-                'message': 'The current GSN house-campaign pilot allows at most 24 hours.',
             },
         )
     return requested_expiry
@@ -8305,6 +8336,8 @@ def preview_gsn_house_campaign(
         clan_ids=payload.clan_ids,
         promotion_count=payload.promotion_count,
         schedule=schedule,
+        expires_at=expires_at,
+        current_time=current_time,
     )
 
 
@@ -8332,6 +8365,8 @@ def create_gsn_house_campaign(
         db,
         clan_ids=payload.clan_ids,
         schedule=schedule,
+        expires_at=expires_at,
+        current_time=current_time,
     )
     target_clan_ids = list(preview["eligible_clan_ids"])
     if not target_clan_ids:

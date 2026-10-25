@@ -72,7 +72,7 @@ type BatchPublication = {
 };
 
 const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
-const GSN_HOUSE_MAX_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const GSN_HOUSE_DEFAULT_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES = 5;
 
 function dateTimeInputValue(date: Date): string {
@@ -81,7 +81,7 @@ function dateTimeInputValue(date: Date): string {
 }
 
 function defaultExpiryInputValue(): string {
-  return dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_MAX_LIFETIME_MS));
+  return dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_DEFAULT_LIFETIME_MS));
 }
 
 function scheduleInputValue(
@@ -113,7 +113,6 @@ function campaignExpiryProblem(value: string): string {
   const expiryTime = new Date(value).getTime();
   if (!value || Number.isNaN(expiryTime)) return 'Choose the date and time when this advert group should stop.';
   if (expiryTime <= Date.now()) return 'Choose an advert-group expiry in the future.';
-  if (expiryTime > Date.now() + GSN_HOUSE_MAX_LIFETIME_MS) return 'The current pilot allows an advert group to run for at most 24 hours.';
   return '';
 }
 
@@ -1461,7 +1460,7 @@ export default function AdminGsnHouseCampaignPage() {
           <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
             {[
               ["Publisher", "GSN-HOUSE"],
-              ["Maximum lifetime", "24 hours"],
+              ["Expiry control", "Admin-selected"],
               ["Selected", String(selectedRows.length)],
               ["Media", mediaQueue.length > 0 ? `${mediaQueue.length} prepared` : "Not ready"],
               ['Group expiry', dateTimeLabel(campaignExpiryIso(expiryInput))],
@@ -1609,7 +1608,7 @@ export default function AdminGsnHouseCampaignPage() {
           ) : (
             <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900 }}>No GSN house campaign is currently serving.</div>
-              <div style={{ marginTop: 5, ...helper() }}>You can start building the 24-hour promotion inventory below.</div>
+              <div style={{ marginTop: 5, ...helper() }}>You can start building promotion inventory for the selected campaign period below.</div>
             </div>
           )}
 
@@ -1708,7 +1707,7 @@ export default function AdminGsnHouseCampaignPage() {
                   {review.schedule ? (
                     <div><strong>Peak-time surcharge:</strong> Policy undecided; not included and no charge occurs here.</div>
                   ) : null}
-                  <div><strong>Maximum lifetime:</strong> 24 hours</div>
+                  <div><strong>Duration:</strong> Until the reviewed expiry selected by the admin</div>
                 </div>
               </div>
             </div>
@@ -1864,7 +1863,8 @@ export default function AdminGsnHouseCampaignPage() {
             Governance and delivery boundary
           </summary>
           <div style={{ marginTop: 13, ...helper(), display: "grid", gap: 8 }}>
-            <div>The campaign expires at the admin-selected time, no later than 24 hours after publication.</div>
+            <div>The campaign expires at the admin-selected future time. Twenty-four hours is the starting default, not a maximum.</div>
+            <div>The expiry records the approved serving boundary. It does not by itself prove payment, payer authority, or settlement.</div>
             <div>Optional timed delivery changes only that campaign. Normal Spotlight rotation remains unchanged for ordinary campaigns.</div>
             <div>A timed interval is an eligible presentation opportunity, not guaranteed clock-time playback, audience-wide broadcast, reach, or sale.</div>
             <div>Only explicitly selected communities are considered.</div>
@@ -2018,7 +2018,6 @@ export default function AdminGsnHouseCampaignPage() {
               type='datetime-local'
               value={expiryInput}
               min={dateTimeInputValue(new Date())}
-              max={dateTimeInputValue(new Date(Date.now() + GSN_HOUSE_MAX_LIFETIME_MS))}
               disabled={draftBusy || publishedCount > 0}
               onChange={(event) => {
                 if (invalidateReview()) setExpiryInput(event.target.value);
@@ -2027,7 +2026,7 @@ export default function AdminGsnHouseCampaignPage() {
             />
           </label>
           <div style={{ marginTop: 6, color: '#60758A', fontSize: 12, lineHeight: 1.5 }}>
-            Every picture and video in this reviewed group receives this same expiry. The current pilot maximum is 24 hours.
+            Every picture and video in this reviewed group receives this same expiry. The starting value is 24 hours, but you may choose any future date and time, including a multi-month campaign. The expiry does not itself confirm payment.
           </div>
 
           <div style={{ marginTop: 16, ...softCard('#F8FBFF'), display: 'grid', gap: 12 }}>
