@@ -51,6 +51,7 @@ from app.services.feature_entitlements_service import (
     get_active_feature_quantity,
     has_active_feature,
 )
+from app.services.expected_payments_service import calc_spotlight_subscription_amount
 from app.services.community_domain_feature_policy import (
     COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
     COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
@@ -803,7 +804,12 @@ def _gsn_house_destination_decision(db: Session, *, clan_id: int) -> dict[str, A
     }
 
 
-def _gsn_house_destination_preview(db: Session, *, clan_ids: list[int]) -> dict[str, Any]:
+def _gsn_house_destination_preview(
+    db: Session,
+    *,
+    clan_ids: list[int],
+    promotion_count: int = 1,
+) -> dict[str, Any]:
     requested = _ordered_unique_clan_ids(clan_ids)
     if not requested:
         raise HTTPException(
@@ -819,6 +825,29 @@ def _gsn_house_destination_preview(db: Session, *, clan_ids: list[int]) -> dict[
     ]
     eligible = [row for row in decisions if bool(row["eligible"])]
     excluded = [row for row in decisions if not bool(row["eligible"])]
+    eligible_ids = [int(row["clan_id"]) for row in eligible]
+    member_counts = {
+        int(clan_id): int(count or 0)
+        for clan_id, count in (
+            db.query(ClanMembership.clan_id, func.count(func.distinct(ClanMembership.user_id)))
+            .filter(ClanMembership.clan_id.in_(eligible_ids or [-1]))
+            .filter(ClanMembership.left_at.is_(None))
+            .group_by(ClanMembership.clan_id)
+            .all()
+        )
+    }
+    eligible = [
+        {**row, "addressable_active_member_accounts": member_counts.get(int(row["clan_id"]), 0)}
+        for row in eligible
+    ]
+    distinct_audience = (
+        db.query(func.count(func.distinct(ClanMembership.user_id)))
+        .filter(ClanMembership.clan_id.in_(eligible_ids or [-1]))
+        .filter(ClanMembership.left_at.is_(None))
+        .scalar()
+    )
+    chargeable_units = max(1, int(promotion_count)) * len(eligible_ids)
+    quoted_amount = calc_spotlight_subscription_amount(chargeable_units)
     return {
         "requested_clan_ids": requested,
         "eligible_clan_ids": [int(row["clan_id"]) for row in eligible],
@@ -827,6 +856,22 @@ def _gsn_house_destination_preview(db: Session, *, clan_ids: list[int]) -> dict[
         "excluded_destinations": excluded,
         "excluded_count": len(excluded),
         "governance_boundary": _gsn_house_governance_boundary(),
+        "audience": {
+            "metric": "addressable_active_member_accounts",
+            "distinct_accounts": int(distinct_audience or 0),
+            "connected_now": None,
+            "connected_now_status": "not_recorded",
+        },
+        "commercial_equivalence": {
+            "status": "quotation_only",
+            "promotion_count": max(1, int(promotion_count)),
+            "eligible_destination_count": len(eligible_ids),
+            "chargeable_days": 1,
+            "repost_equivalent_credits": chargeable_units,
+            "quoted_amount_gbp": format(quoted_amount, '.2f'),
+            "formula": "promotion count x eligible destinations x chargeable days",
+            "financial_effect": "none",
+        },
     }
 
 
@@ -1178,6 +1223,20 @@ def _gsn_house_campaign_report(
         .scalar()
         or 0
     )
+    currently_eligible_clan_ids = [
+        int(row['clan_id'])
+        for row in destination_rows
+        if bool(row.get('delivery_eligible'))
+    ]
+    addressable_accounts = (
+        db.query(func.count(func.distinct(ClanMembership.user_id)))
+        .filter(ClanMembership.clan_id.in_(currently_eligible_clan_ids or [-1]))
+        .filter(ClanMembership.left_at.is_(None))
+        .scalar()
+        or 0
+    )
+    repost_equivalent_credits = len(placements)
+    repost_equivalent_amount = calc_spotlight_subscription_amount(repost_equivalent_credits)
     state = _gsn_house_campaign_operational_state(campaign, now=current_time)
     return {
         "campaign_id": campaign_id,
@@ -1240,6 +1299,21 @@ def _gsn_house_campaign_report(
             "unique_qualified_viewer_accounts": int(unique_viewer_count or 0),
         },
         "destinations": destination_rows,
+        "audience": {
+            "metric": "addressable_active_member_accounts",
+            "distinct_accounts": int(addressable_accounts),
+            "connected_now": None,
+            "connected_now_status": "not_recorded",
+        },
+        "commercial_equivalence": {
+            "status": "quotation_only",
+            "promotion_count": 1,
+            "eligible_destination_count": len(placements),
+            "chargeable_days": 1,
+            "repost_equivalent_credits": repost_equivalent_credits,
+            "quoted_amount_gbp": format(repost_equivalent_amount, '.2f'),
+            "financial_effect": "none",
+        },
         "withdrawal_audit": _gsn_house_campaign_withdrawal_audit(
             db,
             campaign_id=campaign_id,
@@ -3883,6 +3957,7 @@ class MarketplaceBroadcastCreateIn(BaseModel):
 
 class GsnHouseCampaignPreviewIn(BaseModel):
     clan_ids: list[int] = Field(min_length=1, max_length=100)
+    promotion_count: int = Field(default=1, ge=1, le=10)
 
 
 class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
@@ -7974,7 +8049,11 @@ def preview_gsn_house_campaign(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_platform_admin(current_user)
-    return _gsn_house_destination_preview(db, clan_ids=payload.clan_ids)
+    return _gsn_house_destination_preview(
+        db,
+        clan_ids=payload.clan_ids,
+        promotion_count=payload.promotion_count,
+    )
 
 
 @router.post("/admin/gsn-house-campaigns")

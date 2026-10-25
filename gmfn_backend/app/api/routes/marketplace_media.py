@@ -7,6 +7,7 @@ from io import BytesIO
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import JSONResponse
@@ -16,15 +17,17 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import ClanMembership, User
+from app.db.models import ClanMembership, MarketplaceShop, User
 from app.services.marketplace_media_quality_service import (
     MAX_NORMALIZED_VIDEO_BYTES,
+    MAX_GSN_NATURAL_FINISH_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_ASPECT_RATIO,
     MAX_VIDEO_DURATION_SECONDS as QUALITY_MAX_VIDEO_DURATION_SECONDS,
     MIN_VIDEO_FPS,
     MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
+    VideoFinishProfile,
     normalize_marketplace_video,
 )
 from app.services.storage_service import StorageServiceError, create_presigned_upload
@@ -143,6 +146,23 @@ def _upload_path_for(kind: str, filename: str) -> Path:
     if kind == "videos":
         return _video_upload_dir() / filename
     raise HTTPException(status_code=400, detail="Invalid media kind")
+
+
+def _verified_shop_logo_path(value: Any) -> Path | None:
+    path = urlsplit(str(value or '').strip()).path
+    prefix = '/uploads/marketplace/images/'
+    if not path.startswith(prefix):
+        return None
+    filename = Path(path).name
+    if not filename or filename != path[len(prefix):]:
+        return None
+    root = _image_upload_dir().resolve()
+    candidate = (root / filename).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
 
 
 def _validate_media_type(media_type: str) -> str:
@@ -489,6 +509,20 @@ async def upload_marketplace_image(
         "size_bytes": len(data),
         "url": _public_url_for("images", filename),
         "clan_id": clan_id,
+        "finish": (
+            {
+                "profile": "gsn_natural",
+                "duration_seconds": int(selected_finish.duration_seconds),
+                "brand_name": selected_finish.brand_name,
+                "title": selected_finish.title,
+                "public_contact_present": bool(selected_finish.public_contact),
+                "logo_applied": bool(selected_finish.logo_path),
+                "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
+                "truth_boundary": "Presentation only: GSN does not certify the product or alter its claimed condition.",
+            }
+            if selected_finish is not None
+            else None
+        ),
     }
 
 
@@ -497,7 +531,12 @@ async def upload_marketplace_video(
     file: UploadFile = File(...),
     duration_seconds: Optional[float] = Form(default=None),
     clan_id: Optional[int] = Form(default=None),
+    finish_profile: Optional[str] = Form(default=None),
+    finish_duration_seconds: Optional[int] = Form(default=None),
+    finish_shop_id: Optional[int] = Form(default=None),
+    finish_title: Optional[str] = Form(default=None),
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     _ensure_dirs()
 
@@ -506,6 +545,29 @@ async def upload_marketplace_video(
 
     _validate_ext("video", ext)
     _validate_content_type("video", content_type, ext)
+
+    selected_finish: VideoFinishProfile | None = None
+    selected_shop: MarketplaceShop | None = None
+    profile_name = str(finish_profile or '').strip().lower()
+    if profile_name:
+        if profile_name != 'gsn_natural':
+            raise HTTPException(status_code=400, detail='Unknown video finish profile.')
+        if finish_duration_seconds not in {5, 10}:
+            raise HTTPException(status_code=400, detail='Choose a 5-second or 10-second GSN finish.')
+        if not finish_shop_id:
+            raise HTTPException(status_code=400, detail='A seller shop is required for the GSN finish.')
+        selected_shop = db.query(MarketplaceShop).filter(MarketplaceShop.id == int(finish_shop_id)).first()
+        if selected_shop is None:
+            raise HTTPException(status_code=404, detail='Shop not found.')
+        if int(selected_shop.owner_user_id) != int(current_user.id) and not _is_admin(current_user):
+            raise HTTPException(status_code=403, detail='You can only finish video for a shop you own.')
+        selected_finish = VideoFinishProfile(
+            duration_seconds=int(finish_duration_seconds),
+            brand_name=str(selected_shop.name or '').strip()[:120],
+            title=' '.join(str(finish_title or '').split())[:80],
+            public_contact=str(selected_shop.whatsapp_number or '').strip()[:32],
+            logo_path=_verified_shop_logo_path(selected_shop.image_url),
+        )
 
     processing_token = secrets.token_hex(8)
     input_path = _video_processing_dir() / f"{processing_token}.source{ext}"
@@ -521,7 +583,11 @@ async def upload_marketplace_video(
         )
         if source_size_bytes <= 0:
             raise HTTPException(status_code=400, detail="Video file is empty.")
-        normalized = normalize_marketplace_video(input_path, output_path)
+        normalized = normalize_marketplace_video(
+            input_path,
+            output_path,
+            finish_profile=selected_finish,
+        )
         shutil.move(str(output_path), str(filepath))
     except MediaQualityError as exc:
         raise HTTPException(
@@ -541,6 +607,7 @@ async def upload_marketplace_video(
     finally:
         input_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
+        output_path.with_suffix('.overlay.png').unlink(missing_ok=True)
 
     return {
         "ok": True,

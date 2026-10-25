@@ -38,11 +38,11 @@ const expectedSourceActions = {
   PrimaryButton: 12,
   SecondaryButton: 24,
   SubtleButton: 3,
-  StableButton: 5,
+  StableButton: 6,
   StableCtaLink: 13,
-  total: 57,
+  total: 58,
 };
-const expectedNativeFieldCount = 27;
+const expectedNativeFieldCount = 29;
 const expectedFileInputActionRoots = 2;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
@@ -437,6 +437,10 @@ assertShopContains(
 assertShopContains(
   /Picture \/ video, item, message\.[\s\S]*?debugId="shop-control\.spotlight\.media\.image"[\s\S]*?Add picture[\s\S]*?debugId="shop-control\.spotlight\.media\.video"[\s\S]*?Add video[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.image-file"[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.video-file"/,
   "Shop Control free Spotlight publisher must keep one simple outside flow with picture/video upload buttons and hidden audited file inputs."
+);
+assertShopContains(
+  /Add GSN Natural Finish[\s\S]*?5-second finish[\s\S]*?10-second finish[\s\S]*?debugId="shop-control\.spotlight\.video-finish"[\s\S]*?Finished preview ready/,
+  "Shop Control video finish must remain optional, bounded to five/ten seconds, and require a reviewed finished preview."
 );
 
 assertShopContains(

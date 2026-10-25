@@ -8,6 +8,17 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN campaign board + Natural Finish - 2026-10-25
+
+- The existing Spotlight serving engine was deliberately not changed: rotation, dwell, pacing, replay, qualification, ordinary frequency limits, GSN-HOUSE delivery rounds, audio continuity, placement eligibility, quota and credit consumption remain as before.
+- `/app/command-center/gsn-campaigns` now requests one group-level read-only calculation using `promotion count x eligible destinations x one chargeable day`. It reports the existing paid-repost credit/GBP equivalence as a quotation with `financial_effect: none`; it does not create repost, payment, payer, shop or beneficiary records.
+- The campaign board now reports the distinct union of active member accounts across currently eligible communities. `Connected now` is explicitly `not_recorded`; addressable accounts are not represented as views. Campaign history also receives current addressable-account and quotation fields.
+- The authenticated marketplace video upload route now accepts an optional `gsn_natural` finish for only the current seller's shop (platform admin remains the existing override). It supports five or ten seconds, conservative enhancement, a shop-derived lower third, `Presented through GSN`, 1.6 Mbps video/96 kbps audio targets, and a hard 4 MB output ceiling. Ordinary upload defaults are unchanged.
+- Shop Control Free Spotlight and Subscription Spotlight now expose the optional finish, upload it separately for a real server preview, and block publication until the seller reviews that result or turns the option off.
+- Verification passed: Python compile, 31 focused backend Spotlight/media tests, the new real-FFmpeg five-second finish test, Admin GSN campaign audit, scoped diff check, TypeScript and 292-module production build. Initial pytest/build attempts were blocked by the restricted Windows token; the same focused commands passed with approved temporary-process access.
+- Remaining truth: server-side compression reduces stored/delivered bytes but does not reduce the seller's first upload data. Browser preparation still trims supported clips locally; broader imported-video upload compression would require a later bounded on-device codec decision. A finished preview abandoned before publication can remain as an unreferenced managed file because seller-owned reference-safe discard/retention is not yet connected; this is explicit cleanup debt, not silently claimed as complete.
+- This batch is locally implemented and verified but not deployed. Render auto-deploy and Git publishing remain frozen in owner-controlled batch mode.
+
 ## Spotlight iPhone sound continuity - 2026-10-25
 
 - The intended Public Shop contract is now explicit: one viewer tap turns

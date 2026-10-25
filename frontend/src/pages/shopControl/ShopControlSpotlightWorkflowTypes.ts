@@ -164,6 +164,14 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightVideoFile: File | null;
   spotlightHasVideo: boolean;
   spotlightVideoDurationSeconds: number | null;
+  spotlightNaturalFinishEnabled: boolean;
+  setSpotlightNaturalFinishEnabled: Dispatch<SetStateAction<boolean>>;
+  spotlightNaturalFinishSeconds: 5 | 10;
+  setSpotlightNaturalFinishSeconds: Dispatch<SetStateAction<5 | 10>>;
+  spotlightFinishedVideoUrl: string;
+  setSpotlightFinishedVideoUrl: Dispatch<SetStateAction<string>>;
+  preparingSpotlightFinish: boolean;
+  prepareSpotlightNaturalFinish: () => Promise<void>;
   spotlightCanContinueToPreview: boolean;
   setSpotlightFlowStep: Dispatch<SetStateAction<ShopControlSpotlightFlowStep>>;
   spotlightImagePreviewUrl: string;

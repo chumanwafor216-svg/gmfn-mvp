@@ -468,6 +468,10 @@ export default function SubscriptionSpotlightPage() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [videoPreviewUrl, setVideoPreviewUrl] = useState("");
   const [videoDurationSeconds, setVideoDurationSeconds] = useState<number | null>(null);
+  const [naturalFinishEnabled, setNaturalFinishEnabled] = useState(true);
+  const [naturalFinishSeconds, setNaturalFinishSeconds] = useState<5 | 10>(10);
+  const [finishedVideoUrl, setFinishedVideoUrl] = useState('');
+  const [preparingFinish, setPreparingFinish] = useState(false);
   const [preparingImage, setPreparingImage] = useState(false);
   const [preparingVideo, setPreparingVideo] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -897,11 +901,13 @@ export default function SubscriptionSpotlightPage() {
     if (!file) {
       setVideoFile(null);
       setVideoDurationSeconds(null);
+      setFinishedVideoUrl('');
       setMediaFeedback(null);
       return;
     }
     try {
       setPreparingVideo(true);
+      setFinishedVideoUrl('');
       setMediaFeedback({
         tone: 'info',
         text: 'Preparing the selected video. Publishing stays locked until it is ready.',
@@ -934,6 +940,38 @@ export default function SubscriptionSpotlightPage() {
     }
   }
 
+  async function prepareNaturalFinish() {
+    if (!videoFile || !shop?.id || preparingFinish) return;
+    setPreparingFinish(true);
+    try {
+      const res = await uploadMarketplaceVideoFile(
+        videoFile,
+        videoDurationSeconds,
+        shopClanId || null,
+        {
+          profile: 'gsn_natural',
+          durationSeconds: naturalFinishSeconds,
+          shopId: Number(shop.id),
+          title: message,
+        }
+      );
+      if (!mountedRef.current) return;
+      const url = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
+      if (!url) throw new Error('GSN prepared the video but did not return a preview link.');
+      setFinishedVideoUrl(url);
+      setMediaFeedback({
+        tone: 'success',
+        text: `GSN Natural Finish is ready (${naturalFinishSeconds} seconds, maximum 4 MB). Review it in Preview before publishing.`,
+      });
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      setFinishedVideoUrl('');
+      showNotice('error', safeStr(err?.message) || 'GSN could not prepare the finished preview.');
+    } finally {
+      if (mountedRef.current) setPreparingFinish(false);
+    }
+  }
+
   async function publishSpotlight() {
     if (publishing) {
       showNotice("info", "Subscription Spotlight publish is already running.");
@@ -961,7 +999,7 @@ export default function SubscriptionSpotlightPage() {
       }
       return;
     }
-    if (preparingImage || preparingVideo) {
+    if (preparingImage || preparingVideo || preparingFinish) {
       showNotice("info", "Please wait while GSN prepares the selected media, then publish again.");
       return;
     }
@@ -971,6 +1009,10 @@ export default function SubscriptionSpotlightPage() {
         text: 'Add a ready picture or short video before publishing. Subscription Spotlight never publishes a blank media card.',
       });
       showNotice("error", "Add a short message, picture, or video before publishing.");
+      return;
+    }
+    if (videoFile && naturalFinishEnabled && !finishedVideoUrl) {
+      showNotice('info', 'Prepare and review the GSN Natural Finish before publishing, or turn the finish off.');
       return;
     }
     setPublishing(true);
@@ -983,7 +1025,9 @@ export default function SubscriptionSpotlightPage() {
         imageUrl = firstTruthy(res?.image_url, res?.url, res?.file_url, res?.path, res?.item?.image_url, res?.data?.image_url);
         if (!imageUrl) throw new Error("Image upload completed but did not return a usable image link.");
       }
-      if (videoFile) {
+      if (finishedVideoUrl) {
+        videoUrl = finishedVideoUrl;
+      } else if (videoFile) {
         const res = await uploadMarketplaceVideoFile(videoFile, videoDurationSeconds, shopClanId || null);
         if (!mountedRef.current) return;
         videoUrl = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
@@ -1026,6 +1070,7 @@ export default function SubscriptionSpotlightPage() {
       setImageFile(null);
       setVideoFile(null);
       setVideoDurationSeconds(null);
+      setFinishedVideoUrl('');
       setMediaFeedback(null);
       setSpotlightStatus(authoritativeStatus as SpotlightStatusRecord);
       setSpotlights([authoritativeSpotlight as BroadcastRecord]);
@@ -1325,7 +1370,7 @@ export default function SubscriptionSpotlightPage() {
 
         <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 340px", gap: 14 }}>
           <div style={{ ...brandInnerCard(), display: "grid", gap: 12 }}>
-            <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Write the paid spotlight message people should see first." style={textAreaStyle()} />
+            <textarea value={message} onChange={(event) => { setMessage(event.target.value); setFinishedVideoUrl(''); }} placeholder="Write the paid spotlight message people should see first." style={textAreaStyle()} />
             <input
               type="file"
               data-gmfn-action-root="true"
@@ -1348,6 +1393,42 @@ export default function SubscriptionSpotlightPage() {
             <div style={{ ...brandHelperText(), fontSize: 12, fontWeight: 850 }}>
               A ready picture or short video is required. The publish button stays locked until media preparation succeeds.
             </div>
+            {videoFile ? (
+              <div style={{ ...brandInnerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
+                <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 850, color: '#0B2D4A' }}>
+                  <input
+                    type="checkbox"
+                    checked={naturalFinishEnabled}
+                    onChange={(event) => { setNaturalFinishEnabled(event.target.checked); setFinishedVideoUrl(''); }}
+                  />
+                  Add GSN Natural Finish
+                </label>
+                <div style={{ ...brandHelperText(), fontSize: 12 }}>
+                  Gently improves clarity, reduces file size, and adds your shop name, public contact and logo. It does not change the product or certify its condition.
+                </div>
+                {naturalFinishEnabled ? (
+                  <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      value={naturalFinishSeconds}
+                      onChange={(event) => { setNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10); setFinishedVideoUrl(''); }}
+                      style={{ ...inputStyle(), width: 'auto', minWidth: 150 }}
+                    >
+                      <option value={5}>5-second finish</option>
+                      <option value={10}>10-second finish</option>
+                    </select>
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => void prepareNaturalFinish()}
+                      disabled={preparingFinish}
+                      debugId="subscription-spotlight.video-finish"
+                    >
+                      {preparingFinish ? 'Preparing preview...' : finishedVideoUrl ? 'Prepare again' : 'Prepare finished preview'}
+                    </SecondaryButton>
+                    {finishedVideoUrl ? <span style={brandBadge(true)}>Finished preview ready</span> : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {mediaFeedback ? (
               <div
                 data-subscription-spotlight-media-feedback={mediaFeedback.tone}
@@ -1374,9 +1455,11 @@ export default function SubscriptionSpotlightPage() {
                 publishing ||
                 spotlightFeatureOff ||
                 preparingImage ||
-                preparingVideo ||
-                !hasReadyMedia ||
-                mediaPreparationFailed
+                 preparingVideo ||
+                 preparingFinish ||
+                 !hasReadyMedia ||
+                 mediaPreparationFailed ||
+                 Boolean(videoFile && naturalFinishEnabled && !finishedVideoUrl)
               }
               busy={publishing}
               busyLabel="Publishing..."
@@ -1392,16 +1475,16 @@ export default function SubscriptionSpotlightPage() {
               {labelWithIcon("eye", "Preview")}
             </div>
             <div style={{ marginTop: 12, borderRadius: 18, overflow: "hidden", minHeight: 220, background: "#061827" }}>
-              {imagePreviewUrl || videoPreviewUrl ? (
+              {imagePreviewUrl || finishedVideoUrl || videoPreviewUrl ? (
                 <SpotlightMediaFrame
                   imageUrl={resolveAssetSrc(imagePreviewUrl)}
-                  videoUrl={resolveAssetSrc(videoPreviewUrl)}
+                  videoUrl={resolveAssetSrc(finishedVideoUrl || videoPreviewUrl)}
                   videoPoster={resolveAssetSrc(imagePreviewUrl) || undefined}
                   alt="Subscription Spotlight preview"
                   frameStyle={{ width: "100%", minHeight: 220, height: 220, borderRadius: 18, border: "none" }}
                   mediaStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
                   showVideoControls
-                  showAudioUnlock={Boolean(videoPreviewUrl)}
+                  showAudioUnlock={Boolean(finishedVideoUrl || videoPreviewUrl)}
                   audioUnlockLabel="Sound on"
                 />
               ) : (

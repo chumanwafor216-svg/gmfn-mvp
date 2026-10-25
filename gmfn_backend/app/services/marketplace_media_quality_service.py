@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import imageio_ffmpeg
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from app.core.runtime_memory import log_runtime_event, memory_snapshot
 
@@ -28,6 +29,7 @@ MAX_VIDEO_LONG_EDGE = 1280
 # or encoded size; GSN then keeps and normalises only the opening public clip.
 MAX_SOURCE_VIDEO_BYTES = 100 * 1024 * 1024
 MAX_NORMALIZED_VIDEO_BYTES = 15 * 1024 * 1024
+MAX_GSN_NATURAL_FINISH_BYTES = 4 * 1024 * 1024
 VIDEO_PROCESS_TIMEOUT_SECONDS = 50
 # The production API currently runs inside a 512 MiB Render instance. FFmpeg
 # otherwise sizes its decoder, filter, and encoder thread pools from the host
@@ -136,6 +138,15 @@ class VideoInspection:
 
 
 @dataclass(frozen=True)
+class VideoFinishProfile:
+    duration_seconds: int
+    brand_name: str
+    title: str = ''
+    public_contact: str = ''
+    logo_path: Path | None = None
+
+
+@dataclass(frozen=True)
 class NormalizedVideo:
     source: VideoInspection
     output: VideoInspection
@@ -143,6 +154,7 @@ class NormalizedVideo:
     trimmed: bool
     kept_seconds: float
     size_bytes: int
+    finish_profile: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -152,7 +164,69 @@ class NormalizedVideo:
             "trimmed": self.trimmed,
             "kept_seconds": self.kept_seconds,
             "size_bytes": self.size_bytes,
+            "finish_profile": self.finish_profile,
         }
+
+
+def _font(size: int) -> ImageFont.ImageFont:
+    for name in ('DejaVuSans-Bold.ttf', 'Arial.ttf'):
+        try:
+            return ImageFont.truetype(name, size=size)
+        except OSError:
+            pass
+    return ImageFont.load_default()
+
+
+def _ellipsize(draw: ImageDraw.ImageDraw, value: str, font: ImageFont.ImageFont, width: int) -> str:
+    text = ' '.join(str(value or '').split())
+    while text and draw.textbbox((0, 0), text, font=font)[2] > width:
+        text = text[:-2].rstrip() + '...'
+    return text
+
+
+def _build_finish_overlay(profile: VideoFinishProfile, width: int, height: int, path: Path) -> None:
+    canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+    margin = max(12, int(width * 0.025))
+    panel_height = max(90, min(int(height * 0.25), 190))
+    top = height - panel_height - margin
+    draw.rounded_rectangle(
+        (margin, top, width - margin, height - margin),
+        radius=max(14, int(width * 0.018)),
+        fill=(8, 25, 49, 224),
+        outline=(199, 158, 59, 240),
+        width=max(2, int(width * 0.004)),
+    )
+    logo_size = max(52, min(panel_height - 26, 118))
+    text_left = margin * 2
+    if profile.logo_path and profile.logo_path.is_file():
+        try:
+            with Image.open(profile.logo_path) as source:
+                logo = ImageOps.contain(source.convert('RGBA'), (logo_size, logo_size))
+                logo_x = margin * 2
+                canvas.alpha_composite(logo, (logo_x, top + (panel_height - logo.height) // 2))
+                text_left = logo_x + logo_size + margin
+        except (OSError, ValueError):
+            pass
+    max_width = max(100, width - text_left - margin * 2)
+    brand_font = _font(max(18, min(38, int(width * 0.044))))
+    detail_font = _font(max(13, min(26, int(width * 0.029))))
+    small_font = _font(max(11, min(20, int(width * 0.022))))
+    y = top + max(12, int(panel_height * 0.1))
+    for value, font, colour in (
+        (profile.brand_name, brand_font, (255, 247, 225, 255)),
+        (profile.title, detail_font, (255, 255, 255, 245)),
+        (profile.public_contact, small_font, (232, 238, 246, 245)),
+    ):
+        line = _ellipsize(draw, value, font, max_width)
+        if line:
+            draw.text((text_left, y), line, font=font, fill=colour)
+            y += draw.textbbox((0, 0), line, font=font)[3] + 3
+    mark = 'Presented through GSN'
+    mark_font = _font(max(10, min(16, int(width * 0.016))))
+    mark_width = draw.textbbox((0, 0), mark, font=mark_font)[2]
+    draw.text((width - margin * 2 - mark_width, height - margin * 2 - 14), mark, font=mark_font, fill=(199, 158, 59, 255))
+    canvas.save(path, format='PNG', optimize=True)
 
 
 def _safe_float(value: Any) -> float:
@@ -308,6 +382,8 @@ def _normalized_dimensions(inspection: VideoInspection) -> tuple[int, int]:
 def normalize_marketplace_video(
     source_path: str | Path,
     output_path: str | Path,
+    *,
+    finish_profile: VideoFinishProfile | None = None,
 ) -> NormalizedVideo:
     input_path = Path(source_path)
     destination = Path(output_path)
@@ -330,6 +406,16 @@ def normalize_marketplace_video(
     width, height = _normalized_dimensions(inspection)
     output_fps = min(30.0, max(MIN_VIDEO_FPS, round(inspection.fps)))
     has_audio = _source_has_audio(ffmpeg_exe, input_path)
+    finish_seconds = (
+        int(finish_profile.duration_seconds)
+        if finish_profile is not None
+        else int(MAX_VIDEO_DURATION_SECONDS)
+    )
+    if finish_profile is not None and finish_seconds not in {5, 10}:
+        raise MediaQualityError('video_finish_duration_invalid', 'Choose a 5-second or 10-second GSN finish.')
+    overlay_path = destination.with_suffix('.overlay.png')
+    if finish_profile is not None:
+        _build_finish_overlay(finish_profile, width, height, overlay_path)
 
     command = [
         ffmpeg_exe,
@@ -393,6 +479,30 @@ def normalize_marketplace_video(
         command.append("-an")
     command.append(str(destination))
 
+    if finish_profile is not None:
+        time_index = command.index('-t')
+        command[time_index + 1] = str(finish_seconds)
+        command[time_index:time_index] = ['-loop', '1', '-i', str(overlay_path)]
+        command[command.index('0:v:0')] = '[finished]'
+        filter_index = command.index('-vf')
+        del command[filter_index : filter_index + 2]
+        filter_graph = (
+            f'[0:v]scale={width}:{height},'
+            'hqdn3d=1.4:1.0:2.0:1.5,'
+            'eq=brightness=0.015:contrast=1.035:saturation=1.025,'
+            'unsharp=5:5:0.35:3:3:0[base];'
+            '[base][1:v]overlay=0:0:eof_action=repeat[finished]'
+        )
+        command[filter_index:filter_index] = [
+            '-filter_complex_threads', str(FFMPEG_THREAD_LIMIT),
+            '-filter_complex', filter_graph,
+        ]
+        command[command.index('-crf') + 1] = '23'
+        command[command.index('-maxrate') + 1] = '1600k'
+        command[command.index('-bufsize') + 1] = '3200k'
+        if has_audio:
+            command[command.index('-b:a') + 1] = '96k'
+
     try:
         if _runtime_memory_logging_enabled():
             completed = _run_video_process(command)
@@ -415,6 +525,7 @@ def normalize_marketplace_video(
             "GSN could not prepare videos right now. Please try again shortly.",
         ) from exc
 
+    overlay_path.unlink(missing_ok=True)
     if completed.returncode != 0 or not destination.is_file():
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
@@ -423,7 +534,8 @@ def normalize_marketplace_video(
         )
 
     output_size = destination.stat().st_size
-    if output_size <= 0 or output_size > MAX_NORMALIZED_VIDEO_BYTES:
+    output_limit = MAX_GSN_NATURAL_FINISH_BYTES if finish_profile is not None else MAX_NORMALIZED_VIDEO_BYTES
+    if output_size <= 0 or output_size > output_limit:
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
             "video_output_too_large",
@@ -431,7 +543,7 @@ def normalize_marketplace_video(
         )
 
     output_inspection = inspect_video(destination)
-    if output_inspection.duration_seconds > MAX_VIDEO_DURATION_SECONDS + 0.35:
+    if output_inspection.duration_seconds > finish_seconds + 0.35:
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
             "video_trim_failed",
@@ -446,9 +558,10 @@ def normalize_marketplace_video(
         source=inspection,
         output=output_inspection,
         source_had_audio=has_audio,
-        trimmed=inspection.duration_seconds > MAX_VIDEO_DURATION_SECONDS + 0.05,
-        kept_seconds=min(effective_duration, MAX_VIDEO_DURATION_SECONDS),
+        trimmed=inspection.duration_seconds > finish_seconds + 0.05,
+        kept_seconds=min(effective_duration, finish_seconds),
         size_bytes=output_size,
+        finish_profile='gsn_natural' if finish_profile is not None else None,
     )
 
 

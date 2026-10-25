@@ -13,11 +13,13 @@ from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited
 from app.api.routes.marketplace import _require_verified_marketplace_video
 from app.services.marketplace_media_quality_service import (
     FFMPEG_THREAD_LIMIT,
+    MAX_GSN_NATURAL_FINISH_BYTES,
     MAX_NORMALIZED_VIDEO_BYTES,
     MAX_SOURCE_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SECONDS,
     MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
+    VideoFinishProfile,
     VideoInspection,
     inspect_video,
     is_verified_marketplace_video_url,
@@ -134,6 +136,28 @@ def test_normalizer_physically_trims_and_standardises_video(tmp_path: Path):
     assert result.output.fps >= 20
     assert result.output.codec == "h264"
     assert result.size_bytes == output.stat().st_size
+
+
+def test_gsn_natural_finish_is_bounded_branded_profile(tmp_path: Path):
+    source = _make_video(tmp_path / 'seller.mp4', seconds=7, with_audio=True)
+    output = tmp_path / 'qv1_finished.mp4'
+
+    result = normalize_marketplace_video(
+        source,
+        output,
+        finish_profile=VideoFinishProfile(
+            duration_seconds=5,
+            brand_name='Ada Home Foods',
+            title='Fresh soup packs',
+            public_contact='+234 800 000 0000',
+        ),
+    )
+
+    assert output.is_file()
+    assert result.finish_profile == 'gsn_natural'
+    assert result.trimmed is True
+    assert result.output.duration_seconds <= 5.35
+    assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
 
 
 def test_normalizer_caps_decoder_filter_and_encoder_threads(

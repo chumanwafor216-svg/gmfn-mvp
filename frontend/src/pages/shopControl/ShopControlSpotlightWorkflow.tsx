@@ -174,6 +174,14 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightVideoFile,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
+    spotlightNaturalFinishEnabled,
+    setSpotlightNaturalFinishEnabled,
+    spotlightNaturalFinishSeconds,
+    setSpotlightNaturalFinishSeconds,
+    spotlightFinishedVideoUrl,
+    setSpotlightFinishedVideoUrl,
+    preparingSpotlightFinish,
+    prepareSpotlightNaturalFinish,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,
     spotlightImagePreviewUrl,
@@ -833,11 +841,50 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 </div>
                 <textarea
                   value={spotlightMessage}
-                  onChange={(e) => setSpotlightMessage(e.target.value)}
+                  onChange={(e) => { setSpotlightMessage(e.target.value); setSpotlightFinishedVideoUrl(''); }}
                   placeholder="Available today. Message me on WhatsApp to order."
                   style={{ ...textAreaStyle(), marginTop: 10 }}
                 />
               </div>
+              {spotlightVideoFile ? (
+                <div style={{ marginTop: 14, ...innerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
+                  <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 900, color: '#0B2D4A' }}>
+                    <input
+                      type="checkbox"
+                      checked={spotlightNaturalFinishEnabled}
+                      onChange={(event) => { setSpotlightNaturalFinishEnabled(event.target.checked); setSpotlightFinishedVideoUrl(''); }}
+                    />
+                    Add GSN Natural Finish
+                  </label>
+                  <div style={{ ...helperText(), fontSize: 12 }}>
+                    Gently improves clarity, reduces file size, and adds your shop name, public contact and logo. It does not change the product or certify its condition.
+                  </div>
+                  {spotlightNaturalFinishEnabled ? (
+                    <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={spotlightNaturalFinishSeconds}
+                        onChange={(event) => { setSpotlightNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10); setSpotlightFinishedVideoUrl(''); }}
+                        style={{ ...inputStyle(), width: 'auto', minWidth: 150 }}
+                      >
+                        <option value={5}>5-second finish</option>
+                        <option value={10}>10-second finish</option>
+                      </select>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        onClick={() => prepareSpotlightNaturalFinish()}
+                        disabled={preparingSpotlightFinish}
+                        busy={preparingSpotlightFinish}
+                        busyLabel="Preparing..."
+                        debugId="shop-control.spotlight.video-finish"
+                      >
+                        {spotlightFinishedVideoUrl ? 'Prepare again' : 'Prepare finished preview'}
+                      </StableButton>
+                      {spotlightFinishedVideoUrl ? <span style={badge(true)}>Finished preview ready</span> : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div style={controlGrid(isCompact, 150)}>
@@ -847,9 +894,11 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 disabled={
                   preparingSpotlightImage ||
                   preparingSpotlightVideo ||
+                  preparingSpotlightFinish ||
+                  Boolean(spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) ||
                   !spotlightCanContinueToPreview
                 }
-                busy={preparingSpotlightImage || preparingSpotlightVideo}
+                busy={preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish}
                 busyLabel="Preparing media..."
                 fullWidth
                 debugId="shop-control.spotlight.upload.preview"

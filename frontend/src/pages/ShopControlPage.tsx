@@ -3726,6 +3726,10 @@ export default function ShopControlPage() {
   const [spotlightVideoPreviewUrl, setSpotlightVideoPreviewUrl] = useState("");
   const [spotlightVideoDurationSeconds, setSpotlightVideoDurationSeconds] =
     useState<number | null>(null);
+  const [spotlightNaturalFinishEnabled, setSpotlightNaturalFinishEnabled] = useState(true);
+  const [spotlightNaturalFinishSeconds, setSpotlightNaturalFinishSeconds] = useState<5 | 10>(10);
+  const [spotlightFinishedVideoUrl, setSpotlightFinishedVideoUrl] = useState('');
+  const [preparingSpotlightFinish, setPreparingSpotlightFinish] = useState(false);
   const [spotlightImageInputKey, setSpotlightImageInputKey] = useState(0);
   const [spotlightVideoInputKey, setSpotlightVideoInputKey] = useState(0);
   const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
@@ -4074,8 +4078,9 @@ export default function ShopControlPage() {
     setSpotlightImageUrl("");
     setSpotlightVideoUrl("");
     setSpotlightImageFile(null);
-    setSpotlightVideoFile(null);
-    setSpotlightVideoDurationSeconds(null);
+      setSpotlightVideoFile(null);
+      setSpotlightVideoDurationSeconds(null);
+      setSpotlightFinishedVideoUrl('');
     setPreparingSpotlightImage(false);
     setPreparingSpotlightVideo(false);
     setSpotlightImageInputKey((prev) => prev + 1);
@@ -6609,6 +6614,7 @@ export default function ShopControlPage() {
     const prepJob = spotlightVideoPrepJobRef.current;
 
     setPreparingSpotlightVideo(false);
+    setSpotlightFinishedVideoUrl('');
 
     if (!file) {
       setSpotlightVideoInputKey((prev) => prev + 1);
@@ -6689,6 +6695,46 @@ export default function ShopControlPage() {
     }
   }
 
+  async function prepareSpotlightNaturalFinish() {
+    if (!spotlightVideoFile || preparingSpotlightFinish) return;
+    setPreparingSpotlightFinish(true);
+    try {
+      const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
+      if (!activeShop?.id) throw new Error('Save your shop identity before preparing the finished preview.');
+      const targetClanId = Number(activeShop.clan_id || effectiveShopClanId || selectedClanId || 0);
+      const uploadRes = await uploadMarketplaceVideoFile(
+        spotlightVideoFile,
+        spotlightVideoDurationSeconds,
+        targetClanId || null,
+        {
+          profile: 'gsn_natural',
+          durationSeconds: spotlightNaturalFinishSeconds,
+          shopId: Number(activeShop.id),
+          title: firstTruthy(spotlightProductName, spotlightMessage),
+        }
+      );
+      const url = firstTruthy(
+        uploadRes?.video_url,
+        uploadRes?.url,
+        uploadRes?.file_url,
+        uploadRes?.path,
+        uploadRes?.item?.video_url,
+        uploadRes?.data?.video_url
+      );
+      if (!url) throw new Error('GSN prepared the video but did not return a preview link.');
+      setSpotlightFinishedVideoUrl(url);
+      setSpotlightMediaFeedback({
+        tone: 'success',
+        text: `GSN Natural Finish is ready (${spotlightNaturalFinishSeconds} seconds, maximum 4 MB). Review it before publishing.`,
+      });
+    } catch (err: any) {
+      setSpotlightFinishedVideoUrl('');
+      showNotice('error', safeStr(err?.message) || 'GSN could not prepare the finished preview.');
+    } finally {
+      setPreparingSpotlightFinish(false);
+    }
+  }
+
   function composeSpotlightMessage(): string {
     const parts = [
       safeStr(spotlightProductName),
@@ -6758,7 +6804,7 @@ export default function ShopControlPage() {
 
     const targetClanId = Number(activeShop?.clan_id || selectedClanId || effectiveShopClanId || 0);
 
-    if (preparingSpotlightImage || preparingSpotlightVideo) {
+    if (preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish) {
       const preparingMessage =
         "Please wait while the app prepares your spotlight media, then tap Publish again.";
       setSpotlightPublishFeedback({ tone: "info", text: preparingMessage });
@@ -6793,6 +6839,12 @@ export default function ShopControlPage() {
     if (videoValidationIssue) {
       setSpotlightPublishFeedback({ tone: "error", text: videoValidationIssue });
       showNotice("error", videoValidationIssue);
+      return;
+    }
+    if (spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) {
+      const finishMessage = 'Prepare and review the GSN Natural Finish before publishing, or turn the finish off.';
+      setSpotlightPublishFeedback({ tone: 'info', text: finishMessage });
+      showNotice('info', finishMessage);
       return;
     }
 
@@ -6853,7 +6905,9 @@ export default function ShopControlPage() {
         }
       }
 
-      if (spotlightVideoFile) {
+      if (spotlightFinishedVideoUrl) {
+        videoUrl = spotlightFinishedVideoUrl;
+      } else if (spotlightVideoFile) {
         const uploadRes = await uploadMarketplaceVideoFile(
           spotlightVideoFile,
           spotlightVideoDurationSeconds != null &&
@@ -7210,10 +7264,18 @@ export default function ShopControlPage() {
     spotlightVideoFile,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
+    spotlightNaturalFinishEnabled,
+    setSpotlightNaturalFinishEnabled,
+    spotlightNaturalFinishSeconds,
+    setSpotlightNaturalFinishSeconds,
+    spotlightFinishedVideoUrl,
+    setSpotlightFinishedVideoUrl,
+    preparingSpotlightFinish,
+    prepareSpotlightNaturalFinish,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,
     spotlightImagePreviewUrl,
-    spotlightVideoPreviewUrl,
+    spotlightVideoPreviewUrl: spotlightFinishedVideoUrl || spotlightVideoPreviewUrl,
     spotlightPilotMaxVideoSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
     spotlightPreviewMessage,
     spotlightPreviewHasPicture,

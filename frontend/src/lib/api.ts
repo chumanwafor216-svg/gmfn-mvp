@@ -7171,6 +7171,7 @@ export type GsnHouseCampaignDestination = {
   eligible: boolean;
   reason_code: string;
   reason: string;
+  addressable_active_member_accounts?: number;
   placement_broadcast_id?: number | null;
   placement_serving_status?: string | null;
   placement_authorized_expires_at?: string | null;
@@ -7216,6 +7217,22 @@ export type GsnHouseCampaignPreview = {
   excluded_destinations: GsnHouseCampaignDestination[];
   excluded_count: number;
   governance_boundary?: GsnHouseCampaignGovernanceBoundary;
+  audience?: {
+    metric: string;
+    distinct_accounts: number;
+    connected_now?: number | null;
+    connected_now_status?: string;
+  };
+  commercial_equivalence?: {
+    status: string;
+    promotion_count: number;
+    eligible_destination_count: number;
+    chargeable_days: number;
+    repost_equivalent_credits: number;
+    quoted_amount_gbp: string;
+    formula?: string;
+    financial_effect: string;
+  };
 };
 
 export type GsnHouseCampaignPublication = {
@@ -7265,6 +7282,8 @@ export type GsnHouseCampaignReport = {
     unique_qualified_viewer_accounts: number;
   };
   destinations: GsnHouseCampaignDestination[];
+  audience?: GsnHouseCampaignPreview['audience'];
+  commercial_equivalence?: GsnHouseCampaignPreview['commercial_equivalence'];
   withdrawal_audit?: {
     event_id: number;
     actor_user_id: number;
@@ -7369,6 +7388,7 @@ export async function listAdminGsnHouseCampaignDestinations(params?: {
 
 export async function previewAdminGsnHouseCampaign(payload: {
   clan_ids: number[];
+  promotion_count?: number;
 }): Promise<GsnHouseCampaignPreview> {
   return httpJson(
     "/marketplace/admin/gsn-house-campaigns/preview",
@@ -8446,10 +8466,18 @@ export async function uploadMarketplaceImageFile(
   return readJsonOrTextSafe(res);
 }
 
+export type MarketplaceVideoFinishOptions = {
+  profile: 'gsn_natural';
+  durationSeconds: 5 | 10;
+  shopId: number;
+  title?: string;
+};
+
 export async function uploadMarketplaceVideoFile(
   file: File,
   durationSeconds?: number | null,
-  clanId?: number | null
+  clanId?: number | null,
+  finish?: MarketplaceVideoFinishOptions | null
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
@@ -8461,6 +8489,13 @@ export async function uploadMarketplaceVideoFile(
   const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
   if (effectiveClanId > 0) {
     fd.append("clan_id", String(effectiveClanId));
+  }
+
+  if (finish) {
+    fd.append("finish_profile", finish.profile);
+    fd.append("finish_duration_seconds", String(finish.durationSeconds));
+    fd.append("finish_shop_id", String(finish.shopId));
+    if (finish.title?.trim()) fd.append("finish_title", finish.title.trim());
   }
 
   const headers: Record<string, string> = {

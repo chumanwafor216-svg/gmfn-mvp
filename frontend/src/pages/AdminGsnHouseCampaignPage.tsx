@@ -614,6 +614,7 @@ export default function AdminGsnHouseCampaignPage() {
     try {
       const destinationPreview = await previewAdminGsnHouseCampaign({
         clan_ids: selectedRows.map((row) => row.clan_id),
+        promotion_count: mediaQueue.length,
       });
       if (Number(destinationPreview.eligible_count || 0) <= 0) {
         setReview(null);
@@ -1283,6 +1284,8 @@ export default function AdminGsnHouseCampaignPage() {
                   ["Issued by GSN", operations.current.delivery.issued_presentation_count],
                   ["Seen", operations.current.delivery.qualified_presentation_count],
                   ["People who saw it", operations.current.delivery.unique_qualified_viewer_accounts],
+                  ["Addressable accounts", operations.current.audience?.distinct_accounts ?? 0],
+                  ["Repost-equivalent credits", operations.current.commercial_equivalence?.repost_equivalent_credits ?? 0],
                 ].map(([label, value]) => (
                   <div key={label} style={institutionalInnerCard("#FFFFFF")}>
                     <div style={{ color: "#64778B", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
@@ -1390,6 +1393,9 @@ export default function AdminGsnHouseCampaignPage() {
                     <div><strong>Issued by GSN:</strong> {item.delivery.issued_presentation_count}</div>
                     <div><strong>Seen:</strong> {item.delivery.qualified_presentation_count}</div>
                     <div><strong>People who saw it:</strong> {item.delivery.unique_qualified_viewer_accounts}</div>
+                    <div><strong>Addressable active accounts:</strong> {item.audience?.distinct_accounts ?? 0}</div>
+                    <div><strong>Connected right now:</strong> Not recorded</div>
+                    <div><strong>Repost-equivalent quotation:</strong> £{item.commercial_equivalence?.quoted_amount_gbp ?? '0.00'} (no financial movement)</div>
                     {item.withdrawal_audit?.reason ? <div><strong>Stop reason:</strong> {item.withdrawal_audit.reason}</div> : null}
                   </div>
                 </details>
@@ -1423,6 +1429,10 @@ export default function AdminGsnHouseCampaignPage() {
                   <div><strong>Promotions:</strong> {review.media.length}</div>
                   <div><strong>Eligible now:</strong> {review.preview.eligible_count}</div>
                   <div><strong>Excluded now:</strong> {review.preview.excluded_count}</div>
+                  <div><strong>Addressable active accounts:</strong> {review.preview.audience?.distinct_accounts ?? 0}</div>
+                  <div><strong>Connected right now:</strong> Not recorded</div>
+                  <div><strong>Repost-equivalent credits:</strong> {review.preview.commercial_equivalence?.repost_equivalent_credits ?? 0}</div>
+                  <div><strong>Quotation:</strong> £{review.preview.commercial_equivalence?.quoted_amount_gbp ?? '0.00'} (no charge or credit movement)</div>
                   <div><strong>Group expiry:</strong> {dateTimeLabel(review.expiresAt)}</div>
                   <div><strong>Maximum lifetime:</strong> 24 hours</div>
                 </div>
@@ -1434,7 +1444,7 @@ export default function AdminGsnHouseCampaignPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {review.preview.eligible_destinations.map((row) => (
                   <div key={row.clan_id} style={{ color: "#0B1F33", fontWeight: 850 }}>
-                    {destinationTitle(row)}{row.community_code ? ` · ${row.community_code}` : ""}
+                    {destinationTitle(row)}{row.community_code ? ` · ${row.community_code}` : ""} · {row.addressable_active_member_accounts ?? 0} active account{Number(row.addressable_active_member_accounts || 0) === 1 ? '' : 's'}
                   </div>
                 ))}
               </div>

@@ -239,13 +239,23 @@ def test_house_campaign_preview_defaults_free_communities_and_respects_exclusion
 
     response = client.post(
         "/marketplace/admin/gsn-house-campaigns/preview",
-        json={"clan_ids": [1, 2, 3, 9, 10, 999]},
+        json={"clan_ids": [1, 2, 3, 9, 10, 999], "promotion_count": 3},
     )
 
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["eligible_clan_ids"] == [1, 2, 9]
     assert body["eligible_count"] == 3
+    assert body["audience"] == {
+        "metric": "addressable_active_member_accounts",
+        "distinct_accounts": 1,
+        "connected_now": None,
+        "connected_now_status": "not_recorded",
+    }
+    assert body["commercial_equivalence"]["status"] == "quotation_only"
+    assert body["commercial_equivalence"]["repost_equivalent_credits"] == 9
+    assert body["commercial_equivalence"]["quoted_amount_gbp"] == "8.00"
+    assert body["commercial_equivalence"]["financial_effect"] == "none"
     excluded = {row["clan_id"]: row["reason_code"] for row in body["excluded_destinations"]}
     assert excluded == {
         3: "community_domain_spotlight_disabled",
