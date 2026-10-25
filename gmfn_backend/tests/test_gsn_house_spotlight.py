@@ -143,6 +143,10 @@ def test_house_campaign_routes_require_platform_admin(
         "/marketplace/admin/gsn-house-campaigns/1/stop",
         json={"reason": "Permission check", "confirm_withdrawal": True},
     )
+    destination_stop = client.post(
+        "/marketplace/admin/gsn-house-campaigns/1/destinations/1/stop",
+        json={"reason": "Permission check", "confirm_withdrawal": True},
+    )
     publish = client.post(
         "/marketplace/admin/gsn-house-campaigns",
         json={
@@ -159,6 +163,7 @@ def test_house_campaign_routes_require_platform_admin(
     assert campaigns.status_code == 403, campaigns.text
     assert discard.status_code == 403, discard.text
     assert stop.status_code == 403, stop.text
+    assert destination_stop.status_code == 403, destination_stop.text
     assert publish.status_code == 403, publish.text
 
 
@@ -467,6 +472,15 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
                 """
             )
         ).mappings().all()
+        activation_snapshot = conn.execute(
+            text(
+                """
+                SELECT actor_user_id, subject_user_id, meta_json
+                FROM trust_events
+                WHERE event_type = 'marketplace.gsn_house_campaign.activation_snapshot'
+                """
+            )
+        ).mappings().one()
 
     assert publisher["role"] == "system"
     assert campaign == {
@@ -493,6 +507,15 @@ def test_house_campaign_publishes_canonically_without_member_quota_or_shop_ident
         {"actor_user_id": 1, "subject_user_id": publisher["id"]},
         {"actor_user_id": 1, "subject_user_id": publisher["id"]},
     ]
+    snapshot_meta = json.loads(activation_snapshot["meta_json"])
+    assert activation_snapshot["actor_user_id"] == 1
+    assert activation_snapshot["subject_user_id"] == publisher["id"]
+    assert snapshot_meta["requested_clan_ids"] == [1, 2, 3]
+    assert snapshot_meta["eligible_clan_ids"] == [1, 2]
+    assert snapshot_meta["excluded_destinations"] == [
+        {"clan_id": 3, "reason_code": "community_domain_spotlight_disabled"}
+    ]
+    assert snapshot_meta["member_advertising_credit_consumed"] is False
 
     with SessionLocal() as db:
         member_quota_use = marketplace_routes._count_free_spotlight_runs_for_author_today(
@@ -811,6 +834,8 @@ def test_house_campaign_operations_report_and_audited_stop(
         "placement_count": 1,
         "currently_eligible_destination_count": 1,
         "currently_excluded_destination_count": 0,
+        "currently_policy_eligible_destination_count": 1,
+        "withdrawn_destination_count": 0,
         "max_delivery_rounds": 10,
         "consumed_delivery_rounds": 3,
         "remaining_delivery_rounds": 7,
@@ -874,6 +899,190 @@ def test_house_campaign_operations_report_and_audited_stop(
     assert placement_state == "withdrawn"
     assert lease_state == "invalidated"
     assert int(withdrawal_events) == 1
+
+
+def test_house_campaign_destination_stop_is_partial_audited_and_idempotent(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    id, clan_id, user_id, role, personal_pool_balance
+                ) VALUES (2, 2, 3, 'member', 0)
+                """
+            )
+        )
+
+    published = client.post(
+        "/marketplace/admin/gsn-house-campaigns",
+        json={
+            "clan_ids": [1, 2],
+            "message": "Two-community destination withdrawal test",
+            "image_url": "https://cdn.example.test/gsn/destination-stop.jpg",
+            "advertiser_contact_phone": "+2348012345678",
+            "idempotency_key": "gsn-house-destination-stop-0001",
+        },
+    )
+    assert published.status_code == 200, published.text
+    body = published.json()
+    campaign_id = int(body["item"]["spotlight_campaign_id"])
+    placements = {
+        int(item["clan_id"]): int(item["id"])
+        for item in body["items"]
+    }
+
+    with engine.begin() as conn:
+        for clan_id, placement_id in placements.items():
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO spotlight_presentation_leases (
+                        presentation_id, issuance_key, viewer_user_id,
+                        campaign_id, placement_broadcast_id, content_version,
+                        surface, status, issued_at, lease_expires_at
+                    ) VALUES (
+                        :presentation_id, :issuance_key, 3, :campaign_id,
+                        :placement_id, 1, 'public_shop_spotlight_rail',
+                        'issued', CURRENT_TIMESTAMP, '2099-01-01 00:00:00'
+                    )
+                    """
+                ),
+                {
+                    "presentation_id": f"destination-stop-{clan_id}",
+                    "issuance_key": f"destination-stop-{clan_id}",
+                    "campaign_id": campaign_id,
+                    "placement_id": placement_id,
+                },
+            )
+
+    missing_confirmation = client.post(
+        f"/marketplace/admin/gsn-house-campaigns/{campaign_id}/destinations/1/stop",
+        json={
+            "reason": "Community withdrew permission",
+            "confirm_withdrawal": False,
+        },
+    )
+    assert missing_confirmation.status_code == 400, missing_confirmation.text
+    assert (
+        missing_confirmation.json()["detail"]["code"]
+        == "destination_withdrawal_confirmation_required"
+    )
+
+    stopped = client.post(
+        f"/marketplace/admin/gsn-house-campaigns/{campaign_id}/destinations/1/stop",
+        json={
+            "reason": "Community withdrew permission",
+            "confirm_withdrawal": True,
+        },
+    )
+    replay = client.post(
+        f"/marketplace/admin/gsn-house-campaigns/{campaign_id}/destinations/1/stop",
+        json={
+            "reason": "Community withdrew permission",
+            "confirm_withdrawal": True,
+        },
+    )
+    assert stopped.status_code == 200, stopped.text
+    assert replay.status_code == 200, replay.text
+    assert stopped.json()["idempotent_replay"] is False
+    assert replay.json()["idempotent_replay"] is True
+    assert stopped.json()["campaign"]["state"] == "live"
+    assert stopped.json()["campaign"]["delivery"] == {
+        "placement_count": 2,
+        "currently_eligible_destination_count": 1,
+        "currently_excluded_destination_count": 1,
+        "currently_policy_eligible_destination_count": 2,
+        "withdrawn_destination_count": 1,
+        "max_delivery_rounds": SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
+        "consumed_delivery_rounds": 0,
+        "remaining_delivery_rounds": SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
+        "issued_presentation_count": 2,
+        "qualified_presentation_count": 0,
+        "unique_qualified_viewer_accounts": 0,
+    }
+    stopped_destinations = {
+        int(row["clan_id"]): row
+        for row in stopped.json()["campaign"]["destinations"]
+    }
+    assert stopped_destinations[1]["policy_eligible"] is True
+    assert stopped_destinations[1]["delivery_eligible"] is False
+    assert stopped_destinations[1]["placement_serving_status"] == "withdrawn"
+    assert (
+        stopped_destinations[1]["destination_withdrawal_audit"]["reason"]
+        == "Community withdrew permission"
+    )
+    assert stopped_destinations[2]["delivery_eligible"] is True
+    assert stopped_destinations[2]["placement_serving_status"] == "serving"
+
+    last_destination = client.post(
+        f"/marketplace/admin/gsn-house-campaigns/{campaign_id}/destinations/2/stop",
+        json={
+            "reason": "Remove final destination",
+            "confirm_withdrawal": True,
+        },
+    )
+    assert last_destination.status_code == 409, last_destination.text
+    assert (
+        last_destination.json()["detail"]["code"]
+        == "gsn_house_campaign_last_destination_requires_campaign_stop"
+    )
+
+    with SessionLocal() as db:
+        eligibility = evaluate_spotlight_eligibility(
+            db,
+            viewer_user_id=3,
+            campaign_id=campaign_id,
+        )
+    assert eligibility.eligible is True
+    assert [route.route_clan_id for route in eligibility.routes] == [2]
+
+    with engine.begin() as conn:
+        placement_states = dict(
+            conn.execute(
+                text(
+                    """
+                    SELECT clan_id, serving_status
+                    FROM marketplace_broadcasts
+                    WHERE spotlight_campaign_id = :campaign_id
+                    ORDER BY clan_id
+                    """
+                ),
+                {"campaign_id": campaign_id},
+            ).all()
+        )
+        lease_states = dict(
+            conn.execute(
+                text(
+                    """
+                    SELECT placement_broadcast_id, status
+                    FROM spotlight_presentation_leases
+                    WHERE campaign_id = :campaign_id
+                    ORDER BY placement_broadcast_id
+                    """
+                ),
+                {"campaign_id": campaign_id},
+            ).all()
+        )
+        destination_events = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'marketplace.gsn_house_campaign.destination_withdrawn'
+                """
+            )
+        ).scalar_one()
+
+    assert placement_states == {1: "withdrawn", 2: "serving"}
+    assert lease_states == {
+        placements[1]: "invalidated",
+        placements[2]: "issued",
+    }
+    assert int(destination_events) == 1
 
 
 def test_house_campaign_review_media_discard_is_reference_safe(

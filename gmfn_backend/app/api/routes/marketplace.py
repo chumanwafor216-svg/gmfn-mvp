@@ -98,6 +98,9 @@ from app.services.spotlight_presentation_service import (
     revalidate_spotlight_presentation,
     select_spotlight_presentation,
 )
+from app.services.spotlight_pacing_state_service import (
+    SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS,
+)
 from app.services.spotlight_lifecycle_service import (
     SPOTLIGHT_CORRECTION_HOLD,
     SPOTLIGHT_SERVING,
@@ -993,6 +996,89 @@ def _gsn_house_campaign_withdrawal_audit(
     return None
 
 
+def _gsn_house_destination_withdrawal_dedupe_key(
+    *,
+    campaign_id: int,
+    placement_broadcast_id: int,
+) -> str:
+    return hashlib.sha256(
+        (
+            f"gsn-house-destination-withdrawal:{int(campaign_id)}:"
+            f"{int(placement_broadcast_id)}"
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _gsn_house_destination_withdrawal_audits(
+    db: Session,
+    *,
+    campaign_id: int,
+    placements: list[MarketplaceBroadcast],
+) -> dict[int, dict[str, Any]]:
+    expected_keys = {
+        _gsn_house_destination_withdrawal_dedupe_key(
+            campaign_id=int(campaign_id),
+            placement_broadcast_id=int(placement.id),
+        )
+        for placement in placements
+    }
+    if not expected_keys:
+        return {}
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == "marketplace.gsn_house_campaign.destination_withdrawn"
+        )
+        .filter(TrustEvent.dedupe_key.in_(expected_keys))
+        .order_by(TrustEvent.id.desc())
+        .all()
+    )
+    audits: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        meta = _json_load(getattr(row, "meta_json", None))
+        if _safe_int(meta.get("spotlight_campaign_id"), 0) != int(campaign_id):
+            continue
+        event_clan_id = _safe_int(getattr(row, "clan_id", None), 0)
+        if event_clan_id <= 0 or event_clan_id in audits:
+            continue
+        audits[event_clan_id] = {
+            "event_id": int(row.id),
+            "actor_user_id": int(row.actor_user_id),
+            "clan_id": int(event_clan_id),
+            "placement_broadcast_id": _safe_int(
+                meta.get("placement_broadcast_id"),
+                0,
+            )
+            or None,
+            "reason": _safe_str(meta.get("reason")) or None,
+            "invalidated_presentation_count": _safe_int(
+                meta.get("invalidated_presentation_count"),
+                0,
+            ),
+            "remaining_serving_destination_count": _safe_int(
+                meta.get("remaining_serving_destination_count"),
+                0,
+            ),
+            "created_at": _iso_or_none(getattr(row, "created_at", None)),
+        }
+    return audits
+
+
+def _gsn_house_destination_withdrawal_audit(
+    db: Session,
+    *,
+    campaign_id: int,
+    clan_id: int,
+    placement: MarketplaceBroadcast,
+) -> Optional[dict[str, Any]]:
+    return _gsn_house_destination_withdrawal_audits(
+        db,
+        campaign_id=int(campaign_id),
+        placements=[placement],
+    ).get(int(clan_id))
+
+
 def _gsn_house_campaign_report(
     db: Session,
     *,
@@ -1014,16 +1100,65 @@ def _gsn_house_campaign_report(
         .one_or_none()
     )
     first_placement = placements[0] if placements else None
-    destination_rows = [
-        _gsn_house_destination_decision(db, clan_id=int(placement.clan_id))
-        for placement in placements
-    ]
+    destination_withdrawal_audits = (
+        _gsn_house_destination_withdrawal_audits(
+            db,
+            campaign_id=campaign_id,
+            placements=placements,
+        )
+        if any(
+            _safe_str(getattr(row, "serving_status", None)).lower()
+            == "withdrawn"
+            for row in placements
+        )
+        else {}
+    )
+    destination_rows: list[dict[str, Any]] = []
+    for placement in placements:
+        decision = _gsn_house_destination_decision(
+            db,
+            clan_id=int(placement.clan_id),
+        )
+        placement_serving = row_is_serving(placement, now=current_time)
+        policy_eligible = bool(decision.get("eligible"))
+        destination_rows.append(
+            {
+                **decision,
+                "placement_broadcast_id": int(placement.id),
+                "placement_serving_status": _safe_str(
+                    getattr(placement, "serving_status", None),
+                    SPOTLIGHT_SERVING,
+                ),
+                "placement_authorized_expires_at": _iso_or_none(
+                    authorized_expiry(placement)
+                ),
+                "policy_eligible": policy_eligible,
+                "delivery_eligible": bool(policy_eligible and placement_serving),
+                "destination_withdrawal_audit": (
+                    destination_withdrawal_audits.get(int(placement.clan_id))
+                    if _safe_str(
+                        getattr(placement, "serving_status", None)
+                    ).lower()
+                    == "withdrawn"
+                    else None
+                ),
+            }
+        )
     pacing = (
         db.query(SpotlightCampaignPacingState)
         .filter(SpotlightCampaignPacingState.campaign_id == campaign_id)
         .one_or_none()
     )
-    max_rounds = max(int(getattr(pacing, "max_delivery_rounds", 10) or 0), 0)
+    default_max_rounds = (
+        SPOTLIGHT_GSN_HOUSE_PILOT_MAX_DELIVERY_ROUNDS
+        if _safe_str(getattr(campaign, "source_kind", None)).lower()
+        == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
+        else 10
+    )
+    max_rounds = max(
+        int(getattr(pacing, "max_delivery_rounds", default_max_rounds) or 0),
+        0,
+    )
     consumed_rounds = max(
         int(getattr(pacing, "consumed_delivery_rounds", 0) or 0),
         0,
@@ -1083,10 +1218,19 @@ def _gsn_house_campaign_report(
         "delivery": {
             "placement_count": len(placements),
             "currently_eligible_destination_count": sum(
-                1 for row in destination_rows if bool(row.get("eligible"))
+                1 for row in destination_rows if bool(row.get("delivery_eligible"))
             ),
             "currently_excluded_destination_count": sum(
-                1 for row in destination_rows if not bool(row.get("eligible"))
+                1 for row in destination_rows if not bool(row.get("delivery_eligible"))
+            ),
+            "currently_policy_eligible_destination_count": sum(
+                1 for row in destination_rows if bool(row.get("policy_eligible"))
+            ),
+            "withdrawn_destination_count": sum(
+                1
+                for row in destination_rows
+                if _safe_str(row.get("placement_serving_status")).lower()
+                == "withdrawn"
             ),
             "max_delivery_rounds": max_rounds,
             "consumed_delivery_rounds": consumed_rounds,
@@ -3751,6 +3895,11 @@ class GsnHouseCampaignCreateIn(GsnHouseCampaignPreviewIn):
 
 
 class GsnHouseCampaignStopIn(BaseModel):
+    reason: str = Field(min_length=5, max_length=500)
+    confirm_withdrawal: bool = False
+
+
+class GsnHouseCampaignDestinationStopIn(BaseModel):
     reason: str = Field(min_length=5, max_length=500)
     confirm_withdrawal: bool = False
 
@@ -7618,6 +7767,195 @@ def stop_gsn_house_campaign(
     }
 
 
+@router.post(
+    "/admin/gsn-house-campaigns/{campaign_id}/destinations/{clan_id}/stop"
+)
+def stop_gsn_house_campaign_destination(
+    campaign_id: int,
+    clan_id: int,
+    payload: GsnHouseCampaignDestinationStopIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    reason = _safe_str(payload.reason)
+    if len(reason) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "destination_withdrawal_reason_required",
+                "message": (
+                    "Write a clear reason of at least 5 characters before removing "
+                    "this destination."
+                ),
+            },
+        )
+    if payload.confirm_withdrawal is not True:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "destination_withdrawal_confirmation_required",
+                "message": (
+                    "Confirm that future delivery must stop in this community while "
+                    "the campaign remains available in its other permitted destinations."
+                ),
+            },
+        )
+
+    campaign = (
+        db.query(SpotlightCampaign)
+        .filter(SpotlightCampaign.id == int(campaign_id))
+        .filter(
+            SpotlightCampaign.source_kind
+            == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="GSN house campaign not found.")
+
+    placements = (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.spotlight_campaign_id == int(campaign.id))
+        .order_by(MarketplaceBroadcast.id.asc())
+        .with_for_update()
+        .all()
+    )
+    placement = next(
+        (row for row in placements if int(row.clan_id) == int(clan_id)),
+        None,
+    )
+    if placement is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "gsn_house_campaign_destination_not_found",
+                "message": "That community is not a destination of this campaign.",
+            },
+        )
+
+    if _safe_str(getattr(placement, "serving_status", None)).lower() == "withdrawn":
+        return {
+            "ok": True,
+            "idempotent_replay": True,
+            "destination_withdrawal_audit": (
+                _gsn_house_destination_withdrawal_audit(
+                    db,
+                    campaign_id=int(campaign.id),
+                    clan_id=int(clan_id),
+                    placement=placement,
+                )
+            ),
+            "campaign": _gsn_house_campaign_report(db, campaign=campaign),
+        }
+
+    state_before = _gsn_house_campaign_operational_state(campaign)
+    if state_before != "live":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_campaign_destination_not_stoppable",
+                "message": (
+                    f"This campaign is already {state_before}; an individual "
+                    "destination can be removed only while the campaign is live."
+                ),
+            },
+        )
+
+    current_time = _now_utc()
+    serving_placements = [
+        row for row in placements if row_is_serving(row, now=current_time)
+    ]
+    if not row_is_serving(placement, now=current_time):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_campaign_destination_not_serving",
+                "message": "This destination is already unavailable for delivery.",
+            },
+        )
+    if len(serving_placements) <= 1:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "gsn_house_campaign_last_destination_requires_campaign_stop",
+                "message": (
+                    "This is the campaign's last serving destination. Use the "
+                    "campaign stop action so the campaign lifecycle closes explicitly."
+                ),
+            },
+        )
+
+    placement_state_before = _safe_str(
+        getattr(placement, "serving_status", None),
+        SPOTLIGHT_SERVING,
+    )
+    invalidated_count = (
+        db.query(SpotlightPresentationLease)
+        .filter(
+            SpotlightPresentationLease.placement_broadcast_id
+            == int(placement.id)
+        )
+        .filter(SpotlightPresentationLease.status == "issued")
+        .update(
+            {
+                SpotlightPresentationLease.status: "invalidated",
+                SpotlightPresentationLease.invalidated_at: current_time,
+                SpotlightPresentationLease.invalidation_reason: (
+                    "destination_withdrawn"
+                ),
+            },
+            synchronize_session=False,
+        )
+    )
+    placement.serving_status = "withdrawn"
+    placement.serving_status_changed_at = current_time
+    remaining_count = len(serving_placements) - 1
+    event_dedupe = _gsn_house_destination_withdrawal_dedupe_key(
+        campaign_id=int(campaign.id),
+        placement_broadcast_id=int(placement.id),
+    )
+    log_trust_event(
+        db,
+        event_type="marketplace.gsn_house_campaign.destination_withdrawn",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(campaign.owner_user_id),
+        meta={
+            "spotlight_campaign_id": int(campaign.id),
+            "placement_broadcast_id": int(placement.id),
+            "reason": reason,
+            "state_before": placement_state_before,
+            "state_after": "withdrawn",
+            "authorized_expires_at": _iso_or_none(
+                authorized_expiry(placement)
+            ),
+            "invalidated_presentation_count": int(invalidated_count),
+            "remaining_serving_destination_count": int(remaining_count),
+            "publisher": GSN_HOUSE_PUBLISHER_NAME,
+        },
+        dedupe_key=event_dedupe,
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(campaign)
+    return {
+        "ok": True,
+        "idempotent_replay": False,
+        "destination_withdrawal_audit": (
+            _gsn_house_destination_withdrawal_audit(
+                db,
+                campaign_id=int(campaign.id),
+                clan_id=int(clan_id),
+                placement=placement,
+            )
+        ),
+        "campaign": _gsn_house_campaign_report(db, campaign=campaign),
+    }
+
+
 @router.get("/admin/gsn-house-campaigns/destinations")
 def list_gsn_house_campaign_destinations(
     q: Optional[str] = Query(default=None, max_length=120),
@@ -7830,6 +8168,48 @@ def create_gsn_house_campaign(
         )
 
     ensure_initial_content_version(db, campaign=campaign, placement=created_items[0])
+    activation_snapshot_dedupe = hashlib.sha256(
+        f"gsn-house-activation-snapshot:{int(campaign.id)}".encode("utf-8")
+    ).hexdigest()
+    log_trust_event(
+        db,
+        event_type="marketplace.gsn_house_campaign.activation_snapshot",
+        clan_id=None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(publisher.id),
+        meta={
+            "spotlight_campaign_id": int(campaign.id),
+            "publisher": GSN_HOUSE_PUBLISHER_NAME,
+            "source_kind": SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE,
+            "commercial_mode": SPOTLIGHT_COMMERCIAL_MODE_HOUSE,
+            "distribution_scope": (
+                SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES
+            ),
+            "requested_clan_ids": list(preview["requested_clan_ids"]),
+            "eligible_clan_ids": list(preview["eligible_clan_ids"]),
+            "excluded_destinations": [
+                {
+                    "clan_id": int(row["clan_id"]),
+                    "reason_code": _safe_str(row.get("reason_code")),
+                }
+                for row in preview["excluded_destinations"]
+            ],
+            "activated_at": _iso_or_none(
+                getattr(campaign, "activated_at", None)
+            ),
+            "authorized_expires_at": _iso_or_none(expires_at),
+            "member_advertising_credit_consumed": False,
+            "advertiser_contact_method": "phone",
+            "advertiser_contact_phone_last4": advertiser_contact_phone[-4:],
+            "publication_key_hash": hashlib.sha256(
+                publication_key.encode("utf-8")
+            ).hexdigest(),
+            "reason": "gsn_house_campaign_activation_snapshot",
+        },
+        dedupe_key=activation_snapshot_dedupe,
+        commit=False,
+        refresh=False,
+    )
     for item in created_items:
         event_dedupe = hashlib.sha256(
             f"gsn-house:{publication_key}:{int(item.clan_id)}".encode("utf-8")
@@ -7852,6 +8232,7 @@ def create_gsn_house_campaign(
                 "member_advertising_credit_consumed": False,
                 "advertiser_contact_method": "phone",
                 "advertiser_contact_phone_last4": advertiser_contact_phone[-4:],
+                "authorized_expires_at": _iso_or_none(expires_at),
                 "reason": "gsn_house_campaign_published",
             },
             dedupe_key=event_dedupe,

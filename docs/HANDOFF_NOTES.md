@@ -8,6 +8,38 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## GSN selected-destination withdrawal and activation evidence - 2026-10-25
+
+- The first bounded infrastructure slice from the independent-entrepreneur and
+  central-advertising gap review is implemented locally without introducing
+  unresolved prices, rewards, commissions, residuals, payment movement, or a
+  new database entity.
+- A platform administrator can now stop future delivery of one destination in
+  a live multi-community GSN-HOUSE campaign through
+  `POST /marketplace/admin/gsn-house-campaigns/{campaign_id}/destinations/{clan_id}/stop`.
+  The request requires an explicit reason and confirmation, invalidates only
+  issued presentation leases for that placement, preserves the campaign and
+  history, and leaves the other permitted destinations serving. The last
+  serving destination must use the existing whole-campaign stop action.
+- Publication now records one activation audit snapshot containing the
+  requested destinations, eligible destinations, exclusions and reason codes,
+  institutional publisher, acting administrator, authorised expiry, and a
+  hashed publication key. Each destination publication audit also records its
+  authorised expiry.
+- Campaign operations reporting now distinguishes current policy permission
+  from actual delivery eligibility, identifies withdrawn destinations and
+  their withdrawal evidence, and reports the approved 10,000-round GSN-HOUSE
+  pilot ceiling even before a pacing row is materialised.
+- Verification passed locally: Python compilation, `git diff --check`, all 16
+  focused GSN-house tests, 81 adjacent Spotlight presentation, pacing,
+  eligibility, and delivery tests (97 tests total), the admin GSN-house audit,
+  and the Spotlight system-feed audit.
+- Unabated truth: this is backend infrastructure only, verified locally and
+  not deployed. No staff-facing per-destination withdrawal control was added,
+  and paid campaign orders, scheduling, reach commitments, entrepreneur
+  economics, seller-payment automation, and unresolved policy values remain
+  outside this slice. Git publication remains in owner-controlled batch mode.
+
 ## GSN advert-group expiry control - 2026-10-25
 
 - Before this change, each GSN-HOUSE campaign already received a server-set

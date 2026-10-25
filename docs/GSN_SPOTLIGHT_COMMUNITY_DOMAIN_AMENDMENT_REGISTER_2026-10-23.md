@@ -642,7 +642,15 @@ An activation API alone is not a finished publishing channel.
   presentation counts, current destination-policy decisions, and an audited
   idempotent emergency stop that invalidates pending leases without erasing
   history. Discarded unpublished reviews use reference-safe managed-media
-  cleanup. Scheduling, playback/completion analytics, central capacity,
+  cleanup. A bounded backend extension on 2026-10-25 now preserves the
+  activation-time selected/excluded destination snapshot and permits an
+  explicitly confirmed, reasoned withdrawal of one serving destination from a
+  live multi-destination GSN-HOUSE campaign. Only that placement's issued
+  leases are invalidated; other destinations continue, history remains, and
+  the final destination still requires the whole-campaign stop. Operations
+  reporting distinguishes policy permission from present delivery eligibility
+  and exposes the withdrawal audit. No staff-facing per-destination control is
+  present yet. Scheduling, playback/completion analytics, central capacity,
   advertiser billing/refunds, regional targeting, and the independent GSN
   market remain.
 
