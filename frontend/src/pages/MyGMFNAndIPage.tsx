@@ -1136,6 +1136,11 @@ function publicGuideLightButton(primary = false): React.CSSProperties {
   };
 }
 
+const PUBLIC_GSN_CAPABILITY_ORDER = [7, 10, 8, 1, 6, 9, 2, 3, 4, 5, 11, 12];
+const PUBLIC_GSN_CAPABILITIES = PUBLIC_GSN_CAPABILITY_ORDER.map((id) =>
+  GMFN_CAPABILITIES.find((item) => item.id === id)
+).filter((item): item is (typeof GMFN_CAPABILITIES)[number] => Boolean(item));
+
 function PublicCapabilitiesGuidePage({
   compact,
   ios,
@@ -1147,26 +1152,26 @@ function PublicCapabilitiesGuidePage({
 }) {
   const useIosSingleColumn = compact;
   const [publicCapabilityId, setPublicCapabilityId] = useState<number>(
-    GMFN_CAPABILITIES[0]?.id || 1
+    PUBLIC_GSN_CAPABILITIES[0]?.id || 7
   );
   const [showAllPublicCapabilities, setShowAllPublicCapabilities] =
     useState<boolean>(false);
   const publicSelectedCapability =
-    GMFN_CAPABILITIES.find((item) => item.id === publicCapabilityId) ||
-    GMFN_CAPABILITIES[0];
+    PUBLIC_GSN_CAPABILITIES.find((item) => item.id === publicCapabilityId) ||
+    PUBLIC_GSN_CAPABILITIES[0];
   const publicSelectedIndex = Math.max(
     0,
-    GMFN_CAPABILITIES.findIndex((item) => item.id === publicSelectedCapability?.id)
+    PUBLIC_GSN_CAPABILITIES.findIndex((item) => item.id === publicSelectedCapability?.id)
   );
 
   function stepPublicCapability(direction: -1 | 1) {
     setPublicCapabilityId((currentId) => {
-      const currentIndex = GMFN_CAPABILITIES.findIndex((item) => item.id === currentId);
+      const currentIndex = PUBLIC_GSN_CAPABILITIES.findIndex((item) => item.id === currentId);
       const safeIndex = currentIndex >= 0 ? currentIndex : 0;
       const nextIndex =
-        (safeIndex + direction + GMFN_CAPABILITIES.length) %
-        GMFN_CAPABILITIES.length;
-      return GMFN_CAPABILITIES[nextIndex]?.id || GMFN_CAPABILITIES[0]?.id || 1;
+        (safeIndex + direction + PUBLIC_GSN_CAPABILITIES.length) %
+        PUBLIC_GSN_CAPABILITIES.length;
+      return PUBLIC_GSN_CAPABILITIES[nextIndex]?.id || PUBLIC_GSN_CAPABILITIES[0]?.id || 7;
     });
   }
 
@@ -1210,7 +1215,7 @@ function PublicCapabilitiesGuidePage({
               textTransform: "uppercase",
             }}
           >
-            GSN Identity Guide
+            GSN Community Commerce
           </div>
 
           <h1
@@ -1223,7 +1228,7 @@ function PublicCapabilitiesGuidePage({
               letterSpacing: 0,
             }}
           >
-            GSN Decision Guide
+            Buy. Sell. Grow through trusted communities.
           </h1>
 
           <div
@@ -1235,9 +1240,36 @@ function PublicCapabilitiesGuidePage({
               maxWidth: 760,
             }}
           >
-            See the real-world decisions GSN helps people make, why those
-            decisions are risky, which tools cooperate, and what evidence
-            remains afterwards.
+            GSN brings shops, promotion and trusted records together.
+            Community organisation supports the commerce behind the scenes.
+          </div>
+          <div
+            aria-label="GSN priorities"
+            style={{
+              marginTop: 12,
+              display: "flex",
+              gap: 7,
+              flexWrap: "wrap",
+            }}
+          >
+            {["1 - Buy and sell", "2 - Promote and be discovered", "3 - Organise the community"].map(
+              (label) => (
+                <span
+                  key={label}
+                  style={{
+                    borderRadius: 999,
+                    border: "1px solid rgba(244,215,126,0.28)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#F8FBFF",
+                    padding: "6px 9px",
+                    fontSize: 11,
+                    fontWeight: 850,
+                  }}
+                >
+                  {label}
+                </span>
+              )
+            )}
           </div>
         </section>
 
@@ -1397,7 +1429,7 @@ function PublicCapabilitiesGuidePage({
                   whiteSpace: "nowrap",
                 }}
               >
-                {publicSelectedIndex + 1}/{GMFN_CAPABILITY_COUNT}
+                {publicSelectedIndex + 1}/{PUBLIC_GSN_CAPABILITIES.length}
               </div>
               <SecondaryButton
                 type="button"
@@ -1439,7 +1471,7 @@ function PublicCapabilitiesGuidePage({
               gap: useIosSingleColumn ? 9 : 10,
             }}
           >
-            {GMFN_CAPABILITIES.map((item) => {
+            {PUBLIC_GSN_CAPABILITIES.map((item) => {
               const line = publicCapabilityLine(item);
 
               return (

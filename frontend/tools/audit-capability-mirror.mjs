@@ -147,8 +147,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Decision Guide[\s\S]*?real-world decisions GSN helps people make[\s\S]*?why those[\s\S]*?decisions are risky[\s\S]*?which tools cooperate[\s\S]*?evidence[\s\S]*?remains afterwards/,
-  "The public and signed-in My GSN guides must keep the institutional decision-guide heading."
+  /GSN Community Commerce[\s\S]*?Buy\. Sell\. Grow through trusted communities\.[\s\S]*?Buy and sell[\s\S]*?Promote and be discovered[\s\S]*?Organise the community[\s\S]*?PUBLIC_GSN_CAPABILITIES\.map[\s\S]*?GSN Decision Guide/,
+  "The public guide must lead with commerce and promotion while preserving the signed-in decision guide and the full capability set."
 );
 
 assertContains(

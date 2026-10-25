@@ -1,5 +1,6 @@
 import React from "react";
 import SpotlightMediaFrame from "../../components/SpotlightMediaFrame";
+import VideoSoundEditor from "../../components/VideoSoundEditor";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -172,6 +173,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightVideoInputKey,
     handleSpotlightVideoPicked,
     spotlightVideoFile,
+    spotlightVideoSound,
+    setSpotlightVideoSound,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightNaturalFinishEnabled,
@@ -847,6 +850,13 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 />
               </div>
               {spotlightVideoFile ? (
+                <>
+                <VideoSoundEditor
+                  value={spotlightVideoSound}
+                  onChange={(sound) => { setSpotlightVideoSound(sound); setSpotlightFinishedVideoUrl(""); }}
+                  disabled={preparingSpotlightVideo || preparingSpotlightFinish || creatingSpotlight}
+                  debugIdPrefix="shop-control.spotlight.video-sound"
+                />
                 <div style={{ marginTop: 14, ...innerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
                   <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 900, color: '#0B2D4A' }}>
                     <input
@@ -884,6 +894,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     </div>
                   ) : null}
                 </div>
+                </>
               ) : null}
             </div>
 
@@ -896,6 +907,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   preparingSpotlightVideo ||
                   preparingSpotlightFinish ||
                   Boolean(spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) ||
+                  Boolean(spotlightVideoSound && !spotlightVideoSound.rightsConfirmed) ||
                   !spotlightCanContinueToPreview
                 }
                 busy={preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish}

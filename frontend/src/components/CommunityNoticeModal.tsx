@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { StableButton } from "./StableButton";
+import VideoSoundEditor from "./VideoSoundEditor";
 import {
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
+  type MarketplaceVideoSoundOptions,
 } from "../lib/api";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
@@ -113,6 +115,9 @@ export default function CommunityNoticeModal({
   const [attachmentUploadMessage, setAttachmentUploadMessage] = useState("");
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [attachmentError, setAttachmentError] = useState("");
+  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
+  const [pendingVideoDuration, setPendingVideoDuration] = useState<number | null>(null);
+  const [pendingVideoSound, setPendingVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [submitError, setSubmitError] = useState("");
   const words = useMemo(() => countWords(body), [body]);
   const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
@@ -133,6 +138,7 @@ export default function CommunityNoticeModal({
     !body.trim() ||
     (includeFullBody && fullWords > 600) ||
     attachmentUrlInvalid ||
+    Boolean(pendingVideoFile) ||
     attachmentUploading ||
     eventExpiryMissing ||
     busy;
@@ -146,6 +152,9 @@ export default function CommunityNoticeModal({
     setAttachmentLabel("");
     setAttachmentUploadMessage("");
     setAttachmentError("");
+    setPendingVideoFile(null);
+    setPendingVideoDuration(null);
+    setPendingVideoSound(null);
   }
 
   async function pickAttachmentFile(file: File | null, mediaKind: "image" | "video") {
@@ -172,21 +181,56 @@ export default function CommunityNoticeModal({
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
         maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
       });
-      const data = await uploadMarketplaceVideoFile(
-        prepared.file,
-        prepared.durationSeconds ?? null,
-        clanId || null
-      );
-      const url = uploadResultUrl(data, "video");
-      setAttachmentUrl(url);
+      setPendingVideoFile(prepared.file);
+      setPendingVideoDuration(prepared.durationSeconds ?? null);
+      setPendingVideoSound(null);
+      setAttachmentUrl("");
       setAttachmentLabel((current) => current.trim() || "Open video");
       setAttachmentUploadMessage(
-        prepared.message || "Video attached. It will open from the notice."
+        prepared.message || "Video ready. Add sound if needed, then tap Prepare video."
       );
     } catch (error: any) {
       setAttachmentError(
         String(error?.detail?.message || error?.detail || error?.message || error)
           .trim() || "This attachment could not be uploaded."
+      );
+    } finally {
+      setAttachmentUploading(false);
+    }
+  }
+
+  async function preparePendingVideoUpload() {
+    if (!pendingVideoFile || attachmentUploading) return;
+    if (pendingVideoSound && !pendingVideoSound.rightsConfirmed) {
+      setAttachmentError(
+        "Confirm that you created the added sound or have permission to use it."
+      );
+      return;
+    }
+    setAttachmentUploading(true);
+    setAttachmentError("");
+    try {
+      const data = await uploadMarketplaceVideoFile(
+        pendingVideoFile,
+        pendingVideoDuration,
+        clanId || null,
+        null,
+        pendingVideoSound
+      );
+      const url = uploadResultUrl(data, "video");
+      setAttachmentUrl(url);
+      setPendingVideoFile(null);
+      setPendingVideoDuration(null);
+      setAttachmentUploadMessage(
+        pendingVideoSound
+          ? "Video and sound are prepared. They will open from the notice."
+          : "Video is prepared. It will open from the notice."
+      );
+      setPendingVideoSound(null);
+    } catch (error: any) {
+      setAttachmentError(
+        String(error?.detail?.message || error?.detail || error?.message || error)
+          .trim() || "This video could not be uploaded."
       );
     } finally {
       setAttachmentUploading(false);
@@ -365,6 +409,27 @@ export default function CommunityNoticeModal({
               <p style={attachmentHelpStyle}>
                 {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
               </p>
+            ) : null}
+            {attachmentKind === "video" && pendingVideoFile ? (
+              <>
+                <VideoSoundEditor
+                  value={pendingVideoSound}
+                  onChange={setPendingVideoSound}
+                  disabled={attachmentUploading || busy}
+                  debugIdPrefix="community-notice-modal.video-sound"
+                />
+                <StableButton
+                  type="button"
+                  kind="primary"
+                  fullWidth
+                  stableHeight={48}
+                  disabled={Boolean(pendingVideoSound && !pendingVideoSound.rightsConfirmed)}
+                  onClick={() => void preparePendingVideoUpload()}
+                  debugId="community-notice-modal.prepare-video"
+                >
+                  Prepare video
+                </StableButton>
+              </>
             ) : null}
             {attachmentUploadMessage ? (
               <p style={successTextStyle}>{attachmentUploadMessage}</p>

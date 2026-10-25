@@ -7,6 +7,7 @@ import type {
 } from "react";
 import type { Location, NavigateFunction } from "react-router-dom";
 import type { GsnIconName } from "../../components/GsnLegacyIcon";
+import type { MarketplaceVideoSoundOptions } from "../../lib/api";
 
 export type ShopControlNoticeTone = "success" | "error" | "info";
 export type ShopControlSpotlightPriorityMode = "free" | "paid";
@@ -162,6 +163,8 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightVideoInputKey: number;
   handleSpotlightVideoPicked: (file: File | null) => Promise<void>;
   spotlightVideoFile: File | null;
+  spotlightVideoSound: MarketplaceVideoSoundOptions | null;
+  setSpotlightVideoSound: Dispatch<SetStateAction<MarketplaceVideoSoundOptions | null>>;
   spotlightHasVideo: boolean;
   spotlightVideoDurationSeconds: number | null;
   spotlightNaturalFinishEnabled: boolean;

@@ -155,6 +155,9 @@ class NormalizedVideo:
     kept_seconds: float
     size_bytes: int
     finish_profile: str | None = None
+    added_sound: bool = False
+    sound_mode: str | None = None
+    output_has_audio: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -165,6 +168,9 @@ class NormalizedVideo:
             "kept_seconds": self.kept_seconds,
             "size_bytes": self.size_bytes,
             "finish_profile": self.finish_profile,
+            "added_sound": self.added_sound,
+            "sound_mode": self.sound_mode,
+            "output_has_audio": self.output_has_audio,
         }
 
 
@@ -394,6 +400,8 @@ def normalize_marketplace_video(
     output_path: str | Path,
     *,
     finish_profile: VideoFinishProfile | None = None,
+    sound_path: str | Path | None = None,
+    sound_mode: str | None = None,
 ) -> NormalizedVideo:
     input_path = Path(source_path)
     destination = Path(output_path)
@@ -420,6 +428,29 @@ def normalize_marketplace_video(
     width, height = _normalized_dimensions(inspection)
     output_fps = min(30.0, max(MIN_VIDEO_FPS, round(inspection.fps)))
     has_audio = _source_has_audio(ffmpeg_exe, input_path)
+    added_sound_path = Path(sound_path) if sound_path is not None else None
+    selected_sound_mode = str(sound_mode or "").strip().lower() or None
+    if added_sound_path is not None:
+        if not added_sound_path.is_file() or added_sound_path.stat().st_size <= 0:
+            raise MediaQualityError(
+                "sound_empty",
+                "The selected sound is empty or could not be read.",
+            )
+        if selected_sound_mode not in {"mix", "replace"}:
+            raise MediaQualityError(
+                "sound_mode_invalid",
+                "Choose Add over video or Replace video sound.",
+            )
+        if not _source_has_audio(ffmpeg_exe, added_sound_path):
+            raise MediaQualityError(
+                "sound_unreadable",
+                "GSN could not read the selected sound. Choose another audio file or record it again.",
+            )
+    elif selected_sound_mode is not None:
+        raise MediaQualityError(
+            "sound_file_required",
+            "Choose or record a sound before selecting how it should be added.",
+        )
     finish_seconds = (
         int(finish_profile.duration_seconds)
         if finish_profile is not None
@@ -443,12 +474,20 @@ def normalize_marketplace_video(
         str(FFMPEG_THREAD_LIMIT),
         "-i",
         str(input_path),
-        "-t",
-        str(MAX_VIDEO_DURATION_SECONDS),
-        "-map",
-        "0:v:0",
     ]
-    if has_audio:
+    sound_input_index: int | None = None
+    if added_sound_path is not None:
+        sound_input_index = 1
+        command.extend(["-i", str(added_sound_path)])
+    overlay_input_index: int | None = None
+    if finish_profile is not None:
+        overlay_input_index = 2 if added_sound_path is not None else 1
+        command.extend(["-loop", "1", "-i", str(overlay_path)])
+
+    command.extend(["-t", str(finish_seconds), "-map", "0:v:0"])
+    if added_sound_path is not None:
+        command.extend(["-map", "[prepared_audio]"])
+    elif has_audio:
         command.extend(["-map", "0:a:0?"])
     command.extend(
         [
@@ -478,7 +517,9 @@ def normalize_marketplace_video(
             "-1",
         ]
     )
-    if has_audio:
+    if added_sound_path is not None:
+        command.extend(["-c:a", "aac", "-b:a", "96k" if finish_profile is not None else "128k", "-shortest"])
+    elif has_audio:
         command.extend(
             [
                 "-c:a",
@@ -493,29 +534,47 @@ def normalize_marketplace_video(
         command.append("-an")
     command.append(str(destination))
 
-    if finish_profile is not None:
-        time_index = command.index('-t')
-        command[time_index + 1] = str(finish_seconds)
-        command[time_index:time_index] = ['-loop', '1', '-i', str(overlay_path)]
+    filter_parts: list[str] = []
+    if finish_profile is not None and overlay_input_index is not None:
         command[command.index('0:v:0')] = '[finished]'
-        filter_index = command.index('-vf')
-        del command[filter_index : filter_index + 2]
-        filter_graph = (
+        video_filter_index = command.index('-vf')
+        del command[video_filter_index : video_filter_index + 2]
+        filter_parts.append(
             f'[0:v]scale={width}:{height},'
             'hqdn3d=1.4:1.0:2.0:1.5,'
             'eq=brightness=0.015:contrast=1.035:saturation=1.025,'
             'unsharp=5:5:0.35:3:3:0[base];'
-            '[base][1:v]overlay=0:0:eof_action=repeat[finished]'
+            f'[base][{overlay_input_index}:v]overlay=0:0:eof_action=repeat[finished]'
         )
-        command[filter_index:filter_index] = [
-            '-filter_complex_threads', str(FFMPEG_THREAD_LIMIT),
-            '-filter_complex', filter_graph,
-        ]
         command[command.index('-crf') + 1] = '23'
         command[command.index('-maxrate') + 1] = '1600k'
         command[command.index('-bufsize') + 1] = '3200k'
-        if has_audio:
+        if has_audio and added_sound_path is None:
             command[command.index('-b:a') + 1] = '96k'
+
+    if added_sound_path is not None and sound_input_index is not None:
+        duration_filter = f"atrim=0:{finish_seconds},apad=pad_dur={finish_seconds},atrim=0:{finish_seconds},asetpts=PTS-STARTPTS"
+        if selected_sound_mode == "mix" and has_audio:
+            filter_parts.append(
+                f"[0:a:0]{duration_filter},volume=0.35[original_audio];"
+                f"[{sound_input_index}:a:0]{duration_filter},volume=0.80[added_audio];"
+                "[original_audio][added_audio]amix=inputs=2:duration=longest:dropout_transition=0,"
+                "loudnorm=I=-16:TP=-1.5:LRA=11[prepared_audio]"
+            )
+        else:
+            filter_parts.append(
+                f"[{sound_input_index}:a:0]{duration_filter},"
+                "loudnorm=I=-16:TP=-1.5:LRA=11[prepared_audio]"
+            )
+
+    if filter_parts:
+        insert_index = command.index("-r")
+        command[insert_index:insert_index] = [
+            "-filter_complex_threads",
+            str(FFMPEG_THREAD_LIMIT),
+            "-filter_complex",
+            ";".join(filter_parts),
+        ]
 
     try:
         if _runtime_memory_logging_enabled():
@@ -557,6 +616,13 @@ def normalize_marketplace_video(
         )
 
     output_inspection = inspect_video(destination)
+    output_has_audio = _source_has_audio(ffmpeg_exe, destination)
+    if added_sound_path is not None and not output_has_audio:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "sound_output_missing",
+            "GSN could not attach the selected sound to the prepared video. Try another sound file.",
+        )
     if output_inspection.duration_seconds > finish_seconds + 0.35:
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
@@ -576,6 +642,9 @@ def normalize_marketplace_video(
         kept_seconds=min(effective_duration, finish_seconds),
         size_bytes=output_size,
         finish_profile='gsn_natural' if finish_profile is not None else None,
+        added_sound=added_sound_path is not None,
+        sound_mode=selected_sound_mode,
+        output_has_audio=output_has_audio,
     )
 
 

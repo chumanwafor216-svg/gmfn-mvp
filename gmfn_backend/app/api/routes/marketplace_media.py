@@ -37,9 +37,11 @@ router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_VIDEO_BYTES = MAX_NORMALIZED_VIDEO_BYTES
 MAX_VIDEO_DURATION_SECONDS = QUALITY_MAX_VIDEO_DURATION_SECONDS
+MAX_SOURCE_AUDIO_BYTES = 15 * 1024 * 1024
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
+ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".webm"}
 
 ALLOWED_IMAGE_CONTENT_TYPES = {
     "image/jpeg",
@@ -51,6 +53,17 @@ ALLOWED_VIDEO_CONTENT_TYPES = {
     "video/mp4",
     "video/webm",
     "video/quicktime",
+}
+
+ALLOWED_AUDIO_CONTENT_TYPES = {
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/aac",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/ogg",
+    "audio/webm",
 }
 
 CONTENT_TYPE_ALIASES = {
@@ -265,6 +278,8 @@ async def _write_limited_upload(
     file: UploadFile,
     destination: Path,
     max_bytes: int,
+    *,
+    file_label: str = "source video",
 ) -> int:
     # Stream a large phone upload to disk instead of holding it in RAM.
     total = 0
@@ -279,8 +294,8 @@ async def _write_limited_upload(
                     raise HTTPException(
                         status_code=400,
                         detail=(
-                            "This source video is too large for automatic preparation. "
-                            f"Choose a video up to {max_bytes // (1024 * 1024)}MB."
+                            f"This {file_label} is too large for automatic preparation. "
+                            f"Choose a file up to {max_bytes // (1024 * 1024)}MB."
                         ),
                     )
                 stream.write(chunk)
@@ -515,6 +530,9 @@ async def upload_marketplace_image(
 @router.post("/video")
 async def upload_marketplace_video(
     file: UploadFile = File(...),
+    sound_file: Optional[UploadFile] = File(default=None),
+    sound_mode: Optional[str] = Form(default=None),
+    sound_rights_confirmed: bool = Form(default=False),
     duration_seconds: Optional[float] = Form(default=None),
     clan_id: Optional[int] = Form(default=None),
     finish_profile: Optional[str] = Form(default=None),
@@ -531,6 +549,54 @@ async def upload_marketplace_video(
 
     _validate_ext("video", ext)
     _validate_content_type("video", content_type, ext)
+
+    selected_sound_mode = str(sound_mode or "").strip().lower() or None
+    sound_ext = _safe_ext(sound_file.filename) if sound_file is not None else ""
+    if sound_file is not None:
+        if selected_sound_mode not in {"mix", "replace"}:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_mode_invalid",
+                    "message": "Choose Add over video or Replace video sound.",
+                },
+            )
+        if not sound_rights_confirmed:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_rights_confirmation_required",
+                    "message": "Confirm that you created this sound or have permission to use it.",
+                },
+            )
+        if sound_ext not in ALLOWED_AUDIO_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_format_unsupported",
+                    "message": "Use MP3, M4A, AAC, WAV, OGG, or WebM audio.",
+                },
+            )
+        sound_content_type = _normalize_content_type(sound_file.content_type)
+        if not (
+            sound_content_type in ALLOWED_AUDIO_CONTENT_TYPES
+            or sound_content_type in GENERIC_CONTENT_TYPES
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_content_type_unsupported",
+                    "message": "The selected file is not a supported audio file.",
+                },
+            )
+    elif selected_sound_mode is not None or sound_rights_confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "sound_file_required",
+                "message": "Choose or record a sound before adding sound settings.",
+            },
+        )
 
     selected_finish: VideoFinishProfile | None = None
     selected_shop: MarketplaceShop | None = None
@@ -557,6 +623,11 @@ async def upload_marketplace_video(
 
     processing_token = secrets.token_hex(8)
     input_path = _video_processing_dir() / f"{processing_token}.source{ext}"
+    sound_input_path = (
+        _video_processing_dir() / f"{processing_token}.sound{sound_ext}"
+        if sound_file is not None
+        else None
+    )
     output_path = _video_processing_dir() / f"{processing_token}.normalized.mp4"
     filename = f"qv1_{_random_name('.mp4')}"
     filepath = _video_upload_dir() / filename
@@ -569,10 +640,21 @@ async def upload_marketplace_video(
         )
         if source_size_bytes <= 0:
             raise HTTPException(status_code=400, detail="Video file is empty.")
+        if sound_file is not None and sound_input_path is not None:
+            sound_size_bytes = await _write_limited_upload(
+                sound_file,
+                sound_input_path,
+                MAX_SOURCE_AUDIO_BYTES,
+                file_label="sound file",
+            )
+            if sound_size_bytes <= 0:
+                raise HTTPException(status_code=400, detail="Sound file is empty.")
         normalized = normalize_marketplace_video(
             input_path,
             output_path,
             finish_profile=selected_finish,
+            sound_path=sound_input_path,
+            sound_mode=selected_sound_mode,
         )
         shutil.move(str(output_path), str(filepath))
     except MediaQualityError as exc:
@@ -592,6 +674,8 @@ async def upload_marketplace_video(
         ) from exc
     finally:
         input_path.unlink(missing_ok=True)
+        if sound_input_path is not None:
+            sound_input_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
         output_path.with_suffix('.overlay.png').unlink(missing_ok=True)
 
@@ -625,6 +709,12 @@ async def upload_marketplace_video(
             if selected_finish is not None
             else None
         ),
+        "sound": {
+            "added": normalized.added_sound,
+            "mode": normalized.sound_mode,
+            "output_has_audio": normalized.output_has_audio,
+            "rights_confirmed": bool(sound_file is not None and sound_rights_confirmed),
+        },
     }
 
 

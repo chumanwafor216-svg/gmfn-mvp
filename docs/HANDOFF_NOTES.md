@@ -1962,3 +1962,28 @@ under `docs/` or `docs/archive/`, then link that file here.
   though `render.yaml` says `0`; the first run processed zero communities in
   485 ms. Disabling reconciliation and running the first Spotlight retention
   batch both still require separate owner approval.
+
+## Commerce-first public guide and shared video sound editor - 2026-10-25
+
+- The public `/guide` surface now leads with `Buy. Sell. Grow through trusted
+  communities.` and presents buy/sell, promotion/discovery, and community
+  organisation in that order. The complete governance, identity, finance,
+  support, and continuity capability set remains available behind the same
+  focused capability controls; no capability was deleted.
+- One reusable `VideoSoundEditor` now serves Command Centre house campaigns,
+  Community Notice video attachments, Shop items, Shop Control Spotlight,
+  Subscription Spotlight, and Vault block videos. It supports a selected audio
+  file or a microphone recording capped at ten seconds, audio preview,
+  mix/replace choice, remove/reset, and explicit rights confirmation.
+- No music catalogue was added. Popular/commercial music remains outside scope
+  until licensing and rights management exist.
+- The existing authenticated `/marketplace/media/video` route now accepts a
+  bounded sound file only with `mix` or `replace` and a positive rights
+  confirmation. FFmpeg performs the audio operation, loudness normalises the
+  result, and rejects the operation unless the prepared MP4 is confirmed to
+  contain audio. Existing video preparation and Natural Finish remain the
+  single processing path.
+- Local verification passed: 21 focused backend media tests, the production
+  frontend build, the media-quality audit, and the capability-mirror audit.
+  This note records local implementation only until the exact commit is pushed
+  and both Render services are independently confirmed live.

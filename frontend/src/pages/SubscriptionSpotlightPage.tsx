@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import VideoSoundEditor from "../components/VideoSoundEditor";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import {
@@ -15,6 +16,7 @@ import {
   safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
+  type MarketplaceVideoSoundOptions,
 } from "../lib/api";
 import {
   communityDomainFeatureIsOff,
@@ -465,6 +467,7 @@ export default function SubscriptionSpotlightPage() {
   const [message, setMessage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoSound, setVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [videoPreviewUrl, setVideoPreviewUrl] = useState("");
   const [videoDurationSeconds, setVideoDurationSeconds] = useState<number | null>(null);
@@ -896,10 +899,12 @@ export default function SubscriptionSpotlightPage() {
   }
 
   async function prepareVideo(file: File | null) {
+    setVideoSound(null);
     videoPrepRef.current += 1;
     const job = videoPrepRef.current;
     if (!file) {
       setVideoFile(null);
+      setVideoSound(null);
       setVideoDurationSeconds(null);
       setFinishedVideoUrl('');
       setMediaFeedback(null);
@@ -953,7 +958,8 @@ export default function SubscriptionSpotlightPage() {
           durationSeconds: naturalFinishSeconds,
           shopId: Number(shop.id),
           title: message,
-        }
+        },
+        videoSound
       );
       if (!mountedRef.current) return;
       const url = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
@@ -1015,6 +1021,10 @@ export default function SubscriptionSpotlightPage() {
       showNotice('info', 'Prepare and review the GSN Natural Finish before publishing, or turn the finish off.');
       return;
     }
+    if (videoSound && !videoSound.rightsConfirmed) {
+      showNotice("info", "Confirm that you created the added sound or have permission to use it.");
+      return;
+    }
     setPublishing(true);
     try {
       let imageUrl = "";
@@ -1028,7 +1038,13 @@ export default function SubscriptionSpotlightPage() {
       if (finishedVideoUrl) {
         videoUrl = finishedVideoUrl;
       } else if (videoFile) {
-        const res = await uploadMarketplaceVideoFile(videoFile, videoDurationSeconds, shopClanId || null);
+        const res = await uploadMarketplaceVideoFile(
+          videoFile,
+          videoDurationSeconds,
+          shopClanId || null,
+          null,
+          videoSound
+        );
         if (!mountedRef.current) return;
         videoUrl = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
         if (!videoUrl) throw new Error("Video upload completed but did not return a usable video link.");
@@ -1394,6 +1410,13 @@ export default function SubscriptionSpotlightPage() {
               A ready picture or short video is required. The publish button stays locked until media preparation succeeds.
             </div>
             {videoFile ? (
+              <>
+              <VideoSoundEditor
+                value={videoSound}
+                onChange={(sound) => { setVideoSound(sound); setFinishedVideoUrl(""); }}
+                disabled={preparingVideo || preparingFinish || publishing}
+                debugIdPrefix="subscription-spotlight.video-sound"
+              />
               <div style={{ ...brandInnerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
                 <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 850, color: '#0B2D4A' }}>
                   <input
@@ -1428,6 +1451,7 @@ export default function SubscriptionSpotlightPage() {
                   </div>
                 ) : null}
               </div>
+              </>
             ) : null}
             {mediaFeedback ? (
               <div
@@ -1460,6 +1484,7 @@ export default function SubscriptionSpotlightPage() {
                  !hasReadyMedia ||
                  mediaPreparationFailed ||
                  Boolean(videoFile && naturalFinishEnabled && !finishedVideoUrl)
+                 || Boolean(videoSound && !videoSound.rightsConfirmed)
               }
               busy={publishing}
               busyLabel="Publishing..."

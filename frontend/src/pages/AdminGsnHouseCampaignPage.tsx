@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
+import VideoSoundEditor from "../components/VideoSoundEditor";
 import {
   createAdminGsnHouseCampaign,
   discardAdminGsnHouseCampaignReviewMedia,
@@ -17,6 +18,7 @@ import {
   type GsnHouseCampaignPreview,
   type GsnHouseCampaignPublication,
   type GsnHouseCampaignReport,
+  type MarketplaceVideoSoundOptions,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -41,6 +43,7 @@ type PreparedMedia = {
   file: File;
   durationSeconds?: number | null;
   preparationMessage?: string | null;
+  sound?: MarketplaceVideoSoundOptions | null;
 };
 
 type CampaignReviewMedia = {
@@ -451,6 +454,13 @@ export default function AdminGsnHouseCampaignPage() {
       blockers.push("Use an international contact number such as +234....");
     }
     if (mediaQueue.length === 0) blockers.push("Add at least one picture or short video.");
+    if (
+      mediaQueue.some(
+        (item) => item.kind === "video" && item.sound && !item.sound.rightsConfirmed
+      )
+    ) {
+      blockers.push("Confirm permission for every added sound.");
+    }
     if (preparingMedia) blockers.push("Wait for media preparation to finish.");
     if (expiryProblem) blockers.push(expiryProblem);
     if (timingProblem) blockers.push(timingProblem);
@@ -458,7 +468,7 @@ export default function AdminGsnHouseCampaignPage() {
   }, [
     contactPhone,
     expiryInput,
-    mediaQueue.length,
+    mediaQueue,
     message,
     preparingMedia,
     scheduleEndInput,
@@ -646,6 +656,16 @@ export default function AdminGsnHouseCampaignPage() {
     setMediaQueue((current) => current.filter((item) => item.key !== key));
     setMediaInputKey((current) => current + 1);
     setFeedback({ tone: "info", text: "The media item was removed from this batch." });
+  }
+
+  function updatePreparedMediaSound(
+    key: string,
+    sound: MarketplaceVideoSoundOptions | null
+  ) {
+    if (draftBusy || !invalidateReview()) return;
+    setMediaQueue((current) =>
+      current.map((item) => (item.key === key ? { ...item, sound } : item))
+    );
   }
 
   async function handleMediaPicked(files: File[]) {
@@ -841,7 +861,9 @@ export default function AdminGsnHouseCampaignPage() {
                       item.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
                       ? item.durationSeconds
                       : null,
-                    null
+                    null,
+                    null,
+                    item.sound || null
                   )
                 : await uploadMarketplaceImageFile(item.file, null);
           } catch (error) {
@@ -2216,6 +2238,14 @@ export default function AdminGsnHouseCampaignPage() {
               <div style={{ marginTop: 10, color: "#D7E3EF", fontSize: 13 }}>
                 {previewMedia.file.name} · {previewMedia.kind === "video" ? "Verified short video" : "Prepared picture"}
               </div>
+              {previewMedia.kind === "video" ? (
+                <VideoSoundEditor
+                  value={previewMedia.sound || null}
+                  onChange={(sound) => updatePreparedMediaSound(previewMedia.key, sound)}
+                  disabled={draftBusy || publishedCount > 0}
+                  debugIdPrefix="admin-gsn-campaign.video-sound"
+                />
+              ) : null}
               <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                 {mediaQueue.map((item, index) => (
                   <div key={item.key} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", padding: "9px 10px", borderRadius: 12, background: "rgba(255,255,255,0.08)" }}>

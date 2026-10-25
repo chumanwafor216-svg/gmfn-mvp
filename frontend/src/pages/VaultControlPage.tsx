@@ -7,6 +7,7 @@ import {
 } from "../components/StableButton";
 import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import VideoSoundEditor from "../components/VideoSoundEditor";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
@@ -26,6 +27,7 @@ import {
   uploadMarketplaceVideoFile,
   type VaultLinkItem,
   type VaultShopStatus,
+  type MarketplaceVideoSoundOptions,
 } from "../lib/api";
 import {
   communityDomainFeatureIsOff,
@@ -987,6 +989,7 @@ export default function VaultControlPage() {
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [videoSound, setVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [videoPreviewUrl, setVideoPreviewUrl] = useState("");
   const [videoDurationSeconds, setVideoDurationSeconds] = useState<number | null>(null);
@@ -1462,6 +1465,7 @@ export default function VaultControlPage() {
     setVideoUrlInput("");
     setSelectedImageFile(null);
     setSelectedVideoFile(null);
+    setVideoSound(null);
     setVideoDurationSeconds(null);
     setImagePreviewUrl("");
     setVideoPreviewUrl("");
@@ -1495,6 +1499,7 @@ export default function VaultControlPage() {
     setVideoPreviewUrl(firstTruthy(item.video_url));
     setSelectedImageFile(null);
     setSelectedVideoFile(null);
+    setVideoSound(null);
     setVideoDurationSeconds(null);
     setFormNotice(null);
     setEditorOpen(true);
@@ -1536,6 +1541,7 @@ export default function VaultControlPage() {
   }
 
   async function prepareVideo(file: File | null) {
+    setVideoSound(null);
     videoPrepJobRef.current += 1;
     const job = videoPrepJobRef.current;
     setFormNotice(null);
@@ -1669,6 +1675,13 @@ export default function VaultControlPage() {
       setFormNotice({ tone: "error", text: "Add the price first." });
       return;
     }
+    if (videoSound && !videoSound.rightsConfirmed) {
+      setFormNotice({
+        tone: "error",
+        text: "Confirm that you created the added sound or have permission to use it.",
+      });
+      return;
+    }
 
     setSavingProduct(true);
     try {
@@ -1682,7 +1695,10 @@ export default function VaultControlPage() {
       if (selectedVideoFile) {
         nextVideoUrl = await uploadMarketplaceVideoFile(
           selectedVideoFile,
-          videoDurationSeconds
+          videoDurationSeconds,
+          null,
+          null,
+          videoSound
         );
         if (!mountedRef.current) return;
       }
@@ -2481,6 +2497,15 @@ export default function VaultControlPage() {
                   {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
                 </div>
                 {selectedVideoFile || firstTruthy(videoUrlInput) ? (
+                  <>
+                  {selectedVideoFile ? (
+                    <VideoSoundEditor
+                      value={videoSound}
+                      onChange={setVideoSound}
+                      disabled={preparingVideo || savingProduct}
+                      debugIdPrefix="vault-control.editor.video-sound"
+                    />
+                  ) : null}
                   <SecondaryButton
                     type="button"
                     onClick={() => {
@@ -2488,12 +2513,14 @@ export default function VaultControlPage() {
                       setVideoDurationSeconds(null);
                       setVideoUrlInput("");
                       setVideoPreviewUrl("");
+                      setVideoSound(null);
                     }}
                     fullWidth
                     debugId="vault-control.editor.remove-video"
                   >
                     Remove video
                   </SecondaryButton>
+                  </>
                 ) : (
                   <div style={{ ...brandHelperText(), fontSize: 12 }}>
                     New pasted video links are not accepted. Uploading lets GSN verify the real file.
@@ -2518,7 +2545,7 @@ export default function VaultControlPage() {
                 <div style={actionGrid(isCompact, 160)}>
                   <PrimaryButton
                     onClick={() => void submitProduct()}
-                    disabled={vaultFeatureOff || savingProduct}
+                    disabled={vaultFeatureOff || savingProduct || Boolean(videoSound && !videoSound.rightsConfirmed)}
                     busy={preparingImage || preparingVideo || savingProduct}
                     busyLabel={preparingImage || preparingVideo ? "Preparing media..." : "Saving..."}
                     style={brandActionButton("primary", vaultFeatureOff || savingProduct)}

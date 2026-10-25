@@ -84,6 +84,37 @@ def _make_video(
     return path
 
 
+def _make_audio(
+    path: Path,
+    *,
+    seconds: float = 2,
+    frequency: int = 660,
+) -> Path:
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-nostdin",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency={frequency}:sample_rate=44100",
+            "-t",
+            str(seconds),
+            "-c:a",
+            "pcm_s16le",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=45,
+    )
+    return path
+
+
 def test_quality_gate_rejects_only_genuinely_tiny_video(tmp_path: Path):
     source = _make_video(tmp_path / "low.mp4", size="568x320")
 
@@ -137,6 +168,44 @@ def test_normalizer_physically_trims_and_standardises_video(tmp_path: Path):
     assert result.output.fps >= 20
     assert result.output.codec == "h264"
     assert result.size_bytes == output.stat().st_size
+
+
+def test_normalizer_adds_sound_to_a_silent_video(tmp_path: Path):
+    source = _make_video(tmp_path / "silent.mp4")
+    sound = _make_audio(tmp_path / "voice.wav")
+    output = tmp_path / "qv1_with_sound.mp4"
+
+    result = normalize_marketplace_video(
+        source,
+        output,
+        sound_path=sound,
+        sound_mode="replace",
+    )
+
+    assert output.is_file()
+    assert result.source_had_audio is False
+    assert result.added_sound is True
+    assert result.sound_mode == "replace"
+    assert result.output_has_audio is True
+
+
+def test_normalizer_mixes_added_sound_with_original_audio(tmp_path: Path):
+    source = _make_video(tmp_path / "spoken.mp4", with_audio=True)
+    sound = _make_audio(tmp_path / "music.wav", frequency=440)
+    output = tmp_path / "qv1_mixed.mp4"
+
+    result = normalize_marketplace_video(
+        source,
+        output,
+        sound_path=sound,
+        sound_mode="mix",
+    )
+
+    assert output.is_file()
+    assert result.source_had_audio is True
+    assert result.added_sound is True
+    assert result.sound_mode == "mix"
+    assert result.output_has_audio is True
 
 
 def test_gsn_natural_finish_is_bounded_branded_profile(tmp_path: Path):
@@ -386,6 +455,62 @@ def test_video_upload_is_server_verified_and_ignores_claimed_short_duration(
     assert body["filename"].startswith("qv1_")
     assert body["filename"].endswith(".mp4")
     assert (upload_root / "marketplace" / "videos" / body["filename"]).is_file()
+
+
+def test_video_upload_rejects_sound_without_rights_confirmation(
+    client,
+    override_current_user,
+    tmp_path: Path,
+):
+    source = _make_video(tmp_path / "silent-upload.mp4")
+    sound = _make_audio(tmp_path / "unconfirmed.wav")
+
+    with source.open("rb") as video_stream, sound.open("rb") as sound_stream:
+        response = client.post(
+            "/marketplace/media/video",
+            data={"sound_mode": "replace"},
+            files={
+                "file": ("silent-upload.mp4", video_stream, "video/mp4"),
+                "sound_file": ("unconfirmed.wav", sound_stream, "audio/wav"),
+            },
+        )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "sound_rights_confirmation_required"
+
+
+def test_video_upload_embeds_confirmed_user_sound(
+    client,
+    override_current_user,
+    monkeypatch,
+    tmp_path: Path,
+):
+    upload_root = tmp_path / "uploads"
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+    source = _make_video(tmp_path / "silent-upload.mp4")
+    sound = _make_audio(tmp_path / "confirmed.wav")
+
+    with source.open("rb") as video_stream, sound.open("rb") as sound_stream:
+        response = client.post(
+            "/marketplace/media/video",
+            data={
+                "sound_mode": "replace",
+                "sound_rights_confirmed": "true",
+            },
+            files={
+                "file": ("silent-upload.mp4", video_stream, "video/mp4"),
+                "sound_file": ("confirmed.wav", sound_stream, "audio/wav"),
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["sound"] == {
+        "added": True,
+        "mode": "replace",
+        "output_has_audio": True,
+        "rights_confirmed": True,
+    }
 
 
 def test_video_upload_accepts_source_above_published_limit_and_reduces_it(

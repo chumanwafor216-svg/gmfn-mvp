@@ -8507,11 +8507,21 @@ export type MarketplaceVideoFinishOptions = {
   title?: string;
 };
 
+export type MarketplaceVideoSoundMode = "mix" | "replace";
+
+export type MarketplaceVideoSoundOptions = {
+  file: File;
+  mode: MarketplaceVideoSoundMode;
+  rightsConfirmed: boolean;
+  source: "file" | "recording";
+};
+
 export async function uploadMarketplaceVideoFile(
   file: File,
   durationSeconds?: number | null,
   clanId?: number | null,
-  finish?: MarketplaceVideoFinishOptions | null
+  finish?: MarketplaceVideoFinishOptions | null,
+  sound?: MarketplaceVideoSoundOptions | null
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
@@ -8530,6 +8540,12 @@ export async function uploadMarketplaceVideoFile(
     fd.append("finish_duration_seconds", String(finish.durationSeconds));
     fd.append("finish_shop_id", String(finish.shopId));
     if (finish.title?.trim()) fd.append("finish_title", finish.title.trim());
+  }
+
+  if (sound) {
+    fd.append("sound_file", sound.file);
+    fd.append("sound_mode", sound.mode);
+    fd.append("sound_rights_confirmed", String(sound.rightsConfirmed));
   }
 
   const headers: Record<string, string> = {

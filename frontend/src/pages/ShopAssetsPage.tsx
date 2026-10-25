@@ -11,6 +11,7 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import VideoSoundEditor from "../components/VideoSoundEditor";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -43,6 +44,7 @@ import {
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
   uploadMarketplaceFileToR2 as uploadMarketplaceFileToR2Api,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
+  type MarketplaceVideoSoundOptions,
 } from "../lib/api";
 import {
   communityDomainFeatureIsOff,
@@ -694,9 +696,16 @@ async function uploadMarketplaceImageFile(file: File, clanId?: number | null): P
 async function uploadMarketplaceVideoFile(
   file: File,
   durationSeconds?: number | null,
-  clanId?: number | null
+  clanId?: number | null,
+  sound?: MarketplaceVideoSoundOptions | null
 ): Promise<string> {
-  const data = await uploadMarketplaceVideoFileApi(file, durationSeconds ?? null, clanId ?? null);
+  const data = await uploadMarketplaceVideoFileApi(
+    file,
+    durationSeconds ?? null,
+    clanId ?? null,
+    null,
+    sound
+  );
   const url =
     firstTruthy(
       data?.video_url,
@@ -1103,6 +1112,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [productPreviewUrl, setProductPreviewUrl] = useState("");
   const [productVideoUrlInput, setProductVideoUrlInput] = useState("");
   const [productSelectedVideoFile, setProductSelectedVideoFile] = useState<File | null>(null);
+  const [productVideoSound, setProductVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [productVideoDurationSeconds, setProductVideoDurationSeconds] = useState<number | null>(null);
   const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
@@ -1908,6 +1918,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function setProductVideoPreviewFromFile(file: File | null) {
+    setProductVideoSound(null);
     productVideoPrepJobRef.current += 1;
     const prepJob = productVideoPrepJobRef.current;
     setProductFormNotice(null);
@@ -2105,6 +2116,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductSelectedFile(null);
     setProductVideoUrlInput("");
     setProductSelectedVideoFile(null);
+    setProductVideoSound(null);
     setProductVideoDurationSeconds(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
@@ -2131,6 +2143,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductSelectedFile(null);
     setProductVideoUrlInput(firstTruthy(item?.video_url));
     setProductSelectedVideoFile(null);
+    setProductVideoSound(null);
     setProductVideoDurationSeconds(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
@@ -2253,6 +2266,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       showProductFormNotice("error", "Add the item price first.");
       return;
     }
+    if (productVideoSound && !productVideoSound.rightsConfirmed) {
+      showProductFormNotice(
+        "error",
+        "Confirm that you created the added sound or have permission to use it."
+      );
+      return;
+    }
 
     const targetVisibility = safeStr(productVisibility || "community_visible");
     const editingProduct = editingProductId
@@ -2303,7 +2323,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       if (productSelectedVideoFile) {
         nextVideoUrl = await uploadMarketplaceVideoFile(
           productSelectedVideoFile,
-          productVideoDurationSeconds
+          productVideoDurationSeconds,
+          null,
+          productVideoSound
         );
         if (!mountedRef.current) return;
       }
@@ -3911,6 +3933,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
                   {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
                 </div>
+                {productSelectedVideoFile ? (
+                  <VideoSoundEditor
+                    value={productVideoSound}
+                    onChange={setProductVideoSound}
+                    disabled={preparingProductVideo || savingProduct}
+                    debugIdPrefix="shop-assets.product.video-sound"
+                  />
+                ) : null}
                 <details style={{ marginTop: 12 }}>
                   <StableDisclosureSummary debugId="shop-assets.product.media-options.toggle" stableHeight={42} style={{ color: "#31506D", fontWeight: 950, fontSize: 13 }}>
                     More media options
@@ -3937,6 +3967,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                           setProductVideoDurationSeconds(null);
                           setProductVideoUrlInput("");
                           setProductVideoPreviewUrl("");
+                          setProductVideoSound(null);
                         }}
                         fullWidth
                         stableHeight={48}
@@ -4036,7 +4067,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     marketplaceShopsFeatureOff ||
                     savingProduct ||
                     preparingProductImage ||
-                    preparingProductVideo
+                    preparingProductVideo ||
+                    Boolean(productVideoSound && !productVideoSound.rightsConfirmed)
                   }
                   busy={savingProduct || preparingProductImage || preparingProductVideo}
                   busyLabel={

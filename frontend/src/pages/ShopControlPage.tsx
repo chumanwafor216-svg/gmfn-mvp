@@ -41,6 +41,7 @@ import {
   safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
+  type MarketplaceVideoSoundOptions,
   type MarketplaceRequestItem,
 } from "../lib/api";
 import {
@@ -3722,6 +3723,7 @@ export default function ShopControlPage() {
   const [spotlightVideoUrl, setSpotlightVideoUrl] = useState("");
   const [spotlightImageFile, setSpotlightImageFile] = useState<File | null>(null);
   const [spotlightVideoFile, setSpotlightVideoFile] = useState<File | null>(null);
+  const [spotlightVideoSound, setSpotlightVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [spotlightImagePreviewUrl, setSpotlightImagePreviewUrl] = useState("");
   const [spotlightVideoPreviewUrl, setSpotlightVideoPreviewUrl] = useState("");
   const [spotlightVideoDurationSeconds, setSpotlightVideoDurationSeconds] =
@@ -4079,6 +4081,7 @@ export default function ShopControlPage() {
     setSpotlightVideoUrl("");
     setSpotlightImageFile(null);
       setSpotlightVideoFile(null);
+      setSpotlightVideoSound(null);
       setSpotlightVideoDurationSeconds(null);
       setSpotlightFinishedVideoUrl('');
     setPreparingSpotlightImage(false);
@@ -4469,6 +4472,7 @@ export default function ShopControlPage() {
     setSpotlightMessage(handoffMessage);
     setSpotlightImageFile(null);
     setSpotlightVideoFile(null);
+    setSpotlightVideoSound(null);
     setSpotlightVideoDurationSeconds(null);
     setSpotlightImageUrl(imageUrl);
     setSpotlightVideoUrl(videoUrl);
@@ -6615,6 +6619,7 @@ export default function ShopControlPage() {
 
     setPreparingSpotlightVideo(false);
     setSpotlightFinishedVideoUrl('');
+    setSpotlightVideoSound(null);
 
     if (!file) {
       setSpotlightVideoInputKey((prev) => prev + 1);
@@ -6711,7 +6716,8 @@ export default function ShopControlPage() {
           durationSeconds: spotlightNaturalFinishSeconds,
           shopId: Number(activeShop.id),
           title: firstTruthy(spotlightProductName, spotlightMessage),
-        }
+        },
+        spotlightVideoSound
       );
       const url = firstTruthy(
         uploadRes?.video_url,
@@ -6847,6 +6853,12 @@ export default function ShopControlPage() {
       showNotice('info', finishMessage);
       return;
     }
+    if (spotlightVideoSound && !spotlightVideoSound.rightsConfirmed) {
+      const soundMessage = "Confirm that you created the added sound or have permission to use it.";
+      setSpotlightPublishFeedback({ tone: "info", text: soundMessage });
+      showNotice("info", soundMessage);
+      return;
+    }
 
     // Keep the same server idempotency identity when an owner retries the same
     // draft after a lost response. A materially changed draft starts a new
@@ -6914,7 +6926,9 @@ export default function ShopControlPage() {
             spotlightVideoDurationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
             ? spotlightVideoDurationSeconds
             : null,
-          targetClanId || null
+          targetClanId || null,
+          null,
+          spotlightVideoSound
         );
         videoUrl = firstTruthy(
           uploadRes?.video_url,
@@ -7081,6 +7095,7 @@ export default function ShopControlPage() {
       setSpotlightVideoPreviewUrl(safeStr(currentActiveSpotlight?.video_url));
       setSpotlightImageFile(null);
       setSpotlightVideoFile(null);
+      setSpotlightVideoSound(null);
       setSpotlightOpen(true);
       setSpotlightFlowStep("upload");
       const message =
@@ -7262,6 +7277,8 @@ export default function ShopControlPage() {
     spotlightVideoInputKey,
     handleSpotlightVideoPicked,
     spotlightVideoFile,
+    spotlightVideoSound,
+    setSpotlightVideoSound,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightNaturalFinishEnabled,

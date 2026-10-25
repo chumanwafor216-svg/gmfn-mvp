@@ -42,13 +42,18 @@ const api = readFrontend("src/lib/api.ts");
 const shopAssets = readFrontend("src/pages/ShopAssetsPage.tsx");
 const vault = readFrontend("src/pages/VaultControlPage.tsx");
 const shopControl = readFrontend("src/pages/ShopControlPage.tsx");
+const shopControlSpotlightWorkflow = readFrontend(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx"
+);
 const subscription = readFrontend("src/pages/SubscriptionSpotlightPage.tsx");
 
 requirePattern(requirements, /^imageio-ffmpeg==0\.6\.0$/m, "The bundled FFmpeg dependency must stay pinned.");
 requirePattern(service, /MIN_VIDEO_SHORT_EDGE = 360[\s\S]*?MIN_VIDEO_FPS = 15\.0[\s\S]*?MAX_VIDEO_ASPECT_RATIO = 2\.4[\s\S]*?MAX_VIDEO_DURATION_SECONDS = 10\.0/, "The server must keep a practical hard-rejection floor without restoring the rigid 720p gate.");
 requirePattern(service, /MAX_SOURCE_VIDEO_BYTES = 100 \* 1024 \* 1024[\s\S]*?MAX_NORMALIZED_VIDEO_BYTES = 15 \* 1024 \* 1024/, "Large phone sources and bounded published outputs must retain separate ceilings.");
-requirePattern(service, /"-t",[\s\S]*?str\(MAX_VIDEO_DURATION_SECONDS\)[\s\S]*?"libx264"[\s\S]*?"yuv420p"[\s\S]*?"\+faststart"/, "The server must physically trim and produce web-safe H.264 MP4.");
+requirePattern(service, /"-t", str\(finish_seconds\)[\s\S]*?"libx264"[\s\S]*?"yuv420p"[\s\S]*?"\+faststart"/, "The server must physically trim to the bounded target and produce web-safe H.264 MP4.");
 requirePattern(service, /"aac"[\s\S]*?"loudnorm=I=-16:TP=-1\.5:LRA=11"/, "Existing audio must keep modest AAC loudness normalisation.");
+requirePattern(service, /sound_mode[\s\S]*?\{"mix", "replace"\}[\s\S]*?amix=inputs=2[\s\S]*?output_has_audio/, "User sound must support bounded mix or replace and verify that the output contains audio.");
+requirePattern(mediaRoute, /sound_rights_confirmed[\s\S]*?sound_rights_confirmation_required[\s\S]*?MAX_SOURCE_AUDIO_BYTES/, "The video endpoint must require sound-rights confirmation and bound audio uploads.");
 requirePattern(mediaRoute, /@router\.post\("\/video"\)[\s\S]*?Depends\(get_current_user\)[\s\S]*?normalize_marketplace_video[\s\S]*?quality_verified": True/, "The authenticated video endpoint must inspect and mark only verified output.");
 requirePattern(mediaRoute, /_write_limited_upload\([\s\S]*?MAX_SOURCE_VIDEO_BYTES[\s\S]*?normalize_marketplace_video/, "The server must stream a bounded large source before normalising it.");
 requirePattern(mediaRoute, /verified_video_upload_required/g, "Direct video upload bypasses must remain closed.");
@@ -57,6 +62,16 @@ requirePattern(prep, /file\.size \|\| 0\) <= maxBytes[\s\S]*?durationSeconds <= 
 requirePattern(prep, /This is not a quality-gate bypass[\s\S]*?server inspects,[\s\S]*?trims and normalises/, "Unsupported phone-side preparation must fall back to the authoritative server gate.");
 requirePattern(pilot, /clean the lens[\s\S]*?good light[\s\S]*?quiet place[\s\S]*?Common social-video downloads are accepted[\s\S]*?opening 10 seconds[\s\S]*?extremely small[\s\S]*?very choppy/, "Shared guidance must accept usable social video and reserve rejection for clearly unusable sources.");
 requirePattern(serviceTests, /accepts_usable_576x1296_social_portrait[\s\S]*?size="576x1296"[\s\S]*?output\.short_edge >= MIN_VIDEO_SHORT_EDGE/, "Backend regression coverage must prove the reported 576x1296 portrait video is accepted and prepared.");
+requirePattern(serviceTests, /adds_sound_to_a_silent_video[\s\S]*?mixes_added_sound_with_original_audio[\s\S]*?rejects_sound_without_rights_confirmation/, "Backend regression coverage must prove sound insertion, mixing, and rights enforcement.");
+requirePattern(api, /sound_file[\s\S]*?sound_mode[\s\S]*?sound_rights_confirmed/, "The shared frontend upload helper must send all sound controls.");
+for (const [source, name] of [
+  [shopAssets, "Shop Assets"],
+  [vault, "Vault Control"],
+  [shopControlSpotlightWorkflow, "Shop Control"],
+  [subscription, "Subscription Spotlight"],
+]) {
+  requirePattern(source, /VideoSoundEditor/, name + " must expose the shared Add sound editor.");
+}
 requirePattern(screenSpecs, /practical hard-rejection floor[\s\S]*?576x1296[\s\S]*?must not require 720p/, "Screen specs must record the owner-approved usable-social-video correction.");
 requirePattern(freezePolicy, /Media Quality Gate v1 usable-social-video correction[\s\S]*?576x1296[\s\S]*?must not require 720p/, "Freeze policy must record the owner-approved quality-gate correction.");
 requirePattern(api, /j\.detail\.message \|\| j\.detail\.explanation \|\| j\.detail\.error/, "Structured server rejections must surface their plain corrective message.");
