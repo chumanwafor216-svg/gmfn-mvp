@@ -1983,7 +1983,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   result, and rejects the operation unless the prepared MP4 is confirmed to
   contain audio. Existing video preparation and Natural Finish remain the
   single processing path.
-- Local verification passed: 21 focused backend media tests, the production
+- Verification passed: 21 focused backend media tests, the production
   frontend build, the media-quality audit, and the capability-mirror audit.
-  This note records local implementation only until the exact commit is pushed
-  and both Render services are independently confirmed live.
+- Application commit `d6f11bcd32434c68f9805cb470efe08829225a2b`
+  was pushed to the working branch and `main`. GitHub Actions run
+  `40217206202` completed successfully for that exact revision. Render
+  frontend deploy `dep-dbf3rrjsp5es73cgsm7g` and API deploy
+  `dep-dbf3si8n74is73bevfm0` are live at the same revision. The public API
+  health check returned HTTP 200, the live route bundles contained the new
+  commerce and sound controls, and the post-start API error log was empty.
