@@ -42,7 +42,7 @@ def upgrade() -> None:
             sa.Column("status", sa.String(length=32), server_default="detected", nullable=False),
             sa.Column("status_reason", sa.String(length=64), nullable=True),
             sa.Column("confidence", sa.Integer(), server_default="0", nullable=False),
-            sa.Column("canonical", sa.Boolean(), server_default=sa.text("0"), nullable=False),
+            sa.Column("canonical", sa.Boolean(), server_default=sa.false(), nullable=False),
             sa.Column("expected_payment_id", sa.Integer(), nullable=True),
             sa.Column("meta_json", sa.Text(), nullable=True),
             sa.Column("hash", sa.String(length=64), nullable=False),
