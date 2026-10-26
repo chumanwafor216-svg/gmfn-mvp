@@ -8,6 +8,22 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre cleanup deployment evidence - 2026-10-26
+
+- Promoted the six verified frontend milestones from Community Ownership
+  through System Operations to `main` at application commit `40b6ed53`.
+- GitHub Actions run `40416799573` completed successfully for exact head SHA
+  `40b6ed536739d032cc0b7dcc84585783dcfe4970`.
+- Render frontend deploy `dep-dbftnkbcrg8s73av4f3g` reached `live`; the
+  workflow then verified the public frontend marker. An independent no-cache
+  request confirmed the live site serves the System Operations `v3` compact
+  bundle marker from `assets/SystemOperationsPage-w7YKVA9n.js`.
+- Backend deployment was explicitly disabled and the workflow confirmed
+  `Backend deploy needed: false`.
+- This deployment record supersedes the `local only` notes inside the six
+  individual milestone sections below. The 107 unrelated pre-existing
+  worktree entries were not staged, committed, pushed, or deployed.
+
 ## Command Centre System Operations first-surface cleanup - 2026-10-26
 
 - Simplified the platform-admin-only
