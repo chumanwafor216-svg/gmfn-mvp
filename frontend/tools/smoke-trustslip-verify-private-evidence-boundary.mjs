@@ -210,7 +210,7 @@ async function openAppVerifyPage(browser, baseURL, visibleCode, myTrustSlipCode)
     }
   );
 
-  await expect(page.getByRole("heading", { name: "TrustSlip Verify", exact: true })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Check this TrustSlip", exact: true })).toBeVisible({
     timeout: 30000,
   });
 

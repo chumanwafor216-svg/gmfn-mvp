@@ -191,7 +191,7 @@ Boundary: GSN presents evidence or an action outcome. The receiving person or or
 Status: LIVE. Setup requirement: NONE.
 
 Status: LIVE. Behaviour: USER_TRIGGERS_ON_DEMAND.
-Where to go: TrustSlip; TrustSlip Verify; Public Decision Pack; Read evidence; Ask community.
+Where to go: TrustSlip; Check this TrustSlip; Public TrustSlip; Read evidence; Ask community.
 Before it works: Holder has account and enough eligible evidence for requested purpose/context.
 What feeds or creates it: Existing eligible identity/community/trust evidence, selected purpose/Decision Pack, public code, validity window.
 Empty or stale state: Expired, missing, stale, or not enough evidence; verifier may ask holder to refresh.

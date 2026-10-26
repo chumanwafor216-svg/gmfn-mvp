@@ -8,6 +8,56 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Public TrustSlip Verify plain-language package - 2026-10-26
+
+- Continued the approved simplification into public `/t/:code`,
+  `/t/s/:shareToken`, `/verify/trust-slip` and their existing aliases. The
+  already-compliant structure is unchanged; the first read now says `Public
+  TrustSlip`, `Check this TrustSlip`, `What this record says`, `Why this
+  answer`, `What to do next` and `Limits of this check` instead of exposing
+  Decision Pack, Decision First, audit and decision-boundary terminology.
+- Deeper evidence labels now explain the purpose, evidence, source/date, next
+  check and limits directly. An additive shared-disclosure `debugId` override
+  preserves the existing `full-evidence-and-record-details` and
+  `audit-details` action identities while the visible titles change. Direct
+  code opening, code entry, evidence derivation, backend/API contracts,
+  routes, permissions and the public/private evidence boundary are unchanged.
+- Verification passed: the 293-module production build; focused
+  first-viewport, verify-boundary, evidence-order and institutional
+  proof-surface audits; the complete public-state browser smoke; the signed-in
+  private-evidence boundary smoke; and the full protected-button freeze. The
+  separate repository-wide trust-action audit remains blocked by unrelated
+  pre-existing CompanionLayer, DemandBox and doctrine-copy changes outside
+  this package. Physical-phone review and a live public code remain
+  outstanding.
+- Deployment truth: this package is local and uncommitted. It has not been
+  pushed or deployed.
+
+## Trust Passport plain-language package - 2026-10-26
+
+- Continued the approved app-wide simplification into `/app/trust`. The
+  Trust Passport structure was already compliant, so this package does not add
+  or remove cards, lanes, disclosures, actions or routes. It translates the
+  first read from technical labels to `Your trust evidence`, `Overall
+  evidence`, `Main community`, `Communities included` and `Next step`.
+- The same plain-language distinction now carries into copied Trust Passport
+  snapshots: `Overall trust evidence`, `Main community evidence` and `Across
+  communities`. The parser still accepts the retired `Aggregate Passport
+  reading` label so previously copied text remains readable. Internal
+  aggregate/primary-anchor keys, scores, evidence derivation, community IDs,
+  permissions, privacy boundaries, APIs and the separate TrustSlip product are
+  unchanged.
+- Verification passed: the 293-module production build, nine focused Trust
+  Passport/share audits, the authenticated app-tab first-paint audit, the full
+  Trust Passport/TrustSlip phone-width boundary smoke and the complete
+  protected-button freeze. The broad smoke contained stale expectations for
+  existing mobile and replacement-code behavior; those assertions were aligned
+  with the visible mobile copy and now verify exact replacement writes without
+  changing TrustSlip runtime behavior. Physical-phone review and live signed-in
+  evidence remain outstanding.
+- Deployment truth: this package is local and uncommitted. It has not been
+  pushed or deployed.
+
 ## Finance and Trade records deployment - 2026-10-26
 
 - The Finance wording and Trade records phone packages were committed as

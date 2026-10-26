@@ -190,13 +190,13 @@ assertContains(
 
 assertContains(
   "trust",
-  /const trustSlipEvidencePending = trustSlipSummaryHydrating && !trustSlipCode[\s\S]*?const trustPassportDecisionLine = trustSlipEvidencePending[\s\S]*?Opening the private Passport first\. Current TrustSlip evidence is still checking\.[\s\S]*?!trustSlipCode[\s\S]*?Issue the public TrustSlip before sharing evidence\.[\s\S]*?Aggregate reading first\. Primary community is the anchor, not the whole judgement\.[\s\S]*?Build aggregate evidence before relying on this passport\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = trustSlipEvidencePending[\s\S]*?label: "Open TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?!trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo/,
+  /const trustSlipEvidencePending = trustSlipSummaryHydrating && !trustSlipCode[\s\S]*?const trustPassportDecisionLine = trustSlipEvidencePending[\s\S]*?Checking your private record\. Your TrustSlip is still loading\.[\s\S]*?!trustSlipCode[\s\S]*?Create your TrustSlip before sharing evidence\.[\s\S]*?This combines your recorded communities\. Your main community is shown separately\.[\s\S]*?Add more evidence before relying on this record\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = trustSlipEvidencePending[\s\S]*?label: "Open TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?!trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo/,
   "Trust Passport first answer must include aggregate-scope plain action language, a checking-evidence state, and a real primary next-step target."
 );
 
 assertContains(
   "trust",
-  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?Decision Boundary[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary/,
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Your trust evidence[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?Decision Boundary[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary/,
   "Trust Passport first viewport must show aggregate Passport reading, four facts, one primary next-step button, then the compact mobile boundary disclosure."
 );
 
@@ -266,7 +266,7 @@ assertContains(
 );
 assertContains(
   "viewModel",
-  /evidenceScope:[\s\S]*?readingScope: "aggregate_with_primary_anchor" \| "primary_anchor_only"[\s\S]*?communityFootprintCount\?: string \| number \| null[\s\S]*?activeCommunityEvidenceCount = Math\.max\(activeClans, communityFootprintCount\)[\s\S]*?Aggregate Passport reading supports a decision, but it is not proof that every community gives the same judgement/,
+  /evidenceScope:[\s\S]*?readingScope: "aggregate_with_primary_anchor" \| "primary_anchor_only"[\s\S]*?communityFootprintCount\?: string \| number \| null[\s\S]*?activeCommunityEvidenceCount = Math\.max\(activeClans, communityFootprintCount\)[\s\S]*?This combined reading can support a decision, but it does not mean every community gives the same view/,
   "Trust Passport view model must carry an explicit aggregate evidence-scope contract."
 );
 assertNotContains(

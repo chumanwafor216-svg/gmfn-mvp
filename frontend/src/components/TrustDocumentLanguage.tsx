@@ -98,11 +98,13 @@ export function TrustDocumentDisclosureSection({
   title,
   summary,
   defaultOpen = false,
+  debugId,
   children,
 }: {
   title: string;
   summary?: string;
   defaultOpen?: boolean;
+  debugId?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -118,7 +120,7 @@ export function TrustDocumentDisclosureSection({
       }}
     >
       <StableDisclosureSummary
-        debugId={`trust-document.section.${actionIdPart(title)}`}
+        debugId={debugId || `trust-document.section.${actionIdPart(title)}`}
         stableHeight={48}
         style={{
           ...disclosureSummaryStyle(),

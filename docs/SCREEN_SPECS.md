@@ -1044,6 +1044,13 @@ Rules:
 - Do not expose the whole evidence universe, every document route, every trust
   event, and every explanation layer at once.
 - On phones, the lane chooser uses short labels and no repeated active-lane explanation. The cross-community portfolio stays behind one compact `Communities` disclosure so the selected trust lane reaches the surface sooner.
+- The first read must use direct member language: `Your trust evidence`,
+  `Overall evidence`, `Main community`, `Communities included`, and `Next
+  step`. Internal aggregate/primary-anchor contracts remain valid, but those
+  implementation terms must not be required reading. The page and copied
+  snapshot must still distinguish evidence combined across recorded
+  communities from the separately shown main community; simpler words must
+  not turn one community into the whole judgement.
 - TrustSlip is the portable current-evidence layer. Trust Passport is the fuller story.
   Keep those responsibilities distinct.
 - Trust Passport may summarize community-scoped activity evidence from the
@@ -1370,6 +1377,8 @@ Must show:
 
 Rules:
 - On phones, lead with one decision answer, no more than two short reasons, and one recommended next action. Hide the duplicate evidence snapshot and behaviour-pattern stack inside Full evidence and record details.
+- The public first read must use direct reader language: `Public TrustSlip`, `Check this TrustSlip`, `What this record says`, `Why this answer`, `What to do next`, and `Limits of this check`. `Decision Pack` and evidence-profile terminology may remain in internal contracts, but must not be required to understand the public result.
+- Visible disclosure wording may change without changing its stable action/debug identity. The `full-evidence-and-record-details` and `audit-details` identifiers remain compatibility contracts even when their reader-facing labels are simplified.
 - Public links that already contain a code must open directly into the paper. The code-entry route must expose one code field and one primary check action without unrelated welcome/guide buttons.
 - When the TrustSlip carries both a Community ID/key and member GSN ID/key, the
   public evidence paper may link to `CommunityMemberVerifyPage` as `Open member

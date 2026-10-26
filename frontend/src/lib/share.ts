@@ -138,6 +138,7 @@ function compactPaperMessage(value: string): string {
   const member = valueFor("Member", "Holder");
   const reading = valueFor(
     "Main reading",
+    "Overall trust evidence",
     "Aggregate Passport reading",
     "Visible trust reading",
     "Portable trust reading",

@@ -1018,7 +1018,7 @@ async function runTrustPassportScenario(browser, baseURL) {
     timeout: 60000,
   });
 
-  await expect(state.page.getByText("Aggregate Passport reading", { exact: true })).toBeVisible({ timeout: 7000 });
+  await expect(state.page.getByText("Your trust evidence", { exact: true })).toBeVisible({ timeout: 7000 });
   await waitForRequest(
     state.requestLog,
     isTrustPassportSummaryRead,
@@ -1043,9 +1043,9 @@ async function runTrustPassportScenario(browser, baseURL) {
     "Trust Passport background recompute request after secondary release"
   );
   await expect(state.page.getByText("TrustSlip available", { exact: true }).first()).toBeVisible({ timeout: 7000 });
-  await expect(state.page.getByText("Aggregate reading", { exact: true })).toBeVisible();
-  await expect(state.page.getByText("Primary anchor", { exact: true }).first()).toBeVisible();
-  await expect(state.page.getByText("Community portfolio", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Overall evidence", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Main community", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("Communities included", { exact: true })).toBeVisible();
   const decisionBoundary = state.page.locator('[data-trust-passport-decision-boundary="compact"]');
   await expect(decisionBoundary).toBeVisible();
   await expect(state.page.locator('details[data-trust-passport-decision-boundary="compact"]:not([open])')).toHaveCount(1);
@@ -1364,6 +1364,7 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
 
   const holderOpened = await openTrustSlipHolderFromSetup(state.page, {
     setupOnly: Boolean(scenario.setupOnly),
+    expectedCode: scenario.expectedCode || trustSlipCode,
   });
   if (holderOpened) {
     await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
@@ -1392,6 +1393,15 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
 
   for (const debugId of scenario.absentCtas || []) {
     await expect(state.page.locator(`[data-cta-id="${debugId}"]`)).toHaveCount(0);
+  }
+
+  if (Number.isInteger(scenario.expectedReissueWrites)) {
+    const actualReissueWrites = trustSlipReissueWriteCount(state.requestLog);
+    if (actualReissueWrites !== scenario.expectedReissueWrites) {
+      throw new Error(
+        `${scenario.label} expected ${scenario.expectedReissueWrites} TrustSlip reissue write(s), got ${actualReissueWrites}`
+      );
+    }
   }
 
   await waitForRequest(
@@ -1496,11 +1506,12 @@ async function runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL) {
   const setupPanel = state.page.locator('[data-gsn-trustslip-setup-only="true"]');
   const scopeSelect = state.page.getByLabel("Choose TrustSlip community");
 
-  await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
-  await expect(holderCertificate).toBeHidden();
+  await expect(holderCertificate).toHaveCount(0, { timeout: 30000 });
   await expect(setupPanel).toBeVisible();
   await setupPanel.locator('[data-cta-id="trust-slip.setup.open-current"]').click();
   await expect(setupPanel).toHaveCount(0);
+  await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
+  await expect(holderCertificate).toBeHidden();
   await expect(scopeSelect).toHaveValue(`community:${selectedClanId}`);
   await expect(state.page.getByText(recoveredTrustSlipCode, { exact: false }).first()).toBeVisible();
   await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]').first()).toBeEnabled();
@@ -1536,9 +1547,7 @@ async function runTrustSlipSummaryAfterClanListScenario(browser, baseURL) {
 
   await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
   trustSlipSummaryGate.release();
-  await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
-    timeout: 30000,
-  });
+  await openTrustSlipHolderFromSetup(state.page, { expectedCode: recoveredTrustSlipCode });
   await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
   await closeChecked(state, "TrustSlip summary-after-clan-list scenario");
 }
@@ -1563,9 +1572,7 @@ async function runTrustSlipClanListAfterSummaryScenario(browser, baseURL) {
     "TrustSlip summary request before delayed clan-list release"
   );
   clanListGate.release();
-  await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
-    timeout: 30000,
-  });
+  await openTrustSlipHolderFromSetup(state.page, { expectedCode: recoveredTrustSlipCode });
   await expect(state.page.getByLabel("Choose TrustSlip community")).toHaveValue(`community:${selectedClanId}`);
   await closeChecked(state, "TrustSlip clan-list-after-summary scenario");
 }
@@ -2015,7 +2022,7 @@ async function runPublicTradeEvidenceScenario(browser, baseURL, scenario) {
     }
     if (scenario.openDetails) {
       await state.page.locator("summary").filter({ hasText: "Trade or Skilled Work Decision Pack" }).first().click();
-      const evidenceDetails = state.page.locator("summary").filter({ hasText: "Decision evidence details" }).first();
+      const evidenceDetails = state.page.locator("summary").filter({ hasText: "Evidence details" }).first();
       if (await evidenceDetails.count()) await evidenceDetails.click();
     }
     for (const text of scenario.visibleText || []) {
@@ -2044,7 +2051,8 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     },
     headline: "Trade evidence not shown; ask for confirmation",
     compactText: ["does not show qualifying Trade records"],
-    visibleText: ["Not shown: no qualifying Trade records"],
+    openDetails: true,
+    visibleText: ["No detailed category records are shown here"],
     absentText: ["Suitable for a low-risk trade check", "Use for low-risk decisions", "do not surface private note"],
   });
 
@@ -2168,7 +2176,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     headline: "Trade review context shown; outcome not classified",
     compactText: ["Available review context shown", "General review context is available", "Limited or missing information also shown"],
     openDetails: true,
-    visibleText: ["available review context is not work-completion evidence", "outcome is not classified"],
+    visibleText: ["Shown: general review context is visible without an outcome classification", "outcome is not classified"],
     absentText: ["Resolved/corrected context shown", "Review/correction caution shown", "Trade outcome evidence shown"],
   });
 
@@ -2192,7 +2200,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     headline: "Trade activity category shown; confirmation still needed",
     compactText: ["Trade category shown", "Category prompt only", "Limited or missing information also shown"],
     openDetails: true,
-    visibleText: ["category visibility is a prompt for follow-up"],
+    visibleText: ["Shown: a Trade-related public-safe category is visible"],
     absentText: ["successful public extract includes only", "No qualifying public Trade records"],
   });
 
@@ -2250,7 +2258,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     headline: "Trade work evidence shown; confirmation request pending",
     compactText: ["Work record shown", "2 completed-work outcome pointers shown", "Confirmation request pending", "Limited or missing information also shown"],
     openDetails: true,
-    visibleText: ["available work records and pending confirmation requests must be read as separate evidence states", "1 community confirmation request is pending"],
+    visibleText: ["Shown: Trade work evidence is visible and confirmation is pending", "1 community confirmation request is pending"],
     absentText: ["community witness evidence exists", "favourable confirmation exists"],
   });
 
@@ -2368,7 +2376,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     headline: "Trade review or correction pointer needs review",
     compactText: ["Work record shown", "Protected trade fulfilment completed", "Review/correction caution shown", "Limited or missing information also shown"],
     openDetails: true,
-    visibleText: ["general review pointer is not treated as a trade-specific dispute", "One correction review is still open"],
+    visibleText: ["Caution: review/correction context is visible", "One correction review is still open"],
     absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
   });
 
@@ -2419,7 +2427,8 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     },
     headline: "Trade evidence unavailable on this public view",
     compactText: ["did not load in a usable form"],
-    visibleText: ["Unavailable: Trade-specific public evidence was not included"],
+    openDetails: true,
+    visibleText: ["Ask the holder for a fresh public page"],
     absentText: ["No qualifying public Trade records are included"],
   });
 
@@ -2467,6 +2476,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     },
     headline: "Fresh TrustSlip needed before trade evidence review",
     compactText: ["not current"],
+    openDetails: true,
     visibleText: ["Request a fresh TrustSlip"],
     absentText: ["Trade confirmation aggregate shown; recipient still verifies"],
   });
@@ -2525,7 +2535,9 @@ async function main() {
     await runTrustSlipSummaryAfterClanListScenario(browser, baseURL);
     await runTrustSlipClanListAfterSummaryScenario(browser, baseURL);
     await runTrustSlipStateScenario(browser, baseURL, {
-      label: "expired TrustSlip holder",
+      label: "expired TrustSlip refresh",
+      expectedCode: "GSN-TRUSTSLIP-REISSUED",
+      expectedReissueWrites: 1,
       overrides: {
         status: "expired",
         active: false,
@@ -2537,33 +2549,37 @@ async function main() {
       },
       paperPack: "limits",
       visibleText: [
-        "Needs refresh",
-        "Refresh before anyone relies on it",
+        "Active",
+        "Ready to verify",
         "Current TrustSlip state",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
-      label: "revoked TrustSlip holder",
+      label: "revoked TrustSlip refresh",
+      expectedCode: "GSN-TRUSTSLIP-REISSUED",
+      expectedReissueWrites: 1,
       overrides: {
         status: "revoked",
         active: false,
         is_current: false,
       },
       visibleText: [
-        "Revoked",
-        "Do not rely on this TrustSlip",
+        "Active",
+        "Ready to verify",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
-      label: "frozen TrustSlip holder",
+      label: "frozen TrustSlip refresh",
+      expectedCode: "GSN-TRUSTSLIP-REISSUED",
+      expectedReissueWrites: 1,
       overrides: {
         status: "frozen",
         active: false,
         is_current: false,
       },
       visibleText: [
-        "Frozen",
-        "Do not rely on this TrustSlip",
+        "Active",
+        "Ready to verify",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -2590,7 +2606,9 @@ async function main() {
       visibleText: [
         "TrustSlip setup",
         "Choose purpose and community first.",
-        "The full TrustSlip opens after GSN refreshes it for this exact choice.",
+        "Phone verification needed",
+        "Verify your phone number to activate TrustSlip portability.",
+        "First step: Verify your phone, then return here to generate the TrustSlip.",
         "Verify phone",
       ],
     });

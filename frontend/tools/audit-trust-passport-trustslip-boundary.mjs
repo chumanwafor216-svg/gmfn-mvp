@@ -205,13 +205,13 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /const communityPortfolioDetail = passportVm\.evidenceScope\.summary;[\s\S]*?const trustPassportDecisionFacts:[\s\S]*?"Aggregate reading"[\s\S]*?"Primary anchor"[\s\S]*?"Community portfolio"[\s\S]*?communityPortfolioDetail[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows:[\s\S]*?passportVm\.evidenceScope\.readingScope[\s\S]*?"Aggregate \+ anchor"[\s\S]*?"Primary anchor", "Separate"/,
+  /const communityPortfolioDetail = passportVm\.evidenceScope\.summary;[\s\S]*?const trustPassportDecisionFacts:[\s\S]*?"Overall evidence"[\s\S]*?"Main community"[\s\S]*?"Communities included"[\s\S]*?communityPortfolioDetail[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows:[\s\S]*?passportVm\.evidenceScope\.readingScope[\s\S]*?"All recorded \+ main"[\s\S]*?"Main community", "Shown separately"/,
   "Trust Passport first viewport facts must order aggregate reading, primary community anchor, Community Portfolio, and next step from an explicit evidence-scope contract."
 );
 assertContains(
   "trustPassport",
-  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"/,
-  "Trust Passport first viewport must visibly label the headline as Aggregate Passport reading before the quick facts."
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Your trust evidence[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"/,
+  "Trust Passport first viewport must use a direct trust-evidence headline before the quick facts."
 );
 assertContains(
   "trustPassport",

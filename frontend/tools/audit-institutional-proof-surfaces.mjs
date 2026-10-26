@@ -796,8 +796,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?TrustSlip Verify/,
-  "Public TrustSlip paper must present itself as an institutional public Decision Pack while preserving TrustSlip Verify identity."
+  /Public TrustSlip[\s\S]*?Check this TrustSlip/,
+  "Public TrustSlip paper must present itself as an institutional public record in direct reader language."
 );
 assertContains(
   "trustSlipRoute",
@@ -826,7 +826,7 @@ assertNotContains(
 );
 assertContains(
   "publicPaper",
-  /TrustPaperAuthorityStrip[\s\S]*?GSN TrustSlip Verification Paper[\s\S]*?TrustPaperSecurityNote/,
+  /TrustPaperAuthorityStrip[\s\S]*?GSN Public TrustSlip Record[\s\S]*?TrustPaperSecurityNote/,
   "Public TrustSlip paper must carry shared GSN authority and screenshot security marks."
 );
 assertNotContains(
@@ -881,7 +881,7 @@ assertContains(
 );
 assertContains(
   "trustSlipVerify",
-  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : publicVerifyEndpointErrorCopy \? \([\s\S]*?<TrustSlipVerifyResultCard[\s\S]*?\) : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
+  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?Check a TrustSlip[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : publicVerifyEndpointErrorCopy \? \([\s\S]*?<TrustSlipVerifyResultCard[\s\S]*?\) : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
   "Public TrustSlip links with a code must open directly into the paper instead of showing a duplicate intro hero above it."
 );
 assertContains(

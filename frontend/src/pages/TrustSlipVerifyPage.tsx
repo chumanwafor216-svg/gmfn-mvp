@@ -1455,7 +1455,7 @@ export default function TrustSlipVerifyPage() {
               "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
             )}
           >
-            <div style={sectionLabel()}>TrustSlip verify</div>
+            <div style={sectionLabel()}>Public TrustSlip</div>
             <div
               style={{
                 marginTop: 10,
@@ -1465,17 +1465,17 @@ export default function TrustSlipVerifyPage() {
                 lineHeight: 1.1,
               }}
             >
-              Loading verification page
+              Checking this TrustSlip
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
-              Reading the TrustSlip verification record...
+              Checking the current public record...
             </div>
           </section>
         )}
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading TrustSlip verification...
+            Opening the public record...
           </div>
         </section>
       </div>
@@ -1527,7 +1527,7 @@ export default function TrustSlipVerifyPage() {
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
           )}
         >
-          <div style={sectionLabel()}>TrustSlip verify</div>
+          <div style={sectionLabel()}>Public TrustSlip</div>
 
           <div
             style={{
@@ -1538,7 +1538,7 @@ export default function TrustSlipVerifyPage() {
               lineHeight: 1.1,
             }}
           >
-            TrustSlip Verify
+            Check a TrustSlip
           </div>
 
           <div
@@ -1565,16 +1565,6 @@ export default function TrustSlipVerifyPage() {
             gap: 14,
           }}
         >
-          <div
-            style={{
-              color: "#07172C",
-              fontSize: isCompact ? 26 : 32,
-              fontWeight: 1000,
-              lineHeight: 1.08,
-            }}
-          >
-            Check a TrustSlip
-          </div>
           <p style={{ margin: 0, ...helperText(), color: "#475569", maxWidth: 760 }}>
             Type the code shown on the TrustSlip.
           </p>
@@ -1613,7 +1603,7 @@ export default function TrustSlipVerifyPage() {
               fullWidth
               debugId="trust-slip-verify.code-checker.submit"
             >
-              Verify code
+              Check code
             </PrimaryButton>
           </form>
           <div style={{ color: "#64748B", fontSize: 12.5, fontWeight: 800 }}>

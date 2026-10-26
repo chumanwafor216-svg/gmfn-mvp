@@ -362,14 +362,14 @@ export function buildTrustPassportSnapshot(
       params.holderRole && params.holderRole.toLowerCase() !== "member"
         ? cleanLine("Primary community role", `${params.holderRole} inside ${params.communityName}`)
         : "",
-      cleanLine("Aggregate Passport reading", friendlyTrustBand(params.currentBand)),
+      cleanLine("Overall trust evidence", friendlyTrustBand(params.currentBand)),
       cleanLine(
-        "Evidence posture",
+        "Evidence status",
         friendlyEvidencePosture(params.currentPosture, params.currentBand)
       ),
-      cleanLine("Primary community reading", friendlyTrustBand(params.openTrustClass)),
+      cleanLine("Main community evidence", friendlyTrustBand(params.openTrustClass)),
       activeCommunityContextLine(params.activeCommunityCount),
-      cleanLine("Aggregate/wider reading", friendlyConsistency(params.cciClass)),
+      cleanLine("Across communities", friendlyConsistency(params.cciClass)),
       cleanLine("Primary community activity", params.communityActivitySummary || "Not shown"),
       params.communityActivityCategories
         ? cleanLine("Activity categories", params.communityActivityCategories)
@@ -409,7 +409,7 @@ export function buildTrustPassportShareText(
     params.holderRole && params.holderRole.toLowerCase() !== "member"
       ? cleanLine("Primary community role", `${params.holderRole} inside this community`)
       : "",
-    cleanLine("Aggregate Passport reading", friendlyTrustBand(params.currentBand)),
+    cleanLine("Overall trust evidence", friendlyTrustBand(params.currentBand)),
     activeCommunityContextLine(params.activeCommunityCount),
     params.communityActivitySummary
       ? cleanLine("Primary community evidence", params.communityActivitySummary)

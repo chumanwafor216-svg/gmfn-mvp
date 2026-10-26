@@ -773,7 +773,7 @@ async function run() {
       mode: "trust",
       path: "/app/trust?community=8",
       selector: '[data-trust-passport-decision-first="one-answer-four-facts"]',
-      text: "Aggregate Passport reading",
+      text: "Your trust evidence",
       loadingText: "Loading Trust Passport",
       expectDelayedPaths: ["/trust/me/why", "/trust-slips/me/summary"],
     },

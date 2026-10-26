@@ -2879,8 +2879,8 @@ export default function TrustScorePage() {
   const currentRoleSummary = communityRoleCounts || roleCountLabel(passportVm.identity.holderRole, 1);
   const identityRows: Array<[GsnIconName, string, string]> = [
     ["id", "GSN ID", passportVm.identity.gmfnId],
-    ["community", "Primary anchor", passportVm.identity.communityName],
-    ["hash", "Primary anchor ID", passportVm.identity.communityId],
+    ["community", "Main community", passportVm.identity.communityName],
+    ["hash", "Main community ID", passportVm.identity.communityId],
     ["shield", "Community roles", currentRoleSummary],
   ];
   const identityCommunitySummaryRows: Array<[GsnIconName, string, string]> = [
@@ -2893,18 +2893,18 @@ export default function TrustScorePage() {
   const activeCommunityTotal = positiveNumber(passportVm.evidenceScope.activeCommunityCount);
   const activeCommunityCountLabel = passportVm.evidenceScope.portfolioLabel;
   const aggregatePassportReading = passportVm.verdict.lowData
-    ? "Aggregate evidence building"
+    ? "Evidence still building"
     : passportVm.verdict.label;
   const aggregatePassportReadingDetail = passportVm.verdict.lowData
     ? passportVm.verdict.interpretation
-    : `${passportVm.verdict.evidenceMeaning}. Depth: ${passportVm.verdict.evidenceLabel}.`;
+    : `${passportVm.verdict.evidenceMeaning}. Evidence strength: ${passportVm.verdict.evidenceLabel}.`;
   const primaryCommunityAnchorDetail =
     passportVm.identity.communityName === "Not stated"
-      ? "Primary community anchor is not shown yet."
+      ? "Main community is not shown yet."
       : `${currentRoleSummary}; ${passportVm.identity.communityId}.`;
   const communityPortfolioDetail = passportVm.evidenceScope.summary;
   const trustPassportDecisionAnswer = trustSlipEvidencePending
-    ? "Opening current Passport"
+    ? "Checking your trust record"
     : !trustSlipCode
       ? "Evidence setup needed"
       : aggregatePassportReading;
@@ -2916,12 +2916,12 @@ export default function TrustScorePage() {
         ? "good"
         : "info";
   const trustPassportDecisionLine = trustSlipEvidencePending
-    ? "Opening the private Passport first. Current TrustSlip evidence is still checking."
+    ? "Checking your private record. Your TrustSlip is still loading."
     : !trustSlipCode
-      ? "Issue the public TrustSlip before sharing evidence."
+      ? "Create your TrustSlip before sharing evidence."
       : identityEvidence.score >= 60 && activeCommunityTotal > 0
-        ? "Aggregate reading first. Primary community is the anchor, not the whole judgement."
-        : "Build aggregate evidence before relying on this passport.";
+        ? "This combines your recorded communities. Your main community is shown separately."
+        : "Add more evidence before relying on this record.";
   const trustPassportPrimaryActionLabel =
     safeStr(nextStep.ctaLabel).length <= 24 ? nextStep.ctaLabel : "Open next step";
   const trustPassportPrimaryAction = trustSlipEvidencePending
@@ -2951,7 +2951,7 @@ export default function TrustScorePage() {
   ]> = [
     [
       "shield",
-      "Aggregate reading",
+      "Overall evidence",
       aggregatePassportReading,
       aggregatePassportReadingDetail,
       identityEvidence.score >= 60,
@@ -2959,7 +2959,7 @@ export default function TrustScorePage() {
     ],
     [
       "community",
-      "Primary anchor",
+      "Main community",
       passportVm.identity.communityName,
       primaryCommunityAnchorDetail,
       passportVm.identity.communityName !== "Not stated",
@@ -2967,7 +2967,7 @@ export default function TrustScorePage() {
     ],
     [
       "globe",
-      "Community portfolio",
+      "Communities included",
       activeCommunityCountLabel,
       communityPortfolioDetail,
       activeCommunityTotal > 1,
@@ -2990,10 +2990,10 @@ export default function TrustScorePage() {
     [
       "Reading scope",
       passportVm.evidenceScope.readingScope === "aggregate_with_primary_anchor"
-        ? "Aggregate + anchor"
-        : "Primary anchor",
+        ? "All recorded + main"
+        : "Main community only",
     ],
-    ["Primary anchor", "Separate"],
+    ["Main community", "Shown separately"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Final decision", "Yours"],
@@ -3378,7 +3378,7 @@ export default function TrustScorePage() {
                   lineHeight: 1.1,
                 }}
               >
-                Aggregate Passport reading
+                Your trust evidence
               </div>
               <h1
                 style={{

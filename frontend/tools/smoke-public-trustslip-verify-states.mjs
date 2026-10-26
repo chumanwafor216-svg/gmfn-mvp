@@ -33,7 +33,7 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Full evidence and record details", "Verification paper details"],
+    expectedText: ["Evidence and record details", "Verification paper details"],
   },
   minimal: {
     code: "TS-MINIMAL-BOUNDARY",
@@ -429,7 +429,7 @@ async function assertNoPublicPrivateLeaks(page) {
 }
 
 async function assertPublicPaperBasics(page) {
-  await expect(page.getByRole("heading", { name: "TrustSlip Verify", exact: true })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Check this TrustSlip", exact: true })).toBeVisible({
     timeout: 30000,
   });
   await expect(page.getByText("This paper confirms", { exact: true })).toHaveCount(1);
@@ -437,7 +437,7 @@ async function assertPublicPaperBasics(page) {
   await expect(page.getByText("Public paper ends here")).toBeVisible();
   await expect(page.getByText("Private review area below")).toBeVisible();
   await expect(page.getByText("Verification paper details", { exact: true })).toBeVisible();
-  await expect(page.getByText("Audit Details", { exact: true })).toBeVisible();
+  await expect(page.getByText("Official record details", { exact: true })).toBeVisible();
   await assertNoPublicPrivateLeaks(page);
 }
 
@@ -460,7 +460,7 @@ async function runNoCodeScenario(browser, baseURL) {
   await expect(page.getByText("Private Trust Passport details stay hidden.")).toBeVisible();
   await expect(page.locator('[data-cta-id="trust-slip-verify.hero.welcome"]')).toHaveCount(0);
   await expect(page.locator('[data-cta-id="trust-slip-verify.hero.guide"]')).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "TrustSlip Verify", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Check this TrustSlip", exact: true })).toHaveCount(0);
   await assertNoPublicPrivateLeaks(page);
   await page.waitForTimeout(400);
 
@@ -581,12 +581,12 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await mobileFullEvidenceSummary.click();
   const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="collapsed-summary"]');
   await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
-  await expect(mobileFullEvidence).toContainText("Purpose / Relevant evidence");
-  await expect(mobileFullEvidence).toContainText("What it suggests");
-  await expect(mobileFullEvidence).toContainText("Source / Recency");
-  await expect(mobileFullEvidence).toContainText("Next check");
-  await expect(mobileFullEvidence).toContainText("Limitations");
-  await expect(mobileFullEvidence).toContainText("Behaviour evidence pattern");
+  await expect(mobileFullEvidence).toContainText("Purpose and evidence");
+  await expect(mobileFullEvidence).toContainText("What it means");
+  await expect(mobileFullEvidence).toContainText("Source and date");
+  await expect(mobileFullEvidence).toContainText("What to check next");
+  await expect(mobileFullEvidence).toContainText("What this cannot prove");
+  await expect(mobileFullEvidence).toContainText("Recorded evidence pattern");
   if (expectRedactedExtract) {
     await expect(mobileFullEvidence).toContainText("Community participation evidence");
     await expect(mobileFullEvidence).toContainText("149 public-safe records");
@@ -597,12 +597,12 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
-  await expect(decisionReading).toContainText("Purpose evidence and next check");
-  await expect(decisionReading).toContainText("GSN reads the selected Decision Pack first");
+  await expect(decisionReading).toContainText("What is shown and what to check next");
+  await expect(decisionReading).toContainText("GSN shows evidence related to the selected decision first");
   await expect(decisionReading).toContainText("Purpose");
   await expect(decisionReading).toContainText("Relevant evidence");
-  await expect(decisionReading).toContainText("Source / Recency");
-  await expect(decisionReading).toContainText("Limitations");
+  await expect(decisionReading).toContainText("Source and date");
+  await expect(decisionReading).toContainText("What this cannot prove");
   await expect(decisionReading).toContainText("Evidence details");
   await page.locator('[data-cta-id="trust-document.section.evidence-details"]').click();
   const purposeFilteredEvidence = page.locator('[data-gsn-decision-pack-profile="public-purpose-filter"]');

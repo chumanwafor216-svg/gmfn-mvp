@@ -205,10 +205,10 @@ export function buildTrustPassportViewModel(
     activeCommunityEvidenceCount > 1 ? "aggregate_with_primary_anchor" : "primary_anchor_only";
   const evidenceScopeSummary =
     activeCommunityEvidenceCount > 1
-      ? `Aggregate Passport reading draws from ${portfolioLabel}; ${primaryAnchorLabel} remains the primary anchor.`
-      : `Passport reading is anchored to ${primaryAnchorLabel}; wider community evidence is still building.`;
+      ? `This reading uses ${portfolioLabel}. Your main community is ${primaryAnchorLabel}.`
+      : `This reading currently uses ${primaryAnchorLabel}. Evidence from more communities is still building.`;
   const evidenceScopeBoundary =
-    "Aggregate Passport reading supports a decision, but it is not proof that every community gives the same judgement.";
+    "This combined reading can support a decision, but it does not mean every community gives the same view.";
   const counterparties = numberValue(input.counterparties);
   const riskLevel = clean(input.riskLevel, "Unknown");
   const weakBand = ["D", "E", "F"].includes(normalizeTrustBand(band));

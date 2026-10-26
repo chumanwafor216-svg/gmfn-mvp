@@ -2017,11 +2017,11 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["Record", resolvedCode ? "Genuine GSN code" : "Code not shown"],
-    ["Current", publicValidityLabel],
-    ["Evidence", requestedVerificationScopeLabel],
-    ["Not proof of", "Guarantee, ID, or credit approval"],
-    ["Decision", "Receiver decides"],
+    ["Code", resolvedCode ? "GSN code shown" : "Code not shown"],
+    ["Status", publicValidityLabel],
+    ["Community evidence", requestedVerificationScopeLabel],
+    ["Not proof", "Guarantee, ID, or credit approval"],
+    ["Final decision", "Yours"],
   ];
   const selectedConfirmationCommunityName = firstTruthy(
     selectedConfirmationCommunity?.community_name,
@@ -2391,7 +2391,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const decisionBecauseRows: Array<[string, string]> = purposeDecisionReading.because
     .slice(0, compact ? 3 : 5)
-    .map((reason, index): [string, string] => [`Because ${index + 1}`, reason]);
+    .map((reason, index): [string, string] => [`Reason ${index + 1}`, reason]);
   const decisionTranslationRows: Array<[string, string]> = [
     ...decisionBecauseRows,
     ["Active Community ID", communityConnectionFinding],
@@ -3034,7 +3034,7 @@ export default function TrustSlipVerifyPublicPaper({
               textTransform: "uppercase",
             }}
           >
-            Public Decision Pack
+            Public TrustSlip
           </div>
           <h1
             style={{
@@ -3048,7 +3048,7 @@ export default function TrustSlipVerifyPublicPaper({
               wordBreak: "normal",
             }}
           >
-            TrustSlip Verify
+            Check this TrustSlip
           </h1>
           <p
             style={{
@@ -3061,7 +3061,7 @@ export default function TrustSlipVerifyPublicPaper({
               fontWeight: 760,
             }}
           >
-            Public Decision Pack for a safer next decision.
+            See what this record supports and what to check next.
           </p>
           <div
             style={{
@@ -3135,7 +3135,7 @@ export default function TrustSlipVerifyPublicPaper({
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: decisionFirstTone === "warning" ? "#92400E" : "#0B63D1" }}>
-                Decision First
+                What this record says
               </div>
               <h2
                 style={{
@@ -3179,9 +3179,9 @@ export default function TrustSlipVerifyPublicPaper({
             }}
           >
             <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
-              {compact ? "Why" : "Why this reading?"}
+              Why this answer
             </div>
-            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2") : decisionTranslationRows} compact={compact} />
+            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Reason 1" || label === "Reason 2") : decisionTranslationRows} compact={compact} />
             <div
               data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"
               style={{ display: compact ? "none" : "grid", gap: 7 }}
@@ -3211,7 +3211,7 @@ export default function TrustSlipVerifyPublicPaper({
               gap: compact ? 6 : 8,
             }}
           >
-            <div style={{ gridColumn: "1 / -1", ...sectionLabel(), color: "#0B63D1" }}>Quick Decision</div>
+            <div style={{ gridColumn: "1 / -1", ...sectionLabel(), color: "#0B63D1" }}>Quick check</div>
             {quickDecisionFacts.map((fact) => (
               <PublicReadingTile
                 key={fact.label}
@@ -3227,41 +3227,42 @@ export default function TrustSlipVerifyPublicPaper({
 
         {compact ? (
           <TrustDocumentDisclosureSection
-            title="Full evidence and record details"
-            summary="Open for purpose, relevant evidence, source, next check, and limitations."
+            title="Evidence and record details"
+            summary="Open for the purpose, evidence, source, next check, and limits."
+            debugId="trust-document.section.full-evidence-and-record-details"
           >
             <div
               data-gsn-public-mobile-full-evidence="collapsed-summary"
               style={{ display: "grid", gap: 10 }}
             >
               <OfficialResultTable
-                title="Purpose / Relevant evidence"
+                title="Purpose and evidence"
                 rows={relevantEvidenceRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="What it suggests"
+                title="What it means"
                 rows={suggestionRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="Source / Recency"
+                title="Source and date"
                 rows={sourceFamilyRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="Next check"
+                title="What to check next"
                 rows={nextCheckRows}
                 compact={compact}
               />
               <OfficialResultTable
-                title="Limitations"
+                title="What this cannot prove"
                 rows={limitationRows}
                 compact={compact}
               />
               <TrustSlipEvidencePatternStack
                 compact={compact}
-                title="Behaviour evidence pattern"
+                title="Recorded evidence pattern"
                 reading={trustSlipPattern.reading}
                 items={trustSlipPattern.items}
                 nextStep={trustSlipPattern.nextStep}
@@ -3328,12 +3329,12 @@ export default function TrustSlipVerifyPublicPaper({
                 alignContent: "start",
               }}
             >
-              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Next recommended action</div>
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>What to do next</div>
               <div style={{ display: "grid", gridTemplateColumns: compact ? "38px minmax(0, 1fr)" : "44px minmax(0, 1fr)", gap: compact ? 8 : 10, alignItems: "start" }}>
                 {paperIconBadge("community-building", validNow ? "neutral" : "warning", compact ? 36 : 42)}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...readableText(), color: "#07172C", fontSize: compact ? 16 : 18, fontWeight: 1000, lineHeight: 1.12 }}>
-                    {compact ? "Next step" : "Choose what to confirm next"}
+                    {compact ? "Next step" : "Choose your next check"}
                   </div>
                   <p style={{ ...readableText(), display: compact ? "none" : "block", margin: "5px 0 0", color: "#526579", fontSize: compact ? 12 : 12.5, fontWeight: 820, lineHeight: 1.36 }}>
                     {readerConfirmationIntro}
@@ -3475,7 +3476,7 @@ export default function TrustSlipVerifyPublicPaper({
               gap: 8,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
+            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Limits of this check</div>
             {compact ? (
               <div
                 style={{
@@ -3486,7 +3487,7 @@ export default function TrustSlipVerifyPublicPaper({
                   lineHeight: 1.32,
                 }}
               >
-                GSN checked {evidenceScopeIsWider ? "primary and wider community signals" : "the primary community signal"}; this is evidence for the receiver to decide with.
+                GSN checked {evidenceScopeIsWider ? "the main community and other recorded community evidence" : "the main community evidence"}. Use this to decide; it is not approval or a guarantee.
               </div>
             ) : (
               <div
@@ -3512,7 +3513,7 @@ export default function TrustSlipVerifyPublicPaper({
         </div>
         <TrustDocumentDisclosureSection
           title={decisionPackPurpose}
-          summary="Open for purpose-specific public evidence, source, next check, and limits."
+          summary="Open for evidence related to this decision, its source, next check, and limits."
           defaultOpen={!compact}
         >
         <div
@@ -3525,7 +3526,7 @@ export default function TrustSlipVerifyPublicPaper({
         >
           <div>
             <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
-              Decision Pack reading
+              Evidence check
             </div>
             <h2
               style={{
@@ -3537,7 +3538,7 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 1000,
               }}
             >
-              Purpose evidence and next check
+              What is shown and what to check next
             </h2>
             <p
               style={{
@@ -3549,7 +3550,7 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 850,
               }}
             >
-              GSN reads the selected Decision Pack first. Purpose-specific public-safe evidence leads this view; generic community activity is supporting context only.
+              GSN shows evidence related to the selected decision first. Other community activity is supporting context only.
             </p>
           </div>
           <OfficialResultTable
@@ -3563,22 +3564,22 @@ export default function TrustSlipVerifyPublicPaper({
             compact={compact}
           />
           <OfficialResultTable
-            title="What it suggests"
+            title="What it means"
             rows={suggestionRows}
             compact={compact}
           />
           <OfficialResultTable
-            title="Source / Recency"
+            title="Source and date"
             rows={sourceFamilyRows}
             compact={compact}
           />
           <OfficialResultTable
-            title="Next check"
+            title="What to check next"
             rows={nextCheckRows}
             compact={compact}
           />
           <OfficialResultTable
-            title="Limitations"
+            title="What this cannot prove"
             rows={limitationRows}
             compact={compact}
           />
@@ -3726,15 +3727,16 @@ export default function TrustSlipVerifyPublicPaper({
         </TrustDocumentDisclosureSection>
 
         <TrustDocumentDisclosureSection
-          title="Audit Details"
-          summary="Open for technical record checks, community evidence, security, and limits."
+          title="Official record details"
+          summary="Open for community evidence, record checks, security, and limits."
+          debugId="trust-document.section.audit-details"
         >
           <div
             data-gsn-public-more-details="authority-evidence-limits"
             style={{ display: "grid", gap: 12 }}
           >
             <TrustPaperAuthorityStrip
-              title="GSN TrustSlip Verification Paper"
+              title="GSN Public TrustSlip Record"
               reference={resolvedCode || verifyPath || "TrustSlip verify record"}
               generatedAt={issuedAtLabel || undefined}
               classification={validNow ? "Current public evidence" : "Caution public evidence"}
@@ -3745,7 +3747,7 @@ export default function TrustSlipVerifyPublicPaper({
 
             <CommunityProofPanel
               title="Community evidence checked"
-              subtitle="This panel shows the TrustSlip primary community anchor. Use aggregate/wider readings separately where they are shown."
+              subtitle="This shows the main community. Evidence from other recorded communities is shown separately."
               compact={compact}
               communityName={communityLabel}
               holderRole={holderRole}
