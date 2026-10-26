@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, StableDisclosureSummary } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -310,6 +309,15 @@ export default function AdminIdentityRiskPage() {
     });
   }, [data]);
 
+  const riskSummary = useMemo(
+    () => ({
+      intervention: grouped.filter((group) => group.risk.level === "red").length,
+      monitor: grouped.filter((group) => group.risk.level === "yellow").length,
+      signals: grouped.reduce((total, group) => total + group.rows.length, 0),
+    }),
+    [grouped]
+  );
+
   async function handlePhoneLineageLookup(event: React.FormEvent) {
     event.preventDefault();
     const phone = safeStr(phoneLookup).trim();
@@ -542,19 +550,40 @@ export default function AdminIdentityRiskPage() {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       <PageTopNav
-        sectionLabel="Identity Risk"
+        sectionLabel="Command Centre"
         title="Identity Risk"
-        subtitle="Review device overlap, account clusters, and identity pressure that may need manual review."
+        subtitle="Review identity evidence before taking a protected admin action."
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen shows identity signals that may need monitoring or review."
-        why="It helps you separate normal identity behaviour from stronger overlap pressure."
-        next="Read the risk guide, then open detailed signals only when evidence is needed."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
+      <section style={{ ...card(), marginTop: 18, background: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)" }}>
+        <div>{sectionLabelWithIcon("shield", "Identity evidence review")}</div>
+        <h1 style={{ margin: "12px 0 0", color: "#0B1F33", fontSize: "clamp(26px, 6vw, 36px)", lineHeight: 1.1, fontWeight: 1000 }}>
+          What needs review?
+        </h1>
+        <p style={{ margin: "10px 0 0", ...helperText(), color: "#0B1F33" }}>
+          Start with an intervention signal. Use recovery or reconciliation only for a confirmed support case.
+        </p>
+        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          {[
+            ["Intervention", riskSummary.intervention],
+            ["Monitor", riskSummary.monitor],
+            ["Total signals", riskSummary.signals],
+          ].map(([label, value]) => (
+            <div key={String(label)} style={{ borderRadius: 14, border: "1px solid rgba(20,52,83,0.14)", background: "#FFFFFF", padding: "11px 9px", minWidth: 0 }}>
+              <div style={{ color: "#0B63D1", fontSize: 20, fontWeight: 1000 }}>{value}</div>
+              <div style={{ marginTop: 3, color: "#526579", fontSize: 11.5, fontWeight: 900, lineHeight: 1.25 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+        <p style={{ margin: "12px 0 0", color: "#526579", fontSize: 12.5, lineHeight: 1.55 }}>
+          An identity signal is a prompt to review evidence. It is not proof of fraud, wrongdoing, or duplicate identity.
+        </p>
+        {phoneLookupFromQuery || gsnLookupFromQuery ? (
+          <div style={{ marginTop: 12, ...institutionalInnerCard("#FFF7ED"), color: "#7C2D12", fontWeight: 900 }}>
+            A sign-in recovery case is ready in Phone recovery review below.
+          </div>
+        ) : null}
+      </section>
 
       {err ? (
         <div
@@ -571,8 +600,13 @@ export default function AdminIdentityRiskPage() {
         </div>
       ) : null}
 
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div>{sectionLabelWithIcon("shield", "How to read identity risk")}</div>
+      <details style={{ ...card(), marginTop: 18, padding: 14 }}>
+        <StableDisclosureSummary
+          style={{ ...summaryToggle(), display: "flex", width: "100%", boxSizing: "border-box" }}
+          debugId="admin-identity-risk.guide.summary"
+        >
+          {labelWithIcon("shield", "How to read identity risk")}
+        </StableDisclosureSummary>
         <div
           style={{
             marginTop: 14,
@@ -603,10 +637,18 @@ export default function AdminIdentityRiskPage() {
             "#991B1B"
           )}
         </div>
-      </div>
+      </details>
 
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div>{sectionLabelWithIcon("phone", "Phone identity lineage")}</div>
+      <details
+        {...(phoneLookupFromQuery || gsnLookupFromQuery ? { open: true } : {})}
+        style={{ ...card(), marginTop: 18, padding: 14 }}
+      >
+        <StableDisclosureSummary
+          style={{ ...summaryToggle(), display: "flex", width: "100%", boxSizing: "border-box" }}
+          debugId="admin-identity-risk.phone-review.summary"
+        >
+          {labelWithIcon("phone", "Phone recovery review")}
+        </StableDisclosureSummary>
         <div style={{ marginTop: 10, ...helperText() }}>
           Look up the protected GSN identity that already owns a phone number.
           This is read-only; it does not merge, release, or verify the phone.
@@ -1145,10 +1187,15 @@ export default function AdminIdentityRiskPage() {
             </details>
           </div>
         ) : null}
-      </div>
+      </details>
 
-      <div style={{ ...card(), marginTop: 18 }}>
-        <div>{sectionLabelWithIcon("identity-card", "Identity reconciliation")}</div>
+      <details style={{ ...card(), marginTop: 18, padding: 14 }}>
+        <StableDisclosureSummary
+          style={{ ...summaryToggle(), display: "flex", width: "100%", boxSizing: "border-box" }}
+          debugId="admin-identity-risk.reconcile.summary"
+        >
+          {labelWithIcon("identity-card", "Reconcile duplicate identities")}
+        </StableDisclosureSummary>
         <div style={{ marginTop: 10, ...helperText() }}>
           Merge an owner-confirmed duplicate into the canonical GSN identity.
           Preview first. Execute only after the owner has confirmed both records
@@ -1342,9 +1389,15 @@ export default function AdminIdentityRiskPage() {
             </details>
           </div>
         ) : null}
-      </div>
+      </details>
 
       <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
+        <div>
+          <div>{sectionLabelWithIcon("alert", "Identity signal queue")}</div>
+          <div style={{ marginTop: 8, ...helperText() }}>
+            Review intervention signals first, then monitor lower-pressure accounts.
+          </div>
+        </div>
         {grouped.length === 0 ? (
           <div style={card()}>
             <div style={{ color: "#6B7A88" }}>

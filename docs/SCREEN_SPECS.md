@@ -1932,6 +1932,40 @@ Primary action:
 Support Summary
 ```
 
+## AdminIdentityRiskPage
+
+Route: `/app/command-center/identity-risk`.
+
+Purpose:
+Give platform admins a compact identity-evidence queue while keeping phone recovery and duplicate reconciliation available only when the operator deliberately opens those protected tools.
+
+Must show:
+- Command Centre navigation
+- one compact `What needs review?` summary
+- intervention-account, monitor-account, and total-signal counts
+- a plain warning that an identity signal is a review prompt, not proof of fraud, wrongdoing, or duplicate identity
+- the identity signal queue with user reference, signal count, risk reading, signal type, description, severity, and recorded time
+- full per-user signal records available only after the admin opens them
+- a compact `How to read identity risk` disclosure
+- a `Phone recovery review` disclosure that opens automatically when the sign-in recovery handoff includes a phone or GSN ID
+- a closed `Reconcile duplicate identities` disclosure
+
+Rules:
+- Keep the route and all identity-risk, phone-lineage, manual-recovery, and reconciliation endpoints platform-admin only.
+- An identity-risk signal must not be presented as guilt, fraud, misconduct, or a final identity decision.
+- Phone-lineage lookup remains read-only and must not merge, release, verify, or move a phone number.
+- Manual recovery reset must retain owner-proof confirmation, reviewer note, stale-phone review where required, activation checks, and one-time temporary-password handling.
+- Duplicate reconciliation must remain preview-first. Execute remains disabled until the owner-confirmation control is checked.
+- On an ordinary visit, recovery guidance and reconciliation controls stay closed so the identity evidence queue remains the core page responsibility.
+- A sign-in recovery handoff carrying `phone_e164`/`phone` or `gmfn_id`/`gsn_id` must surface the recovery tool immediately without weakening its checks.
+- Preserve all full-record disclosures and existing evidence/audit history.
+
+Primary action:
+
+```text
+Open signal record
+```
+
 ## AdminSupportPage
 
 Route: `/app/command-center/support`.

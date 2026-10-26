@@ -332,6 +332,36 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
+  /What needs review\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?An identity signal is a prompt to review evidence\. It is not proof of fraud, wrongdoing, or duplicate identity[\s\S]*?debugId="admin-identity-risk\.guide\.summary"[\s\S]*?debugId="admin-identity-risk\.phone-review\.summary"[\s\S]*?debugId="admin-identity-risk\.reconcile\.summary"[\s\S]*?Identity signal queue/,
+  "Admin Identity Risk must keep one compact evidence summary, clear non-guilt language, protected tool disclosures, and a visible signal queue."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /A sign-in recovery case is ready in Phone recovery review below[\s\S]*?phoneLookupFromQuery \|\| gsnLookupFromQuery \? \{ open: true \} : \{\}/,
+  "Admin Identity Risk must open the protected phone-recovery tool when the sign-in recovery handoff supplies identity context."
+);
+
+assertNotContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /<ExplainToggle|What this screen does/,
+  "Admin Identity Risk must not restore the repeated first-surface explanation."
+);
+
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /AdminIdentityRiskPage \(`\/app\/command-center\/identity-risk`;/,
+  "Admin Identity Risk must remain explicitly named in the screen registry."
+);
+
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## AdminIdentityRiskPage[\s\S]*?review prompt, not proof of fraud, wrongdoing, or duplicate identity[\s\S]*?Duplicate reconciliation must remain preview-first/,
+  "Admin Identity Risk must keep its compact evidence, recovery, and reconciliation specification."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
   /Forgot-password review:[\s\S]*?member's recorded phone[\s\S]*?confirm the[\s\S]*?GSN ID[\s\S]*?private recovery status[\s\S]*?Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step[\s\S]*?Manual recovery reset[\s\S]*?does not reveal the old password[\s\S]*?manualRecoveryNeedsStalePhoneReview\(row\)[\s\S]*?Stale phone checked:[\s\S]*?debugId="admin-identity-risk\.manual-recovery-reset\.issue"[\s\S]*?Temporary password shown once[\s\S]*?debugId="admin-identity-risk\.manual-recovery-reset\.copy"/,
   "Admin Identity Risk phone-lineage results must show the forgot-password review cue, sanitized recovery status, support first step, and the manual recovery reset boundary."
 );

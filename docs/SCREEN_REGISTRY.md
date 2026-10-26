@@ -63,6 +63,7 @@ Bottom navigation is allowed here.
 22. AdminGsnHouseCampaignPage (`/app/command-center/gsn-campaigns`; platform-admin-only central GSN Spotlight publisher)
 23. AdminTrustEventsPage (`/app/command-center/trust-events`; admin-only recent Trust Event evidence review)
 24. AdminIncompleteLoansPage (`/app/command-center/incomplete-loans`; admin-only incomplete support attention queue)
+25. AdminIdentityRiskPage (`/app/command-center/identity-risk`; admin-only identity evidence, recovery, and reconciliation review)
 
 ## Current Repo Name Notes
 

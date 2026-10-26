@@ -8,6 +8,37 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Identity Risk first-surface cleanup - 2026-10-26
+
+- Simplified the platform-admin-only `/app/command-center/identity-risk`
+  first surface without changing identity-risk loading, phone-lineage lookup,
+  manual recovery reset, duplicate reconciliation, permissions, payloads,
+  query handoff or evidence records.
+- Replaced the repeated explanation and large exposed reading guide with one
+  `What needs review?` summary showing intervention accounts, monitor
+  accounts and total signals. It now states directly that an identity signal
+  is a review prompt, not proof of fraud, wrongdoing or duplicate identity.
+- Moved the reading guide, phone recovery workflow and duplicate-identity
+  reconciliation into stable disclosures. Ordinary visits keep these tools
+  closed; a sign-in recovery handoff carrying a phone or GSN ID opens Phone
+  recovery review and preserves the prefilled context.
+- The identity signal queue remains visible as the page's core evidence area.
+  Owner-proof confirmation, reviewer note, stale-phone confirmation,
+  activation checks, one-time temporary-password handling, preview-first
+  reconciliation and owner-confirmed execution are unchanged.
+- Registered and specified the existing screen, and extended Admin/Operations,
+  entry/auth, phone-simplicity and button-stability protection around the
+  compact layout and recovery handoff.
+- Verification passed: Admin/Operations actions, admin route guards,
+  entry/auth, Trust actions, institutional evidence surfaces, GSN visible
+  language, phone-surface simplicity, button stability, global action IDs and
+  raw actions, mobile tap stability, route coverage, the protected Identity
+  Risk mobile visual audit, the complete protected-button freeze, the
+  295-module production frontend build, and the full mocked 390x844 mobile
+  visual sweep.
+- Deployment remains intentionally deferred under the owner's milestone rule;
+  do not push or deploy this cleanup without explicit approval.
+
 ## Command Centre Incomplete Support first-surface cleanup - 2026-10-26
 
 - Simplified the admin-only `/app/command-center/incomplete-loans` first

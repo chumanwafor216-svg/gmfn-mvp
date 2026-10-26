@@ -833,7 +833,7 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
-  /useSearchParams[\s\S]*?phoneLookupFromQuery[\s\S]*?searchParams\.get\("phone_e164"\)[\s\S]*?useState\(phoneLookupFromQuery\)[\s\S]*?debugId="admin-identity-risk\.phone-lineage\.lookup"/,
+  /useSearchParams[\s\S]*?phoneLookupFromQuery[\s\S]*?searchParams\.get\("phone_e164"\)[\s\S]*?useState\(phoneLookupFromQuery\)[\s\S]*?phoneLookupFromQuery \|\| gsnLookupFromQuery \? \{ open: true \} : \{\}[\s\S]*?debugId="admin-identity-risk\.phone-lineage\.lookup"/,
   "Admin identity-risk review must prefill phone-lineage lookup when Identity Integrity sends a duplicate-phone admin review link."
 );
 assertContains(
@@ -1174,8 +1174,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
-  /import \{ PrimaryButton, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId=\{`admin-identity-risk\.\$\{g\.userId\}\.details`\}/,
-  "Admin Identity Risk disclosure summary must use the shared stable disclosure primitive."
+  /import \{ PrimaryButton, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="admin-identity-risk\.guide\.summary"[\s\S]*?debugId="admin-identity-risk\.phone-review\.summary"[\s\S]*?debugId="admin-identity-risk\.reconcile\.summary"[\s\S]*?debugId=\{`admin-identity-risk\.\$\{g\.userId\}\.details`\}/,
+  "Admin Identity Risk guidance, protected tools, and row details must use the shared stable disclosure primitive."
 );
 
 assertNotContains(
