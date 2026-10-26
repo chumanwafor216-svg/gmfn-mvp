@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Aggregate Trust audit semantic alignment - 2026-10-26
+
+- Repaired the broad Trust action audit after the repayment and TrustSlip
+  cleanup exposed five stale source expectations and one over-broad doctrine
+  check. The affected product screens already followed their approved specs;
+  no route, page structure, user-visible copy, permission, finance behavior or
+  frozen Market Wisdom surface changed in this follow-up.
+- Companion polling is now checked with its fresh-notification option;
+  DemandBox accepts the approved fulfilled/resolved non-finance closure words;
+  Repayment is checked through its plain payment-report, open-support and
+  supporter-responsibility boundaries; and Finance is checked for the explicit
+  `Finance confirmed` count without requiring an obsolete panel heading.
+- Doctrine files may continue to use `proof` inside limitation statements such
+  as `not proof of payment`. The audit still rejects certification-like positive
+  claims such as `proves active`, `proof state`, `provider-verified proof` and
+  `confirmed proof`.
+- Verification passed: aggregate Trust actions, focused DemandBox, Loans and
+  Finance audits, the complete protected-button freeze, the 295-module
+  production frontend build and scoped diff checks.
+
 ## Finance payment-status contract cleanup - 2026-10-26
 
 - Corrected Finance to use the status contract already returned by

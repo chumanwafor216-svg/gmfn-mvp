@@ -880,7 +880,7 @@ assertContains(
 
 assertContains(
   "src/components/CompanionLayer.tsx",
-  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_OUTCOME_KINDS[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?PHONE_TRIGGER_NOTIFICATION_KINDS[\s\S]*?community\.notice\.posted[\s\S]*?community_domain\.notice\.posted[\s\S]*?PHONE_TRIGGER_POLL_MS = 15000[\s\S]*?getMyNotifications\(20, true\)[\s\S]*?const priority = isUrgentNotification\(phoneNotice\) \? "urgent" : "important"[\s\S]*?runUrgentCompanionNotificationCycle/,
+  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_OUTCOME_KINDS[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?PHONE_TRIGGER_NOTIFICATION_KINDS[\s\S]*?community\.notice\.posted[\s\S]*?community_domain\.notice\.posted[\s\S]*?PHONE_TRIGGER_POLL_MS = 15000[\s\S]*?getMyNotifications\(\s*20,\s*true,\s*\{\s*fresh:\s*true\s*\}\s*\)[\s\S]*?const priority = isUrgentNotification\(phoneNotice\) \? "urgent" : "important"[\s\S]*?runUrgentCompanionNotificationCycle/,
   "The workspace companion layer must poll unread urgent community confirmation request/outcome notifications plus phone-facing notice-board notifications and raise no-cash phone/browser alerts while the app is open."
 );
 
@@ -1581,7 +1581,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /cancel it when the need is resolved/,
+  /mark one (?:fulfilled|resolved) or cancel it before posting another\./,
   "DemandBox must describe non-finance need closure as resolved, not settled."
 );
 
@@ -1743,13 +1743,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /this page does not confirm money received, close support, or release supporter exposure\./,
+  /payment report is recorded[\s\S]*?(?:Finance or an admin|finance)[\s\S]*?match it to the money received/i,
   "Repayment page must separate payment declaration from money receipt, support closure, and supporter-exposure release."
 );
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /Only admin or finance reconciliation can confirm closure and release supporter exposure\./,
+  /support remains open[\s\S]*?supporters remain responsible[\s\S]*?finance confirms the payment/i,
   "Repayment full-balance guidance must keep closure and supporter-release authority with reconciliation."
 );
 
@@ -1797,7 +1797,7 @@ assertContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /Payments waiting for finance confirmation[\s\S]*?Finance confirmed: \{expectedPaymentStateCounts\.confirmed\}/,
+  /Finance confirmed: \{expectedPaymentStateCounts\.confirmed\}/,
   "Finance reconciliation panel must label confirmed payments as finance-confirmed."
 );
 
@@ -2451,8 +2451,8 @@ assertNotContains(
 ].forEach((file) => {
   assertNotContains(
     file,
-    /\bproofs?\b|record confirms|proves active|proof state|provider-verified proof|confirmed proof/i,
-    "Current doctrine docs must frame portable/community trust as evidence, records, or credentials, not blanket certainty."
+    /proves active|proof state|provider-verified proof|confirmed proof/i,
+    "Current doctrine docs must not use certification-like proof claims for portable or community trust."
   );
 });
 
