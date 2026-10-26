@@ -13,8 +13,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The owner asked to resume from the Community Confirmation Inbox milestone,
   then review the remaining busy My GSN & I / cover-related surfaces, connect
   commerce intelligence to Market Wisdom, compact the Dashboard Photo Frame
-  affordance, audit account suspension/closure/removal capability, and design
-  respectful inactivity reminders from GSN to the user.
+  affordance, audit account suspension/closure/removal capability, design
+  respectful inactivity reminders from GSN to the user, and use a planned
+  12-minute Spotlight recording to measure short dwell times and unequal
+  appearance frequency before changing rotation policy. Source review already
+  confirms the Public Shop intentionally compresses queues above 24 items
+  against a two-minute cycle, down to a two-second floor; tomorrow must decide
+  whether to replace that owner-rejected readability tradeoff.
 - Exact scope, decision questions, safety boundaries, and acceptance checks are
   recorded in
   [`NEXT_SESSION_PLAN_2026-10-27.md`](NEXT_SESSION_PLAN_2026-10-27.md).

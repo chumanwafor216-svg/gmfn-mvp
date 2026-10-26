@@ -6,6 +6,10 @@ Resume from the verified Community Confirmation Inbox cleanup and improve the
 parts of GSN that help people understand the product, act without clutter,
 build useful commerce activity, and receive timely guidance from GSN.
 
+The owner also plans to provide an approximately 12-minute screen recording of
+the live Spotlight rotation. Use it as evidence for a separate timing and
+fairness audit before changing rotation policy.
+
 `GSM` in the spoken request is recorded as the current user-facing product
 brand, `GSN`, under the repository branding rule.
 
@@ -189,6 +193,98 @@ Implementation preference:
 - route the user to the existing owning screen rather than creating a new
   reminder dashboard
 
+### 7. Measure and correct Spotlight rotation timing and fairness
+
+Owner observation:
+- Spotlight rotation has improved materially, but some media still disappear
+  so quickly that their message loses meaning.
+- Different media variants do not appear to receive the same useful viewing
+  time.
+- Some items appear more often than others.
+- The nominal five-second dwell may need to move to approximately eight or ten
+  seconds, and the lower large-queue floor must be reconsidered with it.
+- The spoken inventory estimate sounded like roughly 30-40 mixed items. Treat
+  that as provisional and confirm the actual eligible inventory from the
+  recording, API, and persisted campaign/placement records.
+
+Evidence to collect from the planned 12-minute recording:
+- timestamp each visible item start and end
+- calculate actual on-screen dwell time, not only the configured timer
+- identify image versus video and, where available, the media's natural video
+  duration
+- record transitions that cut an item off, show a blank/loading state, or
+  restart unexpectedly
+- count each item's appearances and the gap between repeat appearances
+- note consecutive repeats and long periods in which an eligible item does not
+  appear
+- separate normal member/shop Spotlight from GSN-HOUSE campaigns and any
+  timed-schedule behavior
+- record whether tab visibility, navigation, loading, failed media, expiry, or
+  eligibility changes explain an apparent short appearance
+
+Code and data investigation:
+- Confirmed current Public Shop rule:
+  `min(5,000 ms, max(2,000 ms, floor(120,000 ms / item count)))`.
+  Up to 24 queued items receive five seconds; 30 receive four seconds; 40
+  receive three seconds; and queues of 60 or more reach the two-second floor.
+  This intentional two-minute-cycle compression is a strong explanation for
+  the owner's report that mixed 30-40-item rotations lose meaning.
+- Map the rotation cursor/selection algorithm, eligibility filters,
+  presentation lease, seen/qualification event, video playback, and expiry
+  contracts around that confirmed timing rule.
+- compare frontend-observed order with server-issued presentation evidence
+- determine whether unequal appearances are expected weighting, eligibility,
+  pacing, expiry, failed loading, or an actual fairness defect
+- identify every test/spec that currently freezes the five-second rail
+- inspect mixed aspect ratios, file types, and video lengths without assuming
+  every variant should use one identical playback rule
+
+Important distinction:
+- `minimum useful dwell time` and `fair distribution` are separate
+  questions. Removing large-queue compression or raising dwell to ten seconds
+  may improve readability while leaving an unfair selection algorithm
+  untouched.
+- Conversely, forcing equal appearance counts may be wrong when campaigns have
+  different eligibility, expiry, paid entitlement, community scope, or timed
+  schedules.
+- A 12-minute recording can prove a visible short-dwell defect, but by itself
+  may not prove long-run fairness across a large changing inventory. Pair it
+  with persisted serving/qualification evidence where available.
+
+Decision candidates to test, not assume:
+- replace the two-minute-cycle compression with a fixed eight-second useful
+  minimum
+- replace it with a fixed ten-second useful minimum
+- retain a count-aware rule only if it never falls below the newly approved
+  readable minimum, accepting that a full 30-40-item pass will take longer
+- use a media-aware rule that guarantees readable minimum time without
+  truncating an eligible short video incorrectly
+- correct selection/pacing independently if the appearance-count imbalance is
+  not explained by policy or eligibility
+
+Required boundaries:
+- do not claim an issued presentation was seen unless the existing
+  qualification contract records it
+- do not call rotation count verified reach, video completion, sale, or
+  engagement
+- do not modify paid entitlement, expiry, community exclusions, or
+  GSN-HOUSE-only timed schedules while fixing ordinary rotation
+- do not add manual next, previous, pause, or fast-forward controls unless the
+  owner separately changes that product rule
+- update the screen spec, source guards, timing tests, and fairness tests in
+  the same milestone if the five-second rule changes
+
+Acceptance:
+- no eligible item is displayed for less than the newly approved useful
+  minimum because of the ordinary rotation timer
+- video handling has an explicit, tested relationship to natural duration
+- appearance differences are explainable by a named policy/eligibility rule or
+  corrected as a fairness defect
+- the rail remains stable under failed media, hidden tabs, reduced motion,
+  navigation, and mixed image/video inventory
+- Dashboard, Marketplace, Public Shop, Community Home, and Owner Shop Control
+  preserve their existing Spotlight boundaries
+
 ## Session workflow
 
 For each item:
@@ -210,5 +306,7 @@ For each item:
 - Account lifecycle work starts with a truthful authority/retention map, not a
   destructive button.
 - Inactivity reminders are helpful, bounded, user-specific, and non-spammy.
+- Spotlight timing and appearance-frequency decisions are based on measured
+  recording plus persisted serving evidence, not on visual impression alone.
 - Completed milestones are tested and held locally until one deliberate
   deployment point.
