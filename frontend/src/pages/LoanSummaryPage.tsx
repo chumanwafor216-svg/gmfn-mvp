@@ -16,6 +16,10 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import {
+  paymentRecordStatusLabel,
+  supportRecordStatusLabel,
+} from "../lib/paymentStatusLanguage";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
@@ -691,7 +695,7 @@ function statusBadge(status: string) {
           borderColor: "#a7f3d0",
         }}
       >
-        {s.toUpperCase()}
+        {supportRecordStatusLabel(status)}
       </span>
     );
   }
@@ -706,7 +710,7 @@ function statusBadge(status: string) {
           borderColor: "#bfdbfe",
         }}
       >
-        {s.toUpperCase()}
+        {supportRecordStatusLabel(status)}
       </span>
     );
   }
@@ -721,7 +725,7 @@ function statusBadge(status: string) {
           borderColor: "#bbf7d0",
         }}
       >
-        {s.toUpperCase()}
+        {supportRecordStatusLabel(status)}
       </span>
     );
   }
@@ -736,14 +740,14 @@ function statusBadge(status: string) {
           borderColor: "#fecaca",
         }}
       >
-        {(status || "REJECTED").toUpperCase()}
+        {supportRecordStatusLabel(status)}
       </span>
     );
   }
 
   return (
     <span style={{ ...base, background: "#f9fafb", color: "#374151" }}>
-      {(status || "UNKNOWN").toUpperCase()}
+      {supportRecordStatusLabel(status)}
     </span>
   );
 }
@@ -772,7 +776,7 @@ function guarantorBadge(status: string) {
           borderColor: "#a7f3d0",
         }}
       >
-        APPROVED
+        Support recorded
       </span>
     );
   }
@@ -787,7 +791,7 @@ function guarantorBadge(status: string) {
           borderColor: "#fecaca",
         }}
       >
-        DECLINED
+        Declined
       </span>
     );
   }
@@ -802,7 +806,7 @@ function guarantorBadge(status: string) {
           borderColor: "#e5e7eb",
         }}
       >
-        EXPIRED
+        Expired
       </span>
     );
   }
@@ -816,7 +820,7 @@ function guarantorBadge(status: string) {
         borderColor: "#bfdbfe",
       }}
     >
-      PENDING
+      Waiting
     </span>
   );
 }
@@ -825,26 +829,30 @@ function nextStepText(status: string) {
   const s = lc(status);
 
   if (s === "pending") {
-    return "Next: review supporter responses, keep pending decisions moving, and stay inside the support flow until the support picture is clear.";
+    return "Review the people asked to support this request.";
+  }
+
+  if (s === "incomplete") {
+    return "More support is needed. Continue the request.";
   }
 
   if (s === "approved") {
-    return "Next: support is approved. Repayment and finance evidence become the main actions.";
+    return "Support is recorded. Check the money and repayment details.";
   }
 
-  if (s === "disbursed") {
-    return "Next: repayments should continue according to the active support flow.";
+  if (s === "disbursed" || s === "active") {
+    return "Continue repayment.";
   }
 
   if (s === "repaid") {
-    return "Completed: this support item has been fully repaid.";
+    return "This support has been fully repaid.";
   }
 
   if (s === "rejected" || s === "declined" || s === "cancelled") {
-    return "Stopped: this support item was rejected or cancelled. Return to preparation before starting a new request.";
+    return "This request has stopped. Review the record before starting another.";
   }
 
-  return "Next: review supporters, evidence, and repayment state for this support item.";
+  return "Review the record to see what needs attention.";
 }
 
 function routeTarget(
@@ -982,7 +990,7 @@ export default function LoanSummaryPage() {
       : loanStatus === "pending"
       ? "Support is open. Keep each supporter decision explicit until GSN can show what is ready or what is still missing."
       : canRepay
-      ? "Support has moved into the money stage. Repayment is now the next deterministic action."
+      ? "Support has moved to the money stage. Continue with repayment."
       : "No support action is currently open. Review the record before choosing the next page.";
 
   const latestEvent = useMemo(() => {
@@ -1240,7 +1248,7 @@ export default function LoanSummaryPage() {
         routeName: "Support Summary",
         loanId: summary.id,
         amount: fmtMoney(n(summary.amount), currency),
-        status: safeStr(summary.status),
+        status: supportRecordStatusLabel(summary.status),
         actionLink: auditLink,
         detailLines: [
           `Supporters needed: ${requiredCount}`,
@@ -1270,7 +1278,7 @@ export default function LoanSummaryPage() {
         routeName: "Support Summary",
         loanId: summary.id,
         amount: fmtMoney(n(summary.amount), currency),
-        status: safeStr(summary.status),
+        status: supportRecordStatusLabel(summary.status),
         detailLines: [
           supportPurpose ? `Purpose: ${supportPurpose}` : "",
           summaryNextStep ? `Next step: ${summaryNextStep}` : "",
@@ -1311,7 +1319,7 @@ export default function LoanSummaryPage() {
       routeName: "Support Summary",
       loanId: summary.id,
       amount: fmtMoney(n(summary.amount), currency),
-      status: safeStr(summary.status),
+      status: supportRecordStatusLabel(summary.status),
       detailLines: [
         supportPurpose ? `Purpose: ${supportPurpose}` : "",
         `Supporters needed: ${requiredCount}`,
@@ -1486,7 +1494,7 @@ export default function LoanSummaryPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {communityLabel} / Support #{summary.id}
+                {communityLabel} / Support record #{summary.id}
               </div>
               <div
                 style={{
@@ -1520,7 +1528,7 @@ export default function LoanSummaryPage() {
                 }}
               >
                 {[
-                  ["State", safeStr(summary.status || "Not recorded")],
+                  ["State", supportRecordStatusLabel(summary.status)],
                   ["Remaining", fmtMoney(summary.remaining_amount, currency)],
                   ["Support recorded", String(approvedCount)],
                   ["Waiting", String(pendingGuarantors.length)],
@@ -1647,7 +1655,7 @@ export default function LoanSummaryPage() {
                   stableHeight={52}
                   debugId="loan-summary.phone.open-record"
                 >
-                  {actionText("document", "Full support record")}
+                  {actionText("document", "Support record")}
                 </SecondaryButton>
                 <SecondaryButton
                   type="button"
@@ -1656,7 +1664,7 @@ export default function LoanSummaryPage() {
                   stableHeight={52}
                   debugId="loan-summary.phone.open-tools"
                 >
-                  {actionText("briefcase", "Other support tools")}
+                  {actionText("briefcase", "More support tasks")}
                 </SecondaryButton>
                 {!phonePrimaryIsSupporterReview && guarantors.length > 0 ? (
                   <SecondaryButton
@@ -1666,7 +1674,7 @@ export default function LoanSummaryPage() {
                     stableHeight={52}
                     debugId="loan-summary.phone.open-supporters"
                   >
-                    {actionText("check", "Supporter record")}
+                    {actionText("check", "Supporters")}
                   </SecondaryButton>
                 ) : null}
               </section>
@@ -1813,7 +1821,7 @@ export default function LoanSummaryPage() {
             data-gsn-loan-summary-phone-lane="record"
             style={{ ...pageCard("#FFFFFF"), padding: 14 }}
           >
-            <div style={sectionLabel()}>Full support record</div>
+            <div style={sectionLabel()}>Support record</div>
             <div
               style={{
                 marginTop: 6,
@@ -1822,7 +1830,7 @@ export default function LoanSummaryPage() {
                 fontWeight: 950,
               }}
             >
-              Evidence behind this support item
+              What is recorded
             </div>
 
             <div
@@ -1889,17 +1897,17 @@ export default function LoanSummaryPage() {
                 stableHeight={52}
                 debugId="loan-summary.phone.copy-audit"
               >
-                {actionText("copy", "Copy audit")}
+                {actionText("copy", "Copy record link")}
               </SecondaryButton>
             </div>
 
             <div style={{ marginTop: 12, ...innerCard("#F8FBFF") }}>
-              <div style={sectionLabel()}>Repayment evidence</div>
+              <div style={sectionLabel()}>Payment record</div>
               <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
                 {latestRepaymentExpectedPayment
-                  ? `${safeStr(
-                      latestRepaymentExpectedPayment.status || "Expected"
-                    )} ? ${firstTruthy(
+                  ? `${paymentRecordStatusLabel(
+                      latestRepaymentExpectedPayment.status || "expected"
+                    )}: ${firstTruthy(
                       latestRepaymentExpectedPayment.reference_display,
                       latestRepaymentExpectedPayment.reference_normalized,
                       "Reference pending"
@@ -1929,7 +1937,7 @@ export default function LoanSummaryPage() {
             data-gsn-loan-summary-phone-lane="tools"
             style={{ ...pageCard("#FFFFFF"), padding: 14 }}
           >
-            <div style={sectionLabel()}>Other support tools</div>
+            <div style={sectionLabel()}>More support tasks</div>
             <div
               style={{
                 marginTop: 6,
@@ -1948,7 +1956,7 @@ export default function LoanSummaryPage() {
                 stableHeight={52}
                 debugId="loan-summary.phone.route.workbench"
               >
-                {actionText("briefcase", "Support Workbench")}
+                {actionText("briefcase", "Continue support")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.suggestions}
@@ -1966,7 +1974,7 @@ export default function LoanSummaryPage() {
                 stableHeight={52}
                 debugId="loan-summary.phone.route.readiness"
               >
-                {actionText("check", "Support readiness")}
+                {actionText("check", "Check readiness")}
               </StableCtaLink>
               <StableCtaLink
                 to={revenueRoute}
@@ -1977,7 +1985,7 @@ export default function LoanSummaryPage() {
               >
                 {actionText(
                   "financeInstitution",
-                  canOpenCommandRevenue ? "Revenue allocation" : "Finance"
+                  canOpenCommandRevenue ? "Money breakdown" : "Money record"
                 )}
               </StableCtaLink>
               {canRepay ? (
@@ -1988,7 +1996,7 @@ export default function LoanSummaryPage() {
                   stableHeight={52}
                   debugId="loan-summary.phone.route.repayment"
                 >
-                  {actionText("repaymentSchedule", "Repayment")}
+                  {actionText("repaymentSchedule", "Make repayment")}
                 </StableCtaLink>
               ) : null}
               <StableCtaLink
@@ -1998,7 +2006,7 @@ export default function LoanSummaryPage() {
                 stableHeight={52}
                 debugId="loan-summary.phone.route.loans"
               >
-                {actionText("community", "Loan Support")}
+                {actionText("community", "All support requests")}
               </StableCtaLink>
             </div>
           </section>

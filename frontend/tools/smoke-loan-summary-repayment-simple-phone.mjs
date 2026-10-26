@@ -399,7 +399,9 @@ async function testLoanSummary(page, baseURL, viewport) {
 
   const required = [
     "Blessed Satch family",
-    "Support #42",
+    "Support record #42",
+    "Repayment active",
+    "Continue repayment.",
     "Remaining",
     "Support recorded",
     "Waiting",
@@ -675,7 +677,7 @@ async function testRepayment(page, baseURL, viewport) {
     declared.paymentTaskVisible ||
     !declared.backVisible ||
     !declared.text.includes("Sent for checking") ||
-    !declared.text.includes("support item is not closed") ||
+    !declared.text.includes("support remains open") ||
     declared.horizontalOverflow
   ) {
     throw new Error(
@@ -689,6 +691,17 @@ async function testRepayment(page, baseURL, viewport) {
     state: "attached",
     timeout: 10000,
   });
+
+  const statusText = await page.locator("body").innerText();
+  if (
+    !statusText.includes("Waiting for payment") ||
+    statusText.includes("pending_match") ||
+    statusText.includes("mismatch_flagged")
+  ) {
+    throw new Error(
+      "Repayment payment status was not translated: " + statusText
+    );
+  }
 }
 
 async function testViewport(baseURL, viewport) {

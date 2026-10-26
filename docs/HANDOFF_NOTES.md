@@ -8,6 +8,55 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Repayment plain-language package - 2026-10-26
+
+- Continued the locked production-polish order into
+  `/app/payment/loans/:loanId`. The approved full-payment-first phone process
+  was already in place, so no card, task, action, disclosure, route or payment
+  behavior was added. The visible steps now say `Get the payment details`,
+  `Send the selected amount`, `I have paid`, `Sent for checking` and `Wait for
+  payment confirmation` instead of requiring members to decode instruction,
+  declaration, reconciliation or exposure terms.
+- The money boundary remains explicit in direct language: GSN records the
+  payment details and the member's report, does not hold or mark money received,
+  and keeps the support open with supporters still responsible until finance
+  confirms the payment. Loan Summary and Repayment now use one shared status
+  translator so raw support/payment codes are not exposed. Payment instruction,
+  repayment-claim and proof APIs, calculations, permissions, stable action IDs,
+  part-payment behavior and the report-only meaning of `I have paid` are
+  unchanged.
+- Verification passed: the 294-module production build; focused Repayment and
+  Loan action audits; mocked browser smoke at 390x844 and 360x780; and the full
+  protected-button freeze, including its visual subtests. The broad
+  button-stability audit now has no Repayment finding and remains blocked only
+  by the unrelated existing Finance and Public Shop expectations.
+- Deployment truth: this package is local and uncommitted. It has not been
+  pushed or deployed.
+
+## Loan Summary plain-language package - 2026-10-26
+
+- Continued the locked production-polish order into
+  `/app/loan-summary/:loanId`. The approved phone structure was already in
+  place, so no card, action, disclosure, lane or route was added. The first
+  card now translates raw backend states into member readings and gives one
+  short next step.
+- Phone-only deeper labels now name the task directly: support record, more
+  support tasks, copy record link, payment record, continue support, check
+  readiness, money breakdown/record, make repayment and all support requests.
+  Shared/copied support snapshots use the same plain status reading. Individual
+  supporter decisions, repayment and audit evidence, backend/API contracts,
+  calculations, permissions and the non-lender/non-money-movement boundary are
+  unchanged.
+- Verification passed: the 293-module production build, focused Loan actions
+  and Loan Summary/Repayment audits, mocked browser smoke at 390x844 and
+  360x780, and the complete protected-button freeze. The first 360x780 run
+  caught a 15px first-card height regression; shortening the repayment step to
+  `Continue repayment.` restored the locked height with no overflow. The
+  separate aggregate button-stability audit remains blocked by unrelated
+  existing Finance and Public Shop expectations outside this package.
+- Deployment truth: this package is local and uncommitted. It has not been
+  pushed or deployed.
+
 ## Public TrustSlip Verify plain-language package - 2026-10-26
 
 - Continued the approved simplification into public `/t/:code`,

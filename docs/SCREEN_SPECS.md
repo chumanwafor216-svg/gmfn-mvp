@@ -299,6 +299,8 @@ Phone first surface:
 
 Rules:
 - do not repeat the route title beneath the authenticated app-shell header;
+- translate backend states before display. The phone card uses plain readings such as `Waiting for supporters`, `More support needed`, `Support recorded`, `Money sent`, `Repayment active`, `Repaid`, or `Needs review`; it must not expose raw status codes.
+- keep the next-step sentence short and name onward phone tasks by what the member will do: continue support, find supporters, check readiness, open the money record/breakdown, make repayment, or return to all support requests.
 - keep the GSN evidence boundary on the first surface: GSN records support
   evidence but does not approve the whole request, move money, or promise
   repayment;
@@ -325,6 +327,11 @@ Phone process:
 - replace payment instructions with Sent for checking after declaration.
 
 Rules:
+- translate payment stages and backend statuses before display. Use direct
+  readings such as `Get the payment details`, `Send the selected amount`,
+  `Sent for checking`, `Waiting for payment`, or `Payment confirmed`; do not
+  require a member to decode instruction, declaration, reconciliation, event,
+  or exposure terminology;
 - keep the GSN money boundary on the first surface: GSN records instructions
   and declarations but does not hold money or confirm receipt before
   reconciliation;

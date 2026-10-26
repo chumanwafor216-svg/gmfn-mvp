@@ -12,6 +12,10 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import {
+  paymentRecordStatusLabel,
+  supportRecordStatusLabel,
+} from "../lib/paymentStatusLanguage";
+import {
   createRepaymentClaim,
   createLoanInstruction,
   getCurrentClan,
@@ -533,7 +537,7 @@ export default function RepaymentPage() {
 
   const repaymentModeText =
     repaymentMode === "full"
-      ? "Pay the full remaining balance. Only admin or finance reconciliation can confirm closure and release supporter exposure."
+      ? "Pay the full remaining balance. This support closes only after finance or an admin confirms the money received."
       : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
 
   const currentExpectedPayment = useMemo(() => {
@@ -576,7 +580,7 @@ export default function RepaymentPage() {
       ? `GSN has recorded ${plannedInstallments.length} planned repayment step${
           plannedInstallments.length === 1 ? "" : "s"
         } for this support item. Use the exact repayment reference so every payment can be matched.`
-      : "Part payment is supported here. GSN keeps the remaining balance visible until reconciliation closes it.";
+      : "Part payment is supported here. GSN keeps the remaining balance visible until finance confirms the payments.";
 
   const currentExpectedPaymentBankEventId = firstTruthy(
     currentExpectedPayment?.matched_bank_event_id,
@@ -604,9 +608,9 @@ export default function RepaymentPage() {
         toneBg: "#FEF2F2",
         toneBorder: "1px solid rgba(239,68,68,0.16)",
         toneText: "#991B1B",
-        step: "Context",
-        title: "Support repayment context is not ready.",
-        detail: "Open a visible support item first so repayment can stay tied to the correct request.",
+        step: "Start here",
+        title: "Choose a support record first.",
+        detail: "Open a support record so the payment is tied to the right request.",
       };
     }
 
@@ -615,9 +619,9 @@ export default function RepaymentPage() {
         toneBg: "#FFFBEF",
         toneBorder: "1px solid rgba(245,158,11,0.16)",
         toneText: "#92400E",
-        step: "Eligibility",
-        title: "Repayment opens after approval or disbursement.",
-        detail: "This support item is not yet in a repayment-ready state.",
+        step: "Not ready",
+        title: "Repayment is not ready yet.",
+        detail: "This support must reach the payment stage first.",
       };
     }
 
@@ -626,9 +630,9 @@ export default function RepaymentPage() {
         toneBg: "#F8FBFF",
         toneBorder: "1px solid rgba(11,99,209,0.12)",
         toneText: "#0B63D1",
-        step: "Instruction",
-        title: "Generate the repayment instruction.",
-        detail: "Use the exact repayment reference so the money trail can be reconciled to the correct support item.",
+        step: "Next step",
+        title: "Get the payment details.",
+        detail: "GSN will show the bank details and exact reference for this support.",
       };
     }
 
@@ -637,9 +641,9 @@ export default function RepaymentPage() {
         toneBg: "#F8FBFF",
         toneBorder: "1px solid rgba(11,99,209,0.12)",
         toneText: "#0B63D1",
-        step: "Payment",
-        title: "Pay using the exact repayment reference.",
-        detail: "Once payment is made, keep this repayment focused until it is clearly awaiting reconciliation.",
+        step: "Payment details",
+        title: "Send the selected amount.",
+        detail: "Use the exact reference below, then tell GSN after you have sent the money.",
       };
     }
 
@@ -647,9 +651,9 @@ export default function RepaymentPage() {
       toneBg: "#FFFBEF",
       toneBorder: "1px solid rgba(245,158,11,0.16)",
       toneText: "#92400E",
-      step: "Awaiting reconciliation",
-      title: "Repayment is waiting for reconciliation.",
-      detail: "The payment has been declared here and should remain visible until finance or admin reconciliation confirms it.",
+      step: "Checking payment",
+      title: "Payment is being checked.",
+      detail: "GSN recorded what you reported. Finance or an admin must still match it to the money received.",
     };
   }, [numericLoanId, summary, canRepay, instruction, paymentConfirmedAt]);
 
@@ -686,7 +690,7 @@ export default function RepaymentPage() {
 
   async function handleGenerateInstruction() {
     if (!numericLoanId || !summary) {
-      setNotice({ tone: "error", text: "Support repayment context is not ready." });
+      setNotice({ tone: "error", text: "Choose a support record first." });
       return;
     }
 
@@ -699,7 +703,7 @@ export default function RepaymentPage() {
     if (!canRepay) {
       setNotice({
         tone: "error",
-        text: "Repayment instructions open only after approval or disbursement.",
+        text: "Repayment is not ready for this support yet.",
       });
       return;
     }
@@ -738,13 +742,13 @@ export default function RepaymentPage() {
 
       setInstruction((generated || null) as LoanInstruction | null);
       setPaymentConfirmedAt(null);
-      setNotice({ tone: "success", text: "Repayment instruction generated." });
+      setNotice({ tone: "success", text: "Payment details are ready." });
     } catch (error: any) {
       setNotice({
         tone: "error",
         text:
           safeStr(error?.message) ||
-          "Repayment instruction could not be generated.",
+          "Payment details could not be opened.",
       });
     } finally {
       setGeneratingInstruction(false);
@@ -753,7 +757,7 @@ export default function RepaymentPage() {
 
   async function handleConfirmPaymentMade() {
     if (!instruction) {
-      setNotice({ tone: "error", text: "Generate the repayment instruction first." });
+      setNotice({ tone: "error", text: "Get the payment details first." });
       return;
     }
 
@@ -790,15 +794,15 @@ export default function RepaymentPage() {
       setNotice({
         tone: "success",
         text: claim?.already_claimed
-          ? "Repayment declaration was already recorded. Admin confirmation is still needed."
-          : "Repayment declaration sent. Admin confirmation is still needed.",
+          ? "This payment was already reported. Finance still needs to confirm it."
+          : "Payment reported. Finance still needs to confirm it.",
       });
     } catch (error: any) {
       setNotice({
         tone: "error",
         text:
           safeStr(error?.message) ||
-          "Repayment declaration could not be sent.",
+          "The payment report could not be sent.",
       });
     } finally {
       setDeclaringPayment(false);
@@ -821,7 +825,7 @@ export default function RepaymentPage() {
 
   function handleCopyInstruction() {
     if (!instruction) {
-      setNotice({ tone: "error", text: "Generate the repayment instruction first." });
+      setNotice({ tone: "error", text: "Get the payment details first." });
       return;
     }
 
@@ -870,7 +874,7 @@ export default function RepaymentPage() {
     });
 
     safeCopy(text);
-    setNotice({ tone: "success", text: "Repayment instruction copied." });
+    setNotice({ tone: "success", text: "Payment details copied." });
   }
 
   if (loading) {
@@ -988,7 +992,7 @@ export default function RepaymentPage() {
             }}
           >
             {repaymentDeclared
-              ? "Your declaration is recorded. Finance or an admin must still match the money before repayment is confirmed."
+              ? "Your payment report is recorded. Finance or an admin must still match it to the money received."
               : instruction
               ? "Pay the selected amount with the exact reference below."
               : "Choose the amount, then get the bank details and exact reference."}
@@ -1053,8 +1057,8 @@ export default function RepaymentPage() {
               lineHeight: 1.4,
             }}
           >
-            GSN records the instruction and declaration. It does not hold the
-            money or confirm receipt before reconciliation.
+            GSN records the payment details and what you report. It does not
+            hold the money or mark it received until finance checks it.
           </div>
         </section>
 
@@ -1181,8 +1185,8 @@ export default function RepaymentPage() {
               <div style={sectionLabel()}>Before continuing</div>
               <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
                 Only tap <strong>I have paid</strong> after sending the money
-                with this exact reference. Your declaration still needs
-                reconciliation.
+                with this exact reference. GSN still needs to match it to the
+                money received.
               </div>
             </div>
 
@@ -1234,7 +1238,7 @@ export default function RepaymentPage() {
                   stableHeight={52}
                   debugId="repayment.phone.copy-instruction"
                 >
-                  {actionText("document", "Copy full instruction")}
+                {actionText("document", "Copy all payment details")}
                 </SecondaryButton>
                 <SecondaryButton
                   type="button"
@@ -1267,11 +1271,11 @@ export default function RepaymentPage() {
                 lineHeight: 1.3,
               }}
             >
-              Wait for finance confirmation
+              Wait for payment confirmation
             </div>
             <div style={{ marginTop: 7, ...helperText() }}>
-              Your declaration is visible, but the support item is not closed
-              and supporter exposure is not released until reconciliation.
+              Your report is recorded, but this support remains open and the
+              supporters remain responsible until finance confirms the payment.
             </div>
 
             <StableCtaLink
@@ -1315,9 +1319,8 @@ export default function RepaymentPage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    {safeStr(
-                      currentExpectedPayment?.status ||
-                        "Declaration sent; reconciliation pending"
+                    {paymentRecordStatusLabel(
+                      currentExpectedPayment?.status || "declared"
                     )}
                   </div>
                   <div style={{ marginTop: 7, ...helperText() }}>
@@ -1363,7 +1366,7 @@ export default function RepaymentPage() {
                       );
                       setNotice({
                         tone: "success",
-                        text: "Repayment proof uploaded for finance review. Payment still needs reconciliation.",
+                        text: "Repayment proof added for checking. The payment is not confirmed yet.",
                       });
                     }}
                     onNotice={(tone, text) => {
@@ -1392,7 +1395,7 @@ export default function RepaymentPage() {
         >
           {actionText(
             phoneMoreOpen ? "lock" : "document",
-            phoneMoreOpen ? "Hide other pages" : "Other pages"
+            phoneMoreOpen ? "Hide repayment tasks" : "More repayment tasks"
           )}
         </SubtleButton>
 
@@ -1455,7 +1458,7 @@ export default function RepaymentPage() {
         label="What this screen does"
         what="This gives the exact repayment amount, reference, and result state."
         why="It keeps payment tied to the right support item."
-        next="Generate the instruction and declare payment only after paying; this page does not confirm money received, close support, or release supporter exposure."
+        next="Get the payment details and report payment only after sending the money. This page does not confirm receipt or close the support."
         tone="blue"
       />
 
@@ -1476,7 +1479,7 @@ export default function RepaymentPage() {
         </div>
         <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
           {generatingInstruction
-            ? "GSN is generating the repayment instruction now."
+            ? "GSN is getting the payment details now."
             : routeState.detail}
         </div>
         <div
@@ -1511,12 +1514,12 @@ export default function RepaymentPage() {
             onClick={() => void handleGenerateInstruction()}
             disabled={generatingInstruction || !canRepay}
             busy={generatingInstruction}
-            busyLabel="Generating..."
+            busyLabel="Getting details"
             fullWidth
             stableHeight={isCompact ? 52 : 54}
             debugId="repayment.front-generate-instruction"
           >
-            {actionText("repaymentSchedule", "Generate")}
+            {actionText("repaymentSchedule", "Get details")}
           </PrimaryButton>
 
           <SecondaryButton
@@ -1624,7 +1627,7 @@ export default function RepaymentPage() {
           label="What this does"
           what="This keeps status, amount, paid total, and due time together."
           why="It helps prevent paying the wrong amount."
-          next="Confirm the facts, then generate the instruction."
+          next="Confirm the facts, then get the payment details."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1641,7 +1644,7 @@ export default function RepaymentPage() {
             <div style={statTile()}>
               <div style={sectionLabel()}>Support status</div>
               <div style={{ marginTop: 8, color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
-                {safeStr(summary?.status || "Status not recorded yet")}
+                {supportRecordStatusLabel(summary?.status)}
               </div>
             </div>
 
@@ -1672,9 +1675,9 @@ export default function RepaymentPage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <div style={sectionLabel()}>Repayment instruction</div>
+            <div style={sectionLabel()}>Payment details</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Generate the exact repayment reference for this support item.
+              Get the exact reference and bank account for this support.
             </div>
           </div>
           <SubtleButton
@@ -1699,7 +1702,7 @@ export default function RepaymentPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Instruction details</div>
+              <div style={sectionLabel()}>Amount and bank details</div>
 
               <div style={{ marginTop: 10, ...innerCard("#FFFFFF") }}>
                 <div style={sectionLabel()}>Repayment choice</div>
@@ -1764,7 +1767,7 @@ export default function RepaymentPage() {
 
               {!instruction ? (
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Generate the instruction to reveal the repayment reference and settlement details.
+                  Get the payment details to see the exact reference and bank account.
                 </div>
               ) : (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -1790,7 +1793,7 @@ export default function RepaymentPage() {
                           </div>
                         ) : null}
                         <div style={{ ...helperText(), color: "#D7E3F1", fontSize: 13 }}>
-                          For part payments, this keeps the full support balance visible until reconciliation closes it.
+                          For part payments, the full support balance stays visible until finance confirms the payments.
                         </div>
                       </div>
                     </div>
@@ -1804,7 +1807,7 @@ export default function RepaymentPage() {
                   </div>
 
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Settlement details</div>
+                    <div style={sectionLabel()}>Bank details</div>
                     <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                       <div style={helperText()}>
                         Bank: {firstTruthy(instruction?.settlement?.bankName, "Not returned yet")}
@@ -1825,19 +1828,19 @@ export default function RepaymentPage() {
             </div>
 
             <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Instruction actions</div>
+              <div style={sectionLabel()}>Payment actions</div>
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <PrimaryButton
                   type="button"
                   onClick={() => void handleGenerateInstruction()}
                   disabled={generatingInstruction || !canRepay}
                   busy={generatingInstruction}
-                  busyLabel="Generating..."
+                  busyLabel="Getting details"
                   minWidth={isCompact ? undefined : 186}
                   stableHeight={54}
                   debugId="repayment.generate-instruction"
                 >
-                  {actionText("repaymentSchedule", "Generate")}
+                  {actionText("repaymentSchedule", "Get details")}
                 </PrimaryButton>
 
                 <SecondaryButton
@@ -1859,7 +1862,7 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.copy-full-instruction"
                 >
-                  {actionText("repaymentSchedule", "Copy instruction")}
+                  {actionText("repaymentSchedule", "Copy payment details")}
                 </SecondaryButton>
               </div>
             </div>
@@ -1870,9 +1873,9 @@ export default function RepaymentPage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <div style={sectionLabel()}>Result and reconciliation</div>
+            <div style={sectionLabel()}>Payment status</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Stay here until the repayment is waiting or confirmed by admin or finance reconciliation.
+              Stay here until finance or an admin confirms the payment.
             </div>
           </div>
           <SubtleButton
@@ -1897,10 +1900,10 @@ export default function RepaymentPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Current result state</div>
+              <div style={sectionLabel()}>Current payment status</div>
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={routeStateLabelStyle}>Route result</div>
+                  <div style={routeStateLabelStyle}>What is happening</div>
                   <div style={{ marginTop: 8, color: routeState.toneText, fontWeight: 900, fontSize: 16, lineHeight: 1.35 }}>
                     {routeState.title}
                   </div>
@@ -1911,7 +1914,7 @@ export default function RepaymentPage() {
 
                 {paymentConfirmedAt ? (
                   <div style={innerCard("#FFFBEF")}>
-                    <div style={sectionLabel()}>Payment declared at</div>
+                    <div style={sectionLabel()}>Payment reported at</div>
                     <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 900, fontSize: 14, lineHeight: 1.35 }}>
                       {safeDateTime(paymentConfirmedAt)}
                     </div>
@@ -1925,10 +1928,12 @@ export default function RepaymentPage() {
                         currentExpectedPayment.matched_bank_event_id ? "#F3FBF5" : "#F8FBFF"
                       )}
                     >
-                      <div style={sectionLabel()}>Expected payment visibility</div>
+                      <div style={sectionLabel()}>Payment record</div>
                       <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                         <div style={helperText()}>
-                          Status: {safeStr(currentExpectedPayment.status || "expected")}
+                          Status: {paymentRecordStatusLabel(
+                            currentExpectedPayment.status || "expected"
+                          )}
                         </div>
                         <div style={helperText()}>
                           Reference: {firstTruthy(
@@ -1961,12 +1966,12 @@ export default function RepaymentPage() {
                         ) : null}
                         <div style={helperText()}>
                           {currentExpectedPaymentBankEventId
-                            ? `Matched bank event visible: ${currentExpectedPaymentBankEventId}`
+                            ? `Matched payment record: ${currentExpectedPaymentBankEventId}`
                             : currentExpectedPayment.confirmed_at
                             ? `Confirmed at: ${safeDateTime(currentExpectedPayment.confirmed_at)}`
                             : currentExpectedPayment.due_at
                             ? `Due at: ${safeDateTime(currentExpectedPayment.due_at)}`
-                            : "Awaiting reconciliation visibility in Finance"}
+                            : "Waiting for finance to check the payment"}
                         </div>
                         {safeStr(currentExpectedPayment.status_reason) ? (
                           <div style={helperText()}>
@@ -1991,7 +1996,7 @@ export default function RepaymentPage() {
                         );
                         setNotice({
                           tone: "success",
-                          text: "Repayment proof uploaded for finance review. Payment still needs reconciliation.",
+                          text: "Repayment proof added for checking. The payment is not confirmed yet.",
                         });
                       }}
                       onNotice={(tone, text) => {
@@ -2003,9 +2008,9 @@ export default function RepaymentPage() {
                   </>
                 ) : instruction ? (
                   <div style={innerCard("#F8FBFF")}>
-                    <div style={sectionLabel()}>Expected payment visibility</div>
+                    <div style={sectionLabel()}>Payment record</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Finance has not shown a matching repayment expectation yet.
+                      Finance has not shown a matching payment record yet.
                     </div>
                   </div>
                 ) : null}
@@ -2027,22 +2032,22 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.confirm-paid"
                 >
-                  {actionText("check", paymentConfirmedAt ? "Declared" : "Declare paid")}
+                  {actionText("check", paymentConfirmedAt ? "Reported" : "I have paid")}
                 </PrimaryButton>
 
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Keep this payment focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Declare payment only after using the exact reference.
+                      Report payment only after sending it with the exact reference.
                     </div>
                   </div>
                 ) : (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Move on from here</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      This repayment declaration has been sent. Admin or finance
-                      still needs to confirm the money trail.
+                      Your payment report has been sent. Finance or an admin
+                      still needs to match it to the money received.
                     </div>
                   </div>
                 )}
@@ -2081,8 +2086,8 @@ export default function RepaymentPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Stay here until the instruction is generated and payment is
-                  waiting for reconciliation.
+                  Stay here until you have the payment details and your payment
+                  report is waiting for confirmation.
                 </div>
               </div>
             </div>
