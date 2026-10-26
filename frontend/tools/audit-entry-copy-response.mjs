@@ -96,6 +96,12 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
+  /function looksLikeCommunityId[\s\S]*?\(\?:GMFN\|GSN\)-C-[\s\S]*?looksLikeCommunityId\(u\)[\s\S]*?That is a Community ID\. Enter your phone, email, or member GSN ID instead\.[\s\S]*?looksLikeCommunityId\(p\)[\s\S]*?setPassword\(""\)[\s\S]*?A Community ID is not your password\.[\s\S]*?const loginResult = await loginAndStore/,
+  "Sign In must stop Community IDs being used as member identity or password before sending credentials."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
   /function signInSessionError[\s\S]*browser did not keep you signed in[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns[\s\S]*Activate Membership to confirm this account is active[\s\S]*member record check[\s\S]*pause and report this sign-in recovery message[\s\S]*live system could not open your member session[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns/,
   "Sign In session recovery errors must explain the problem and give a first safe recovery step without exposing backend/API/CORS language."
 );

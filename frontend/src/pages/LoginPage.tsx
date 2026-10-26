@@ -430,6 +430,11 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function looksLikeCommunityId(value: unknown): boolean {
+  const normalized = safeStr(value).toUpperCase().replace(/\s+/g, "");
+  return /^(?:GMFN|GSN)-C-[A-Z0-9-]+$/.test(normalized);
+}
+
 function recoveryAdminReviewPath(gsnId: string, phone: string): string {
   const params = new URLSearchParams();
   const cleanPhone = safeStr(phone);
@@ -694,6 +699,17 @@ export default function LoginPage() {
 
       if (!u) throw new Error("Enter your phone, email, or GSN ID.");
       if (!p) throw new Error("Enter your password.");
+      if (looksLikeCommunityId(u)) {
+        throw new Error(
+          "That is a Community ID. Enter your phone, email, or member GSN ID instead."
+        );
+      }
+      if (looksLikeCommunityId(p)) {
+        setPassword("");
+        throw new Error(
+          "A Community ID is not your password. Enter the password you created during activation. No password yet? Open Help and choose Activate membership."
+        );
+      }
 
       const loginResult = await loginAndStore(u, p);
       const token = safeStr(loginResult?.access_token);

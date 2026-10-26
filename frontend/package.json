@@ -142,6 +142,7 @@
     "audit:real-life-trust-guidance": "node tools/audit-real-life-trust-guidance.mjs",
     "audit:support-helpdesk": "node tools/audit-support-helpdesk.mjs",
     "smoke:support-helpdesk-simple-phone": "node tools/smoke-support-helpdesk-simple-phone.mjs",
+    "smoke:login-community-id-guard": "node tools/smoke-login-community-id-guard.mjs",
     "smoke:demand-box-simple-phone": "node tools/smoke-demand-box-simple-phone.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
     "audit:active-feed-freshness": "node tools/audit-active-feed-freshness.mjs",

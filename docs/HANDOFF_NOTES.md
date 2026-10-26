@@ -3206,3 +3206,26 @@ under `docs/` or `docs/archive/`, then link that file here.
   complete protected-button/frozen-surface audit suite.
 - This sign-in fix remains local only. Nothing was pushed, promoted, sent to
   Render, or deployed.
+
+## Community ID mistaken for sign-in password - 2026-10-26
+
+- A second review of the same laptop screenshot showed the member's Community
+  ID in the password field. The earlier GSN-ID character correction was valid
+  but was not, by itself, a complete explanation of that failed attempt.
+- `/login` now recognizes `GMFN-C-...` and `GSN-C-...` values before making an
+  authentication request. In the identity field it explains that a Community
+  ID is not a member identity. In the password field it explains that a
+  Community ID is not a password, clears the mistaken value, and points a
+  member without a password to Help -> Activate membership.
+- No new panel, button, or always-visible helper was added to the already busy
+  entry surface. Valid phone, email, member GSN ID, and password submissions
+  keep the existing path. The API and password rules are unchanged.
+- A repeatable production-build browser check is available as
+  `smoke:login-community-id-guard`. It fills both screenshot-shaped mistakes,
+  checks the exact human correction, confirms the password field is cleared,
+  and proves that neither mistake reaches `/auth/login`.
+- Verification passed: entry-copy, entry/auth, and button-stability audits;
+  the 295-module production build; the production-browser login guard smoke;
+  and the complete protected-button/frozen-surface audit suite.
+- This follow-up remains local only. Nothing was pushed, promoted, sent to
+  Render, or deployed.
