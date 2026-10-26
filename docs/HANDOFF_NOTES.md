@@ -8,6 +8,16 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Finance and Trade records deployment - 2026-10-26
+
+- The Finance wording and Trade records phone packages were committed as
+  `b5b5b441`, pushed to the working branch and promoted unchanged to `main`.
+- GitHub Actions run `40320771684` deployed the frontend-only commit through
+  Render. Render deploy `dep-dbfk7fpsrm7s73f9q0dg` reached `live`, and the
+  workflow confirmed `https://gmfn-frontend.onrender.com` was serving the
+  deployed frontend build. The backend-deploy check correctly resolved to
+  `false`.
+
 ## Finance task wording - 2026-10-26
 
 - Continued the app-wide plain-language work into `/app/finance`. Its compact
@@ -27,8 +37,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   flows at 390x844 and 360x780 passed. Both phone sizes retained one primary
   action, one task disclosure, one active lane and no horizontal overflow.
   Physical-phone review and live money operations remain outstanding. This
-  Finance package and the preceding Trade records package form the requested
-  frontend deployment batch; live deployment evidence is still pending.
+  package was deployed in frontend commit `b5b5b441` as recorded above.
 
 ## Trade records phone progression - 2026-10-26
 
@@ -53,8 +62,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   smoke passed. The smoke recorded the last outcome button at 839px inside the
   844px viewport, with the deeper disclosure closed and no Trade-surface
   horizontal overflow. Physical-phone review and live Protected Trade writes
-  remain outstanding. This package is included in the requested frontend
-  deployment batch; live deployment evidence is still pending.
+  remain outstanding. This package was deployed in frontend commit
+  `b5b5b441` as recorded above.
 
 ## Owner-shop simplification deployment - 2026-10-26
 
