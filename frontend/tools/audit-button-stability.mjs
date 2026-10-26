@@ -1234,13 +1234,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?debugId="bank-console\.copy-config"/,
-  "Bank Console must use shared stable CTA primitives and shared CTA resolution for next-step, row copy, refresh, ingest, reconcile, and config-copy actions."
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.toggle\.record"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?debugId="bank-console\.toggle\.records"[\s\S]*?debugId="bank-console\.toggle\.expected"[\s\S]*?debugId="bank-console\.copy-config"/,
+  "Bank Console must use shared stable CTA primitives and shared CTA resolution for its next step, disclosures, row copy, refresh, ingest, reconcile, and config-copy actions."
 );
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function nextStepActionText\(step: NextStepState\)[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?stableHeight=\{52\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.copy-config"/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function renderNextStepAction\(\)[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.toggle\.record"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?debugId="bank-console\.toggle\.records"[\s\S]*?debugId="bank-console\.toggle\.expected"[\s\S]*?debugId="bank-console\.copy-config"/,
   "Bank Console actions must keep compact 3D icon-led no-wrap geometry."
 );
 

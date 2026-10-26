@@ -3034,6 +3034,44 @@ under `docs/` or `docs/archive/`, then link that file here.
   485 ms. Disabling reconciliation and running the first Spotlight retention
   batch both still require separate owner approval.
 
+## Compact Bank Console and executable next action - 2026-10-26
+
+- `/app/command-center/bank-console` now opens with one deep-navy `What needs
+  attention now` card, the selected community, four concise record counts, one
+  evidence-led primary action, and one Refresh action.
+- Manual intake, recent/unmatched/credit record lists, and expected-payment
+  proof material now start closed behind `Record a missing bank event`, `Review
+  bank records`, and `Expected payments and proof`. The previous exposed
+  explanation blocks, duplicate statistic grid, and Today/Tomorrow cards were
+  removed.
+- The primary action now prioritises eligible submitted Community Domain proof,
+  then unmatched bank events. `Review proof` reveals the existing protected
+  proof controls. `Match records` is now a real button that calls the existing
+  reconciliation handler instead of linking back to the same Bank Console
+  route. Community selection and calm-state Loan Support handoffs keep their
+  existing shared routes.
+- No bank API payload, matching algorithm, expected-payment permission,
+  Community Domain proof scope, stale-context guard, copied evidence paper,
+  auth rule, or backend behavior changed. Reconciliation remains matching and
+  review evidence, not settlement or proof that money moved.
+- The compact Command Centre money row also restores the previously omitted
+  `Support committed` figure; its trust audit now checks the compact wording.
+- Verification passed: production frontend build, finance-action audit,
+  trust-action audit, institutional evidence-surface audit, button-stability
+  audit, admin route-guard audit, global action-debug-id audit, global
+  raw-action audit, phone-surface simplicity audit, and mobile visual route
+  coverage audit.
+- A focused 390x844 Chromium check confirmed no horizontal overflow, the
+  primary action in the first viewport, all three detail areas closed by
+  default, proof review revealing only the expected-payment area, and preserved
+  approve/reject actions. A second check confirmed `Match records` is a button,
+  calls `/bank/reconcile` once, and does not navigate away.
+- The broad Community Domain product-contract audit completed but remains red
+  on two unrelated pre-existing policy assertions in backend Marketplace shop
+  writes and Shop Assets policy guidance. It reported no Bank Console
+  contract failure; those unrelated files were not changed in this batch.
+- This batch is local only. It has not been pushed or deployed, as instructed.
+
 ## Compact Trust Command Centre - 2026-10-26
 
 - `/app/command-center` now opens with the existing operator identity, one

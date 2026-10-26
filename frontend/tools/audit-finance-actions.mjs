@@ -259,8 +259,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
-  /debugId="bank-console\.next-step"[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"/,
-  "Bank Console next-step and operational actions must remain traceable."
+  /debugId="bank-console\.next-step"[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.toggle\.record"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?debugId="bank-console\.toggle\.records"[\s\S]*?debugId="bank-console\.toggle\.expected"/,
+  "Bank Console next-step, disclosure, and operational actions must remain traceable."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /const BANK_CONSOLE_UI_STORAGE_KEY = "gmfn\.bankConsole\.sections\.v1";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?record: true,[\s\S]*?records: true,[\s\S]*?expected: true,[\s\S]*?data-bank-console-current-action="true"[\s\S]*?data-bank-console-record="collapsed"[\s\S]*?data-bank-console-records="collapsed"[\s\S]*?data-bank-console-expected="collapsed"/,
+  "Bank Console must keep one live action visible and default manual intake, record lists, and expected-payment proof details closed."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /kind: "proof"[\s\S]*?kind: "reconcile"[\s\S]*?function renderNextStepAction\(\)[\s\S]*?nextStep\.kind === "proof"[\s\S]*?revealSection\("expected"[\s\S]*?nextStep\.kind === "reconcile"[\s\S]*?onClick=\{\(\) => void reconcileNow\(\)\}/,
+  "Bank Console must surface reviewable proof first and make the unmatched-record recommendation execute the existing reconciliation handler."
 );
 
 assertContains(
@@ -277,8 +289,14 @@ assertContains(
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
-  /review matched records[\s\S]*?matched record is visible/,
-  "Bank Console guidance must frame matching as visible matched-record review."
+  /Next step: run reconciliation so GSN can match it against expected payments\.[\s\S]*?Run the existing reconciliation check, then review anything that remains unmatched\./,
+  "Bank Console guidance must explain the real reconciliation action and the review that follows it."
+);
+
+assertNotContains(
+  "src/pages/BankConsolePage.tsx",
+  /ExplainToggle|What this screen does|What this does|How to use this|<div style=\{sectionLabel\(\)\}>Today<\/div>|<div style=\{sectionLabel\(\)\}>Tomorrow<\/div>/,
+  "Bank Console must not restore duplicate explanation blocks or repetitive Today/Tomorrow cards."
 );
 
 assertContains(

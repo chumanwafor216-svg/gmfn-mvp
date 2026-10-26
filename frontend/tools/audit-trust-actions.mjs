@@ -1396,7 +1396,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /Check database and service health[\s\S]*?Check community-admin exposure access[\s\S]*?Review support progress and coverage[\s\S]*?exposure reading[\s\S]*?Buffer:/,
+  /Check database and service health[\s\S]*?Check community-admin exposure access[\s\S]*?Review support progress and coverage[\s\S]*?Exposure reading:[\s\S]*?Buffer/,
   "Trust Command Centre overview must frame admin readings as checks, support progress, exposure readings, and buffer signals."
 );
 
@@ -1420,7 +1420,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /Active support: \{Number\(liquidity\?\.activeLoansCount \|\| 0\)\} \| Support committed: \{safeStr\(liquidity\?\.pledgedTotal \|\| "0"\)\}/,
+  /Active support: \$\{Number\([\s\S]*?liquidity\?\.activeLoansCount \|\| 0[\s\S]*?Support committed: \$\{safeStr\(liquidity\?\.pledgedTotal \|\| "0"\)\}/,
   "Trust Command Centre liquidity detail must show committed support wording instead of pledged total wording."
 );
 
@@ -1977,8 +1977,8 @@ assertContains(
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
-  /review matched records[\s\S]*?matched record is visible/,
-  "Bank Console guidance must keep matched-record review language."
+  /Next step: run reconciliation so GSN can match it against expected payments\.[\s\S]*?Run the existing reconciliation check, then review anything that remains unmatched\./,
+  "Bank Console guidance must describe the real reconciliation check and the unmatched-record review that follows it."
 );
 
 assertContains(

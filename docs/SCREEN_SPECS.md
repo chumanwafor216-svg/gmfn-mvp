@@ -1764,6 +1764,41 @@ Rules:
 - Do not add backend mutations, change authentication or permissions, or alter the frozen Dashboard Market Wisdom area as part of this surface cleanup.
 - On phone, signal rows remain one column and deeper content appears only after the operator opens the relevant disclosure.
 
+## BankConsolePage
+
+Purpose:
+Give an authorised finance operator one calm view of the most important bank-record action while preserving protected reconciliation, manual intake, record review, and Community Domain payment-proof workflows.
+
+Route:
+- `/app/command-center/bank-console`
+
+Must show on first load:
+- existing Bank Console navigation
+- one deep-navy `What needs attention now` card
+- the selected community and concise counts for recent, unmatched, credit, and expected-payment records
+- one primary action that matches the current evidence
+- one compact refresh action
+- three closed disclosures: `Record a missing bank event`, `Review bank records`, and `Expected payments and proof`
+
+Primary-action priority:
+- If no community is selected, open Community Home so the operator can establish the correct context.
+- If submitted Community Domain subscription proof is eligible for finance review, reveal the expected-payment proof section before softer reconciliation work.
+- If bank events remain unmatched, run the existing reconciliation handler; do not link back to the same Bank Console route while labelling the action `Match records`.
+- When no current finance-review pressure is visible, return to Loan Support.
+
+Disclosure responsibilities:
+- `Record a missing bank event` preserves the existing amount, currency, direction, reference, description, record-event, and secondary reconciliation controls.
+- `Review bank records` preserves the recent-event, unmatched-event, and credit record lists plus their bounded copied review papers.
+- `Expected payments and proof` preserves expected-payment visibility, Community Domain subscription metadata, finance-review approve/reject actions, and protected settings review paper.
+
+Rules:
+- Reconciliation is recorded matching and review evidence. It is not settlement, proof that money moved, payout approval, or authority to release goods or credit.
+- Submitted proof remains evidence for manual finance review and must not become automatic confirmation.
+- Community Domain proof approval remains limited to eligible submitted, unconfirmed Community Domain subscription rows and must not approve donations, registrations, event fees, ROSCA, Spotlight, Shop Diary, or ordinary marketplace payments.
+- Existing API payloads, finance-review restrictions, stale-context guards, authentication, permissions, route targets, stable action identities, and copied evidence boundaries remain unchanged.
+- Do not restore the exposed explanatory blocks, duplicate statistic grid, or repetitive Today/Tomorrow cards.
+- On phone, manual inputs and record/proof detail must not appear until the corresponding disclosure is opened.
+
 ## AdminCommunityOwnershipPage
 
 Purpose:

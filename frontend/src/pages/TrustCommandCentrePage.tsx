@@ -1572,7 +1572,7 @@ export default function TrustCommandCentrePage() {
                     detail: exposureTotals
                       ? `Exposure reading: ${formatNumber(exposureTotals.exposure)} / Active support: ${Number(
                           liquidity?.activeLoansCount || 0
-                        )}`
+                        )} / Support committed: ${safeStr(liquidity?.pledgedTotal || "0")}`
                       : "Exposure and support totals are not available yet.",
                   },
                 ].map((signal) => (

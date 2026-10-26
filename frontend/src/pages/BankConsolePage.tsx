@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
-  institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
@@ -64,13 +62,20 @@ type BankConsoleLoadResult = {
 };
 
 type NextStepState = {
+  kind: "community" | "proof" | "reconcile" | "loans";
   title: string;
   detail: string;
-  today: string;
-  tomorrow: string;
   ctaLabel: string;
-  ctaTo: string;
+  ctaTo?: string;
 };
+
+type CollapseState = {
+  record: boolean;
+  records: boolean;
+  expected: boolean;
+};
+
+const BANK_CONSOLE_UI_STORAGE_KEY = "gmfn.bankConsole.sections.v1";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -99,13 +104,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     boxShadow:
       "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
     padding: 22,
-  };
-}
-
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(20,52,83,0.20)",
   };
 }
 
@@ -181,18 +179,6 @@ function actionText(name: GsnIconName, label: string): React.ReactNode {
       <span>{label}</span>
     </span>
   );
-}
-
-function nextStepActionText(step: NextStepState): React.ReactNode {
-  if (step.ctaLabel.toLowerCase().includes("reconcile")) {
-    return actionText("refresh", "Match records");
-  }
-
-  if (step.ctaLabel.toLowerCase().includes("community")) {
-    return actionText("community", "Community Home");
-  }
-
-  return actionText("briefcase", "Loan Support");
 }
 
 function inputStyle(): React.CSSProperties {
@@ -489,18 +475,40 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
-function renderStepAction(step: NextStepState) {
-  return (
-    <StableCtaLink
-      to={step.ctaTo}
-      debugId="bank-console.next-step"
-      minWidth={156}
-      stableHeight={52}
-      style={bankConsolePrimaryButtonStyle(false)}
-    >
-      {nextStepActionText(step)}
-    </StableCtaLink>
-  );
+function readLocalJSON<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJSON(key: string, value: any) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore browser storage failures; the safe default remains collapsed.
+  }
+}
+
+function defaultCollapseState(): CollapseState {
+  return {
+    record: true,
+    records: true,
+    expected: true,
+  };
+}
+
+function normalizeCollapseState(raw: any): CollapseState {
+  const base = defaultCollapseState();
+  return {
+    record: Boolean(raw?.record ?? base.record),
+    records: Boolean(raw?.records ?? base.records),
+    expected: Boolean(raw?.expected ?? base.expected),
+  };
 }
 
 export default function BankConsolePage() {
@@ -508,6 +516,11 @@ export default function BankConsolePage() {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    normalizeCollapseState(
+      readLocalJSON(BANK_CONSOLE_UI_STORAGE_KEY, defaultCollapseState())
+    )
+  );
 
   const [cfg, setCfg] = useState<any>(null);
   const [community, setCommunity] = useState<CommunityLite | null>(null);
@@ -539,7 +552,6 @@ export default function BankConsolePage() {
       commandCenter: routeTarget("adminCommand", selectedClanId, "bank-console.route.command-center"),
       community: routeTarget("communityHome", selectedClanId, "bank-console.route.community"),
       loans: routeTarget("loans", selectedClanId, "bank-console.route.loans"),
-      bankConsole: routeTarget("bankConsole", selectedClanId, "bank-console.route.self"),
       paymentRails: routeTarget("paymentRails", selectedClanId, "bank-console.route.payment-rails"),
       marketplace: routeTarget("marketplace", selectedClanId, "bank-console.route.marketplace"),
       trust: routeTarget("trust", selectedClanId, "bank-console.route.trust"),
@@ -576,6 +588,10 @@ export default function BankConsolePage() {
       .map((row: any) => normalizeRow(row))
       .filter(Boolean) as BankConsoleRow[];
   }, []);
+
+  useEffect(() => {
+    writeLocalJSON(BANK_CONSOLE_UI_STORAGE_KEY, collapsed);
+  }, [collapsed]);
 
   const clearBankConsoleState = useCallback(() => {
     setCfg(null);
@@ -802,47 +818,127 @@ export default function BankConsolePage() {
     );
   }, [community, selectedClanId]);
 
+  const reviewableProofCount = useMemo(
+    () =>
+      expected.filter((row) => {
+        const hasProof = Boolean(
+          safeStr(row.proof_status || row.proof_status_text || row.proof_filename)
+        );
+        const isConfirmed = ["confirmed", "applied"].includes(
+          safeStr(row.status).toLowerCase()
+        );
+        return hasProof && !isConfirmed && isCommunityDomainSubscription(row);
+      }).length,
+    [expected]
+  );
+
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
       return {
+        kind: "community",
         title: "Choose the community first",
         detail:
           "Bank operations are clearer once your current community is in place.",
-        today: "Open Community Home and confirm the community first.",
-        tomorrow:
-          "A clear community keeps operations disciplined and traceable.",
         ctaLabel: "Open Community Home",
         ctaTo: routes.community,
       };
     }
 
+    if (reviewableProofCount > 0) {
+      return {
+        kind: "proof",
+        title:
+          reviewableProofCount === 1
+            ? "One submitted payment proof needs review"
+            : `${reviewableProofCount} submitted payment proofs need review`,
+        detail:
+          "Check the submitted evidence against bank or receipt records before approving or rejecting it.",
+        ctaLabel: "Review proof",
+      };
+    }
+
     if (unmatched.length > 0) {
       return {
+        kind: "reconcile",
         title:
           unmatched.length === 1
             ? "One bank event is still unmatched"
             : `${unmatched.length} bank events are still unmatched`,
         detail:
-          "Match records first, then review the unmatched queue.",
-        today: "Match records now, then open the item still needing review.",
-        tomorrow:
-          "Clean matched records make later settlement review easier to defend.",
+          "Run the existing reconciliation check, then review anything that remains unmatched.",
         ctaLabel: "Match records",
-        ctaTo: routes.bankConsole,
       };
     }
 
     return {
+      kind: "loans",
       title: "Operations path is calmer right now",
       detail:
         "Only ingest a real event that needs review now.",
-      today: "Check recent events before adding anything manually.",
-      tomorrow:
-        "Fewer manual entries keeps the money record cleaner.",
       ctaLabel: "Return to Loan Support",
       ctaTo: routes.loans,
     };
-  }, [routes.bankConsole, routes.community, routes.loans, selectedClanId, unmatched.length]);
+  }, [reviewableProofCount, routes.community, routes.loans, selectedClanId, unmatched.length]);
+
+  function toggleSection(key: keyof CollapseState) {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function revealSection(key: keyof CollapseState, selector: string) {
+    setCollapsed((prev) => ({ ...prev, [key]: false }));
+    window.setTimeout(() => {
+      document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
+
+  function renderNextStepAction() {
+    if (nextStep.kind === "proof") {
+      return (
+        <PrimaryButton
+          onClick={() => revealSection("expected", "[data-bank-console-expected]")}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 156}
+          stableHeight={52}
+          debugId="bank-console.next-step"
+          style={bankConsolePrimaryButtonStyle(false)}
+        >
+          {actionText("shield", nextStep.ctaLabel)}
+        </PrimaryButton>
+      );
+    }
+
+    if (nextStep.kind === "reconcile") {
+      return (
+        <PrimaryButton
+          onClick={() => void reconcileNow()}
+          disabled={busyReconcile}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 156}
+          stableHeight={52}
+          debugId="bank-console.next-step"
+          style={bankConsolePrimaryButtonStyle(busyReconcile)}
+        >
+          {actionText("refresh", busyReconcile ? "Matching" : nextStep.ctaLabel)}
+        </PrimaryButton>
+      );
+    }
+
+    return (
+      <StableCtaLink
+        to={nextStep.ctaTo || routes.loans}
+        debugId="bank-console.next-step"
+        fullWidth={isCompact}
+        minWidth={isCompact ? undefined : 156}
+        stableHeight={52}
+        style={bankConsolePrimaryButtonStyle(false)}
+      >
+        {actionText(
+          nextStep.kind === "community" ? "community" : "briefcase",
+          nextStep.kind === "community" ? "Community Home" : "Loan Support"
+        )}
+      </StableCtaLink>
+    );
+  }
 
   function renderList(
     title: string,
@@ -1047,15 +1143,6 @@ export default function BankConsolePage() {
         ]}
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="See bank events, matches, and items still needing review."
-        why="It keeps community money records traceable."
-        next="Match records first. Add manually only when a real event is missing."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
-
       {err ? (
         <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div>
       ) : null}
@@ -1065,6 +1152,7 @@ export default function BankConsolePage() {
       ) : null}
 
       <section
+        data-bank-console-current-action="true"
         style={{
           ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
           marginTop: 18,
@@ -1073,15 +1161,13 @@ export default function BankConsolePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gridTemplateColumns: "1fr",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Operations page</div>
+            <div style={sectionLabel()}>What needs attention now</div>
 
             <div
               style={{
@@ -1096,8 +1182,7 @@ export default function BankConsolePage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.45 }}>
-              Check incoming bank events, review matched records, and investigate
-              anything still unmatched.
+              {nextStep.detail}
             </div>
 
             <div
@@ -1112,6 +1197,7 @@ export default function BankConsolePage() {
               <span style={badge(false)}>Recent: {recent.length}</span>
               <span style={badge(false)}>Unmatched: {unmatched.length}</span>
               <span style={badge(false)}>Credits: {credits.length}</span>
+              <span style={badge(false)}>Expected: {expected.length}</span>
             </div>
 
             <div
@@ -1125,7 +1211,7 @@ export default function BankConsolePage() {
                 alignItems: "center",
               }}
             >
-              {renderStepAction(nextStep)}
+              {renderNextStepAction()}
               <SecondaryButton
                 onClick={() => void loadAll()}
                 disabled={loading}
@@ -1139,134 +1225,44 @@ export default function BankConsolePage() {
               </SecondaryButton>
             </div>
           </div>
-
-          <div style={{ display: "grid", gap: 12 }}>
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Today</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                {nextStep.today}
-              </div>
-            </div>
-
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Tomorrow</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.65,
-                }}
-              >
-                {nextStep.tomorrow}
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
       <section
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
+        id="bank-manual-ingest"
+        data-bank-console-record="collapsed"
+        style={{ ...pageCard(), marginTop: 18 }}
       >
-        <div style={{ gridColumn: "1 / -1" }}>
-          <ExplainToggle
-            label="What this does"
-            what="This summary shows the current bank-console reading across recent events, unmatched items, credits, and expected payments."
-            why="It helps you see where the money path is calm and where review is still needed before you act."
-            next="Use the unmatched and expected counts to decide whether to reconcile, investigate, or continue into the detailed event lists below."
-            tone="light"
-          />
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Recent events</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "..." : recent.length}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Record a missing bank event
+            </div>
+            <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.45 }}>
+              Use this only when a real event is missing from the bank feed.
+            </div>
           </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Unmatched</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
+          <SecondaryButton
+            onClick={() => toggleSection("record")}
+            aria-expanded={!collapsed.record}
+            stableHeight={52}
+            debugId="bank-console.toggle.record"
+            style={bankConsoleSecondaryButtonStyle(false)}
           >
-            {loading ? "..." : unmatched.length}
-          </div>
+            {actionText(collapsed.record ? "chevronDown" : "chevronUp", collapsed.record ? "Open" : "Hide")}
+          </SecondaryButton>
         </div>
 
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Credits</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "..." : credits.length}
-          </div>
-        </div>
-
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Expected items</div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 28,
-              fontWeight: 1000,
-              color: "#0B1F33",
-            }}
-          >
-            {loading ? "..." : expected.length}
-          </div>
-        </div>
-      </section>
-
-      <section id="bank-manual-ingest" style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Record Missing Bank Event
-        </div>
-
-        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.45 }}>
-          Add one real bank event only when it is missing from the bank feed.
-        </div>
-
-        <ExplainToggle
-          label="How to use this"
-          what="Record one missing real bank event."
-          why="This avoids duplicate or speculative entries."
-          next="Save it, refresh, then check whether a matched record is visible."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
-
+        {!collapsed.record ? (
+          <>
         <div
           style={{
             marginTop: 14,
@@ -1353,16 +1349,51 @@ export default function BankConsolePage() {
             {actionText("refresh", busyReconcile ? "Matching" : "Match records")}
           </SecondaryButton>
         </div>
+          </>
+        ) : null}
       </section>
 
       <section
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-          gap: 18,
-        }}
+        data-bank-console-records="collapsed"
+        style={{ ...pageCard(), marginTop: 18 }}
       >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Review bank records
+            </div>
+            <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.45 }}>
+              Open recent, unmatched, and credit-side records when investigation is needed.
+            </div>
+          </div>
+          <SecondaryButton
+            onClick={() => toggleSection("records")}
+            aria-expanded={!collapsed.records}
+            stableHeight={52}
+            debugId="bank-console.toggle.records"
+            style={bankConsoleSecondaryButtonStyle(false)}
+          >
+            {actionText(collapsed.records ? "chevronDown" : "chevronUp", collapsed.records ? "Open" : "Hide")}
+          </SecondaryButton>
+        </div>
+
+        {!collapsed.records ? (
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 18,
+            }}
+          >
         {renderList(
           "Recent Events",
           "Newest bank-side items visible in this community.",
@@ -1383,7 +1414,46 @@ export default function BankConsolePage() {
           credits,
           "No credit record is currently shown."
         )}
+          </div>
+        ) : null}
+      </section>
 
+      <section
+        data-bank-console-expected="collapsed"
+        style={{ ...pageCard(), marginTop: 18 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
+              Expected payments and proof
+            </div>
+            <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.45 }}>
+              {reviewableProofCount > 0
+                ? `${reviewableProofCount} submitted proof ${reviewableProofCount === 1 ? "needs" : "need"} finance review.`
+                : "Open expected-payment records and submitted evidence only when needed."}
+            </div>
+          </div>
+          <SecondaryButton
+            onClick={() => toggleSection("expected")}
+            aria-expanded={!collapsed.expected}
+            stableHeight={52}
+            debugId="bank-console.toggle.expected"
+            style={bankConsoleSecondaryButtonStyle(false)}
+          >
+            {actionText(collapsed.expected ? "chevronDown" : "chevronUp", collapsed.expected ? "Open" : "Hide")}
+          </SecondaryButton>
+        </div>
+
+        {!collapsed.expected ? (
+          <div style={{ marginTop: 16 }}>
         <div style={pageCard("#FFFFFF")}>
           <div
             style={{
@@ -1794,6 +1864,8 @@ export default function BankConsolePage() {
             )}
           </div>
         </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );
