@@ -241,6 +241,14 @@ def _find_user_by_identity(db: Session, identity: str) -> User | None:
         user = db.query(User).filter(User.gmfn_id.in_(candidates)).first()
     if not user:
         user = db.query(User).filter(User.phone_e164.in_(candidates)).first()
+    if not user:
+        lookalike_candidates = _generated_gsn_id_lookalike_candidates(identity)
+        if lookalike_candidates:
+            user = (
+                db.query(User)
+                .filter(User.gmfn_id.in_(lookalike_candidates))
+                .first()
+            )
     return user
 
 
@@ -272,6 +280,35 @@ def _gsn_id_candidates(value: str) -> list[str]:
             seen.add(candidate)
             out.append(candidate)
     return out
+
+
+def _generated_gsn_id_lookalike_candidates(value: str) -> list[str]:
+    """Correct only impossible characters in the generated 8-digit hex suffix."""
+
+    raw = str(value or "").strip().upper()
+    if not raw:
+        return []
+
+    suffix = ""
+    for prefix in ("GSN-GMFN-U-", "GMFN-GSN-U-", "GMFN-U-", "GSN-U-", "U-"):
+        if raw.startswith(prefix):
+            suffix = raw[len(prefix):]
+            break
+
+    if len(suffix) != 8:
+        return []
+    if any(character not in "0123456789ABCDEFOIL" for character in suffix):
+        return []
+
+    normalized_suffix = suffix.translate(
+        str.maketrans({"O": "0", "I": "1", "L": "1"})
+    )
+    if normalized_suffix == suffix:
+        return []
+    if any(character not in "0123456789ABCDEF" for character in normalized_suffix):
+        return []
+
+    return _gsn_id_candidates(f"GMFN-U-{normalized_suffix}")
 
 
 def _find_user_by_gsn_id(db: Session, gmfn_id: str) -> User | None:

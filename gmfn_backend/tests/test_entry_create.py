@@ -1388,6 +1388,74 @@ def test_auth_me_allows_non_email_identity_after_gmfn_login(client, monkeypatch)
     assert me_body["display_name"] == "Non Email QA"
 
 
+def test_login_corrects_impossible_generated_gsn_id_lookalikes(client, monkeypatch):
+    monkeypatch.setenv("GMFN_SECRET_KEY", "pytest-secret")
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                email="lookalike-login@example.com",
+                hashed_password=get_password_hash("lookalike-secret"),
+                role="user",
+                gmfn_id="GMFN-U-0B16D94C",
+                display_name="Lookalike Login",
+            )
+        )
+        db.commit()
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "GMFN-U-OBI6D94C",
+            "password": "lookalike-secret",
+        },
+    )
+
+    assert login_res.status_code == 200, login_res.text
+    assert login_res.json()["gmfn_id"] == "GMFN-U-0B16D94C"
+
+
+def test_login_keeps_exact_legacy_gsn_id_ahead_of_lookalike_fallback(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_SECRET_KEY", "pytest-secret")
+
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                User(
+                    email="canonical-generated@example.com",
+                    hashed_password=get_password_hash("canonical-secret"),
+                    role="user",
+                    gmfn_id="GMFN-U-0B16D94C",
+                    display_name="Canonical Generated",
+                ),
+                User(
+                    email="exact-legacy@example.com",
+                    hashed_password=get_password_hash("legacy-secret"),
+                    role="user",
+                    gmfn_id="GMFN-U-OBI6D94C",
+                    display_name="Exact Legacy",
+                ),
+            ]
+        )
+        db.commit()
+
+    exact_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-OBI6D94C", "password": "legacy-secret"},
+    )
+    assert exact_login.status_code == 200, exact_login.text
+    assert exact_login.json()["gmfn_id"] == "GMFN-U-OBI6D94C"
+
+    blocked_fallback = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-OBI6D94C", "password": "canonical-secret"},
+    )
+    assert blocked_fallback.status_code == 401, blocked_fallback.text
+
+
 def test_admin_phone_lineage_lookup_identifies_protected_owner(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
 

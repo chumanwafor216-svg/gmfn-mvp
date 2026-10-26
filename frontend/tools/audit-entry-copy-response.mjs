@@ -90,6 +90,12 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
+  /Enter your phone, email, or GSN ID\.[\s\S]*?Sign-in details did not match\. Check the ID and password, then try again\. First sign-in\? Activate membership first\./,
+  "Sign In must name every accepted identity type and keep failed-login recovery concise."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
   /function signInSessionError[\s\S]*browser did not keep you signed in[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns[\s\S]*Activate Membership to confirm this account is active[\s\S]*member record check[\s\S]*pause and report this sign-in recovery message[\s\S]*live system could not open your member session[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns/,
   "Sign In session recovery errors must explain the problem and give a first safe recovery step without exposing backend/API/CORS language."
 );

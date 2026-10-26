@@ -3179,3 +3179,30 @@ under `docs/` or `docs/archive/`, then link that file here.
   false signal.
 - This follow-up remains local only. Nothing was pushed, promoted, sent to
   Render, or deployed.
+
+## Laptop GSN-ID sign-in lookalike recovery - 2026-10-26
+
+- Pilot screenshots showed a generated member GSN ID copied on a laptop with
+  `O` in place of `0` and `I` in place of `1`. The existing sign-in lookup was
+  case- and prefix-tolerant but required every suffix character to match, so
+  that visually plausible transcription could not find the active account.
+- Generated member IDs use an eight-character hexadecimal suffix. The login
+  identity lookup now tries all existing exact email, GSN-ID, and phone
+  candidates first. Only when none exists, and only for a recognized member-ID
+  prefix with exactly eight suffix characters, it may correct impossible
+  generated-suffix lookalikes `O` to `0` and `I`/`L` to `1`.
+- Exact lookup remains authoritative. A real legacy ID containing those letters
+  wins before any generated-ID fallback, and the password for a different
+  canonical-looking account cannot be used through that exact legacy ID. The
+  password is never corrected or relaxed.
+- The fallback is confined to sign-in. Email, phone, arbitrary/long legacy
+  IDs, activation, and password-recovery claims keep their existing behavior.
+- Sign-in's empty-field instruction now correctly asks for phone, email, or
+  GSN ID rather than email alone. The failed-login message is shorter and gives
+  one direct first step plus the activation path for a genuine first sign-in.
+- Verification passed: both focused lookalike/exact-precedence tests, all 45
+  backend entry/authentication tests, the frontend entry-copy audit, and the
+  frontend entry/auth contract audit, the 295-module production build, and the
+  complete protected-button/frozen-surface audit suite.
+- This sign-in fix remains local only. Nothing was pushed, promoted, sent to
+  Render, or deployed.

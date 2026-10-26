@@ -692,7 +692,7 @@ export default function LoginPage() {
       const u = safeStr(email);
       const p = String(password || "");
 
-      if (!u) throw new Error("Enter your email.");
+      if (!u) throw new Error("Enter your phone, email, or GSN ID.");
       if (!p) throw new Error("Enter your password.");
 
       const loginResult = await loginAndStore(u, p);
@@ -752,7 +752,7 @@ export default function LoginPage() {
         raw.toLowerCase().includes("not yet activated")
       ) {
         setErr(
-          "Those details did not match an active account. If this is your first time on the live system, use Activate Membership or start through Create Community first."
+          "Sign-in details did not match. Check the ID and password, then try again. First sign-in? Activate membership first."
         );
         setSupportOpen(true);
       } else {
