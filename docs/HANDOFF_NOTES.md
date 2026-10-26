@@ -30,8 +30,12 @@ under `docs/` or `docs/archive/`, then link that file here.
   protected-button freeze, including its visual subtests. The broad
   button-stability audit now has no Repayment finding and remains blocked only
   by the unrelated existing Finance and Public Shop expectations.
-- Deployment truth: this package is local and uncommitted. It has not been
-  pushed or deployed.
+- Deployment truth: this package and the Loan Summary package below were
+  committed together as `2f7dddbe`, pushed to the working branch and promoted
+  unchanged to `main`. GitHub Actions run `40331782929` deployed the
+  frontend-only commit as Render deploy `dep-dbfldu2jnfac73cqjuug`, which
+  reached `live`. The workflow verified the public frontend build marker at
+  `https://gmfn-frontend.onrender.com`; backend deploy resolved to `false`.
 
 ## Loan Summary plain-language package - 2026-10-26
 
@@ -54,8 +58,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   `Continue repayment.` restored the locked height with no overflow. The
   separate aggregate button-stability audit remains blocked by unrelated
   existing Finance and Public Shop expectations outside this package.
-- Deployment truth: this package is local and uncommitted. It has not been
-  pushed or deployed.
+- Deployment truth: deployed with the Repayment package in frontend commit
+  `2f7dddbe` as recorded above.
 
 ## Public TrustSlip Verify plain-language package - 2026-10-26
 
