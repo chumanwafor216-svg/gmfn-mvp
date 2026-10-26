@@ -1173,6 +1173,63 @@ Rules:
   resend behind the same ownership, rate-limit, provider, and Pipeline Credit
   boundaries.
 
+## CommunityConfirmationInboxPage
+
+Route: `/app/community-confirmations`.
+
+Purpose:
+Give a signed-in eligible responder one calm place to answer live community
+confirmation requests from personal knowledge, while keeping reviewer work and
+contact preferences available without turning the first surface into an
+operations dashboard.
+
+Must show:
+- one compact `What needs your answer?` summary
+- pending, instant-pulse, and relay-request counts
+- one state-aware first action: `Review first request`,
+  `Answer this request` for a focused notification, or
+  `Refresh inbox` when nothing is waiting
+- the existing request identity, purpose guide, aggregate response reading,
+  private-note field, TrustSlip route, and full response-choice inventory
+- refresh and protected copy-summary controls inside a closed
+  `Inbox tools` disclosure
+- reviewer queue, assignment, evidence, SLA-marker, and resolution controls
+  inside a closed `Review cases` disclosure
+- relay opt-in, instant-pulse preference, and policy route inside a closed
+  `Relay settings` disclosure
+- clear empty and expired-or-completed focused-request states
+
+Rules:
+- Preserve `request_id` notification focus and `case_id` reviewer focus.
+  A focused review case may open its reviewer disclosure automatically; an
+  ordinary queue count must not.
+- The first action may reveal and scroll to an existing request. It must not
+  answer, approve, certify, resolve, or otherwise mutate a request.
+- Every response remains the signed-in responder's personal evidence, not a
+  whole-community vote, parent-community certification, identity guarantee,
+  payment confirmation, credit approval, or release authority.
+- Keep private contact information, private response notes, and protected
+  witness details out of copied or public output.
+- Preserve the existing authenticated inbox, self-service relay-setting,
+  response, reviewer-assignment, evidence, resolution, and policy contracts.
+  Backend permission checks remain authoritative.
+- Keep all existing response choices visible once a request is deliberately
+  reviewed. Do not hide caution or objection behind a positive action.
+- Do not restore the exposed explanation panel, reviewer controls, relay
+  settings, or copy tools above the request task.
+
+Primary action:
+
+```text
+Review first request
+```
+
+Focused notification:
+
+```text
+Answer this request
+```
+
 ## CommunityConfirmationPolicyPage
 
 Purpose:

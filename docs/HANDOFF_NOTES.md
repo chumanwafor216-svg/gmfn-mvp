@@ -8,6 +8,46 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Community Confirmation Inbox first-surface cleanup - 2026-10-26
+
+- Simplified the authenticated `/app/community-confirmations` first surface
+  without changing the responder inbox, response submission, self-service
+  relay settings, reviewer assignment/evidence/resolution, SLA scan, policy,
+  permissions, payloads, or backend routes.
+- Removed the exposed explanation panel and duplicate four-count operations
+  framing. Added one `What needs your answer?` summary with Pending,
+  Instant, and Relay counts plus one state-aware first action:
+  `Review first request`, `Answer this request` for a focused
+  notification, or `Refresh inbox` when nothing is waiting.
+- Refresh/copy controls, reviewer operations, and relay preferences now start
+  inside separate closed disclosures. An ordinary review-case count no longer
+  opens reviewer work automatically; an explicit `case_id` notification
+  still opens and reveals its protected case. `request_id` focus still shows
+  only the requested response card.
+- Preserved the complete nine-choice response inventory across positive,
+  caution, and objection categories, the private-note boundary, TrustSlip
+  route, purpose/evidence guidance, notification handoffs, and backend
+  permission enforcement. The first action only reveals existing work and
+  performs no response, approval, certification, or review mutation.
+- Added the previously missing screen specification, focused source guards,
+  and a repeatable populated/empty/request-focus/review-focus 390x844 browser
+  smoke. No matching reference mockup exists; the owner-approved compact
+  first-surface plan and established institutional tokens are the source of
+  truth.
+- Verification passed: the 295-module production build, confirmation outcome
+  boundary, phone-surface simplicity, Trust actions, button/tap stability,
+  global action-ID/raw-action, mobile route coverage, focused 390x844 browser
+  smoke, complete protected button/frozen-surface suite, and full mocked
+  authenticated mobile visual sweep.
+- Remaining truth: this milestone reduces the page entrance and secondary
+  operations clutter, but each deliberately opened request is still a detailed
+  evidence card with all nine choices, and multiple pending requests still
+  render sequentially. A later request-card simplification would need a
+  separately approved interaction contract so caution and objection choices
+  are not made harder to find.
+- This milestone is local only. Do not push, promote to `main`, or deploy
+  it until the owner explicitly says `deploy`.
+
 ## Command Centre cleanup deployment evidence - 2026-10-26
 
 - Promoted the six verified frontend milestones from Community Ownership

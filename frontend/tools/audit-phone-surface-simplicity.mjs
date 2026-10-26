@@ -20,6 +20,7 @@ const files = {
   trustAnalytics: "src/pages/TrustAnalyticsPage.tsx",
   adminTrustGraph: "src/pages/AdminTrustGraphPage.tsx",
   systemOperations: "src/pages/SystemOperationsPage.tsx",
+  communityConfirmationInbox: "src/pages/CommunityConfirmationInboxPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -118,6 +119,16 @@ assertContains(
   "systemOperations",
   /data-gsn-system-operations-summary="true"[\s\S]*?What needs attention\?[\s\S]*?Community[\s\S]*?Entry needing help[\s\S]*?Immediate queue[\s\S]*?Identity cases[\s\S]*?debugId="system-operations\.priority-action"[\s\S]*?data-gsn-system-operations-overview="true"[\s\S]*?data-gsn-system-operations-intake="true"[\s\S]*?data-gsn-system-operations-signals="true"/,
   "System Operations must keep one compact queue summary and one state-aware action before closed operational detail."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?What needs your answer\?[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/,
+  "Community Confirmation Inbox must keep one compact answer summary with one state-aware action and three request counts."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /data-gsn-community-confirmation-tools="true"[\s\S]*?data-gsn-community-confirmation-review-cases="true"[\s\S]*?data-gsn-community-confirmation-relay-settings="true"[\s\S]*?data-gsn-community-confirmation-requests="true"/,
+  "Community Confirmation Inbox must keep tools, reviewer work, and relay settings closed before the request task."
 );
 
 if (findings.length > 0) {

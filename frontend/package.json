@@ -148,6 +148,7 @@
     "smoke:trust-analytics-guided-phone": "node tools/smoke-trust-analytics-guided-phone.mjs",
     "smoke:trust-graph-guided-phone": "node tools/smoke-trust-graph-guided-phone.mjs",
     "smoke:system-operations-guided-phone": "node tools/smoke-system-operations-guided-phone.mjs",
+    "smoke:community-confirmation-inbox-guided-phone": "node tools/smoke-community-confirmation-inbox-guided-phone.mjs",
     "smoke:login-community-id-guard": "node tools/smoke-login-community-id-guard.mjs",
     "smoke:demand-box-simple-phone": "node tools/smoke-demand-box-simple-phone.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",

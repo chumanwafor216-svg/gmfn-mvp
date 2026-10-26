@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -765,6 +764,7 @@ function CommunityConfirmationInboxPage() {
   const focusedRequestMissing = Boolean(
     focusedRequestId && !loading && focusedRows.length === 0
   );
+  const firstVisibleRequestId = focusedRows[0]?.id || null;
   const visibleReviewCases = useMemo(() => {
     if (!focusedReviewCaseId) return reviewCases;
     return reviewCases.filter((row) => row.reviewCaseId === focusedReviewCaseId);
@@ -1314,6 +1314,22 @@ function CommunityConfirmationInboxPage() {
     }
   }
 
+  async function handlePrimaryInboxAction() {
+    if (!firstVisibleRequestId) {
+      await loadInbox();
+      return;
+    }
+    if (typeof document === "undefined") return;
+    const targetId = `community-confirmation-request-${firstVisibleRequestId}`;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    revealElementWithoutJump(target, {
+      surface: "community-confirmation-inbox",
+      targetId,
+      reason: focusedRequestId ? "focused-request-action" : "first-request-action",
+    });
+  }
+
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 36 : 56 }}>
       <PageTopNav
@@ -1324,15 +1340,6 @@ function CommunityConfirmationInboxPage() {
         homeLabel="Dashboard"
         backTo={APP_ROUTES.TRUST_SLIP}
         backLabel="TrustSlip"
-      />
-
-      <ExplainToggle
-        label="How to answer"
-        what="Eligible members answer live community checks here."
-        why="A reader needs clear community evidence without seeing private community contacts."
-        next="Choose the true answer. GSN shares the result pattern, not your private contact."
-        tone="blue"
-        style={{ marginTop: 16 }}
       />
 
       {notice ? (
@@ -1349,6 +1356,7 @@ function CommunityConfirmationInboxPage() {
       ) : null}
 
       <section
+        data-gsn-community-confirmation-summary="true"
         style={{
           marginTop: 16,
           ...pageCard("#FFFFFF"),
@@ -1374,19 +1382,53 @@ function CommunityConfirmationInboxPage() {
                 textTransform: "uppercase",
               }}
             >
-              {sectionLabelWithIcon("shield", "Community signal")}
+              {sectionLabelWithIcon("shield", "Community confirmation")}
             </div>
             <h1 style={{ margin: "8px 0 0", fontSize: isCompact ? 30 : 42, lineHeight: 1, fontWeight: 1000 }}>
-              Answer the live check.
+              What needs your answer?
             </h1>
             <p style={{ margin: "12px 0 0", color: "#D7E2EF", fontSize: 16, fontWeight: 800, lineHeight: 1.5 }}>
-              Give the safest honest signal. GSN keeps private contacts out of the public paper.
+              {loading
+                ? "Checking for requests that need your personal knowledge."
+                : focusedRequestMissing
+                  ? "This alert is no longer waiting for your answer."
+                  : focusedRequestId && firstVisibleRequestId
+                    ? "This request needs your honest answer."
+                  : pendingCount > 0
+                    ? `${pendingCount} request${pendingCount === 1 ? "" : "s"} need${pendingCount === 1 ? "s" : ""} an honest answer.`
+                    : "Nothing is waiting for your answer right now."}
             </p>
+            <p style={{ margin: "8px 0 0", color: "#B9C7D8", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
+              Answer only from personal knowledge. GSN combines personal answers into clear community evidence while keeping your contact and private note out of the public result.
+            </p>
+            <div
+              data-gsn-community-confirmation-priority="true"
+              style={{ marginTop: 16, maxWidth: isCompact ? "none" : 280 }}
+            >
+              <PrimaryButton
+                type="button"
+                onClick={() => void handlePrimaryInboxAction()}
+                busy={loading}
+                busyLabel="Checking inbox..."
+                fullWidth
+                stableHeight={isCompact ? 52 : 48}
+                debugId="community-confirmation-inbox.priority-action"
+              >
+                {labelWithIcon(
+                  firstVisibleRequestId ? "navigation" : "refresh",
+                  focusedRequestId && firstVisibleRequestId
+                    ? "Answer this request"
+                    : firstVisibleRequestId
+                      ? "Review first request"
+                      : "Refresh inbox"
+                )}
+              </PrimaryButton>
+            </div>
           </div>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+              gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "1fr",
               gap: 10,
               minWidth: isCompact ? "auto" : 190,
             }}
@@ -1409,19 +1451,32 @@ function CommunityConfirmationInboxPage() {
               </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{relayCount}</div>
             </div>
-            <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
-                {sectionLabelWithIcon("document", "Review")}
-              </div>
-              <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{reviewCaseCount}</div>
-            </div>
           </div>
         </div>
       </section>
 
-      <section style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
+      <details
+        data-gsn-community-confirmation-tools="true"
+        style={{ marginTop: 14, ...softCard("#F8FBFF") }}
+      >
+        <StableDisclosureSummary
+          debugId="community-confirmation-inbox.tools.toggle"
+          stableHeight={56}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) auto",
+            gap: 12,
+            alignItems: "center",
+            color: "#07172C",
+            fontWeight: 1000,
+          }}
+        >
+          <span>{sectionLabelWithIcon("document", "Inbox tools")}</span>
+          <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 22 }}>+</span>
+        </StableDisclosureSummary>
         <div
           style={{
+            marginTop: 12,
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
             gap: 12,
@@ -1434,7 +1489,7 @@ function CommunityConfirmationInboxPage() {
               Answer from personal knowledge only. No pressure, no guesswork.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: isCompact ? 24 : 0 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <SecondaryButton
               type="button"
               onClick={() => void loadInbox()}
@@ -1462,7 +1517,7 @@ function CommunityConfirmationInboxPage() {
             </SecondaryButton>
           </div>
         </div>
-      </section>
+      </details>
 
       {isRequestFocusMode ? (
         <section style={{ marginTop: 14, ...softCard("#FFF8E6") }}>
@@ -1474,7 +1529,11 @@ function CommunityConfirmationInboxPage() {
       ) : null}
 
       {!isRequestFocusMode ? (
-      <details style={{ marginTop: 14, ...softCard("#FFFFFF") }} open={!isCompact && (isReviewCaseFocusMode || reviewCaseCount > 0)}>
+      <details
+        data-gsn-community-confirmation-review-cases="true"
+        style={{ marginTop: 14, ...softCard("#FFFFFF") }}
+        open={isReviewCaseFocusMode}
+      >
         <StableDisclosureSummary
           debugId="community-confirmation-inbox.review-cases.toggle"
           stableHeight={56}
@@ -2424,9 +2483,33 @@ function CommunityConfirmationInboxPage() {
       ) : null}
 
       {!isRequestFocusMode ? (
-      <section style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
+      <details
+        data-gsn-community-confirmation-relay-settings="true"
+        style={{ marginTop: 14, ...softCard("#FFFFFF") }}
+      >
+        <StableDisclosureSummary
+          debugId="community-confirmation-inbox.settings.toggle"
+          stableHeight={56}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) auto",
+            gap: 12,
+            alignItems: "center",
+            color: "#07172C",
+            fontWeight: 1000,
+          }}
+        >
+          <span>
+            {sectionLabelWithIcon("phone", "Relay settings")}
+            <span style={{ marginLeft: 8, ...pillStyle(settings.length ? "neutral" : "caution") }}>
+              {settings.length}
+            </span>
+          </span>
+          <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 22 }}>+</span>
+        </StableDisclosureSummary>
         <div
           style={{
+            marginTop: 12,
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
             gap: 12,
@@ -2565,10 +2648,13 @@ function CommunityConfirmationInboxPage() {
             })
           )}
         </div>
-      </section>
+      </details>
       ) : null}
 
-      <section style={{ marginTop: 14, display: "grid", gap: 12 }}>
+      <section
+        data-gsn-community-confirmation-requests="true"
+        style={{ marginTop: 14, display: "grid", gap: 12 }}
+      >
         {loading ? (
           <div style={innerCard("#FFFFFF")}>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>Loading community confirmation requests...</div>

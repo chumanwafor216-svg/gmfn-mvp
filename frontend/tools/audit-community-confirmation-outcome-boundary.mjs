@@ -111,6 +111,42 @@ assertContains(
 );
 
 assertContains(
+  "inbox",
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?What needs your answer\?[\s\S]*?data-gsn-community-confirmation-priority="true"[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?Answer this request[\s\S]*?Review first request[\s\S]*?Refresh inbox[\s\S]*?Pending[\s\S]*?Instant[\s\S]*?Relay/,
+  "Community Confirmation Inbox must keep one compact request summary and one state-aware first action."
+);
+
+assertOrder(
+  "inbox",
+  [
+    { label: "request summary", pattern: /data-gsn-community-confirmation-summary="true"/ },
+    { label: "inbox tools disclosure", pattern: /data-gsn-community-confirmation-tools="true"/ },
+    { label: "review cases disclosure", pattern: /data-gsn-community-confirmation-review-cases="true"/ },
+    { label: "relay settings disclosure", pattern: /data-gsn-community-confirmation-relay-settings="true"/ },
+    { label: "request work", pattern: /data-gsn-community-confirmation-requests="true"/ },
+  ],
+  "Community Confirmation Inbox must put the response task before deliberately disclosed tools and operations."
+);
+
+assertContains(
+  "inbox",
+  /data-gsn-community-confirmation-review-cases="true"[\s\S]*?open=\{isReviewCaseFocusMode\}[\s\S]*?data-gsn-community-confirmation-relay-settings="true"/,
+  "Reviewer work may auto-open only for an explicit focused review case; relay settings must remain a separate closed disclosure."
+);
+
+assertContains(
+  "inbox",
+  /type: "known_here"[\s\S]*?type: "active_here"[\s\S]*?type: "good_standing"[\s\S]*?type: "ask_more_evidence"[\s\S]*?type: "known_but_caution"[\s\S]*?type: "cannot_confirm_now"[\s\S]*?type: "inactive"[\s\S]*?type: "under_dispute"[\s\S]*?type: "not_known"/,
+  "Community Confirmation Inbox response choices changed; preserve the full honest-answer inventory unless the product contract changes."
+);
+
+assertNotContains(
+  "inbox",
+  /ExplainToggle|label="How to answer"/,
+  "Community Confirmation Inbox must not restore the exposed explanation panel above the live request task."
+);
+
+assertContains(
   "outcome",
   /privacy-safe community response for this specific decision-support request/i,
   "Community Confirmation Outcome subtitle must frame the public paper as decision support, not a trust decision."
