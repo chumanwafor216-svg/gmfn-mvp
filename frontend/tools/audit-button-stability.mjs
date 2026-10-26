@@ -1930,8 +1930,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /import \{ SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-command\.toggle\.executive"[\s\S]*?debugId="trust-command\.executive\.next-action"[\s\S]*?debugId="trust-command\.toggle\.pilot"[\s\S]*?debugId="trust-command\.toggle\.overview"[\s\S]*?debugId="trust-command\.toggle\.routes"[\s\S]*?debugId=\{`trust-command\.route\.\$\{card\.label\.toLowerCase\(\)\.replace\(\/\[\^a-z0-9\]\+\/g, "-"\)\}`\}[\s\S]*?debugId="trust-command\.toggle\.workflows"[\s\S]*?debugId="trust-command\.toggle\.notes"[\s\S]*?debugId=\{`trust-command\.next\.\$\{item\.label\.toLowerCase\(\)\.replace\(\/\[\^a-z0-9\]\+\/g, "-"\)\}`\}/,
-  "Trust Command Centre must use shared stable primitives and shared CTA resolution for command toggles and route actions."
+  /import \{ SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-command\.executive\.next-action"[\s\S]*?debugId="trust-command\.toggle\.pilot"[\s\S]*?debugId="trust-command\.toggle\.overview"[\s\S]*?debugId="trust-command\.public-website\.open"[\s\S]*?debugId="trust-command\.toggle\.routes"[\s\S]*?debugId=\{`trust-command\.route\.\$\{card\.label\.toLowerCase\(\)\.replace\(\/\[\^a-z0-9\]\+\/g, "-"\)\}`\}/,
+  "Trust Command Centre must use shared stable primitives and shared CTA resolution for its recommendation, three disclosures, public-site action, and authorised route cards."
 );
 
 assertNotContains(

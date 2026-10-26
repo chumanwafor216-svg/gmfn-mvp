@@ -3034,6 +3034,35 @@ under `docs/` or `docs/archive/`, then link that file here.
   485 ms. Disabling reconciliation and running the first Spotlight retention
   batch both still require separate owner approval.
 
+## Compact Trust Command Centre - 2026-10-26
+
+- `/app/command-center` now opens with the existing operator identity, one
+  always-visible `What needs attention now` recommendation, its single primary
+  action, and three compact live rows for system/readiness, trust/identity, and
+  money/support.
+- Every existing authorised Command Centre route remains available inside one
+  closed `See all command tools` disclosure. Readiness worksheet/check/evidence
+  material remains inside `Readiness and validation`; deeper summaries,
+  operator work-path guidance, member/admin layer guidance, and the public GSN
+  site action remain inside `More operator details`.
+- The exposed command-rule card, duplicate `Where next` route list, and separate
+  work-path/layer sections were removed. No API call, recommendation priority,
+  route destination, authentication rule, role guard, backend behavior, or
+  Dashboard Market Wisdom surface changed.
+- The revised three-disclosure layout uses local UI state key
+  `gmfn.commandCenter.sections.v3`, so existing browsers receive the new closed
+  defaults instead of inheriting stale open state from the longer layout.
+- Verification passed: production frontend build, admin/operations action
+  audit, admin route-guard audit, button-stability audit, global action-debug-id
+  audit, global raw-action audit, phone-surface simplicity audit, and mobile
+  visual route-coverage audit. A focused 390x844 Chromium check confirmed no
+  horizontal overflow, the required recommendation/tools/readiness/details
+  order, three live signal rows, all three disclosures closed by default, the
+  primary recommendation action inside the first viewport, and 11 authorised
+  tool links after opening the tool disclosure.
+- This batch is committed locally only. It has not been pushed or deployed, as
+  instructed.
+
 ## Compact Cover About GSN & I guide - 2026-10-26
 
 - The public `/guide` destination opened by Cover's `About GSN & I` action is

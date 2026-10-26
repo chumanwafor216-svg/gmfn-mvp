@@ -1736,6 +1736,34 @@ Additional Community Domain lifecycle responsibility:
 - This is not a global user ban. Banning/removing a person from GSN identity should remain a separate high-risk account-governance workflow.
 - No Community Domain billing/payment instruction should be created by this lifecycle action.
 
+## TrustCommandCentrePage
+
+Purpose:
+Give an authorised operator one calm place to see the strongest live operational need and open the matching admin tool without turning the first phone surface into a dashboard dump.
+
+Route:
+- `/app/command-center`
+
+Must show on first load:
+- existing Command Centre navigation and operator identity
+- one always-visible `What needs attention now` recommendation driven by existing live readings
+- one primary action for that recommendation
+- three compact signal rows: `System and readiness`, `Trust and identity`, and `Money and support`
+- three closed disclosures, ordered as `See all command tools`, `Readiness and validation`, and `More operator details`
+
+Disclosure responsibilities:
+- `See all command tools` preserves every existing role-authorised Command Centre route and its stable action identity.
+- `Readiness and validation` preserves the local validation worksheet, readiness checks, evidence summaries, and existing follow-on actions.
+- `More operator details` preserves the deeper live summaries, operator work-path guidance, member/admin layer explanation, and public GSN site action.
+
+Rules:
+- Platform-admin and community-admin visibility must continue to come from existing role and route-guard rules; the compact layout must not widen access.
+- Existing API calls, recommendation priority, community context, readiness worksheet persistence, and all route destinations remain unchanged.
+- Do not restore a duplicate `Where next` action list, a separate exposed command-rule card, or separate work-path/layer sections.
+- Do not hide the live recommendation behind a disclosure.
+- Do not add backend mutations, change authentication or permissions, or alter the frozen Dashboard Market Wisdom area as part of this surface cleanup.
+- On phone, signal rows remain one column and deeper content appears only after the operator opens the relevant disclosure.
+
 ## AdminCommunityOwnershipPage
 
 Purpose:

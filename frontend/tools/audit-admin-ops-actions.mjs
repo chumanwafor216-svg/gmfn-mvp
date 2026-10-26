@@ -124,19 +124,24 @@ assertNotContains(
 );
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /sectionLabelWithIcon\("navigation", "Command rule"\)[\s\S]*?Start with the live reading, then open only the admin page that matches the current task\./,
-  "Trust Command Centre must use a compact command rule instead of a multi-line how-to card."
+  /data-trust-command-current-action="true"[\s\S]*?sectionLabelWithIcon\("navigation", "What needs attention now"\)[\s\S]*?debugId="trust-command\.executive\.next-action"[\s\S]*?data-trust-command-signal-rows="true"[\s\S]*?System and readiness[\s\S]*?Trust and identity[\s\S]*?Money and support/,
+  "Trust Command Centre must expose one live recommendation and three compact signal rows before deeper operator material."
 );
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn\.commandCenter\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?executive: true,[\s\S]*?overview: true,[\s\S]*?routes: true,[\s\S]*?workflows: true,[\s\S]*?pilot: true,[\s\S]*?notes: true,/,
-  "Trust Command Centre must default executive, overview, route, workflow, pilot, and notes sections closed so the phone starts with the live command reading."
+  /data-trust-command-readiness="collapsed"[\s\S]*?order: 3[\s\S]*?Readiness and validation[\s\S]*?data-trust-command-operator-details="collapsed"[\s\S]*?order: 4[\s\S]*?More operator details[\s\S]*?data-trust-command-tools="collapsed"[\s\S]*?order: 2[\s\S]*?See all command tools/,
+  "Trust Command Centre must keep tools second, readiness third, and deeper operator details fourth through the explicit compact ordering contract."
+);
+assertContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn\.commandCenter\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?routes: true,[\s\S]*?pilot: true,/,
+  "Trust Command Centre must default its tool, readiness, and operator-detail disclosures closed."
 );
 
 assertNotContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /How to use this page|Start here before opening an admin page|Pick the page that matches the current task|Keep member work in the member pages/,
-  "Trust Command Centre must not restore the old exposed how-to card."
+  /How to use this page|Start here before opening an admin page|Pick the page that matches the current task|Keep member work in the member pages|sectionLabelWithIcon\("navigation", "Command rule"\)|trust-command\.toggle\.executive|trust-command\.toggle\.workflows|trust-command\.toggle\.notes|trust-command\.next\.|Where next|Operator work paths/,
+  "Trust Command Centre must not restore the old exposed how-to, duplicate navigation, or superseded disclosure controls."
 );
 
 assertContains(

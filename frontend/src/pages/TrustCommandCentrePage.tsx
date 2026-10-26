@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -28,12 +27,9 @@ import { getClanLiquiditySummary } from "../lib/communityMoney";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
-  executive: boolean;
   overview: boolean;
   routes: boolean;
-  workflows: boolean;
   pilot: boolean;
-  notes: boolean;
 };
 
 type ExecutiveReading = {
@@ -73,7 +69,7 @@ function defaultExecutiveReading(): ExecutiveReading {
 }
 
 const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
-const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v2";
+const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v3";
 const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
   "gmfn.commandCenter.pilotWorksheet.v1";
 const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name";
@@ -477,28 +473,6 @@ function sectionLabelWithIcon(
   );
 }
 
-function commandStatValueStyle(): React.CSSProperties {
-  return {
-    marginTop: 8,
-    color: "#0B1F33",
-    fontWeight: 900,
-    fontSize: 18,
-    lineHeight: 1.25,
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
-  };
-}
-
-function commandStatDetailStyle(): React.CSSProperties {
-  return {
-    marginTop: 8,
-    ...helperText(),
-    fontSize: 13,
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
-  };
-}
-
 function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
   return (
     <span
@@ -680,12 +654,9 @@ function normalizePilotWorksheet(raw: any): PilotWorksheet {
 
 function defaultCollapseState(): CollapseState {
   return {
-    executive: true,
     overview: true,
     routes: true,
-    workflows: true,
     pilot: true,
-    notes: true,
   };
 }
 
@@ -693,12 +664,9 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    executive: Boolean(raw?.executive ?? base.executive),
     overview: Boolean(raw?.overview ?? base.overview),
     routes: Boolean(raw?.routes ?? base.routes),
-    workflows: Boolean(raw?.workflows ?? base.workflows),
     pilot: Boolean(raw?.pilot ?? base.pilot),
-    notes: Boolean(raw?.notes ?? base.notes),
   };
 }
 
@@ -985,9 +953,6 @@ export default function TrustCommandCentrePage() {
 
   const systemOk = Boolean(executiveReading.systemHealth?.ok);
   const protocolStage = firstTruthy(executiveReading.protocolStatus?.stage, "unknown");
-  const protocolNextPriorities = Array.isArray(executiveReading.protocolStatus?.next_priority)
-    ? executiveReading.protocolStatus.next_priority
-    : [];
   const pilotOverall = firstTruthy(executiveReading.pilotReadiness?.overall_status, "unknown");
   const pilotOverallLabel = firstTruthy(
     executiveReading.pilotReadiness?.overall_label,
@@ -1160,41 +1125,6 @@ export default function TrustCommandCentrePage() {
     routes.bankConsole,
     routes.exposure,
     routes.gsnCampaigns,
-    routes.identityRisk,
-    routes.communityOwnership,
-    routes.incompleteLoans,
-    routes.revenueAllocation,
-    routes.systemOperations,
-    routes.trustAnalytics,
-    routes.trustEvents,
-    routes.trustGraph,
-  ]);
-
-  const whereNextActions = useMemo(() => {
-    if (isPlatformAdmin) {
-      return [
-        { label: "Trust Analytics", to: routes.trustAnalytics, kind: "primary" as const },
-        { label: "Trust Events", to: routes.trustEvents, kind: "secondary" as const },
-        { label: "Identity Risk", to: routes.identityRisk, kind: "secondary" as const },
-        { label: "Community Ownership", to: routes.communityOwnership, kind: "secondary" as const },
-        { label: "Incomplete Support", to: routes.incompleteLoans, kind: "secondary" as const },
-        { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
-        { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
-        { label: "System Operations", to: routes.systemOperations, kind: "secondary" as const },
-        { label: "Exposure", to: routes.exposure, kind: "secondary" as const },
-        { label: "Trust Graph", to: routes.trustGraph, kind: "secondary" as const },
-      ];
-    }
-
-    return [
-      { label: "Exposure", to: routes.exposure, kind: "primary" as const },
-      { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
-      { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
-    ];
-  }, [
-    isPlatformAdmin,
-    routes.bankConsole,
-    routes.exposure,
     routes.identityRisk,
     routes.communityOwnership,
     routes.incompleteLoans,
@@ -1477,21 +1407,13 @@ export default function TrustCommandCentrePage() {
           backTo={routes.dashboard}
         />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This is the guided entry point into trust admin tools."
-        why="It helps you choose the right page without scanning too many admin choices."
-        next="Read the executive action first, then open the page that matches the strongest signal."
-        tone="light"
-      />
-
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
+            gridTemplateColumns: "1fr",
             gap: 16,
             alignItems: "start",
           }}
@@ -1539,26 +1461,13 @@ export default function TrustCommandCentrePage() {
               )}
             </div>
           </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div>{sectionLabelWithIcon("navigation", "Command rule")}</div>
-            <div style={{ marginTop: 10, ...helperText() }}>
-              Start with the live reading, then open only the admin page that matches the current task.
-            </div>
-            <SecondaryButton
-              type="button"
-              stableHeight={44}
-              debugId="trust-command.public-website.open"
-              onClick={() => window.open(GSN_PUBLIC_WEBSITE_URL, "_blank", "noopener,noreferrer")}
-              style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
-            >
-              {labelWithIcon("navigation", "Open public GSN site")}
-            </SecondaryButton>
-          </div>
         </div>
       </section>
 
-        <section style={pageCard("#FFFFFF")}>
+        <section
+          data-trust-command-current-action="true"
+          style={{ ...pageCard("#FFFFFF"), order: 1 }}
+        >
         <div
           style={{
             display: "flex",
@@ -1569,38 +1478,17 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("chart", "Executive reading")}</div>
+            <div>{sectionLabelWithIcon("navigation", "What needs attention now")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Live service records come first, before deeper admin pages.
+              Start with this live recommendation, then open only the page needed for the task.
             </div>
           </div>
-
-          <SecondaryButton
-            onClick={() => toggleSection("executive")}
-            stableHeight={52}
-            debugId="trust-command.toggle.executive"
-            style={collapseToggle()}
-          >
-            {labelWithIcon(collapsed.executive ? "chevronDown" : "chevronUp", collapsed.executive ? "Open" : "Hide")}
-          </SecondaryButton>
         </div>
 
-        <ExplainToggle
-          label="What this executive reading does"
-          what="This gathers health, readiness, liquidity, exposure, risk, support activity, and bank pressure."
-          why="It saves you from opening several pages just to find the current state."
-          next="Follow the next-action lane into the strongest current issue."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
-
-        {!collapsed.executive ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
             <div style={softCard("#F8FBFF")}>
-              <div>{sectionLabelWithIcon("navigation", "Current next action")}</div>
               <div
                 style={{
-                  marginTop: 10,
                   color: "#0B1F33",
                   fontSize: 20,
                   fontWeight: 900,
@@ -1618,30 +1506,6 @@ export default function TrustCommandCentrePage() {
                   debugId="trust-command.executive.next-action"
                 >
                   {labelWithIcon(routeIcon(executiveNextAction.cta), executiveNextAction.cta)}
-                </StableCtaLink>
-                {isPlatformAdmin ? (
-                  <StableCtaLink
-                    to={routes.systemOperations}
-                    kind="secondary"
-                    debugId="trust-command.executive.system-operations"
-                  >
-                    {labelWithIcon("shield", "System Operations")}
-                  </StableCtaLink>
-                ) : (
-                  <StableCtaLink
-                    to={routes.bankConsole}
-                    kind="secondary"
-                    debugId="trust-command.executive.bank-console"
-                  >
-                    {labelWithIcon("bank", "Bank Console")}
-                  </StableCtaLink>
-                )}
-                <StableCtaLink
-                  to={routes.exposure}
-                  kind="soft"
-                  debugId="trust-command.executive.exposure"
-                >
-                  {labelWithIcon("alert", "Exposure")}
                 </StableCtaLink>
               </div>
             </div>
@@ -1672,74 +1536,103 @@ export default function TrustCommandCentrePage() {
               </div>
             ) : (
               <div
+                data-trust-command-signal-rows="true"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "repeat(5, minmax(0, 1fr))",
-                  gap: 12,
+                  gridTemplateColumns: "1fr",
+                  gap: 8,
                 }}
               >
-                <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("shield", "System health")}</div>
-                  <div style={commandStatValueStyle()}>
-                    {systemOk ? "Healthy" : "Needs review"}
+                {[
+                  {
+                    icon: "shield" as GsnIconName,
+                    label: "System and readiness",
+                    value: `${systemOk ? "Healthy" : "Needs review"} / ${pilotOverallLabel}`,
+                    detail: `Database: ${firstTruthy(
+                      executiveReading.systemHealth?.database,
+                      "unknown"
+                    )} / Protocol: ${protocolStage.replace(/_/g, " ")}`,
+                  },
+                  {
+                    icon: "id" as GsnIconName,
+                    label: "Trust and identity",
+                    value:
+                      trustEventMix.weakened + trustEventMix.repair > 0
+                        ? `${trustEventMix.weakened + trustEventMix.repair} pressure signals`
+                        : "No current trust pressure",
+                    detail: `${identityInterventionCount} identity interventions / ${trustEventRows.length} recent trust events`,
+                  },
+                  {
+                    icon: "wallet" as GsnIconName,
+                    label: "Money and support",
+                    value:
+                      selectedClanId > 0
+                        ? `${bankUnmatchedRows.length} unmatched / ${urgentIncompleteCount} urgent`
+                        : "Choose a community for live totals",
+                    detail: exposureTotals
+                      ? `Exposure reading: ${formatNumber(exposureTotals.exposure)} / Active support: ${Number(
+                          liquidity?.activeLoansCount || 0
+                        )}`
+                      : "Exposure and support totals are not available yet.",
+                  },
+                ].map((signal) => (
+                  <div
+                    key={signal.label}
+                    style={{
+                      ...innerCard("#FFFFFF"),
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "44px minmax(0, 1fr)"
+                        : "48px minmax(180px, 0.7fr) minmax(0, 1.3fr)",
+                      gap: 12,
+                      alignItems: "center",
+                      padding: isCompact ? 12 : 14,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 14,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#F2C766",
+                        background: "linear-gradient(180deg, #12314D 0%, #081D33 100%)",
+                      }}
+                    >
+                      <GsnLegacyIcon name={signal.icon} size={24} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: "#0B1F33", fontSize: 14, fontWeight: 950 }}>
+                        {signal.label}
+                      </div>
+                      <div style={{ marginTop: 4, color: "#1F3B56", fontSize: 13, fontWeight: 850 }}>
+                        {signal.value}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        ...helperText(),
+                        gridColumn: isCompact ? "2" : "auto",
+                        fontSize: 12.5,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {signal.detail}
+                    </div>
                   </div>
-                  <div style={commandStatDetailStyle()}>
-                    Database: {firstTruthy(executiveReading.systemHealth?.database, "unknown")}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("document", "Protocol stage")}</div>
-                  <div style={commandStatValueStyle()}>
-                    {protocolStage.replace(/_/g, " ")}
-                  </div>
-                  <div style={commandStatDetailStyle()}>
-                    Next priority: {firstTruthy(protocolNextPriorities[0], "Not specified")}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("check", "Operational readiness")}</div>
-                  <div style={commandStatValueStyle()}>
-                    {pilotOverallLabel}
-                  </div>
-                  <div style={commandStatDetailStyle()}>
-                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs evidence: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("wallet", "Community liquidity")}</div>
-                  <div style={commandStatValueStyle()}>
-                    {formatNumber(liquidity?.lockedTotal || 0)} locked
-                  </div>
-                  <div style={commandStatDetailStyle()}>
-                    Active support: {Number(liquidity?.activeLoansCount || 0)} | Support committed: {safeStr(liquidity?.pledgedTotal || "0")}
-                  </div>
-                </div>
-
-                <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("alert", "Exposure pressure")}</div>
-                  <div style={commandStatValueStyle()}>
-                    {exposureTotals ? `${formatNumber(exposureTotals.exposure)} exposure reading` : "Unavailable"}
-                  </div>
-                  <div style={commandStatDetailStyle()}>
-                    {exposureTotals
-                      ? `Buffer: ${formatNumber(exposureTotals.available)} | Pool: ${formatNumber(exposureTotals.pool)}`
-                      : selectedClanId > 0
-                      ? "Exposure totals could not be loaded."
-                      : "Select a current community first."}
-                  </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
-        ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        data-trust-command-readiness="collapsed"
+        style={{ ...pageCard("#FFFFFF"), order: 3 }}
+      >
         <div
           style={{
             display: "flex",
@@ -1750,9 +1643,9 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("check", "Readiness validation")}</div>
+            <div>{sectionLabelWithIcon("check", "Readiness and validation")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep verification assumptions and required data visible.
+              Open the worksheet, readiness checks, and validation evidence when needed.
             </div>
           </div>
 
@@ -1765,15 +1658,6 @@ export default function TrustCommandCentrePage() {
             {labelWithIcon(collapsed.pilot ? "chevronDown" : "chevronUp", collapsed.pilot ? "Open" : "Hide")}
           </SecondaryButton>
         </div>
-
-        <ExplainToggle
-          label="What this validation section does"
-          what="This combines service readiness with the assumptions you are testing."
-          why="It keeps validation structured instead of relying only on chat feedback."
-          next="Read readiness first, then use the checklist to guide what should be measured."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         {!collapsed.pilot ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
@@ -2166,7 +2050,10 @@ export default function TrustCommandCentrePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        data-trust-command-operator-details="collapsed"
+        style={{ ...pageCard("#FFFFFF"), order: 4 }}
+      >
         <div
           style={{
             display: "flex",
@@ -2177,9 +2064,9 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("chart", "Command summary")}</div>
+            <div>{sectionLabelWithIcon("chart", "More operator details")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Live page signals before you choose one operational page.
+              Open deeper live summaries and operator guidance only when needed.
             </div>
           </div>
 
@@ -2193,26 +2080,23 @@ export default function TrustCommandCentrePage() {
           </SecondaryButton>
         </div>
 
-        <ExplainToggle
-          label="What this does"
-          what="This shows live readings for the main admin pages."
-          why="It turns the command centre into a current workload view."
-          next="Open the matching page only when its summary shows the current issue."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
-
         {!collapsed.overview ? (
           <div
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 12,
+              gap: 14,
             }}
           >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
             <div style={statTile()}>
               <div>{sectionLabelWithIcon("chart", "Trust Analytics")}</div>
               <div
@@ -2398,11 +2282,75 @@ export default function TrustCommandCentrePage() {
                 Fee and distribution view
               </div>
             </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {workflowCards.map((card, index) => (
+                <div
+                  key={`${card.title}-${index}`}
+                  style={innerCard(card.accent ? "#F8FBFF" : "#FFFFFF")}
+                >
+                  <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
+                    {labelWithIcon(routeIcon(card.title), card.title)}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    {card.detail}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <div style={innerCard("#F8FBFF")}>
+                <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
+                  {labelWithIcon("user", "Member pages stay user-facing")}
+                </div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  Dashboard, Marketplace, Trust Passport, TrustSlip, Community Home, and
+                  Notifications stay calm for ordinary users.
+                </div>
+              </div>
+
+              <div style={innerCard("#FFFFFF")}>
+                <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
+                  {labelWithIcon("shield", "Command pages stay admin-led")}
+                </div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  Admin pages can hold more system detail, but they still need a clear next action.
+                </div>
+                <SecondaryButton
+                  type="button"
+                  stableHeight={44}
+                  debugId="trust-command.public-website.open"
+                  onClick={() =>
+                    window.open(GSN_PUBLIC_WEBSITE_URL, "_blank", "noopener,noreferrer")
+                  }
+                  style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
+                >
+                  {labelWithIcon("navigation", "Open public GSN site")}
+                </SecondaryButton>
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        data-trust-command-tools="collapsed"
+        style={{ ...pageCard("#FFFFFF"), order: 2 }}
+      >
         <div
           style={{
             display: "flex",
@@ -2413,9 +2361,9 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("navigation", "Command pages")}</div>
+            <div>{sectionLabelWithIcon("navigation", "See all command tools")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter the admin page you need instead of carrying too much at once.
+              Open the authorised admin page that matches the work in front of you.
             </div>
           </div>
 
@@ -2467,155 +2415,6 @@ export default function TrustCommandCentrePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div>{sectionLabelWithIcon("navigation", "Operator work paths")}</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Pick the right command path for the job you are actually doing.
-            </div>
-          </div>
-
-          <SecondaryButton
-            onClick={() => toggleSection("workflows")}
-            stableHeight={52}
-            debugId="trust-command.toggle.workflows"
-            style={collapseToggle()}
-          >
-            {labelWithIcon(collapsed.workflows ? "chevronDown" : "chevronUp", collapsed.workflows ? "Open" : "Hide")}
-          </SecondaryButton>
-        </div>
-
-        {!collapsed.workflows ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            {workflowCards.map((card, index) => (
-              <div
-                key={`${card.title}-${index}`}
-                style={innerCard(card.accent ? "#F8FBFF" : "#FFFFFF")}
-              >
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 15,
-                  }}
-                >
-                  {labelWithIcon(routeIcon(card.title), card.title)}
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>{card.detail}</div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div>{sectionLabelWithIcon("shield", "Separation of layers")}</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the admin workspace distinct from the ordinary member side.
-            </div>
-          </div>
-
-          <SecondaryButton
-            onClick={() => toggleSection("notes")}
-            stableHeight={52}
-            debugId="trust-command.toggle.notes"
-            style={collapseToggle()}
-          >
-            {labelWithIcon(collapsed.notes ? "chevronDown" : "chevronUp", collapsed.notes ? "Open" : "Hide")}
-          </SecondaryButton>
-        </div>
-
-        {!collapsed.notes ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                {labelWithIcon("user", "Member pages stay user-facing")}
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Dashboard, Marketplace, Trust Passport, TrustSlip, Community Home, and Notifications stay calm for ordinary users.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                {labelWithIcon("shield", "Command pages stay admin-led")}
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Admin pages can hold more system detail, but they still need a clear next action.
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div>{sectionLabelWithIcon("navigation", "Where next")}</div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          {whereNextActions.map((item) => (
-            <StableCtaLink
-              key={item.to}
-              to={item.to}
-              kind={item.kind}
-              debugId={`trust-command.next.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-            >
-              {labelWithIcon(routeIcon(item.label), item.label)}
-            </StableCtaLink>
-          ))}
-        </div>
-        </section>
       </div>
     </div>
   );
