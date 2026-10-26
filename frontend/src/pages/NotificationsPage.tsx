@@ -1314,7 +1314,7 @@ export default function NotificationsPage() {
     setSelectedNotice((prev) =>
       prev && safeStr(prev.id) === id ? { ...prev, unread: false } : prev
     );
-    void refreshGsnAppBadge();
+    void refreshGsnAppBadge({ force: true });
     setActionNotice({
       tone: "success",
       text: "Notice marked as read.",
@@ -1337,7 +1337,7 @@ export default function NotificationsPage() {
         ? { ...prev, unread: false, relayStatus: relayStatus || prev.relayStatus }
         : prev
     );
-    void refreshGsnAppBadge();
+    void refreshGsnAppBadge({ force: true });
   }
 
   function relayActionErrorText(err: any): string {
@@ -1417,7 +1417,7 @@ export default function NotificationsPage() {
     if (settings.openActionsDirectly) {
       if (/^\d+$/.test(noticeId)) {
         void markNotificationRead(Number(noticeId)).catch(() => null);
-        void refreshGsnAppBadge();
+        void refreshGsnAppBadge({ force: true });
       }
       navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;

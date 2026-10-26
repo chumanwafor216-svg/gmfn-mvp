@@ -220,6 +220,18 @@ function clearStartupReadCache(): void {
   getMeFreshInFlight = null;
   myClansInFlight = null;
   myClansCache = null;
+
+  const invalidatedAt = Date.now();
+  const activeSectionLabels = new Set(
+    [...startupSectionCache.keys(), ...startupSectionInFlight.keys()].map(
+      startupSectionLabelFromKey
+    )
+  );
+  activeSectionLabels.forEach((label) => {
+    startupSectionInvalidatedAt.set(label, invalidatedAt);
+  });
+  startupSectionCache.clear();
+  startupSectionInFlight.clear();
 }
 
 async function fetchWithTimeout(
@@ -3036,7 +3048,10 @@ export async function getClanTrustScoreExplained(params?: {
 
 export async function getMyTrustSlip(params?: { fresh?: boolean }): Promise<any> {
   if (params?.fresh) clearStartupSectionCacheByLabel("getMyTrustSlip");
-  return httpJson("/trust-slips/me", "GET");
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyTrustSlip"),
+    () => httpJson("/trust-slips/me", "GET")
+  );
 }
 
 export async function reissueMyTrustSlip(params?: {
@@ -5755,8 +5770,16 @@ export async function getMyNotifications(
   );
 }
 
-export async function getMyUnreadNotificationCount(): Promise<any> {
-  return httpJson("/notifications/me/unread-count", "GET");
+export async function getMyUnreadNotificationCount(options?: {
+  fresh?: boolean;
+}): Promise<any> {
+  if (options?.fresh) {
+    clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
+  }
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyUnreadNotificationCount"),
+    () => httpJson("/notifications/me/unread-count", "GET")
+  );
 }
 
 export async function acceptOpportunityRelayOffer(offerId: number | string): Promise<any> {
@@ -6275,10 +6298,13 @@ export async function setMyMemberCreditServicePermission(
 }
 
 export async function markNotificationRead(notificationId: number): Promise<any> {
-  return httpJson(
+  const updated = await httpJson(
     `/notifications/me/${encodeURIComponent(String(notificationId))}/read`,
     "POST"
   );
+  clearStartupSectionCacheByLabel("getMyNotifications");
+  clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
+  return updated;
 }
 
 export async function seedAssistantNotifications(): Promise<any> {

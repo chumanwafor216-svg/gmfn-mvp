@@ -3093,3 +3093,59 @@ under `docs/` or `docs/archive/`, then link that file here.
   revision -> head rehearsal ending at `20261025_ad_share`.
 - This batch is local only. It has not been pushed or deployed because the
   repository freeze still requires an explicit owner batch-ready instruction.
+
+## Active-session continuity and startup read cleanup - 2026-10-26
+
+- A local browser trace confirmed why users can experience GSN as turning off
+  during a deployment: the service worker used `skipWaiting()` and
+  `clients.claim()`, while `pwaInstall.ts` responded to `controllerchange` by
+  immediately reloading every active non-iPhone page. The same module also
+  automatically reloaded an installed non-iPhone shell when it detected a new
+  asset signature.
+- Both automatic reload paths are removed. An open browser session now keeps
+  running its current shell while the new worker activates in the background;
+  the network-first navigation strategy serves the current shell on the next
+  full navigation or reopen. The existing explicit iPhone `Update now?`
+  confirmation remains unchanged, including its busy/file-selection guards.
+- Dashboard startup no longer forces fresh reads on its first render. The
+  15-second active polling, focus, and visibility refresh paths still request
+  fresh server data, while the initial render shares the existing 15-second
+  startup cache. Companion notification polling now applies its interval guard
+  to focus/visibility bursts as well as timer polling.
+- TrustSlip and unread-notification-count reads now use the shared startup
+  cache. A successful notification `mark read` invalidates both the notice-list
+  and unread-count caches, and explicit badge refreshes after user actions still
+  bypass the cache. Changing the access token invalidates every authenticated
+  startup-section cache and resets badge throttling, so a rapid account switch
+  cannot reuse another account's cached response. Dashboard uses the same
+  20-item notice query as guidance so those consumers coalesce.
+- Measured warm Dashboard requests changed from five Marketplace reads, ten
+  notification reads, two TrustSlip reads, and four unread-count reads to three
+  intentional Marketplace query shapes, three total notification reads, one
+  TrustSlip read, and one unread-count read. Each remaining exact request ran
+  once. The Marketplace ceiling is now three because the July audit predates
+  the September feature that separately includes the member's own DemandBox
+  rows; the audit documents all three query shapes rather than calling them a
+  duplicate.
+- The Community Home first-paint audit now checks the selected community name,
+  which is the approved phone identity, instead of requiring the hidden
+  desktop-only `Community Home` label. Selector and required-text waits now run
+  concurrently under one unchanged deadline instead of accidentally adding two
+  separate seven-second waits.
+- Verification passed: link contracts, PWA boot recovery, active-feed
+  freshness, the complete protected-button/frozen-surface audit suite, scoped
+  diff checks, and the 295-module production build.
+- Remaining truth: the standalone cold-Vite timing audits are not green.
+  Community Home rendered its usable identity at about 8.3 seconds against a
+  7-second cold-development ceiling while its deliberately delayed domain read
+  remained non-blocking. The latest Dashboard startup run met every request
+  ceiling but measured 6.77 seconds for shell, 7.57 seconds for Dashboard, and
+  11.52 seconds for the simulated 6.5-second auth retry against 6.5, 7.5, and
+  9-second limits. These results vary materially because Vite cold-compiles
+  large route modules; the thresholds were not relaxed to manufacture a pass.
+  The web-push readiness audit also remains independently red because the
+  current manifests intentionally use browser display mode while that audit
+  expects standalone mode.
+- This batch is local only. It has not been pushed, promoted to `main`, sent to
+  Render, or deployed because the owner explicitly requested milestone-based
+  releases while pilot users are active.

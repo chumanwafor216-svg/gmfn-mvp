@@ -3654,7 +3654,7 @@ export default function DashboardPage() {
         await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
-          getMyTrustSlip({ fresh: true }).catch(dashboardTrustSlipPendingFromError),
+          getMyTrustSlip().catch(dashboardTrustSlipPendingFromError),
           selectedClanId
             ? getClanTrustScoreExplained({
                 clan_id: selectedClanId,
@@ -3846,15 +3846,17 @@ export default function DashboardPage() {
     let alive = true;
     let refreshTimer: number | null = null;
 
-    async function refreshNotices() {
+    async function refreshNotices(fresh = false) {
       if (!alive) return;
 
       setNoticesLoading(true);
 
       try {
-        const res = await getMyNotifications(12, false, { fresh: true }).catch(() => ({
-          items: [],
-        }));
+        const res = await getMyNotifications(
+          20,
+          false,
+          fresh ? { fresh: true } : undefined
+        ).catch(() => ({ items: [] }));
 
         if (!alive) return;
 
@@ -3879,13 +3881,13 @@ export default function DashboardPage() {
         return;
       }
 
-      void refreshNotices();
+      void refreshNotices(true);
     }
 
     if (typeof window !== "undefined") {
       window.addEventListener("focus", handleVisibilityRefresh);
       refreshTimer = window.setInterval(() => {
-        void refreshNotices();
+        void refreshNotices(true);
       }, 15000);
     }
 
@@ -3967,21 +3969,21 @@ export default function DashboardPage() {
     let alive = true;
     let refreshTimer: number | null = null;
 
-    async function refreshDemandItems() {
+    async function refreshDemandItems(fresh = false) {
       const [visibleRows, myRows] = await Promise.all([
         listMarketplaceRequests({
           clan_id: selectedClanId || undefined,
           status: "open",
           mine_only: false,
           limit: 200,
-          fresh: true,
+          fresh,
         }).catch(() => []),
         listMarketplaceRequests({
           clan_id: selectedClanId || undefined,
           status: "open",
           mine_only: true,
           limit: 200,
-          fresh: true,
+          fresh,
         }).catch(() => []),
       ]);
 
@@ -4002,13 +4004,13 @@ export default function DashboardPage() {
         return;
       }
 
-      void refreshDemandItems();
+      void refreshDemandItems(true);
     }
 
     if (typeof window !== "undefined") {
       window.addEventListener("focus", handleVisibilityRefresh);
       refreshTimer = window.setInterval(() => {
-        void refreshDemandItems();
+        void refreshDemandItems(true);
       }, 15000);
     }
 

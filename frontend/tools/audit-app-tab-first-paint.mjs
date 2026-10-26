@@ -221,28 +221,21 @@ async function measureRoute(browser, baseURL, test) {
     timeout: 30000,
   });
   try {
-    await page.waitForSelector(test.selector, { timeout: MAX_FIRST_SURFACE_MS });
+    await Promise.all([
+      page.waitForSelector(test.selector, { timeout: MAX_FIRST_SURFACE_MS }),
+      page.waitForFunction(
+        (requiredText) => (document.body.textContent || "").includes(requiredText),
+        test.text,
+        { timeout: MAX_FIRST_SURFACE_MS }
+      ),
+    ]);
   } catch (error) {
     const diagnostic = await page.evaluate(() => ({
       url: window.location.href,
       text: (document.body.textContent || "").replace(/\s+/g, " ").trim().slice(0, 1600),
       html: document.body.innerHTML.slice(0, 1600),
     }));
-    console.error("First-paint selector diagnostic:", { test: test.name, diagnostic, pageErrors });
-    throw error;
-  }
-  try {
-    await page.waitForFunction(
-      (requiredText) => (document.body.textContent || "").includes(requiredText),
-      test.text,
-      { timeout: MAX_FIRST_SURFACE_MS }
-    );
-  } catch (error) {
-    const diagnostic = await page.evaluate(() => ({
-      url: window.location.href,
-      text: (document.body.textContent || "").replace(/\s+/g, " ").trim().slice(0, 2400),
-    }));
-    console.error("First-paint text diagnostic:", { test: test.name, requiredText: test.text, diagnostic, pageErrors });
+    console.error("First-paint surface diagnostic:", { test: test.name, diagnostic, pageErrors });
     throw error;
   }
   const firstSurfaceMs = Date.now() - startedAt;
@@ -739,7 +732,7 @@ async function run() {
       mode: "community",
       path: "/app/community?community=8",
       selector: '[data-debug-id="community-home.identity-card"]',
-      text: "Community Home",
+      text: "Homeland isa Marketplace",
       loadingText: "Loading your communities",
     },
     {

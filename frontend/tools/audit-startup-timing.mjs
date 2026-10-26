@@ -301,7 +301,9 @@ async function run() {
       "/clans/8/join-requests": 1,
       "/loans": 2,
       "/marketplace/broadcasts": 2,
-      "/marketplace/requests": 2,
+      // Dashboard reads visible demands and the member's own demands separately;
+      // guidance adds one intentionally smaller own-demand summary.
+      "/marketplace/requests": 3,
       "/notifications/me": 3,
       "/rosca/obligations/me": 1,
       "/trust-slips/me": 1,

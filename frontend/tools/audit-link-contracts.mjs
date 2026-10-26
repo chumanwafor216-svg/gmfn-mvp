@@ -177,8 +177,8 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
-  /function checkForFreshInstalledShell\(\)[\s\S]*?isGsnStandaloneDisplay\(\)[\s\S]*?fetch\(`\/\?gsn_shell_check=\$\{Date\.now\(\)\}`,[\s\S]*?cache: "no-store"[\s\S]*?shellSignatureFromHtml[\s\S]*?reloadForFreshShell/,
-  "Installed GSN shortcuts must compare the running app shell against the latest deployed index and refresh when Render serves a new bundle."
+  /function checkForFreshInstalledShell\(\)[\s\S]*?isGsnStandaloneDisplay\(\)[\s\S]*?fetch\(`\/\?gsn_shell_check=\$\{Date\.now\(\)\}`,[\s\S]*?cache: "no-store"[\s\S]*?shellSignatureFromHtml[\s\S]*?offerIosShellUpdate\(latestSignature\)/,
+  "Installed GSN shortcuts must compare the running shell against the latest deployed index while keeping the explicit iPhone update path."
 );
 
 assertContains(
@@ -189,8 +189,14 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
-  /controllerchange[\s\S]*?if \(isIosInstalledShortcut\(\)\) return;[\s\S]*?\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
-  "The iPhone update prompt must not restore the automatic controller-change or skip-waiting reload loop."
+  /\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
+  "The worker may activate in the background without interrupting the active GSN session."
+);
+
+assertWholeFileNotContains(
+  "src/lib/pwaInstall.ts",
+  /controllerchange/,
+  "A service-worker controller change must not automatically reload an active GSN session."
 );
 
 assertContains(

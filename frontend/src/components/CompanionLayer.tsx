@@ -393,14 +393,16 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
     async function pollPhoneTriggerNotifications(force = false) {
       const now = Date.now();
-      if (!force && now - lastUrgentPollRef.current < PHONE_TRIGGER_POLL_MS - 500) {
+      if (now - lastUrgentPollRef.current < PHONE_TRIGGER_POLL_MS - 500) {
         return;
       }
       lastUrgentPollRef.current = now;
 
-      const result = await getMyNotifications(20, true, { fresh: true }).catch(
-        () => null
-      );
+      const result = await getMyNotifications(
+        20,
+        true,
+        force ? { fresh: true } : undefined
+      ).catch(() => null);
       if (!alive || !result) return;
 
       const rows = Array.isArray(result?.items) ? result.items : [];
@@ -450,10 +452,10 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       });
     }
 
-    void pollPhoneTriggerNotifications(true);
+    void pollPhoneTriggerNotifications();
 
     const intervalId = window.setInterval(() => {
-      void pollPhoneTriggerNotifications();
+      void pollPhoneTriggerNotifications(true);
     }, PHONE_TRIGGER_POLL_MS);
 
     function handleFocusLikeEvent() {

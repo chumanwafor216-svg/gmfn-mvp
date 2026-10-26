@@ -11,7 +11,6 @@ export type BeforeInstallPromptEvent = Event & {
 const installListeners = new Set<() => void>();
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let supportRegistered = false;
-let serviceWorkerControllerReloading = false;
 let installedThisSession = false;
 let shellFreshnessRegistered = false;
 let shellFreshnessChecking = false;
@@ -256,9 +255,10 @@ async function checkForFreshInstalledShell(): Promise<void> {
     if (latestSignature && latestSignature !== currentSignature) {
       if (isIosInstalledShortcut()) {
         offerIosShellUpdate(latestSignature);
-      } else {
-        reloadForFreshShell(latestSignature);
       }
+      // Keep an active browser session stable. The claimed worker and the
+      // network-first navigation strategy serve the new shell on the next
+      // full navigation or reopen without interrupting work in progress.
     }
   } catch {
     // Installed shortcut freshness is helpful, but the app must still open offline.
@@ -312,13 +312,6 @@ function registerInstalledShellFreshnessChecks(
 export function registerGsnServiceWorker(): void {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (serviceWorkerControllerReloading) return;
-    if (isIosInstalledShortcut()) return;
-    serviceWorkerControllerReloading = true;
-    window.location.reload();
-  });
 
   window.addEventListener("load", () => {
     navigator.serviceWorker

@@ -5,6 +5,14 @@ import {
 
 export const GSN_AUTH_SESSION_CHANGED_EVENT = "GSN_AUTH_SESSION_CHANGED";
 
+const APP_BADGE_REFRESH_MIN_MS = 15000;
+let badgeRefreshInFlight: {
+  accessToken: string;
+  promise: Promise<void>;
+} | null = null;
+let lastBadgeRefreshAt = 0;
+let lastBadgeAccessToken = "";
+
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof navigator !== "undefined";
 }
@@ -45,24 +53,61 @@ export async function clearGsnAppBadge(): Promise<void> {
   await setGsnAppBadge(0);
 }
 
-export async function refreshGsnAppBadge(): Promise<void> {
+export async function refreshGsnAppBadge(options?: { force?: boolean }): Promise<void> {
   if (!isBrowser()) return;
 
-  if (!getAccessToken()) {
-    await clearGsnAppBadge();
+  const accessToken = String(getAccessToken() || "");
+  const hasAccessToken = Boolean(accessToken);
+  if (badgeRefreshInFlight?.accessToken === accessToken) {
+    return badgeRefreshInFlight.promise;
+  }
+  if (accessToken !== lastBadgeAccessToken) {
+    lastBadgeAccessToken = accessToken;
+    lastBadgeRefreshAt = 0;
+  }
+  const now = Date.now();
+  if (
+    hasAccessToken &&
+    !options?.force &&
+    now - lastBadgeRefreshAt < APP_BADGE_REFRESH_MIN_MS
+  ) {
     return;
   }
+  if (hasAccessToken) lastBadgeRefreshAt = now;
 
-  const payload = await getMyUnreadNotificationCount().catch(() => null);
-  if (!payload) return;
-  await setGsnAppBadge(unreadCountFromPayload(payload));
+  const nextRefresh = (async () => {
+    if (!hasAccessToken) {
+      await clearGsnAppBadge();
+      return;
+    }
+
+    const payload = await getMyUnreadNotificationCount({
+      fresh: options?.force,
+    }).catch(() => null);
+    if (!payload) return;
+    if (String(getAccessToken() || "") !== accessToken) return;
+    await setGsnAppBadge(unreadCountFromPayload(payload));
+  })();
+
+  const inFlightRecord = { accessToken, promise: nextRefresh };
+  badgeRefreshInFlight = inFlightRecord;
+  try {
+    await nextRefresh;
+  } finally {
+    if (badgeRefreshInFlight === inFlightRecord) {
+      badgeRefreshInFlight = null;
+    }
+  }
 }
 
 export function installGsnAppBadgeSync(): void {
   if (!isBrowser()) return;
 
+  let pendingRefreshTimer: number | null = null;
   const refreshSoon = () => {
-    window.setTimeout(() => {
+    if (pendingRefreshTimer !== null) return;
+    pendingRefreshTimer = window.setTimeout(() => {
+      pendingRefreshTimer = null;
       void refreshGsnAppBadge();
     }, 0);
   };
@@ -85,5 +130,4 @@ export function installGsnAppBadgeSync(): void {
     });
   }
 
-  refreshSoon();
 }
