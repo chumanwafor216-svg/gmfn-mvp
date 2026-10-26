@@ -123,7 +123,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /No community is active in Marketplace yet[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-access"\)[\s\S]*?debugId="marketplace\.empty\.community-home"/,
+  /Choose a community to use Marketplace[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-access"\)[\s\S]*?debugId="marketplace\.empty\.community-home"/,
   "Marketplace blocked access must explain the real-life meaning of choosing a community before commerce tools."
 );
 
