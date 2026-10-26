@@ -145,6 +145,7 @@
     "smoke:community-ownership-guided-phone": "node tools/smoke-community-ownership-guided-phone.mjs",
     "smoke:revenue-allocation-guided-phone": "node tools/smoke-revenue-allocation-guided-phone.mjs",
     "smoke:exposure-admin-guided-phone": "node tools/smoke-exposure-admin-guided-phone.mjs",
+    "smoke:trust-analytics-guided-phone": "node tools/smoke-trust-analytics-guided-phone.mjs",
     "smoke:login-community-id-guard": "node tools/smoke-login-community-id-guard.mjs",
     "smoke:demand-box-simple-phone": "node tools/smoke-demand-box-simple-phone.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",

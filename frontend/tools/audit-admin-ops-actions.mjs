@@ -24,6 +24,7 @@ const adminOpsFiles = [
   "src/pages/AdminIncompleteLoansPage.tsx",
   "src/pages/ExposureAdminPage.tsx",
   "src/pages/ExposurePage.tsx",
+  "src/pages/TrustAnalyticsPage.tsx",
   "src/pages/SystemOperationsPage.tsx",
   "src/pages/CommunityJoinRequestsPage.tsx",
   "src/pages/NotificationsPage.tsx",
@@ -298,6 +299,39 @@ assertNotContains(
   "src/pages/ExposureAdminPage.tsx",
   /locked money|Pending pool confirmation|pool confirmation|Clean bank events|Incomplete loan|Incomplete loans|Open Incomplete Loans|loan queues stack up|`Approved \$\{toNum\(row\.approved_count\)\}/,
   "Exposure Admin must not use broad money, confirmation, or approval wording for exposure readings."
+);
+
+assertContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /data-gsn-trust-analytics-summary="true"[\s\S]*?debugId="trust-analytics\.priority-review"[\s\S]*?debugId="trust-analytics\.toggle\.mix"[\s\S]*?debugId="trust-analytics\.toggle\.timeline"[\s\S]*?debugId="trust-analytics\.toggle\.notes"[\s\S]*?debugId="trust-analytics\.route\.system-operations"[\s\S]*?debugId="trust-analytics\.route\.command-center"/,
+  "Trust Analytics priority, disclosure, and deeper-page actions must remain traceable."
+);
+assertContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn\.trustAnalytics\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?mix: true,[\s\S]*?timeline: true,[\s\S]*?notes: true,[\s\S]*?function openPrioritySection\(\)[\s\S]*?summary\.total > 0 \? "timeline" : "notes"/,
+  "Trust Analytics must keep mix, timeline, and guidance closed while its priority action reveals only the relevant existing section."
+);
+assertNotContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /<ExplainToggle|trust-analytics\.toggle\.overview|Trust pattern view for \{operatorName\}|Role: \{roleLabel\}/,
+  "Trust Analytics must not restore repeated explanation panels, the duplicate overview, or operator identity clutter."
+);
+assertContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /reading of recorded signals[\s\S]*?not proof of wrongdoing,[\s\S]*?final identity decision,[\s\S]*?authority to release money, goods, or credit/,
+  "Trust Analytics must frame its classifications as a bounded reading rather than proof or release authority."
+);
+
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /TrustAnalyticsPage \(`\/app\/command-center\/trust-analytics`;/,
+  "Trust Analytics must remain explicitly named in the screen registry."
+);
+
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## TrustAnalyticsPage[\s\S]*?one compact `What does the record show\?` summary[\s\S]*?not proof of wrongdoing,[\s\S]*?reading guidance and System Operations/,
+  "Trust Analytics must keep its compact selected-community reading specification."
 );
 
 assertContains(

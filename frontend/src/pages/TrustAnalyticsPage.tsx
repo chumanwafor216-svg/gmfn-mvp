@@ -1,17 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
-  institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import {
   getCurrentClan,
-  getMe,
   getSelectedClanId,
   listTrustEvents,
 } from "../lib/api";
@@ -32,13 +28,12 @@ type TrustEventRow = {
 type EventCategory = "built" | "protected" | "weakened" | "repair";
 
 type CollapseState = {
-  overview: boolean;
   mix: boolean;
   timeline: boolean;
   notes: boolean;
 };
 
-const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn.trustAnalytics.sections.v2";
+const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn.trustAnalytics.sections.v3";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -197,19 +192,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(20,52,83,0.19)",
-    background:
-      bg === "#F8FBFF"
-        ? "radial-gradient(circle at 16% 12%, rgba(201,154,39,0.13) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 16%, rgba(38,96,171,0.11) 0%, rgba(38,96,171,0) 29%), linear-gradient(180deg, rgba(250,252,255,0.996) 0%, rgba(236,244,252,0.984) 60%, rgba(220,231,242,0.972) 100%)"
-        : bg,
-    boxShadow:
-      "0 18px 40px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
-  };
-}
-
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalInnerCard(bg),
@@ -220,19 +202,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
         : bg,
     boxShadow:
       "0 16px 34px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
-  };
-}
-
-function statTile(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...institutionalStatTile(bg),
-    border: "1px solid rgba(20,52,83,0.17)",
-    background:
-      bg === "#FFFFFF"
-        ? "radial-gradient(circle at 16% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(240,246,252,0.984) 100%)"
-        : bg,
-    boxShadow:
-      "0 14px 28px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.80)",
   };
 }
 
@@ -398,7 +367,6 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: true,
     mix: true,
     timeline: true,
     notes: true,
@@ -409,7 +377,6 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    overview: Boolean(raw?.overview ?? base.overview),
     mix: Boolean(raw?.mix ?? base.mix),
     timeline: Boolean(raw?.timeline ?? base.timeline),
     notes: Boolean(raw?.notes ?? base.notes),
@@ -457,9 +424,10 @@ export default function TrustAnalyticsPage() {
   );
 
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [events, setEvents] = useState<TrustEventRow[]>([]);
+  const timelineSectionRef = useRef<HTMLElement | null>(null);
+  const notesSectionRef = useRef<HTMLElement | null>(null);
   const analyticsLoadSeqRef = useRef(0);
   const analyticsLoadContextRef = useRef("");
 
@@ -501,8 +469,7 @@ export default function TrustAnalyticsPage() {
       setEvents([]);
 
       try {
-        const [meRes, clanRes, eventsRes] = await Promise.all([
-          getMe().catch(() => null),
+        const [clanRes, eventsRes] = await Promise.all([
           getCurrentClan().catch(() => null),
           listTrustEvents({
             clan_id: selectedClanId || undefined,
@@ -512,7 +479,6 @@ export default function TrustAnalyticsPage() {
 
         if (!isCurrentAnalyticsLoad()) return;
 
-        setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setEvents(rowsOf<TrustEventRow>(eventsRes));
       } finally {
@@ -525,18 +491,6 @@ export default function TrustAnalyticsPage() {
     };
   }, [selectedClanId]);
 
-  const operatorName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Operator"
-    );
-  }, [me]);
-
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -547,12 +501,6 @@ export default function TrustAnalyticsPage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
-
-  const roleLabel = useMemo(() => {
-    return (
-      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
-    );
-  }, [me]);
 
   const normalizedRows = useMemo(() => {
     return events
@@ -652,6 +600,15 @@ export default function TrustAnalyticsPage() {
     }));
   }
 
+  function openPrioritySection() {
+    const targetKey: keyof CollapseState = summary.total > 0 ? "timeline" : "notes";
+    setCollapsed((prev) => ({ ...prev, [targetKey]: false }));
+    window.setTimeout(() => {
+      const target = targetKey === "timeline" ? timelineSectionRef.current : notesSectionRef.current;
+      target?.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 0);
+  }
+
   if (loading) {
     return (
       <div
@@ -693,224 +650,80 @@ export default function TrustAnalyticsPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Trust Analytics"
+        sectionLabel="Command Centre"
         title="Trust Analytics"
-        subtitle="Read the trust pattern, signal mix, and recent movement before taking deeper admin action."
+        subtitle="Read the selected community's recorded trust pattern before opening a deeper review page."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen shows whether trust is building, protected, weakening, or needing repair."
-        why="It helps you act from the record instead of guessing."
-        next="Start with the current reading, then check the overview, mix, and timeline."
-        tone="light"
-      />
-
       <section
+        data-gsn-trust-analytics-summary="true"
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
+        <div>{sectionLabelWithIcon("chart", "What does the record show?", true)}</div>
         <div
           style={{
+            marginTop: 10,
+            color: "#F8FBFF",
+            fontWeight: 900,
+            fontSize: isCompact ? 27 : 34,
+            lineHeight: 1.12,
+          }}
+        >
+          {summary.trendTitle}
+        </div>
+        <div style={{ marginTop: 10, color: "#D8E7F6", fontSize: 14.5, lineHeight: 1.65 }}>
+          {summary.trendDetail}
+        </div>
+        <div
+          style={{
+            marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 10,
           }}
         >
-          <div>
-            <div>{sectionLabelWithIcon("chart", "Analytics overview", true)}</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
-              }}
-            >
-              Trust pattern view for {operatorName}
+          {[
+            ["Community", communityLabel],
+            ["Recorded events", summary.total],
+            ["Built or protected", summary.built + summary.protectedCount],
+            ["Weakened or repair", summary.weakened + summary.repair],
+          ].map(([label, value]) => (
+            <div key={String(label)} style={{ ...innerCard("rgba(255,255,255,0.96)"), minWidth: 0 }}>
+              <div style={sectionLabel()}>{label}</div>
+              <div style={{ marginTop: 7, color: "#0B1F33", fontWeight: 900, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                {value}
+              </div>
             </div>
-
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read the trust pattern before opening deeper intervention pages.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {analyticsIconBadge("user", <>Role: {roleLabel}</>, true)}
-              {analyticsIconBadge("community", <>Community: {communityLabel}</>)}
-              {analyticsIconBadge("document", <>Recent events: {summary.total}</>)}
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div>{sectionLabelWithIcon("shield", "Current reading")}</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
-              }}
-            >
-              {summary.trendTitle}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText() }}>
-              {summary.trendDetail}
-            </div>
-          </div>
+          ))}
         </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This reading turns the evidence signals into one practical direction."
-          why="It helps you avoid heavier action before you understand the pattern."
-          next="Use the sections below to see why the pattern looks this way."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
+        <div style={{ marginTop: 14, color: "#D8E7F6", fontSize: 13.5, lineHeight: 1.6 }}>
+          This is a reading of recorded signals. It is not proof of wrongdoing, a final identity decision, or authority to release money, goods, or credit.
+        </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+      <section data-gsn-trust-analytics-priority="true" style={pageCard("#FFFFFF")}>
+        <div>{sectionLabelWithIcon(summary.total > 0 ? "calendar" : "document", "Next review")}</div>
+        <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 900, lineHeight: 1.3 }}>
+          {summary.total > 0 ? "Start with the latest recorded movement." : "No trust event is visible for this community yet."}
+        </div>
+        <div style={{ marginTop: 8, ...helperText() }}>
+          {summary.total > 0 ? "Open the timeline to check what was recorded before choosing a deeper review page." : "Open the reading guide to understand what this empty view does and does not mean."}
+        </div>
+        <PrimaryButton
+          onClick={openPrioritySection}
+          stableHeight={56}
+          debugId="trust-analytics.priority-review"
+          style={{ width: "100%", marginTop: 14 }}
         >
-          <div>
-            <div>{sectionLabelWithIcon("chart", "Signal overview")}</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              A quick count of what the visible record is saying.
-            </div>
-          </div>
-
-          <SecondaryButton
-            onClick={() => toggleSection("overview")}
-            stableHeight={52}
-            debugId="trust-analytics.toggle.overview"
-            style={collapseToggle()}
-          >
-            {labelWithIcon(collapsed.overview ? "chevronDown" : "chevronUp", collapsed.overview ? "Open" : "Hide")}
-          </SecondaryButton>
-        </div>
-
-        {!collapsed.overview ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(6, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("document", "Total")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.total}
-              </div>
-            </div>
-
-            <div style={statTile("#F3FBF5")}>
-              <div>{sectionLabelWithIcon("check", "Built")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#166534",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.built}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              <div>{sectionLabelWithIcon("shield", "Protected")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.protectedCount}
-              </div>
-            </div>
-
-            <div style={statTile("#FFF5F5")}>
-              <div>{sectionLabelWithIcon("alert", "Weakened")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#991B1B",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.weakened}
-              </div>
-            </div>
-
-            <div style={statTile("#FFFBEF")}>
-              <div>{sectionLabelWithIcon("refresh", "Repair")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#92400E",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.repair}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("calendar", "Last 7 days")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.last7Days}
-              </div>
-            </div>
-          </div>
-        ) : null}
+          {labelWithIcon(summary.total > 0 ? "calendar" : "document", summary.total > 0 ? "Review recent timeline" : "Read the guide")}
+        </PrimaryButton>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-gsn-trust-analytics-mix="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1023,7 +836,7 @@ export default function TrustAnalyticsPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={timelineSectionRef} data-gsn-trust-analytics-timeline="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1131,7 +944,7 @@ export default function TrustAnalyticsPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={notesSectionRef} data-gsn-trust-analytics-guide="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1196,50 +1009,48 @@ export default function TrustAnalyticsPage() {
                 Move to System Operations, Exposure, or Trust Graph for live handling, risk review, or relationship checks.
               </div>
             </div>
+
+            <div
+              data-gsn-trust-analytics-next-pages="true"
+              style={{ ...innerCard("#FFFFFF"), gridColumn: "1 / -1" }}
+            >
+              <div>{sectionLabelWithIcon("navigation", "Next pages")}</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Open a deeper page only after the visible record gives you a reason.
+              </div>
+              <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <StableCtaLink
+                  to={routes.systemOperations}
+                  kind="primary"
+                  debugId="trust-analytics.route.system-operations"
+                >
+                  {labelWithIcon("shield", "System Operations")}
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.exposure}
+                  kind="secondary"
+                  debugId="trust-analytics.route.exposure"
+                >
+                  {labelWithIcon("alert", "Exposure")}
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.trustGraph}
+                  kind="secondary"
+                  debugId="trust-analytics.route.trust-graph"
+                >
+                  {labelWithIcon("chart", "Trust Graph")}
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.commandCenter}
+                  kind="soft"
+                  debugId="trust-analytics.route.command-center"
+                >
+                  {labelWithIcon("navigation", "Command Center")}
+                </StableCtaLink>
+              </div>
+            </div>
           </div>
         ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div>{sectionLabelWithIcon("navigation", "Where next")}</div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <StableCtaLink
-            to={routes.systemOperations}
-            kind="primary"
-            debugId="trust-analytics.route.system-operations"
-          >
-            {labelWithIcon("shield", "System Operations")}
-          </StableCtaLink>
-          <StableCtaLink
-            to={routes.exposure}
-            kind="secondary"
-            debugId="trust-analytics.route.exposure"
-          >
-            {labelWithIcon("alert", "Exposure")}
-          </StableCtaLink>
-          <StableCtaLink
-            to={routes.trustGraph}
-            kind="secondary"
-            debugId="trust-analytics.route.trust-graph"
-          >
-            {labelWithIcon("chart", "Trust Graph")}
-          </StableCtaLink>
-          <StableCtaLink
-            to={routes.commandCenter}
-            kind="soft"
-            debugId="trust-analytics.route.command-center"
-          >
-            {labelWithIcon("navigation", "Command Center")}
-          </StableCtaLink>
-        </div>
       </section>
     </div>
   );

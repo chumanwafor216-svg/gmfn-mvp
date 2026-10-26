@@ -1972,6 +1972,49 @@ Primary action:
 Open signal record
 ```
 
+## TrustAnalyticsPage
+
+Route: `/app/command-center/trust-analytics`.
+
+Purpose:
+Give a platform admin one selected-community reading of recorded Trust Event
+movement before the operator chooses a deeper review page.
+
+Must show:
+- Command Centre navigation
+- one compact `What does the record show?` summary
+- selected community, recorded-event count, built/protected count, and
+  weakened/repair count
+- one visible next action: `Review recent timeline` when records exist, or
+  `Read the guide` when the selected community has no visible record
+- a plain boundary that the reading is not proof of wrongdoing, a final
+  identity decision, or authority to release money, goods, or credit
+- the existing strongest positive and weakened/repair event mix inside a
+  closed disclosure
+- the existing bounded recent timeline inside a closed disclosure
+- reading guidance and System Operations, Exposure, Trust Graph, and Command
+  Centre destinations inside one closed disclosure
+
+Rules:
+- Keep the route platform-admin-only.
+- Preserve the existing Trust Events endpoint, selected-community scope,
+  120-record request limit, category classification, date sorting, trend
+  comparison, and bounded event lists.
+- The visible next action may reveal and scroll to the existing timeline or
+  reading guide. It must not write, approve, recompute, reconcile, or change a
+  Trust Event.
+- Do not expose the signed-in operator name or role as analytics facts.
+- Do not restore repeated explanation panels, a duplicate six-tile overview,
+  or exposed next-page actions.
+- A weakened or repair classification is a review reading from event wording;
+  it is not proof of fraud, guilt, misconduct, or a final identity decision.
+
+Primary action:
+
+```text
+Review recent timeline
+```
+
 ## ExposureAdminPage
 
 Route: `/app/command-center/exposure`.

@@ -1894,8 +1894,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustAnalyticsPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-analytics\.toggle\.overview"[\s\S]*?debugId="trust-analytics\.toggle\.mix"[\s\S]*?debugId="trust-analytics\.toggle\.timeline"[\s\S]*?debugId="trust-analytics\.toggle\.notes"[\s\S]*?debugId="trust-analytics\.route\.system-operations"[\s\S]*?debugId="trust-analytics\.route\.exposure"[\s\S]*?debugId="trust-analytics\.route\.trust-graph"[\s\S]*?debugId="trust-analytics\.route\.command-center"/,
-  "Trust Analytics must use shared stable primitives and shared CTA resolution for collapse controls and command routes."
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-analytics\.priority-review"[\s\S]*?debugId="trust-analytics\.toggle\.mix"[\s\S]*?debugId="trust-analytics\.toggle\.timeline"[\s\S]*?debugId="trust-analytics\.toggle\.notes"[\s\S]*?debugId="trust-analytics\.route\.system-operations"[\s\S]*?debugId="trust-analytics\.route\.exposure"[\s\S]*?debugId="trust-analytics\.route\.trust-graph"[\s\S]*?debugId="trust-analytics\.route\.command-center"/,
+  "Trust Analytics must use shared stable primitives and shared CTA resolution for its priority, collapse, and deeper-page actions."
 );
 
 assertNotContains(

@@ -271,19 +271,24 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustAnalyticsPage.tsx",
-  /This reading turns the evidence signals into one practical direction\./,
-  "Trust Analytics explanation must frame inputs as evidence signals, not trust signals."
+  /This is a reading of recorded signals\. It is not proof of wrongdoing, a final identity decision, or authority to release money, goods, or credit\./,
+  "Trust Analytics must frame event classifications as a bounded recorded-signal reading."
 );
 assertContains(
   "src/pages/TrustAnalyticsPage.tsx",
-  /const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn\.trustAnalytics\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?mix: true,[\s\S]*?timeline: true,[\s\S]*?notes: true,/,
-  "Trust Analytics must default overview, evidence mix, timeline, and notes closed while keeping the current analytics reading visible."
+  /const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn\.trustAnalytics\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?mix: true,[\s\S]*?timeline: true,[\s\S]*?notes: true,/,
+  "Trust Analytics must default evidence mix, timeline, and reading guidance closed while keeping the current analytics reading visible."
 );
 
 assertNotContains(
   "src/pages/TrustAnalyticsPage.tsx",
   /trust signals/i,
   "Trust Analytics visible explanation must not use trust-signal wording."
+);
+assertNotContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /<ExplainToggle|trust-analytics\.toggle\.overview|Trust pattern view for/,
+  "Trust Analytics must not restore repeated explanation panels or its duplicate overview."
 );
 
 assertContains(

@@ -8,6 +8,39 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Trust Analytics first-surface cleanup - 2026-10-26
+
+- Simplified the platform-admin-only
+  `/app/command-center/trust-analytics` first surface without changing the
+  Trust Events endpoint, selected-community scope, 120-record request limit,
+  event classification, date ordering, trend comparison, bounded lists, or
+  deeper-page destinations.
+- Replaced two explanation blocks, the operator-name/role greeting, and a
+  duplicate six-tile overview with one `What does the record show?` summary:
+  Community, Recorded events, Built or protected, and Weakened or repair.
+- Added one state-aware read-only action. `Review recent timeline` opens the
+  existing bounded timeline when records exist; `Read the guide` opens the
+  reading guidance when no event is visible. The action performs no write,
+  approval, recomputation, reconciliation, or Trust Event mutation.
+- Signal mix, recent timeline, and reading guidance now start closed. System
+  Operations, Exposure, Trust Graph, and Command Centre remain available
+  inside the reading guide instead of competing on the first phone surface.
+- Added an explicit boundary that the classifications are a reading of
+  recorded signals, not proof of wrongdoing, a final identity decision, or
+  authority to release money, goods, or credit.
+- Added the missing screen registry/spec entry plus focused source guards and
+  a populated/empty 390x844 browser smoke. No matching reference mockup exists;
+  the approved design tokens and established compact Command Centre pattern
+  remain the visual source of truth.
+- Verification passed: the 295-module production build, Admin/Operations,
+  Trust, phone-surface, button-stability, admin-route, institutional-proof,
+  visible-language, global action-ID/raw-action and tap-stability audits,
+  mobile route coverage, the focused populated/empty 390x844 browser smoke,
+  the complete protected button/frozen-surface suite, and the full mocked
+  390x844 mobile visual sweep.
+- This continuation is local only. Do not push, promote to `main`, or deploy
+  it until the owner explicitly says `deploy`.
+
 ## Command Centre Exposure Review first-surface cleanup - 2026-10-26
 
 - Simplified `/app/command-center/exposure` without changing the exposure
