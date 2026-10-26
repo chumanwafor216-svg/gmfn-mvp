@@ -78,6 +78,36 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /async function openSpotlightReview\(\)[\s\S]*?spotlightVideoSound[\s\S]*?!spotlightCanContinueToPreview[\s\S]*?prepareSpotlightNaturalFinish\(\)[\s\S]*?setSpotlightFlowStep\("preview"\)/,
+  "Free Spotlight must explain recoverable review blockers and prepare an enabled Natural Finish before opening review."
+);
+
+assertContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /function focusSpotlightTarget[\s\S]*?data-spotlight-video-options[\s\S]*?video-sound\.rights[\s\S]*?!spotlightHasImage && !spotlightHasVideo[\s\S]*?shop-control-spotlight-add-picture[\s\S]*?!safeSpotlightText\(spotlightProductName\)[\s\S]*?shop-control-spotlight-item/,
+  "Check and publish must open or focus the exact sound-rights, media, or item control that needs attention."
+);
+
+assertContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /data-spotlight-publish-actions="persistent"[\s\S]*?onClick=\{\(\) => openSpotlightReview\(\)\}[\s\S]*?Check and publish[\s\S]*?debugId="shop-control\.spotlight\.upload\.cancel"/,
+  "The phone composer must keep a visible Check and publish action before optional video tools, with its stable close action."
+);
+
+assertContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /data-spotlight-video-options[\s\S]*?debugId="shop-control\.spotlight\.video-options"[\s\S]*?Improve my video automatically[\s\S]*?<option value=\{5\}>[\s\S]*?5 seconds[\s\S]*?<option value=\{10\}>[\s\S]*?10 seconds[\s\S]*?<VideoSoundEditor/,
+  "Optional sound and automatic video improvement must stay inside one closed Video options disclosure."
+);
+
+assertLineNotContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /Prepare finished preview|debugId="shop-control\.spotlight\.video-finish"/,
+  "Free Spotlight must not reintroduce a separate manual video-finish step before Check and publish."
+);
+
+assertContains(
   "src/pages/ShopControlPage.tsx",
   /function isSpotlightVideoFile\([\s\S]*?SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS\.includes\(ext\)[\s\S]*?startsWith\("video\/"\)[\s\S]*?function isSpotlightImageFile\([\s\S]*?SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS\.includes\(ext\)[\s\S]*?startsWith\("image\/"\)[\s\S]*?handleSpotlightImagePicked[\s\S]*?isSpotlightVideoFile\(file\)[\s\S]*?handleSpotlightVideoPicked\(file\)[\s\S]*?handleSpotlightVideoPicked[\s\S]*?isSpotlightImageFile\(file\)[\s\S]*?handleSpotlightImagePicked\(file\)/,
   "Spotlight must recover when a phone returns a selected video through the picture input or a picture through the video input."

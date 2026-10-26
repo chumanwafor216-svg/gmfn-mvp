@@ -1438,6 +1438,40 @@ Must show:
 - Grow Trusted Circle
 - Owner Spotlight Status
 
+Owner-approved 2026-10-26 first-view correction:
+- On phone, show the shop name and one state-aware `Your next step` before all
+  secondary routes. Do not repeat the same state as hero badges, an action
+  title, and large cards.
+- Keep the five required first-level routes, but present them as compact action
+  rows using member language: `Your public shop`, `Shop items`, `Shop
+  activity`, `Shop promotion`, and `Shop update`.
+- Shop Update must not display the number of public products as a Diary/update
+  status. When no authoritative Diary count is loaded, invite the owner to
+  `Write a short message` instead of inventing a count.
+- Keep private offers, paid promotion, cross-community promotion, extra space,
+  and trade records behind the closed `More shop tools` disclosure. This
+  correction changes no route, action inventory, permission, backend data,
+  Spotlight lifecycle, payment, quota, serving, or pacing behavior.
+- Shop Details (`#shop-control-details`) must use the state-aware heading `Set
+  up your shop` or `Change what customers see`. Show shop name, WhatsApp number
+  and the optional description first. Keep Telegram reachable behind one
+  closed `More contact options (optional)` disclosure.
+- A new owner must see one primary `Save shop` action before product
+  management. Once the shop exists, use `Save changes` and expose `Manage shop
+  items` as the secondary continuation. Do not call these details a billboard
+  or system record in member-facing save feedback. Stored fields, API payload,
+  review behavior, routes, permissions and field inventory do not change.
+- Shop Activity (`#shop-control-counts`) must not expose the complete report
+  before an owner can understand the current reading. On phone, lead with one
+  plain-language reading, last-seven-day `Visitors`, `Item opens`, and `Contact
+  taps`, one state-derived `Your next step`, and the boundary that these GSN
+  activities do not prove a sale or payment.
+- Keep the picture-led Shop Health summary, six analytics sections and seven
+  Opportunity Engine sections intact behind one closed `See activity details`
+  disclosure on phone. Desktop may keep that report open. Do not delete or
+  change calculations, source data, panel routes, Attention Spine behavior or
+  Dashboard Market Wisdom while simplifying the first surface.
+
 Rules:
 - Identity-lock and protected-shop-action blockers must explain why Shop
   Control waits for GSN identity confidence before public shop, Vault,
@@ -1532,6 +1566,17 @@ Rules:
   should use that saved shop identity, quietly prepare the backend shop row if
   it is missing, and ask only for the product/update details, price note, media,
   and short instruction that belong to the current spotlight.
+- Owner-approved 2026-10-26 phone correction: Shop Control Free Spotlight uses
+  member language: `Promote your shop`, `What are you selling?`, `Add a picture
+  or short video`, and `How should customers contact you?`. It must not show a
+  persistent internal shop-record readiness message. `Check and publish` stays
+  immediately after the required composer and remains visible on phone.
+  Optional sound and automatic `GSN Natural Finish` controls stay inside one
+  closed `Video options` disclosure. There is no separate prepare-finish
+  decision: when automatic improvement is on, `Check and publish` prepares the
+  video before opening the required review. Recoverable blockers explain the
+  first fix on tap, and review retains one explicit final `Publish now` action.
+  This changes no media, quota, permission, payment, serving or pacing contract.
 
 
 Additional Community Domain lifecycle responsibility:

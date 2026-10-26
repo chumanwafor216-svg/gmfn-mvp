@@ -471,8 +471,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /async function saveShopDetails[\s\S]*?setActiveOwnerLayer\("shop-details"\);[\s\S]*?Shop billboard details saved on the system\./,
-  "Owner Shop Control details must stay open after a successful save so the system-backed billboard edit does not jump the owner away."
+  /async function saveShopDetails[\s\S]*?setActiveOwnerLayer\("shop-details"\);[\s\S]*?Shop details saved\./,
+  "Owner Shop Control details must stay open after a successful save without exposing system/billboard implementation language."
 );
 
 assertContains(

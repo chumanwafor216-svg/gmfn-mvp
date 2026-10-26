@@ -174,7 +174,7 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightFinishedVideoUrl: string;
   setSpotlightFinishedVideoUrl: Dispatch<SetStateAction<string>>;
   preparingSpotlightFinish: boolean;
-  prepareSpotlightNaturalFinish: () => Promise<void>;
+  prepareSpotlightNaturalFinish: () => Promise<string | null>;
   spotlightCanContinueToPreview: boolean;
   setSpotlightFlowStep: Dispatch<SetStateAction<ShopControlSpotlightFlowStep>>;
   spotlightImagePreviewUrl: string;

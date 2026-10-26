@@ -42,6 +42,7 @@ The Free Spotlight line is:
 - Do not use frontend identity continuity to block the free spotlight lane. The backend broadcast endpoint is the authority for active membership, shop ownership, capacity, and paid entitlement rules.
 - Do not add a second Shop Control spotlight publisher underneath the main Shop Control page. The active Shop Control spotlight surface is the portal section with `id="shop-control-spotlight"`.
 - Do not native-disable the free spotlight publish button for recoverable states. Let the click explain the blocker.
+- Do not move Shop Control's `Check and publish` action below optional video controls. Sound and automatic Natural Finish stay inside one closed `Video options` disclosure; do not restore the manual prepare-finish button. On phone the main action stays visible, prepares an enabled finish, and then opens the required review with explicit `Publish now`.
 - Do not bypass the shared stable tap-target guard on publish/cancel/preview controls. Spotlight buttons must not jump or become silent taps while media is preparing.
 - Do not remove the shared video audio toggle from Free Spotlight displays. Silent motion preview is allowed; opened/listening state must be explicit and reversible.
 

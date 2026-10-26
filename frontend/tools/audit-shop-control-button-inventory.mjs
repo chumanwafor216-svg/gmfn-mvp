@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 12,
-  SecondaryButton: 24,
+  SecondaryButton: 23,
   SubtleButton: 3,
-  StableButton: 6,
+  StableButton: 5,
   StableCtaLink: 13,
-  total: 58,
+  total: 56,
 };
 const expectedNativeFieldCount = 29;
 const expectedFileInputActionRoots = 2;
@@ -238,9 +238,8 @@ const expectedActionOrder = [
   "shop-control.spotlight.media.video",
   "shop-control.spotlight.upload.preview",
   "shop-control.spotlight.upload.cancel",
-  "shop-control.spotlight.preview.back",
   "shop-control.spotlight.preview.publish",
-  "shop-control.spotlight.preview.cancel",
+  "shop-control.spotlight.preview.back",
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
@@ -375,13 +374,13 @@ assertShopContains(
 );
 
 assertShopContains(
-  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?label: "Manage Spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?label: "Publish Spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
+  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?label: "Set up shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?label: "Add a shop item"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?label: "View live promotion"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?label: "Promote your shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
   "Shop Control owner overview must derive one truthful primary next action from shop/product/Spotlight/public-shop state."
 );
 
 assertShopContains(
-  /const ownerOrientationCards = \[[\s\S]*?debugId: "shop-control\.orientation\.public-shop"[\s\S]*?debugId: "shop-control\.orientation\.products"[\s\S]*?debugId: "shop-control\.orientation\.analytics"[\s\S]*?debugId: "shop-control\.orientation\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.diary"/,
-  "Shop Control overview must expose compact Public shop, Products/services, Analytics, Spotlight, and Shop Diary orientation cards."
+  /const ownerOrientationCards = \[[\s\S]*?label: "Your public shop"[\s\S]*?debugId: "shop-control\.orientation\.public-shop"[\s\S]*?label: "Shop items"[\s\S]*?debugId: "shop-control\.orientation\.products"[\s\S]*?label: "Shop activity"[\s\S]*?debugId: "shop-control\.orientation\.analytics"[\s\S]*?label: "Shop promotion"[\s\S]*?debugId: "shop-control\.orientation\.spotlight"[\s\S]*?label: "Shop update"[\s\S]*?value: "Write a short message"[\s\S]*?debugId: "shop-control\.orientation\.diary"/,
+  "Shop Control overview must expose the five owner routes with direct member wording and must not invent a Diary count from shop-item data."
 );
 
 assertShopContains(
@@ -390,8 +389,23 @@ assertShopContains(
 );
 
 assertShopContains(
-  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More owner tools[\s\S]*?Vault · Spotlight plans · Repost · Capacity[\s\S]*?debugId=\{tool\.debugId\}/,
-  "Shop Control first view must render My Shop orientation, one primary action, compact status cards, and descriptive progressive owner tools."
+  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?Manage what customers see and choose what to do next\.[\s\S]*?Your next step[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?gridTemplateColumns: isCompact \? "minmax\(0, 1fr\) auto" : "1fr"[\s\S]*?display: isCompact \? "none" : undefined[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More shop tools[\s\S]*?Private offers · paid promotion · extra space[\s\S]*?debugId=\{tool\.debugId\}/,
+  "Shop Control first view must keep one primary next step, compress the five phone routes into action rows, and leave deeper shop tools behind disclosure."
+);
+
+assertShopDoesNotContain(
+  /const shopDiaryStatusLabel = occupiedPublicProductSlotCount/,
+  "Shop Control must not present the public-product count as the Shop Diary status."
+);
+
+assertShopContains(
+  /activeOwnerLayer === "shop-details"[\s\S]*?Change what customers see[\s\S]*?Shop name[\s\S]*?WhatsApp number[\s\S]*?inputMode="tel"[\s\S]*?What do you sell\? \(optional\)[\s\S]*?data-shop-details-options="true"[\s\S]*?debugId="shop-control\.details\.more-contact"[\s\S]*?More contact options \(optional\)[\s\S]*?Telegram username[\s\S]*?debugId="shop-control\.details\.save"[\s\S]*?Save changes[\s\S]*?shopRecordReady \? \([\s\S]*?debugId="shop-control\.details\.manage-products"[\s\S]*?Manage shop items[\s\S]*?Save your shop first\./,
+  "Shop Details must keep name, WhatsApp and description first, hide Telegram behind one optional disclosure, and withhold product management until the shop exists."
+);
+
+assertShopDoesNotContain(
+  /Shop billboard details saved on the system\./,
+  "Shop Details success feedback must not expose billboard or system implementation language."
 );
 
 assertShopDoesNotContain(
@@ -435,12 +449,16 @@ assertShopContains(
     "Shop Control must keep the rich owner-facing live Spotlight frame with public preview and the approved correction/permanent-withdrawal actions."
   );
 assertShopContains(
-  /Picture \/ video, item, message\.[\s\S]*?debugId="shop-control\.spotlight\.media\.image"[\s\S]*?Add picture[\s\S]*?debugId="shop-control\.spotlight\.media\.video"[\s\S]*?Add video[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.image-file"[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.video-file"/,
-  "Shop Control free Spotlight publisher must keep one simple outside flow with picture/video upload buttons and hidden audited file inputs."
+  /Tell customers what you have\.[\s\S]*?What are you selling\?[\s\S]*?Add a picture or short video[\s\S]*?debugId="shop-control\.spotlight\.media\.image"[\s\S]*?Add picture[\s\S]*?debugId="shop-control\.spotlight\.media\.video"[\s\S]*?Add video[\s\S]*?id="shop-control-spotlight-image-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.image-file"[\s\S]*?id="shop-control-spotlight-video-file"[\s\S]*?data-cta-id="shop-control\.spotlight\.video-file"[\s\S]*?How should customers contact you\?/,
+  "Shop Control free Spotlight must keep one plain-language outside flow with item, media and customer-contact guidance."
 );
 assertShopContains(
-  /Add GSN Natural Finish[\s\S]*?5-second finish[\s\S]*?10-second finish[\s\S]*?debugId="shop-control\.spotlight\.video-finish"[\s\S]*?Finished preview ready/,
-  "Shop Control video finish must remain optional, bounded to five/ten seconds, and require a reviewed finished preview."
+  /data-spotlight-video-options[\s\S]*?debugId="shop-control\.spotlight\.video-options"[\s\S]*?Improve my video automatically[\s\S]*?Short · 5 seconds[\s\S]*?Full · 10 seconds[\s\S]*?<VideoSoundEditor/,
+  "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
+);
+assertShopContains(
+  /async function openSpotlightReview\(\)[\s\S]*?prepareSpotlightNaturalFinish\(\)[\s\S]*?setSpotlightFlowStep\("preview"\)[\s\S]*?Check before publishing[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"[\s\S]*?Publish now/,
+  "Automatic video improvement must complete before the required review and explicit Publish now action."
 );
 
 assertShopContains(
@@ -580,8 +598,13 @@ assertShopContains(
   "Shop Control Opportunity reading visual must stay wired to live shop signals."
 );
 assertShopContains(
-  /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,
-  "Shop Control analytics must keep the picture-led shop health summary for low-literacy owner review."
+  /Shop activity[\s\S]*?data-shop-activity-reading="true"[\s\S]*?What your activity suggests[\s\S]*?aria-label="Shop activity first-view figures"[\s\S]*?Visitors[\s\S]*?Item opens[\s\S]*?Contact taps[\s\S]*?data-shop-activity-next-step="true"[\s\S]*?Your next step[\s\S]*?debugId="shop-control\.market-intelligence\.primary-action"[\s\S]*?These numbers show activity inside GSN\. They do not prove a sale or payment\.[\s\S]*?data-shop-activity-details="true"[\s\S]*?open=\{isCompact \? undefined : true\}[\s\S]*?debugId="shop-control\.analytics\.more\.toggle"[\s\S]*?See activity details[\s\S]*?aria-label="Shop health visual summary"/,
+  "Shop Control activity must lead with one reading, three figures and one next action while keeping the full report closed on phone and open on desktop."
+);
+
+assertShopContains(
+  /data-shop-activity-details="true"[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,
+  "Shop Control must preserve the picture-led shop health summary inside the deeper activity report."
 );
 
 assertShopContains(

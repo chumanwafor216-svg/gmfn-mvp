@@ -4080,10 +4080,12 @@ export default function ShopControlPage() {
     setSpotlightImageUrl("");
     setSpotlightVideoUrl("");
     setSpotlightImageFile(null);
-      setSpotlightVideoFile(null);
-      setSpotlightVideoSound(null);
-      setSpotlightVideoDurationSeconds(null);
-      setSpotlightFinishedVideoUrl('');
+    setSpotlightVideoFile(null);
+    setSpotlightVideoSound(null);
+    setSpotlightVideoDurationSeconds(null);
+    setSpotlightNaturalFinishEnabled(true);
+    setSpotlightNaturalFinishSeconds(10);
+    setSpotlightFinishedVideoUrl("");
     setPreparingSpotlightImage(false);
     setPreparingSpotlightVideo(false);
     setSpotlightImageInputKey((prev) => prev + 1);
@@ -4908,29 +4910,26 @@ export default function ShopControlPage() {
   );
   const spotlightStatusLabel = currentActiveSpotlight
     ? currentSpotlightServingStatus === "correction_hold"
-      ? "Correction hold"
-      : "Live"
-    : "Inactive";
+      ? "Needs correction"
+      : "Showing now"
+    : "Not showing now";
   const spotlightStatusDetail = currentActiveSpotlight
     ? firstTruthy(
         safeDateTime(
           currentActiveSpotlight.authorized_expires_at ||
             currentActiveSpotlight.expires_at
         )
-          ? `Authorised until ${safeDateTime(
+          ? `Showing until ${safeDateTime(
               currentActiveSpotlight.authorized_expires_at ||
                 currentActiveSpotlight.expires_at
             )}`
-          : "Live now",
-        "Live now"
+          : "Your promotion is showing now.",
+        "Your promotion is showing now."
       )
-    : "No active promotion";
+    : "No shop promotion is showing.";
   const productStatusLabel = occupiedPublicProductSlotCount > 0
-    ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} shop spaces filled`
-    : "No public items";
-  const shopDiaryStatusLabel = occupiedPublicProductSlotCount > 0
-    ? `${occupiedPublicProductSlotCount} public shop item${occupiedPublicProductSlotCount === 1 ? "" : "s"}`
-    : "No public content yet";
+    ? `${occupiedPublicProductSlotCount} of ${publicProductSlotsTotal} spaces used`
+    : "No shop items yet";
   const vaultStatusLabel = vaultProducts.length > 0
     ? `${vaultProducts.length} private offer${vaultProducts.length === 1 ? "" : "s"}`
     : "Private offers optional";
@@ -4939,38 +4938,38 @@ export default function ShopControlPage() {
       return {
         label: "Set up shop",
         to: routes.shopDetails,
-        detail: "Create the shop record and public face first.",
+        detail: "Add your shop name and contact details.",
         debugId: "shop-control.orientation.primary.setup",
       };
     }
     if (occupiedPublicProductSlotCount <= 0) {
       return {
-        label: "Add product or service",
+        label: "Add a shop item",
         to: routes.shopGallery,
-        detail: "Add one public shop item before promoting the shop.",
+        detail: "Add one item before promoting your shop.",
         debugId: "shop-control.orientation.primary.products",
       };
     }
     if (currentActiveSpotlight) {
       return {
-        label: "Manage Spotlight",
+        label: "View live promotion",
         to: routes.freeSpotlight,
-        detail: "Review the live promotion or take it down.",
+        detail: "See what is showing or stop the promotion.",
         debugId: "shop-control.orientation.primary.spotlight",
       };
     }
     if (ownerPublicShopPath) {
       return {
-        label: "Publish Spotlight",
+        label: "Promote your shop",
         to: routes.freeSpotlight,
-        detail: "Create the next live promotion for the public shop.",
+        detail: "Show one shop item to people in your community.",
         debugId: "shop-control.orientation.primary.spotlight",
       };
     }
     return {
       label: "Review shop details",
       to: routes.shopDetails,
-      detail: "Finish the public shop identity.",
+      detail: "Check the name, contact and description customers will see.",
       debugId: "shop-control.orientation.primary.details",
     };
   }, [currentActiveSpotlight, occupiedPublicProductSlotCount, ownerPublicShopPath, routes.freeSpotlight, routes.shopDetails, routes.shopGallery, shopRecordReady]);
@@ -4978,88 +4977,88 @@ export default function ShopControlPage() {
     {
       key: "public-shop",
       icon: "shop" as GsnIconName,
-      label: "Public shop",
-      value: publicShopReady ? "Ready" : "Setup needed",
-      detail: publicShopReady ? "Visitor-facing shop link is available." : "Save shop details before visitors can inspect it.",
+      label: "Your public shop",
+      value: publicShopReady ? "Ready for visitors" : "Needs setup",
+      detail: publicShopReady ? "Open the shop customers can see." : "Add your shop details before sharing it.",
       to: publicShopReady ? ownerPublicShopPath : routes.shopDetails,
-      action: publicShopReady ? "Open" : "Set up",
+      action: publicShopReady ? "Open shop" : "Set up shop",
       debugId: "shop-control.orientation.public-shop",
     },
     {
       key: "products",
       icon: "cart" as GsnIconName,
-      label: "Products/services",
+      label: "Shop items",
       value: productStatusLabel,
-      detail: "Managed in Pictures & Products.",
+      detail: "Add or change what customers can buy.",
       to: routes.shopGallery,
-      action: "Manage",
+      action: "Manage items",
       debugId: "shop-control.orientation.products",
     },
     {
       key: "analytics",
       icon: "chart" as GsnIconName,
-      label: "Analytics",
-      value: shopAnalyticsWisdom.state,
-      detail: "Signals and experiments, not sales proof.",
+      label: "Shop activity",
+      value: "Visits and interest",
+      detail: "See activity and what you could try next. These signals do not prove sales.",
       to: routes.shopSummary,
-      action: "Open",
+      action: "See activity",
       debugId: "shop-control.orientation.analytics",
     },
     {
       key: "spotlight",
       icon: "megaphone" as GsnIconName,
-      label: "Spotlight",
+      label: "Shop promotion",
       value: spotlightStatusLabel,
       detail: spotlightStatusDetail,
       to: routes.freeSpotlight,
-      action: currentActiveSpotlight ? "Manage" : "Publish",
+      action: currentActiveSpotlight ? "View promotion" : "Promote shop",
       debugId: "shop-control.orientation.spotlight",
     },
     {
       key: "diary",
       icon: "copy" as GsnIconName,
-      label: "Shop Diary",
-      value: shopDiaryStatusLabel,
-      detail: "Public shop items and ordinary content, not formal evidence.",
+      label: "Shop update",
+      value: "Write a short message",
+      detail: "Post a short note for visitors. This is separate from your shop items.",
       to: routes.shopDiary,
-      action: occupiedPublicProductSlotCount > 0 ? "Review" : "Write",
+      action: "Write update",
       debugId: "shop-control.orientation.diary",
     },
   ];
   const progressiveOwnerTools = [
     {
       label: "Shop details",
-      detail: "Name, contact and public picture.",
+      detail: "Name, contact details and description.",
       to: routes.shopDetails,
       debugId: "shop-control.more.details",
     },
     {
-      label: "Vault private offers",
-      detail: vaultStatusLabel,
+      label: "Private offers",
+      detail: `${vaultStatusLabel}. Only invited customers can open them.`,
       to: routes.vaultControl,
       debugId: "shop-control.more.vault",
     },
     {
-      label: "Subscription Spotlight",
-      detail: "Paid priority lane stays separate from free Spotlight.",
+      label: "Paid promotion",
+      detail: "Use a paid plan to keep promoting your shop.",
       to: routes.subscriptionSpotlight,
       debugId: "shop-control.more.subscription-spotlight",
     },
     {
-      label: "Paid repost",
-      detail: "Send one public shop item to another permitted marketplace.",
+      label: "Promote in another community",
+      detail: "Show one shop item in another permitted community.",
       to: routes.paidRepost,
       debugId: "shop-control.more.paid-repost",
     },
     {
-      label: "More shop & community space",
-      detail: "Add shop spaces or member places, or open ROSCA and meeting support.",
+      label: "Extra shop and community space",
+      detail: "Get more room for shop items or community members.",
       to: routes.communityPackages,
       debugId: "shop-control.more.community-packages",
     },
     {
-      label: "Trade Evidence",
-      detail: "Formal bilateral records stay in Marketplace.",
+      label: "Trade records",
+      detail: "Keep important buyer and seller records in Marketplace.",
       to: routes.tradeEvidence,
       debugId: "shop-control.more.trade-evidence",
     },
@@ -6430,7 +6429,7 @@ export default function ShopControlPage() {
       setTelegramHandle(firstTruthy(updated?.telegram_handle));
       setImageUrlInput(firstTruthy(updated?.image_url));
       setActiveOwnerLayer("shop-details");
-      showNotice("success", "Shop billboard details saved on the system.");
+      showNotice("success", "Shop details saved.");
     } catch (err: any) {
       showNotice("error", shopControlRequestErrorMessage(err) || "Shop details could not be saved.");
     } finally {
@@ -6500,10 +6499,7 @@ export default function ShopControlPage() {
       setTelegramHandle(firstTruthy(created?.telegram_handle, telegramHandle));
       setImageUrlInput(firstTruthy(created?.image_url));
       setSpotlightFlowStep("upload");
-      const successMessage =
-        "Shop record is ready. Continue with the product spotlight.";
-      setSpotlightPublishFeedback({ tone: "success", text: successMessage });
-      showNotice("success", successMessage);
+      setSpotlightPublishFeedback(null);
       await loadPage({ background: true, preferredClanId: Number(created?.clan_id || clanId) });
       return created;
     } catch (err: any) {
@@ -6700,8 +6696,8 @@ export default function ShopControlPage() {
     }
   }
 
-  async function prepareSpotlightNaturalFinish() {
-    if (!spotlightVideoFile || preparingSpotlightFinish) return;
+  async function prepareSpotlightNaturalFinish(): Promise<string | null> {
+    if (!spotlightVideoFile || preparingSpotlightFinish) return null;
     setPreparingSpotlightFinish(true);
     try {
       const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
@@ -6731,11 +6727,13 @@ export default function ShopControlPage() {
       setSpotlightFinishedVideoUrl(url);
       setSpotlightMediaFeedback({
         tone: 'success',
-        text: `GSN Natural Finish is ready (${spotlightNaturalFinishSeconds} seconds, maximum 4 MB). Review it before publishing.`,
+        text: "Your improved video is ready to check.",
       });
+      return url;
     } catch (err: any) {
       setSpotlightFinishedVideoUrl('');
       showNotice('error', safeStr(err?.message) || 'GSN could not prepare the finished preview.');
+      return null;
     } finally {
       setPreparingSpotlightFinish(false);
     }
@@ -6848,7 +6846,7 @@ export default function ShopControlPage() {
       return;
     }
     if (spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) {
-      const finishMessage = 'Prepare and review the GSN Natural Finish before publishing, or turn the finish off.';
+      const finishMessage = 'Let GSN finish improving the video before you publish, or turn automatic improvement off.';
       setSpotlightPublishFeedback({ tone: 'info', text: finishMessage });
       showNotice('info', finishMessage);
       return;
@@ -7192,16 +7190,16 @@ export default function ShopControlPage() {
   const spotlightModeIsPaid = spotlightPriorityMode === "paid";
   const spotlightPortalTitle = spotlightModeIsPaid
     ? "Spotlight Subscription"
-    : "Free Spotlight";
+    : "Promote your shop";
   const spotlightPortalSubtitle = spotlightModeIsPaid
     ? "Use the paid lane only after the subscription payment is confirmed."
-    : "Show one clear shop update to people inside your community.";
+    : "Show one item or offer to people in your community.";
   const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid
     ? "financeInstitution"
     : "megaphone";
   const spotlightStepBadges = [
-    { key: "upload", label: "1. Product update" },
-    { key: "preview", label: "2. Publish" },
+    { key: "upload", label: "1. Add details" },
+    { key: "preview", label: "2. Check and publish" },
   ] satisfies ShopControlSpotlightStepBadge[];
   const spotlightPreviewHasPicture = Boolean(spotlightImageFile || safeStr(spotlightImageUrl));
   const spotlightPreviewHasVideo = Boolean(spotlightVideoFile || safeStr(spotlightVideoUrl));
@@ -7311,9 +7309,9 @@ export default function ShopControlPage() {
           id="shop-control-spotlight"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 54%, #EAF3FF 100%)")}
         >
-          <div style={sectionLabel()}>Spotlight publisher</div>
+          <div style={sectionLabel()}>Shop promotion</div>
           <div style={{ marginTop: 8, color: "#07172C", fontSize: isCompact ? 22 : 26, fontWeight: 950 }}>
-            Opening spotlight publisher...
+            Opening your promotion...
           </div>
         </section>
       }
@@ -7345,7 +7343,7 @@ export default function ShopControlPage() {
       <div style={institutionalBlueRailShell(isCompact)}>
         <ShopControlFieldPolish />
         <PageTopNav
-          sectionLabel="Spotlight Portal"
+          sectionLabel={spotlightModeIsPaid ? "Spotlight subscription" : "Free Spotlight"}
           title={spotlightPortalTitle}
           subtitle={spotlightPortalSubtitle}
           homeTo={routes.dashboard}
@@ -7474,12 +7472,7 @@ export default function ShopControlPage() {
                 {firstTruthy(shop?.name, "Shop not set up")}
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760, color: "#D7E3F1", lineHeight: 1.45 }}>
-                Manage your shop, public content, and Spotlight.
-              </div>
-              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(publicShopReady)}>{labelWithIcon("shop", publicShopReady ? "Public shop ready" : "Setup needed")}</span>
-                <span style={badge(occupiedPublicProductSlotCount > 0)}>{labelWithIcon("cart", productStatusLabel)}</span>
-                <span style={badge(Boolean(currentActiveSpotlight))}>{labelWithIcon("megaphone", `Spotlight ${spotlightStatusLabel}`)}</span>
+                Manage what customers see and choose what to do next.
               </div>
             </div>
             <div
@@ -7489,11 +7482,8 @@ export default function ShopControlPage() {
                 boxShadow: "0 18px 36px rgba(2,12,27,0.18)",
               }}
             >
-              <div style={sectionLabel()}>Next action</div>
-              <div style={{ marginTop: 8, color: "#07172C", fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
-                {ownerPrimaryAction.label}
-              </div>
-              <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
+              <div style={sectionLabel()}>Your next step</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13, lineHeight: 1.4 }}>
                 {ownerPrimaryAction.detail}
               </div>
               <StableCtaLink
@@ -7521,31 +7511,38 @@ export default function ShopControlPage() {
                 key={card.key}
                 style={{
                   ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,250,255,0.94) 100%)"),
-                  minHeight: isCompact ? 118 : 142,
+                  minHeight: isCompact ? 0 : 142,
                   display: "grid",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : "1fr",
+                  alignItems: isCompact ? "center" : "stretch",
                   alignContent: "space-between",
-                  gap: 10,
+                  gap: isCompact ? 12 : 10,
+                  padding: isCompact ? 12 : undefined,
                 }}
               >
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     {inlineIcon(card.icon, "#0F5EAA", 15)}
                     <div style={{ ...sectionLabel(), color: "#27496A" }}>{card.label}</div>
                   </div>
-                  <div style={{ marginTop: 8, color: "#07172C", fontSize: 17, fontWeight: 950, lineHeight: 1.15 }}>
+                  <div style={{ marginTop: isCompact ? 5 : 8, color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, lineHeight: 1.15 }}>
                     {card.value}
                   </div>
-                  <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.32 }}>
+                  <div style={{ marginTop: 6, ...helperText(), display: isCompact ? "none" : undefined, fontSize: 12.5, lineHeight: 1.32 }}>
                     {card.detail}
                   </div>
                 </div>
                 <StableCtaLink
                   to={card.to}
                   kind="secondary"
-                  fullWidth
-                  stableHeight={42}
+                  fullWidth={!isCompact}
+                  stableHeight={isCompact ? 48 : 42}
                   debugId={card.debugId}
-                  style={{ fontSize: 12, borderRadius: 14 }}
+                  style={{
+                    fontSize: 12,
+                    borderRadius: 14,
+                    ...(isCompact ? { minWidth: 126, padding: "8px 10px" } : {}),
+                  }}
                 >
                   {card.action}
                 </StableCtaLink>
@@ -7573,9 +7570,9 @@ export default function ShopControlPage() {
               }}
             >
               <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
-                <span>{labelWithIcon("shield", "More owner tools")}</span>
+                <span>{labelWithIcon("shield", "More shop tools")}</span>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#617085", fontSize: 11.5, fontWeight: 820 }}>
-                  Vault · Spotlight plans · Repost · Capacity
+                  Private offers · paid promotion · extra space
                 </span>
               </span>
 
@@ -8891,7 +8888,13 @@ export default function ShopControlPage() {
         id="shop-control-details"
         style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 72%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Shop details</div>
+        <div style={sectionLabel()}>{shopRecordReady ? "Shop details" : "New shop"}</div>
+        <div style={{ marginTop: 8, color: "#07172C", fontSize: isCompact ? 24 : 28, fontWeight: 950, lineHeight: 1.1 }}>
+          {shopRecordReady ? "Change what customers see" : "Set up your shop"}
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), maxWidth: 680, fontSize: 13.5, lineHeight: 1.45 }}>
+          Add the simple details customers need to recognise and contact your shop.
+        </div>
 
         <div
           style={{
@@ -8906,40 +8909,66 @@ export default function ShopControlPage() {
             <input
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
-              placeholder="Shop name"
-              style={{ ...inputStyle(), marginTop: 8 }}
-            />
-          </div>
-
-          <div>
-            <div style={sectionLabel()}>WhatsApp</div>
-            <input
-              value={whatsApp}
-              onChange={(e) => setWhatsApp(e.target.value)}
-              placeholder="WhatsApp number"
-              style={{ ...inputStyle(), marginTop: 8 }}
-            />
-          </div>
-
-          <div>
-            <div style={sectionLabel()}>Telegram</div>
-            <input
-              value={telegramHandle}
-              onChange={(e) => setTelegramHandle(e.target.value)}
-              placeholder="Telegram handle"
+              placeholder="What should customers call your shop?"
+              autoComplete="organization"
               style={{ ...inputStyle(), marginTop: 8 }}
             />
           </div>
 
           <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-            <div style={sectionLabel()}>Description</div>
+            <div style={sectionLabel()}>WhatsApp number</div>
+            <input
+              value={whatsApp}
+              onChange={(e) => setWhatsApp(e.target.value)}
+              placeholder="Include country code, for example +234..."
+              inputMode="tel"
+              autoComplete="tel"
+              style={{ ...inputStyle(), marginTop: 8 }}
+            />
+            <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+              Customers can use this number to contact you.
+            </div>
+          </div>
+
+          <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+            <div style={sectionLabel()}>What do you sell? (optional)</div>
             <textarea
               value={shopDescription}
               onChange={(e) => setShopDescription(e.target.value)}
-              placeholder="Tell people what this shop offers..."
+              placeholder="For example: home-cooked meals and event catering."
               style={{ ...textAreaStyle(), marginTop: 8 }}
             />
           </div>
+
+          <details
+            data-shop-details-options="true"
+            style={{
+              gridColumn: isCompact ? "auto" : "1 / span 2",
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+              padding: 12,
+            }}
+          >
+            <StableDisclosureSummary
+              debugId="shop-control.details.more-contact"
+              stableHeight={48}
+              style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}
+            >
+              More contact options (optional)
+            </StableDisclosureSummary>
+            <div style={{ marginTop: 12 }}>
+              <div style={sectionLabel()}>Telegram username</div>
+              <input
+                value={telegramHandle}
+                onChange={(e) => setTelegramHandle(e.target.value)}
+                placeholder="@yourname"
+                autoCapitalize="none"
+                style={{ ...inputStyle(), marginTop: 8 }}
+              />
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+                Add this only if customers can contact you on Telegram.
+              </div>
+            </div>
+          </details>
         </div>
 
         <div style={{ marginTop: 16, ...controlGrid(isCompact, 150) }}>
@@ -8952,18 +8981,28 @@ export default function ShopControlPage() {
             stableHeight={isCompact ? 64 : 56}
             debugId="shop-control.details.save"
           >
-            {shopActionsLocked ? "Review Identity First" : "Save Shop Details"}
+            {shopActionsLocked
+              ? "Review identity first"
+              : shopRecordReady
+                ? "Save changes"
+                : "Save shop"}
           </PrimaryButton>
 
-          <StableCtaLink
-            to={routes.shopAssets}
-            kind="secondary"
-            fullWidth
-            stableHeight={isCompact ? 64 : 56}
-            debugId="shop-control.details.manage-products"
-          >
-            Manage Products
-          </StableCtaLink>
+          {shopRecordReady ? (
+            <StableCtaLink
+              to={routes.shopAssets}
+              kind="secondary"
+              fullWidth
+              stableHeight={isCompact ? 64 : 56}
+              debugId="shop-control.details.manage-products"
+            >
+              Manage shop items
+            </StableCtaLink>
+          ) : (
+            <div style={{ ...helperText(), alignSelf: "center", fontSize: 12.5, lineHeight: 1.4 }}>
+              Save your shop first. Then you can add shop items and promote it.
+            </div>
+          )}
         </div>
       </section>
       ) : null}
@@ -8973,8 +9012,9 @@ export default function ShopControlPage() {
         id="shop-control-counts"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 52%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Shop analytics</div>
+        <div style={sectionLabel()}>Shop activity</div>
         <div
+          data-shop-activity-reading="true"
           style={{
             marginTop: 10,
             borderRadius: 24,
@@ -9010,7 +9050,7 @@ export default function ShopControlPage() {
           </div>
           <div>
             <div style={{ fontSize: isCompact ? 13 : 15, fontWeight: 850, opacity: 0.88 }}>
-              {shopAnalyticsWisdom.state}:
+              {isCompact ? "What your activity suggests" : `${shopAnalyticsWisdom.state}:`}
             </div>
             <div style={{ marginTop: 4, fontSize: isCompact ? 21 : 27, fontWeight: 950, lineHeight: 1.08 }}>
               {shopAnalyticsWisdom.headline}
@@ -9025,6 +9065,99 @@ export default function ShopControlPage() {
             </div>
           ) : null}
         </div>
+
+        <div style={{ marginTop: 14 }}>
+          <div style={{ ...sectionLabel(), color: "#27496A" }}>Last 7 days</div>
+          <div
+            aria-label="Shop activity first-view figures"
+            style={{
+              marginTop: 8,
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            {[
+              { label: "Visitors", value: attentionVisitors7Days },
+              { label: "Item opens", value: attentionProductOpens7Days },
+              { label: "Contact taps", value: attentionContactTaps7Days },
+            ].map((item) => (
+              <div
+                key={`shop-activity-first-${item.label}`}
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(15,94,170,0.12)",
+                  background: "rgba(255,255,255,0.92)",
+                  padding: isCompact ? "10px 8px" : 12,
+                  textAlign: "center",
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ color: "#07172C", fontSize: isCompact ? 21 : 24, fontWeight: 950, lineHeight: 1 }}>
+                  {item.value}
+                </div>
+                <div style={{ marginTop: 6, color: "#385773", fontSize: isCompact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.2 }}>
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          data-shop-activity-next-step="true"
+          style={{
+            marginTop: 12,
+            ...innerCard("linear-gradient(180deg, #F1FFF9 0%, #FFFFFF 100%)"),
+            border: "1px solid rgba(46,155,98,0.16)",
+          }}
+        >
+          <div style={sectionLabel()}>Your next step</div>
+          <div style={{ marginTop: 7, color: "#385773", fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>
+            {marketIntelligencePrimaryAction.detail}
+          </div>
+          <StableCtaLink
+            to={marketIntelligencePrimaryAction.to}
+            onClick={() => trackMarketIntelligenceAction(marketIntelligencePrimaryAction.actionKey)}
+            debugId="shop-control.market-intelligence.primary-action"
+            kind="primary"
+            fullWidth
+            stableHeight={isCompact ? 52 : 48}
+            style={{ marginTop: 10 }}
+          >
+            {marketIntelligencePrimaryAction.label}
+          </StableCtaLink>
+        </div>
+
+        <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11.5, fontWeight: 800, lineHeight: 1.4 }}>
+          These numbers show activity inside GSN. They do not prove a sale or payment.
+        </div>
+
+        <details
+          data-shop-activity-details="true"
+          open={isCompact ? undefined : true}
+          style={{ marginTop: 14 }}
+        >
+          <StableDisclosureSummary
+            debugId="shop-control.analytics.more.toggle"
+            stableHeight={52}
+            style={{
+              display: isCompact ? "grid" : "none",
+              color: "#0B2D4A",
+              fontSize: 13,
+              fontWeight: 950,
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+              padding: "8px 12px",
+            }}
+          >
+            <span style={{ display: "grid", gap: 2 }}>
+              <span>See activity details</span>
+              <span style={{ color: "#617085", fontSize: 11, fontWeight: 800 }}>
+                Shop health, promotion, visits, contacts and trade records
+              </span>
+            </span>
+          </StableDisclosureSummary>
+          <div style={{ marginTop: isCompact ? 12 : 0 }}>
         <div
           aria-label="Shop health visual summary"
           style={{
@@ -10198,45 +10331,6 @@ export default function ShopControlPage() {
                 Recheck: {shopAnalyticsWisdom.recheckPoint}
               </div>
             </div>
-            <div
-              style={{
-                marginTop: 12,
-                borderRadius: 16,
-                border: "1px solid rgba(15,94,170,0.16)",
-                background: "linear-gradient(180deg, #F8FBFF 0%, #EAF4FF 100%)",
-                padding: 12,
-                display: activeOpportunityEnginePanel === "signals" ? "flex" : "none",
-                justifyContent: "space-between",
-                gap: 10,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Recommended next move</div>
-                <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                  {marketIntelligencePrimaryAction.detail}
-                </div>
-              </div>
-              <StableCtaLink
-                to={marketIntelligencePrimaryAction.to}
-                onClick={() => trackMarketIntelligenceAction(marketIntelligencePrimaryAction.actionKey)}
-                debugId="shop-control.market-intelligence.primary-action"
-                stableHeight={38}
-                style={{
-                  borderRadius: 999,
-                  padding: "0 13px",
-                  background: "#FFFFFF",
-                  color: "#0F5EAA",
-                  border: "1px solid rgba(15,94,170,0.18)",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
-                }}
-              >
-                {marketIntelligencePrimaryAction.label}
-              </StableCtaLink>
-            </div>
             <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" && !isCompact ? "grid" : "none", gap: 8 }}>
               {shopAnalyticsWisdom.actions.slice(0, 3).map((item, index) => {
                 const actionKey = marketIntelligenceActionKey(item, index);
@@ -10441,6 +10535,8 @@ export default function ShopControlPage() {
         >
           Visitors, views, opens, and taps are attention signals. They are not buyers, sales, payment proof, verification, or a trust score.
         </div>
+          </div>
+        </details>
       </section>
       ) : null}
       {activeOwnerLayer === "vault" ? (

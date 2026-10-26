@@ -147,7 +147,7 @@ export default function VideoSoundEditor({
   }
 
   return (
-    <div style={{ ...brandInnerCard(), padding: 12, marginTop: 12 }}>
+    <div style={{ ...brandInnerCard(), padding: 10, marginTop: 10 }}>
       <StableButton
         type="button"
         kind="secondary"
@@ -161,11 +161,11 @@ export default function VideoSoundEditor({
       </StableButton>
 
       {open ? (
-        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+        <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
           <div>
             <div style={brandSectionLabel()}>Sound for this video</div>
             <p style={{ ...brandHelperText(), margin: "5px 0 0" }}>
-              Record a short voice or choose sound you created or have permission to use.
+              Choose a sound file or record up to 10 seconds. Use only sound you own or can use.
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function VideoSoundEditor({
               fontSize: 13,
             }}
           >
-            Choose sound file
+            Choose sound
             <input
               type="file"
               accept={SOUND_ACCEPT}
@@ -267,6 +267,7 @@ export default function VideoSoundEditor({
                 }}
               >
                 <input
+                  id={`${debugIdPrefix}.rights`}
                   type="checkbox"
                   checked={value.rightsConfirmed}
                   disabled={disabled}
@@ -303,7 +304,7 @@ export default function VideoSoundEditor({
             </p>
           ) : null}
           <p style={{ ...brandHelperText(), margin: 0 }}>
-            GSN does not provide a popular-music library yet. Music licensing and rights management must be established first.
+            No music library yet. Add only sound you have permission to use.
           </p>
         </div>
       ) : null}

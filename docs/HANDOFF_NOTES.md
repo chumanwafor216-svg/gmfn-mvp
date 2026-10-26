@@ -8,6 +8,126 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Shop Activity phone first-view simplification - 2026-10-26
+
+- Continued the owner-requested plain-language correction into
+  `/app/shop-control#shop-control-counts`. The old phone first view repeated
+  one diagnosis through a second hero, four status cards, a meaning block, a
+  three-step plan, an evidence strip and a disclaimer before giving the owner
+  an action.
+- The phone first view now shows one `What your activity suggests` reading,
+  three truthful last-seven-day figures (`Visitors`, `Item opens`, and
+  `Contact taps`), one state-derived `Your next step`, and an explicit warning
+  that GSN activity does not prove a sale or payment.
+- The complete picture-led Shop Health report, all six analytics panels and
+  all seven Opportunity Engine panels remain available behind the closed `See
+  activity details` disclosure on phone. The same disclosure remains open by
+  default on desktop.
+- The next-step control is the same existing tracked action moved earlier on
+  the surface; no action root was added or removed. Analytics data,
+  calculations, state diagnosis, routes, tracking, permissions and backend
+  behavior did not change. The frozen Dashboard Market Wisdom area was not
+  edited.
+- Verification passed the Shop Control action inventory, Spotlight controls,
+  Spotlight system-feed contract, the 390x844 browser audit (including the
+  collapsed first view and every preserved analytics/opportunity panel), the
+  293-module production build, TypeScript, and the complete protected-button
+  suite.
+- Known unrelated audit state: `audit-link-contracts` still has the existing
+  Community Home `Manage shop` and Login publish-return expectation failures;
+  neither route was changed by this package.
+- Test limitation and deployment truth: verification used a mocked 390x844
+  browser rather than the owner's physical phone or live analytics data. This
+  continuation is local only and remains uncommitted, unpushed and undeployed
+  with the wider simplification batch.
+
+## Shop Details phone simplification - 2026-10-26
+
+- Continued the owner-requested novice-language work into
+  `/app/shop-control#shop-control-details`, the first task reached by a member
+  whose shop is not set up.
+- The form now says `Set up your shop` for a new owner and `Change what
+  customers see` for an existing owner. Shop name, WhatsApp number and the
+  optional description are first; Telegram remains stored and editable but is
+  closed behind `More contact options (optional)`.
+- A new owner now sees one `Save shop` action and a short explanation of what
+  comes next. `Manage shop items` appears only after the shop exists. Existing
+  owners use `Save changes`. Save success now says `Shop details saved` instead
+  of exposing billboard/system implementation language.
+- Corrected the overview guidance at the same time: this form manages name,
+  contact and description, not the separate shop-picture task.
+- The four stored fields, shop create/update request, community-review result,
+  routes, permissions, action inventory, native-field inventory and backend
+  behavior did not change.
+- Verification passed the Shop Control inventory, Spotlight controls, the
+  390x844 Shop Details/overview/analytics browser audit, the 293-module
+  production build, the complete protected-button suite and scoped `git diff
+  --check`.
+- Known unrelated audit state: `audit-link-contracts` still fails its existing
+  Community Home `Manage shop` and Login publish-return expectations. The
+  updated Shop Details save assertion passed before those later failures; this
+  package did not change either unrelated page.
+- Deployment truth: this continuation is local only and remains in the same
+  uncommitted, unpushed and undeployed simplification batch.
+
+## Shop Control first-view simplification - 2026-10-26
+
+- Trigger: after the Free Spotlight correction, the owner asked to continue
+  simplifying wording and surfaces for members who should not need to
+  understand internal GSN terminology.
+- The `/app/shop-control` overview now shows the shop name and one truthful,
+  state-aware `Your next step`. It no longer repeats the same state through
+  three hero badges, a duplicate action heading, and five tall phone cards.
+- The five required first-level routes remain, but on phone they are compact
+  action rows named `Your public shop`, `Shop items`, `Shop activity`, `Shop
+  promotion`, and `Shop update`. Private offers, paid promotion,
+  cross-community promotion, extra space, and trade records remain reachable
+  behind the closed `More shop tools` disclosure.
+- Corrected an existing false status: the public-product count was also being
+  shown as the Shop Diary status even though this page does not load a Diary
+  count. Shop Update now truthfully invites the owner to `Write a short
+  message` instead of inventing a count.
+- Routes, permissions, action count/order, backend calls, Spotlight lifecycle,
+  paid tools, focused product/Diary tasks, media behavior and frozen Market
+  Wisdom were not changed.
+- Verification passed the Shop Control action inventory, Spotlight controls,
+  the 390x844 Shop Control overview/analytics browser visual audit, the
+  293-module production frontend build, the complete protected-button freeze
+  suite, and scoped `git diff --check`.
+- Deployment truth: this continuation is local only. It is not committed,
+  pushed, or deployed, and remains in the same unpublished batch as the Free
+  Spotlight phone correction below.
+
+## Free Spotlight phone publish-path correction - 2026-10-26
+
+- Trigger: the owner supplied a phone recording of `/app/shop-control` where
+  the Free Spotlight composer became unnecessarily long after optional sound
+  and Natural Finish controls opened, while the only bottom action was a
+  disabled `Preview` button and no publish-labelled action was visible.
+- Corrected the caged workflow with an explicit owner-approved exception:
+  - the compact header now uses a two-column phone layout;
+  - the first surface now says `Promote your shop`, `What are you selling?`,
+    `Add a picture or short video`, and `How should customers contact you?`;
+  - `Check and publish` appears immediately after the required message/media
+    composer and remains sticky on phone;
+  - recoverable media and sound-rights blockers now explain the first fix on
+    tap instead of silently disabling the action;
+  - sound and automatic Natural Finish are inside one closed `Video options`
+    disclosure. The separate prepare-finish decision and persistent internal
+    shop-record-ready message are removed;
+  - enabled Natural Finish is prepared from `Check and publish`, then the user
+    enters the required review where `Publish now` is the only write action;
+  - optional sound and finish guidance is shorter. No media gate, permission,
+    quota, payment, serving, pacing or final-review rule changed.
+- Regression coverage: `audit:spotlight-controls` now cages the visible action
+  and automatic Natural Finish handoff. `audit:spotlight-controls`,
+  `audit:shop-control-button-inventory`, the full
+  `audit:protected-button-freeze` suite, and `npm --prefix frontend run build`
+  all passed. `git diff --check` passed for the scoped implementation files.
+- Deployment truth: this correction is implemented and verified locally but is
+  not yet committed, pushed, or deployed. Do not report it live until an exact
+  revision is promoted to `main` and Render acceptance/live evidence exists.
+
 ## Pre-React phone shortcut startup recovery - 2026-10-25
 
 - Trigger: an older Android home-screen icon opened a white body between the

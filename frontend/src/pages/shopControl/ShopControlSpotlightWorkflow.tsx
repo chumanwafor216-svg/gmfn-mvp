@@ -5,11 +5,11 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableButton,
+  StableDisclosureSummary,
 } from "../../components/StableButton";
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
 import { publicApiOrigin } from "../../lib/publicLinks";
-import { SPOTLIGHT_VIDEO_QUALITY_GUIDANCE } from "../../lib/spotlightPilot";
 import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
 function safeSpotlightText(value: unknown): string {
@@ -209,6 +209,77 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
       currentActiveSpotlight?.serving_status
     ) === "correction_hold";
 
+  function focusSpotlightTarget(targetId: string, openVideoOptions = false) {
+    if (openVideoOptions) {
+      const options = document.querySelector<HTMLDetailsElement>("[data-spotlight-video-options]");
+      if (options) options.open = true;
+    }
+    window.setTimeout(() => {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.scrollIntoView({ block: "center" });
+      target.focus({ preventScroll: true });
+    }, 0);
+  }
+
+  async function openSpotlightReview() {
+    if (preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish) {
+      showNotice("info", "GSN is still getting your picture or video ready. Keep this page open for a moment.");
+      return;
+    }
+    if (spotlightVideoSound && !spotlightVideoSound.rightsConfirmed) {
+      showNotice("info", "Confirm that you created the added sound or have permission to use it.");
+      focusSpotlightTarget("shop-control.spotlight.video-sound.rights", true);
+      return;
+    }
+    if (spotlightMediaFeedback?.tone === "error") {
+      showNotice("error", spotlightMediaFeedback.text);
+      focusSpotlightTarget("shop-control-spotlight-add-picture");
+      return;
+    }
+    if (!spotlightHasImage && !spotlightHasVideo) {
+      showNotice("info", "Add a picture or short video so customers can see what you are selling.");
+      focusSpotlightTarget("shop-control-spotlight-add-picture");
+      return;
+    }
+    if (
+      !safeSpotlightText(spotlightProductName) &&
+      !safeSpotlightText(spotlightPriceNote) &&
+      !safeSpotlightText(spotlightMessage)
+    ) {
+      showNotice("info", "Tell customers what you are selling or give them a short message.");
+      focusSpotlightTarget("shop-control-spotlight-item");
+      return;
+    }
+    if (!spotlightCanContinueToPreview) {
+      showNotice("info", "Check the item, picture or video, and customer message, then try again.");
+      return;
+    }
+    if (spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) {
+      const preparedUrl = await prepareSpotlightNaturalFinish();
+      if (!preparedUrl) return;
+    }
+    setSpotlightFlowStep("preview");
+  }
+
+  const isPaidDraft = spotlightPriorityMode === "paid";
+  const memberFacingTitle =
+    spotlightFlowStep === "preview"
+      ? "Check before publishing"
+      : isPaidDraft
+        ? spotlightPortalTitle
+        : "Show customers what you’re selling";
+  const memberFacingSubtitle =
+    spotlightFlowStep === "preview"
+      ? "Make sure the item, price and customer message are correct."
+      : isPaidDraft
+        ? spotlightPortalSubtitle
+        : "Add one item or offer, a picture or video, and how customers should contact you.";
+  const videoOptionsSummary = [
+    spotlightNaturalFinishEnabled ? "Automatic improvement on" : "Automatic improvement off",
+    spotlightVideoSound ? "Sound added" : "",
+  ].filter(Boolean).join(" · ");
+
   return (
     <section
       id="shop-control-spotlight"
@@ -217,17 +288,17 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
-          gap: 14,
+          gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "72px minmax(0, 1fr)",
+          gap: isCompact ? 10 : 14,
           alignItems: "center",
         }}
       >
         <div
           aria-hidden="true"
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: 22,
+            width: isCompact ? 44 : 64,
+            height: isCompact ? 44 : 64,
+            borderRadius: isCompact ? 15 : 22,
             display: "grid",
             placeItems: "center",
             background: "rgba(255,255,255,0.97)",
@@ -237,35 +308,41 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               "0 16px 30px rgba(6,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
           }}
         >
-          <GsnLegacyIcon name={spotlightLaneIcon} size={38} />
+          <GsnLegacyIcon name={spotlightLaneIcon} size={isCompact ? 28 : 38} />
         </div>
 
         <div>
-          <div style={sectionLabel()}>Spotlight publisher</div>
+          <div style={sectionLabel()}>{isPaidDraft ? "Spotlight subscription" : "Free Spotlight"}</div>
           <div
             style={{
-              marginTop: 8,
+              marginTop: isCompact ? 4 : 8,
               color: "#07172C",
-              fontSize: isCompact ? 23 : 28,
+              fontSize: isCompact ? 21 : 28,
               fontWeight: 950,
               lineHeight: 1.08,
             }}
           >
-            {spotlightPortalTitle}
+            {memberFacingTitle}
           </div>
-          <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-            {spotlightPortalSubtitle}
+          <div style={{ marginTop: isCompact ? 5 : 8, ...helperText(), maxWidth: 760 }}>
+            {memberFacingSubtitle}
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {spotlightStepBadges.map((item) => (
-          <span key={item.key} style={badge(spotlightFlowStep === item.key)}>
-            {item.label}
+      <div style={{ marginTop: isCompact ? 11 : 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {isCompact ? (
+          <span style={badge(true)}>
+            {spotlightFlowStep === "preview" ? "2 of 2 · Check and publish" : "1 of 2 · Add details"}
           </span>
-        ))}
-        <span style={badge(false)}>Community: {communityName}</span>
+        ) : (
+          spotlightStepBadges.map((item) => (
+            <span key={item.key} style={badge(spotlightFlowStep === item.key)}>
+              {item.label}
+            </span>
+          ))
+        )}
+        <span style={badge(false)}>{communityName}</span>
       </div>
 
       {spotlightFeatureOff ? (
@@ -488,6 +565,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <StableButton
+                    id="shop-control-spotlight-add-picture"
                     type="button"
                     onClick={() => {
                       if (!routes.publicShopSpotlightPreview) {
@@ -524,7 +602,13 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
         );
       })() : null}
       {spotlightPublishFeedback ? (
-        <div style={{ marginTop: 14, ...noticeCard(spotlightPublishFeedback.tone) }}>
+        <div
+          style={{
+            marginTop: 14,
+            ...noticeCard(spotlightPublishFeedback.tone),
+            ...(isCompact ? { padding: "10px 12px", fontSize: 13, lineHeight: 1.4 } : {}),
+          }}
+        >
           {spotlightPublishFeedback.text}
         </div>
       ) : null}
@@ -622,17 +706,17 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
         ) : spotlightFlowStep === "upload" ? (
           <>
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>{labelWithIcon("megaphone", "Create one shop update")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("megaphone", "Promote one item or offer")}</div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontSize: isCompact ? 21 : 24, fontWeight: 950, lineHeight: 1.1 }}>
-                Picture / video, item, message.
+                Tell customers what you have.
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Keep it simple outside. GSN handles the shop link, community, timing, and publishing rules inside.
+                Add the item, a picture or short video, and how customers should contact you.
               </div>
 
               {correctionHoldActive ? (
                 <div style={{ marginTop: 14 }}>
-                  <div style={sectionLabel()}>Corrected shop product (optional)</div>
+                  <div style={sectionLabel()}>What needs correcting? (optional)</div>
                   <select
                     value={spotlightCorrectionProductId || ""}
                     onChange={(event) =>
@@ -642,7 +726,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     }
                     style={{ ...inputStyle(), marginTop: 8 }}
                   >
-                    <option value="">Wording or media only</option>
+                    <option value="">Words or picture/video only</option>
                     {products
                       .filter(
                         (product) =>
@@ -659,8 +743,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                       ))}
                   </select>
                   <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5 }}>
-                    Choosing another eligible product from this shop is a correction,
-                    not a new purchase. The original activation and expiry stay unchanged.
+                    You can correct this promotion without starting or paying for a new one.
                   </div>
                 </div>
               ) : null}
@@ -674,20 +757,22 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 }}
               >
                 <div>
-                  <div style={sectionLabel()}>Item or offer</div>
+                  <div style={sectionLabel()}>What are you selling?</div>
                   <input
+                    id="shop-control-spotlight-item"
                     value={spotlightProductName}
                     onChange={(e) => setSpotlightProductName(e.target.value)}
-                    placeholder="Fish for sale"
+                    placeholder="Fresh fish"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
                 <div>
-                  <div style={sectionLabel()}>Price or key detail</div>
+                  <div style={sectionLabel()}>Price or important detail (optional)</div>
                   <input
+                    id="shop-control-spotlight-price"
                     value={spotlightPriceNote}
                     onChange={(e) => setSpotlightPriceNote(e.target.value)}
-                    placeholder="Quarter box N90k"
+                    placeholder="₦90,000 for a quarter box"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -703,12 +788,12 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
               >
-                <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
+                <div style={sectionLabel()}>{labelWithIcon("image", "Add a picture or short video")}</div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
-                  Add a picture, a short video, or both. Use what people will understand fastest.
+                  Choose what helps customers understand the item fastest.
                 </div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
-                  {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
+                  For video: use good light, hold the phone steady and keep the item in view. GSN uses the first 10 seconds.
                 </div>
                 {spotlightMediaFeedback ? (
                   <div
@@ -838,99 +923,142 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <div style={sectionLabel()}>{labelWithIcon("pen", "Message")}</div>
+                <div style={sectionLabel()}>{labelWithIcon("pen", "How should customers contact you?")}</div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
-                  Tell customers what is available or how to order.
+                  Give one simple next step.
                 </div>
                 <textarea
+                  id="shop-control-spotlight-customer-message"
                   value={spotlightMessage}
                   onChange={(e) => { setSpotlightMessage(e.target.value); setSpotlightFinishedVideoUrl(''); }}
                   placeholder="Available today. Message me on WhatsApp to order."
                   style={{ ...textAreaStyle(), marginTop: 10 }}
                 />
               </div>
+
+              <div
+                data-spotlight-publish-actions="persistent"
+                style={{
+                  marginTop: 12,
+                  ...controlGrid(isCompact, 150),
+                  ...(isCompact
+                    ? {
+                        position: "sticky",
+                        top: 68,
+                        zIndex: 8,
+                        padding: 8,
+                        borderRadius: 18,
+                        border: "1px solid rgba(13,95,168,0.14)",
+                        background: "rgba(248,251,255,0.96)",
+                        boxShadow: "0 12px 26px rgba(6,24,39,0.14)",
+                        backdropFilter: "blur(12px)",
+                      }
+                    : {}),
+                }}
+              >
+                <PrimaryButton
+                  type="button"
+                  onClick={() => openSpotlightReview()}
+                  disabled={
+                    preparingSpotlightImage ||
+                    preparingSpotlightVideo ||
+                    preparingSpotlightFinish ||
+                    creatingSpotlight
+                  }
+                  busy={preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish}
+                  busyLabel={preparingSpotlightFinish ? "Improving video..." : "Getting media ready..."}
+                  fullWidth
+                  debugId="shop-control.spotlight.upload.preview"
+                >
+                  Check and publish
+                </PrimaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={collapseSpotlightTools}
+                  fullWidth
+                  debugId="shop-control.spotlight.upload.cancel"
+                >
+                  Close
+                </SecondaryButton>
+              </div>
+
               {spotlightVideoFile ? (
-                <>
-                <VideoSoundEditor
-                  value={spotlightVideoSound}
-                  onChange={(sound) => { setSpotlightVideoSound(sound); setSpotlightFinishedVideoUrl(""); }}
-                  disabled={preparingSpotlightVideo || preparingSpotlightFinish || creatingSpotlight}
-                  debugIdPrefix="shop-control.spotlight.video-sound"
-                />
-                <div style={{ marginTop: 14, ...innerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
-                  <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 900, color: '#0B2D4A' }}>
-                    <input
-                      type="checkbox"
-                      checked={spotlightNaturalFinishEnabled}
-                      onChange={(event) => { setSpotlightNaturalFinishEnabled(event.target.checked); setSpotlightFinishedVideoUrl(''); }}
-                    />
-                    Add GSN Natural Finish
-                  </label>
-                  <div style={{ ...helperText(), fontSize: 12 }}>
-                    Gently improves clarity, reduces file size, and adds your shop name, public contact and logo. It does not change the product or certify its condition.
-                  </div>
-                  {spotlightNaturalFinishEnabled ? (
-                    <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select
-                        value={spotlightNaturalFinishSeconds}
-                        onChange={(event) => { setSpotlightNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10); setSpotlightFinishedVideoUrl(''); }}
-                        style={{ ...inputStyle(), width: 'auto', minWidth: 150 }}
-                      >
-                        <option value={5}>5-second finish</option>
-                        <option value={10}>10-second finish</option>
-                      </select>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        onClick={() => prepareSpotlightNaturalFinish()}
-                        disabled={preparingSpotlightFinish}
-                        busy={preparingSpotlightFinish}
-                        busyLabel="Preparing..."
-                        debugId="shop-control.spotlight.video-finish"
-                      >
-                        {spotlightFinishedVideoUrl ? 'Prepare again' : 'Prepare finished preview'}
-                      </StableButton>
-                      {spotlightFinishedVideoUrl ? <span style={badge(true)}>Finished preview ready</span> : null}
+                <details data-spotlight-video-options style={{ marginTop: 10 }}>
+                  <StableDisclosureSummary
+                    debugId="shop-control.spotlight.video-options"
+                    stableHeight={44}
+                    style={{
+                      display: "grid",
+                      gap: 2,
+                      padding: "9px 12px",
+                      borderRadius: 16,
+                      border: "1px solid rgba(13,95,168,0.18)",
+                      background: "rgba(255,255,255,0.86)",
+                      color: "#0B2D4A",
+                      fontWeight: 900,
+                      listStyle: "none",
+                    }}
+                  >
+                    <span>Video options</span>
+                    <span style={{ ...helperText(), fontSize: 12, fontWeight: 700 }}>
+                      {videoOptionsSummary}
+                    </span>
+                  </StableDisclosureSummary>
+
+                  <div style={{ marginTop: 8, ...innerCard("#F8FBFF"), display: "grid", gap: 10 }}>
+                    <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontWeight: 900, color: "#0B2D4A" }}>
+                      <input
+                        type="checkbox"
+                        checked={spotlightNaturalFinishEnabled}
+                        onChange={(event) => {
+                          setSpotlightNaturalFinishEnabled(event.target.checked);
+                          setSpotlightFinishedVideoUrl("");
+                        }}
+                      />
+                      Improve my video automatically
+                    </label>
+                    <div style={{ ...helperText(), fontSize: 12 }}>
+                      GSN Natural Finish adds your shop name and prepares the clip. It does not change the item or certify its condition.
                     </div>
-                  ) : null}
-                </div>
-                </>
+                    {spotlightNaturalFinishEnabled ? (
+                      <div style={{ display: "flex", gap: 9, alignItems: "center", flexWrap: "wrap" }}>
+                        <label style={{ color: "#0B2D4A", fontSize: 12, fontWeight: 850 }}>
+                          Finish length
+                          <select
+                            value={spotlightNaturalFinishSeconds}
+                            onChange={(event) => {
+                              setSpotlightNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10);
+                              setSpotlightFinishedVideoUrl("");
+                            }}
+                            style={{ ...inputStyle(), width: "auto", minWidth: 170, marginTop: 6 }}
+                          >
+                            <option value={5}>Short · 5 seconds</option>
+                            <option value={10}>Full · 10 seconds</option>
+                          </select>
+                        </label>
+                        {spotlightFinishedVideoUrl ? <span style={badge(true)}>Improved video ready</span> : null}
+                      </div>
+                    ) : null}
+
+                    <VideoSoundEditor
+                      value={spotlightVideoSound}
+                      onChange={(sound) => {
+                        setSpotlightVideoSound(sound);
+                        setSpotlightFinishedVideoUrl("");
+                      }}
+                      disabled={preparingSpotlightVideo || preparingSpotlightFinish || creatingSpotlight}
+                      debugIdPrefix="shop-control.spotlight.video-sound"
+                    />
+                  </div>
+                </details>
               ) : null}
             </div>
 
-            <div style={controlGrid(isCompact, 150)}>
-              <PrimaryButton
-                type="button"
-                onClick={() => setSpotlightFlowStep("preview")}
-                disabled={
-                  preparingSpotlightImage ||
-                  preparingSpotlightVideo ||
-                  preparingSpotlightFinish ||
-                  Boolean(spotlightVideoFile && spotlightNaturalFinishEnabled && !spotlightFinishedVideoUrl) ||
-                  Boolean(spotlightVideoSound && !spotlightVideoSound.rightsConfirmed) ||
-                  !spotlightCanContinueToPreview
-                }
-                busy={preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish}
-                busyLabel="Preparing media..."
-                fullWidth
-                debugId="shop-control.spotlight.upload.preview"
-              >
-                Preview
-              </PrimaryButton>
-              <SecondaryButton
-                type="button"
-                onClick={collapseSpotlightTools}
-                fullWidth
-                debugId="shop-control.spotlight.upload.cancel"
-              >
-                Cancel
-              </SecondaryButton>
-            </div>
           </>
         ) : (
           <>
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>{labelWithIcon("eye", "Preview")}</div>
+              <div style={sectionLabel()}>{labelWithIcon("eye", "Check before publishing")}</div>
               <div style={{ marginTop: 10 }}>
                 {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
                   <SpotlightMediaFrame
@@ -969,10 +1097,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   >
                     <div>
                       <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 900 }}>
-                        No media is ready yet
+                        Add a picture or video first
                       </div>
                       <div style={{ marginTop: 8, ...helperText(), fontSize: 13, maxWidth: 260 }}>
-                        Go back and add the picture or short video first.
+                        Choose Change details below, then add the picture or short video.
                       </div>
                     </div>
                   </div>
@@ -985,7 +1113,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 <span style={badge(true)}>
                   {labelWithIcon(
                     spotlightPriorityMode === "paid" ? "financeInstitution" : "megaphone",
-                    spotlightPriorityMode === "paid" ? "Paid lane" : "Free lane"
+                    spotlightPriorityMode === "paid" ? "Paid promotion" : "Free promotion"
                   )}
                 </span>
                 {spotlightPreviewHasPicture ? (
@@ -998,14 +1126,6 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             </div>
 
             <div style={controlGrid(isCompact, 150)}>
-              <SecondaryButton
-                type="button"
-                onClick={() => setSpotlightFlowStep("upload")}
-                fullWidth
-                debugId="shop-control.spotlight.preview.back"
-              >
-                Back to upload
-              </SecondaryButton>
               <PrimaryButton
                 type="button"
                 onClick={() => handleCreateSpotlight()}
@@ -1019,15 +1139,15 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   ? "Publish after identity review"
                   : creatingSpotlight
                   ? "Publishing..."
-                  : "Publish spotlight"}
+                  : "Publish now"}
               </PrimaryButton>
               <SecondaryButton
                 type="button"
-                onClick={collapseSpotlightTools}
+                onClick={() => setSpotlightFlowStep("upload")}
                 fullWidth
-                debugId="shop-control.spotlight.preview.cancel"
+                debugId="shop-control.spotlight.preview.back"
               >
-                Cancel spotlight
+                Change details
               </SecondaryButton>
             </div>
           </>

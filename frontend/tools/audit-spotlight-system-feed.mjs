@@ -368,8 +368,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopSellerHelper\(shopAnalyticsWisdom\)[\s\S]*?Small Seller Helper[\s\S]*?What is happening[\s\S]*?Why it matters[\s\S]*?Try first[\s\S]*?Recommended next move/,
-  "Shop Control Market Intelligence must show the small-seller helper before deeper evidence and route actions."
+  /buildShopSellerHelper\(shopAnalyticsWisdom\)[\s\S]*?Your next step[\s\S]*?debugId="shop-control\.market-intelligence\.primary-action"[\s\S]*?Small Seller Helper[\s\S]*?What is happening[\s\S]*?Why it matters[\s\S]*?Try first/,
+  "Shop Control Market Intelligence must show one routed next step before the deeper small-seller helper and evidence."
 );
 
 assertContains(

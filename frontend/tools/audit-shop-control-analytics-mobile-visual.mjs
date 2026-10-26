@@ -618,13 +618,118 @@ try {
     localStorage.setItem("gmfn_companion_settings_local", JSON.stringify({ companionMode: "off" }));
   });
 
-  await page.goto(`${baseUrl}/app/shop-control#shop-control-counts`, { waitUntil: "networkidle", timeout: 25000 });
-  await page
-    .locator('[aria-label="Shop analytics sections"], [data-cta-id="shop-control.analytics-panel.market-intelligence"], [data-debug-id="shop-control.analytics-panel.market-intelligence"]')
-    .first()
-    .waitFor({ state: "visible", timeout: 20000 });
-
   const findings = [...sourceFindings];
+
+  await page.goto(`${baseUrl}/app/shop-control`, { waitUntil: "networkidle", timeout: 25000 });
+  const overview = page.locator("#shop-control-summary");
+  await overview.waitFor({ state: "visible", timeout: 20000 });
+  const overviewText = (await overview.innerText()).replace(/\s+/g, " ").trim();
+  const normalizedOverviewText = overviewText.toLowerCase();
+  const expectedOverviewText = [
+    "Your next step",
+    "Your public shop",
+    "Shop items",
+    "Shop activity",
+    "Shop promotion",
+    "Shop update",
+    "More shop tools",
+  ];
+  const missingOverviewText = expectedOverviewText.filter((text) => !normalizedOverviewText.includes(text.toLowerCase()));
+  if (missingOverviewText.length > 0) {
+    findings.push({
+      label: "overview:member-language",
+      findings: [
+        `missing compact overview labels: ${missingOverviewText.join(", ")}`,
+        `captured overview text: ${overviewText.slice(0, 500)}`,
+      ],
+    });
+  }
+  const forbiddenOverviewText = ["Correction hold", "More owner tools", "Vault · Spotlight plans · Repost · Capacity"];
+  const exposedOldText = forbiddenOverviewText.filter((text) => normalizedOverviewText.includes(text.toLowerCase()));
+  if (exposedOldText.length > 0) {
+    findings.push({
+      label: "overview:member-language",
+      findings: [`old implementation-facing labels remain visible: ${exposedOldText.join(", ")}`],
+    });
+  }
+
+  const compactRowHeights = await page
+    .locator('[data-cta-id^="shop-control.orientation."]:not([data-cta-id^="shop-control.orientation.primary."])')
+    .evaluateAll((controls) => controls.map((control) => Math.round(control.parentElement?.getBoundingClientRect().height || 0)));
+  if (compactRowHeights.length !== 5 || compactRowHeights.some((height) => height <= 0 || height > 96)) {
+    findings.push({
+      label: "overview:compact-rows",
+      findings: [`expected five compact phone rows no taller than 96px; measured ${JSON.stringify(compactRowHeights)}`],
+    });
+  }
+  const overviewFinding = await collectPanelAudit(page, "overview:first-view");
+  if (overviewFinding) findings.push(overviewFinding);
+
+  await page.goto(`${baseUrl}/app/shop-control#shop-control-details`, { waitUntil: "networkidle", timeout: 25000 });
+  const shopDetails = page.locator("#shop-control-details");
+  await shopDetails.waitFor({ state: "visible", timeout: 20000 });
+  const shopDetailsText = (await shopDetails.innerText()).replace(/\s+/g, " ").trim().toLowerCase();
+  const expectedShopDetailsText = [
+    "change what customers see",
+    "shop name",
+    "whatsapp number",
+    "what do you sell? (optional)",
+    "more contact options (optional)",
+    "save changes",
+    "manage shop items",
+  ];
+  const missingShopDetailsText = expectedShopDetailsText.filter((text) => !shopDetailsText.includes(text));
+  const optionalContactDetails = shopDetails.locator('[data-shop-details-options="true"]');
+  const optionalContactOpen = await optionalContactDetails.getAttribute("open");
+  const telegramVisibleBeforeOpen = await shopDetails.locator('input[placeholder="@yourname"]').isVisible();
+  if (missingShopDetailsText.length > 0 || optionalContactOpen !== null || telegramVisibleBeforeOpen) {
+    findings.push({
+      label: "shop-details:first-view",
+      findings: [
+        ...(missingShopDetailsText.length > 0
+          ? [`missing direct Shop Details labels: ${missingShopDetailsText.join(", ")}`]
+          : []),
+        ...(optionalContactOpen !== null ? ["optional contact disclosure opened before the owner requested it"] : []),
+        ...(telegramVisibleBeforeOpen ? ["Telegram field was visible on the first phone surface"] : []),
+      ],
+    });
+  }
+  const shopDetailsFinding = await collectPanelAudit(page, "shop-details:first-view");
+  if (shopDetailsFinding) findings.push(shopDetailsFinding);
+
+  await page.goto(`${baseUrl}/app/shop-control#shop-control-counts`, { waitUntil: "networkidle", timeout: 25000 });
+  const activityReading = page.locator('[data-shop-activity-reading="true"]');
+  await activityReading.waitFor({ state: "visible", timeout: 20000 });
+  const activityDetails = page.locator('[data-shop-activity-details="true"]');
+  const activityDetailsOpenBeforeTap = await activityDetails.getAttribute("open");
+  const analyticsSectionsVisibleBeforeTap = await page.locator('[aria-label="Shop analytics sections"]').isVisible();
+  const activityFirstViewText = (await page.locator("#shop-control-counts").innerText()).replace(/\s+/g, " ").trim().toLowerCase();
+  const expectedActivityFirstViewText = [
+    "shop activity",
+    "what your activity suggests",
+    "last 7 days",
+    "visitors",
+    "item opens",
+    "contact taps",
+    "your next step",
+    "see activity details",
+  ];
+  const missingActivityText = expectedActivityFirstViewText.filter((text) => !activityFirstViewText.includes(text));
+  if (activityDetailsOpenBeforeTap !== null || analyticsSectionsVisibleBeforeTap || missingActivityText.length > 0) {
+    findings.push({
+      label: "shop-activity:first-view",
+      findings: [
+        ...(activityDetailsOpenBeforeTap !== null ? ["the detailed analytics report opened before the owner requested it"] : []),
+        ...(analyticsSectionsVisibleBeforeTap ? ["analytics section controls were visible before See activity details was opened"] : []),
+        ...(missingActivityText.length > 0 ? [`missing concise activity labels: ${missingActivityText.join(", ")}`] : []),
+      ],
+    });
+  }
+  const activityFirstViewFinding = await collectPanelAudit(page, "shop-activity:first-view");
+  if (activityFirstViewFinding) findings.push(activityFirstViewFinding);
+
+  await tapDebug(page, "shop-control.analytics.more.toggle");
+  await page.locator('[aria-label="Shop analytics sections"]').waitFor({ state: "visible", timeout: 10000 });
 
   for (const panel of mainPanels) {
     await tapDebug(page, `shop-control.analytics-panel.${panel}`);
