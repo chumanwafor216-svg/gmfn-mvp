@@ -8,6 +8,345 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Finance payment-status contract cleanup - 2026-10-26
+
+- Corrected Finance to use the status contract already returned by
+  `GET /payment-instructions/my/expected`: plain payment label, bank/provider
+  guidance, paid amount, remaining amount and `bank_event_id`.
+- Removed stale client assumptions about nonexistent `confirmed_at` and
+  `matched_bank_event_id` response fields. Part payments now stay in the
+  completion workload, show `Part payment confirmed`, and show the amount
+  received and amount still left instead of raw values such as
+  `partial_payment_applied`.
+- Updated the compact Finance status copy from `not received yet` to `needs
+  completion`, because a part payment has been received but the expected total
+  is not complete. Payment creation, reconciliation, balances, permissions and
+  route contracts are unchanged.
+- Verification passed: the focused Finance action audit, production frontend
+  build and scoped diff check.
+
+## Loan Summary and Repayment payment-record continuity - 2026-10-26
+
+- Corrected `/app/loan-summary/:loanId` so ordinary members load repayment
+  expectations through `GET /payment-instructions/my/expected`, while platform
+  and community admins retain the broader `GET /bank/expected` view permitted
+  by the backend. Previously, the screen always used the admin-only endpoint
+  and silently showed no payment record after a normal member received `403`.
+- Replaced stale `matched_bank_event_id` and `confirmed_at` assumptions with
+  the actual `bank_event_id`, created date, safe payment label, paid/remaining
+  amounts and bank/provider guidance returned by the backend. Raw status and
+  internal reason text are no longer presented as member guidance.
+- The same authorization drift was present on `/app/payment/loans/:loanId`.
+  Corrected it so an ordinary borrower keeps the expected-payment status and
+  proof panel after reporting a payment; administrators retain their permitted
+  broader view. A newly reported payment still reads `Sent for checking` while
+  the expanded record preserves the server's underlying reconciliation state.
+- Repayment creation, reconciliation, balances, permissions, route contracts
+  and the approved phone structure are unchanged.
+- Verification passed: focused Loan actions and simple-phone source audits,
+  the production frontend build, scoped diff check, and the mocked browser
+  smoke at 390x844 and 360x780 with one visible state, one primary action, one
+  active task and no horizontal overflow.
+
+## Trust Passport repayment/reversal language continuity - 2026-10-26
+
+- Corrected `/app/trust` Evidence Story so recent trust events no longer expose
+  raw backend names such as `repayment.reversed` or
+  `loan_fully_repaid_reversed`.
+- Added shared frontend trust-event language for confirmed/reported payments,
+  full repayment, repayment and supporter reversals, missed/late/overdue
+  payments, defaults and identity evidence. Code-like reason/note values are
+  translated before display; already-written sentences are preserved.
+- Reused the shared translator in the older trust history surface so trust
+  event wording does not remain trapped in one page. Scoring, event inclusion,
+  lifecycle state, permissions and evidence calculations are unchanged.
+- Verification passed: focused Trust Passport Evidence Story audit,
+  institutional proof-surface audit, production frontend build and scoped diff
+  check. The broad `audit:trust-actions` baseline remains red for unrelated
+  Companion, DemandBox and doctrine checks plus stale Finance/Repayment wording
+  assertions; those failures were not weakened or hidden in this package.
+
+## TrustSlip repayment-caution continuity - 2026-10-26
+
+- Confirmed that TrustSlip's `last_full_repayment_at` comes from the
+  lifecycle-aware trust-score computation, so a reversed repayment is removed
+  before the holder summary is built. No duplicate frontend lifecycle rule was
+  added.
+- Corrected `/app/trust-slip` to translate raw CCI risk flags into plain
+  cautions. A historical full repayment no longer makes Finance Discipline or
+  Follow-through read `Strong` when the current summary also carries a
+  repayment-delay, missing-confirmation or default caution.
+- Trust scoring, TrustSlip issuance, verification codes, visibility,
+  permissions and public/private evidence boundaries are unchanged.
+- Verification passed: Trust Passport/TrustSlip boundary audit, TrustSlip
+  evidence-pattern audit, institutional proof-surface audit, production
+  frontend build and scoped diff check.
+- Final combined package verification passed: 62 backend repayment,
+  reconciliation, lifecycle and institutional-PDF tests, plus the focused
+  Finance, Loans and Trust Timeline evidence audits.
+
+## Repayment-reversal evidence continuity - 2026-10-26
+
+- The append-only admin reversal route already preserved the original payment
+  record, marked its lifecycle as reversed, changed the support record to
+  disputed and removed the original full-repayment evidence from clean trust
+  scoring.
+- Closed the user-facing evidence gap: the live Trust Timeline now keeps the
+  zero-delta reversal rows instead of hiding them, and the Trust Timeline PDF
+  plus Member Evidence Pack translate repayment, full-repayment and supporter
+  outcome reversals into plain language.
+- The Member Evidence Pack now includes reversal records alongside the older
+  historical repayment entry, so it no longer presents only the earlier full
+  repayment after an append-only correction. Payment references, raw event
+  names, internal IDs and metadata remain outside the redacted paper.
+- Reversal authority, lifecycle states, score calculation, support-record
+  status changes and money movement are unchanged.
+- Verification passed: all 13 lifecycle/reversal tests, all 39 institutional
+  PDF tests, the institutional proof-surface audit, Python compilation and
+  diff checks.
+
+## Overdue and missed-payment Finance continuity - 2026-10-26
+
+- Corrected Finance's attention count to prefer the trust engine's normalized
+  `missed_payments` and `defaults` aggregates. The page previously looked
+  only for raw singular and legacy event names, so genuine repayment pressure
+  could be absent from the Finance status and watch list.
+- The normalized counts are lifecycle-aware: reversed, disputed or otherwise
+  limited evidence is excluded by the trust engine before Finance reads it.
+  Raw overdue/default aliases remain only as a fallback for an older response
+  shape, avoiding double-counting when canonical fields are present.
+- No penalties, event creation, evidence lifecycle, loan status, money
+  movement, route contract or frozen Market Wisdom presentation changed.
+- Verification passed: all 26 trust/lifecycle tests, the Finance action audit,
+  the production frontend build and diff checks.
+
+## Full-repayment Finance continuity - 2026-10-26
+
+- Confirmed that the repayment service already records canonical
+  `loan.repaid` evidence and that the trust engine correctly exposes it as
+  `computed.counts.full_repayments`.
+- Corrected Finance's repayment-history summary to read that canonical
+  aggregate first. It previously checked only raw legacy event names, so a
+  genuine completed repayment could be absent from the member's Finance
+  summary even though the backend had counted it.
+- Raw historical names remain a fallback for older response shapes. The
+  canonical aggregate is preferred rather than added to those aliases, which
+  prevents the same repayment from being counted twice if both shapes appear.
+- This changes only the Finance summary reading. It does not create repayment
+  evidence, change trust scoring, move money, alter a route contract, or touch
+  the frozen Market Wisdom section.
+- Verification passed: all 13 canonical trust-event tests, the Finance action
+  audit, the production frontend build and diff checks.
+
+## Partial-payment status truth - 2026-10-26
+
+- Corrected the shared status wording for a bank-reconciled part payment. The
+  backend instruction service and both payment API serializers now say `Part
+  payment confirmed` instead of the incomplete and misleading `Authorised`.
+- The shared frontend payment-status translator now recognizes canonical
+  `partial` records, so Repayment and Loan Summary no longer fall back to
+  `Payment record available` after part of the balance has been matched.
+- The technical `authorised_partial` stage, expected-payment status, paid and
+  remaining balances, reconciliation behavior, route contracts, permissions
+  and frozen screen structures are unchanged. Existing guidance still tells
+  the member to complete the remaining payment or provider authentication.
+- Regression coverage checks the live reconciliation result, its unchanged
+  stage and remaining-balance guidance, the shared frontend translation, and
+  all three backend response contracts.
+- Verification passed: all 7 reconciliation integrity tests, the loans-action
+  audit, Python compilation, the production frontend build and diff checks.
+
+## Pay-in-parts claim continuity - 2026-10-26
+
+- Corrected the borrower `POST /loans/{loan_id}/repayment-claim` gate. It no
+  longer treats the first claim as the only claim permitted for the lifetime
+  of a support record. A duplicate click remains idempotent while the latest
+  report is waiting for finance, but a later `repayment.created` confirmation
+  closes that report and permits the next instalment report.
+- Closed and defaulted support records now reject new borrower payment reports,
+  aligning the claim route with the existing repayment service. The endpoint,
+  payload, borrower authorization, event names, payment reference, finance
+  confirmation and bank-reconciliation contracts are unchanged. No money is
+  moved by this route.
+- The finance claim queue now omits a claim once a later `repayment.created`
+  event exists for the same borrower and support record. This prevents an old
+  instalment report from continuing to look unconfirmed and being actioned a
+  second time; a later unresolved instalment becomes the one visible queue row.
+- Regression coverage proves one pending claim at a time, a second equal
+  instalment after confirmation, preserved paid and remaining balances, and
+  rejection after full repayment. The existing frontend already explains that
+  finance must confirm a reported payment, so no frozen page structure or copy
+  changed.
+- Verification passed: all 3 repayment-completion tests, all 7 reconciliation
+  integrity tests, Python compilation and the frontend loans-action audit. The
+  unresolved lifecycle limitation remains explicit: there is no finance claim
+  rejection event, so a rejected report cannot yet be closed independently of
+  a confirmed repayment.
+
+## Pay-in-full evidence continuity - 2026-10-26
+
+- Traced the live pay-in-full chain from the repayment screen and payment
+  instruction through member report, finance confirmation and automatic bank
+  application. The transaction service already records `repayment.created`,
+  marks the support record `repaid`, releases supporter responsibility and
+  records canonical `loan.repaid` evidence when the remaining balance reaches
+  zero.
+- Corrected the Member Evidence Pack allowlist so the current
+  `repayment.claimed`, `repayment.created`, `repayment.auto_applied` and
+  `loan.repaid` records are no longer silently omitted. The paper translates
+  them to plain GSN wording and continues to hide payment references, support
+  record IDs, internal member IDs and raw machine event names.
+- Added an end-to-end regression from `create_repayment` through the generated
+  Member Evidence PDF, plus layout and proof-audit coverage for the complete
+  current repayment vocabulary. No payment movement, permissions, route
+  contracts or frozen frontend structure changed.
+- Verification passed: the repayment-completion regression, all 38
+  institutional PDF tests, Python compilation and the institutional
+  proof-surface audit. A real service-built pay-in-full fixture produced one
+  page with both plain-language repayment entries, no private reference or raw
+  event code, and no non-watermark text outside the page. The PNG rendered,
+  but direct image viewing was blocked by the Windows split-root sandbox; do
+  not treat this run as a manual visual sign-off.
+
+## Member Evidence Pack PDF decision-first package - 2026-10-26
+
+- Completed the final locked institutional-document stage in
+  `build_user_evidence_pack_pdf`, presented as the GSN Member Evidence Pack.
+  The paper now leads with one plain answer, member reference, trust score,
+  evidence band and recent-activity count before a single Decision Boundary,
+  compact evidence context, recent evidence table and record security.
+- Removed repeated contact-redaction rows, the empty breakdown heading and raw
+  event-code presentation. The recognized event types have ordinary-language
+  labels; any unrecognised type is shown as `Other recorded
+  activity`. Private contacts, internal member IDs, support record numbers and
+  event metadata remain outside the redacted paper. The empty state explains
+  that no matching activity in the 30-day window is not a claim that the member
+  has no older history.
+- The member lookup, stored-score/fallback calculation, trust band, 30-day
+  window, newest-first order, 50-row limit and service signature are unchanged.
+  The allowlist now includes the active repayment lifecycle events. The
+  ordinary empty fixture stays on one page; an
+  18-entry fixture continues cleanly across two pages under repeat-headed
+  institutional tables.
+- Unabated route truth: repository search found no production API route or
+  application caller for this generator. It is currently used only by the PDF
+  smoke utility and institutional tests. This work does not invent an endpoint
+  or claim that members can download the paper in production.
+- Verification passed: all 38 institutional PDF tests, the institutional
+  proof-surface audit, Python compilation/import, one-page extraction/privacy
+  checks and two-page continuation/privacy checks. Every rendered page was
+  visually inspected with no clipping, overlap, isolated security page or raw
+  machine event. Deployment is pending; this backend-affecting package has not
+  been committed, pushed or claimed live.
+
+## Support Evidence Pack PDF decision-first package - 2026-10-26
+
+- Continued the locked institutional-document order into authenticated
+  `GET /analytics/loans/{loan_id}/evidence-pack.pdf`, presented to users as the
+  GSN Support Evidence Pack. The redacted paper now leads with the recorded
+  support status, requested amount, support gap and supporter progress, then
+  explains what the paper confirms, what it does not confirm and the first
+  live record check to make before relying on it.
+- Replaced the long key/value dump with compact fact, boundary, trust,
+  supporter, repayment, timeline and record-security blocks. An ordinary
+  empty support record stays on one page. A populated fixture with six
+  supporters, six repayments and ten linked events produces an intentional
+  two-page paper with repeat-headed tables and the institutional shell on
+  every page.
+- Private contacts, internal member IDs and event metadata remain outside the
+  redacted share copy. Unknown machine event codes are now shown as `Other
+  recorded activity`; metadata is represented only as redacted. The route,
+  authorization gates, filename, query limits, support calculations, status,
+  trust computation, redaction default and database contracts are unchanged.
+- Verification passed: all 37 institutional PDF tests, the institutional
+  proof-surface audit, one-page smoke extraction/privacy checks, and populated
+  two-page continuation/privacy checks. Every rendered page was visually
+  inspected with no clipping, overlap, isolated security page or exposed raw
+  machine event. Deployment is pending; this backend-affecting package has not
+  been committed, pushed or claimed live.
+
+## Community Evidence Pack PDF decision-first package - 2026-10-26
+
+- Continued the locked institutional-document order into community-admin
+  `GET /analytics/clans/{clan_id}/evidence-pack.pdf`. The redacted share paper
+  now leads with one plain invite-entry answer, four quick facts and a compact
+  Decision Boundary before recent entry rows, recorded activity categories and
+  record security. An ordinary one-entry snapshot stays on one page; longer
+  entry tables continue under the same institutional shell without orphaning
+  the activity or security headings.
+- Removed the misleading repeated `private member contact redacted` rows from
+  the share copy. Redacted tables now omit contact columns entirely, mask
+  invite references and generalize unknown internal event codes to `Other
+  recorded activity`. Private contacts, internal member IDs, raw event names
+  and event metadata remain out of the share paper. The empty state explains
+  that no invite-led entry or activity category is recorded in the snapshot.
+- The community-admin authorization gate, route, filename, analytics queries,
+  event calculations, complete-record service option and database contracts
+  are unchanged. The reference fingerprint is labelled as a lookup aid rather
+  than a digital signature, and the financial limitation remains in the shared
+  footer.
+- Verification passed: all 36 institutional PDF tests, the institutional
+  proof-surface audit, Python compilation, one-page deterministic smoke text
+  and privacy checks, and a two-page ten-entry continuation check. The normal
+  page and both continuation pages were visually inspected with no clipping,
+  overlap or orphan heading. Deployment is pending; this backend-affecting
+  package has not been committed, pushed or claimed live.
+
+## Trust Timeline PDF decision-first package - 2026-10-26
+
+- Continued the locked production-polish order into authenticated
+  `GET /trust/me/timeline.pdf`, its `/trust/me/trust-timeline.pdf` alias and
+  the Timeline paper embedded in the portable evidence pack. The document is
+  now decision-first: page one gives one plain answer, four quick facts, use
+  guidance, the Decision Boundary and compact evidence context; page two and
+  any continuation pages present the newest activity first in a repeat-headed
+  chronology table.
+- Internal event codes are translated into ordinary-language activity names.
+  Private contacts, payment references, support IDs, raw metadata and raw user
+  IDs remain out of the paper, while record provenance and a non-signature
+  reference fingerprint remain visible. A meaningful empty state explains
+  that no recent rows does not mean older history is absent. Auth, aliases,
+  filenames, response headers, event calculations, schemas and the existing
+  evidence-pack contract are unchanged.
+- Removed an avoidable route cost: downloading the Timeline PDF no longer
+  builds an entire evidence-pack ZIP just to obtain optional metadata. Both
+  the route and PDF adapter now fall back to the limited trust breakdown when
+  a member has no issuable community TrustSlip, instead of failing the PDF
+  request with the TrustSlip `ValueError`.
+- Verification passed: all 36 institutional PDF tests, the institutional
+  proof-surface audit, the Trust Timeline privacy-boundary audit, Python
+  compile/import checks, the authenticated Trust Timeline browser smoke and an
+  integrated two-page PDF smoke render. Both rendered pages were visually
+  inspected with no clipping or overflow. Deployment is pending; this
+  backend-affecting package has not been committed, pushed or claimed live.
+
+## TrustSlip evidence PDF decision-first package - 2026-10-26
+
+- Continued the locked production-polish order into the institutional document
+  shell for `GET /trust-slips/me/evidence.pdf` and the TrustSlip copy embedded
+  in the portable trust evidence pack. The output is now an intentional
+  two-page paper: page one gives one status answer, four quick facts, a live
+  check panel and a compact Decision Boundary; page two groups record details,
+  trust evidence, support/repayment context and current cautions.
+- Corrected two source-of-truth failures. The authenticated route and evidence
+  pack now supply the full current TrustSlip payload when one can be formed,
+  while retaining the previous safe score-summary fallback for a member
+  without an issuable community context. QR generation now uses an explicit TrustSlip verification
+  URL or the real quoted `/t/:code` path; when no public code exists, the PDF
+  shows an honest verification-unavailable warning instead of linking to the
+  nonexistent `/trust-slips/ping` route. Auth, filenames, public routes,
+  evidence calculations, database schemas and privacy boundaries are
+  unchanged.
+- The paper continues to redact internal member, support and reconciliation
+  identifiers. A reference fingerprint is labelled as a lookup aid rather than
+  a digital signature, and the financial limitation remains visible in the
+  shared footer. Both rendered pages were visually inspected after a first
+  render exposed and corrected an accidental third-page overflow.
+- Verification passed: the full 35-test institutional PDF suite, the
+  institutional proof-surface audit, Python import/compile checks and the
+  two-page smoke render. Deployment is pending; this backend-affecting package
+  has not yet been committed, pushed or claimed live.
+
 ## Repayment plain-language package - 2026-10-26
 
 - Continued the locked production-polish order into

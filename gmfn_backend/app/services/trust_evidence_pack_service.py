@@ -18,6 +18,7 @@ from app.services.trust_slip_evidence_pdf_service import build_trust_slip_pdf
 from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf
 from app.services.trust_timeline_service import list_trust_timeline
 from app.services.trust_score_service import compute_trust_breakdown
+from app.services.trust_slips_services import get_trust_slip_payload
 from app.services.evidence_lifecycle_service import resolve_trust_event_lifecycle
 
 
@@ -122,6 +123,13 @@ def build_trust_evidence_pack_zip_with_meta(
     generated_at = now.isoformat()
 
     summary = compute_trust_breakdown(db, user_id=int(user_id))
+    try:
+        trust_slip_summary = get_trust_slip_payload(
+            db,
+            user_id=int(user_id),
+        )
+    except ValueError:
+        trust_slip_summary = summary
 
     pack_meta = {
         "pack_id": pack_id,
@@ -130,7 +138,11 @@ def build_trust_evidence_pack_zip_with_meta(
     }
 
     # PDFs
-    trust_slip_pdf = build_trust_slip_pdf(db, summary, pack_meta=pack_meta)
+    trust_slip_pdf = build_trust_slip_pdf(
+        db,
+        trust_slip_summary,
+        pack_meta=pack_meta,
+    )
     trust_timeline_pdf = build_trust_timeline_pdf(
         db,
         user_id=int(user_id),

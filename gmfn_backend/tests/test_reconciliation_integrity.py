@@ -15,6 +15,7 @@ from app.db.bank_models import BankEvent, ExpectedPayment
 from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, PoolEvent, TrustEvent, User
 from app.services.expected_payments_service import ensure_loan_repayment_expected_payment
 from app.services.payment_instruction_service import (
+    _payment_status_contract,
     create_loan_repayment_instruction,
     create_pool_deposit_instruction,
 )
@@ -520,6 +521,11 @@ def test_loan_repayment_reconciliation_applies_part_payment_then_full_closure(db
     assert loan.status == "approved"
     assert loan.paid_total == Decimal("40.00")
     assert loan.remaining_amount == Decimal("60.00")
+
+    partial_status = _payment_status_contract(expected)
+    assert partial_status["payment_stage"] == "authorised_partial"
+    assert partial_status["payment_status_label"] == "Part payment confirmed"
+    assert "remaining" in partial_status["bank_authentication_guidance"].lower()
 
     event_types_after_part = [
         row.event_type

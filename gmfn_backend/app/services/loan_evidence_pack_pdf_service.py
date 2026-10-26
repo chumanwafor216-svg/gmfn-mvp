@@ -2,21 +2,13 @@
 
 import json
 from datetime import datetime, timezone
-from io import BytesIO
 from typing import Optional, Any
 
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
 
 from app.db.models import Loan, Clan, User, LoanGuarantor, Repayment, TrustEvent
-from app.services.institutional_pdf import (
-    draw_institutional_footer,
-    draw_institutional_header,
-    safe_pdf_text,
-    utc_generated_label,
-    wrap_pdf_text_lines,
-)
+from app.services.institutional_pdf import utc_generated_label
+from app.services.loan_evidence_pack_pdf_layout import build_support_evidence_document
 from app.services.trust_score_service import trust_band_for_score, compute_trust_score_explained
 
 
@@ -187,174 +179,57 @@ def build_loan_evidence_pack_pdf(
             }
         )
 
-    # -------------------------
-    # Build PDF
-    # -------------------------
-    bio = BytesIO()
-    c = canvas.Canvas(bio, pagesize=A4)
-    width, height = A4
-    ts = utc_generated_label()
-    y = draw_institutional_header(
-        c,
-        width,
-        height,
-        title="GSN Support Evidence Pack",
-        subtitle="Support record, trust snapshot, supporters, repayment, and evidence timeline.",
-        generated_at=ts,
-        reference=support_reference,
+    trust_by_user_id = {int(row["user_id"]): row for row in guarantor_trust_rows}
+    supporter_rows = []
+    for guarantor in guarantors:
+        guarantor_user_id = getattr(guarantor, "guarantor_user_id", None)
+        trust = trust_by_user_id.get(int(guarantor_user_id), {}) if isinstance(guarantor_user_id, int) else {}
+        supporter_rows.append(
+            {
+                "member_reference": member_reference(guarantor_user_id),
+                "status": getattr(guarantor, "status", None),
+                "pledge_amount": getattr(guarantor, "pledge_amount", 0),
+                "score": trust.get("score"),
+                "band": trust.get("band"),
+            }
+        )
+
+    repayment_rows = [
+        {
+            "created_at": getattr(repayment, "created_at", None),
+            "payer_reference": member_reference(getattr(repayment, "payer_user_id", None)),
+            "amount": getattr(repayment, "amount", 0),
+        }
+        for repayment in repayments
+    ]
+
+    timeline_rows = []
+    for event in trust_events:
+        actor = member_reference(getattr(event, "actor_user_id", None))
+        subject = member_reference(getattr(event, "subject_user_id", None))
+        timeline_rows.append(
+            {
+                "created_at": getattr(event, "created_at", None),
+                "event_type": getattr(event, "event_type", None),
+                "participants": actor if actor == subject else f"{actor} / {subject}",
+                "has_metadata": bool(_loads_meta(getattr(event, "meta_json", None))),
+            }
+        )
+
+    return build_support_evidence_document(
+        support_reference=support_reference,
+        community_name=clan_name or "Not shown",
+        community_reference=community_reference,
+        requester_reference=borrower_reference,
+        requester_trust=borrower_trust,
+        status=str(getattr(loan, "status", "not shown") or "not shown"),
+        amount=getattr(loan, "amount", 0),
+        currency=str(getattr(loan, "currency", "NGN") or "NGN"),
+        support_gap=getattr(loan, "guarantee_gap", 0),
+        supporters_required=int(getattr(loan, "guarantors_required", 0) or 0),
+        supporters=supporter_rows,
+        repayments=repayment_rows,
+        timeline=timeline_rows,
+        redact=bool(redact),
+        generated_at=utc_generated_label(),
     )
-    content_left = 56
-    content_width = width - (content_left * 2)
-
-    def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
-        nonlocal y
-        if not str(text if text is not None else "").strip():
-            y -= gap
-            return
-
-        font_name = "Helvetica-Bold" if bold else "Helvetica"
-        for wrapped_line in wrap_pdf_text_lines(text, font_name, size, content_width):
-            if y < 60:
-                draw_institutional_footer(c, width, "GSN support evidence paper")
-                c.showPage()
-                y = draw_institutional_header(
-                    c,
-                    width,
-                    height,
-                    title="GSN Support Evidence Pack",
-                    subtitle="Support record, trust snapshot, supporters, repayment, and evidence timeline.",
-                    generated_at=ts,
-                    reference=support_reference,
-                )
-            c.setFont(font_name, size)
-            c.drawString(content_left, y, safe_pdf_text(wrapped_line))
-            y -= gap
-
-    def kv(label: str, value: str):
-        line(f"{label}: {value}", size=10, gap=14)
-
-    line("Official evidence summary", size=14, gap=20, bold=True)
-    kv("Generated", ts)
-    kv("Support record", support_reference)
-    kv("Community", clan_name or "-")
-    kv("Community ID", community_reference)
-    kv("Borrower", borrower_reference)
-    kv("Redaction", "ON (member references redacted)" if redact else "OFF (authorized complete-record contact)")
-    line("")
-
-    # Trust Snapshot
-    line("Trust snapshot", bold=True)
-    kv("Borrower score", str(borrower_trust.get("score")) if borrower_trust.get("score") is not None else "-")
-    kv("Borrower band", borrower_trust.get("band") or "-")
-    if borrower_trust.get("updated_at"):
-        kv("Borrower trust updated", str(borrower_trust.get("updated_at")))
-    else:
-        kv("Borrower trust updated", "-")
-
-    if guarantor_trust_rows:
-        line("Supporter trust (stored + fallback compute)", size=10, gap=14, bold=True)
-        for r in guarantor_trust_rows[:12]:
-            line(
-                f"- {r['member_reference']} | score={r['score'] if r['score'] is not None else '-'} | band={r['band'] or '-'}",
-                size=9,
-                gap=13,
-            )
-    else:
-        line("- No supporters yet", size=10, gap=14)
-
-    line("")
-
-    # Support summary
-    line("Support summary", bold=True)
-    kv("Status", str(getattr(loan, "status", "-")))
-    kv("Amount", str(getattr(loan, "amount", getattr(loan, "principal_amount", "-"))))
-    kv("Created", str(getattr(loan, "created_at", "-")))
-    kv("Due date", str(getattr(loan, "due_date", "-")))
-    line("")
-
-    # Supporters list
-    line("Supporters (decisions)", bold=True)
-    if not guarantors:
-        line("- None", size=10, gap=14)
-    else:
-        for g in guarantors:
-            gid = getattr(g, "guarantor_user_id", None)
-            gmember = member_reference(gid)
-            status = getattr(g, "status", "-")
-            responded_at = getattr(g, "responded_at", None)
-            expires_at = getattr(g, "expires_at", None)
-
-            txt = f"- {gmember} | status={status}"
-            if responded_at:
-                txt += f" | responded={responded_at}"
-            if expires_at:
-                txt += f" | expires={expires_at}"
-            line(txt, size=9, gap=13)
-
-    line("")
-
-    # Repayments
-    line("Repayments", bold=True)
-    if not repayments:
-        line("- None", size=10, gap=14)
-    else:
-        for r in repayments[:60]:
-            payer_id = getattr(r, "payer_user_id", None)
-            payer_member = member_reference(payer_id)
-            amount = getattr(r, "amount", "-")
-            created_at = getattr(r, "created_at", "-")
-            line(f"- {created_at} | payer={payer_member} | amount={amount}", size=9, gap=13)
-        if len(repayments) > 60:
-            line(f"... ({len(repayments)-60} more not shown)", size=9, gap=13)
-
-    line("")
-
-    # Trust timeline
-    line("Evidence timeline for this support record", bold=True)
-    if not trust_events:
-        line("- None", size=10, gap=14)
-    else:
-        for ev in trust_events[:90]:
-            created_at = getattr(ev, "created_at", "-")
-            etype = getattr(ev, "event_type", "-")
-            actor_id = getattr(ev, "actor_user_id", None)
-            subject_id = getattr(ev, "subject_user_id", None)
-            actor_member = member_reference(actor_id)
-            subject_member = member_reference(subject_id)
-            meta = _loads_meta(getattr(ev, "meta_json", None))
-
-            meta_small = ""
-            if meta and redact:
-                meta_small = " | meta: redacted for share copy"
-            elif meta:
-                keys = list(meta.keys())[:3]
-                meta_small = " | meta: " + ", ".join([f"{k}={meta.get(k)}" for k in keys])
-
-            line(
-                f"- {created_at} | {etype} | actor={actor_member} | subject={subject_member}{meta_small}",
-                size=8,
-                gap=12,
-            )
-        if len(trust_events) > 90:
-            line(f"... ({len(trust_events)-90} more not shown)", size=8, gap=12)
-
-    line("")
-    line("Reader boundary", bold=True, gap=18)
-    line(
-        "This paper supports a trust decision. It is not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
-        size=9,
-        gap=13,
-    )
-    line(
-        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private support, supporter, and repayment details.",
-        size=9,
-        gap=13,
-    )
-
-    draw_institutional_footer(c, width, "GSN support evidence paper - controlled community trust record.")
-    c.showPage()
-    c.save()
-
-    pdf_bytes = bio.getvalue()
-    bio.close()
-    return pdf_bytes

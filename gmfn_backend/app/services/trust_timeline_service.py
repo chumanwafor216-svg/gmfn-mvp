@@ -35,6 +35,11 @@ FOLLOW_ATTENTION_NOTE = (
     "Attention only. Following keeps a community or shop close; it is not "
     "membership, endorsement, verification, payment evidence, or a trust-score increase."
 )
+REPAYMENT_REVERSAL_EVENT_TYPES = {
+    "repayment.reversed",
+    "loan_fully_repaid_reversed",
+    "guarantor_success_reversed",
+}
 
 ALIASES = {
     EV_FULL_REPAID: {
@@ -141,6 +146,12 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
 
     if et_lower in ("repayment.claimed", "repayment_claimed", "repayment.claim"):
         return "You said you paid"
+    if et_lower == "repayment.reversed":
+        return "Repayment record reversed"
+    if et_lower == "loan_fully_repaid_reversed":
+        return "Full repayment status reversed"
+    if et_lower == "guarantor_success_reversed":
+        return "Support outcome reversed"
 
     if et_lower in ("merchant.release_recorded", "merchant_release_recorded"):
         return "Merchant recorded goods release"
@@ -246,6 +257,8 @@ def list_trust_timeline(
                 if (raw_type or "").upper() in {"LOAN_CANCELLED", "LOAN_INCOMPLETE"}:
                     keep = True
                 if rt in {"repayment.claimed", "repayment_claimed", "repayment.claim"}:
+                    keep = True
+                if rt in REPAYMENT_REVERSAL_EVENT_TYPES:
                     keep = True
                 if rt in FOLLOW_ATTENTION_EVENT_TYPES:
                     keep = True

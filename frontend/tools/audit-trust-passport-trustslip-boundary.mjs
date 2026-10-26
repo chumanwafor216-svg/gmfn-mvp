@@ -10,6 +10,7 @@ const files = {
   trustPassport: "src/pages/TrustScorePage.tsx",
   trustPassportDocumentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   trustSlip: "src/pages/TrustSlipPage.tsx",
+  eventLanguage: "src/lib/trustEventLanguage.ts",
   trustSlipPrivatePreview: "src/pages/trustSlip/TrustSlipDecisionPackPrivatePreview.tsx",
   smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
@@ -831,6 +832,24 @@ assertContains(
   "trustSlip",
   /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Verification scope", verificationScopeLabel\][\s\S]*?\["Scope boundary", verificationScopeBoundary\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?<CommunityProofPanel/,
   "TrustSlip holder page must place a compact decision boundary between the confidence ribbon and primary community evidence."
+);
+
+assertContains(
+  "eventLanguage",
+  /const TRUST_RISK_FLAG_LABELS[\s\S]*?default_history: "Default history recorded"[\s\S]*?repayment_delay_detected: "Repayment delay recorded"[\s\S]*?no_verified_repayment_history: "No verified repayment history"[\s\S]*?export function trustRiskFlagLabel/,
+  "Shared trust language must translate repayment/default risk flags before a TrustSlip presents them."
+);
+
+assertContains(
+  "trustSlip",
+  /import \{ trustRiskFlagLabel \} from "\.\.\/lib\/trustEventLanguage";[\s\S]*?const riskFlagLabels = riskFlags\.map[\s\S]*?const hasRepaymentCaution = riskFlags\.some[\s\S]*?Cautions shown: \$\{riskFlagLabels\.join[\s\S]*?A full repayment is visible[\s\S]*?repayment or default cautions are also recorded[\s\S]*?label: "Finance discipline"[\s\S]*?status: hasRepaymentCaution[\s\S]*?label: "Follow-through"[\s\S]*?status: hasRepaymentCaution/,
+  "TrustSlip must translate risk flags and must not call finance/follow-through strong when repayment or default cautions are present."
+);
+
+assertNotContains(
+  "trustSlip",
+  /Flags present: \$\{riskFlags\.join/,
+  "TrustSlip must not expose raw backend risk-flag codes."
 );
 if (findings.length > 0) {
   console.error("Trust Passport / TrustSlip boundary audit failed:");

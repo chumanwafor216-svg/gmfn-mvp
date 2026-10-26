@@ -138,7 +138,7 @@ def _payment_status_contract(row: Any) -> Dict[str, str]:
     if status == "partial":
         return {
             "payment_stage": "authorised_partial",
-            "payment_status_label": "Authorised",
+            "payment_status_label": "Part payment confirmed",
             "bank_authentication_guidance": "GSN has matched part of the payment. Complete any remaining bank transfer or provider authentication before the payment can be completed.",
         }
     if status in {"cancelled", "canceled"}:

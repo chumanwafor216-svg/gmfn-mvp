@@ -12,6 +12,7 @@ from app.db.database import get_db
 from app.db.models import User
 from app.services.trust_score_service import compute_trust_breakdown
 from app.services.trust_slip_evidence_pdf_service import build_trust_slip_pdf
+from app.services.trust_slips_services import get_trust_slip_payload
 
 router = APIRouter(prefix="/trust-slips", tags=["trust-slips"])
 
@@ -21,7 +22,16 @@ def get_my_trust_slip_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    trust_summary = compute_trust_breakdown(db, user_id=int(current_user.id))
+    try:
+        trust_summary = get_trust_slip_payload(
+            db,
+            user_id=int(current_user.id),
+        )
+    except ValueError:
+        trust_summary = compute_trust_breakdown(
+            db,
+            user_id=int(current_user.id),
+        )
     pdf_bytes = build_trust_slip_pdf(db, trust_summary)
 
     return StreamingResponse(

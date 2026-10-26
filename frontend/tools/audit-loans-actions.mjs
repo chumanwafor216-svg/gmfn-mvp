@@ -216,8 +216,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /createRepaymentClaim[\s\S]*?type RepaymentMode = "full" \| "part";[\s\S]*?paid_amount\?: string \| number \| null;[\s\S]*?remaining_amount\?: string \| number \| null;[\s\S]*?bank_event_id\?: number \| string \| null;[\s\S]*?meta\?: any;[\s\S]*?meta_json\?: any;[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?currentExpectedPaymentMeta[\s\S]*?plannedInstallments[\s\S]*?repaymentPlanTruth[\s\S]*?planned repayment step[\s\S]*?currentExpectedPaymentBankEventId[\s\S]*?matched_bank_event_id[\s\S]*?bank_event_id[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?createRepaymentClaim\(numericLoanId[\s\S]*?Finance still needs to confirm it[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount[\s\S]*?Paid so far:[\s\S]*?Still left:[\s\S]*?Plan:[\s\S]*?I have paid/,
+  /createRepaymentClaim[\s\S]*?type RepaymentMode = "full" \| "part";[\s\S]*?paid_amount\?: string \| number \| null;[\s\S]*?remaining_amount\?: string \| number \| null;[\s\S]*?bank_event_id\?: number \| string \| null;[\s\S]*?payment_status_label\?: string \| null;[\s\S]*?bank_authentication_guidance\?: string \| null;[\s\S]*?meta\?: any;[\s\S]*?meta_json\?: any;[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?currentExpectedPaymentMeta[\s\S]*?plannedInstallments[\s\S]*?repaymentPlanTruth[\s\S]*?planned repayment step[\s\S]*?currentExpectedPaymentStatusLabel[\s\S]*?currentExpectedPaymentGuidance[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?createRepaymentClaim\(numericLoanId[\s\S]*?Finance still needs to confirm it[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount[\s\S]*?Paid so far:[\s\S]*?Still left:[\s\S]*?Plan:[\s\S]*?I have paid/,
   "Repayment page must expose full-balance and part-payment choices, show backend planned repayment metadata when present, show paid/left reconciliation amounts, generate instructions for the selected amount, and send borrower declarations to the repayment-claim backend instead of only setting local state."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /listMyPaymentInstructionExpectedPayments[\s\S]*?accountIsAdmin[\s\S]*?communityIsAdmin[\s\S]*?accountIsAdmin \|\| communityIsAdmin[\s\S]*?listExpectedPayments[\s\S]*?listMyPaymentInstructionExpectedPayments/,
+  "Repayment must use the admin expected-payment list only for platform/community admins and the signed-in member endpoint for ordinary borrowers."
+);
+
+assertNotContains(
+  "src/pages/RepaymentPage.tsx",
+  /matched_bank_event_id|confirmed_at\?: string \| null|Reason: \{safeStr\(currentExpectedPayment\.status_reason\)\}|Matched payment record:/,
+  "Repayment must not rely on stale expected-payment fields or expose raw payment reason and bank-event identifiers."
 );
 
 assertContains(
@@ -258,6 +270,33 @@ assertContains(
   /export async function createRepaymentClaim[\s\S]*?\/loans\/\$\{encodeURIComponent\(String\(loanId\)\)\}\/repayment-claim[\s\S]*?payment_reference: String\(payload\.payment_reference \|\| ""\)\.trim\(\)/,
   "Frontend API must expose the borrower repayment-claim endpoint used by RepaymentPage."
 );
+
+assertContains(
+  "src/lib/paymentStatusLanguage.ts",
+  /value === "partial"\) return "Part payment confirmed"/,
+  "Shared payment language must identify a reconciled part payment without implying that the full balance is complete."
+);
+
+[
+  "gmfn_backend/app/services/payment_instruction_service.py",
+  "gmfn_backend/app/api/routes/bank.py",
+  "gmfn_backend/app/api/routes/payment_instructions.py",
+].forEach((file) => {
+  const source = readRepo(file);
+  if (
+    !/status == "partial"[\s\S]*?authorised_partial[\s\S]*?Part payment confirmed/.test(
+      source
+    )
+  ) {
+    findings.push({
+      file,
+      line: 1,
+      message:
+        "Backend partial-payment responses must preserve the authorised_partial stage and expose the plain-language part-payment label.",
+      text: "Expected partial-payment status contract was not found.",
+    });
+  }
+});
 
 assertNotContains(
   "src/pages/RepaymentPage.tsx",
@@ -429,6 +468,24 @@ assertContains(
   "src/pages/LoanSummaryPage.tsx",
   /const LOAN_SUMMARY_UI_STORAGE_KEY = "gmfn\.loanSummary\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?guarantors: true,[\s\S]*?repayment: true,[\s\S]*?evidence: true,[\s\S]*?routes: true,/,
   "Loan Summary must default deeper facts, supporter decisions, repayment, evidence, and route grids closed so the phone view is decision-first."
+);
+
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /listMyPaymentInstructionExpectedPayments[\s\S]*?accountIsAdmin[\s\S]*?communityIsAdmin[\s\S]*?accountIsAdmin \|\| communityIsAdmin[\s\S]*?listExpectedPayments[\s\S]*?listMyPaymentInstructionExpectedPayments/,
+  "Loan Summary must use the admin expected-payment list only for platform/community admins and the signed-in member endpoint for ordinary borrowers."
+);
+
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /payment_status_label\?: string \| null;[\s\S]*?bank_authentication_guidance\?: string \| null;[\s\S]*?latestRepaymentStatusLabel[\s\S]*?latestRepaymentProgress[\s\S]*?received; \$\{fmtMoney[\s\S]*?left[\s\S]*?latestRepaymentGuidance[\s\S]*?Status: \{latestRepaymentStatusLabel\}[\s\S]*?Progress: \{latestRepaymentProgress\}[\s\S]*?\{latestRepaymentGuidance\}/,
+  "Loan Summary repayment evidence must use the backend's safe label and guidance and show paid/remaining progress in plain language."
+);
+
+assertNotContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /matched_bank_event_id|confirmed_at|Reason: \{safeStr\(latestRepaymentExpectedPayment\.status_reason\)\}|Status: \{safeStr\(latestRepaymentExpectedPayment\.status/,
+  "Loan Summary must not rely on stale expected-payment fields or expose raw payment status/reason values."
 );
 
 assertContains(

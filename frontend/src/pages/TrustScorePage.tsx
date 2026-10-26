@@ -59,6 +59,7 @@ import {
   getContextualEvidencePosture,
   TRUST_BAND_SHORT_LABELS,
 } from "../lib/trustBandLanguage";
+import { trustEventLabel, trustEvidenceText } from "../lib/trustEventLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import {
   buildIdentityEvidenceCompletion,
@@ -3204,14 +3205,15 @@ export default function TrustScorePage() {
     },
   ];
 
-  const latestExplanation =
+  const latestExplanation = trustEvidenceText(
     firstTruthy(
       explainability?.latest_note,
       explainability?.latest_reason,
       openTrust.whyText,
       cci.whyText
-    ) ||
-    "No recent evidence movement is shown yet. When new events occur, the reason will appear here in plain language.";
+    ),
+    "No recent evidence movement is shown yet. When new events occur, the reason will appear here in plain language."
+  );
 
   const institutionalRows: Array<[string, string]> = [
     ["Support limit signal", `${trustLimit} ${trustCurrency}`],
@@ -5511,9 +5513,12 @@ export default function TrustScorePage() {
                       <div style={{ display: "grid", gap: 8 }}>
                         {recentEvents.slice(0, isCompact ? 2 : 3).map((event, index) => (
                           <div key={event.id || index} style={innerCard("#F8FBFF")}>
-                            <b>{firstTruthy(event.event_type, "Evidence event")}</b>
+                            <b>{trustEventLabel(event.event_type)}</b>
                             <div style={helperText()}>
-                              {firstTruthy(event.reason, event.note, safeDateTime(event.created_at), "No detail shown")}
+                              {trustEvidenceText(
+                                firstTruthy(event.note, event.reason),
+                                safeDateTime(event.created_at) || "No detail shown"
+                              )}
                             </div>
                           </div>
                         ))}

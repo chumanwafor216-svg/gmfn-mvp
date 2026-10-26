@@ -114,7 +114,7 @@ def _payment_status_contract(exp: ExpectedPayment) -> Dict[str, Any]:
         guidance = "Payment provider or bank confirmation has been matched by GSN."
     elif status == "partial":
         stage = "authorised_partial"
-        label = "Authorised"
+        label = "Part payment confirmed"
         guidance = (
             "GSN has matched part of the payment. Complete any remaining bank "
             "transfer or provider authentication before the payment can be completed."

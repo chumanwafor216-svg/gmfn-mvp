@@ -14,6 +14,7 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+import { trustEventLabel } from "../lib/trustEventLanguage";
 
 type Me = {
   id: number;
@@ -104,30 +105,6 @@ function supportDisplayText(value: unknown, fallback = "-"): string {
     .replace(/guarantor/g, "supporter");
 }
 
-function humanizeEventType(eventType?: string | null): string {
-  const raw = safeStr(eventType);
-  if (!raw) return "Event";
-
-  const known: Record<string, string> = {
-    "identity.phone_verified": "Verified phone recorded",
-    "identity.bank_destination_recorded": "Bank destination recorded",
-    "identity.drivers_licence_recorded": "Driver's licence recorded",
-    "identity.region_consistent": "Region consistency confirmed",
-    "identity.region_mismatch_explained": "Cross-region explanation recorded",
-    "identity.bank_verification_checked": "Bank verification checked",
-    "identity.drivers_licence_verification_checked":
-      "Driver's licence verification checked",
-  };
-
-  if (known[raw]) return known[raw];
-
-  return raw
-    .replace(/[._]+/g, " ")
-    .replace(/\b\w/g, (char: string) => char.toUpperCase())
-    .replace(/Guarantors/g, "Supporters")
-    .replace(/Guarantor/g, "Supporter");
-}
-
 function buildTrustEvidenceShareText(why: TrustWhy | null): string {
   const lines = [
     "GSN Trust Explanation Evidence",
@@ -143,7 +120,7 @@ function buildTrustEvidenceShareText(why: TrustWhy | null): string {
     lines.push("Recent trust records shown as labels only:");
     events.forEach((event: any) => {
       const label = supportDisplayText(
-        event.reference_label || humanizeEventType(event.event_type),
+        event.reference_label || trustEventLabel(event.event_type, "Trust record"),
         "Trust record"
       );
       const when = supportDisplayText(event.created_at, "");
@@ -677,7 +654,7 @@ export default function TrustPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         {trustIconTile(trustEventIconName(e.event_type), 34)}
-                        <span style={{ minWidth: 0 }}>{humanizeEventType(e.event_type)}</span>
+                        <span style={{ minWidth: 0 }}>{trustEventLabel(e.event_type, "Event")}</span>
                       </div>
                       <div style={{ fontSize: 12, color: "#526579" }}>{timeAgo(e.created_at)} - {e.created_at || ""}</div>
                     </div>
@@ -753,7 +730,7 @@ export default function TrustPage() {
           </div>
           {latest?.event_type ? (
             <span style={pill(eventTone(latest.event_type) as any)}>
-              Latest: {humanizeEventType(latest.event_type)} - {timeAgo(latest.created_at)}
+              Latest: {trustEventLabel(latest.event_type, "Event")} - {timeAgo(latest.created_at)}
             </span>
           ) : null}
         </div>
@@ -764,7 +741,7 @@ export default function TrustPage() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   {trustIconTile(trustEventIconName(ev.event_type), 34)}
-                  <span style={{ minWidth: 0 }}>{humanizeEventType(ev.event_type)}</span>
+                  <span style={{ minWidth: 0 }}>{trustEventLabel(ev.event_type, "Event")}</span>
                 </div>
                 <div style={{ fontSize: 12, color: "#526579" }}>{ev.created_at || ""} {timeAgo(ev.created_at)}</div>
               </div>

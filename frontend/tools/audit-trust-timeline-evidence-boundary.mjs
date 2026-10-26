@@ -16,6 +16,7 @@ const files = {
   backendPack: "../gmfn_backend/app/api/routes/trust_evidence_pack.py",
   backendPdf: "../gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   pdfService: "../gmfn_backend/app/services/trust_timeline_pdf_service.py",
+  pdfLayout: "../gmfn_backend/app/services/trust_timeline_pdf_layout.py",
   packService: "../gmfn_backend/app/services/trust_evidence_pack_service.py",
 };
 
@@ -46,6 +47,13 @@ function assertContains(key, pattern, message, text) {
   const source = sourceByKey[key];
   if (pattern.test(source)) return;
   addFinding(key, -1, message, text || pattern.toString());
+}
+
+function assertNotContains(key, pattern, message) {
+  const source = sourceByKey[key];
+  const match = source.match(pattern);
+  if (!match || match.index === undefined) return;
+  addFinding(key, match.index, message, match[0]);
 }
 
 function assertOrder(key, orderedPatterns, message) {
@@ -220,9 +228,51 @@ assertContains(
 );
 
 assertContains(
+  "pdfLayout",
+  /Reader boundary: redacted personal trust history for controlled review\./,
+  "Trust Timeline PDF must keep the redacted reader boundary."
+);
+
+assertContains(
+  "pdfLayout",
+  /not a bank guarantee, "[\s\S]*?"credit approval, payment instruction, or automatic debit authority/,
+  "Trust Timeline PDF must keep non-approval language in its page footer."
+);
+
+assertContains(
+  "pdfLayout",
+  /Private contacts, payment references, support IDs, and event notes are not printed\./,
+  "Trust Timeline PDF layout must state its protected-detail boundary."
+);
+
+assertContains(
+  "pdfLayout",
+  /private event details redacted for timeline PDF/,
+  "Trust Timeline PDF layout must apply its protected-detail boundary."
+);
+
+assertContains(
+  "pdfLayout",
+  /USER_EVENT_LABELS[\s\S]*?Full repayment recorded[\s\S]*?Support completed successfully[\s\S]*?Payment reported by member/,
+  "Trust Timeline PDF must translate internal event codes into ordinary-language labels."
+);
+
+assertContains(
+  "backendPdf",
+  /get_trust_slip_payload[\s\S]*?except ValueError:[\s\S]*?compute_trust_breakdown/,
+  "Trust Timeline PDF route must keep headers available when no active TrustSlip exists."
+);
+
+assertContains(
   "pdfService",
-  /Reader boundary: redacted personal trust history for controlled review\. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority\./,
-  "Trust Timeline PDF must keep reader-boundary non-approval language."
+  /get_trust_slip_payload[\s\S]*?except ValueError:[\s\S]*?compute_trust_breakdown[\s\S]*?build_timeline_document/,
+  "Trust Timeline PDF service must keep a safe no-membership fallback and delegate presentation to the layout module."
+);
+
+assertNotContains(
+  "backendPdf",
+  /build_trust_evidence_pack_zip_with_meta/,
+  "Trust Timeline PDF route must not build an entire evidence ZIP for timeline metadata."
 );
 
 assertContains(

@@ -128,19 +128,24 @@ async function installApiMocks(page) {
       );
     }
 
-    if (path === "/bank/expected") {
+    if (path === "/payment-instructions/my/expected") {
       return route.fulfill(
         json({
           items: [
             {
               id: 501,
               loan_id: 42,
-              status: "expected",
+              status: "partial",
               amount: "25.00",
-              paid_amount: "0.00",
-              remaining_amount: "25.00",
+              paid_amount: "10.00",
+              remaining_amount: "15.00",
               currency: "GBP",
               reference_display: "GSN-REPAY-42-ADA",
+              payment_stage: "authorised_partial",
+              payment_status_label: "Part payment confirmed",
+              bank_authentication_guidance:
+                "GSN has matched part of the payment. Complete the amount still left with your bank or provider.",
+              created_at: "2026-10-20T12:00:00.000Z",
               due_at: "2026-11-15T12:00:00.000Z",
               meta: { loan_id: 42 },
             },
@@ -462,6 +467,7 @@ async function testLoanSummary(page, baseURL, viewport) {
       );
     };
     return {
+      text: document.body.textContent || "",
       frontVisible: visible(
         document.querySelector('[data-gsn-loan-summary-phone-front="simple"]')
       ),
@@ -482,6 +488,9 @@ async function testLoanSummary(page, baseURL, viewport) {
     record.frontVisible ||
     !record.recordVisible ||
     !record.backVisible ||
+    !record.text.includes("Part payment confirmed") ||
+    !record.text.includes("GSN-REPAY-42-ADA") ||
+    record.text.includes("authorised_partial") ||
     record.horizontalOverflow
   ) {
     throw new Error(
@@ -694,7 +703,8 @@ async function testRepayment(page, baseURL, viewport) {
 
   const statusText = await page.locator("body").innerText();
   if (
-    !statusText.includes("Waiting for payment") ||
+    !statusText.includes("Part payment confirmed") ||
+    statusText.includes("authorised_partial") ||
     statusText.includes("pending_match") ||
     statusText.includes("mismatch_flagged")
   ) {

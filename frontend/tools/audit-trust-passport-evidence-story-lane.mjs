@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  eventLanguage: "src/lib/trustEventLanguage.ts",
   documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   institutionalContext: "src/pages/trustScore/TrustPassportInstitutionalContext.tsx",
   package: "package.json",
@@ -39,6 +40,13 @@ function assertContains(key, pattern, message, text) {
   const source = sourceByFile[key];
   if (pattern.test(source)) return;
   addFinding(files[key], source, -1, message, text);
+}
+
+function assertNotContains(key, pattern, message) {
+  const source = sourceByFile[key];
+  const index = source.search(pattern);
+  if (index === -1) return;
+  addFinding(files[key], source, index, message, source.slice(index, index + 240));
 }
 
 function assertOrderedSnippets(key, snippets, message) {
@@ -78,6 +86,24 @@ assertContains(
   "trust",
   /activeTrustPassportLane === "evidence"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?/,
   "Evidence Story lane must keep the support/pressure reasons, latest movement, recent events, and evidence context in the same lane."
+);
+
+assertContains(
+  "eventLanguage",
+  /"repayment\.created": "Payment confirmed"[\s\S]*?"repayment\.reversed": "Repayment record reversed"[\s\S]*?loan_fully_repaid_reversed: "Full repayment status reversed"[\s\S]*?guarantor_success_reversed: "Support outcome reversed"[\s\S]*?missed_payment: "Missed payment recorded"[\s\S]*?export function trustEventLabel[\s\S]*?export function trustEvidenceText/,
+  "Shared trust-event language must translate repayment, reversal, missed-payment, and code-like evidence text."
+);
+
+assertContains(
+  "trust",
+  /import \{ trustEventLabel, trustEvidenceText \} from "\.\.\/lib\/trustEventLanguage";[\s\S]*?const latestExplanation = trustEvidenceText[\s\S]*?<b>\{trustEventLabel\(event\.event_type\)\}<\/b>[\s\S]*?trustEvidenceText\([\s\S]*?event\.note, event\.reason/,
+  "Trust Passport Evidence Story must use shared plain-language translation for event names and code-like details."
+);
+
+assertNotContains(
+  "trust",
+  /<b>\{firstTruthy\(event\.event_type|\{event\.event_type\}/,
+  "Trust Passport must not render raw backend event types in the Evidence Story."
 );
 
 assertContains(

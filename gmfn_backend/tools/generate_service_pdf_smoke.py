@@ -5,7 +5,9 @@ import sys
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -22,6 +24,7 @@ from app.db.models import Clan, Loan, TrustEvent, User  # noqa: E402
 from app.services.evidence_pack_pdf_service import build_clan_evidence_pack_pdf  # noqa: E402
 from app.services.loan_evidence_pack_pdf_service import build_loan_evidence_pack_pdf  # noqa: E402
 from app.services.trust_slip_evidence_pdf_service import build_trust_slip_pdf  # noqa: E402
+from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf  # noqa: E402
 from app.services.user_evidence_pack_pdf_service import build_user_evidence_pack_pdf  # noqa: E402
 from tools.render_pdf_to_png import render_first_page, render_page  # noqa: E402
 
@@ -143,6 +146,16 @@ def build_community_evidence_smoke(
                     dedupe_key="smoke-community-join",
                     created_at=now,
                 ),
+                TrustEvent(
+                    id=930103,
+                    event_type="opaque_internal_event",
+                    clan_id=int(clan.id),
+                    actor_user_id=int(owner.id),
+                    subject_user_id=int(member.id),
+                    meta_json='{"private":"PRIVATE-EVIDENCE-META","member_id":9302}',
+                    dedupe_key="smoke-community-private-event",
+                    created_at=now,
+                ),
             ]
         )
         db.commit()
@@ -220,6 +233,13 @@ def _trust_slip_summary() -> dict[str, Any]:
     return {
         "user_id": 9201,
         "gmfn_id": "GSN-U-TRUSTSLIP-SMOKE",
+        "code": "GSN-SMOKE",
+        "status": "active",
+        "active": True,
+        "is_current": True,
+        "currency": "NGN",
+        "expires_at": "2026-07-10T09:00:00+00:00",
+        "band": "B",
         "lifetime_trust": "1200.00",
         "standing_score": "81",
         "trust_slip_limit": "50000.00",
@@ -285,7 +305,8 @@ def build_trustslip_evidence_smoke(
             _trust_slip_summary(),
             pack_meta={
                 "pack_id": "GSN-PACK-TRUSTSLIP-SMOKE",
-                "merchant_verify_ui_url": "https://gmfn-frontend.onrender.com/t/GSN-SMOKE",
+                "generated_at_utc": "2026-07-03T09:00:00+00:00",
+                "trustslip_verify_ui_url": "https://gmfn-frontend.onrender.com/t/GSN-SMOKE",
             },
         )
         pdf_path.write_bytes(pdf_bytes)
@@ -301,6 +322,91 @@ def build_trustslip_evidence_smoke(
         if page2_png_path is None:
             page2_png_path = pdf_path.with_name(f"{pdf_path.stem}-page2.png")
         result["page2_png"] = render_page(pdf_path, page2_png_path, page_number=2)
+    return result
+
+
+def build_trust_timeline_smoke(
+    pdf_path: Path,
+    png_path: Path | None = None,
+    page2_png_path: Path | None = None,
+    *,
+    render_png: bool = True,
+) -> dict[str, Path]:
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    if png_path:
+        png_path.parent.mkdir(parents=True, exist_ok=True)
+    if page2_png_path:
+        page2_png_path.parent.mkdir(parents=True, exist_ok=True)
+
+    timeline_summary = {
+        **_trust_slip_summary(),
+        "gmfn_id": "GSN-U-TIMELINE-SMOKE",
+        "code": "GSN-TIMELINE-SMOKE",
+        "trust_score": "78",
+        "cci_score": "74",
+        "cci_band": "B",
+    }
+    event_time = datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc)
+    timeline_events = [
+        SimpleNamespace(created_at=event_time, event_type="loan_repaid", meta={"payment_reference": "PRIVATE-TIMELINE-REF"}),
+        SimpleNamespace(created_at=event_time, event_type="guarantor_success", meta={"note": "private support detail"}),
+        SimpleNamespace(created_at=event_time, event_type="repayment.claimed", meta={"amount": "50000.00"}),
+        SimpleNamespace(created_at=event_time, event_type="community.followed", meta={"community": "private"}),
+        SimpleNamespace(created_at=event_time, event_type="merchant.delivered", meta={"status": "delivered"}),
+    ]
+
+    engine, db = _session()
+    try:
+        user = User(
+            id=9501,
+            email="timeline-smoke@example.com",
+            hashed_password="smoke-only",
+            role="user",
+            gmfn_id="GSN-U-TIMELINE-SMOKE",
+            trust_score=78,
+            trust_band="B",
+        )
+        db.add(user)
+        db.commit()
+
+        with patch(
+            "app.services.trust_timeline_pdf_service.get_trust_slip_payload",
+            return_value=timeline_summary,
+        ), patch(
+            "app.services.trust_timeline_pdf_service._load_events",
+            return_value=timeline_events,
+        ):
+            pdf_bytes = build_trust_timeline_pdf(
+                db,
+                user_id=int(user.id),
+                limit=20,
+                audience="user",
+                pack_meta={
+                    "pack_id": "GSN-PACK-TIMELINE-SMOKE",
+                    "protocol_version": "1.0",
+                    "generated_at_utc": "2026-07-03 10:00 UTC",
+                },
+                footer="Visibility: standard",
+                score="78",
+                redact=True,
+            )
+        pdf_path.write_bytes(pdf_bytes)
+    finally:
+        db.close()
+        engine.dispose()
+
+    result: dict[str, Path] = {"pdf": pdf_path}
+    if render_png:
+        if png_path is None:
+            png_path = pdf_path.with_suffix(".png")
+        result["png"] = render_first_page(pdf_path, png_path)
+        if page2_png_path is None:
+            page2_png_path = pdf_path.with_name(f"{pdf_path.stem}-page2.png")
+        result["page2_png"] = render_page(
+            pdf_path,
+            page2_png_path,
+            page_number=2,
+        )
     return result
 
 
@@ -332,6 +438,21 @@ def parse_args() -> argparse.Namespace:
         "--trustslip-page2-png",
         default=str(REPO_ROOT / "screenshots" / "pdf-smoke" / "trustslip-evidence-smoke-page2.png"),
         help="Path for the rendered second page of the TrustSlip evidence PNG.",
+    )
+    parser.add_argument(
+        "--timeline-pdf",
+        default=str(REPO_ROOT / "screenshots" / "pdf-smoke" / "trust-timeline-smoke.pdf"),
+        help="Path for the generated Trust Timeline PDF.",
+    )
+    parser.add_argument(
+        "--timeline-png",
+        default=str(REPO_ROOT / "screenshots" / "pdf-smoke" / "trust-timeline-smoke.png"),
+        help="Path for the rendered first page of the Trust Timeline PDF.",
+    )
+    parser.add_argument(
+        "--timeline-page2-png",
+        default=str(REPO_ROOT / "screenshots" / "pdf-smoke" / "trust-timeline-smoke-page2.png"),
+        help="Path for the rendered second page of the Trust Timeline PDF.",
     )
     parser.add_argument(
         "--community-pdf",
@@ -374,6 +495,12 @@ def main() -> None:
         Path(args.trustslip_page2_png),
         render_png=not args.no_render,
     )
+    timeline_result = build_trust_timeline_smoke(
+        Path(args.timeline_pdf),
+        Path(args.timeline_png),
+        Path(args.timeline_page2_png),
+        render_png=not args.no_render,
+    )
     community_result = build_community_evidence_smoke(
         Path(args.community_pdf),
         Path(args.community_png),
@@ -388,6 +515,8 @@ def main() -> None:
         print(f"member_{kind}: {path.resolve()}")
     for kind, path in trustslip_result.items():
         print(f"trustslip_{kind}: {path.resolve()}")
+    for kind, path in timeline_result.items():
+        print(f"timeline_{kind}: {path.resolve()}")
     for kind, path in community_result.items():
         print(f"community_{kind}: {path.resolve()}")
     for kind, path in loan_result.items():

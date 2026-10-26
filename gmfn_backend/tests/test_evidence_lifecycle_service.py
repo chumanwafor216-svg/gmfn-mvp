@@ -32,6 +32,7 @@ from app.schemas.admin_repayment_reversal import AdminRepaymentReverseIn
 from app.services.trust_score_service import recompute_trust_for_user
 from app.services.trust_recompute_service import recompute_trust_for_user as legacy_recompute_trust_for_user
 from app.services.trust_slip_decision_packs import build_decision_pack_private_evidence_extract
+from app.services.trust_timeline_service import list_trust_timeline
 from app.services.evidence_lifecycle_service import (
     backfill_deterministic_repayment_lifecycle_markers,
     create_lifecycle_marker,
@@ -425,6 +426,44 @@ def test_admin_repayment_reversal_links_lifecycle_markers_when_repayment_is_know
     assert db.get(Repayment, repayment.id) is not None
     assert db.get(TrustEvent, original.id) is not None
     assert db.get(Loan, loan.id).status == "disputed"
+
+    timeline = list_trust_timeline(
+        db,
+        user_id=int(borrower.id),
+        audience="user",
+        hide_zero_deltas_for_user=True,
+    )
+    labels = {str(item.get("label") or "") for item in timeline}
+    assert "Repayment record reversed" in labels
+    assert "Full repayment status reversed" in labels
+    original_item = next(
+        item for item in timeline if item.get("label") == "Full repayment recorded"
+    )
+    assert original_item["evidence_lifecycle_state"] == REVERSED
+    assert original_item["evidence_lifecycle_caution"] is True
+    assert all("payment_reference" not in item for item in timeline)
+
+    from app.services.user_evidence_pack_pdf_service import build_user_evidence_pack_pdf
+    import fitz
+
+    borrower.gmfn_id = "GSN-U-REVERSED-EVIDENCE"
+    db.add(borrower)
+    db.commit()
+    pdf_bytes = build_user_evidence_pack_pdf(
+        db,
+        user_id=int(borrower.id),
+        redact=True,
+    )
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as document:
+        evidence_text = " ".join(
+            " ".join(page.get_text().split()) for page in document
+        )
+
+    assert "Repayment record reversed" in evidence_text
+    assert "Full repayment status reversed" in evidence_text
+    assert "repayment.reversed" not in evidence_text
+    assert "loan_fully_repaid_reversed" not in evidence_text
+    assert "WP3A-REP-1" not in evidence_text
 
 
 def test_decision_pack_separates_lifecycle_context_from_clean_counts(db):

@@ -23,6 +23,7 @@ import {
   getMe,
   getSelectedClanId,
   listExpectedPayments,
+  listMyPaymentInstructionExpectedPayments,
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -61,11 +62,12 @@ type ExpectedPaymentRow = {
   currency?: string | null;
   reference_display?: string | null;
   reference_normalized?: string | null;
-  confirmed_at?: string | null;
   due_at?: string | null;
-  status_reason?: string | null;
+  created_at?: string | null;
   bank_event_id?: number | string | null;
-  matched_bank_event_id?: number | string | null;
+  payment_stage?: string | null;
+  payment_status_label?: string | null;
+  bank_authentication_guidance?: string | null;
   meta?: any;
   meta_json?: any;
   loan_id?: number | string | null;
@@ -475,11 +477,21 @@ export default function RepaymentPage() {
       }
 
       try {
-        const res = await listExpectedPayments({
-          clan_id: clanId,
-          expected_type: "repayment",
-          limit: 100,
-        }).catch(() => null);
+        const accountIsAdmin =
+          lc(firstTruthy(me?.role, me?.account_role, me?.user_role)) === "admin";
+        const communityIsAdmin = lc(communityRole(currentClan)) === "admin";
+        const res = await (accountIsAdmin || communityIsAdmin
+          ? listExpectedPayments({
+              clan_id: clanId,
+              expected_type: "repayment",
+              limit: 100,
+            })
+          : listMyPaymentInstructionExpectedPayments({
+              clan_id: clanId,
+              expected_type: "repayment",
+              limit: 100,
+            })
+        ).catch(() => null);
 
         if (!alive) return;
         const items = Array.isArray(res)
@@ -499,7 +511,7 @@ export default function RepaymentPage() {
     return () => {
       alive = false;
     };
-  }, [summary, currentClan, numericLoanId, instruction, paymentConfirmedAt]);
+  }, [summary, currentClan, me, numericLoanId, instruction, paymentConfirmedAt]);
 
   const currency = firstTruthy(summary?.currency, "NGN");
   const loanStatus = lc(summary?.status);
@@ -582,10 +594,27 @@ export default function RepaymentPage() {
         } for this support item. Use the exact repayment reference so every payment can be matched.`
       : "Part payment is supported here. GSN keeps the remaining balance visible until finance confirms the payments.";
 
-  const currentExpectedPaymentBankEventId = firstTruthy(
-    currentExpectedPayment?.matched_bank_event_id,
-    currentExpectedPayment?.bank_event_id
-  );
+  const currentExpectedPaymentStatusLabel = currentExpectedPayment
+    ? firstTruthy(
+        currentExpectedPayment.payment_status_label,
+        paymentRecordStatusLabel(
+          currentExpectedPayment.status ||
+            currentExpectedPayment.payment_stage ||
+            "expected"
+        )
+      )
+    : "";
+  const currentExpectedPaymentIsComplete =
+    lc(currentExpectedPayment?.payment_stage) === "completed" ||
+    ["confirmed", "applied"].includes(lc(currentExpectedPayment?.status));
+  const currentExpectedPaymentGuidance = currentExpectedPayment
+    ? firstTruthy(
+        currentExpectedPayment.bank_authentication_guidance,
+        currentExpectedPaymentIsComplete
+          ? "GSN has matched the bank or payment-provider confirmation."
+          : "Complete the payment with your bank or provider. GSN will update this record after reconciliation."
+      )
+    : "";
 
   const repaymentChoiceLabel =
     repaymentMode === "full" ? "Full balance" : "Part payment";
@@ -1319,9 +1348,10 @@ export default function RepaymentPage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    {paymentRecordStatusLabel(
-                      currentExpectedPayment?.status || "declared"
-                    )}
+                    {paymentConfirmedAt
+                      ? paymentRecordStatusLabel("declared")
+                      : currentExpectedPaymentStatusLabel ||
+                        paymentRecordStatusLabel("declared")}
                   </div>
                   <div style={{ marginTop: 7, ...helperText() }}>
                     Reference: {instructionReference || "Not returned yet"}
@@ -1924,16 +1954,14 @@ export default function RepaymentPage() {
                 {currentExpectedPayment ? (
                   <>
                     <div
-                      style={innerCard(
-                        currentExpectedPayment.matched_bank_event_id ? "#F3FBF5" : "#F8FBFF"
+                    style={innerCard(
+                        currentExpectedPaymentIsComplete ? "#F3FBF5" : "#F8FBFF"
                       )}
                     >
                       <div style={sectionLabel()}>Payment record</div>
                       <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                         <div style={helperText()}>
-                          Status: {paymentRecordStatusLabel(
-                            currentExpectedPayment.status || "expected"
-                          )}
+                          Status: {currentExpectedPaymentStatusLabel}
                         </div>
                         <div style={helperText()}>
                           Reference: {firstTruthy(
@@ -1965,17 +1993,11 @@ export default function RepaymentPage() {
                           </div>
                         ) : null}
                         <div style={helperText()}>
-                          {currentExpectedPaymentBankEventId
-                            ? `Matched payment record: ${currentExpectedPaymentBankEventId}`
-                            : currentExpectedPayment.confirmed_at
-                            ? `Confirmed at: ${safeDateTime(currentExpectedPayment.confirmed_at)}`
-                            : currentExpectedPayment.due_at
-                            ? `Due at: ${safeDateTime(currentExpectedPayment.due_at)}`
-                            : "Waiting for finance to check the payment"}
+                          {currentExpectedPaymentGuidance}
                         </div>
-                        {safeStr(currentExpectedPayment.status_reason) ? (
+                        {currentExpectedPayment.due_at ? (
                           <div style={helperText()}>
-                            Reason: {safeStr(currentExpectedPayment.status_reason)}
+                            Due: {safeDateTime(currentExpectedPayment.due_at)}
                           </div>
                         ) : null}
                       </div>

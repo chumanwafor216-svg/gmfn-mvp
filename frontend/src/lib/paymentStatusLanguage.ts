@@ -5,6 +5,7 @@ export function paymentRecordStatusLabel(status: unknown): string {
   if (value === "declared" || value === "submitted") return "Sent for checking";
   if (value === "pending_match") return "Waiting to be matched";
   if (value === "mismatch_flagged") return "Payment needs checking";
+  if (value === "partial") return "Part payment confirmed";
   if (value === "matched" || value === "reconciled" || value === "confirmed") {
     return "Payment confirmed";
   }

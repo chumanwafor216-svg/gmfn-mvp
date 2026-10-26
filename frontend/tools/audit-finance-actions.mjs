@@ -335,6 +335,36 @@ assertContains(
   "Embedded payment instruction panel copy action must stay traceable."
 );
 
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /const canonicalFullRepaymentCount = Number\(trustCounts\?\.full_repayments\);[\s\S]*?Number\.isFinite\(canonicalFullRepaymentCount\)[\s\S]*?canonicalFullRepaymentCount[\s\S]*?: countTrustEvents\(trustCounts, \[[\s\S]*?"loan_fully_repaid"/,
+  "Finance must prefer the canonical full_repayments aggregate and use raw legacy repayment names only as fallback."
+);
+
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /const canonicalMissedPaymentCount = Number\(trustCounts\?\.missed_payments\);[\s\S]*?const canonicalDefaultCount = Number\(trustCounts\?\.defaults\);[\s\S]*?hasCanonicalFinancePressureCount[\s\S]*?Math\.max\(0, canonicalMissedPaymentCount\)[\s\S]*?Math\.max\(0, canonicalDefaultCount\)[\s\S]*?: countTrustEvents\(trustCounts, \[[\s\S]*?"missed_payment"/,
+  "Finance must prefer lifecycle-aware missed_payments and defaults aggregates, with raw overdue aliases only as a legacy fallback."
+);
+
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /paid_amount\?: string \| null;[\s\S]*?remaining_amount\?: string \| null;[\s\S]*?payment_status_label\?: string \| null;[\s\S]*?bank_authentication_guidance\?: string \| null;[\s\S]*?const serverLabel = safeStr\(item\.payment_status_label\)[\s\S]*?status === "partial"\) return "Part payment confirmed"[\s\S]*?const serverGuidance = safeStr\(item\.bank_authentication_guidance\)[\s\S]*?function expectedPaymentProgress[\s\S]*?received; \$\{remaining \|\| "0\.00"\} \$\{currency\} left/,
+  "Finance must read the server payment-status contract and show paid/remaining progress instead of stale client-only fields."
+);
+
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /pendingReconciliationCount[\s\S]*?return !\[[\s\S]*?"confirmed"[\s\S]*?Payments still being completed[\s\S]*?A payment is complete only after GSN matches the full expected amount[\s\S]*?Part payment: \{expectedPaymentStateCounts\.partial\}/,
+  "Finance must keep part payments in the completion workload and explain that only the full expected amount closes the item."
+);
+
+assertNotContains(
+  "src/pages/FinancePage.tsx",
+  /matched_bank_event_id|item\.confirmed_at|partial_payment_applied/,
+  "Finance must not rely on stale expected-payment fields or expose raw partial-payment status reasons."
+);
+
 if (findings.length > 0) {
   console.error("Finance action audit failed:");
   for (const finding of findings) {

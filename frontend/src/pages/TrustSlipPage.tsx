@@ -63,6 +63,7 @@ import {
   normalizeTrustBand,
   TRUST_BAND_SHORT_LABELS,
 } from "../lib/trustBandLanguage";
+import { trustRiskFlagLabel } from "../lib/trustEventLanguage";
 
 
 const LazyQRCodeSVG = React.lazy(async () => {
@@ -3705,6 +3706,12 @@ export default function TrustSlipPage() {
   const capacityContext = summary?.evidence_summary?.capacity_context || null;
   const readinessContext = summary?.evidence_summary?.readiness_context || null;
   const riskFlags = Array.isArray(summary?.risk_flags) ? summary.risk_flags : [];
+  const riskFlagLabels = riskFlags.map((flag) => trustRiskFlagLabel(flag));
+  const hasRepaymentCaution = riskFlags.some((flag) =>
+    /default|repayment_delay|no_verified_repayment|without_repayment/i.test(
+      safeStr(flag)
+    )
+  );
   const capacityReasons = Array.isArray(capacityContext?.reasons)
     ? capacityContext.reasons
     : [];
@@ -3946,7 +3953,7 @@ export default function TrustSlipPage() {
   )}; counterparties: ${countOrNotProvided(summary?.unique_counterparties)}.`;
   const riskSignalText =
     riskFlags.length > 0
-      ? `Flags present: ${riskFlags.join(", ")}`
+      ? `Cautions shown: ${riskFlagLabels.join(", ")}`
       : Array.isArray(summary?.risk_flags)
       ? "No risk flags shown."
       : "Risk data not shown at this visibility level.";
@@ -4118,7 +4125,9 @@ export default function TrustSlipPage() {
     {
       title: "Do they follow through?",
       answer: safeStr(summary?.last_full_repayment_at)
-        ? `Follow-through evidence is visible. Last full repayment: ${lastFullRepaymentText}.`
+        ? hasRepaymentCaution
+          ? `A full repayment is visible (${lastFullRepaymentText}), but repayment or default cautions are also recorded. Check the latest evidence before relying.`
+          : `Follow-through evidence is visible. Last full repayment: ${lastFullRepaymentText}.`
         : safeStr(summary?.last_release_at)
         ? `A release is visible (${lastReleaseText}), but this view does not yet show full repayment after that release.`
         : commitmentPlainLanguage
@@ -4155,7 +4164,9 @@ export default function TrustSlipPage() {
     {
       label: "Follow-through",
       value: safeStr(summary?.last_full_repayment_at)
-        ? `Full repayment shown: ${lastFullRepaymentText}.`
+        ? hasRepaymentCaution
+          ? `Full repayment shown: ${lastFullRepaymentText}; current repayment or default cautions also need checking.`
+          : `Full repayment shown: ${lastFullRepaymentText}.`
         : safeStr(summary?.last_release_at)
         ? `Release shown: ${lastReleaseText}; repayment follow-through is not fully shown here.`
         : commitmentPlainLanguage || personalCommitmentPlainLanguage || "Limited follow-through evidence shown.",
@@ -4281,7 +4292,11 @@ export default function TrustSlipPage() {
     {
       icon: "wallet" as GsnIconName,
       label: "Finance discipline",
-      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Caution",
+      status: hasRepaymentCaution
+        ? "Needs caution"
+        : safeStr(summary?.last_full_repayment_at)
+          ? "Strong"
+          : "Caution",
     },
     {
       icon: "shop" as GsnIconName,
@@ -4292,7 +4307,11 @@ export default function TrustSlipPage() {
     {
       icon: "check" as GsnIconName,
       label: "Follow-through",
-      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "No repayment evidence yet",
+      status: hasRepaymentCaution
+        ? "Needs caution"
+        : safeStr(summary?.last_full_repayment_at)
+          ? "Strong"
+          : "No repayment evidence yet",
     },
     {
       icon: "home" as GsnIconName,

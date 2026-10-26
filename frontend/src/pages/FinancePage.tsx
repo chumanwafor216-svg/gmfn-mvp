@@ -92,14 +92,17 @@ type ExpectedPaymentRecord = {
   id?: number | null;
   expected_type?: string | null;
   amount?: string | null;
+  paid_amount?: string | null;
+  remaining_amount?: string | null;
   currency?: string | null;
   reference_display?: string | null;
   status?: string | null;
   status_reason?: string | null;
   due_at?: string | null;
-  matched_bank_event_id?: number | null;
   bank_event_id?: number | null;
-  confirmed_at?: string | null;
+  payment_stage?: string | null;
+  payment_status_label?: string | null;
+  bank_authentication_guidance?: string | null;
 };
 type PipelineCreditStatus = {
   configured?: boolean;
@@ -385,24 +388,40 @@ function safeDateTime(x: any): string {
 }
 
 function expectedPaymentState(item: ExpectedPaymentRecord): string {
-  if (safeStr(item.confirmed_at)) return "Finance confirmed";
-  if (item.matched_bank_event_id) return "Bank match found";
+  const serverLabel = safeStr(item.payment_status_label);
+  if (serverLabel) return serverLabel;
+  const status = safeStr(item.status).toLowerCase();
+  if (status === "confirmed" || status === "applied") return "Completed";
+  if (status === "partial") return "Part payment confirmed";
+  if (item.bank_event_id) return "Waiting for Bank";
   if (safeStr(item.reference_display)) return "Code generated";
   return "Needs code";
 }
 
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
+  const serverGuidance = safeStr(item.bank_authentication_guidance);
+  if (serverGuidance) return serverGuidance;
   const state = expectedPaymentState(item);
-  if (state === "Finance confirmed") {
+  if (state === "Completed") {
     return "Finance shows this payment as confirmed; use the related service only where its page says it is available.";
   }
-  if (state === "Bank match found") {
+  if (state === "Waiting for Bank") {
     return "Waiting for finance reconciliation.";
   }
   if (state === "Code generated") {
     return "Pay with the exact reference so finance can reconcile it.";
   }
   return "Generate a code first.";
+}
+
+function expectedPaymentProgress(item: ExpectedPaymentRecord): string {
+  const currency = safeStr(item.currency || "NGN");
+  const paid = safeStr(item.paid_amount);
+  const remaining = safeStr(item.remaining_amount);
+  if (paid || remaining) {
+    return `${paid || "0.00"} ${currency} received; ${remaining || "0.00"} ${currency} left`;
+  }
+  return expectedPaymentState(item);
 }
 
 function apiBase(): string {
@@ -1446,29 +1465,44 @@ export default function FinancePage() {
     trustScore === "0" ? "" : trustScore,
     trustBand
   );
-  const repaymentRecordCount = countTrustEvents(trustCounts, [
-    "loan_fully_repaid",
-    "loan_repaid",
-    "repaid",
-    "repayment_full",
-    "full_repayment",
-    "loan_repayment_completed",
-  ]);
+  const canonicalFullRepaymentCount = Number(trustCounts?.full_repayments);
+  const repaymentRecordCount = Number.isFinite(canonicalFullRepaymentCount)
+    ? canonicalFullRepaymentCount
+    : countTrustEvents(trustCounts, [
+        "loan_fully_repaid",
+        "loan_repaid",
+        "repaid",
+        "repayment_full",
+        "full_repayment",
+        "loan_repayment_completed",
+      ]);
   const supportRecordCount = countTrustEvents(trustCounts, [
     "guarantor_success",
     "guarantor_repayment_success",
     "guarantor_supported_repaid",
     "guarantor_credit",
   ]);
-  const financePressureEventCount = countTrustEvents(trustCounts, [
-    "missed_payment",
-    "repayment_missed",
-    "late_payment",
-    "overdue",
-    "default",
-    "loan_defaulted",
-    "write_off",
-  ]);
+  const canonicalMissedPaymentCount = Number(trustCounts?.missed_payments);
+  const canonicalDefaultCount = Number(trustCounts?.defaults);
+  const hasCanonicalFinancePressureCount =
+    Number.isFinite(canonicalMissedPaymentCount) ||
+    Number.isFinite(canonicalDefaultCount);
+  const financePressureEventCount = hasCanonicalFinancePressureCount
+    ? (Number.isFinite(canonicalMissedPaymentCount)
+        ? Math.max(0, canonicalMissedPaymentCount)
+        : 0) +
+      (Number.isFinite(canonicalDefaultCount)
+        ? Math.max(0, canonicalDefaultCount)
+        : 0)
+    : countTrustEvents(trustCounts, [
+        "missed_payment",
+        "repayment_missed",
+        "late_payment",
+        "overdue",
+        "default",
+        "loan_defaulted",
+        "write_off",
+      ]);
   const guarantorEarningsTotal = safeStr(guarantorEarnings?.total_earned || "0.00");
   const guarantorEarningsItems = rowsOf<any>(guarantorEarnings);
 
@@ -1482,7 +1516,15 @@ export default function FinancePage() {
   const pendingReconciliationCount = useMemo(() => {
     return activeExpectedPayments.filter((item) => {
       const status = safeStr(item?.status).toLowerCase();
-      return status === "expected" || status === "matched";
+      return ![
+        "confirmed",
+        "applied",
+        "cancelled",
+        "canceled",
+        "expired",
+        "failed",
+        "defaulted",
+      ].includes(status);
     }).length;
   }, [activeExpectedPayments]);
 
@@ -1515,15 +1557,17 @@ export default function FinancePage() {
   const expectedPaymentStateCounts = useMemo(() => {
     return activeExpectedPayments.reduce(
       (acc, item) => {
-        const state = expectedPaymentState(item);
-        if (state === "Finance confirmed") acc.confirmed += 1;
-        else if (state === "Bank match found") acc.matched += 1;
-        else if (state === "Code generated") acc.awaitingReconciliation += 1;
+        const status = safeStr(item.status).toLowerCase();
+        if (status === "confirmed" || status === "applied") acc.confirmed += 1;
+        else if (status === "partial") acc.partial += 1;
+        else if (item.bank_event_id) acc.matched += 1;
+        else if (safeStr(item.reference_display)) acc.awaitingReconciliation += 1;
         else acc.awaitingIssue += 1;
         return acc;
       },
       {
         confirmed: 0,
+        partial: 0,
         matched: 0,
         awaitingReconciliation: 0,
         awaitingIssue: 0,
@@ -1624,9 +1668,9 @@ export default function FinancePage() {
 
     if (pendingReconciliationCount > 0) {
       rows.push(
-        `${pendingReconciliationCount} payment code${
+        `${pendingReconciliationCount} payment item${
           pendingReconciliationCount === 1 ? "" : "s"
-        } waiting for a bank match.`
+        } still need completion.`
       );
     }
 
@@ -3403,9 +3447,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Payments waiting for finance confirmation</div>
+            <div style={sectionLabel()}>Payments still being completed</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Codes are not paid until finance reconciles the bank match.
+              A payment is complete only after GSN matches the full expected amount.
             </div>
           </div>
 
@@ -3430,8 +3474,9 @@ export default function FinancePage() {
               }}
             >
               <span style={badge(true)}>Codes open: {activeExpectedPayments.length}</span>
-              <span style={badge(false)}>Not received yet: {pendingReconciliationCount}</span>
+              <span style={badge(false)}>Needs completion: {pendingReconciliationCount}</span>
               <span style={badge(false)}>Finance confirmed: {expectedPaymentStateCounts.confirmed}</span>
+              <span style={badge(false)}>Part payment: {expectedPaymentStateCounts.partial}</span>
               <span style={badge(false)}>Bank match found: {expectedPaymentStateCounts.matched}</span>
               <span style={badge(false)}>
                 Needs new code: {expectedPaymentStateCounts.awaitingIssue}
@@ -3446,7 +3491,7 @@ export default function FinancePage() {
                   <FinanceMobileRecord
                     key={`${item.id || index}`}
                     title={firstTruthy(item.expected_type, "Payment check")}
-                    tone={expectedPaymentState(item) === "Finance confirmed" ? "good" : "watch"}
+                    tone={["confirmed", "applied"].includes(safeStr(item.status).toLowerCase()) ? "good" : "watch"}
                     rows={[
                       ["Reference", safeStr(item.reference_display || "-")],
                       [
@@ -3455,20 +3500,16 @@ export default function FinancePage() {
                       ],
                       ["Payment status", expectedPaymentState(item)],
                       [
-                        "Status",
-                        `${safeStr(item.status || "expected")}${
-                          item.status_reason ? ` - ${safeStr(item.status_reason)}` : ""
-                        }`,
+                        "Progress",
+                        expectedPaymentProgress(item),
                       ],
                       [
                         "Date",
-                        item.confirmed_at
-                          ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
-                          : item.due_at
-                            ? `Due: ${safeDateTime(item.due_at)}`
-                            : item.matched_bank_event_id
-                              ? "Bank match found"
-                              : "-",
+                        item.due_at
+                          ? `Due: ${safeDateTime(item.due_at)}`
+                          : item.bank_event_id
+                            ? "Bank match found"
+                            : "-",
                       ],
                       ["Next action", expectedPaymentNextAction(item)],
                     ]}
@@ -3484,7 +3525,7 @@ export default function FinancePage() {
                       <th style={tableHeadCell()}>Reference</th>
                       <th style={tableHeadCell()}>Amount</th>
                       <th style={tableHeadCell()}>Payment status</th>
-                      <th style={tableHeadCell()}>Status</th>
+                      <th style={tableHeadCell()}>Progress</th>
                       <th style={tableHeadCell()}>Date</th>
                       <th style={tableHeadCell()}>Next action</th>
                     </tr>
@@ -3504,17 +3545,14 @@ export default function FinancePage() {
                         </td>
                         <td style={tableCell()}>{expectedPaymentState(item)}</td>
                         <td style={tableCell()}>
-                          {safeStr(item.status || "expected")}
-                          {item.status_reason ? ` - ${safeStr(item.status_reason)}` : ""}
+                          {expectedPaymentProgress(item)}
                         </td>
                         <td style={tableCell()}>
-                          {item.confirmed_at
-                            ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
-                            : item.due_at
-                              ? `Due: ${safeDateTime(item.due_at)}`
-                              : item.matched_bank_event_id
-                                ? "Bank match found"
-                                : "-"}
+                          {item.due_at
+                            ? `Due: ${safeDateTime(item.due_at)}`
+                            : item.bank_event_id
+                              ? "Bank match found"
+                              : "-"}
                         </td>
                         <td style={tableCell()}>{expectedPaymentNextAction(item)}</td>
                       </tr>

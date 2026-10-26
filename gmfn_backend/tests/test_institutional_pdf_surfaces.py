@@ -158,6 +158,19 @@ def test_service_pdf_smoke_generator_writes_member_evidence_pdf_and_png():
         _assert_pdf_bytes(pdf_path.read_bytes())
         assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
         assert png_path.stat().st_size > 1000
+
+        import fitz
+
+        with fitz.open(pdf_path) as document:
+            assert len(document) == 1
+            normalized_text = " ".join(" ".join(page.get_text() for page in document).split())
+        assert "A trust snapshot is available; no matching recent activity is recorded." in normalized_text
+        assert "Decision Boundary" in normalized_text
+        assert "MEMBER REFERENCE GSN-U-SERVICE-SMOKE" in normalized_text
+        assert "Evidence context" in normalized_text
+        assert "Record security" in normalized_text
+        assert "member-evidence-smoke@example.com" not in normalized_text
+
     finally:
         pdf_path.unlink(missing_ok=True)
         png_path.unlink(missing_ok=True)
@@ -187,6 +200,26 @@ def test_service_pdf_smoke_generator_writes_community_evidence_pdf_and_png():
         _assert_pdf_bytes(pdf_path.read_bytes())
         assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
         assert png_path.stat().st_size > 1000
+
+        import fitz
+
+        with fitz.open(pdf_path) as document:
+            assert document.page_count == 1
+            text = " ".join(page.get_text() for page in document)
+
+        normalized_text = " ".join(text.split())
+        assert "1 invite-led community entry is recorded." in normalized_text
+        assert "Decision Boundary" in normalized_text
+        assert "Recent invite-led entries" in normalized_text
+        assert "Recorded activity summary" in normalized_text
+        assert "Other recorded activity" in normalized_text
+        assert "Redacted share copy" in normalized_text
+        assert "***2345" in normalized_text
+        assert "SMOKE-CODE-12345" not in normalized_text
+        assert "opaque_internal_event" not in normalized_text
+        assert "PRIVATE-EVIDENCE-META" not in normalized_text
+        assert "community-owner-smoke@example.com" not in normalized_text
+        assert "community-member-smoke@example.com" not in normalized_text
     finally:
         pdf_path.unlink(missing_ok=True)
         png_path.unlink(missing_ok=True)
@@ -216,6 +249,18 @@ def test_service_pdf_smoke_generator_writes_loan_evidence_pdf_and_png():
         _assert_pdf_bytes(pdf_path.read_bytes())
         assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
         assert png_path.stat().st_size > 1000
+
+        import fitz
+
+        with fitz.open(pdf_path) as document:
+            assert len(document) == 1
+            normalized_text = " ".join(" ".join(page.get_text() for page in document).split())
+        assert "This support request is recorded as pending." in normalized_text
+        assert "Decision Boundary" in normalized_text
+        assert "SUPPORT GAP NGN 35,000.00" in normalized_text
+        assert "Recorded evidence" in normalized_text
+        assert "Record security" in normalized_text
+        assert "support-borrower-smoke@example.com" not in normalized_text
     finally:
         pdf_path.unlink(missing_ok=True)
         png_path.unlink(missing_ok=True)
@@ -283,15 +328,22 @@ def test_trustslip_evidence_smoke_pdf_text_keeps_private_fields_out():
 
         document = fitz.open(pdf_path)
         try:
-            assert document.page_count >= 2
+            assert document.page_count == 2
             text = "\n".join(page.get_text() for page in document)
         finally:
             document.close()
 
-        assert "Private member reference: redacted for TrustSlip evidence paper" in text
-        assert "Reconciliation reference: private operational detail redacted" in text
-        assert "Public TrustSlip verification QR" in text
-        assert "Scan to open this public TrustSlip verification page." in text
+        normalized_text = " ".join(text.split())
+        assert "This TrustSlip was current when this paper was generated." in normalized_text
+        assert "Decision Boundary" in normalized_text
+        assert "Private member reference" in normalized_text
+        assert "redacted for TrustSlip evidence paper" in normalized_text
+        assert "Reconciliation reference" in normalized_text
+        assert "private operational detail redacted" in normalized_text
+        assert "Check the live TrustSlip" in normalized_text
+        assert "Public code: GSN-SMOKE" in normalized_text
+        assert "Public TrustSlip verification QR" not in text
+        assert "Scan to open this public TrustSlip verification page." not in text
         assert "Merchant verification QR" not in text
         assert "Scan to open merchant verification view." not in text
         assert "trustslip-smoke@example.com" not in text
@@ -304,6 +356,46 @@ def test_trustslip_evidence_smoke_pdf_text_keeps_private_fields_out():
         assert "Payment reference" not in text
     finally:
         pdf_path.unlink(missing_ok=True)
+
+
+def test_trust_timeline_smoke_pdf_is_two_page_plain_language_record():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_timeline_smoke",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "trust-timeline-smoke.pdf"
+    png_path = temp_dir / "trust-timeline-smoke.png"
+    page2_png_path = temp_dir / "trust-timeline-smoke-page2.png"
+
+    try:
+        result = module.build_trust_timeline_smoke(pdf_path, png_path, page2_png_path)
+        assert result["pdf"] == pdf_path
+        assert result["png"] == png_path
+        assert result["page2_png"] == page2_png_path
+        _assert_pdf_bytes(pdf_path.read_bytes())
+
+        import fitz
+
+        with fitz.open(pdf_path) as document:
+            assert document.page_count == 2
+            text = " ".join(page.get_text() for page in document)
+
+        normalized_text = " ".join(text.split())
+        assert "5 recent trust record changes are shown." in normalized_text
+        assert "Decision Boundary" in normalized_text
+        assert "Your recent trust record, newest first." in normalized_text
+        assert "Full repayment recorded" in normalized_text
+        assert "Support completed successfully" in normalized_text
+        assert "Payment reported by member" in normalized_text
+        assert "private event details redacted for timeline PDF" in normalized_text
+        assert "loan_repaid" not in normalized_text
+        assert "PRIVATE-TIMELINE-REF" not in normalized_text
+        assert "timeline-smoke@example.com" not in normalized_text
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+        page2_png_path.unlink(missing_ok=True)
 
 
 class _RecordingPdfCanvas:
@@ -495,12 +587,166 @@ def test_generated_simple_evidence_pack_pdfs_return_valid_pdf_bytes(monkeypatch)
         monkeypatch.setattr(evidence_pack_pdf_service, "get_recent_invite_joins", lambda db, clan_id, limit=20: [])
         monkeypatch.setattr(evidence_pack_pdf_service, "get_trust_events_timeline", lambda db, clan_id, limit=300: [])
 
-        _assert_pdf_bytes(evidence_pack_pdf_service.build_clan_evidence_pack_pdf(db, clan_id=1))
+        community_pdf = evidence_pack_pdf_service.build_clan_evidence_pack_pdf(db, clan_id=1)
+        _assert_pdf_bytes(community_pdf)
+
+        import fitz
+
+        with fitz.open(stream=community_pdf, filetype="pdf") as document:
+            community_text = " ".join(page.get_text() for page in document)
+        normalized_community_text = " ".join(community_text.split())
+        assert "No invite-led community entries are recorded." in normalized_community_text
+        assert "No recent invite-led entries are recorded in this snapshot." in normalized_community_text
+        assert "No recorded activity categories in this snapshot." in normalized_community_text
         _assert_pdf_bytes(build_loan_evidence_pack_pdf(db, loan_id=1))
         _assert_pdf_bytes(build_user_evidence_pack_pdf(db, user_id=1))
     finally:
         db.close()
         engine.dispose()
+
+
+def test_populated_loan_evidence_pdf_is_two_page_decision_first_and_share_safe():
+    from app.services.loan_evidence_pack_pdf_layout import build_support_evidence_document
+    import fitz
+
+    supporters = [
+        {
+            "member_reference": f"GSN-U-SUPPORTER-{index:02d}",
+            "status": "approved" if index < 4 else "pending",
+            "pledge_amount": 5000 + index,
+            "score": 70 + index,
+            "band": "B",
+        }
+        for index in range(1, 7)
+    ]
+    repayments = [
+        {
+            "created_at": f"2026-10-{20 - index:02d} 12:00 UTC",
+            "payer_reference": "GSN-U-REQUESTER-LONG",
+            "amount": 1250 + index,
+        }
+        for index in range(1, 7)
+    ]
+    timeline = [
+        {
+            "created_at": f"2026-10-26 {12 - index:02d}:00 UTC",
+            "event_type": "repayment_confirmed" if index % 2 else "opaque_internal_event",
+            "participants": f"GSN-U-MEMBER-{index:02d}",
+            "has_metadata": True,
+        }
+        for index in range(1, 11)
+    ]
+
+    pdf = build_support_evidence_document(
+        support_reference="GSN-SUPPORT-009999",
+        community_name="GSN Long Evidence Community",
+        community_reference="GSN-C-LONG-EVIDENCE",
+        requester_reference="GSN-U-REQUESTER-LONG",
+        requester_trust={"score": 78, "band": "B", "updated_at": "2026-10-26 12:00 UTC"},
+        status="pending",
+        amount="75000",
+        currency="NGN",
+        support_gap="25000",
+        supporters_required=6,
+        supporters=supporters,
+        repayments=repayments,
+        timeline=timeline,
+        redact=True,
+        generated_at="2026-10-26 12:00 UTC",
+    )
+
+    _assert_pdf_bytes(pdf)
+    with fitz.open(stream=pdf, filetype="pdf") as document:
+        assert len(document) == 2
+        page_text = [" ".join(page.get_text().split()) for page in document]
+    assert all("GSN Support Evidence Pack" in text for text in page_text)
+    assert all("not a bank guarantee" in text for text in page_text)
+    normalized_text = " ".join(page_text)
+    assert "This support request is recorded as pending." in normalized_text
+    assert "Other recorded activity" in normalized_text
+    assert "Metadata redacted for share copy" in normalized_text
+    assert "opaque_internal_event" not in normalized_text
+
+
+def test_populated_member_evidence_pdf_is_two_page_decision_first_and_share_safe():
+    from app.services.user_evidence_pack_pdf_layout import build_member_evidence_document
+    import fitz
+
+    event_types = [
+        "loan.created",
+        "guarantor.requested",
+        "repayment.claimed",
+        "repayment.created",
+        "repayment.auto_applied",
+        "loan.repaid",
+        "repayment.reversed",
+        "loan_fully_repaid_reversed",
+        "guarantor_success_reversed",
+        "clan_join_via_invite",
+        "opaque_internal_event",
+    ]
+    events = [
+        {
+            "created_at": f"2026-10-26 {23 - index:02d}:00 UTC",
+            "event_type": event_types[index % len(event_types)],
+            "context": (
+                "Private support record / GSN member record"
+                if index % 3 == 0
+                else "GSN member record"
+            ),
+        }
+        for index in range(18)
+    ]
+
+    pdf = build_member_evidence_document(
+        member_reference="GSN-U-MEMBER-LONG",
+        score=81,
+        band="B",
+        updated_at="2026-10-26 12:00 UTC",
+        category_summary=[
+            ("Full repayments", 4),
+            ("Support completed", 3),
+            ("Missed payments", 1),
+            ("Defaults", 0),
+        ],
+        events=events,
+        days=30,
+        redact=True,
+        generated_at="2026-10-26 12:00 UTC",
+    )
+
+    _assert_pdf_bytes(pdf)
+    with fitz.open(stream=pdf, filetype="pdf") as document:
+        assert len(document) == 2
+        page_text = [" ".join(page.get_text().split()) for page in document]
+    assert all("GSN Member Evidence Pack" in text for text in page_text)
+    assert all("not a bank guarantee" in text for text in page_text)
+    normalized_text = " ".join(page_text)
+    assert "A trust snapshot and 18 recent evidence entries are recorded." in normalized_text
+    assert "Other recorded activity" in normalized_text
+    assert "Private support record" in normalized_text
+    assert "Payment reported by member" in normalized_text
+    assert "Payment confirmed" in normalized_text
+    assert "Confirmed payment applied to support" in normalized_text
+    assert "Full repayment recorded" in normalized_text
+    assert "Repayment record reversed" in normalized_text
+    assert "Full repayment status reversed" in normalized_text
+    assert "Support outcome reversed" in normalized_text
+    assert "opaque_internal_event" not in normalized_text
+
+
+def test_repayment_reversal_event_labels_are_plain_across_timeline_papers():
+    from app.services.trust_timeline_pdf_layout import event_type_label
+
+    assert event_type_label("repayment.reversed", audience="user") == "Repayment record reversed"
+    assert (
+        event_type_label("loan_fully_repaid_reversed", audience="user")
+        == "Full repayment status reversed"
+    )
+    assert (
+        event_type_label("guarantor_success_reversed", audience="user")
+        == "Support outcome reversed"
+    )
 
 
 def test_generated_trustslip_and_timeline_pdfs_return_valid_pdf_bytes(monkeypatch):
@@ -576,7 +822,18 @@ def test_generated_trustslip_and_timeline_pdfs_return_valid_pdf_bytes(monkeypatc
         )
         monkeypatch.setattr(trust_timeline_pdf_service, "_load_events", lambda db, user_id, limit: [])
 
-        _assert_pdf_bytes(build_trust_slip_pdf(db, trustslip_summary, pack_meta={}))
+        trustslip_pdf = build_trust_slip_pdf(db, trustslip_summary, pack_meta={})
+        _assert_pdf_bytes(trustslip_pdf)
+
+        import fitz
+
+        with fitz.open(stream=trustslip_pdf, filetype="pdf") as document:
+            trustslip_text = " ".join(
+                page.get_text() for page in document
+            )
+        normalized_trustslip_text = " ".join(trustslip_text.split())
+        assert "Public verification is unavailable" in normalized_trustslip_text
+        assert "No public TrustSlip code was available" in normalized_trustslip_text
         _assert_pdf_bytes(trust_timeline_pdf_service.build_trust_timeline_pdf(db, user_id=2, limit=5))
     finally:
         db.close()
@@ -650,48 +907,69 @@ def test_generated_report_pdfs_return_valid_pdf_bytes():
 
 
 def test_simple_evidence_pdfs_use_gsn_institutional_shell():
-    for service in [
-        "app/services/evidence_pack_pdf_service.py",
-        "app/services/loan_evidence_pack_pdf_service.py",
-        "app/services/user_evidence_pack_pdf_service.py",
-    ]:
-        text = read_service(service)
-
-        assert "draw_institutional_header" in text
-        assert "draw_institutional_footer" in text
-        assert "safe_pdf_text" in text
-        assert "wrap_pdf_text_lines" in text
-        assert "content_width = width - (content_left * 2)" in text
-        assert "Official evidence summary" in text
-        assert "GMFN Evidence Pack" not in text
+    user_text = read_service("app/services/user_evidence_pack_pdf_service.py")
+    user_layout = read_service("app/services/user_evidence_pack_pdf_layout.py")
+    assert "build_member_evidence_document" in user_text
+    assert "member_reference=gsn_id" in user_text
+    assert "draw_institutional_header" in user_layout
+    assert "draw_institutional_footer" in user_layout
+    assert "safe_pdf_text" in user_layout
+    assert "SimpleDocTemplate" in user_layout
+    assert "LongTable" in user_layout
+    assert "repeatRows=1" in user_layout
+    assert "MEMBER EVIDENCE SNAPSHOT" in user_layout
+    assert "Decision Boundary" in user_layout
+    assert "Evidence context" in user_layout
+    assert "Record security" in user_layout
+    assert "Official evidence summary" not in user_layout
+    assert "GMFN Evidence Pack" not in user_layout
 
     loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")
-    assert 'kv("Community", clan_name or "-")' in loan_text
-    assert 'kv("Community ID", community_reference)' in loan_text
-    assert 'kv("Support record", support_reference)' in loan_text
+    loan_layout = read_service("app/services/loan_evidence_pack_pdf_layout.py")
+    assert "build_support_evidence_document" in loan_text
+    assert "community_reference=community_reference" in loan_text
+    assert "support_reference=support_reference" in loan_text
+    assert "draw_institutional_header" in loan_layout
+    assert "draw_institutional_footer" in loan_layout
+    assert "safe_pdf_text" in loan_layout
+    assert "SimpleDocTemplate" in loan_layout
+    assert "LongTable" in loan_layout
+    assert "repeatRows=1" in loan_layout
+    assert "SUPPORT EVIDENCE SNAPSHOT" in loan_layout
+    assert "Decision Boundary" in loan_layout
+    assert "Record security" in loan_layout
+    assert "SUPPORT RECORD" in loan_layout
+    assert "SUPPORT GAP" in loan_layout
     assert 'kv("Clan"' not in loan_text
     assert 'kv("Loan ID", str(loan_id))' not in loan_text
 
     community_text = read_service("app/services/evidence_pack_pdf_service.py")
-    assert "community_reference = getattr(clan, \"community_code\", None)" in community_text
-    assert "Community ID: {community_reference}" in community_text
-    assert "Community entry summary" in community_text
-    assert "Evidence activity summary" in community_text
+    assert "community_reference = (" in community_text
+    assert "draw_institutional_header" in community_text
+    assert "draw_institutional_footer" in community_text
+    assert "safe_pdf_text" in community_text
+    assert "SimpleDocTemplate" in community_text
+    assert "COMMUNITY EVIDENCE SNAPSHOT" in community_text
+    assert "Decision Boundary" in community_text
+    assert "Recent invite-led entries" in community_text
+    assert "Recorded activity summary" in community_text
+    assert "LongTable" in community_text
+    assert "repeatRows=1" in community_text
     assert "Member joined by invite" in community_text
     assert "Community ID: {clan_id}" not in community_text
     assert "TrustEvent summary counts" not in community_text
+    assert "Official evidence summary" not in community_text
 
-    assert "Trust snapshot" in loan_text
-    assert "Support summary" in loan_text
-    assert "Evidence timeline for this support record" in loan_text
-    assert "GSN Support Evidence Pack" in loan_text
-    assert "GSN support evidence paper" in loan_text
-    assert "private support, supporter, and repayment details" in loan_text
-    assert "GSN Loan Evidence Pack" not in loan_text
-    assert "GSN loan evidence paper" not in loan_text
-    assert "Loan summary" not in loan_text
-    assert "Trust Snapshot (Explainable)" not in loan_text
-    assert "Trust timeline (events linked to this loan)" not in loan_text
+    assert "Trust snapshot" in loan_layout
+    assert "Evidence timeline for this support record" in loan_layout
+    assert "GSN Support Evidence Pack" in loan_layout
+    assert "GSN support evidence paper" in loan_layout
+    assert "private support, supporter, and repayment details" in loan_layout
+    assert "GSN Loan Evidence Pack" not in loan_layout
+    assert "GSN loan evidence paper" not in loan_layout
+    assert "Loan summary" not in loan_layout
+    assert "Trust Snapshot (Explainable)" not in loan_layout
+    assert "Trust timeline (events linked to this loan)" not in loan_layout
 
 
 def test_trust_slip_pdf_uses_gsn_title_and_watermark():
@@ -702,9 +980,10 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "GSN TrustSlip Evidence Snapshot" in text
     assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
-    assert "Trust-limit signal" in text
+    assert "Support signal" in text
     assert "KeepTogether" in text
-    assert 'Paragraph("Public TrustSlip verification QR", styles["Heading2"])' in text
+    assert 'Paragraph("Check the live TrustSlip", styles["section"])' in text
+    assert "Public verification is unavailable" in text
     assert "Merchant verification QR" not in text
     assert "Available support capacity" in text
     assert "Support pressure reading" in text
@@ -717,11 +996,12 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Available Guarantee Capacity" not in text
     assert "Overexposure ratio" not in text
     assert "Estimated Guarantee Gap" not in text
-    assert "from reportlab.lib.units import inch, mm" in text
+    assert "from reportlab.lib.units import mm" in text
     assert "topMargin=80 * mm" in text
     assert "Confirmed By (Actor ID)" not in text
     assert "Confirmed by record" not in text
-    assert "confirmation_source = \"GSN recorded trust event\"" in text
+    assert "confirmation_source = (" in text
+    assert "\"GSN recorded trust event\"" in text
     assert "Confirmation source" in text
     assert "Support record" in text
     assert "Private support record" in text
@@ -733,6 +1013,7 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "loan_id = event.loan_id" not in text
     assert "Payment reference" not in text
     assert "payment_reference" not in text
+    assert "/trust-slips/ping" not in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
 
 
@@ -741,6 +1022,9 @@ def test_trust_slip_pdf_route_uses_gsn_filename():
 
     assert 'filename="gsn-trustslip-evidence.pdf"' in text
     assert "trust_slip_evidence.pdf" not in text
+    assert "get_trust_slip_payload" in text
+    assert "except ValueError:" in text
+    assert "compute_trust_breakdown" in text
 
 
 def test_trust_slip_release_helper_page_is_institutional_and_bounded():
@@ -803,24 +1087,31 @@ def test_legacy_merchant_verify_ui_is_bounded_and_escaped_if_reenabled():
 
 
 def test_trust_timeline_pdf_uses_institutional_shell():
-    text = read_service("app/services/trust_timeline_pdf_service.py")
+    service = read_service("app/services/trust_timeline_pdf_service.py")
+    layout = read_service("app/services/trust_timeline_pdf_layout.py")
+    text = service + layout
 
-    assert "GSN Trust Timeline Evidence Report" in text
+    assert 'title="GSN Trust Timeline"' in layout
     assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
-    assert "safe_pdf_text(text)" in text
-    assert "Trust-limit signal" in text
+    assert "PRIVATE TRUST RECORD" in layout
+    assert "Decision Boundary" in layout
+    assert "RECORDED ACTIVITY" in layout
+    assert "LongTable" in layout
+    assert "repeatRows=1" in layout
+    assert "Support signal" in text
     assert "Available support capacity" in text
-    assert "Current locked support" in text
-    assert "Support capacity ratio" in text
     assert "Private contact" in text
     assert "redacted for timeline PDF" in text
-    assert "def _timeline_contact_boundary" in text
-    assert "def _audience_label" in text
+    assert "def _timeline_contact_boundary" in service
+    assert "def _audience_label" in service
     assert "Reader boundary: redacted personal trust history for controlled review." in text
     assert "private event details redacted for timeline PDF" in text
-    assert "redact: bool = True" in text
-    assert "pack_meta: Optional[Dict[str, Any]] = None" in text
+    assert "redact: bool = True" in service
+    assert "pack_meta: Optional[Dict[str, Any]] = None" in service
+    assert "build_timeline_document" in service
+    assert "except ValueError:" in service
+    assert "compute_trust_breakdown" in service
     assert "User Email" not in text
     assert "Email: {_mask_email" not in text
     assert "def _mask_email" not in text
@@ -839,6 +1130,9 @@ def test_trust_timeline_pdf_route_uses_gsn_filename_and_user_audience_guard():
     assert "is_platform_admin" in text
     assert 'pdf_audience = "admin" if audience == "admin" and is_platform_admin else "user"' in text
     assert "redact=True" in text
+    assert "build_trust_evidence_pack_zip_with_meta" not in text
+    assert "except ValueError:" in text
+    assert "compute_trust_breakdown" in text
     assert 'filename = f"gsn-trust-timeline-u{user_id}-{visibility_level}.pdf"' in text
     assert '"X-GSN-Merchant-Visibility-Level"' in text
     assert '"X-GSN-TrustSlip-Code"' in text
@@ -1039,15 +1333,21 @@ def test_dormant_loan_audit_share_links_are_redacted_if_reenabled():
 def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     clan_text = read_service("app/services/evidence_pack_pdf_service.py")
     loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")
+    loan_layout = read_service("app/services/loan_evidence_pack_pdf_layout.py")
     user_text = read_service("app/services/user_evidence_pack_pdf_service.py")
+    user_layout = read_service("app/services/user_evidence_pack_pdf_layout.py")
 
     assert "def _mask_code" in clan_text
-    assert "def _member_contact_boundary" in clan_text
-    assert "private member contact redacted" in clan_text
     assert "redact: bool = True" in clan_text
-    assert "invite_code = _mask_code" in clan_text
-    assert "Reader boundary" in clan_text
-    assert "redacted share copy for outside review" in clan_text
+    assert 'headers = ["WHEN", "ENTRY", "INVITE REFERENCE"]' in clan_text
+    assert 'invite_reference = _mask_code(row.get("invite_code"))' in clan_text
+    assert "Decision Boundary" in clan_text
+    assert '"Privacy"' in clan_text
+    assert "Private member contacts, internal member IDs, and complete invite codes are not printed" in clan_text
+    assert 'return EVENT_LABELS.get(raw, "Other recorded activity")' in clan_text
+    assert "def _aggregate_event_counts" in clan_text
+    assert "def _member_contact_boundary" not in clan_text
+    assert "private member contact redacted" not in clan_text
     assert "r['invited_by_user_id']" not in clan_text
     assert "r.get('joined_user_id')" not in clan_text
     assert "r.get('invited_by_user_id')" not in clan_text
@@ -1057,9 +1357,10 @@ def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     assert "def member_reference" in loan_text
     assert "private member reference redacted" in loan_text
     assert "redact: bool = True" in loan_text
-    assert "Reader boundary" in loan_text
-    assert "meta: redacted for share copy" in loan_text
-    assert "private support, supporter, and repayment details" in loan_text
+    assert "Decision Boundary" in loan_layout
+    assert "Metadata redacted for share copy" in loan_layout
+    assert "private support, supporter, and repayment details" in loan_layout
+    assert "Private contacts, internal member IDs, and event metadata are not printed" in loan_layout
     assert "def _mask_email" not in loan_text
     assert "show_email" not in loan_text
     assert "r['email'] or r['user_id']" not in loan_text
@@ -1068,21 +1369,21 @@ def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     assert "subject={subject_email or subject_id}" not in loan_text
 
     assert "redact: bool = True" in user_text
-    assert "Private member reference" in user_text
-    assert "Private contact" in user_text
-    assert "redacted for member evidence paper" in user_text
-    assert "Reader boundary" in user_text
-    assert "private member evidence" in user_text
-    assert "support record=private operational detail redacted" in user_text
-    assert "source=GSN member record" in user_text
+    assert 'context.append("Private support record")' in user_text
+    assert 'context.append("GSN member record")' in user_text
+    assert "Decision Boundary" in user_layout
+    assert "private member evidence" in user_layout
+    assert "Private contact details, internal member IDs, support record numbers, and event metadata are not printed" in user_layout
+    assert "Other recorded activity" in user_layout
     assert "User ID: {user_id}" not in user_text
     assert "Email: {email or '-'}" not in user_text
     assert "reference=f\"User {user_id}\"" not in user_text
     assert "def _mask_email" not in user_text
     assert "loan={loan_id}" not in user_text
     assert "src={src}" not in user_text
+    assert "meta_json" not in user_layout
 
-    for text in [clan_text, loan_text, user_text]:
+    for text in [clan_text, loan_layout, user_layout]:
         assert "visa / partner framing" not in text
         assert "Visa/partner framing" not in text
         assert "bank guarantee, credit approval, payment instruction, or automatic debit authority" in text

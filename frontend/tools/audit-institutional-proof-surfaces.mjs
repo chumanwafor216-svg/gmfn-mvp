@@ -22,11 +22,15 @@ const files = {
   shipmentRoute: "gmfn_backend/app/api/routes/shipment.py",
   trustEvidencePack: "gmfn_backend/app/services/trust_evidence_pack_service.py",
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
+  loanEvidenceLayout: "gmfn_backend/app/services/loan_evidence_pack_pdf_layout.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
+  userEvidenceLayout: "gmfn_backend/app/services/user_evidence_pack_pdf_layout.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
   trustSlipEvidenceRoute: "gmfn_backend/app/api/routes/trust_slip_evidence.py",
   legacyVerifyUi: "gmfn_backend/app/api/routes/trust_slips_verify_ui.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
+  trustTimelineLayout: "gmfn_backend/app/services/trust_timeline_pdf_layout.py",
+  trustTimelineService: "gmfn_backend/app/services/trust_timeline_service.py",
   trustTimelineRoute: "gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
   trustScoreService: "gmfn_backend/app/services/trust_score_service.py",
@@ -212,6 +216,14 @@ function assertOrdered(key, snippets, message) {
 
 const institutionalShellServices = [
   "evidencePack",
+  "loanEvidenceLayout",
+  "userEvidenceLayout",
+  "trustTimelineLayout",
+  "reports",
+];
+
+const utcStampedPdfServices = [
+  "evidencePack",
   "loanEvidencePack",
   "userEvidencePack",
   "trustTimelinePdf",
@@ -220,6 +232,9 @@ const institutionalShellServices = [
 
 const pdfServices = [
   ...institutionalShellServices,
+  "loanEvidencePack",
+  "userEvidencePack",
+  "trustTimelinePdf",
   "trustSlipPdf",
 ];
 
@@ -273,13 +288,31 @@ for (const key of institutionalShellServices) {
   assertContains(key, /draw_institutional_header/, "PDF services must use the shared institutional header.");
   assertContains(key, /draw_institutional_footer/, "PDF services must use the shared institutional footer.");
   assertContains(key, /safe_pdf_text/, "PDF services must sanitize visible PDF text.");
+}
+
+for (const key of utcStampedPdfServices) {
   assertContains(key, /utc_generated_label/, "PDF services must stamp a UTC generated time.");
 }
 
 assertContains(
   "evidencePack",
-  /community_reference = getattr\(clan, "community_code", None\)[\s\S]*?Community ID: \{community_reference\}[\s\S]*?Community entry summary[\s\S]*?Evidence activity summary/,
-  "Community evidence PDF must show the public GSN community reference instead of the raw database community id."
+  /community_reference = \([\s\S]*?COMMUNITY EVIDENCE SNAPSHOT[\s\S]*?Decision Boundary[\s\S]*?Recent invite-led entries[\s\S]*?Recorded activity summary[\s\S]*?Record security/,
+  "Community evidence PDF must lead with the public community reference, decision boundary, and compact evidence sequence."
+);
+assertContains(
+  "evidencePack",
+  /SimpleDocTemplate\([\s\S]*?topMargin=80 \* mm/,
+  "Community evidence PDF must use a flowable institutional layout with protected header space."
+);
+assertContains(
+  "evidencePack",
+  /LongTable\([\s\S]*?repeatRows=1/,
+  "Community evidence PDF must keep stable headings when entry tables continue."
+);
+assertContains(
+  "evidencePack",
+  /KeepTogether\([\s\S]*?Recorded activity summary[\s\S]*?Record security/,
+  "Community evidence PDF must keep activity and security headings with their compact content."
 );
 assertNotContains(
   "evidencePack",
@@ -288,21 +321,21 @@ assertNotContains(
 );
 assertContains(
   "loanEvidencePack",
-  /support_reference = f"GSN-SUPPORT-\{int\(loan_id\):06d\}"[\s\S]*?title="GSN Support Evidence Pack"[\s\S]*?reference=support_reference/,
-  "Loan evidence PDF must title and reference the paper as a support evidence pack."
+  /support_reference = f"GSN-SUPPORT-\{int\(loan_id\):06d\}"[\s\S]*?build_support_evidence_document\([\s\S]*?support_reference=support_reference/,
+  "Loan evidence service must derive the public support reference and pass it to the PDF layout."
 );
 assertContains(
-  "loanEvidencePack",
-  /kv\("Support record", support_reference\)[\s\S]*?kv\("Community ID", community_reference\)[\s\S]*?Trust snapshot[\s\S]*?Support summary[\s\S]*?Evidence timeline for this support record/,
-  "Loan evidence PDF must use user-facing support-record sections and the public community reference."
+  "loanEvidenceLayout",
+  /title="GSN Support Evidence Pack"[\s\S]*?reference=reference[\s\S]*?SUPPORT EVIDENCE SNAPSHOT[\s\S]*?Decision Boundary[\s\S]*?Trust snapshot[\s\S]*?Evidence timeline for this support record[\s\S]*?Record security/,
+  "Loan evidence PDF must lead with a decision snapshot and retain compact support evidence sections."
 );
 assertContains(
-  "loanEvidencePack",
+  "loanEvidenceLayout",
   /private support, supporter, and repayment details/,
   "Loan evidence PDF reader boundary must use support language instead of loan language."
 );
 assertNotContains(
-  "loanEvidencePack",
+  "loanEvidenceLayout",
   /title="GSN Loan Evidence Pack"|GSN loan evidence paper|kv\("Loan ID", str\(loan_id\)\)|Loan summary|Trust Snapshot \(Explainable\)|Trust timeline \(events linked to this loan\)|private loan, supporter/g,
   "Loan evidence PDF must not expose the raw loan id as the primary user-facing paper label or use machine-style section headings."
 );
@@ -314,8 +347,8 @@ assertContains(
 );
 assertContains(
   "trustSlipPdf",
-  /Global Support Network official evidence paper/,
-  "TrustSlip PDF must identify itself as an official GSN evidence paper."
+  /This TrustSlip was current when this paper was generated\.[\s\S]*?OFFICIAL PUBLIC EVIDENCE/,
+  "TrustSlip PDF must open with a decision-first official public evidence answer."
 );
 assertContains(
   "trustSlipPdf",
@@ -349,13 +382,13 @@ assertContains(
 );
 assertContains(
   "trustSlipPdf",
-  /from reportlab\.lib\.units import inch, mm[\s\S]*?topMargin=80 \* mm/,
+  /from reportlab\.lib\.units import mm[\s\S]*?topMargin=80 \* mm/,
   "TrustSlip PDF body content must start below the institutional header and security strip."
 );
 assertContains(
   "trustSlipPdf",
-  /KeepTogether[\s\S]*?Public TrustSlip verification QR[\s\S]*?Scan to open this public TrustSlip verification page\.[\s\S]*?_qr_block/,
-  "TrustSlip PDF QR heading and QR image must stay together instead of orphaning the heading at the bottom of a page."
+  /Check the live TrustSlip[\s\S]*?_qr_block\(verification_url\)[\s\S]*?KeepTogether\(\[verification_panel\]\)/,
+  "TrustSlip PDF live-check copy and QR must stay together in one verification panel."
 );
 assertContains(
   "trustSlipEvidenceRoute",
@@ -369,12 +402,12 @@ assertNotContains(
 );
 assertContains(
   "trustSlipPdf",
-  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Support pressure reading[\s\S]*?Estimated support gap/,
-  "TrustSlip PDF must use institution-grade trust-limit and support-capacity language."
+  /Support signal[\s\S]*?Available support capacity[\s\S]*?Support pressure reading[\s\S]*?Estimated support gap/,
+  "TrustSlip PDF must use direct support and capacity language."
 );
 assertContains(
   "trustSlipPdf",
-  /confirmation_source = "GSN recorded trust event"[\s\S]*?Confirmation source/,
+  /confirmation_source = \([\s\S]*?"GSN recorded trust event"[\s\S]*?Confirmation source/,
   "TrustSlip PDF must show a reader-safe confirmation source instead of a raw internal actor record."
 );
 assertContains(
@@ -384,32 +417,47 @@ assertContains(
 );
 assertNotContains(
   "trustSlipPdf",
-  /TrustSlip Limit|Available Guarantee Capacity|Overexposure ratio|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference|TP-UNKNOWN|"User ID", summary\.get\("user_id"\)/g,
-  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording, old TP fallbacks, raw member ids, or repayment references."
+  /TrustSlip Limit|Available Guarantee Capacity|Overexposure ratio|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference|TP-UNKNOWN|"User ID", summary\.get\("user_id"\)|\/trust-slips\/ping/g,
+  "TrustSlip PDF must not expose older internal wording, raw identifiers, repayment references, or the removed dead verification path."
 );
 assertContains(
-  "trustTimelinePdf",
-  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Current locked support[\s\S]*?Support capacity ratio/,
-  "Trust Timeline PDF must use institution-grade trust-limit and support-capacity language."
+  "trustSlipEvidenceRoute",
+  /get_trust_slip_payload\([\s\S]*?except ValueError:[\s\S]*?compute_trust_breakdown\([\s\S]*?build_trust_slip_pdf/,
+  "TrustSlip PDF route must prefer the complete current payload and keep an honest limited-summary fallback."
 );
 assertContains(
-  "trustTimelinePdf",
+  "trustTimelineLayout",
+  /PRIVATE TRUST RECORD[\s\S]*?How to use this timeline[\s\S]*?Decision Boundary[\s\S]*?Current evidence context[\s\S]*?RECORDED ACTIVITY[\s\S]*?Your recent trust record, newest first\./,
+  "Trust Timeline PDF must lead with the answer and decision boundary before the chronological record."
+);
+assertContains(
+  "trustTimelineLayout",
   /Reader boundary: redacted personal trust history for controlled review\./,
   "Trust Timeline PDF must explain the redacted reader boundary."
 );
 assertContains(
-  "trustTimelinePdf",
+  "trustTimelineLayout",
   /private event details redacted for timeline PDF/,
   "Trust Timeline PDF must hide private TrustEvent metadata in event notes."
 );
 assertContains(
-  "trustTimelinePdf",
-  /def _timeline_contact_boundary[\s\S]*?redacted for timeline PDF[\s\S]*?Private contact[\s\S]*?Contact: \{_timeline_contact_boundary\(\)\}/,
-  "Trust Timeline PDF must redact holder and sponsor contact details instead of rendering masked private emails."
+  "trustTimelineLayout",
+  /"repayment\.reversed": "Repayment record reversed"[\s\S]*?"loan_fully_repaid_reversed": "Full repayment status reversed"[\s\S]*?"guarantor_success_reversed": "Support outcome reversed"/,
+  "Trust Timeline PDF must translate repayment reversal records into plain language."
+);
+assertContains(
+  "trustTimelineService",
+  /REPAYMENT_REVERSAL_EVENT_TYPES = \{[\s\S]*?"repayment\.reversed"[\s\S]*?"loan_fully_repaid_reversed"[\s\S]*?"guarantor_success_reversed"[\s\S]*?if rt in REPAYMENT_REVERSAL_EVENT_TYPES:[\s\S]*?keep = True/,
+  "The member Trust Timeline must keep repayment reversal rows visible even though they do not expose a raw score delta."
 );
 assertContains(
   "trustTimelinePdf",
-  /def _audience_label[\s\S]*?admin redacted review[\s\S]*?controlled reader review[\s\S]*?Audience: \{_audience_label\(audience\)\}/,
+  /def _timeline_contact_boundary[\s\S]*?redacted for timeline PDF/,
+  "Trust Timeline PDF adapter must keep the explicit private-contact boundary."
+);
+assertContains(
+  "trustTimelinePdf",
+  /def _audience_label[\s\S]*?Admin redacted review[\s\S]*?Private holder review[\s\S]*?audience=_audience_label\(safe_audience\)/,
   "Trust Timeline PDF must translate audience values into reader-safe review labels."
 );
 assertContains(
@@ -422,8 +470,23 @@ assertContains(
   /pack_meta: Optional\[Dict\[str, Any\]\] = None/,
   "Trust Timeline PDF builder must stay compatible with evidence-pack metadata callers."
 );
-assertNotContains(
+assertContains(
   "trustTimelinePdf",
+  /get_trust_slip_payload[\s\S]*?except ValueError:[\s\S]*?compute_trust_breakdown[\s\S]*?build_timeline_document/,
+  "Trust Timeline PDF adapter must prefer the complete TrustSlip payload and keep an honest fallback."
+);
+assertContains(
+  "trustTimelineLayout",
+  /LongTable\([\s\S]*?repeatRows=1[\s\S]*?Support signal[\s\S]*?Available support capacity/,
+  "Trust Timeline PDF layout must keep repeatable chronology headings and plain-language support context."
+);
+assertContains(
+  "trustTimelineLayout",
+  /draw_institutional_header[\s\S]*?draw_institutional_footer[\s\S]*?topMargin=80 \* mm/,
+  "Trust Timeline PDF layout must reuse the institutional page shell without crowding its header."
+);
+assertNotContains(
+  "trustTimelineLayout",
   /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio|payment_reference|User Email|Email: \{_mask_email|def _mask_email|Audience: \{_safe_str\(audience, 'user'\)\}/,
   "Trust Timeline PDF must not expose older limit/guarantee/capacity wording, payment references, private contact labels, or raw audience values."
 );
@@ -434,8 +497,8 @@ assertContains(
 );
 assertNotContains(
   "trustTimelineRoute",
-  /gmfn_trust_timeline|X-GMFN-Merchant-Visibility-Level|X-GMFN-TrustSlip-Code|X-GMFN-CCI-Score/g,
-  "Trust Timeline PDF route must not keep old GMFN download names or headers."
+  /gmfn_trust_timeline|X-GMFN-Merchant-Visibility-Level|X-GMFN-TrustSlip-Code|X-GMFN-CCI-Score|build_trust_evidence_pack_zip_with_meta/g,
+  "Trust Timeline PDF route must not keep old GMFN contracts or construct a ZIP just to render one PDF."
 );
 assertContains(
   "portableEvidencePack",
@@ -570,28 +633,33 @@ assertContains(
 );
 assertContains(
   "loanEvidencePack",
-  /kv\("Community", clan_name or "-"\)/,
+  /community_name=clan_name or "Not shown"[\s\S]*?community_reference=community_reference/,
   "Loan evidence pack PDFs must label the route context as Community, not Clan."
 );
 assertContains(
   "evidencePack",
-  /def _member_contact_boundary[\s\S]*?private member contact redacted[\s\S]*?def _mask_code[\s\S]*?redact: bool = True[\s\S]*?invite_code = _mask_code/,
-  "Community evidence pack share PDFs must mask invite codes and redact member contacts by default."
+  /def _mask_code[\s\S]*?def _entry_table[\s\S]*?if redact:[\s\S]*?headers = \["WHEN", "ENTRY", "INVITE REFERENCE"\][\s\S]*?invite_reference = _mask_code/,
+  "Community evidence pack share PDFs must omit contact columns and mask invite codes in the redacted table."
 );
 assertContains(
   "evidencePack",
-  /Reader boundary[\s\S]*?controlled community review[\s\S]*?redacted share copy for outside review/,
-  "Community evidence pack PDFs must explain the reader boundary and share-copy privacy limit."
+  /Decision Boundary[\s\S]*?What this confirms[\s\S]*?What this does not confirm[\s\S]*?First thing to do[\s\S]*?Privacy[\s\S]*?Private member contacts, internal member IDs, and complete invite codes are not printed/,
+  "Community evidence pack PDFs must explain confirmation, non-confirmation, first-check, and privacy boundaries before activity detail."
 );
 assertNotContains(
   "evidencePack",
-  /def _mask_email|r\['invited_by_user_id'\]|r\.get\('joined_user_id'\)|r\.get\('invited_by_user_id'\)/,
-  "Community evidence pack PDFs must not print internal member ids or masked private emails in share papers."
+  /def _mask_email|def _member_contact_boundary|private member contact redacted|r\['invited_by_user_id'\]|r\.get\('joined_user_id'\)|r\.get\('invited_by_user_id'\)|safe_pdf_text\(event_type\)/,
+  "Community evidence pack PDFs must not print internal member ids, repeat contact-redaction filler, mask emails, or expose unknown raw event codes."
 );
 assertContains(
   "loanEvidencePack",
-  /def _private_member_boundary[\s\S]*?private member reference redacted[\s\S]*?redact: bool = True[\s\S]*?def member_reference[\s\S]*?meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private support, supporter, and repayment details/,
-  "Loan evidence pack PDFs must redact participant references and trust-event metadata in share copies and explain the reader boundary."
+  /def _private_member_boundary[\s\S]*?private member reference redacted[\s\S]*?redact: bool = True[\s\S]*?def member_reference[\s\S]*?"has_metadata": bool\(_loads_meta/,
+  "Loan evidence service must redact participant references and reduce trust-event metadata to a presence flag."
+);
+assertContains(
+  "loanEvidenceLayout",
+  /Decision Boundary[\s\S]*?What this confirms[\s\S]*?What this does not confirm[\s\S]*?First thing to do[\s\S]*?Privacy[\s\S]*?Metadata redacted for share copy[\s\S]*?private support, supporter, and repayment details/,
+  "Loan evidence layout must explain the decision boundary and keep metadata hidden in share copies."
 );
 assertNotContains(
   "loanEvidencePack",
@@ -600,22 +668,42 @@ assertNotContains(
 );
 assertContains(
   "userEvidencePack",
-  /redacted for member evidence paper[\s\S]*?redact: bool = True[\s\S]*?Private member reference[\s\S]*?Private contact[\s\S]*?Reader boundary[\s\S]*?private member evidence/,
-  "User evidence pack PDFs must default to share-safe redaction and explain the reader boundary before private member evidence is shared."
+  /redact: bool = True[\s\S]*?context\.append\("Private support record"\)[\s\S]*?context\.append\("GSN member record"\)[\s\S]*?build_member_evidence_document\([\s\S]*?member_reference=gsn_id/,
+  "Member evidence service must default to redaction, keep support references private, and pass the public member reference to the layout."
 );
 assertContains(
   "userEvidencePack",
-  /support record=private operational detail redacted[\s\S]*?source=GSN member record/,
-  "User evidence pack PDFs must describe private support/source context without raw support IDs."
+  /MEMBER_EVIDENCE_EVENT_TYPES = \([\s\S]*?"repayment\.claimed"[\s\S]*?"repayment\.created"[\s\S]*?"repayment\.auto_applied"[\s\S]*?"loan\.repaid"[\s\S]*?"repayment\.reversed"[\s\S]*?"loan_fully_repaid_reversed"[\s\S]*?"guarantor_success_reversed"[\s\S]*?TrustEvent\.event_type\.in_\(MEMBER_EVIDENCE_EVENT_TYPES\)/,
+  "Member evidence must carry current repayment progress and reversal records into the evidence paper."
+);
+assertContains(
+  "userEvidenceLayout",
+  /MEMBER EVIDENCE SNAPSHOT[\s\S]*?Decision Boundary[\s\S]*?What this confirms[\s\S]*?What this does not confirm[\s\S]*?First thing to do[\s\S]*?Privacy[\s\S]*?Evidence context[\s\S]*?Recent recorded evidence[\s\S]*?Record security/,
+  "Member evidence layout must lead with a decision snapshot and keep the compact evidence sequence."
+);
+assertContains(
+  "userEvidenceLayout",
+  /"repayment\.claimed": "Payment reported by member"[\s\S]*?"repayment\.created": "Payment confirmed"[\s\S]*?"repayment\.auto_applied": "Confirmed payment applied to support"[\s\S]*?"loan\.repaid": "Full repayment recorded"[\s\S]*?"repayment\.reversed": "Repayment record reversed"[\s\S]*?"loan_fully_repaid_reversed": "Full repayment status reversed"[\s\S]*?"guarantor_success_reversed": "Support outcome reversed"/,
+  "Member evidence must translate current repayment and reversal event names into ordinary language."
+);
+assertContains(
+  "userEvidenceLayout",
+  /Private contact details, internal member IDs, support record numbers, and event metadata are not printed[\s\S]*?private member evidence/,
+  "Member evidence layout must explain its share-safe privacy boundary before private evidence is used."
 );
 assertNotContains(
   "userEvidencePack",
   /loan=\{loan_id\}|src=\{src\}|extra\.append\(f"loan=|User ID: \{user_id\}|Email: \{email or '-'\}|reference=f"User \{user_id\}"|def _mask_email/,
   "User evidence pack PDFs must not print raw support IDs, raw source metadata, internal user ids, or private email rows."
 );
+assertNotContains(
+  "userEvidenceLayout",
+  /meta_json|opaque_internal_event|loan=\{loan_id\}|src=\{src\}|User ID:|Email:/,
+  "Member evidence layout must not expose raw event metadata, machine event examples, support IDs, internal user IDs, or private contact rows."
+);
 assertContains(
   "trustSlipPdf",
-  /support_record = "Private support record"[\s\S]*?_paragraph\("Support record", support_record, styles\)[\s\S]*?Reconciliation reference[\s\S]*?private operational detail redacted/,
+  /support_record = \([\s\S]*?"Private support record"[\s\S]*?\("Support record", support_record\)[\s\S]*?Reconciliation reference[\s\S]*?private operational detail redacted/,
   "TrustSlip evidence PDFs must describe private support records without exposing support IDs."
 );
 assertNotContains(
@@ -624,7 +712,7 @@ assertNotContains(
   "TrustSlip evidence PDFs must not expose raw support IDs."
 );
 assertNotContains(
-  "loanEvidencePack",
+  "loanEvidenceLayout",
   /kv\("Clan"/,
   "Loan evidence pack PDFs must not expose older Clan labels."
 );
@@ -638,7 +726,7 @@ assertContains(
   /Official evidence and support records[\s\S]*?Evidence and support records[\s\S]*?Includes evidence snapshot and timeline[\s\S]*?support careful decision-making with relevant evidence/,
   "Evidence Pack panel must keep evidence-first decision-support language."
 );
-for (const key of ["evidencePack", "loanEvidencePack", "userEvidencePack"]) {
+for (const key of ["evidencePack", "loanEvidenceLayout", "userEvidenceLayout"]) {
   assertNotContains(
     key,
     /visa \/ partner framing|Visa\/partner framing/g,

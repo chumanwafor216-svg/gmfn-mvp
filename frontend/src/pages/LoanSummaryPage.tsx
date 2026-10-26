@@ -34,6 +34,7 @@ import {
   getLoanGuarantors,
   getLoanSummary,
   listExpectedPayments,
+  listMyPaymentInstructionExpectedPayments,
   getMe,
   getRevenueAllocation,
   getSelectedClanId,
@@ -125,10 +126,14 @@ type ExpectedPayment = {
   currency?: string | null;
   reference_display?: string | null;
   reference_normalized?: string | null;
-  confirmed_at?: string | null;
+  paid_amount?: string | number | null;
+  remaining_amount?: string | number | null;
   due_at?: string | null;
-  status_reason?: string | null;
-  matched_bank_event_id?: number | string | null;
+  created_at?: string | null;
+  bank_event_id?: number | string | null;
+  payment_stage?: string | null;
+  payment_status_label?: string | null;
+  bank_authentication_guidance?: string | null;
   meta?: any;
   meta_json?: any;
   loan_id?: number | string | null;
@@ -1015,10 +1020,10 @@ export default function LoanSummaryPage() {
     const rows = [...expectedPayments];
     rows.sort((a, b) => {
       const ta = new Date(
-        firstTruthy(a?.confirmed_at, a?.due_at, a?.meta?.created_at, a?.meta_json?.created_at)
+        firstTruthy(a?.created_at, a?.due_at, a?.meta?.created_at, a?.meta_json?.created_at)
       ).getTime();
       const tb = new Date(
-        firstTruthy(b?.confirmed_at, b?.due_at, b?.meta?.created_at, b?.meta_json?.created_at)
+        firstTruthy(b?.created_at, b?.due_at, b?.meta?.created_at, b?.meta_json?.created_at)
       ).getTime();
       return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
     });
@@ -1038,6 +1043,45 @@ export default function LoanSummaryPage() {
   }, [latestRepaymentMeta]);
   const nextRepaymentPlanItem =
     latestRepaymentPlan.find((item) => n(item?.amount) > 0) || null;
+  const latestRepaymentStatusLabel = latestRepaymentExpectedPayment
+    ? firstTruthy(
+        latestRepaymentExpectedPayment.payment_status_label,
+        paymentRecordStatusLabel(
+          latestRepaymentExpectedPayment.status ||
+            latestRepaymentExpectedPayment.payment_stage ||
+            "expected"
+        )
+      )
+    : "";
+  const latestRepaymentCurrency = firstTruthy(
+    latestRepaymentExpectedPayment?.currency,
+    currency
+  );
+  const latestRepaymentProgress =
+    latestRepaymentExpectedPayment &&
+    (latestRepaymentExpectedPayment.paid_amount != null ||
+      latestRepaymentExpectedPayment.remaining_amount != null)
+      ? `${fmtMoney(
+          latestRepaymentExpectedPayment.paid_amount ?? 0,
+          latestRepaymentCurrency
+        )} received; ${fmtMoney(
+          latestRepaymentExpectedPayment.remaining_amount ?? 0,
+          latestRepaymentCurrency
+        )} left`
+      : "";
+  const latestRepaymentIsComplete =
+    lc(latestRepaymentExpectedPayment?.payment_stage) === "completed" ||
+    ["confirmed", "applied"].includes(
+      lc(latestRepaymentExpectedPayment?.status)
+    );
+  const latestRepaymentGuidance = latestRepaymentExpectedPayment
+    ? firstTruthy(
+        latestRepaymentExpectedPayment.bank_authentication_guidance,
+        latestRepaymentIsComplete
+          ? "GSN has matched the bank or payment-provider confirmation."
+          : "Complete the payment with your bank or provider. GSN will update this record after reconciliation."
+      )
+    : "";
 
   const memberName = useMemo(() => {
     return (
@@ -1132,11 +1176,28 @@ export default function LoanSummaryPage() {
       }
 
       try {
-        const expectedRes = await listExpectedPayments({
-          clan_id: loanClanId || undefined,
-          expected_type: "repayment",
-          limit: 100,
-        }).catch(() => null);
+        const accountIsAdmin =
+          lc(
+            firstTruthy(
+              meRes?.role,
+              meRes?.account_role,
+              meRes?.user_role
+            )
+          ) === "admin";
+        const communityIsAdmin =
+          lc(normalizeCommunityRole(clanRes || null)) === "admin";
+        const expectedRes = await (accountIsAdmin || communityIsAdmin
+          ? listExpectedPayments({
+              clan_id: loanClanId || undefined,
+              expected_type: "repayment",
+              limit: 100,
+            })
+          : listMyPaymentInstructionExpectedPayments({
+              clan_id: loanClanId,
+              expected_type: "repayment",
+              limit: 100,
+            })
+        ).catch(() => null);
 
         const expectedItems = Array.isArray(expectedRes)
           ? expectedRes
@@ -1905,9 +1966,7 @@ export default function LoanSummaryPage() {
               <div style={sectionLabel()}>Payment record</div>
               <div style={{ marginTop: 7, ...helperText(), color: "#0B1F33" }}>
                 {latestRepaymentExpectedPayment
-                  ? `${paymentRecordStatusLabel(
-                      latestRepaymentExpectedPayment.status || "expected"
-                    )}: ${firstTruthy(
+                  ? `${latestRepaymentStatusLabel}: ${firstTruthy(
                       latestRepaymentExpectedPayment.reference_display,
                       latestRepaymentExpectedPayment.reference_normalized,
                       "Reference pending"
@@ -2829,7 +2888,7 @@ Planning evidence for possible supporter outreach. These rows do not approve sup
                 {latestRepaymentExpectedPayment ? (
                   <div
                     style={innerCard(
-                      latestRepaymentExpectedPayment.matched_bank_event_id
+                      latestRepaymentIsComplete
                         ? "#F3FBF5"
                         : "#F8FBFF"
                     )}
@@ -2837,7 +2896,7 @@ Planning evidence for possible supporter outreach. These rows do not approve sup
                     <div style={sectionLabel()}>Repayment expectation</div>
                     <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                       <div style={helperText()}>
-                        Status: {safeStr(latestRepaymentExpectedPayment.status || "expected")}
+                        Status: {latestRepaymentStatusLabel}
                       </div>
                       <div style={helperText()}>
                         Reference: {firstTruthy(
@@ -2847,9 +2906,14 @@ Planning evidence for possible supporter outreach. These rows do not approve sup
                         )}
                       </div>
                       <div style={helperText()}>
-                        Amount: {safeStr(latestRepaymentExpectedPayment.amount || "0.00")}{" "}
-                        {safeStr(latestRepaymentExpectedPayment.currency || currency)}
+                        Expected: {fmtMoney(
+                          latestRepaymentExpectedPayment.amount || 0,
+                          latestRepaymentCurrency
+                        )}
                       </div>
+                      {latestRepaymentProgress ? (
+                        <div style={helperText()}>Progress: {latestRepaymentProgress}</div>
+                      ) : null}
                       {latestRepaymentPlan.length > 0 ? (
                         <div style={helperText()}>
                           Plan: {latestRepaymentPlan.length} step
@@ -2863,17 +2927,11 @@ Planning evidence for possible supporter outreach. These rows do not approve sup
                         </div>
                       ) : null}
                       <div style={helperText()}>
-                        {latestRepaymentExpectedPayment.matched_bank_event_id
-                          ? `Matched bank event visible: ${safeStr(latestRepaymentExpectedPayment.matched_bank_event_id)}`
-                          : latestRepaymentExpectedPayment.confirmed_at
-                          ? `Confirmed at: ${safeDateTime(latestRepaymentExpectedPayment.confirmed_at)}`
-                          : latestRepaymentExpectedPayment.due_at
-                          ? `Due at: ${safeDateTime(latestRepaymentExpectedPayment.due_at)}`
-                          : "Awaiting reconciliation visibility in Finance"}
+                        {latestRepaymentGuidance}
                       </div>
-                      {safeStr(latestRepaymentExpectedPayment.status_reason) ? (
+                      {latestRepaymentExpectedPayment.due_at ? (
                         <div style={helperText()}>
-                          Reason: {safeStr(latestRepaymentExpectedPayment.status_reason)}
+                          Due: {safeDateTime(latestRepaymentExpectedPayment.due_at)}
                         </div>
                       ) : null}
                     </div>

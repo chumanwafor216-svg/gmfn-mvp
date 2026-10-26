@@ -7,15 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
+from app.services.trust_score_service import compute_trust_breakdown
 from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf
 from app.services.trust_slips_services import get_trust_slip_payload
-
-try:
-    from app.services.trust_evidence_pack_service import (  # type: ignore
-        build_trust_evidence_pack_zip_with_meta,
-    )
-except Exception:
-    build_trust_evidence_pack_zip_with_meta = None  # type: ignore
 
 try:
     from app.services.trust_score_service import compute_trust_score_explained  # type: ignore
@@ -63,19 +57,6 @@ def download_my_trust_timeline_pdf(
     protocol_version = None
     footer = None
 
-    if build_trust_evidence_pack_zip_with_meta:
-        try:
-            _zip_bytes, meta = build_trust_evidence_pack_zip_with_meta(
-                db,
-                user_id=user_id,
-            )
-            if isinstance(meta, dict):
-                pack_id = _safe_str(meta.get("pack_id"))
-                protocol_version = _safe_str(meta.get("protocol_version"))
-                footer = _safe_str(meta.get("footer"))
-        except Exception:
-            pass
-
     score = None
     last_change: Optional[Dict[str, Any]] = None
 
@@ -99,7 +80,10 @@ def download_my_trust_timeline_pdf(
         except Exception:
             pass
 
-    trustslip_summary = get_trust_slip_payload(db, user_id=user_id)
+    try:
+        trustslip_summary = get_trust_slip_payload(db, user_id=user_id)
+    except ValueError:
+        trustslip_summary = compute_trust_breakdown(db, user_id=user_id)
 
     visibility_footer = f"Visibility: {visibility_level}"
     if footer:

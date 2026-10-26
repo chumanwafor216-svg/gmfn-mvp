@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
@@ -16,6 +16,7 @@ router = APIRouter(tags=["repayments"])
 
 
 EV_REPAYMENT_CLAIMED = "repayment.claimed"
+EV_REPAYMENT_CONFIRMED = "repayment.created"
 
 
 def _is_admin(user: Any) -> bool:
@@ -66,25 +67,47 @@ def create_repayment_claim(
         raise HTTPException(status_code=403, detail="Not your loan")
 
     st = str(getattr(loan, "status", "") or "").lower()
-    if st in ("cancelled", "canceled", "declined", "rejected"):
+    if st in (
+        "repaid",
+        "defaulted",
+        "cancelled",
+        "canceled",
+        "declined",
+        "rejected",
+    ):
         raise HTTPException(status_code=400, detail=f"Cannot claim repayment for a {st} loan")
 
-    # Prevent spam duplicates: one claim per loan per user (simple MVP rule)
-    existing = (
+    # Keep one unconfirmed claim open at a time. A later repayment.created event
+    # closes that report and allows the borrower to report the next instalment.
+    latest_claim = (
         db.query(TrustEvent)
         .filter(TrustEvent.event_type == EV_REPAYMENT_CLAIMED)
         .filter(TrustEvent.loan_id == int(loan_id))
         .filter(TrustEvent.subject_user_id == int(current_user.id))
+        .order_by(TrustEvent.id.desc())
         .first()
     )
-    if existing:
+    latest_confirmation = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == EV_REPAYMENT_CONFIRMED)
+        .filter(TrustEvent.loan_id == int(loan_id))
+        .filter(TrustEvent.subject_user_id == int(current_user.id))
+        .order_by(TrustEvent.id.desc())
+        .first()
+    )
+    claim_is_waiting = latest_claim is not None and (
+        latest_confirmation is None
+        or int(getattr(latest_claim, "id", 0) or 0)
+        > int(getattr(latest_confirmation, "id", 0) or 0)
+    )
+    if claim_is_waiting:
         return {
             "ok": True,
             "already_claimed": True,
             "loan_id": int(loan_id),
             "payment_reference": payload.payment_reference,
             "note": payload.note,
-            "message": "Repayment claim already recorded.",
+            "message": "This payment report is already waiting for finance confirmation.",
         }
 
     log_trust_event(
@@ -125,9 +148,20 @@ def list_repayment_claims_admin(
     _require_admin(current_user)
     limit = max(1, min(int(limit), 200))
 
+    confirmation = aliased(TrustEvent)
+    later_confirmation_exists = (
+        db.query(confirmation.id)
+        .filter(confirmation.event_type == EV_REPAYMENT_CONFIRMED)
+        .filter(confirmation.loan_id == TrustEvent.loan_id)
+        .filter(confirmation.subject_user_id == TrustEvent.subject_user_id)
+        .filter(confirmation.id > TrustEvent.id)
+        .exists()
+    )
+
     rows: List[TrustEvent] = (
         db.query(TrustEvent)
         .filter(TrustEvent.event_type == EV_REPAYMENT_CLAIMED)
+        .filter(~later_confirmation_exists)
         .order_by(TrustEvent.created_at.desc())
         .limit(limit)
         .all()
