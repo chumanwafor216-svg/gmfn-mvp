@@ -919,7 +919,10 @@ def _ensure_my_trust_slip_payload(
         "merchant_verify_detail": (
             "External merchant verification is active."
             if merchant_verify_active
-            else "External merchant verification requires an active merchant verification subscription."
+            else (
+                "External merchant verification requires an active merchant "
+                "verification subscription."
+            )
         ),
     }
 
@@ -1064,6 +1067,49 @@ def get_my_trust_slip_summary(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     return _ensure_my_trust_slip_payload(db, current_user=current_user)
+
+
+@router.get("/me/feature-summary")
+def get_my_trust_slip_feature_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Return the small TrustSlip status subset used by owner control surfaces."""
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    active = bool(
+        current
+        and _is_valid_current_holder_trust_slip(
+            current,
+            current_user=current_user,
+        )
+    )
+    code = _safe_str(getattr(current, "code", "")) if active else ""
+    merchant_verify_active = _merchant_verify_active_for_holder(
+        db,
+        holder=current_user,
+    )
+
+    return {
+        "ok": True,
+        "active": active,
+        "status": (
+            _safe_str(getattr(current, "status", None), "not_issued")
+            if current
+            else "not_issued"
+        ),
+        "code": code or None,
+        "public_verify_url": _verify_page_url(code) if code else None,
+        "merchant_verify_active": bool(merchant_verify_active),
+        "merchant_verify_subscription_required": not bool(merchant_verify_active),
+        "merchant_verify_detail": (
+            "External merchant verification is active."
+            if merchant_verify_active
+            else "External merchant verification requires an active merchant verification subscription."
+        ),
+    }
 
 
 @router.get("/me/decision-pack-accesses")

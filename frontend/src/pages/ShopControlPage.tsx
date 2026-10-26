@@ -32,6 +32,7 @@ import {
   recordMarketplaceAttentionEvent,
   getMyMarketplaceShop,
   getMyIdentityRisk,
+  getMyTrustSlipFeatureSummary,
   getSelectedClanId,
   listMyCommunityDomains,
   createVaultShopAccessLink,
@@ -102,6 +103,7 @@ import type {
 } from "./shopControl/ShopControlSpotlightWorkflowTypes";
 
 const ShopControlSpotlightWorkflow = React.lazy(() => import("./shopControl/ShopControlSpotlightWorkflow"));
+const SHOP_CONTROL_BACKGROUND_REFRESH_MS = 5 * 60 * 1000;
 
 type ShopRecord = {
   id: number;
@@ -4231,7 +4233,7 @@ export default function ShopControlPage() {
             `/api/marketplace/products?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&limit=200`
           ).catch(() => ({ items: [] })),
           apiJson<any>(expectedPaymentsPath).catch(() => []),
-          apiJson<any>("/api/trust-slips/me").catch(() => null),
+          getMyTrustSlipFeatureSummary().catch(() => null),
           apiJson<any>(packageStatusPath).catch(() => null),
           apiJson<any>(roscaCyclesPath).catch(() => null),
           apiJson<any>(communityMeetingsPath).catch(() => null),
@@ -4369,7 +4371,7 @@ export default function ShopControlPage() {
 
     const timer = window.setInterval(() => {
       void loadPage({ background: true });
-    }, 60000);
+    }, SHOP_CONTROL_BACKGROUND_REFRESH_MS);
 
     function handleFocusRefresh() {
       void loadPage({ background: true });

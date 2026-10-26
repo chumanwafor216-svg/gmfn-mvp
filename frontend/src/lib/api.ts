@@ -3054,6 +3054,18 @@ export async function getMyTrustSlip(params?: { fresh?: boolean }): Promise<any>
   );
 }
 
+export async function getMyTrustSlipFeatureSummary(params?: {
+  fresh?: boolean;
+}): Promise<any> {
+  if (params?.fresh) {
+    clearStartupSectionCacheByLabel("getMyTrustSlipFeatureSummary");
+  }
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyTrustSlipFeatureSummary"),
+    () => httpJson("/trust-slips/me/feature-summary", "GET")
+  );
+}
+
 export async function reissueMyTrustSlip(params?: {
   reason?: string;
   force?: boolean;

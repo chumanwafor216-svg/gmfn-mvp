@@ -1035,16 +1035,16 @@ def _community_context(
             )
             .all()
         )
-        active_member_ids = {
-            int(membership_row.user_id)
+        active_membership_rows = [
+            (membership_row, member_user)
             for membership_row, member_user in active_membership_rows
             if not is_user_activation_pending(member_user)
+        ]
+        active_member_ids = {
+            int(membership_row.user_id)
+            for membership_row, _member_user in active_membership_rows
         }
-        active_member_count = sum(
-            1
-            for _membership_row, member_user in active_membership_rows
-            if not is_user_activation_pending(member_user)
-        )
+        active_member_count = len(active_membership_rows)
         total_member_count = (
             db.query(ClanMembership)
             .filter(ClanMembership.clan_id == int(clan_id))

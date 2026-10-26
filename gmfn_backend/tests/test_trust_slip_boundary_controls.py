@@ -476,6 +476,37 @@ def test_get_my_trust_slip_summary_recovers_existing_current_code_when_rich_payl
     assert _trust_slip_count() == before_slips
     assert _trust_event_count() == before_events
 
+
+def test_get_my_trust_slip_feature_summary_skips_rich_evidence_payload(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    _create_trust_slip(code="FEATURE-SUMMARY-LIGHT", clan_id=1)
+
+    def fail_rich_payload(*args, **kwargs):
+        raise AssertionError("feature summary must not build rich TrustSlip evidence")
+
+    monkeypatch.setattr(
+        trust_slips_route,
+        "_payload_with_identity",
+        fail_rich_payload,
+    )
+
+    response = client.get("/trust-slips/me/feature-summary")
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["ok"] is True
+    assert data["active"] is True
+    assert data["code"] == "FEATURE-SUMMARY-LIGHT"
+    assert data["public_verify_url"] == "/t/FEATURE-SUMMARY-LIGHT"
+    assert isinstance(data["merchant_verify_active"], bool)
+    assert "identity_context" not in data
+    assert "evidence_summary" not in data
+
 def test_get_my_trust_slip_issues_first_slip_for_eligible_holder(
     seed_clan_member_membership,
 ):

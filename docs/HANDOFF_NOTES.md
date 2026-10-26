@@ -8,6 +8,31 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Render OOM diagnosis and local request-pressure cleanup - 2026-10-26
+
+- Render confirmed five `gmfn-api` 512 MiB OOM kills today, not one harmless
+  warning. The service also had two confirmed OOM kills on 19 October. The
+  current post-`16:15Z` instance was available and near 324 MiB at the end of
+  the checked window, which is stable but still leaves limited burst headroom.
+- Production logs tied the high-pressure windows to Shop Control's minute-wide
+  request fan-out, 8?33 second full TrustSlip reads, duplicate pending-member
+  bcrypt checks, and hundreds of `passlib 1.7.4` / `bcrypt 5.0.0` compatibility
+  tracebacks. These are proven amplifiers; the exact fatal allocation remains
+  unproven because Render sampling missed some short spikes.
+- Local cleanup uses bcrypt directly, caches pending-account checks by password
+  hash, evaluates each TrustSlip community member once, adds the lightweight
+  `GET /trust-slips/me/feature-summary` route for owner control surfaces, and
+  reduces Shop Control's complete background refresh from one to five minutes.
+  Initial load, focus return, explicit action refresh, permissions, TrustSlip
+  evidence rules and payment behavior are unchanged.
+- Verification passed: 49 entry/auth and focused TrustSlip tests, six focused
+  activation/TrustSlip regressions, Python compilation, the 295-module frontend
+  production build, and scoped diff checks.
+- Full evidence and the controlled rollout threshold are recorded in
+  [`GSN_API_MEMORY_FOLLOWUP_2026-10-26.md`](GSN_API_MEMORY_FOLLOWUP_2026-10-26.md).
+  No deployment, Render mutation, push, or scale change was made. Deployment
+  remains deferred until the owner explicitly approves the milestone.
+
 ## Admin campaign disclosure stability and language-audit alignment - 2026-10-26
 
 - Corrected a real shared-action gap on the platform-admin-only

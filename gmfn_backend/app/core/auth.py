@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
@@ -43,6 +44,11 @@ def _get_or_create_test_user(db: Session) -> User:
     return user
 
 
+@lru_cache(maxsize=4096)
+def _matches_pending_applicant_password(hashed_password: str) -> bool:
+    return verify_password(PENDING_APPLICANT_TEMP_PASSWORD, hashed_password)
+
+
 def is_user_activation_pending(user: Optional[User]) -> bool:
     if user is None:
         return True
@@ -52,10 +58,9 @@ def is_user_activation_pending(user: Optional[User]) -> bool:
         return True
 
     email = str(getattr(user, "email", "") or "").strip().lower()
-    if email.endswith(PENDING_APPLICANT_EMAIL_SUFFIX) and verify_password(
-        PENDING_APPLICANT_TEMP_PASSWORD,
-        hashed,
-    ):
+    if email.endswith(
+        PENDING_APPLICANT_EMAIL_SUFFIX
+    ) and _matches_pending_applicant_password(hashed):
         return True
 
     return False

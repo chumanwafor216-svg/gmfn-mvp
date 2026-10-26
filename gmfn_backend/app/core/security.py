@@ -4,9 +4,6 @@ from typing import Any, Optional
 
 import bcrypt
 from jose import jwt
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ALGORITHM = "HS256"
 DEFAULT_DEV_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"
@@ -62,28 +59,22 @@ def _looks_like_bcrypt_hash(hashed_password: str) -> bool:
 # Password helpers
 # ----------------------------
 def hash_password(password: str) -> str:
-    try:
-        return pwd_context.hash(password)
-    except Exception:
-        return bcrypt.hashpw(_password_bytes(password), bcrypt.gensalt()).decode(
-            "utf-8"
-        )
+    return bcrypt.hashpw(_password_bytes(password), bcrypt.gensalt()).decode(
+        "utf-8"
+    )
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception:
-        if not _looks_like_bcrypt_hash(hashed_password):
-            return False
+    if not _looks_like_bcrypt_hash(hashed_password):
+        return False
 
-        try:
-            return bcrypt.checkpw(
-                _password_bytes(plain_password),
-                str(hashed_password or "").encode("utf-8"),
-            )
-        except Exception:
-            return False
+    try:
+        return bcrypt.checkpw(
+            _password_bytes(plain_password),
+            str(hashed_password or "").encode("utf-8"),
+        )
+    except Exception:
+        return False
 
 
 # Backwards-compatible name some modules may import
