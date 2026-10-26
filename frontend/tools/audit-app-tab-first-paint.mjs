@@ -1,11 +1,15 @@
 /* global console, process, URL, URLSearchParams, localStorage, document, window */
 
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { createServer } from "vite";
+import { createServer, preview } from "vite";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const USE_PRODUCTION_BUILD =
+  process.env.GSN_AUDIT_PRODUCTION_BUILD === "1" ||
+  process.argv.includes("--production-build");
 const SECONDARY_DELAY_MS = 21000;
 const MAX_FIRST_SURFACE_MS = 7000;
 
@@ -19,6 +23,30 @@ function json(body, status = 200) {
 
 function delay(ms) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
+
+async function startAuditServer() {
+  if (USE_PRODUCTION_BUILD) {
+    if (!existsSync(join(frontendRoot, "dist", "index.html"))) {
+      throw new Error(
+        "frontend/dist/index.html is missing. Run the frontend build before the production first-paint audit."
+      );
+    }
+    return preview({
+      root: frontendRoot,
+      preview: { host: "127.0.0.1", port: 0, strictPort: false },
+      logLevel: "silent",
+    });
+  }
+
+  const developmentServer = await createServer({
+    root: frontendRoot,
+    configFile: join(frontendRoot, "vite.config.ts"),
+    server: { host: "127.0.0.1", port: 0, strictPort: false },
+    logLevel: "silent",
+  });
+  await developmentServer.listen();
+  return developmentServer;
 }
 
 const me = {
@@ -789,13 +817,7 @@ async function run() {
     : tests;
 
   try {
-    server = await createServer({
-      root: frontendRoot,
-      configFile: join(frontendRoot, "vite.config.ts"),
-      server: { host: "127.0.0.1", port: 0, strictPort: false },
-      logLevel: "silent",
-    });
-    await server.listen();
+    server = await startAuditServer();
     const port = server.httpServer.address().port;
     const baseURL = `http://127.0.0.1:${port}`;
 
@@ -835,7 +857,7 @@ async function run() {
     }
 
     console.log(
-      `App tab first-paint audit passed with ${SECONDARY_DELAY_MS}ms delayed secondary calls: ${JSON.stringify({ results, settledResults })}.`
+      `App tab first-paint audit passed (${USE_PRODUCTION_BUILD ? "production build" : "development server"}) with ${SECONDARY_DELAY_MS}ms delayed secondary calls: ${JSON.stringify({ results, settledResults })}.`
     );
   } finally {
     if (browser) await browser.close().catch(() => {});

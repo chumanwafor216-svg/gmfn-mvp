@@ -3149,3 +3149,33 @@ under `docs/` or `docs/archive/`, then link that file here.
 - This batch is local only. It has not been pushed, promoted to `main`, sent to
   Render, or deployed because the owner explicitly requested milestone-based
   releases while pilot users are active.
+
+## Production-build startup evidence - 2026-10-26
+
+- The existing startup and app-tab first-paint audits used Vite's development
+  server. Their cold runs therefore included on-demand TypeScript/JSX
+  transformation and were not a reliable measurement of the files served to
+  pilot users by Render. The development checks and their thresholds remain
+  unchanged because they still protect request counts and non-blocking route
+  behavior.
+- Both audits now accept `--production-build`, backed by Vite preview of the
+  already-built `dist` directory. Named package scripts make the production
+  checks repeatable: `audit:startup-timing:production` and
+  `audit:app-tab-first-paint:production`. They fail clearly if no production
+  build exists and retain the same API mocks, artificial delays, selectors,
+  and time ceilings as their development counterparts.
+- The production startup audit passed: Dashboard shell 1.264 seconds,
+  Dashboard content 1.371 seconds, and the deliberately slow 6.5-second auth
+  retry 7.061 seconds. Every exact startup request still ran once and all
+  request ceilings passed.
+- The production first-paint audit passed all six authenticated surfaces while
+  selected secondary calls were delayed by 21 seconds: Community Home 1.265
+  seconds, Marketplace 1.225 seconds, Profile 1.756 seconds, My GSN 1.086
+  seconds, Trust Passport 1.173 seconds, and TrustSlip Setup 1.140 seconds.
+  Both settled My GSN/Profile navigation checks also passed.
+- Conclusion: the remaining cold-Vite failures are development-tooling cost,
+  not evidence of a production route bottleneck. No runtime component, route
+  preload order, or frozen Market Wisdom behavior was changed to chase that
+  false signal.
+- This follow-up remains local only. Nothing was pushed, promoted, sent to
+  Render, or deployed.
