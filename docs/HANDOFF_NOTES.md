@@ -8,7 +8,7 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
-## Render OOM diagnosis and local request-pressure cleanup - 2026-10-26
+## Render OOM cleanup deployed and under observation - 2026-10-26
 
 - Render confirmed five `gmfn-api` 512 MiB OOM kills today, not one harmless
   warning. The service also had two confirmed OOM kills on 19 October. The
@@ -19,7 +19,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   bcrypt checks, and hundreds of `passlib 1.7.4` / `bcrypt 5.0.0` compatibility
   tracebacks. These are proven amplifiers; the exact fatal allocation remains
   unproven because Render sampling missed some short spikes.
-- Local cleanup uses bcrypt directly, caches pending-account checks by password
+- Cleanup uses bcrypt directly, caches pending-account checks by password
   hash, evaluates each TrustSlip community member once, adds the lightweight
   `GET /trust-slips/me/feature-summary` route for owner control surfaces, and
   reduces Shop Control's complete background refresh from one to five minutes.
@@ -30,8 +30,14 @@ under `docs/` or `docs/archive/`, then link that file here.
   production build, and scoped diff checks.
 - Full evidence and the controlled rollout threshold are recorded in
   [`GSN_API_MEMORY_FOLLOWUP_2026-10-26.md`](GSN_API_MEMORY_FOLLOWUP_2026-10-26.md).
-  No deployment, Render mutation, push, or scale change was made. Deployment
-  remains deferred until the owner explicitly approves the milestone.
+- Owner approval was received and exact commit `80a91c1a` was promoted to
+  `main`. GitHub Backend Tests run `40376565709` passed before release. Render
+  frontend deploy `dep-dbfplr799u4c73enjud0` became live at `18:26:22Z`, and
+  API deploy `dep-dbfpms4s728c73cgti60` became live at `18:29:06Z`. Coordinated
+  deploy run `40377456001`, its live API identity audit, public frontend HTTP
+  check, and API `/health` check all passed. No plan or instance-count change
+  was made. Continue observing memory and OOM events under normal pilot load;
+  the first startup sample is not enough to prove the long-term leak is gone.
 
 ## Admin campaign disclosure stability and language-audit alignment - 2026-10-26
 

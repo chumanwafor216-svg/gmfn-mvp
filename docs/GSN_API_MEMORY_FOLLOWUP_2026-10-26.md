@@ -4,9 +4,9 @@
 
 Render confirmed five `gmfn-api` out-of-memory kills against the 512 MiB
 Starter limit on 26 October 2026. This was not a harmless email and not a
-single isolated restart. A narrow local cleanup now removes two production
-amplifiers found in the incident window. It has not been deployed because the
-product owner has explicitly deferred publishing until the next milestone.
+single isolated restart. A narrow cleanup removes production amplifiers found
+in the incident window. The product owner approved the milestone deployment,
+and exact commit `80a91c1a` is now live on both frontend and API.
 
 ## Confirmed Render evidence
 
@@ -46,7 +46,7 @@ These are confirmed amplifiers. They strongly explain the slow request pileup
 and reduced headroom, but they do not prove that one specific allocation caused
 all five OOM kills.
 
-## Local cleanup
+## Cleanup
 
 - Password hashing and verification now use the already-imported `bcrypt`
   package directly. `passlib` is removed from runtime requirements, eliminating
@@ -73,12 +73,23 @@ all five OOM kills.
 - The 295-module production frontend build passed.
 - `git diff --check` passed.
 
-## Remaining risk and controlled next step
+## Deployment evidence and remaining risk
 
-The live service still runs the pre-cleanup code. Do not claim the OOM problem
-is fixed until the owner approves one exact deployment and Render telemetry is
-observed through normal pilot use. After approval, monitor the new instance's
-idle baseline, Shop Control bursts, `/trust-slips/me` latency, bcrypt warnings,
-and restart events. If memory again exceeds about 470 MiB or any OOM recurs
-after this cleanup, the 512 MiB plan is operationally undersized and an instance
-upgrade should be considered alongside the next code-level profile.
+- GitHub Backend Tests run `40376565709` passed for exact commit `80a91c1a`
+  before deployment.
+- Render frontend deploy `dep-dbfplr799u4c73enjud0` became live at
+  `18:26:22Z` and API deploy `dep-dbfpms4s728c73cgti60` became live at
+  `18:29:06Z`.
+- Coordinated deploy run `40377456001` passed, including the live API identity
+  contract audit. Direct public checks returned HTTP 200 for the frontend and
+  API `/health`; the API reported `ok: true` and `dev_mode: false`.
+- No error or critical API logs appeared between deployment start and the
+  first post-live check. The Starter plan remains 512 MiB with one instance;
+  no scale or plan change was made.
+
+Do not claim that one successful startup proves the OOM problem is permanently
+fixed. Observe the new instance's idle baseline, Shop Control bursts,
+`/trust-slips/me` latency, bcrypt warnings, and restart events under normal
+pilot use. If memory again exceeds about 470 MiB or any OOM recurs after this
+cleanup, the 512 MiB plan is operationally undersized and an instance upgrade
+should be considered alongside the next code-level profile.
