@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -25,7 +24,6 @@ type NoticeTone = "success" | "error";
 type CollapseState = {
   context: boolean;
   summary: boolean;
-  details: boolean;
   routes: boolean;
 };
 
@@ -49,7 +47,7 @@ type RevenueAllocationView = {
   raw: any;
 };
 
-const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn.revenueAllocation.sections.v2";
+const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn.revenueAllocation.sections.v3";
 const REVENUE_ALLOCATION_LOAN_STORAGE_KEY = "gmfn.revenueAllocation.lastLoanId";
 
 function safeStr(x: any): string {
@@ -135,7 +133,6 @@ function defaultCollapseState(): CollapseState {
   return {
     context: true,
     summary: true,
-    details: true,
     routes: true,
   };
 }
@@ -146,7 +143,6 @@ function normalizeCollapseState(raw: any): CollapseState {
   return {
     context: Boolean(raw?.context ?? base.context),
     summary: Boolean(raw?.summary ?? base.summary),
-    details: Boolean(raw?.details ?? base.details),
     routes: Boolean(raw?.routes ?? base.routes),
   };
 }
@@ -421,28 +417,6 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 32,
-    borderRadius: 999,
-    padding: "7px 12px",
-    background: primary
-      ? "linear-gradient(180deg, rgba(29,95,212,0.14) 0%, rgba(29,95,212,0.09) 100%)"
-      : "linear-gradient(180deg, rgba(247,250,254,0.98) 0%, rgba(228,238,248,0.80) 100%)",
-    border: primary
-      ? "1px solid rgba(29,95,212,0.16)"
-      : "1px solid rgba(20,52,83,0.16)",
-    color: primary ? "#164AAE" : "#496178",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
-  };
-}
-
 function helperText(): React.CSSProperties {
   return {
     color: "#405A72",
@@ -615,9 +589,6 @@ export default function RevenueAllocationPage() {
   const gmfnIdValue = useMemo(() => {
     return firstTruthy(me?.gmfn_id);
   }, [me]);
-  const gmfnId = useMemo(() => {
-    return firstTruthy(gmfnIdValue, "Not issued yet");
-  }, [gmfnIdValue]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -640,9 +611,6 @@ export default function RevenueAllocationPage() {
       )
     );
   }, [currentClan]);
-  const communityPublicId = useMemo(() => {
-    return firstTruthy(communityPublicIdValue, "No community ID yet");
-  }, [communityPublicIdValue]);
 
   const memberRole = useMemo(() => {
     return (
@@ -699,6 +667,19 @@ export default function RevenueAllocationPage() {
     [activeCommunityId, currentLoanId]
   );
   const details = useMemo(() => detailPairs(allocation), [allocation]);
+  const reviewState = allocation
+    ? allocation.status
+    : currentLoanId
+      ? "Ready to load"
+      : "Needs support ID";
+  const reviewTitle = allocation
+    ? "Allocation ready for review"
+    : currentLoanId
+      ? "Load this support allocation"
+      : "Choose one support item";
+  const reviewHelper = allocation
+    ? "Review the returned split below. This is a read-only allocation record, not proof that money moved."
+    : "Enter one support ID to see its fee, supporter pool, platform revenue, and net amount.";
 
   async function load() {
     const requestedLoanId = currentLoanId;
@@ -738,6 +719,7 @@ export default function RevenueAllocationPage() {
       }
 
       setAllocation(normalized);
+      setCollapsed((previous) => ({ ...previous, summary: false }));
       setNotice({
         tone: "success",
         text: "Revenue allocation loaded.",
@@ -827,17 +809,10 @@ export default function RevenueAllocationPage() {
         backLabel="Support Workbench"
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This shows the fee, pool, revenue, and net amount for one support item."
-        why="It keeps the money split clear before deeper review."
-        next="Load the item, then open details only if you need them."
-        tone="light"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
+        data-gsn-revenue-allocation-summary="true"
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
@@ -849,7 +824,7 @@ export default function RevenueAllocationPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Fixed allocation context</div>
+            <div style={{ ...sectionLabel(), color: "#C9D7E5" }}>What needs review?</div>
 
             <div
               style={{
@@ -860,7 +835,7 @@ export default function RevenueAllocationPage() {
                 lineHeight: 1.15,
               }}
             >
-              Revenue allocation for support item review
+              {reviewTitle}
             </div>
 
             <div
@@ -870,49 +845,12 @@ export default function RevenueAllocationPage() {
                 lineHeight: 1.45,
               }}
             >
-              See the returned split without digging through source finance
-              records. This page does not confirm settlement or prove money
-              moved.
+              {reviewHelper}
             </div>
 
             <div
               style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
-                gap: 10,
-              }}
-            >
-              <PrimaryButton
-                type="button"
-                onClick={() => void load()}
-                disabled={busy}
-                busy={busy}
-                busyLabel="Loading"
-                fullWidth
-                stableHeight={52}
-                debugId="revenue-allocation.front-load"
-                style={primaryBtn(busy)}
-              >
-                {actionText("refresh", busy ? "Loading" : "Load")}
-              </PrimaryButton>
-
-              <SecondaryButton
-                type="button"
-                onClick={copySummary}
-                disabled={!allocation}
-                fullWidth
-                stableHeight={52}
-                debugId="revenue-allocation.front-copy-summary"
-                style={secondaryBtn(!allocation)}
-              >
-                {actionText("copy", "Copy summary")}
-              </SecondaryButton>
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
+                marginTop: 16,
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
                 gap: 10,
@@ -934,7 +872,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Community ID</div>
+                <div style={sectionLabel()}>Support ID</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -945,12 +883,12 @@ export default function RevenueAllocationPage() {
                     wordBreak: "break-word",
                   }}
                 >
-                  {communityPublicId}
+                  {currentLoanId || "Not selected"}
                 </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>GSN ID</div>
+                <div style={sectionLabel()}>State</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -961,12 +899,12 @@ export default function RevenueAllocationPage() {
                     wordBreak: "break-word",
                   }}
                 >
-                  {gmfnId}
+                  {reviewState}
                 </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Current step</div>
+                <div style={sectionLabel()}>Boundary</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -976,29 +914,14 @@ export default function RevenueAllocationPage() {
                     lineHeight: 1.3,
                   }}
                 >
-                  Revenue allocation
+                  Read only
                 </div>
               </div>
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={badge(true)}>Member: {memberName}</span>
-              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>
-                Current support ID: {currentLoanId || "No support selected yet"}
-              </span>
             </div>
           </div>
 
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Current action</div>
+          <div data-gsn-revenue-allocation-action="true" style={softCard("#FFFFFF")}>
+            <div style={sectionLabel()}>Find allocation</div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
               <div>
@@ -1038,7 +961,7 @@ export default function RevenueAllocationPage() {
                   debugId="revenue-allocation.load"
                   style={primaryBtn(busy)}
                 >
-                  {actionText("refresh", busy ? "Loading" : "Load")}
+                  {actionText("refresh", busy ? "Loading" : "Load allocation")}
                 </PrimaryButton>
 
                 <SecondaryButton
@@ -1086,15 +1009,6 @@ export default function RevenueAllocationPage() {
             {actionText(collapsed.summary ? "document" : "lock", collapsed.summary ? "Open" : "Hide")}
           </SubtleButton>
         </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This is the main money breakdown for the selected item."
-          why="It shows the broad split before the field-by-field view, without proving money movement."
-          next="Use this first, then open details only when needed; settlement still needs finance evidence."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         {!collapsed.summary ? (
           allocation ? (
@@ -1231,80 +1145,6 @@ export default function RevenueAllocationPage() {
               Load a revenue allocation to see the summary.
             </div>
           )
-        ) : null}
-      </section>
-
-      <section style={{ ...pageCard("#F8FBFF") }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Meaning</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the allocation logic readable.
-            </div>
-          </div>
-
-          <SubtleButton
-            type="button"
-            onClick={() => toggleSection("details")}
-            stableHeight={52}
-            debugId="revenue-allocation.toggle-details"
-            style={collapseToggle()}
-          >
-            {actionText(collapsed.details ? "document" : "lock", collapsed.details ? "Open" : "Hide")}
-          </SubtleButton>
-        </div>
-
-        {!collapsed.details ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                }}
-              >
-                Why this matters
-              </div>
-
-              <div style={{ marginTop: 10, ...helperText() }}>
-                See what was kept as fee, what is reserved for supporters, and what
-                may reach the member in the allocation reading.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                }}
-              >
-                Next use
-              </div>
-
-              <div style={{ marginTop: 10, ...helperText() }}>
-                After the split is clear, return to the workbench, summary, or
-                finance page you need.
-              </div>
-            </div>
-          </div>
         ) : null}
       </section>
 

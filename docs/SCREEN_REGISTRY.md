@@ -64,6 +64,7 @@ Bottom navigation is allowed here.
 23. AdminTrustEventsPage (`/app/command-center/trust-events`; admin-only recent Trust Event evidence review)
 24. AdminIncompleteLoansPage (`/app/command-center/incomplete-loans`; admin-only incomplete support attention queue)
 25. AdminIdentityRiskPage (`/app/command-center/identity-risk`; admin-only identity evidence, recovery, and reconciliation review)
+26. RevenueAllocationPage (`/app/command-center/revenue-allocation`; community-admin read-only allocation review with one-item lookup and closed evidence/navigation details; compact first surface reviewed 2026-10-26)
 
 ## Current Repo Name Notes
 

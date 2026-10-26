@@ -1972,6 +1972,48 @@ Primary action:
 Open signal record
 ```
 
+## RevenueAllocationPage
+
+Route: `/app/command-center/revenue-allocation`.
+
+Purpose:
+Give an authorised community or platform admin one read-only allocation
+breakdown for a selected support item without presenting the record as proof of
+payment, settlement, disbursement, or release authority.
+
+Must show:
+- Command Centre navigation
+- one compact `What needs review?` summary
+- current community, selected support ID, review state, and read-only boundary
+- one visible support-ID lookup action
+- Copy summary only after an allocation has loaded
+- the returned amount, service fee, platform revenue, supporter pool, net
+  disbursed preview, pool used, support gap, and remaining amount
+- field-level returned evidence inside a closed disclosure
+- Support Summary, Support Workbench, Finance, Loan Support, Marketplace, and
+  Money Out destinations inside a closed next-steps disclosure
+
+Rules:
+- Keep the route limited to `adminOrClanAdmin` and preserve the backend
+  community-membership/admin check.
+- Keep the existing revenue-allocation endpoint and returned-field
+  normalisation unchanged.
+- The ordinary phone visit must show one lookup action, not duplicate Load and
+  Copy controls above and inside the same card.
+- Do not expose signed-in member identity or GSN ID as first-surface allocation
+  facts; those values may remain in the bounded copied internal summary.
+- Open the allocation summary after a successful lookup. Keep field-level
+  evidence and next-page destinations closed until deliberately opened.
+- Never describe a returned allocation as a receipt, payment instruction,
+  settlement confirmation, payout approval, proof that money moved, or
+  authority to release goods, credit, or money.
+
+Primary action:
+
+```text
+Load allocation
+```
+
 ## AdminSupportPage
 
 Route: `/app/command-center/support`.

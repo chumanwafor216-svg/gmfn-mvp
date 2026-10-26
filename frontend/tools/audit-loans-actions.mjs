@@ -532,8 +532,8 @@ assertContains(
 
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",
-  /const gmfnIdValue = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(me\?\.gmfn_id\);[\s\S]*?const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(gmfnIdValue, "Not issued yet"\);[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?\{ label: "Community ID", value: communityPublicIdValue \}[\s\S]*?\{ label: "GSN ID", value: gmfnIdValue \}[\s\S]*?Current support ID: \{currentLoanId \|\| "No support selected yet"\}/,
-  "Revenue Allocation must show honest missing identity labels while copied review summaries use only actual IDs."
+  /const gmfnIdValue = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(me\?\.gmfn_id\);[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?\{ label: "Community ID", value: communityPublicIdValue \}[\s\S]*?\{ label: "GSN ID", value: gmfnIdValue \}/,
+  "Revenue Allocation copied review summaries must use only actual GSN/community IDs without first-surface identity fallbacks."
 );
 
 assertContains(
@@ -639,14 +639,20 @@ assertContains(
 );
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",
-  /stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-load"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-copy-summary"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
-  "Revenue Allocation must keep Load and Copy Summary available before the stats grid while preserving the deeper current-action card."
+  /data-gsn-revenue-allocation-summary="true"[\s\S]*?data-gsn-revenue-allocation-action="true"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?Load allocation[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
+  "Revenue Allocation must keep one stable Load Allocation action and one disabled-until-loaded Copy Summary action."
 );
 
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",
-  /const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn\.revenueAllocation\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?context: true,[\s\S]*?summary: true,[\s\S]*?details: true,[\s\S]*?routes: true,/,
-  "Revenue Allocation must default allocation summary, details, context, and routes closed while keeping front load/copy actions visible."
+  /const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn\.revenueAllocation\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?context: true,[\s\S]*?summary: true,[\s\S]*?routes: true,[\s\S]*?setCollapsed\(\(previous\) => \(\{ \.\.\.previous, summary: false \}\)\)/,
+  "Revenue Allocation must default summary, detailed fields, and routes closed, then open only the summary after a successful lookup."
+);
+
+assertNotContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /revenue-allocation\.front-load|revenue-allocation\.front-copy-summary|<ExplainToggle|debugId="revenue-allocation\.toggle-details"/,
+  "Revenue Allocation must not restore duplicate first-surface actions, repeated explanation blocks, or the generic Meaning section."
 );
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",

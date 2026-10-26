@@ -15,6 +15,7 @@ const files = {
   adminIncompleteLoans: "src/pages/AdminIncompleteLoansPage.tsx",
   adminIdentityRisk: "src/pages/AdminIdentityRiskPage.tsx",
   adminCommunityOwnership: "src/pages/AdminCommunityOwnershipPage.tsx",
+  revenueAllocation: "src/pages/RevenueAllocationPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -88,6 +89,11 @@ assertContains(
   "adminCommunityOwnership",
   /data-gsn-community-ownership-work="steward"[\s\S]*?display: activeLane === "steward"[\s\S]*?data-gsn-community-ownership-work="cleanup"[\s\S]*?display: activeLane === "cleanup"[\s\S]*?data-gsn-community-ownership-work="community-lifecycle"[\s\S]*?lifecycleScope === "community"[\s\S]*?data-gsn-community-ownership-work="domain-owner"[\s\S]*?ownerScope === "domain"[\s\S]*?data-gsn-community-ownership-work="domain-lifecycle"[\s\S]*?lifecycleScope === "domain"/,
   "Admin Community Ownership must reveal only the selected case lane and selected record scope."
+);
+assertContains(
+  "revenueAllocation",
+  /data-gsn-revenue-allocation-summary="true"[\s\S]*?What needs review\?[\s\S]*?Community[\s\S]*?Support ID[\s\S]*?State[\s\S]*?Boundary[\s\S]*?data-gsn-revenue-allocation-action="true"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?Load allocation[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
+  "Revenue Allocation must keep one compact review summary and one lookup action before closed evidence and route details."
 );
 
 if (findings.length > 0) {

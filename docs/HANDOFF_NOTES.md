@@ -8,6 +8,29 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Revenue Allocation first-surface cleanup - 2026-10-26
+
+- Simplified the admin/community-admin
+  `/app/command-center/revenue-allocation` first surface without changing its
+  endpoint, route gate, community-membership check, returned-field
+  normalisation, copy-paper boundary, or financial calculations.
+- Replaced two explanation blocks, duplicate Load/Copy rows, four
+  identity/context tiles, and a generic Meaning section with one live
+  `What needs review?` summary and one support-ID lookup action.
+- The summary now shows only Community, Support ID, State, and the read-only
+  boundary. A successful lookup opens the returned allocation split; detailed
+  fields and next-page destinations remain closed until deliberately opened.
+- Added the previously missing screen registry/spec entry and focused source
+  and phone-browser protection for the one-action flow.
+- Verification passed: the 295-module production build, Loans and Finance
+  action contracts, phone-surface simplicity, button stability, admin route
+  guards, Trust actions, institutional proof surfaces, visible GSN language,
+  global action IDs and raw-action checks, mobile tap stability, mobile route
+  coverage, the focused 390x844 guided-phone smoke, the complete protected
+  button/frozen-surface suite, and the full mocked 390x844 mobile visual sweep.
+- This continuation is local only. Do not push, promote to `main`, or deploy it
+  until the owner explicitly says `deploy`.
+
 ## Command Centre Community Ownership guided cleanup - 2026-10-26
 
 - Simplified the platform-admin-only `/app/command-center/community-ownership`
