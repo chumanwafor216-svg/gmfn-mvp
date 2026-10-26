@@ -880,7 +880,7 @@ assertContains(
 
 assertContains(
   "src/components/CompanionLayer.tsx",
-  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_OUTCOME_KINDS[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?PHONE_TRIGGER_NOTIFICATION_KINDS[\s\S]*?community\.notice\.posted[\s\S]*?community_domain\.notice\.posted[\s\S]*?PHONE_TRIGGER_POLL_MS = 15000[\s\S]*?getMyNotifications\(\s*20,\s*true,\s*\{\s*fresh:\s*true\s*\}\s*\)[\s\S]*?const priority = isUrgentNotification\(phoneNotice\) \? "urgent" : "important"[\s\S]*?runUrgentCompanionNotificationCycle/,
+  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_OUTCOME_KINDS[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?PHONE_TRIGGER_NOTIFICATION_KINDS[\s\S]*?community\.notice\.posted[\s\S]*?community_domain\.notice\.posted[\s\S]*?PHONE_TRIGGER_POLL_MS = 15000[\s\S]*?getMyNotifications\(\s*20,\s*true,\s*force \? \{\s*fresh:\s*true\s*\} : undefined\s*\)[\s\S]*?const priority = isUrgentNotification\(phoneNotice\) \? "urgent" : "important"[\s\S]*?runUrgentCompanionNotificationCycle/,
   "The workspace companion layer must poll unread urgent community confirmation request/outcome notifications plus phone-facing notice-board notifications and raise no-cash phone/browser alerts while the app is open."
 );
 
