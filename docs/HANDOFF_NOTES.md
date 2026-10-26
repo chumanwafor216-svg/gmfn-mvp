@@ -30,8 +30,13 @@ under `docs/` or `docs/archive/`, then link that file here.
   pre-existing CompanionLayer, DemandBox and doctrine-copy changes outside
   this package. Physical-phone review and a live public code remain
   outstanding.
-- Deployment truth: this package is local and uncommitted. It has not been
-  pushed or deployed.
+- Deployment truth: this package and the Trust Passport package below were
+  committed together as `fecc26b9`, pushed to the working branch and promoted
+  unchanged to `main`. GitHub Actions run `40328579296` deployed the
+  frontend-only commit as Render deploy `dep-dbfl3h0u01pc73blv8og`, which
+  reached `live`. The workflow verified the public frontend build marker;
+  `/verify/trust-slip` also returned HTTP 200. Backend deploy resolved to
+  `false`.
 
 ## Trust Passport plain-language package - 2026-10-26
 
@@ -55,8 +60,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   with the visible mobile copy and now verify exact replacement writes without
   changing TrustSlip runtime behavior. Physical-phone review and live signed-in
   evidence remain outstanding.
-- Deployment truth: this package is local and uncommitted. It has not been
-  pushed or deployed.
+- Deployment truth: deployed with the public TrustSlip package in frontend
+  commit `fecc26b9` as recorded above.
 
 ## Finance and Trade records deployment - 2026-10-26
 
