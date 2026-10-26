@@ -1972,6 +1972,49 @@ Primary action:
 Open signal record
 ```
 
+## ExposureAdminPage
+
+Route: `/app/command-center/exposure`.
+
+Purpose:
+Give a platform admin one selected-community reading of supporter exposure,
+stale demand, incomplete support, pending pool review, and unmatched bank-event
+pressure before opening the page that owns an intervention.
+
+Must show:
+- Command Centre navigation
+- one compact `What needs attention?` summary
+- selected community, at-risk member count, bounded action-queue count, and
+  total exposure reading
+- one visible next action: `Review action queue` when queue items exist, or
+  `Review pressure details` when the queue is calm
+- a plain boundary that exposure is a risk reading, not settlement, release
+  authority, evidence of wrongdoing, or evidence that money moved
+- concentration and queue pressure inside a closed disclosure
+- the existing bounded combined queue inside a closed disclosure
+- System Operations, Trust Analytics, Trust Graph, and Bank Console inside a
+  closed next-pages disclosure
+
+Rules:
+- Preserve the existing exposure formula, pressure thresholds, queue ordering,
+  bounded queue size, API payloads, and owning-page destinations.
+- The visible next action may reveal and scroll to the existing queue or
+  pressure disclosure. It must not approve, reconcile, settle, release, or
+  mutate any record.
+- Do not expose the signed-in operator name or role as first-surface risk facts.
+- The active backend exposure-summary endpoint is platform-admin-only. The
+  shared frontend Command Centre parent currently admits `adminOrClanAdmin`;
+  until that route/auth mismatch receives an explicit product decision, show
+  an honest unavailable state to a caller rejected by the backend and do not
+  invent exposure totals.
+- Keep intervention controls in the page that owns each queue item.
+
+Primary action:
+
+```text
+Review action queue
+```
+
 ## RevenueAllocationPage
 
 Route: `/app/command-center/revenue-allocation`.

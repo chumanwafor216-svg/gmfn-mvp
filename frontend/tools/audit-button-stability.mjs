@@ -1918,8 +1918,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="exposure-admin\.toggle\.overview"[\s\S]*?debugId="exposure-admin\.toggle\.pressure"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId=\{`exposure-admin\.queue\.\$\{row\.key\}\.route`\}[\s\S]*?debugId="exposure-admin\.toggle\.routes"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.trust-analytics"[\s\S]*?debugId="exposure-admin\.route\.trust-graph"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
-  "Exposure Admin must use shared stable primitives and shared CTA resolution for collapse controls, queue routes, and next-route cards."
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="exposure-admin\.review-priority"[\s\S]*?debugId="exposure-admin\.toggle\.pressure"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId=\{`exposure-admin\.queue\.\$\{row\.key\}\.route`\}[\s\S]*?debugId="exposure-admin\.toggle\.routes"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.trust-analytics"[\s\S]*?debugId="exposure-admin\.route\.trust-graph"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
+  "Exposure Admin must use shared stable primitives and shared CTA resolution for its priority action, collapse controls, queue routes, and next-page cards."
 );
 
 assertNotContains(

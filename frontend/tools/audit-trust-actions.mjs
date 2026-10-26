@@ -1947,7 +1947,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /Support decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority, or evidence that money moved[\s\S]*?locked support coverage/,
+  /Support decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority,[\s\S]*?evidence of wrongdoing,[\s\S]*?evidence that money moved[\s\S]*?Review locked support coverage/,
   "Exposure Admin must frame exposure as a risk reading and support-coverage review, not settlement, release authority, or payment proof."
 );
 

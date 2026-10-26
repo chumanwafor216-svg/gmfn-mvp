@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -13,7 +12,6 @@ import {
   getAdminIncompleteLoans,
   getCurrentClan,
   getExposureAdmin,
-  getMe,
   getSelectedClanId,
   listAdminPoolPending,
   listMarketplaceRequests,
@@ -22,7 +20,6 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
-  overview: boolean;
   pressure: boolean;
   queues: boolean;
   routes: boolean;
@@ -47,7 +44,7 @@ type DemandRow = {
   createdAt?: string | null;
 };
 
-const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn.exposureAdmin.sections.v2";
+const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn.exposureAdmin.sections.v3";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -358,7 +355,6 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: true,
     pressure: true,
     queues: true,
     routes: true,
@@ -369,7 +365,6 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    overview: Boolean(raw?.overview ?? base.overview),
     pressure: Boolean(raw?.pressure ?? base.pressure),
     queues: Boolean(raw?.queues ?? base.queues),
     routes: Boolean(raw?.routes ?? base.routes),
@@ -436,7 +431,6 @@ export default function ExposureAdminPage() {
   );
 
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [exposureRows, setExposureRows] = useState<ExposureRow[]>([]);
   const [exposureTotals, setExposureTotals] = useState<any>(null);
@@ -447,6 +441,8 @@ export default function ExposureAdminPage() {
   const [demands, setDemands] = useState<DemandRow[]>([]);
   const exposureLoadSeqRef = useRef(0);
   const exposureLoadContextRef = useRef("");
+  const pressureSectionRef = useRef<HTMLElement | null>(null);
+  const queueSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -492,9 +488,8 @@ export default function ExposureAdminPage() {
       setDemands([]);
 
       try {
-        const [meRes, clanRes, exposureRes, incompleteLoansRes, pendingPoolRes, bankUnmatchedRes, demandsRes] =
+        const [clanRes, exposureRes, incompleteLoansRes, pendingPoolRes, bankUnmatchedRes, demandsRes] =
           await Promise.all([
-            getMe().catch(() => null),
             getCurrentClan().catch(() => null),
             selectedClanId > 0
               ? getExposureAdmin(selectedClanId).catch((error: any) => ({
@@ -521,7 +516,6 @@ export default function ExposureAdminPage() {
 
         if (!isCurrentExposureLoad()) return;
 
-        setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setExposureRows(
           exposureRes && typeof exposureRes === "object" && !exposureRes.__error
@@ -556,18 +550,6 @@ export default function ExposureAdminPage() {
     };
   }, [selectedClanId]);
 
-  const operatorName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Operator"
-    );
-  }, [me]);
-
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -578,12 +560,6 @@ export default function ExposureAdminPage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
-
-  const roleLabel = useMemo(() => {
-    return (
-      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
-    );
-  }, [me]);
 
   const exposedMembers = useMemo(
     () => exposureRows.filter((row) => toNum(row?.exposure) > 0),
@@ -628,7 +604,7 @@ export default function ExposureAdminPage() {
         level: "medium" as const,
         title: "Exposure summary is not available here yet.",
         detail:
-          "The current community did not return the community-admin exposure summary. Confirm the selected community and community-admin access before treating this page as the full concentration view.",
+          "The current community did not return the protected exposure summary. Confirm the selected community and platform-admin access before treating this page as the full concentration view.",
       };
     }
 
@@ -763,6 +739,16 @@ export default function ExposureAdminPage() {
     }));
   }
 
+  function reviewPriority() {
+    const target = recentQueues.length > 0 ? "queues" : "pressure";
+    setCollapsed((previous) => ({ ...previous, [target]: false }));
+    window.setTimeout(() => {
+      const section =
+        target === "queues" ? queueSectionRef.current : pressureSectionRef.current;
+      section?.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 0);
+  }
+
   if (loading) {
     return (
       <div
@@ -775,13 +761,13 @@ export default function ExposureAdminPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Exposure"
-          title="Exposure"
+          sectionLabel="Command Centre"
+          title="Exposure Review"
           subtitle="Loading the exposure reading..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.commandCenter}
-          backLabel="Command Center"
+          backLabel="Command Centre"
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -804,24 +790,17 @@ export default function ExposureAdminPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Exposure"
-        title="Exposure"
-        subtitle="See concentration and queue pressure before choosing the next intervention."
+        sectionLabel="Command Centre"
+        title="Exposure Review"
+        subtitle="See what needs attention in the selected community."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
-        backLabel="Command Center"
-      />
-
-      <ExplainToggle
-        label="How to use this"
-        what="This page reads exposure, stale demand, bank pressure, and admin queues together."
-        why="Exposure is a practical risk reading; it is not settlement, release authority, or evidence that money moved."
-        next="Start with current pressure, then open the page that matches the cause."
-        tone="light"
+        backLabel="Command Centre"
       />
 
       <section
+        data-gsn-exposure-summary="true"
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
         <div
@@ -833,7 +812,7 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            {sectionLabelWithIcon("chart", "Exposure overview", "gold")}
+            {sectionLabelWithIcon("alert", "What needs attention?", pressureReading.level === "high" ? "red" : "gold")}
 
             <div
               style={{
@@ -844,28 +823,55 @@ export default function ExposureAdminPage() {
                 lineHeight: 1.1,
               }}
             >
-              Exposure reading for {operatorName}
+              {pressureReading.title}
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read locked support coverage, stale demand, pending pool review, and bank pressure in one place.
+              {pressureReading.detail}
             </div>
 
             <div
               style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                marginTop: 16,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 10,
               }}
             >
-              {badgeWithIcon("user", <>Role: {roleLabel}</>, true, "blue")}
-              {badgeWithIcon("community", <>Community: {communityLabel}</>)}
-              {badgeWithIcon("chart", "Exposure")}
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Community</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, lineHeight: 1.3 }}>
+                  {communityLabel}
+                </div>
+              </div>
+              <div style={statTile("#FFFBEF")}>
+                <div style={sectionLabel()}>At-risk members</div>
+                <div style={{ marginTop: 8, color: "#92400E", fontSize: 22, fontWeight: 900 }}>
+                  {exposedMembersAtRisk.length}
+                </div>
+              </div>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Action queue</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 22, fontWeight: 900 }}>
+                  {recentQueues.length}
+                </div>
+              </div>
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Total exposure</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 22, fontWeight: 900 }}>
+                  {toNum(exposureTotals?.exposure)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, ...innerCard("#FFFBEF"), color: "#0B1F33", lineHeight: 1.55 }}>
+              Exposure is a practical risk reading; it is not settlement, release authority,
+              evidence of wrongdoing, or evidence that money moved.
             </div>
           </div>
 
           <div
+            data-gsn-exposure-priority="true"
             style={{
               ...softCard(pressureStyle.bg),
               border: pressureStyle.border,
@@ -873,7 +879,7 @@ export default function ExposureAdminPage() {
           >
             {sectionLabelWithIcon(
               pressureReading.level === "high" ? "alert" : "chart",
-              "Current pressure",
+              "Next action",
               pressureReading.level === "high" ? "red" : pressureReading.level === "medium" ? "gold" : "green"
             )}
 
@@ -886,151 +892,44 @@ export default function ExposureAdminPage() {
                 lineHeight: 1.25,
               }}
             >
-              {pressureReading.title}
+              {recentQueues.length > 0
+                ? `${recentQueues.length} queue item${recentQueues.length === 1 ? "" : "s"} need review`
+                : "No immediate queue is visible"}
             </div>
 
             <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33" }}>
-              {pressureReading.detail}
+              {recentQueues.length > 0
+                ? "Open the combined queue and continue in the page that owns each record."
+                : "The deeper pressure reading remains available if you need to inspect the calm state."}
+            </div>
+
+            <PrimaryButton
+              type="button"
+              onClick={reviewPriority}
+              fullWidth
+              stableHeight={52}
+              debugId="exposure-admin.review-priority"
+              style={{ marginTop: 14 }}
+            >
+              {actionLabel(
+                recentQueues.length > 0 ? "briefcase" : "chart",
+                recentQueues.length > 0 ? "Review action queue" : "Review pressure details",
+                recentQueues.length > 0 ? "blue" : "green"
+              )}
+            </PrimaryButton>
+
+            <div style={{ marginTop: 10, ...helperText(), color: "#0B1F33", fontSize: 13 }}>
+              Review locked support coverage and queue evidence here; complete any intervention only in its owning page.
             </div>
           </div>
         </div>
-
-        <ExplainToggle
-          label="Pressure"
-          what="The pressure block turns many signals into one practical reading."
-          why="It shows whether the community is calm, stretched, or at risk."
-          next="Use the sections below to find the cause."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            {sectionLabelWithIcon("chart", "Exposure summary", "blue")}
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Six short facts for the current community.
-            </div>
-          </div>
-
-          <SecondaryButton
-            onClick={() => toggleSection("overview")}
-            stableHeight={52}
-            debugId="exposure-admin.toggle.overview"
-            style={collapseToggle()}
-          >
-            {collapsed.overview ? "Open" : "Hide"}
-          </SecondaryButton>
-        </div>
-
-        {!collapsed.overview ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(6, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={statTile()}>
-              {sectionLabelWithIcon("user", "Exposed members", "blue")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {exposedMembers.length}
-              </div>
-            </div>
-
-            <div style={statTile("#FFFBEF")}>
-              {sectionLabelWithIcon("alert", "At-risk members", "gold")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#92400E",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {exposedMembersAtRisk.length}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              {sectionLabelWithIcon("wallet", "Total exposure", "blue")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {toNum(exposureTotals?.exposure)}
-              </div>
-            </div>
-
-            <div style={statTile("#FFF5F5")}>
-              {sectionLabelWithIcon("document", "Incomplete support", "red")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#991B1B",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {incompleteLoans.length}
-              </div>
-            </div>
-
-            <div style={statTile("#FFF5F5")}>
-              {sectionLabelWithIcon("bank", "Unmatched bank", "red")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#991B1B",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {bankUnmatched.length}
-              </div>
-            </div>
-
-            <div style={statTile("#FFFBEF")}>
-              {sectionLabelWithIcon("wallet", "Pending pool", "gold")}
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#92400E",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {pendingPool.length}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        ref={pressureSectionRef}
+        data-gsn-exposure-pressure="true"
+        style={pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -1126,7 +1025,11 @@ export default function ExposureAdminPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        ref={queueSectionRef}
+        data-gsn-exposure-queue="true"
+        style={pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -1198,7 +1101,7 @@ export default function ExposureAdminPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-gsn-exposure-next-pages="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",

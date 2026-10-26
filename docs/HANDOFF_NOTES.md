@@ -8,6 +8,40 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Exposure Review first-surface cleanup - 2026-10-26
+
+- Simplified `/app/command-center/exposure` without changing the exposure
+  formula, pressure thresholds, combined-queue ordering/limit, API payloads,
+  owning-page destinations, or any intervention behavior.
+- Replaced two explanation blocks, the operator-name/role greeting, and a
+  duplicate six-tile overview with one live `What needs attention?` summary:
+  Community, At-risk members, Action queue, and Total exposure.
+- Added one state-aware first action. `Review action queue` opens and scrolls
+  to the existing bounded queue when records need attention;
+  `Review pressure details` opens the existing pressure disclosure when the
+  queue is calm. The action performs no write or operational intervention.
+- Pressure analysis, the combined queue, and next-page destinations remain
+  closed until deliberately opened. The visible authority boundary now states
+  that exposure is a risk reading, not settlement, release authority,
+  wrongdoing evidence, or proof that money moved.
+- Confirmed authority mismatch: the shared frontend Command Centre parent
+  admits `adminOrClanAdmin`, but the active backend `/exposure/admin`
+  implementation is platform-admin-only. This UX cleanup does not silently
+  change that critical contract; rejected callers receive an honest
+  unavailable state instead of invented exposure totals. Product direction is
+  still required before aligning the route guard or backend authority.
+- Added the missing screen registry/spec entry plus focused source and browser
+  guards covering both high-pressure queue reveal and calm-state pressure
+  fallback at 390x844.
+- Verification passed: the 295-module production build, Admin/Operations,
+  Trust, phone-surface, button-stability, admin-route, institutional-proof,
+  visible-language, global action-ID/raw-action and tap-stability audits, mobile
+  route coverage, the focused high-pressure/calm-state 390x844 browser smoke,
+  the complete protected button/frozen-surface suite, and the full mocked
+  390x844 mobile visual sweep.
+- This continuation is local only. Do not push, promote to `main`, or deploy it
+  until the owner explicitly says `deploy`.
+
 ## Command Centre Revenue Allocation first-surface cleanup - 2026-10-26
 
 - Simplified the admin/community-admin

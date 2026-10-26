@@ -261,13 +261,19 @@ assertRepoContains(
 
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /debugId="exposure-admin\.toggle\.overview"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
-  "Exposure Admin toggles and route actions must remain traceable."
+  /data-gsn-exposure-summary="true"[\s\S]*?debugId="exposure-admin\.review-priority"[\s\S]*?debugId="exposure-admin\.toggle\.pressure"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId="exposure-admin\.toggle\.routes"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
+  "Exposure Admin priority, disclosure, and route actions must remain traceable."
 );
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn\.exposureAdmin\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?pressure: true,[\s\S]*?queues: true,[\s\S]*?routes: true,/,
-  "Exposure Admin must default exposure summary, pressure detail, queues, and route sections closed while keeping current pressure visible."
+  /const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn\.exposureAdmin\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?pressure: true,[\s\S]*?queues: true,[\s\S]*?routes: true,[\s\S]*?function reviewPriority\(\)[\s\S]*?recentQueues\.length > 0 \? "queues" : "pressure"/,
+  "Exposure Admin must keep its pressure, queues, and next pages closed while the priority action reveals only the relevant existing section."
+);
+
+assertNotContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /<ExplainToggle|exposure-admin\.toggle\.overview|Exposure reading for \{operatorName\}|Role: \{roleLabel\}/,
+  "Exposure Admin must not restore repeated explanation blocks, the duplicate overview section, or operator identity clutter."
 );
 
 assertContains(
@@ -284,7 +290,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /Support decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority, or evidence that money moved[\s\S]*?locked support coverage/,
+  /Support decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority,[\s\S]*?evidence of wrongdoing,[\s\S]*?evidence that money moved[\s\S]*?Review locked support coverage/,
   "Exposure Admin must frame exposure as a risk reading and support-coverage review, not settlement, release authority, or payment proof."
 );
 

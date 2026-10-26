@@ -16,6 +16,7 @@ const files = {
   adminIdentityRisk: "src/pages/AdminIdentityRiskPage.tsx",
   adminCommunityOwnership: "src/pages/AdminCommunityOwnershipPage.tsx",
   revenueAllocation: "src/pages/RevenueAllocationPage.tsx",
+  exposureAdmin: "src/pages/ExposureAdminPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -94,6 +95,11 @@ assertContains(
   "revenueAllocation",
   /data-gsn-revenue-allocation-summary="true"[\s\S]*?What needs review\?[\s\S]*?Community[\s\S]*?Support ID[\s\S]*?State[\s\S]*?Boundary[\s\S]*?data-gsn-revenue-allocation-action="true"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?Load allocation[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
   "Revenue Allocation must keep one compact review summary and one lookup action before closed evidence and route details."
+);
+assertContains(
+  "exposureAdmin",
+  /data-gsn-exposure-summary="true"[\s\S]*?What needs attention\?[\s\S]*?Community[\s\S]*?At-risk members[\s\S]*?Action queue[\s\S]*?Total exposure[\s\S]*?data-gsn-exposure-priority="true"[\s\S]*?debugId="exposure-admin\.review-priority"[\s\S]*?Review action queue[\s\S]*?Review pressure details/,
+  "Exposure Admin must keep one compact attention summary and one state-aware review action before closed pressure, queue, and next-page details."
 );
 
 if (findings.length > 0) {
