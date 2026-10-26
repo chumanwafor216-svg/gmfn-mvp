@@ -8,6 +8,33 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Community Ownership guided cleanup - 2026-10-26
+
+- Simplified the platform-admin-only `/app/command-center/community-ownership`
+  first surface without changing lookup, preview, execution, evidence
+  confirmation, reviewer-note, permission, API, lifecycle, cleanup, steward,
+  ownership-transfer or audit-history behavior.
+- Replaced the six simultaneously exposed sensitive workflows with one compact
+  live case summary and four stable lanes: `Owner repair`, `Steward setup`,
+  `Pilot cleanup`, and `Lifecycle close`.
+- Owner repair and lifecycle review now separate ordinary `Community` records
+  from protected `Community Domain` records before revealing the matching
+  workflow. Only one work area is visible at a time; switching lanes preserves
+  unfinished local inputs and never submits or mutates them.
+- Removed the real pilot organisation, member ID and email defaults from the
+  general page. Ordinary visits now require deliberate record entry; existing
+  query-parameter handoffs can still open a named support case safely.
+- Added focused source guards and a repeatable 390x844 browser smoke covering
+  all four lanes, both record scopes, one-visible-task behavior and horizontal
+  overflow. Verification passed: the 295-module production build, admin route
+  guards, Admin/Operations actions, phone-surface simplicity, button stability,
+  global action identities and raw-action checks, mobile tap stability, visible
+  GSN language, Trust actions, mobile route coverage, the complete protected
+  button/frozen-surface suite, the focused guided-phone smoke, and the full
+  mocked 390x844 mobile visual sweep.
+- This continuation is local only. Do not push, promote to `main`, or deploy it
+  until the owner explicitly says `deploy`.
+
 ## Command Centre Identity Risk first-surface cleanup - 2026-10-26
 
 - Simplified the platform-admin-only `/app/command-center/identity-risk`

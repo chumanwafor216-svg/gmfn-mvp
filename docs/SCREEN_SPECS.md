@@ -1805,6 +1805,7 @@ Purpose:
 Platform-admin Command Centre tool for resolving a blocked community name by assigning a verified canonical owner/admin to the existing community record.
 
 Must show:
+- one compact decision summary for the currently selected case lane
 - community lookup by name
 - owner lookup by member identity signal
 - exact community and owner selection
@@ -1821,6 +1822,10 @@ Must show:
 
 Rules:
 - Route is `/app/command-center/community-ownership` and must remain platform-admin only.
+- The first surface must present four stable case lanes only: `Owner repair`, `Steward setup`, `Pilot cleanup`, and `Lifecycle close`.
+- Show only the selected case lane's work area. Do not expose steward setup, pilot cleanup, both lifecycle forms, both ownership forms, and ordinary owner repair together in one long operator page.
+- Inside `Owner repair`, require an explicit `Community` or `Community Domain` scope before showing the corresponding workflow. Inside `Lifecycle close`, use the same two-scope boundary.
+- Switching lanes or record scope may hide unfinished fields but must not submit, clear, or mutate them. Existing preview and confirmation rules remain authoritative.
 - The case chooser must map each real-life case to the existing engine: owner repair for transfer/release, steward setup for prepared shells, pilot cleanup for public setup/test traces, and lifecycle close/suspend for organisation exit.
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
 - Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until evidence-checked owner repair releases it.
@@ -1833,7 +1838,8 @@ Rules:
 - Successful owner-repair execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
 - If owner repair is executed against a `steward_setup` community, evidence confirmation releases that community to `active`; dormant/closed communities are not automatically reactivated by ordinary transfer.
 - If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
-- Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.
+- Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a named pilot case.
+- Ordinary visits must not preload a real organisation, member ID, email address, or phone number into owner repair, pilot cleanup, or lifecycle controls. A deliberate query-parameter handoff may prefill the named case.
 ## SupportPage
 
 Route: `/app/help` (`/app/support-desk` redirects here; `/app/support` remains Loans & Support).

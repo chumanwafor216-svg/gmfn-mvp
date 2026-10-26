@@ -53,7 +53,7 @@ Bottom navigation is allowed here.
 12. IdentityIntegrityPage
 13. CommunityDomainDashboardPage
 14. TrustTimelinePage
-15. AdminCommunityOwnershipPage
+15. AdminCommunityOwnershipPage (`/app/command-center/community-ownership`; platform-admin-only guided ownership, steward setup, pilot cleanup, and lifecycle review; compact one-lane first surface reviewed 2026-10-26)
 16. SupportPage
 17. AdminSupportPage
 18. TrustSlipPage

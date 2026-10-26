@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableButton, StableCtaLink } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
@@ -17,6 +17,9 @@ import {
   postAdminCommunityDomainOwnershipReconciliation,
   postAdminCommunityOwnershipReconciliation,
 } from "../lib/api";
+
+type OwnershipWorkLane = "owner" | "steward" | "cleanup" | "lifecycle";
+type OwnershipRecordScope = "community" | "domain";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -166,8 +169,15 @@ function intakeName(row: any): string {
 
 export default function AdminCommunityOwnershipPage() {
   const [searchParams] = useSearchParams();
+  const [activeLane, setActiveLane] = useState<OwnershipWorkLane>("owner");
+  const [ownerScope, setOwnerScope] = useState<OwnershipRecordScope>(
+    searchParams.get("domain_name") ? "domain" : "community"
+  );
+  const [lifecycleScope, setLifecycleScope] = useState<OwnershipRecordScope>(
+    searchParams.get("domain_name") ? "domain" : "community"
+  );
   const [communityNameInput, setCommunityNameInput] = useState(
-    safeStr(searchParams.get("community_name")) || "Pillar of Hope"
+    safeStr(searchParams.get("community_name"))
   );
   const [ownerQuery, setOwnerQuery] = useState(safeStr(searchParams.get("owner_query")));
   const [selectedClanId, setSelectedClanId] = useState<number>(0);
@@ -195,7 +205,7 @@ export default function AdminCommunityOwnershipPage() {
   const [stewardError, setStewardError] = useState("");
   const [stewardBusy, setStewardBusy] = useState<"preview" | "execute" | "">("");
   const [pilotCleanupName, setPilotCleanupName] = useState(
-    safeStr(searchParams.get("community_name")) || "Pillar of Hope"
+    safeStr(searchParams.get("community_name"))
   );
   const [pilotCleanupId, setPilotCleanupId] = useState(0);
   const [pilotCleanupScrubPublic, setPilotCleanupScrubPublic] = useState(true);
@@ -209,7 +219,7 @@ export default function AdminCommunityOwnershipPage() {
   const [pilotCleanupError, setPilotCleanupError] = useState("");
   const [pilotCleanupBusy, setPilotCleanupBusy] = useState<"preview" | "execute" | "">("");
   const [communityLifecycleName, setCommunityLifecycleName] = useState(
-    safeStr(searchParams.get("community_name")) || "Pillar of Hope"
+    safeStr(searchParams.get("community_name"))
   );
   const [communityLifecycleId, setCommunityLifecycleId] = useState(0);
   const [communityLifecycleStatus, setCommunityLifecycleStatus] = useState<"active" | "dormant" | "closed">("dormant");
@@ -231,7 +241,7 @@ export default function AdminCommunityOwnershipPage() {
   const [domainLifecycleError, setDomainLifecycleError] = useState("");
   const [domainLifecycleBusy, setDomainLifecycleBusy] = useState<"preview" | "execute" | "">("");
   const [domainOwnerName, setDomainOwnerName] = useState(
-    safeStr(searchParams.get("domain_name")) || "Pillar of Hope"
+    safeStr(searchParams.get("domain_name"))
   );
   const [domainOwnerId, setDomainOwnerId] = useState(0);
   const [domainOwnerQuery, setDomainOwnerQuery] = useState(safeStr(searchParams.get("owner_query")));
@@ -323,7 +333,7 @@ export default function AdminCommunityOwnershipPage() {
         setSelectedOwnerId(0);
         setSelectedIntakeId(0);
         setSelectedOwnerGmfnId("");
-        setMessage("Community lookup checked. No GSN identity or intake matched yet. Try Felix's exact phone with country code.");
+        setMessage("Community lookup checked. No GSN identity or intake matched yet. Try the owner's exact phone with country code.");
       }
     } catch (err: any) {
       setError(safeStr(err?.message || err) || "Lookup failed.");
@@ -681,6 +691,64 @@ export default function AdminCommunityOwnershipPage() {
         : selectedOwner || ownerIdentityReady
           ? "Preview repair"
           : "Search owner";
+  const laneSummary = (() => {
+    if (activeLane === "steward") {
+      return {
+        eyebrow: "Steward setup",
+        title: "Prepare an organisation",
+        helper: "Create a hidden shell from a real brief, then keep it private until owner proof is checked.",
+        scope: "Community shell",
+        state: stewardResult ? "Prepared" : stewardPreview ? "Ready to confirm" : "Not previewed",
+        next: stewardResult ? "Move to owner repair" : stewardPreview ? "Confirm evidence" : "Preview setup",
+      };
+    }
+    if (activeLane === "cleanup") {
+      return {
+        eyebrow: "Pilot cleanup",
+        title: "Clean example data",
+        helper: "Remove public setup traces while preserving the community record and its audit history.",
+        scope: "Ordinary community",
+        state: pilotCleanupResult ? "Recorded" : pilotCleanupPreview ? "Ready to confirm" : "Not previewed",
+        next: pilotCleanupResult ? "Review result" : pilotCleanupPreview ? "Confirm cleanup" : "Preview cleanup",
+      };
+    }
+    if (activeLane === "lifecycle") {
+      const domain = lifecycleScope === "domain";
+      const lifecyclePreview = domain ? domainLifecyclePreview : communityLifecyclePreview;
+      const lifecycleResult = domain ? domainLifecycleResult : communityLifecycleResult;
+      return {
+        eyebrow: "Lifecycle review",
+        title: domain ? "Review a Community Domain" : "Review a community",
+        helper: "Pause, close, or reactivate the correct record without deleting its name, members, or history.",
+        scope: domain ? "Community Domain" : "Ordinary community",
+        state: lifecycleResult ? "Recorded" : lifecyclePreview ? "Ready to confirm" : "Not previewed",
+        next: lifecycleResult ? "Review result" : lifecyclePreview ? "Confirm decision" : "Preview decision",
+      };
+    }
+    const domain = ownerScope === "domain";
+    return {
+      eyebrow: "Owner repair",
+      title: "Repair ownership",
+      helper: domain
+        ? "Transfer the protected Community Domain only after the representative and evidence are checked."
+        : "Find the existing community and rightful owner, then preview the repair before recording it.",
+      scope: domain ? "Community Domain" : "Ordinary community",
+      state: domain
+        ? domainOwnerResult
+          ? "Resolved"
+          : domainOwnerPreview
+            ? "Proof needed"
+            : "Not previewed"
+        : repairState,
+      next: domain
+        ? domainOwnerResult
+          ? "Send owner back"
+          : domainOwnerPreview
+            ? "Confirm proof"
+            : "Preview transfer"
+        : nextAction,
+    };
+  })();
 
   return (
     <div style={pageShell()}>
@@ -694,7 +762,7 @@ export default function AdminCommunityOwnershipPage() {
           backTo="/app/command-center"
         />
 
-        <section style={card()}>
+        <section data-gsn-community-ownership-summary="true" style={card("#0B1F33")}>
           <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 14, alignItems: "center" }}>
             <span
               style={{
@@ -704,32 +772,32 @@ export default function AdminCommunityOwnershipPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#F2C766",
-                background: "linear-gradient(180deg, #08233A 0%, #061827 100%)",
-                boxShadow: "0 16px 32px rgba(7,20,36,0.16)",
+                color: "#08233A",
+                background: "linear-gradient(180deg, #F8D97A 0%, #D7AA3B 100%)",
+                boxShadow: "0 16px 32px rgba(0,0,0,0.20)",
               }}
             >
               <GsnLegacyIcon name="community" size={28} />
             </span>
             <div>
-              <div style={label()}>Owner repair</div>
-              <h1 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 28, lineHeight: 1.08 }}>
-                Repair ownership
+              <div style={{ ...label(), color: "#C9D7E5" }}>{laneSummary.eyebrow}</div>
+              <h1 style={{ margin: "6px 0 0", color: "#FFFFFF", fontSize: 28, lineHeight: 1.08 }}>
+                {laneSummary.title}
               </h1>
-              <div style={{ marginTop: 6, ...helper() }}>
-                Select Pillar of Hope and Felix. If Felix has no GSN ID, use his intake record first.
+              <div style={{ marginTop: 6, ...helper(), color: "#D9E4EF" }}>
+                {laneSummary.helper}
               </div>
             </div>
           </div>
           <div style={{ marginTop: 14, ...factGrid(136) }}>
-            {fact("Community", selectedCommunity ? communityName(selectedCommunity) : communityNameInput)}
-            {fact("Owner", selectedOwner ? userName(selectedOwner) : selectedIntake ? `${intakeName(selectedIntake)} intake` : selectedOwnerGmfnId || ownerQuery || "Not set")}
-            {fact("State", repairState)}
-            {fact("Next", nextAction)}
+            {fact("Case", laneSummary.eyebrow)}
+            {fact("Record", laneSummary.scope)}
+            {fact("State", laneSummary.state)}
+            {fact("Next", laneSummary.next)}
           </div>
         </section>
 
-        <section style={card("#FFFBEB")}>
+        <section data-gsn-community-ownership-lane-chooser="true" style={card("#FFFBEB")}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Case chooser</div>
@@ -740,42 +808,85 @@ export default function AdminCommunityOwnershipPage() {
             </div>
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <div style={soft("#FFFFFF")}>
-              <div style={label()}>Transfer or release</div>
-              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Owner repair</div>
-              <div style={{ marginTop: 8, ...helper() }}>
-                Use when the real owner is ready and proof has been checked. This can release a steward setup to active.
-              </div>
-            </div>
-            <div style={soft("#FFFFFF")}>
-              <div style={label()}>Prepare first</div>
-              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Steward setup</div>
-              <div style={{ marginTop: 8, ...helper() }}>
-                Use when GSN prepares an organisation shell from a brief before the representative accepts ownership.
-              </div>
-            </div>
-            <div style={soft("#FFFFFF")}>
-              <div style={label()}>Test data used</div>
-              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Pilot cleanup</div>
-              <div style={{ marginTop: 8, ...helper() }}>
-                Use when public example details, shops, products, or spotlights should be cleaned while history stays preserved.
-              </div>
-            </div>
-            <div style={soft("#FFFFFF")}>
-              <div style={label()}>Organisation leaving</div>
-              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Lifecycle close</div>
-              <div style={{ marginTop: 8, ...helper() }}>
-                Use when the community or domain should stop normal operation. This keeps the name and audit trail reserved.
-              </div>
-            </div>
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: 10 }}>
+            <StableButton
+              type="button"
+              kind="secondary"
+              debugId="admin-community-ownership.lane-owner"
+              aria-pressed={activeLane === "owner"}
+              onClick={() => setActiveLane("owner")}
+              style={{ ...soft(activeLane === "owner" ? "#0B1F33" : "#FFFFFF"), color: activeLane === "owner" ? "#FFFFFF" : "#0B1F33", boxShadow: "none", justifyContent: "flex-start", textAlign: "left" }}
+            >
+              Owner repair
+            </StableButton>
+            <StableButton
+              type="button"
+              kind="secondary"
+              debugId="admin-community-ownership.lane-steward"
+              aria-pressed={activeLane === "steward"}
+              onClick={() => setActiveLane("steward")}
+              style={{ ...soft(activeLane === "steward" ? "#0B1F33" : "#FFFFFF"), color: activeLane === "steward" ? "#FFFFFF" : "#0B1F33", boxShadow: "none", justifyContent: "flex-start", textAlign: "left" }}
+            >
+              Steward setup
+            </StableButton>
+            <StableButton
+              type="button"
+              kind="secondary"
+              debugId="admin-community-ownership.lane-cleanup"
+              aria-pressed={activeLane === "cleanup"}
+              onClick={() => setActiveLane("cleanup")}
+              style={{ ...soft(activeLane === "cleanup" ? "#0B1F33" : "#FFFFFF"), color: activeLane === "cleanup" ? "#FFFFFF" : "#0B1F33", boxShadow: "none", justifyContent: "flex-start", textAlign: "left" }}
+            >
+              Pilot cleanup
+            </StableButton>
+            <StableButton
+              type="button"
+              kind="secondary"
+              debugId="admin-community-ownership.lane-lifecycle"
+              aria-pressed={activeLane === "lifecycle"}
+              onClick={() => setActiveLane("lifecycle")}
+              style={{ ...soft(activeLane === "lifecycle" ? "#0B1F33" : "#FFFFFF"), color: activeLane === "lifecycle" ? "#FFFFFF" : "#0B1F33", boxShadow: "none", justifyContent: "flex-start", textAlign: "left" }}
+            >
+              Lifecycle close
+            </StableButton>
           </div>
 
           <div style={{ marginTop: 12, ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
             Truth boundary: none of these actions is legal erasure, a silent deletion, or proof that an organisation accepted GSN. Those decisions must stay separate.
           </div>
         </section>
-        <section style={card("#F8FBFF")}>
+
+        {activeLane === "owner" ? (
+          <section data-gsn-community-ownership-scope="owner" style={soft("#F8FBFF")}>
+            <div style={label()}>Owner record</div>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              <StableButton type="button" kind={ownerScope === "community" ? "primary" : "secondary"} debugId="admin-community-ownership.scope-community" aria-pressed={ownerScope === "community"} onClick={() => setOwnerScope("community")} fullWidth>
+                Community
+              </StableButton>
+              <StableButton type="button" kind={ownerScope === "domain" ? "primary" : "secondary"} debugId="admin-community-ownership.scope-domain" aria-pressed={ownerScope === "domain"} onClick={() => setOwnerScope("domain")} fullWidth>
+                Community Domain
+              </StableButton>
+            </div>
+          </section>
+        ) : null}
+
+        {activeLane === "lifecycle" ? (
+          <section data-gsn-community-ownership-scope="lifecycle" style={soft("#F8FBFF")}>
+            <div style={label()}>Lifecycle record</div>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              <StableButton type="button" kind={lifecycleScope === "community" ? "primary" : "secondary"} debugId="admin-community-lifecycle.scope-community" aria-pressed={lifecycleScope === "community"} onClick={() => setLifecycleScope("community")} fullWidth>
+                Community
+              </StableButton>
+              <StableButton type="button" kind={lifecycleScope === "domain" ? "primary" : "secondary"} debugId="admin-community-lifecycle.scope-domain" aria-pressed={lifecycleScope === "domain"} onClick={() => setLifecycleScope("domain")} fullWidth>
+                Community Domain
+              </StableButton>
+            </div>
+          </section>
+        ) : null}
+        <section
+          data-gsn-community-ownership-work="steward"
+          style={{ ...card("#F8FBFF"), display: activeLane === "steward" ? undefined : "none" }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Steward setup</div>
@@ -936,7 +1047,10 @@ export default function AdminCommunityOwnershipPage() {
           ) : null}
         </section>
 
-        <section style={card("#F8FBFF")}>
+        <section
+          data-gsn-community-ownership-work="cleanup"
+          style={{ ...card("#F8FBFF"), display: activeLane === "cleanup" ? undefined : "none" }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Pilot data cleanup</div>
@@ -958,7 +1072,7 @@ export default function AdminCommunityOwnershipPage() {
                   setPilotCleanupPreview(null);
                   setPilotCleanupResult(null);
                 }}
-                placeholder="Pillar of Hope"
+                placeholder="Community name"
                 style={inputStyle()}
               />
             </div>
@@ -1094,7 +1208,10 @@ export default function AdminCommunityOwnershipPage() {
           ) : null}
         </section>
 
-        <section style={card("#F8FBFF")}>
+        <section
+          data-gsn-community-ownership-work="community-lifecycle"
+          style={{ ...card("#F8FBFF"), display: activeLane === "lifecycle" && lifecycleScope === "community" ? undefined : "none" }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Community lifecycle</div>
@@ -1116,7 +1233,7 @@ export default function AdminCommunityOwnershipPage() {
                   setCommunityLifecyclePreview(null);
                   setCommunityLifecycleResult(null);
                 }}
-                placeholder="Pillar of Hope"
+                placeholder="Community name"
                 style={inputStyle()}
               />
             </div>
@@ -1191,7 +1308,7 @@ export default function AdminCommunityOwnershipPage() {
                     <textarea
                       value={communityLifecycleNote}
                       onChange={(event) => setCommunityLifecycleNote(event.target.value)}
-                      placeholder="Example: Pillar of Hope was used as a pilot setup example. Pause the example shell while preserving the name, membership trail, and audit history."
+                      placeholder="Example: This record was used during pilot setup. Pause the example shell while preserving its name, membership trail, and audit history."
                       rows={4}
                       style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
                     />
@@ -1218,7 +1335,10 @@ export default function AdminCommunityOwnershipPage() {
             </div>
           ) : null}
         </section>
-        <section style={card("#F8FBFF")}>
+        <section
+          data-gsn-community-ownership-work="domain-owner"
+          style={{ ...card("#F8FBFF"), display: activeLane === "owner" && ownerScope === "domain" ? undefined : "none" }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Community Domain owner</div>
@@ -1267,7 +1387,7 @@ export default function AdminCommunityOwnershipPage() {
                   setDomainOwnerPreview(null);
                   setDomainOwnerResult(null);
                 }}
-                placeholder="GMFN-U-E485F73F or email"
+                placeholder="GSN ID, email, or phone"
                 style={inputStyle()}
               />
             </div>
@@ -1286,7 +1406,7 @@ export default function AdminCommunityOwnershipPage() {
           </div>
 
           <div style={{ marginTop: 10, ...helper() }}>
-            For Felix, use exact ID <strong>GMFN-U-E485F73F</strong> or exact email <strong>fetern@yahoo.com</strong>. Do not use lifecycle close/suspend for ownership transfer.
+            Use the representative's exact GSN ID, email, or phone. Do not use lifecycle close or suspend for an ownership transfer.
           </div>
 
           {domainOwnerPreview ? (
@@ -1316,7 +1436,7 @@ export default function AdminCommunityOwnershipPage() {
                     <textarea
                       value={domainOwnerNote}
                       onChange={(event) => setDomainOwnerNote(event.target.value)}
-                      placeholder="Example: Felix Nwobi is present with Chuma. Pillar of Hope demo domain was created under Chuma during pilot setup and is now transferred to the rightful representative."
+                      placeholder="Example: The representative was checked in person. This pilot domain is now being transferred to its rightful owner."
                       rows={4}
                       style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
                     />
@@ -1343,7 +1463,10 @@ export default function AdminCommunityOwnershipPage() {
             </div>
           ) : null}
         </section>
-        <section style={card()}>
+        <section
+          data-gsn-community-ownership-work="domain-lifecycle"
+          style={{ ...card(), display: activeLane === "lifecycle" && lifecycleScope === "domain" ? undefined : "none" }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Community Domain lifecycle</div>
@@ -1467,7 +1590,10 @@ export default function AdminCommunityOwnershipPage() {
             </div>
           ) : null}
         </section>
-        <section style={card()}>
+
+        {activeLane === "owner" && ownerScope === "community" ? (
+          <>
+        <section data-gsn-community-ownership-work="community-owner" style={card()}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Find record</div>
@@ -1484,7 +1610,7 @@ export default function AdminCommunityOwnershipPage() {
               <input
                 value={communityNameInput}
                 onChange={(event) => setCommunityNameInput(event.target.value)}
-                placeholder="Pillar of Hope"
+                placeholder="Community name"
                 style={inputStyle()}
               />
             </div>
@@ -1498,7 +1624,7 @@ export default function AdminCommunityOwnershipPage() {
                   setSelectedIntakeId(0);
                   setSelectedOwnerGmfnId("");
                 }}
-                placeholder="Felix, email, or phone number"
+                placeholder="Owner name, email, phone, or GSN ID"
                 style={inputStyle()}
               />
             </div>
@@ -1548,7 +1674,7 @@ export default function AdminCommunityOwnershipPage() {
               The owner has no GSN ID yet, but onboarding evidence is recorded.
             </div>
             <div style={{ marginTop: 10, ...helper() }}>
-              Choose the intake below, preview the repair, then record it after checking proof. GSN will create his ID first, then attach Pillar of Hope.
+              Choose the intake below, preview the repair, then record it after checking proof. GSN will create the missing ID first, then attach the selected community.
             </div>
           </section>
         ) : null}
@@ -1647,7 +1773,7 @@ export default function AdminCommunityOwnershipPage() {
                     ))}
                   </select>
                   <div style={{ marginTop: 10, ...helper() }}>
-                    Use this when Felix finished onboarding evidence but the duplicate community name stopped GSN ID creation.
+                    Use this when onboarding evidence exists but the duplicate community name stopped GSN ID creation.
                   </div>
                 </div>
               ) : null}
@@ -1687,7 +1813,7 @@ export default function AdminCommunityOwnershipPage() {
                   <textarea
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
-                    placeholder="Example: Felix confirmed as Pillar of Hope founder during pilot review. Existing test row kept as canonical community."
+                    placeholder="Example: The representative was confirmed during pilot review. Keep the existing record as the canonical community."
                     rows={4}
                     style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
                   />
@@ -1712,6 +1838,8 @@ export default function AdminCommunityOwnershipPage() {
               {iconLabel(error ? "alert" : "check", error || message)}
             </div>
           </section>
+        ) : null}
+          </>
         ) : null}
       </div>
     </div>

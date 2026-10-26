@@ -37,6 +37,12 @@ function assertContains(file, source, pattern, message, text = "Expected route g
   fail(file, source, -1, message, text);
 }
 
+function assertNotContains(file, source, pattern, message) {
+  const match = source.match(pattern);
+  if (!match) return;
+  fail(file, source, match.index ?? -1, message, match[0]);
+}
+
 const commandRouteStart = appSource.indexOf('path="command-center"');
 const legacyRouteStart = appSource.indexOf('path="trust-command-centre"');
 const commandRouteBlock =
@@ -192,6 +198,27 @@ assertContains(
   adminPageSource,
   /Case chooser[\s\S]*?Owner repair[\s\S]*?Steward setup[\s\S]*?Pilot cleanup[\s\S]*?Lifecycle close/,
   "Admin Community Ownership page must explain which existing engine to use for transfer, steward setup, cleanup, and exit cases."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /type OwnershipWorkLane = "owner" \| "steward" \| "cleanup" \| "lifecycle"[\s\S]*?data-gsn-community-ownership-lane-chooser="true"[\s\S]*?setActiveLane\("owner"\)[\s\S]*?setActiveLane\("steward"\)[\s\S]*?setActiveLane\("cleanup"\)[\s\S]*?setActiveLane\("lifecycle"\)/,
+  "Admin Community Ownership must keep four explicit guided case lanes instead of exposing every sensitive workflow together."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /data-gsn-community-ownership-scope="owner"[\s\S]*?setOwnerScope\("community"\)[\s\S]*?setOwnerScope\("domain"\)[\s\S]*?data-gsn-community-ownership-scope="lifecycle"[\s\S]*?setLifecycleScope\("community"\)[\s\S]*?setLifecycleScope\("domain"\)/,
+  "Owner repair and lifecycle review must separate ordinary-community records from Community Domain records."
+);
+
+assertNotContains(
+  adminPageFile,
+  adminPageSource,
+  /(Pillar of Hope|GMFN-U-E485F73F|fetern@yahoo\.com)/,
+  "The general Community Ownership page must not preload or expose a real pilot organisation, member ID, or email address."
 );
 
 assertContains(

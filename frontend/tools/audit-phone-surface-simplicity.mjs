@@ -14,6 +14,7 @@ const files = {
   adminTrustEvents: "src/pages/AdminTrustEventsPage.tsx",
   adminIncompleteLoans: "src/pages/AdminIncompleteLoansPage.tsx",
   adminIdentityRisk: "src/pages/AdminIdentityRiskPage.tsx",
+  adminCommunityOwnership: "src/pages/AdminCommunityOwnershipPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -77,6 +78,16 @@ assertContains(
   "adminIdentityRisk",
   /What needs review\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?not proof of fraud, wrongdoing, or duplicate identity[\s\S]*?debugId="admin-identity-risk\.guide\.summary"[\s\S]*?debugId="admin-identity-risk\.phone-review\.summary"[\s\S]*?debugId="admin-identity-risk\.reconcile\.summary"/,
   "Admin Identity Risk must keep one compact evidence summary and collapse guidance, recovery, and reconciliation controls."
+);
+assertContains(
+  "adminCommunityOwnership",
+  /data-gsn-community-ownership-summary="true"[\s\S]*?data-gsn-community-ownership-lane-chooser="true"[\s\S]*?debugId="admin-community-ownership\.lane-owner"[\s\S]*?debugId="admin-community-ownership\.lane-steward"[\s\S]*?debugId="admin-community-ownership\.lane-cleanup"[\s\S]*?debugId="admin-community-ownership\.lane-lifecycle"/,
+  "Admin Community Ownership must keep one compact decision summary followed by its four-case chooser."
+);
+assertContains(
+  "adminCommunityOwnership",
+  /data-gsn-community-ownership-work="steward"[\s\S]*?display: activeLane === "steward"[\s\S]*?data-gsn-community-ownership-work="cleanup"[\s\S]*?display: activeLane === "cleanup"[\s\S]*?data-gsn-community-ownership-work="community-lifecycle"[\s\S]*?lifecycleScope === "community"[\s\S]*?data-gsn-community-ownership-work="domain-owner"[\s\S]*?ownerScope === "domain"[\s\S]*?data-gsn-community-ownership-work="domain-lifecycle"[\s\S]*?lifecycleScope === "domain"/,
+  "Admin Community Ownership must reveal only the selected case lane and selected record scope."
 );
 
 if (findings.length > 0) {

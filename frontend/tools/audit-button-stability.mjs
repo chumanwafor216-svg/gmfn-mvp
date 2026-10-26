@@ -1941,6 +1941,12 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/AdminCommunityOwnershipPage.tsx",
+  /import \{ PrimaryButton, SecondaryButton, StableButton, StableCtaLink \}[\s\S]*?debugId="admin-community-ownership\.lane-owner"[\s\S]*?debugId="admin-community-ownership\.lane-steward"[\s\S]*?debugId="admin-community-ownership\.lane-cleanup"[\s\S]*?debugId="admin-community-ownership\.lane-lifecycle"[\s\S]*?debugId="admin-community-ownership\.scope-community"[\s\S]*?debugId="admin-community-ownership\.scope-domain"/,
+  "Admin Community Ownership must use shared stable actions for the four case lanes and owner-record scope."
+);
+
+assertContains(
   "src/components/GsnSupportContact.tsx",
   /VITE_GSN_SUPPORT_EMAIL[\s\S]*?VITE_SUPPORT_EMAIL[\s\S]*?isValidSupportEmail[\s\S]*?if \(!email\) return null;[\s\S]*?<StableCtaLink[\s\S]*?to=\{href\}[\s\S]*?Email support/,
   "GSN support contact must be configured by real environment email, hide when unset, and use the shared stable link for mailto actions."
