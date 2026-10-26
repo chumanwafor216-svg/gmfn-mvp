@@ -8,6 +8,21 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Aggregate button-stability audit alignment - 2026-10-26
+
+- Repaired the remaining broad button-stability failures after confirming that
+  Finance and Public Shop already use the shared stable controls required by
+  their focused inventories. No runtime screen, geometry, action, route,
+  contact behavior or frozen Market Wisdom surface changed in this follow-up.
+- Finance mini-tools are now checked through their stable `debugKey` identities
+  rather than visible labels, so ordinary copy changes do not alter action/test
+  identity. Public Shop Spotlight contact is checked through the current
+  `contact-advertiser` identity because the same control truthfully supports
+  WhatsApp when available and a phone-call fallback otherwise.
+- Verification passed: the aggregate button-stability audit, Public Shop and
+  Finance button inventories, Finance action audit, complete protected-button
+  freeze, 295-module production frontend build and scoped diff checks.
+
 ## Aggregate Trust audit semantic alignment - 2026-10-26
 
 - Repaired the broad Trust action audit after the repayment and TrustSlip
