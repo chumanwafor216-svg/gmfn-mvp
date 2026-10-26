@@ -3261,3 +3261,28 @@ under `docs/` or `docs/archive/`, then link that file here.
   and the complete protected-button/frozen-surface audit suite.
 - This follow-up remains local only. Nothing was pushed, promoted, sent to
   Render, or deployed.
+
+## Audit contract cleanup milestone deployment - 2026-10-26
+
+- Four audit-contract cleanup commits were promoted from
+  `codex/spotlight-rotation-continuity` to `main`, ending at application commit
+  `0bea2a0d0b857a5bf11e61bf1b727a1076790fc3`. They align Marketplace trust
+  guidance, Web Push manifest expectations, Companion notification caching,
+  Identity Integrity, and TrustSlip boundary guards with the already-approved
+  runtime behavior. No application runtime source, backend route, schema, or
+  user-facing surface changed in this milestone.
+- Verification passed before publication: Marketplace trust guidance, Web
+  Push readiness, notice-board phone notifications, PWA boot recovery, Trust
+  actions, active-feed freshness, Identity Integrity front package, Trust
+  Passport / TrustSlip boundary, startup-root boundary, and the complete
+  protected-button/frozen-surface suite.
+- GitHub Actions `Trigger Render Deploy` run `40384861953` checked out the exact
+  application commit, accepted the frontend deploy hook, and monitored Render
+  deploy `dep-dbfqcvnavr4c73fl5c10` to `live`. The workflow then confirmed the
+  deployed asset marker at `https://gmfn-frontend.onrender.com`.
+- An independent no-cache request to `/cover?deploy_check=0bea2a0d` returned
+  HTTP 200 and the GSN HTML title. The workflow correctly reported
+  `Backend deploy needed: false`; `gmfn-api` was not redeployed.
+- This handoff evidence is published separately with `[skip render]` so
+  recording the completed deployment does not trigger another pilot-facing
+  restart.
