@@ -1584,9 +1584,13 @@ export default function AdminGsnHouseCampaignPage() {
 
               {operations.current.can_stop ? (
                 <details style={{ marginTop: 14, ...institutionalInnerCard("#FFF7F7"), borderColor: "rgba(153,27,27,0.18)" }}>
-                  <summary style={{ cursor: "pointer", color: "#991B1B", fontWeight: 900 }}>
+                  <StableDisclosureSummary
+                    debugId="admin-gsn-campaign.emergency-stop.summary"
+                    stableHeight={44}
+                    style={{ color: "#991B1B", fontWeight: 900 }}
+                  >
                     Emergency campaign stop
-                  </summary>
+                  </StableDisclosureSummary>
                   <p style={{ margin: "12px 0 0", color: "#7F1D1D", fontSize: 14, lineHeight: 1.6 }}>
                     This permanently ends delivery and invalidates pending presentation leases. It does not erase the campaign or its audit history.
                   </p>
@@ -1636,9 +1640,13 @@ export default function AdminGsnHouseCampaignPage() {
 
           {operations && operations.active.length > 1 ? (
             <details style={{ marginTop: 14, ...softCard("#F5FAFF") }}>
-              <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 900 }}>
+              <StableDisclosureSummary
+                debugId="admin-gsn-campaign.other-active.summary"
+                stableHeight={44}
+                style={{ color: "#0B1F33", fontWeight: 900 }}
+              >
                 Other active promotions ({operations.active.length - 1})
-              </summary>
+              </StableDisclosureSummary>
               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                 {operations.active.slice(1).map((item) => (
                   <div key={item.campaign_id} style={institutionalInnerCard("#FFFFFF")}>
@@ -1662,15 +1670,23 @@ export default function AdminGsnHouseCampaignPage() {
           ) : null}
 
           <details style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
-            <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 900 }}>
+            <StableDisclosureSummary
+              debugId="admin-gsn-campaign.history.summary"
+              stableHeight={44}
+              style={{ color: "#0B1F33", fontWeight: 900 }}
+            >
               Campaign history ({operations?.history.length || 0})
-            </summary>
+            </StableDisclosureSummary>
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {operations?.history.length ? operations.history.map((item) => (
                 <details key={item.campaign_id} style={institutionalInnerCard("#F8FAFC")}>
-                  <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 850 }}>
+                  <StableDisclosureSummary
+                    debugId={`admin-gsn-campaign.history.${item.campaign_id}.summary`}
+                    stableHeight={44}
+                    style={{ color: "#0B1F33", fontWeight: 850 }}
+                  >
                     Campaign #{item.campaign_id} · {stateLabel(item.state)} · {dateTimeLabel(item.activated_at)}
-                  </summary>
+                  </StableDisclosureSummary>
                   <div style={{ marginTop: 10, display: "grid", gap: 7, ...helper() }}>
                     <div>{item.content.message}</div>
                     {item.content.advertiser_contact_phone ? <div><strong>Advertiser contact:</strong> {item.content.advertiser_contact_phone}</div> : null}
@@ -1765,9 +1781,13 @@ export default function AdminGsnHouseCampaignPage() {
               </div>
               {review.media.map((item, index) => (
                 <details key={item.key} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.14)" }}>
-                  <summary style={{ cursor: "pointer", color: "#FFFFFF", fontWeight: 850 }}>
+                  <StableDisclosureSummary
+                    debugId={`admin-gsn-campaign.review-media.${item.key}.summary`}
+                    stableHeight={44}
+                    style={{ color: "#FFFFFF", fontWeight: 850 }}
+                  >
                     {index + 1}. {item.fileName} · {item.mediaKind === "video" ? "Verified video" : "Prepared picture"}
-                  </summary>
+                  </StableDisclosureSummary>
                   {item.mediaKind === "image" ? (
                     <img src={item.mediaUrl} alt={`Official GSN promotion ${index + 1}`} style={{ marginTop: 10, width: "100%", maxHeight: 390, objectFit: "cover", borderRadius: 16 }} />
                   ) : (
@@ -1881,9 +1901,13 @@ export default function AdminGsnHouseCampaignPage() {
         ) : null}
 
         <details style={{ ...card(), order: 7 }}>
-          <summary style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 900 }}>
+          <StableDisclosureSummary
+            debugId="admin-gsn-campaign.governance.summary"
+            stableHeight={44}
+            style={{ color: "#0B1F33", fontWeight: 900 }}
+          >
             Governance and delivery boundary
-          </summary>
+          </StableDisclosureSummary>
           <div style={{ marginTop: 13, ...helper(), display: "grid", gap: 8 }}>
             <div>The campaign expires at the admin-selected future time. Twenty-four hours is the starting default, not a maximum.</div>
             <div>The expiry records the approved serving boundary. It does not by itself prove payment, payer authority, or settlement.</div>

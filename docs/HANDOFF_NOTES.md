@@ -8,6 +8,30 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Admin campaign disclosure stability and language-audit alignment - 2026-10-26
+
+- Corrected a real shared-action gap on the platform-admin-only
+  `/app/command-center/gsn-campaigns` screen. Emergency stop, other active
+  promotions, campaign history, individual history rows, review media and the
+  governance boundary now use `StableDisclosureSummary` with unique action
+  identities and fixed 44px minimum geometry instead of raw `<summary>`
+  controls. Campaign data, permissions, publication, payment, stop and
+  destination behavior did not change.
+- Corrected two stale visible-language audit expectations left behind when the
+  Trust Timeline PDF was moved into its current institutional layout. The audit
+  now protects the visible `GSN Trust Timeline` identity and the plain
+  `Community consistency signal` label instead of requiring the removed jargon
+  `GSN trust infrastructure` and `Cross-Community Integrity` in the old service
+  file. PDF generation and output did not change in this follow-up.
+- Verification passed: aggregate action-surface and GSN visible-language
+  audits, Admin GSN campaign contract, global action-ID audit, complete
+  protected-button freeze, the 295-module production frontend build and scoped
+  diff checks. Surface ownership and phone-simplicity audits also passed before
+  the correction.
+- Deployment is intentionally deferred under the owner's milestone release
+  rule. This local cleanup must not be pushed to `main` or sent to Render until
+  the owner explicitly approves the collected milestone.
+
 ## Aggregate link-contract audit alignment - 2026-10-26
 
 - Repaired the three remaining broad link-contract failures after tracing them
