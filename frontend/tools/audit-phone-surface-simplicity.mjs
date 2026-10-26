@@ -18,6 +18,7 @@ const files = {
   revenueAllocation: "src/pages/RevenueAllocationPage.tsx",
   exposureAdmin: "src/pages/ExposureAdminPage.tsx",
   trustAnalytics: "src/pages/TrustAnalyticsPage.tsx",
+  adminTrustGraph: "src/pages/AdminTrustGraphPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -106,6 +107,11 @@ assertContains(
   "trustAnalytics",
   /data-gsn-trust-analytics-summary="true"[\s\S]*?What does the record show\?[\s\S]*?Community[\s\S]*?Recorded events[\s\S]*?Built or protected[\s\S]*?Weakened or repair[\s\S]*?data-gsn-trust-analytics-priority="true"[\s\S]*?debugId="trust-analytics\.priority-review"[\s\S]*?Review recent timeline[\s\S]*?Read the guide/,
   "Trust Analytics must keep one compact record summary and one state-aware review action before closed mix, timeline, and guidance details."
+);
+assertContains(
+  "adminTrustGraph",
+  /data-gsn-trust-graph-summary="true"[\s\S]*?What does the relationship record show\?[\s\S]*?Community[\s\S]*?Graph feed[\s\S]*?Evidence signals[\s\S]*?Watch or flagged[\s\S]*?data-gsn-trust-graph-priority="true"[\s\S]*?debugId="admin-trust-graph\.review-priority"[\s\S]*?Review evidence signals[\s\S]*?Read structure limits/,
+  "Admin Trust Graph must keep one honest relationship-evidence summary and one state-aware action before closed structure, signal, and next-page details."
 );
 
 if (findings.length > 0) {

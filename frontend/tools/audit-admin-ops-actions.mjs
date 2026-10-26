@@ -159,25 +159,37 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
-  /debugId="admin-trust-graph\.toggle-overview"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
-  "Admin Trust Graph toggles and route actions must remain traceable."
+  /data-gsn-trust-graph-summary="true"[\s\S]*?debugId="admin-trust-graph\.review-priority"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.toggle-signals"[\s\S]*?debugId="admin-trust-graph\.toggle-routes"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
+  "Admin Trust Graph priority, disclosure, and next-page actions must remain traceable."
 );
 assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
-  /const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn\.trustGraph\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?structure: true,[\s\S]*?signals: true,[\s\S]*?routes: true,/,
-  "Admin Trust Graph must default overview, structure, signal, and route sections closed while keeping the structural reading visible."
+  /const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn\.trustGraph\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?structure: true,[\s\S]*?signals: true,[\s\S]*?routes: true,[\s\S]*?function openPrioritySection\(\)[\s\S]*?graphSignals\.length > 0 \? "signals" : "structure"/,
+  "Admin Trust Graph must default structure, signal, and next-page sections closed while the priority action reveals only the relevant existing section."
 );
 
 assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
-  /sectionLabelWithIcon\("navigation", "Next pages"\)[\s\S]*?Move from structural reading into the next admin page you need\./,
-  "Admin Trust Graph must describe follow-on navigation as next pages, not routes."
+  /Community graph data is not connected here yet\.[\s\S]*?Zero nodes or relationships must not be read as proof that none exist[\s\S]*?Graph feed"[\s\S]*?"Not connected"/,
+  "Admin Trust Graph must expose the unconnected community graph boundary without presenting zero rows as a clean record."
 );
 
 assertNotContains(
   "src/pages/AdminTrustGraphPage.tsx",
-  /Next routes/,
-  "Admin Trust Graph visible copy must not expose route wording."
+  /<ExplainToggle|admin-trust-graph\.toggle-overview|Trust structure reading for \{operatorName\}|Role: \{roleLabel\}|callFirstAvailable|getAdminTrustGraph/,
+  "Admin Trust Graph must not restore explanation clutter, duplicate overview, operator identity, or the unsafe community-ID-as-user-ID graph lookup."
+);
+
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /AdminTrustGraphPage \(`\/app\/command-center\/trust-graph`;/,
+  "Admin Trust Graph must remain explicitly named in the screen registry."
+);
+
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## AdminTrustGraphPage[\s\S]*?active backend `\/admin\/trust-graph\/\{user_id\}` contract is user-rooted,[\s\S]*?Never pass the selected community ID as `user_id`/,
+  "Admin Trust Graph must keep its user-graph versus community-graph safety boundary in the screen specification."
 );
 
 assertContains(

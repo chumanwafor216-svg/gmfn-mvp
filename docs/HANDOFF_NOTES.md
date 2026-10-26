@@ -8,6 +8,47 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Trust Graph safety and first-surface cleanup - 2026-10-26
+
+- Simplified the platform-admin-only `/app/command-center/trust-graph`
+  first surface and removed an unsafe frontend integration attempt without
+  changing backend graph logic, schemas, permissions, or Trust Event records.
+- Confirmed contract defect: active backend
+  `GET /admin/trust-graph/{user_id}` builds one named user's relationship
+  graph. The page was passing the selected community ID through candidate API
+  signatures as though it were `user_id`, which could retrieve an unrelated
+  person's graph when numeric IDs overlapped. The frontend normalizer also
+  expected a different community-shaped edge/signal payload.
+- The page no longer calls the user-specific graph endpoint from community
+  context. Until a separately approved community graph endpoint and payload
+  contract exist, it honestly shows `Graph feed: Not connected` and uses only
+  the existing bounded selected-community Trust Events fallback.
+- Replaced two explanation blocks, the operator-name/role greeting, and a
+  duplicate five-tile overview with one
+  `What does the relationship record show?` summary: Community, Graph feed,
+  Evidence signals, and Watch or flagged.
+- Added one state-aware read-only action. `Review evidence signals` opens the
+  fallback signal list when events exist; `Read structure limits` opens the
+  honest missing-data explanation when the fallback is empty. It performs no
+  write, approval, recomputation, reconciliation, or Trust Event mutation.
+- Structure limits, evidence signals, and next-page destinations start closed.
+  The visible boundary says relationship evidence is not proof of wrongdoing,
+  a complete network map, a final identity decision, or authority to release
+  money, goods, or credit. Zero graph rows are not presented as proof that no
+  relationships exist.
+- Added the missing screen registry/spec entry, source guards that forbid the
+  community-ID-as-user-ID call, and a populated/empty 390x844 browser smoke
+  that records any attempted `/admin/trust-graph/8` request and requires the
+  count to remain zero. No matching reference mockup exists.
+- Verification passed: the 295-module production build, Admin/Operations,
+  Trust, phone-surface, button-stability, admin-route, institutional-proof,
+  visible-language, global action-ID/raw-action and tap-stability audits,
+  mobile route coverage, the focused fallback/empty 390x844 browser smoke, the
+  complete protected button/frozen-surface suite, and the full mocked 390x844
+  mobile visual sweep.
+- This continuation is local only. Do not push, promote to `main`, or deploy
+  it until the owner explicitly says `deploy`.
+
 ## Command Centre Trust Analytics first-surface cleanup - 2026-10-26
 
 - Simplified the platform-admin-only

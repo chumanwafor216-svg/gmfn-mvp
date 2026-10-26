@@ -1222,8 +1222,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-trust-graph\.toggle-overview"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.toggle-signals"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
-  "Admin Trust Graph must use shared stable CTA primitives and shared CTA resolution for collapse controls and next-route tiles."
+  /import \{ PrimaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-trust-graph\.review-priority"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.toggle-signals"[\s\S]*?debugId="admin-trust-graph\.toggle-routes"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
+  "Admin Trust Graph must use shared stable CTA primitives and shared CTA resolution for priority, disclosure, and next-page controls."
 );
 
 assertNotContains(

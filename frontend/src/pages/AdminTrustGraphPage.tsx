@@ -1,19 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { StableCtaLink, SubtleButton } from "../components/StableButton";
+import { PrimaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
-  institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
-  overview: boolean;
   structure: boolean;
   signals: boolean;
   routes: boolean;
@@ -67,7 +63,7 @@ type TrustEventRow = {
   created_at?: string | null;
 };
 
-const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn.trustGraph.sections.v2";
+const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn.trustGraph.sections.v3";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -122,24 +118,10 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(20,52,83,0.20)",
-  };
-}
-
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalInnerCard(bg),
     border: "1px solid rgba(20,52,83,0.18)",
-  };
-}
-
-function statTile(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...institutionalStatTile(bg),
-    border: "1px solid rgba(20,52,83,0.16)",
   };
 }
 
@@ -315,7 +297,6 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: true,
     structure: true,
     signals: true,
     routes: true,
@@ -326,32 +307,10 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    overview: Boolean(raw?.overview ?? base.overview),
     structure: Boolean(raw?.structure ?? base.structure),
     signals: Boolean(raw?.signals ?? base.signals),
     routes: Boolean(raw?.routes ?? base.routes),
   };
-}
-
-async function callFirstAvailable<T = any>(
-  names: string[],
-  argsSets: any[][]
-): Promise<T | null> {
-  for (const name of names) {
-    const fn = (api as any)[name];
-    if (typeof fn !== "function") continue;
-
-    for (const args of argsSets) {
-      try {
-        const result = await fn(...args);
-        if (result) return result as T;
-      } catch {
-        // try next signature
-      }
-    }
-  }
-
-  return null;
 }
 
 function normalizeGraphNode(raw: any, index: number): GraphNode {
@@ -605,10 +564,13 @@ export default function AdminTrustGraphPage() {
   );
 
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
-  const [graphSnapshot, setGraphSnapshot] = useState<GraphSnapshot | null>(null);
+  // The active backend graph is user-rooted. Keep community graph data empty
+  // until a correctly scoped community endpoint and payload contract exist.
+  const [graphSnapshot] = useState<GraphSnapshot | null>(null);
   const [fallbackEvents, setFallbackEvents] = useState<TrustEventRow[]>([]);
+  const structureSectionRef = useRef<HTMLElement | null>(null);
+  const signalsSectionRef = useRef<HTMLElement | null>(null);
   const graphLoadSeqRef = useRef(0);
   const graphLoadContextRef = useRef("");
 
@@ -647,27 +609,11 @@ export default function AdminTrustGraphPage() {
     (async () => {
       setLoading(true);
       setCurrentClan(null);
-      setGraphSnapshot(null);
       setFallbackEvents([]);
 
       try {
-        const [meRes, clanRes, graphRes, eventsRes] = await Promise.all([
-          api.getMe().catch(() => null),
+        const [clanRes, eventsRes] = await Promise.all([
           api.getCurrentClan().catch(() => null),
-          callFirstAvailable(
-            [
-              "getAdminTrustGraph",
-              "getTrustGraphAdmin",
-              "getTrustGraph",
-              "getTrustGraphSnapshot",
-              "getTrustGraphSummary",
-            ],
-            [
-              [{ clan_id: selectedClanId || undefined }],
-              [selectedClanId || undefined],
-              [],
-            ]
-          ),
           api
             .listTrustEvents({
               clan_id: selectedClanId || undefined,
@@ -678,9 +624,7 @@ export default function AdminTrustGraphPage() {
 
         if (!isCurrentGraphLoad()) return;
 
-        setMe(meRes || null);
         setCurrentClan(clanRes || null);
-        setGraphSnapshot(normalizeGraphSnapshot(graphRes));
         setFallbackEvents(rowsOf<TrustEventRow>(eventsRes));
       } finally {
         if (isCurrentGraphLoad()) setLoading(false);
@@ -692,18 +636,6 @@ export default function AdminTrustGraphPage() {
     };
   }, [selectedClanId]);
 
-  const operatorName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Operator"
-    );
-  }, [me]);
-
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -714,12 +646,6 @@ export default function AdminTrustGraphPage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
-
-  const roleLabel = useMemo(() => {
-    return (
-      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
-    );
-  }, [me]);
 
   const graphSignals = useMemo(() => {
     if (graphSnapshot?.signals?.length) return graphSnapshot.signals;
@@ -773,7 +699,11 @@ export default function AdminTrustGraphPage() {
     let structureDetail =
       "No strong central concentration signal is dominating the visible evidence graph right now.";
 
-    if (centralityPressure >= 8 || flaggedSignals >= 4) {
+    if (!graphSnapshot) {
+      structureTitle = "Community graph data is not connected here yet.";
+      structureDetail =
+        "The visible signals come from the selected community's Trust Events only. Zero nodes or relationships must not be read as proof that none exist.";
+    } else if (centralityPressure >= 8 || flaggedSignals >= 4) {
       structureTitle = "The visible evidence structure shows concentration pressure.";
       structureDetail =
         "A central node or a cluster of flagged relationship evidence signals is standing out in the current graph reading.";
@@ -799,6 +729,15 @@ export default function AdminTrustGraphPage() {
       ...prev,
       [key]: !prev[key],
     }));
+  }
+
+  function openPrioritySection() {
+    const targetKey: keyof CollapseState = graphSignals.length > 0 ? "signals" : "structure";
+    setCollapsed((prev) => ({ ...prev, [targetKey]: false }));
+    window.setTimeout(() => {
+      const target = targetKey === "signals" ? signalsSectionRef.current : structureSectionRef.current;
+      target?.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 0);
   }
 
   if (loading) {
@@ -842,102 +781,80 @@ export default function AdminTrustGraphPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Trust Graph"
+        sectionLabel="Command Centre"
         title="Trust Graph"
-        subtitle="Read connectedness, concentration, and relationship evidence shape."
+        subtitle="Review the selected community's available relationship evidence without treating missing graph data as a clean record."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen reads connectedness, clusters, centrality, and flagged relationship evidence signals."
-        why="It helps you see when an evidence concern is structural, not only an event or exposure issue."
-        next="Start with the current graph reading, then check overview, structure, and signals."
-        tone="light"
-      />
-
       <section
+        data-gsn-trust-graph-summary="true"
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
+        <div>{sectionLabelWithIcon("community", "What does the relationship record show?", true)}</div>
         <div
           style={{
+            marginTop: 10,
+            color: "#F8FBFF",
+            fontWeight: 900,
+            fontSize: isCompact ? 27 : 34,
+            lineHeight: 1.12,
+          }}
+        >
+          {summary.structureTitle}
+        </div>
+        <div style={{ marginTop: 10, color: "#D8E7F6", fontSize: 14.5, lineHeight: 1.65 }}>
+          {summary.structureDetail}
+        </div>
+        <div
+          style={{
+            marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 10,
           }}
         >
-          <div>
-            <div>{sectionLabelWithIcon("community", "Structural overview", true)}</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
-              }}
-            >
-              Trust structure reading for {operatorName}
+          {[
+            ["Community", communityLabel],
+            ["Graph feed", graphSnapshot ? "Connected" : "Not connected"],
+            ["Evidence signals", graphSignals.length],
+            ["Watch or flagged", summary.watchSignals + summary.flaggedSignals],
+          ].map(([label, value]) => (
+            <div key={String(label)} style={{ ...innerCard("rgba(255,255,255,0.96)"), minWidth: 0 }}>
+              <div style={sectionLabel()}>{label}</div>
+              <div style={{ marginTop: 7, color: "#0B1F33", fontWeight: 900, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                {value}
+              </div>
             </div>
-
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read network shape, centrality, clusters, and structural risk signals.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {graphIconBadge("user", <>Role: {roleLabel}</>, true)}
-              {graphIconBadge("community", <>Community: {communityLabel}</>)}
-              {graphIconBadge(
-                "document",
-                <>Source: {graphSnapshot?.sourceLabel || "Fallback trust-event read"}</>
-              )}
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            <div>{sectionLabelWithIcon("shield", "Current graph reading")}</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
-              }}
-            >
-              {summary.structureTitle}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText() }}>
-              {summary.structureDetail}
-            </div>
-          </div>
+          ))}
         </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This turns the network snapshot into one structural reading."
-          why="It gives you the direction before you dig into nodes, edges, and clusters."
-          next="Use the overview and structure sections to confirm the reason."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
+        <div style={{ marginTop: 14, color: "#D8E7F6", fontSize: 13.5, lineHeight: 1.6 }}>
+          Relationship evidence is a review prompt. It is not proof of wrongdoing, a complete network map, a final identity decision, or authority to release money, goods, or credit.
+        </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-gsn-trust-graph-priority="true" style={pageCard("#FFFFFF")}>
+        <div>{sectionLabelWithIcon(graphSignals.length > 0 ? "alert" : "document", "Next review")}</div>
+        <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 900, lineHeight: 1.3 }}>
+          {graphSignals.length > 0 ? "Review the available evidence signals." : "Read the current structure limits."}
+        </div>
+        <div style={{ marginTop: 8, ...helperText() }}>
+          {graphSignals.length > 0 ? "These signals come from the selected community's Trust Events and may indicate where evidence needs closer review." : "No graph or fallback signal is visible. Missing data must not be read as proof that no relationships exist."}
+        </div>
+        <PrimaryButton
+          onClick={openPrioritySection}
+          stableHeight={56}
+          debugId="admin-trust-graph.review-priority"
+          style={{ width: "100%", marginTop: 14 }}
+        >
+          {labelWithIcon(graphSignals.length > 0 ? "alert" : "document", graphSignals.length > 0 ? "Review evidence signals" : "Read structure limits")}
+        </PrimaryButton>
+      </section>
+
+      <section ref={structureSectionRef} data-gsn-trust-graph-structure="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -948,120 +865,11 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("chart", "Graph overview")}</div>
+            <div>{sectionLabelWithIcon("community", graphSnapshot ? "Structure reading" : "Structure limits")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Visible structure size and flagged signal count.
-            </div>
-          </div>
-
-          <SubtleButton
-            onClick={() => toggleSection("overview")}
-            stableHeight={52}
-            debugId="admin-trust-graph.toggle-overview"
-            style={adminTrustGraphCollapseStyle()}
-          >
-            {labelWithIcon(collapsed.overview ? "chevronDown" : "chevronUp", collapsed.overview ? "Open" : "Hide")}
-          </SubtleButton>
-        </div>
-
-        {!collapsed.overview ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(5, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("user", "Nodes")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.nodeCount}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("navigation", "Edges")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.edgeCount}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              <div>{sectionLabelWithIcon("community", "Clusters")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.clusterCount}
-              </div>
-            </div>
-
-            <div style={statTile("#FFFBEF")}>
-              <div>{sectionLabelWithIcon("eye", "Watch signals")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#92400E",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.watchSignals}
-              </div>
-            </div>
-
-            <div style={statTile("#FFF5F5")}>
-              <div>{sectionLabelWithIcon("alert", "Flagged signals")}</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#991B1B",
-                  fontSize: 24,
-                  fontWeight: 900,
-                }}
-              >
-                {summary.flaggedSignals}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div>{sectionLabelWithIcon("community", "Structure reading")}</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Which nodes look most central, and which relationships are worth watching.
+              {graphSnapshot
+                ? "Which nodes look most central, and which relationships are worth watching."
+                : "No community graph feed is connected. These details stay empty instead of borrowing a person's graph."}
             </div>
           </div>
 
@@ -1195,7 +1003,7 @@ export default function AdminTrustGraphPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={signalsSectionRef} data-gsn-trust-graph-signals="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1206,9 +1014,9 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("alert", "Graph signals")}</div>
+            <div>{sectionLabelWithIcon("alert", "Available evidence signals")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Structural signals from the graph or fallback trust-event feed.
+              Selected-community Trust Event signals until a correctly scoped community graph feed exists.
             </div>
           </div>
 
@@ -1281,7 +1089,7 @@ export default function AdminTrustGraphPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-gsn-trust-graph-next-pages="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",

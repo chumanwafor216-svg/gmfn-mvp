@@ -268,6 +268,16 @@ assertNotContains(
   /Relationship signal|relationship-related trust signal|visible trust structure/i,
   "Admin Trust Graph page must not label graph evidence as trust signals or visible trust structure."
 );
+assertContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /Community graph data is not connected here yet\.[\s\S]*?not be read as proof that none exist[\s\S]*?Relationship evidence is a review prompt\.[\s\S]*?not proof of wrongdoing,/,
+  "Admin Trust Graph must disclose missing community graph data and keep relationship evidence bounded."
+);
+assertNotContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /callFirstAvailable|getAdminTrustGraph|admin-trust-graph\.toggle-overview|<ExplainToggle/,
+  "Admin Trust Graph must not query a user graph with community context or restore its old duplicate explanation surface."
+);
 
 assertContains(
   "src/pages/TrustAnalyticsPage.tsx",

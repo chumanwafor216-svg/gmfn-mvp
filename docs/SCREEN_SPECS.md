@@ -1972,6 +1972,54 @@ Primary action:
 Open signal record
 ```
 
+## AdminTrustGraphPage
+
+Route: `/app/command-center/trust-graph`.
+
+Purpose:
+Give a platform admin an honest selected-community relationship-evidence
+reading while the product does not yet have a correctly scoped community graph
+endpoint.
+
+Must show:
+- Command Centre navigation
+- one compact `What does the relationship record show?` summary
+- selected community, graph-feed status, available evidence-signal count, and
+  watch/flagged count
+- `Graph feed: Not connected` while no community graph contract exists
+- one visible next action: `Review evidence signals` when selected-community
+  Trust Events produce fallback signals, or `Read structure limits` when no
+  fallback signal is visible
+- a plain boundary that relationship evidence is not proof of wrongdoing, a
+  complete network map, a final identity decision, or release authority
+- structure limitations inside a closed disclosure
+- the existing bounded selected-community Trust Event fallback signals inside
+  a closed disclosure
+- Trust Analytics, System Operations, Exposure, and Command Centre inside a
+  closed next-pages disclosure
+
+Rules:
+- Keep the route platform-admin-only.
+- The active backend `/admin/trust-graph/{user_id}` contract is user-rooted,
+  not community-rooted. Never pass the selected community ID as `user_id`.
+- Until a separately approved community graph endpoint and payload contract
+  exist, do not claim node, relationship, cluster, or centrality totals for the
+  selected community.
+- Preserve the selected-community Trust Events request, 60-record limit,
+  fallback signal classification, ordering, and ten-row visible bound.
+- The visible next action may reveal and scroll to the existing signal or
+  structure-limit disclosure. It must not write, approve, recompute,
+  reconcile, or change a Trust Event.
+- Do not expose the signed-in operator name or role as graph facts.
+- Do not restore repeated explanation panels, a duplicate five-tile overview,
+  or treat zero graph rows as proof that no relationships exist.
+
+Primary action:
+
+```text
+Review evidence signals
+```
+
 ## TrustAnalyticsPage
 
 Route: `/app/command-center/trust-analytics`.
