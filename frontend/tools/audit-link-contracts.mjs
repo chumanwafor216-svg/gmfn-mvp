@@ -339,7 +339,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop[\s\S]*?Spotlight management live in Shop Control/s,
+  /function openCommunityShopControl\([\s\S]*?navigateWithOrigin\(navigate, routes\.shop, location\);[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?Manage shop/s,
   "Community Home must hand shop and Spotlight management to Shop Control through the compact Manage shop row."
 );
 
@@ -525,7 +525,7 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\.\/lib\/publishRecovery";[\s\S]*?function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*?target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?if \(publishTarget\) return publishTarget;[\s\S]*?const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\.\/lib\/publishRecovery";[\s\S]*?function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*?target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*?const publishRecoveryReturnTarget = useMemo\([\s\S]*?peekPublishRecoveryTarget\(\)[\s\S]*?if \(publishRecoveryReturnTarget\) return publishRecoveryReturnTarget;[\s\S]*?const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
   "Login must accept only safe /app publish return targets and consume publish recovery after successful sign-in."
 );
 
@@ -1018,8 +1018,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?Paid Repost[\s\S]*?Target community ID[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
-  "Marketplace must own the in-network Paid Repost composer with one public block and one target community ID."
+  /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?id="marketplace-paid-network-placement"[\s\S]*?"marketplace\.network-repost\.public-block-select"[\s\S]*?"marketplace\.network-repost\.target-community-input"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
+  "Marketplace must own the in-network paid promotion composer with one public shop item and one target community ID."
 );
 
 assertContains(

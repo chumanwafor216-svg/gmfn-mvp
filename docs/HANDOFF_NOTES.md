@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Aggregate link-contract audit alignment - 2026-10-26
+
+- Repaired the three remaining broad link-contract failures after tracing them
+  to stale source-pattern expectations rather than broken screens. No runtime
+  page, route, user-visible wording, authentication behavior, Marketplace
+  payment behavior or frozen Market Wisdom surface changed in this follow-up.
+- Community Home is checked through the compact `Manage shop` action and its
+  actual Shop Control navigation rather than an obsolete helper sentence.
+  Login is checked through its current publish-recovery variable while still
+  requiring `/app`-only query return targets and stored-target consumption
+  after sign-in. Marketplace promotion is checked through the stable public
+  item, target-community and placement control identities instead of the old
+  `Paid Repost` and `Target community ID` labels.
+- Verification passed: the aggregate link-contract audit, focused entry/auth,
+  Community Home and Marketplace action audits, the complete protected-button
+  freeze, the 295-module production frontend build and scoped diff checks.
+- Deployment is intentionally deferred under the owner's milestone release
+  rule. This local cleanup must not be pushed to `main` or sent to Render until
+  the owner explicitly approves the collected milestone.
+
 ## Aggregate button-stability audit alignment - 2026-10-26
 
 - Repaired the remaining broad button-stability failures after confirming that
