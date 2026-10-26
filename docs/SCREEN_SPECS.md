@@ -1867,6 +1867,38 @@ Primary action:
 Ask for help
 ```
 
+## AdminTrustEventsPage
+
+Route: `/app/command-center/trust-events`.
+
+Purpose:
+Give admins a compact review queue for recent Trust Event evidence before they open deeper analytics, graph, or identity-risk tools.
+
+Must show:
+- Command Centre navigation
+- one compact `What needs review?` summary
+- total event count, last-24-hours count, and negative-delta count
+- plain warning that a negative delta is a review signal, not proof of wrongdoing
+- event type, recorded time, delta, event reference, actor and subject references
+- short recorded reason or note
+- copyable bounded event snapshot
+- source-event details available only after the admin opens them
+- deeper analysis destinations inside one compact disclosure
+
+Rules:
+- Keep the route admin-only and preserve the append-only Trust Event record boundary.
+- On phone, do not repeat the page purpose in a second explanation block or expose all deeper-analysis links before the event list.
+- A negative delta must not be presented as guilt, fraud, misconduct, or a final identity decision.
+- Copying an event snapshot must retain the existing privacy and authority limitations.
+- Raw source details stay closed by default and must use the existing stable per-event action.
+- Analytics, Trust Graph, Identity Risk, and Command Centre destinations remain available without becoming competing first-surface actions.
+
+Primary action:
+
+```text
+Open source details
+```
+
 ## AdminSupportPage
 
 Route: `/app/command-center/support`.

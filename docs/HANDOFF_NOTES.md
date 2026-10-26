@@ -8,6 +8,28 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Trust Events first-surface cleanup - 2026-10-26
+
+- Simplified the admin-only `/app/command-center/trust-events` first surface
+  without changing event loading, append-only evidence, routes, permissions,
+  snapshot copying or per-event source details.
+- Replaced the repeated explanation, five exposed counters, two guidance cards
+  and four exposed cross-navigation actions with one `What needs review?`
+  summary. It shows total, last-24-hours and negative-delta counts, and states
+  that a negative delta is a review signal rather than proof of wrongdoing.
+- Analytics, Trust Graph, Identity Risk and Command Centre destinations remain
+  available inside one stable `Open deeper analysis` disclosure. Event source
+  details remain closed per event until the admin opens them.
+- Registered and specified the existing admin route, and added focused audit
+  protection against restoring the repeated preamble.
+- Verification passed: Admin/Operations actions, admin route guards, Trust
+  actions, institutional evidence surfaces, visible GSN language, phone-surface
+  simplicity, button stability, global action IDs and raw actions, mobile tap
+  stability, the complete protected-button freeze, the 295-module production
+  frontend build, and the full mocked 390x844 mobile visual sweep.
+- Deployment remains intentionally deferred under the owner's milestone rule;
+  do not push or deploy this cleanup without explicit approval.
+
 ## Command Centre GSN campaign first-surface cleanup - 2026-10-26
 
 - Simplified the platform-admin-only `/app/command-center/gsn-campaigns`

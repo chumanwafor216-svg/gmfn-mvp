@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { SecondaryButton, StableCtaLink, StableDisclosureSummary, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { adminRecentTrustEvents, getSelectedClanId, safeCopy } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -54,16 +53,6 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     background: bg,
     border: "1px solid rgba(108,138,184,0.16)",
     boxShadow: "0 14px 34px rgba(15,23,42,0.04)",
-  };
-}
-
-function statTile(): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(108,138,184,0.16)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
-    padding: 16,
-    boxShadow: "0 14px 28px rgba(15,23,42,0.04)",
   };
 }
 
@@ -331,20 +320,16 @@ export default function AdminTrustEventsPage() {
   const summary = useMemo(() => {
     const recentCutoff = Date.now() - 24 * 60 * 60 * 1000;
     let recent = 0;
-    let positive = 0;
     let negative = 0;
-    let noted = 0;
 
     rows.forEach((row) => {
       const createdAt = new Date(safeStr(row?.created_at)).getTime();
       if (Number.isFinite(createdAt) && createdAt >= recentCutoff) recent += 1;
       const num = toNum(row?.delta);
-      if (num !== null && num > 0) positive += 1;
       if (num !== null && num < 0) negative += 1;
-      if (safeStr(row?.reason || row?.note)) noted += 1;
     });
 
-    return { total: rows.length, recent, positive, negative, noted };
+    return { total: rows.length, recent, negative };
   }, [rows]);
 
   function toggleRow(rowKey: string) {
@@ -363,51 +348,50 @@ export default function AdminTrustEventsPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust evidence before opening deeper admin pages." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen shows recent trust-event records for evidence review."
-        why="It helps you inspect the event trail before deeper analysis or intervention."
-        next="Start with the overview, then open source details only when exact evidence is needed."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
+      <PageTopNav sectionLabel="Command Centre" title="Trust Events" subtitle="Review recent evidence that needs admin attention." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Centre" />
 
       <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE", minWidth: 0 }}>
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Trust event log</div>
-          <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-            Read the event trail first. Move deeper only when the current record shows pressure.
+          <div>{sectionLabelWithIcon("search", "Evidence review")}</div>
+          <h1 style={{ margin: "10px 0 0", fontSize: "clamp(26px, 6vw, 36px)", lineHeight: 1.1, fontWeight: 1000, color: "#0B1F33" }}>
+            What needs review?
+          </h1>
+          <p style={{ margin: "9px 0 0", ...helperText(), color: "#0B1F33" }}>
+            Start with the newest negative event or any event whose explanation needs checking.
+          </p>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {[
+              ["All events", summary.total],
+              ["Last 24 hours", summary.recent],
+              ["Negative", summary.negative],
+            ].map(([label, value]) => (
+              <div key={label} style={{ ...softCard("#FFFFFF"), padding: "10px 8px", textAlign: "center" }}>
+                <div style={{ color: "#64778B", fontSize: 10.5, fontWeight: 900, lineHeight: 1.25 }}>{label}</div>
+                <div style={{ marginTop: 4, color: "#0B1F33", fontSize: 21, fontWeight: 1000 }}>{value}</div>
+              </div>
+            ))}
           </div>
 
-          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {eventIconBadge("document", <>Tracked events: {summary.total}</>, true)}
-            {eventIconBadge("calendar", <>Last 24 hours: {summary.recent}</>)}
-            {eventIconBadge("check", <>Positive deltas: {summary.positive}</>)}
-            {eventIconBadge("alert", <>Negative deltas: {summary.negative}</>)}
-            {eventIconBadge("pen", <>Events with notes: {summary.noted}</>)}
-          </div>
+          <p style={{ margin: "9px 0 0", color: "#60758A", fontSize: 12.5, lineHeight: 1.55 }}>
+            A negative delta is a review signal, not proof of wrongdoing. Read the event record before deciding what it means.
+          </p>
 
           {notice ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#ECFDF3", border: "1px solid #A7F3D0", color: "#166534", fontWeight: 900 }}>{notice}</div> : null}
           {err ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", fontWeight: 900 }}>{err}</div> : null}
 
-          <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("search", "What to read first")}</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Start with the newest negative or heavily noted event.
-              </div>
-            </div>
-            <div style={statTile()}>
-              <div>{sectionLabelWithIcon("navigation", "When to leave this page")}</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Use Graph for structure, Analytics for pattern, and Identity Risk for person-level integrity.
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <details style={{ marginTop: 16, ...softCard("#FFFFFF"), padding: 14 }}>
+            <StableDisclosureSummary
+              debugId="admin-trust-events.deeper-analysis.summary"
+              stableHeight={46}
+              style={{ color: "#0B1F33", fontWeight: 900 }}
+            >
+              Open deeper analysis
+            </StableDisclosureSummary>
+            <p style={{ margin: "10px 0 0", ...helperText(), fontSize: 13 }}>
+              Use Analytics for patterns, Graph for structure, or Identity Risk for person-level integrity.
+            </p>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
             <StableCtaLink
               to={routes.analytics}
               debugId="admin-trust-events.route.analytics"
@@ -438,9 +422,10 @@ export default function AdminTrustEventsPage() {
               stableHeight={52}
               style={adminTrustEventActionStyle("soft")}
             >
-              {labelWithIcon("navigation", "Back to Command Center")}
+              {labelWithIcon("navigation", "Back to Command Centre")}
             </StableCtaLink>
-          </div>
+            </div>
+          </details>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
             {rows.length === 0 && !err ? <div style={{ ...softCard(), color: "#7A8D9F" }}>{labelWithIcon("check", "No recent trust events are currently shown.")}</div> : null}

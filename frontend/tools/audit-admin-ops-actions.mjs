@@ -185,6 +185,38 @@ assertContains(
   "Admin Trust Events route actions must remain traceable."
 );
 
+assertContains(
+  "src/pages/AdminTrustEventsPage.tsx",
+  /What needs review\?[\s\S]*?All events[\s\S]*?Last 24 hours[\s\S]*?Negative[\s\S]*?not proof of wrongdoing[\s\S]*?debugId="admin-trust-events\.deeper-analysis\.summary"[\s\S]*?Open deeper analysis/,
+  "Admin Trust Events must keep one compact review summary and a closed deeper-analysis disclosure."
+);
+
+for (const pattern of [
+  /<ExplainToggle/,
+  /Positive deltas:/,
+  /Events with notes:/,
+  /What to read first/,
+  /When to leave this page/,
+]) {
+  assertNotContains(
+    "src/pages/AdminTrustEventsPage.tsx",
+    pattern,
+    "Admin Trust Events must not restore the repeated first-surface explanation or five-counter preamble."
+  );
+}
+
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /AdminTrustEventsPage \(`\/app\/command-center\/trust-events`/,
+  "Admin Trust Events must remain explicitly named in the screen registry."
+);
+
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## AdminTrustEventsPage[\s\S]*?negative delta is a review signal, not proof of wrongdoing[\s\S]*?deeper analysis destinations inside one compact disclosure/,
+  "Admin Trust Events must keep its compact evidence-review screen specification."
+);
+
 assertNotContains(
   "src/pages/AdminTrustEventsPage.tsx",
   /opening deeper admin routes/i,

@@ -1186,7 +1186,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminTrustEventsPage.tsx",
-  /import \{ SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-trust-events\.route\.analytics"[\s\S]*?debugId="admin-trust-events\.route\.graph"[\s\S]*?debugId="admin-trust-events\.route\.identity-risk"[\s\S]*?debugId=\{`admin-trust-events\.row\.\$\{rowKey\}\.copy`\}[\s\S]*?debugId=\{`admin-trust-events\.row\.\$\{rowKey\}\.toggle`\}/,
+  /import \{ SecondaryButton, StableCtaLink, StableDisclosureSummary, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-trust-events\.deeper-analysis\.summary"[\s\S]*?debugId="admin-trust-events\.route\.analytics"[\s\S]*?debugId="admin-trust-events\.route\.graph"[\s\S]*?debugId="admin-trust-events\.route\.identity-risk"[\s\S]*?debugId=\{`admin-trust-events\.row\.\$\{rowKey\}\.copy`\}[\s\S]*?debugId=\{`admin-trust-events\.row\.\$\{rowKey\}\.toggle`\}/,
   "Admin Trust Events must use shared stable CTA primitives and shared CTA resolution for command routes, row copy, and raw-event toggles."
 );
 

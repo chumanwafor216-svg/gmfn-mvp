@@ -11,6 +11,7 @@ const files = {
   loans: "src/pages/LoansPage.tsx",
   moneyIn: "src/pages/PaymentInstructionsPage.tsx",
   moneyOut: "src/pages/WithdrawalInstructionsPage.tsx",
+  adminTrustEvents: "src/pages/AdminTrustEventsPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -59,6 +60,11 @@ assertContains(
   "moneyOut",
   /<GsnSupportContact[\s\S]*?context="Money Out"[\s\S]*?compact=\{isCompact\}/,
   "Money Out must use the compact shared phone support action."
+);
+assertContains(
+  "adminTrustEvents",
+  /What needs review\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?A negative delta is a review signal, not proof of wrongdoing[\s\S]*?debugId="admin-trust-events\.deeper-analysis\.summary"[\s\S]*?Open deeper analysis/,
+  "Admin Trust Events must keep one compact review summary and collapse secondary analysis destinations."
 );
 
 if (findings.length > 0) {
