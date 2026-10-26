@@ -54,6 +54,39 @@ Primary action:
 Continue
 ```
 
+## Cover About GSN & I guide (`/guide`)
+
+Purpose:
+Explain what GSN helps people do without turning the public introduction into
+a feature catalogue.
+
+Must show:
+- one simple Back control;
+- the title `About GSN & I`;
+- the short promise `Buy, sell, grow, and build trusted records with your communities.`;
+- three compact outcome cards, in this order: `Buy and sell`, `Grow your shop`,
+  and `Keep community trust visible`;
+- one closed disclosure labelled `See everything GSN can help with`;
+- all 12 shared GSN capabilities inside that disclosure, each with a plain title
+  and one short explanation;
+- iPhone home-screen guidance when the existing device rule requires it;
+- one primary Continue action at the bottom.
+
+Must not show:
+- bottom navigation;
+- a capability carousel;
+- Previous or Next capability controls;
+- technical category or tone chips;
+- duplicate primary actions above and below the content;
+- authenticated My GSN controls.
+
+Behavior:
+- Back and Continue return through the route state supplied by the Cover flow,
+  falling back to `/cover`;
+- the full capability list is closed on first load;
+- no capability is deleted from the shared registry;
+- the signed-in My GSN guide remains separate and unchanged.
+
 ## WelcomeGuidePage
 
 Purpose:

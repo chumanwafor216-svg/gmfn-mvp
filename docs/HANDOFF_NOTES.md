@@ -3034,6 +3034,34 @@ under `docs/` or `docs/archive/`, then link that file here.
   485 ms. Disabling reconciliation and running the first Spotlight retention
   batch both still require separate owner approval.
 
+## Compact Cover About GSN & I guide - 2026-10-26
+
+- The public `/guide` destination opened by Cover's `About GSN & I` action is
+  now a compact pre-auth introduction: one Back control, a short outcome-led
+  hero, three cards (`Buy and sell`, `Grow your shop`, and
+  `Keep community trust visible`), one closed full-capability disclosure, and
+  one bottom Continue action.
+- The former featured-capability carousel, Previous/Next controls, technical
+  category/tone chips, duplicate top Continue action, and conditional Collapse
+  action were removed. The existing return-route state, stable Back/full-list/
+  Continue action identities, iPhone home-screen guidance, and all 12 shared
+  capabilities remain intact.
+- No backend, authentication, route, shared capability registry, or signed-in
+  My GSN behavior changed. The Cover button and its `/guide` route remain
+  unchanged, and the public guide still has no bottom navigation.
+- Verification passed: production frontend build, capability-mirror audit,
+  entry/auth audit, entry-flow polish audit, entry copy/response audit, GSN
+  visible-language audit, phone-surface simplicity audit, mobile visual route
+  coverage audit, protected button sub-audits, button-stability audit, global
+  action-debug-id audit, and raw-action audit.
+- A 390x844 local Chromium check confirmed three outcome cards, a closed
+  disclosure on first load, 12 cards after opening it, and no bottom nav. The
+  full protected-button umbrella audit did not finish in the Windows sandbox:
+  its three unrelated Vite visual harnesses first hit `spawn EPERM`, then the
+  escalated rerun exceeded the 120-second command limit. Their surrounding
+  contract checks passed, and the production build completed successfully.
+- This batch is local only. It has not been pushed or deployed, as instructed.
+
 ## Commerce-first public guide and shared video sound editor - 2026-10-25
 
 - The public `/guide` surface now leads with `Buy. Sell. Grow through trusted

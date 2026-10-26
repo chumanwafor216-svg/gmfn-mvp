@@ -147,8 +147,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Community Commerce[\s\S]*?Buy\. Sell\. Grow through trusted communities\.[\s\S]*?Buy and sell[\s\S]*?Promote and be discovered[\s\S]*?Organise the community[\s\S]*?PUBLIC_GSN_CAPABILITIES\.map[\s\S]*?GSN Decision Guide/,
-  "The public guide must lead with commerce and promotion while preserving the signed-in decision guide and the full capability set."
+  /PUBLIC_GSN_OUTCOMES[\s\S]*?Buy and sell[\s\S]*?Grow your shop[\s\S]*?Keep community trust visible[\s\S]*?About GSN &amp; I[\s\S]*?Buy, sell, grow, and build trusted records with your communities\.[\s\S]*?data-my-gmfn-public-capabilities="collapsed"[\s\S]*?See everything GSN can help with[\s\S]*?PUBLIC_GSN_CAPABILITIES\.map[\s\S]*?GSN Decision Guide/,
+  "The public guide must lead with three plain outcomes, keep the complete capability set behind one closed disclosure, and preserve the signed-in decision guide."
 );
 
 assertContains(
@@ -228,19 +228,34 @@ for (const value of [
 }
 
 for (const value of [
-  "publicCapabilityId",
-  "publicSelectedCapability",
-  "showAllPublicCapabilities",
-  'data-my-gmfn-public-selected-capability="true"',
-  "stepPublicCapability",
-  "Show previous public GSN capability",
-  "Show next public GSN capability",
+  "PUBLIC_GSN_OUTCOMES",
+  'data-my-gmfn-public-outcomes="true"',
+  'data-my-gmfn-public-capabilities="collapsed"',
+  "See everything GSN can help with",
   "my-gmfn.public.toggle-all-capabilities",
+  "my-gmfn.public.close-top",
+  "my-gmfn.public.continue-bottom",
+  'surface="my-gsn-and-i-ios"',
 ]) {
   assertTextIncludes(
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
-    "The public My GSN and I guide must default to one focused core capability with previous/next controls and keep the full core list optional."
+    "The public About GSN and I guide must keep its compact outcomes, optional full list, stable return actions, and iPhone guidance."
+  );
+}
+
+for (const value of [
+  "my-gmfn.public.continue-top",
+  "my-gmfn.public.previous-capability",
+  "my-gmfn.public.next-capability",
+  "my-gmfn.public.collapse-bottom",
+  "Show previous public GSN capability",
+  "Show next public GSN capability",
+]) {
+  assertTextExcludes(
+    "frontend/src/pages/MyGMFNAndIPage.tsx",
+    value,
+    "The public About GSN and I guide must not restore the removed carousel or duplicate top and bottom controls."
   );
 }
 
