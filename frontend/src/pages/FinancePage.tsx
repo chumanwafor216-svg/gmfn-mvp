@@ -2040,7 +2040,7 @@ export default function FinancePage() {
       <PageTopNav
         sectionLabel="Finance"
         title="Finance"
-        subtitle="See money in, money out, rails, and support records."
+        subtitle="See money received, money sent, payment setup, and support records."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
@@ -2073,7 +2073,7 @@ export default function FinancePage() {
         >
           <div>
             <div style={{ ...sectionLabel(), color: "#F2CF77" }}>
-              {isCompact ? communityLabel : "Finance overview"}
+              {isCompact ? communityLabel : "Your money"}
             </div>
             <h1
               style={{
@@ -2088,7 +2088,7 @@ export default function FinancePage() {
             >
               {isCompact
                 ? financeFileReading.title
-                : "Your community finances. Clear. Secure. Together."}
+                : "Your community money, clearly recorded."}
             </h1>
             <p
               style={{
@@ -2382,8 +2382,8 @@ export default function FinancePage() {
             {
               id: "money-in",
               icon: "card" as FinanceGlyphName,
-              label: "Money In",
-              detail: "Open guided pay-in.",
+              label: "Money in",
+              detail: "Record money coming in.",
               action: () => openFinanceRoute(routes.moneyIn),
               color: "#135FD1",
             },
@@ -2400,16 +2400,16 @@ export default function FinancePage() {
             {
               id: "bank-accounts",
               icon: "bank" as FinanceGlyphName,
-              label: "Banking Rails",
-              detail: "Check rails before acting.",
+              label: "Payment setup",
+              detail: "Check where money can move.",
               action: () => openFinanceRoute(routes.paymentRails),
               color: "#D6AA45",
             },
             {
               id: "export-data",
               icon: "ledger" as FinanceGlyphName,
-              label: "Records / Events",
-              detail: "Read money records.",
+              label: "Money history",
+              detail: "See recent money records.",
               action: () => {
                 openFinanceDetailLane("events", "finance-events");
               },
@@ -2490,7 +2490,7 @@ export default function FinancePage() {
           >
             {!isCompact ? (
               <FinanceSectionLabel icon="signal" color="#0B4EA2">
-                Other finance lanes
+                Other money tasks
               </FinanceSectionLabel>
             ) : null}
             {isCompact ? (
@@ -2516,65 +2516,75 @@ export default function FinancePage() {
             >
               {[
                 {
+                  debugKey: "money-in",
                   icon: "card" as FinanceGlyphName,
-                  label: "Money In",
-                  detail: "Open guided pay-in.",
+                  label: "Money in",
+                  detail: "Record money coming in.",
                   action: () => openFinanceRoute(routes.moneyIn),
                   compactOnly: true,
                 },
                 {
+                  debugKey: "records-events",
                   icon: "ledger" as FinanceGlyphName,
-                  label: "Records / Events",
-                  detail: "Read money records.",
+                  label: "Money history",
+                  detail: "See recent money records.",
                   action: () => openFinanceDetailLane("events", "finance-events"),
                   compactOnly: true,
                 },
                 {
+                  debugKey: "payment-checks",
                   icon: "check" as FinanceGlyphName,
-                  label: "Payment checks",
-                  detail: "Check pending payment records.",
+                  label: "Payment status",
+                  detail: "Check money still waiting.",
                   action: () => openFinanceDetailLane("reconciliation", "finance-reconciliation"),
                   compactOnly: true,
                 },
                 {
+                  debugKey: "support-record",
                   icon: "shield" as FinanceGlyphName,
-                  label: "Support record",
-                  detail: "See support money effects.",
+                  label: "Support money",
+                  detail: "See money tied to support.",
                   action: () => openFinanceDetailLane("borrower", "finance-support-effect"),
                   compactOnly: true,
                 },
                 {
+                  debugKey: "banking-rails",
                   icon: "bank" as FinanceGlyphName,
-                  label: "Banking Rails",
-                  detail: "Check rails before acting.",
+                  label: "Payment setup",
+                  detail: "Check where money can move.",
                   action: () => openFinanceRoute(routes.paymentRails),
                   compactOnly: true,
                 },
                 {
+                  debugKey: "money-out",
                   icon: "out" as FinanceGlyphName,
-                  label: "Money Out",
-                  detail: "Open guided payout.",
+                  label: "Money out",
+                  detail: "Open the money-out steps.",
                   action: () => openFinanceRoute(routes.moneyOut),
                 },
                 {
+                  debugKey: "payout-details",
                   icon: "receipt" as FinanceGlyphName,
-                  label: "Payout Details",
-                  detail: "Confirm payout details.",
+                  label: "Payout account",
+                  detail: "Check where a payout would go.",
                   action: () => openFinanceRoute(routes.payoutDetails),
                 },
                 {
+                  debugKey: "signals-readiness",
                   icon: "check" as FinanceGlyphName,
-                  label: "Signals / Readiness",
-                  detail: "Read support readiness.",
+                  label: "Support readiness",
+                  detail: "Check the next support step.",
                   action: () => openFinanceRoute(routes.loanReadiness),
                 },
                 {
+                  debugKey: "pipeline-credits",
                   icon: "signal" as FinanceGlyphName,
-                  label: "Pipeline Credits",
-                  detail: "Plan usage credits.",
+                  label: "Service credits",
+                  detail: "Plan paid GSN service use.",
                   action: () => openFinanceDetailLane("pipelineCredits", "finance-pipeline-credits"),
                 },
                 {
+                  debugKey: "trust-passport",
                   icon: "shield" as FinanceGlyphName,
                   label: "Trust Passport",
                   detail: "Read trust record.",
@@ -2584,11 +2594,11 @@ export default function FinancePage() {
                 .filter((tool) => !tool.compactOnly || isCompact)
                 .map((tool) => (
                   <SecondaryButton
-                    key={tool.label}
+                    key={tool.debugKey}
                     onClick={tool.action}
                     fullWidth
                     stableHeight={isCompact ? 52 : 76}
-                    debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                    debugId={`finance.mini-tool.${tool.debugKey}`}
                     style={financeMiniToolButtonStyle(isCompact)}
                   >
                     <span
@@ -2635,7 +2645,7 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <FinanceSectionLabel icon="down">Finance quick snapshot</FinanceSectionLabel>
+            <FinanceSectionLabel icon="down">Money at a glance</FinanceSectionLabel>
             <div style={{ marginTop: 7, color: "#52697F", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
               Short reading only. Open a lane for the full record.
             </div>
@@ -2865,7 +2875,7 @@ export default function FinancePage() {
             }}
           >
             <FinanceSectionLabel icon="shield" color="#F2CF77">
-              Finance Signals
+              What your money activity suggests
             </FinanceSectionLabel>
             <div style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
               {financeFileReading.title}
@@ -2922,7 +2932,7 @@ export default function FinancePage() {
                 color: "#07172C",
               }}
             >
-              View Finance Signals
+              Review money details
             </PrimaryButton>
           </div>
         </div>
@@ -2942,7 +2952,7 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <FinanceSectionLabel icon="signal">Pipeline credit programmes</FinanceSectionLabel>
+            <FinanceSectionLabel icon="signal">GSN service credits</FinanceSectionLabel>
             <div style={{ marginTop: 8, ...helperText() }}>
               Plan low base access plus prepaid usage credits before costly verification, reports, messages, or support work starts.
             </div>
@@ -3322,10 +3332,10 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <FinanceSectionLabel icon="chart">Money Summary</FinanceSectionLabel>
+            <FinanceSectionLabel icon="chart">Your money summary</FinanceSectionLabel>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Read your money position first. These figures show the selected
-              community view inside your wider Finance story.
+              See what is available and what is still waiting. These figures
+              show the selected community inside your wider money record.
             </div>
           </div>
 

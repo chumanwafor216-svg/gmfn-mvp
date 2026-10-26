@@ -10,11 +10,13 @@ const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx"
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
+const shopControlFile = "src/pages/ShopControlPage.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
+const shopControlSource = readFileSync(join(frontendRoot, shopControlFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
@@ -53,6 +55,21 @@ function assertNotContains(pattern, message) {
   });
 }
 
+function assertShopControlContains(pattern, message) {
+  if (pattern.test(shopControlSource)) return;
+  findings.push({
+    file: shopControlFile,
+    line: 1,
+    message,
+    text: "Expected Shop Control Trade records launcher pattern was not found.",
+  });
+}
+
+function assertMarketplacePageContains(pattern, message) {
+  if (pattern.test(marketplacePageSource)) return;
+  addFinding(-1, message);
+}
+
 function sectionBetween(startPattern, endPattern) {
   const start = source.search(startPattern);
   if (start === -1) return { text: "", start: -1 };
@@ -87,6 +104,21 @@ assertContains(
 assertContains(
   /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?members: "marketplace-members-shops"[\s\S]*?trade: "marketplace-trade-evidence"/,
   "Trade Evidence and Members & Shops section anchors must stay separate."
+);
+
+assertShopControlContains(
+  /tradeEvidence: appendRouteQueryParam\([\s\S]*?hash: "marketplace-trade-evidence"[\s\S]*?"source"[\s\S]*?"shop-control"/,
+  "Shop Control Trade records must carry explicit source context into Marketplace."
+);
+
+assertContains(
+  /hash !== "marketplace-trade-evidence"[\s\S]*?routeRepostSource === "shop-control"[\s\S]*?routeRepostSource === "community-shop-control"[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\("trade"\)\)[\s\S]*?scheduleMarketplaceSectionScroll\("marketplace-trade-evidence"/,
+  "Marketplace must open the focused Trade records lane for an explicit Shop Control source."
+);
+
+assertMarketplacePageContains(
+  /handleTradeEvidenceLanding[\s\S]*?targetId: "marketplace-trade-evidence"[\s\S]*?reason: "focused-trade-task-mounted"[\s\S]*?landingRef=\{handleTradeEvidenceLanding\}/,
+  "The lazy Trade records surface must complete its focused phone landing after it mounts."
 );
 
 assertContains(
@@ -200,7 +232,6 @@ if (!tradeEvidenceSection.text) {
     /Minimum evidence packet[\s\S]*?marketplaceFieldTouchProps\("marketplace\.protected-trade\.packet"\)[\s\S]*?invoice reference[\s\S]*?courier handoff[\s\S]*?payment schedule/,
     /debugId="marketplace\.protected-trade\.create"[\s\S]*?Start record/,
     /debugId="marketplace\.protected-trade\.refresh-empty"[\s\S]*?Refresh records/,
-    /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh records/,
     /Record update/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.record"\)/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.type"\)/,
@@ -213,6 +244,11 @@ if (!tradeEvidenceSection.text) {
     /Event trail/,
     /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
     /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
+    /Trade records/,
+    /What to do next/,
+    /marketplace\.protected-trade\.next-step/,
+    /debugId="marketplace\.protected-trade\.more\.summary"[\s\S]*?Records, updates & evidence/,
+    /<details[\s\S]*?open=\{!isCompact\}/,
   ].forEach((pattern) => {
     if (!pattern.test(tradeEvidenceSection.text)) {
       addFinding(

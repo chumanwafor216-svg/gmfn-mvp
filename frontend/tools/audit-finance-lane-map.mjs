@@ -57,14 +57,14 @@ function assertOrderedSnippets(file, source, snippets, message) {
 }
 
 [
-  "Money Summary",
-  "Money In",
-  "Money Out",
-  "Banking Rails",
-  "Records / Events",
-  "Signals / Readiness",
-  "Pipeline Credits",
-].forEach((lane) => {
+  ["Money Summary", "Money Summary"],
+  ["Money In", "Money in"],
+  ["Money Out", "Money out"],
+  ["Banking Rails", "Payment setup"],
+  ["Records / Events", "Money history"],
+  ["Signals / Readiness", "Support readiness"],
+  ["Pipeline Credits", "Service credits"],
+].forEach(([lane, memberLabel]) => {
   assertContains(
     specsFile,
     specsSource,
@@ -80,16 +80,16 @@ function assertOrderedSnippets(file, source, snippets, message) {
   assertContains(
     financeFile,
     financeSource,
-    new RegExp(`label: "${escapeRegex(lane)}"`),
-    `FinancePage must expose the ${lane} lane with a direct lane label.`
+    new RegExp(`label: "${escapeRegex(memberLabel)}"`),
+    `FinancePage must expose the canonical ${lane} lane with the plain member label ${memberLabel}.`
   );
 });
 
 [
-  ["money-in", "Money In", "routes.moneyIn"],
+  ["money-in", "Money in", "routes.moneyIn"],
   ["reports", "Money Summary", "finance-summary"],
-  ["bank-accounts", "Banking Rails", "routes.paymentRails"],
-  ["export-data", "Records / Events", "finance-events"],
+  ["bank-accounts", "Payment setup", "routes.paymentRails"],
+  ["export-data", "Money history", "finance-events"],
 ].forEach(([id, label, target]) => {
   assertOrderedSnippets(
     financeFile,
@@ -100,15 +100,15 @@ function assertOrderedSnippets(file, source, snippets, message) {
 });
 
 [
-  ["Money Out", "routes.moneyOut"],
-  ["Signals / Readiness", "routes.loanReadiness"],
-  ["Pipeline Credits", "finance-pipeline-credits"],
+  ["Money out", "routes.moneyOut"],
+  ["Support readiness", "routes.loanReadiness"],
+  ["Service credits", "finance-pipeline-credits"],
 ].forEach(([label, target]) => {
   assertContains(
     financeFile,
     financeSource,
     new RegExp(
-      `Other finance lanes[\\s\\S]*?label: "${escapeRegex(label)}"[\\s\\S]*?${escapeRegex(target)}`
+      `Other money tasks[\\s\\S]*?label: "${escapeRegex(label)}"[\\s\\S]*?${escapeRegex(target)}`
     ),
     `${label} must stay visible inside the grouped secondary Finance lane area.`
   );
@@ -119,6 +119,9 @@ function assertOrderedSnippets(file, source, snippets, message) {
   "View Ledger",
   "Loan Readiness",
   "More finance tools",
+  "Banking Rails",
+  "Records / Events",
+  "Signals / Readiness",
 ].forEach((oldLabel) => {
   const index = financeSource.indexOf(`label: "${oldLabel}"`);
   if (index === -1 && oldLabel !== "More finance tools") return;

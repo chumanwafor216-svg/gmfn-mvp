@@ -55,8 +55,8 @@ assertContains(
 
 assertContains(
   "finance",
-  /id: "bank-accounts"[\s\S]*?label: "Banking Rails"[\s\S]*?detail: "Check rails before acting\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.paymentRails\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
-  "Finance Banking Rails launcher must clearly open a rail-check route before money action."
+  /id: "bank-accounts"[\s\S]*?label: "Payment setup"[\s\S]*?detail: "Check where money can move\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.paymentRails\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  "Finance Payment setup launcher must clearly open the existing rail-check route before money action."
 );
 
 assertContains(

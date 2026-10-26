@@ -5793,6 +5793,27 @@ export default function MarketplacePage() {
     });
   }, [sectionsOpen, scheduleMarketplaceSectionScroll]);
 
+  const handleTradeEvidenceLanding = useCallback(
+    (node: HTMLElement | null) => {
+      if (!node) return;
+      const openedFromTradeLauncher =
+        routeRepostSource === "shop-control" ||
+        routeRepostSource === "community-shop-control" ||
+        Boolean(routeDemandTradeHandoff);
+      if (!openedFromTradeLauncher) return;
+
+      pendingMarketplaceSectionRef.current = "";
+      pendingMarketplaceSectionForceRef.current = false;
+      scrollElementToMarketplaceLanding(node, {
+        surface: "marketplace",
+        targetId: "marketplace-trade-evidence",
+        reason: "focused-trade-task-mounted",
+        attempt: 0,
+      });
+    },
+    [routeDemandTradeHandoff, routeRepostSource]
+  );
+
   useEffect(() => {
     if (sectionsOpen.tools) return;
     setActiveLinkCenterTool(null);
@@ -6714,6 +6735,38 @@ export default function MarketplacePage() {
     location.search,
     activeCommunityId,
     scrollToMarketplaceSection,
+  ]);
+
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-trade-evidence") return;
+
+    const openedFromTradeLauncher =
+      routeRepostSource === "shop-control" ||
+      routeRepostSource === "community-shop-control" ||
+      Boolean(routeDemandTradeHandoff);
+    if (!openedFromTradeLauncher) return;
+
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "trade"));
+    setSectionsOpen(focusedMarketplaceSectionState("trade"));
+    scheduleMarketplaceSectionScroll("marketplace-trade-evidence", {
+      force: true,
+    });
+    clearMarketplaceHash();
+  }, [
+    activeCommunityId,
+    location.hash,
+    location.pathname,
+    location.search,
+    routeDemandTradeHandoff,
+    routeRepostSource,
+    scheduleMarketplaceSectionScroll,
   ]);
 
   useEffect(() => {
@@ -10420,6 +10473,7 @@ export default function MarketplacePage() {
       {sectionsOpen.trade ? (
         <Suspense fallback={null}>
           <MarketplaceTradeEvidenceSection
+            landingRef={handleTradeEvidenceLanding}
             data={{
               MarketplaceGlyph,
               PROTECTED_TRADE_EVENT_OPTIONS,

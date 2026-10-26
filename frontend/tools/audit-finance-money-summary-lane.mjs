@@ -48,7 +48,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /id: "export-data"[\s\S]*?label: "Records \/ Events"[\s\S]*?openFinanceDetailLane\("events", "finance-events"\)/,
+  /id: "export-data"[\s\S]*?label: "Money history"[\s\S]*?openFinanceDetailLane\("events", "finance-events"\)/,
   "Records / Events front card must also use the one-lane detail helper."
 );
 
@@ -62,14 +62,14 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /<PrimaryButton[\s\S]*?openFinanceDetailLane\("overview", "finance-summary"\);[\s\S]*?debugId="finance\.view-signals"[\s\S]*?>[\s\S]*?View Finance Signals[\s\S]*?<\/PrimaryButton>/,
+  /<PrimaryButton[\s\S]*?openFinanceDetailLane\("overview", "finance-summary"\);[\s\S]*?debugId="finance\.view-signals"[\s\S]*?>[\s\S]*?Review money details[\s\S]*?<\/PrimaryButton>/,
   "Finance Signals action must use the one-lane helper instead of manually leaving competing detail sections open."
 );
 
 assertContains(
   financeFile,
   financeSource,
-  /id="finance-summary"[\s\S]*?<FinanceSectionLabel icon="chart">Money Summary<\/FinanceSectionLabel>[\s\S]*?Read your money position first\.[\s\S]*?selected[\s\S]*?community view[\s\S]*?wider Finance story/,
+  /id="finance-summary"[\s\S]*?<FinanceSectionLabel icon="chart">Your money summary<\/FinanceSectionLabel>[\s\S]*?See what is available and what is still waiting\.[\s\S]*?selected community[\s\S]*?wider money record/,
   "Money Summary detail section must explain that it is the selected community view inside the wider Finance story."
 );
 

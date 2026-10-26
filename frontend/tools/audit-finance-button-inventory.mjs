@@ -88,7 +88,7 @@ for (const action of actions) {
 const expectedOrder = [
   "finance.tool.${item.id}",
   "finance.more-lanes.toggle",
-  "finance.mini-tool.${tool.label",
+  "finance.mini-tool.${tool.debugKey}",
   "finance.events.view-all",
   "finance.view-signals",
   "finance.toggle-pipeline-credits",
@@ -160,15 +160,15 @@ assertContains(
   "Finance secondary tools must stay behind one compact task disclosure on phone."
 );
 assertContains(
-  /label: "Money In"[\s\S]*?compactOnly: true[\s\S]*?label: "Records \/ Events"[\s\S]*?label: "Payment checks"[\s\S]*?label: "Support record"[\s\S]*?label: "Banking Rails"[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
+  /debugKey: "money-in"[\s\S]*?label: "Money in"[\s\S]*?compactOnly: true[\s\S]*?debugKey: "records-events"[\s\S]*?label: "Money history"[\s\S]*?label: "Payment status"[\s\S]*?label: "Support money"[\s\S]*?label: "Payment setup"[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.debugKey\}`\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
   "Finance mini tools must keep tightened fixed phone geometry."
 );
 assertContains(
-  /FinanceSectionLabel icon="down"[\s\S]*?Finance quick snapshot[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?Finance Signals/,
+  /FinanceSectionLabel icon="down"[\s\S]*?Money at a glance[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?What your money activity suggests/,
   "Finance desktop snapshot labels must use deterministic glyphs instead of emoji text."
 );
 assertContains(
-  /label: "Pipeline Credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?Pipeline credit programmes[\s\S]*?One pipeline credit means GBP 1 of planned usage value[\s\S]*?Credits fund usage\. They are not loans\./,
+  /label: "Service credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?GSN service credits[\s\S]*?One pipeline credit means GBP 1 of planned usage value[\s\S]*?Credits fund usage\. They are not loans\./,
   "Finance Pipeline Credits lane must stay wired from the secondary lane chooser to a truthful pricing/planning panel."
 );
 

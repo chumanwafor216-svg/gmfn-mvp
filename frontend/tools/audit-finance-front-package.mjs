@@ -53,7 +53,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /data-gsn-finance-phone-front=\{isCompact \? "simple" : undefined\}[\s\S]*?financeFileReading\.title[\s\S]*?Your community finances\. Clear\. Secure\. Together\.[\s\S]*?financeFileReading\.detail[\s\S]*?GSN records finance activity; it is not a bank, lender, wallet, or payment processor\.[\s\S]*?data-gsn-finance-primary-facts=\{isCompact \? "compact-four" : undefined\}[\s\S]*?Available now[\s\S]*?Waiting in[\s\S]*?Waiting out[\s\S]*?Communities/,
+  /data-gsn-finance-phone-front=\{isCompact \? "simple" : undefined\}[\s\S]*?financeFileReading\.title[\s\S]*?Your community money, clearly recorded\.[\s\S]*?financeFileReading\.detail[\s\S]*?GSN records finance activity; it is not a bank, lender, wallet, or payment processor\.[\s\S]*?data-gsn-finance-primary-facts=\{isCompact \? "compact-four" : undefined\}[\s\S]*?Available now[\s\S]*?Waiting in[\s\S]*?Waiting out[\s\S]*?Communities/,
   "Finance hero must keep a plain cumulative finance summary with phone-safe compact copy and full desktop context."
 );
 
@@ -65,10 +65,10 @@ assertContains(
 );
 
 [
-  ["money-in", "card", "Money In", "Open guided pay-in."],
+  ["money-in", "card", "Money in", "Record money coming in."],
   ["reports", "chart", "Money Summary", "See your full money position."],
-  ["bank-accounts", "bank", "Banking Rails", "Check rails before acting."],
-  ["export-data", "ledger", "Records / Events", "Read money records."],
+  ["bank-accounts", "bank", "Payment setup", "Check where money can move."],
+  ["export-data", "ledger", "Money history", "See recent money records."],
 ].forEach(([id, icon, label, detail]) => {
   [
     `id: "${id}"`,
@@ -102,8 +102,8 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Other finance lanes[\s\S]*?Money In[\s\S]*?Records \/ Events[\s\S]*?Payment checks[\s\S]*?Support record[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Pipeline Credits[\s\S]*?Trust Passport/,
-  "Finance secondary lanes must remain grouped inside the secondary task chooser."
+  /Other money tasks[\s\S]*?Money in[\s\S]*?Money history[\s\S]*?Payment status[\s\S]*?Support money[\s\S]*?Payment setup[\s\S]*?Money out[\s\S]*?Payout account[\s\S]*?Support readiness[\s\S]*?Service credits[\s\S]*?Trust Passport/,
+  "Finance secondary tasks must remain grouped inside the plain-language task chooser."
 );
 
 assertContains(
@@ -116,7 +116,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /<section style=\{\{ \.\.\.pageCard\("#FFFFFF"\), display: isCompact \? "none" : undefined \}\}>[\s\S]*?Finance quick snapshot[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?Finance Signals/,
+  /<section style=\{\{ \.\.\.pageCard\("#FFFFFF"\), display: isCompact \? "none" : undefined \}\}>[\s\S]*?Money at a glance[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?What your money activity suggests/,
   "Finance may keep its richer snapshot on desktop, but it must stay off the default phone front door."
 );
 assertContains(
@@ -129,7 +129,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Pipeline Credits[\s\S]*?finance-pipeline-credits[\s\S]*?Pipeline credit programmes[\s\S]*?Credits fund usage\. They are not loans\./,
+  /label: "Service credits"[\s\S]*?finance-pipeline-credits[\s\S]*?GSN service credits[\s\S]*?Credits fund usage\. They are not loans\./,
   "Finance front package must include the Pipeline Credits planning lane without implying lending or wallet behaviour."
 );
 

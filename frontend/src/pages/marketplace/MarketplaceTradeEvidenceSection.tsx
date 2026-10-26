@@ -7,7 +7,10 @@ import React, {
   type SyntheticEvent,
 } from "react";
 
-import { StableButton } from "../../components/StableButton";
+import {
+  StableButton,
+  StableDisclosureSummary,
+} from "../../components/StableButton";
 import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import type { ProtectedTradeEventRecord, ProtectedTradeRecord } from "../../lib/api";
 import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
@@ -128,10 +131,12 @@ export type MarketplaceTradeEvidenceSectionData = {
 
 type MarketplaceTradeEvidenceSectionProps = {
   data: MarketplaceTradeEvidenceSectionData;
+  landingRef?: (node: HTMLElement | null) => void;
 };
 
 export default function MarketplaceTradeEvidenceSection({
   data,
+  landingRef,
 }: MarketplaceTradeEvidenceSectionProps) {
   const {
     MarketplaceGlyph,
@@ -198,6 +203,7 @@ export default function MarketplaceTradeEvidenceSection({
       {sectionsOpen.trade ? (
       <section
         id="marketplace-trade-evidence"
+        ref={isCompact ? undefined : landingRef}
         style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 3 }}
       >
         <div
@@ -227,10 +233,13 @@ export default function MarketplaceTradeEvidenceSection({
               <MarketplaceGlyph name="trade" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Trade Evidence</div>
+              <div style={sectionLabel()}>
+                {isCompact ? "Trade records" : "Trade Evidence"}
+              </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Record the item, the other side, and agreed terms before goods,
-                service, or money move. This is evidence, not escrow.
+                {isCompact
+                  ? "Keep the item, agreement, and outcome clear for both sides."
+                  : "Record the item, the other side, and agreed terms before goods, service, or money move. This is evidence, not escrow."}
               </div>
             </div>
           </div>
@@ -255,7 +264,7 @@ export default function MarketplaceTradeEvidenceSection({
             }}
           >
             <span style={stableStatusPillStyle(true)}>
-              Trade record lane
+              {isCompact ? "Buyer & seller record" : "Trade record lane"}
             </span>
             <span style={stableStatusPillStyle(protectedTrades.length > 0)}>
               {protectedTrades.length
@@ -265,9 +274,9 @@ export default function MarketplaceTradeEvidenceSection({
           </div>
         ) : null}
 
-        {sectionsOpen.trade ? (
+        {sectionsOpen.trade && !isCompact ? (
           <RealLifeMeaningGuide
-            compact={isCompact}
+            compact={false}
             guidance={getRealLifeTrustGuidance("marketplace-trade-boundary")}
             style={{ marginTop: 12 }}
           />
@@ -304,7 +313,9 @@ export default function MarketplaceTradeEvidenceSection({
                 <MarketplaceGlyph name="ledger" size={24} />
               </span>
               <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Trade Evidence Record</div>
+                <div style={sectionLabel()}>
+                  {isCompact ? "Trade record" : "Trade Evidence Record"}
+                </div>
                 <div
                   style={{
                     marginTop: 5,
@@ -313,8 +324,9 @@ export default function MarketplaceTradeEvidenceSection({
                     lineHeight: 1.35,
                   }}
                 >
-                  Record the item, other side, and basic terms before goods,
-                  service, or money move. This creates evidence, not escrow.
+                  {isCompact
+                    ? "Record the agreement before anything changes hands."
+                    : "Record the item, other side, and basic terms before goods, service, or money move. This creates evidence, not escrow."}
                 </div>
               </div>
               <span
@@ -327,6 +339,73 @@ export default function MarketplaceTradeEvidenceSection({
                 ? `${protectedTrades.length} recent`
                 : "No records yet"}
               </span>
+            </div>
+
+            <div
+              ref={isCompact ? landingRef : undefined}
+              {...marketplaceSurfaceTouchProps(
+                "marketplace.protected-trade.next-step"
+              )}
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(214,170,69,0.24)",
+                background:
+                  "linear-gradient(180deg, #FFFDF7 0%, #F7FAFD 100%)",
+                padding: isCompact ? 11 : 13,
+                display: "grid",
+                gap: 7,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={sectionLabel()}>What to do next</div>
+                <span
+                  style={stableStatusPillStyle(
+                    Boolean(selectedProtectedTrade?.id) ||
+                      showProtectedTradeCreateForm
+                  )}
+                >
+                  {showProtectedTradeCreateForm
+                    ? "New record"
+                    : safeStr(selectedProtectedTrade?.trade_code) ||
+                      "Choose record"}
+                </span>
+              </div>
+              <div
+                style={{
+                  color: "#173750",
+                  fontSize: isCompact ? 14 : 15,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {showProtectedTradeCreateForm
+                  ? recentProtectedTrades.length
+                    ? "Complete the new buyer and seller record below."
+                    : "Start one record before goods, services, or money change hands."
+                  : `Confirm what happened with ${
+                      safeStr(selectedProtectedTrade?.item_title) ||
+                      "the selected trade"
+                    }.`}
+              </div>
+              <div
+                style={{
+                  color: "#617085",
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: 800,
+                  lineHeight: 1.35,
+                }}
+              >
+                GSN keeps the record. It does not hold the money or guarantee
+                delivery.
+              </div>
             </div>
 
             {recentProtectedTrades.length ? (
@@ -499,54 +578,6 @@ export default function MarketplaceTradeEvidenceSection({
                   </StableButton>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: 8,
-                  }}
-                >
-                  <StableButton
-                    debugId="marketplace.protected-trade.start-another"
-                    type="button"
-                    onClick={(event) => {
-                      consumeMarketplaceButtonEvent(event);
-                      setProtectedTradeCreateOpen((open: boolean) => !open);
-                    }}
-                    stableHeight={44}
-                    style={{
-                      ...marketplaceInlineActionStyle("soft", false, isCompact),
-                      height: 44,
-                      minHeight: 44,
-                      maxHeight: 44,
-                      fontSize: isCompact ? 12 : 12.5,
-                    }}
-                  >
-                    {protectedTradeCreateOpen
-                      ? "Hide form"
-                      : "New record"}
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.protected-trade.refresh"
-                    type="button"
-                    busy={loadingProtectedTrades}
-                    busyLabel="Refreshing"
-                    onClick={(event) => {
-                      consumeMarketplaceButtonEvent(event);
-                      void refreshProtectedTrades();
-                    }}
-                    stableHeight={44}
-                    style={{
-                      ...marketplaceInlineActionStyle("soft", false, isCompact),
-                      height: 44,
-                      minHeight: 44,
-                      maxHeight: 44,
-                      fontSize: isCompact ? 12 : 12.5,
-                    }}
-                  >
-                    Refresh
-                  </StableButton>
-                </div>
               </div>
             ) : null}
 
@@ -742,7 +773,79 @@ export default function MarketplaceTradeEvidenceSection({
             ) : null}
 
             {recentProtectedTrades.length ? (
-              <div style={{ display: "grid", gap: 8 }}>
+              <details
+                open={!isCompact}
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(16,37,59,0.10)",
+                  background: "rgba(255,255,255,0.78)",
+                  padding: isCompact ? 10 : 12,
+                }}
+              >
+                <StableDisclosureSummary
+                  debugId="marketplace.protected-trade.more.summary"
+                  stableHeight={isCompact ? 48 : 52}
+                  style={{
+                    ...marketplaceActionStyle("soft"),
+                    width: "100%",
+                    justifyContent: "space-between",
+                    padding: isCompact ? "0 12px" : "0 14px",
+                    fontSize: isCompact ? 13 : 14,
+                  }}
+                >
+                  Records, updates & evidence
+                  <span aria-hidden="true">+</span>
+                </StableDisclosureSummary>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <StableButton
+                    debugId="marketplace.protected-trade.start-another"
+                    type="button"
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      setProtectedTradeCreateOpen((open: boolean) => !open);
+                    }}
+                    stableHeight={44}
+                    style={{
+                      ...marketplaceInlineActionStyle("soft", false, isCompact),
+                      height: 44,
+                      minHeight: 44,
+                      maxHeight: 44,
+                      fontSize: isCompact ? 12 : 12.5,
+                    }}
+                  >
+                    {protectedTradeCreateOpen
+                      ? "Hide form"
+                      : "New record"}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.protected-trade.refresh"
+                    type="button"
+                    busy={loadingProtectedTrades}
+                    busyLabel="Refreshing"
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      void refreshProtectedTrades();
+                    }}
+                    stableHeight={44}
+                    style={{
+                      ...marketplaceInlineActionStyle("soft", false, isCompact),
+                      height: 44,
+                      minHeight: 44,
+                      maxHeight: 44,
+                      fontSize: isCompact ? 12 : 12.5,
+                    }}
+                  >
+                    Refresh
+                  </StableButton>
+                </div>
                 {recentProtectedTrades.map((trade) => (
                   <div
                     key={trade.id || trade.trade_code || trade.item_title}
@@ -1093,6 +1196,7 @@ export default function MarketplaceTradeEvidenceSection({
                   </div>
                 </div>
               </div>
+              </details>
             ) : (
               <div
                 style={{

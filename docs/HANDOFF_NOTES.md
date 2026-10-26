@@ -8,6 +8,65 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Finance task wording - 2026-10-26
+
+- Continued the app-wide plain-language work into `/app/finance`. Its compact
+  phone structure was already compliant; the remaining defect was technical
+  member-facing wording such as `Banking Rails`, `Records / Events`,
+  `Signals / Readiness` and `Pipeline Credits`.
+- The Finance chooser now uses direct task names: `Money in`, `Money out`,
+  `Payment setup`, `Money history`, `Payment status`, `Support money`,
+  `Support readiness` and `Service credits`. The hero, snapshot, signal and
+  summary headings were simplified without adding another section or action.
+- Canonical lane ownership, routes, calculations, payment/support truth,
+  permissions, APIs and GSN's non-bank/non-wallet boundary are unchanged.
+  Stable Finance action IDs are now explicit, so future copy corrections do
+  not silently change automation or deep-link contracts. No backend or frozen
+  Dashboard Market Wisdom code changed.
+- The 293-module production build, ten focused Finance audits and mocked phone
+  flows at 390x844 and 360x780 passed. Both phone sizes retained one primary
+  action, one task disclosure, one active lane and no horizontal overflow.
+  Physical-phone review and live money operations remain outstanding. This
+  Finance package and the preceding Trade records package form the requested
+  frontend deployment batch; live deployment evidence is still pending.
+
+## Trade records phone progression - 2026-10-26
+
+- Continued the owner-requested Shop Control simplification into the existing
+  Marketplace Protected Trade task. The `Trade records` launcher supplied a
+  hash but no trusted source, and Marketplace had no matching focused opener,
+  so the shortcut could arrive without opening or landing on the requested
+  work.
+- Shop Control now adds `source=shop-control`; Marketplace accepts that trusted
+  source (and its existing DemandBox trade handoff), focuses Trade records and
+  completes the landing when the lazy section mounts. A naked hash remains
+  blocked. On phone, `Trade records` leads with one state-aware `What to do
+  next` and keeps the current record's three truthful outcome choices in the
+  first viewport. Creation/refresh, history, event update, private evidence
+  paper and event trail remain under `Records, updates & evidence`; desktop
+  keeps the complete workbench open.
+- Protected Trade parties, terms, evidence/events, derived outcome truth,
+  privacy, permissions, APIs, evidence paper and GSN's non-custodial boundary
+  are unchanged. No backend or frozen Dashboard Market Wisdom code changed.
+- The 293-module production build, relevant Marketplace/Shop Control audits,
+  complete protected-button freeze and mocked 390x844 Marketplace boundary
+  smoke passed. The smoke recorded the last outcome button at 839px inside the
+  844px viewport, with the deeper disclosure closed and no Trade-surface
+  horizontal overflow. Physical-phone review and live Protected Trade writes
+  remain outstanding. This package is included in the requested frontend
+  deployment batch; live deployment evidence is still pending.
+
+## Owner-shop simplification deployment - 2026-10-26
+
+- The preceding owner-shop phone packages through `Promote in another
+  community` were committed as `d5112561`, pushed to the working branch and
+  `main`, and accepted by GitHub Actions run `40315356839` as Render deploy
+  `dep-dbfjjrvb9u1s73d6ldv0`.
+- The same commit was rebuilt by run `40316172484`; Render deploy
+  `dep-dbfjm06c6qcc739vgn2g` reached `live`. The batch was frontend-only. The
+  Trade records package above started afterward and is not included in that
+  deployment.
+
 ## Promote in another community phone progression - 2026-10-26
 
 - Continued the owner-requested shop simplification into the existing
@@ -38,7 +97,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   or promotion-surface overflow. The complete protected-button freeze also
   passed across Marketplace, Shop Control, Dashboard, Market Wisdom, Community
   Home, Action Inbox, entry/auth, shared tap guards and global action hygiene.
-  This package is local and not deployed.
+  This package was deployed in frontend commit `d5112561` as recorded above.
 
 ## Paid promotion phone progression - 2026-10-26
 
@@ -55,7 +114,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   `Publish paid promotion`.
 - No payment, pricing, credit, permission, Community Domain, identity,
   one-live-run, media-integrity, authoritative-persistence, serving, pacing or
-  exposure contract changed. This package is local and not deployed.
+  exposure contract changed. This package was deployed in frontend commit
+  `d5112561` as recorded above.
 - Verification passed: TypeScript, the 293-module production build,
   `audit:spotlight-controls`, payment-instruction phone rows, media quality,
   action-response, proof-surface and route-fallthrough audits, plus the complete
@@ -107,9 +167,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   DemandBox and earlier doctrine-copy findings. These broader failures were
   not repaired or hidden inside this focused package.
 - Deployment truth: this correction and the preceding More selling space,
-  Shop items, Shop update and Shop picture packages are local, uncommitted,
-  unpushed and undeployed. Commit `84fe4b68` remains the latest deployed
-  application commit.
+  Shop items, Shop update and Shop picture packages were deployed in frontend
+  commit `d5112561` as recorded above.
 
 ## More selling space phone first-view simplification - 2026-10-26
 
@@ -141,8 +200,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   passed. Physical-phone review and a live package purchase remain
   outstanding.
 - Deployment truth: this correction and the preceding Shop items, Shop update
-  and Shop picture packages are local, uncommitted, unpushed and undeployed.
-  Commit `84fe4b68` remains the latest deployed application commit.
+  and Shop picture packages were deployed in frontend commit `d5112561` as
+  recorded above.
 
 ## Shop picture focused-task correction - 2026-10-26
 
@@ -168,9 +227,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   The 293-module production build and complete protected-button freeze suite
   also passed. Physical-phone review and a live picture save remain
   outstanding.
-- Deployment truth: this correction, Shop items, and Shop update are local,
-  uncommitted, unpushed and undeployed. Commit `84fe4b68` remains the latest
-  deployed application commit.
+- Deployment truth: this correction, Shop items, and Shop update were deployed
+  in frontend commit `d5112561` as recorded above.
 
 ## Shop update phone first-view simplification - 2026-10-26
 
@@ -193,9 +251,8 @@ under `docs/` or `docs/archive/`, then link that file here.
   293-module production bundle, all 17 compiled visual scenarios at
   360/390/430px, and the complete protected-button freeze suite passed.
   Physical-phone review and live publishing remain outstanding.
-- Deployment truth: this continuation and the Shop items package below are
-  local, uncommitted, unpushed and undeployed. The earlier simplification
-  batch remains the latest deployed application commit.
+- Deployment truth: this continuation and the Shop items package below were
+  deployed in frontend commit `d5112561` as recorded above.
 
 ## Shop items phone first-view simplification - 2026-10-26
 
@@ -213,8 +270,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Static Shop Control, Shop Assets and shortcut audits, TypeScript, and the
   mocked 390x844 add/save/public-link/Diary browser workflow passed. Physical
   phone review and live product writes remain outstanding.
-- Deployment truth: this continuation began after the prior batch was
-  deployed. It is local, uncommitted, unpushed and undeployed.
+- Deployment truth: this continuation was deployed in frontend commit
+  `d5112561` as recorded above.
 
 ## Shop simplification deployment - 2026-10-26
 

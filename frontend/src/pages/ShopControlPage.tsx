@@ -3866,11 +3866,15 @@ export default function ShopControlPage() {
         "mode",
         "ask_community"
       ),
-      tradeEvidence: routeTarget(
-        "marketplace",
-        effectiveShopClanId,
-        "shop-control.route.trade-evidence",
-        { hash: "marketplace-trade-evidence" }
+      tradeEvidence: appendRouteQueryParam(
+        routeTarget(
+          "marketplace",
+          effectiveShopClanId,
+          "shop-control.route.trade-evidence",
+          { hash: "marketplace-trade-evidence" }
+        ),
+        "source",
+        "shop-control"
       ),
       shop: routeTarget("shop", effectiveShopClanId, "shop-control.route.shop"),
       shopGallery: routeTarget(

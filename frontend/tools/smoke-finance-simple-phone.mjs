@@ -245,7 +245,7 @@ async function testViewport(baseURL, viewport) {
       .allTextContents();
 
     if (
-      !["Money In", "Money Out", "Records / Events", "Payment checks", "Support record"].every(
+      !["Money in", "Money out", "Money history", "Payment status", "Support money"].every(
         (label) => taskLabels.some((value) => value.includes(label))
       )
     ) {

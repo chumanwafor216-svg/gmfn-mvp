@@ -52,13 +52,13 @@ assertContains(
 
 assertContains(
   "finance",
-  /id: "money-in"[\s\S]*?label: "Money In"[\s\S]*?detail: "Open guided pay-in\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyIn\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  /id: "money-in"[\s\S]*?label: "Money in"[\s\S]*?detail: "Record money coming in\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyIn\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
   "Finance Money In launcher must clearly open the guided pay-in route and keep its stable tool debug id."
 );
 
 assertContains(
   "finance",
-  /Other finance lanes[\s\S]*?label: "Money Out"[\s\S]*?detail: "Open guided payout\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyOut\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
+  /Other money tasks[\s\S]*?debugKey: "money-out"[\s\S]*?label: "Money out"[\s\S]*?detail: "Open the money-out steps\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyOut\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.debugKey\}`\}/,
   "Finance Money Out launcher must clearly open the guided payout route and keep its stable mini-tool debug id."
 );
 

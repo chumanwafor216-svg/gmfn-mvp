@@ -61,21 +61,22 @@ assertContains(
 );
 
 [
-  ["bank", "Banking Rails", "Check rails before acting.", "routes.paymentRails"],
-  ["out", "Money Out", "Open guided payout.", "routes.moneyOut"],
-  ["receipt", "Payout Details", "Confirm payout details.", "routes.payoutDetails"],
-  ["check", "Signals / Readiness", "Read support readiness.", "routes.loanReadiness"],
-  ["shield", "Trust Passport", "Read trust record.", "routes.trust"],
-].forEach(([icon, label, detail, target]) => {
+  ["banking-rails", "bank", "Payment setup", "Check where money can move.", "routes.paymentRails"],
+  ["money-out", "out", "Money out", "Open the money-out steps.", "routes.moneyOut"],
+  ["payout-details", "receipt", "Payout account", "Check where a payout would go.", "routes.payoutDetails"],
+  ["signals-readiness", "check", "Support readiness", "Check the next support step.", "routes.loanReadiness"],
+  ["trust-passport", "shield", "Trust Passport", "Read trust record.", "routes.trust"],
+].forEach(([debugKey, icon, label, detail, target]) => {
   assertOrderedSnippets(
     "finance",
     [
-      "Other finance lanes",
+      "Other money tasks",
+      `debugKey: "${debugKey}"`,
       `icon: "${icon}" as FinanceGlyphName`,
       `label: "${label}"`,
       `detail: "${detail}"`,
       `action: () => openFinanceRoute(${target})`,
-      "debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, \"-\")}`}",
+      "debugId={`finance.mini-tool.${tool.debugKey}`}",
     ],
     `${label} must stay in the compact Finance secondary route tool group with the approved target and debug-id root.`
   );
@@ -89,7 +90,7 @@ assertContains(
 
 assertContains(
   "finance",
-  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other finance lanes[\s\S]*?Choose another task[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 52 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
+  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other money tasks[\s\S]*?Choose another task[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.debugKey\}`\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
   "Finance secondary route tools must keep compact two-up phone geometry and fixed-height mini buttons."
 );
 

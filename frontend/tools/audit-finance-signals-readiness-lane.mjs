@@ -49,8 +49,8 @@ assertContains(
 
 assertContains(
   "finance",
-  /Other finance lanes[\s\S]*?label: "Signals \/ Readiness"[\s\S]*?detail: "Read support readiness\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.loanReadiness\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
-  "Finance Signals / Readiness launcher must clearly open the support-readiness reading route and keep its stable mini-tool debug id."
+  /Other money tasks[\s\S]*?debugKey: "signals-readiness"[\s\S]*?label: "Support readiness"[\s\S]*?detail: "Check the next support step\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.loanReadiness\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.debugKey\}`\}/,
+  "Finance Support readiness launcher must clearly open the existing readiness route and keep its stable mini-tool debug id."
 );
 
 assertContains(

@@ -53,8 +53,8 @@ function assertOrderedSnippets(key, snippets, message) {
 
 assertContains(
   "finance",
-  /id: "export-data"[\s\S]*?label: "Records \/ Events"[\s\S]*?detail: "Read money records\."[\s\S]*?openFinanceDetailLane\("events", "finance-events"\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
-  "Records / Events front card must clearly open only the finance-events detail lane."
+  /id: "export-data"[\s\S]*?label: "Money history"[\s\S]*?detail: "See recent money records\."[\s\S]*?openFinanceDetailLane\("events", "finance-events"\)[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  "Money history front card must clearly open only the finance-events detail lane."
 );
 
 assertContains(

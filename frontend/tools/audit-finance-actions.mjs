@@ -82,7 +82,7 @@ for (const file of financeFiles) {
 }
 assertContains(
   "src/pages/FinancePage.tsx",
-  /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace\(/,
+  /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.debugKey\}`\}/,
   "Finance main tool grids must keep item-based debug IDs."
 );
 assertContains(

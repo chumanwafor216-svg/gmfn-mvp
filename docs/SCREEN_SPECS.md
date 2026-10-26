@@ -900,6 +900,16 @@ Rules:
   technical credit detail stay secondary. Product identity, target
   suggestions, paid credits, proof review, pricing and placement permissions
   remain unchanged.
+- Shop Control `Trade records` must open the existing Marketplace Trade
+  Evidence task with an explicit trusted source. A naked hash must not expose
+  the protected task. On phone, the task uses the member-facing `Trade
+  records` name, leads with one state-aware `What to do next`, and keeps the
+  current record's three truthful outcome choices in the first viewport.
+  Record creation/refresh, history, event update, private evidence paper and
+  event trail remain available behind one closed `Records, updates & evidence`
+  disclosure. Desktop retains the complete open workbench. Parties, terms,
+  evidence events, derived outcome truth, permissions, privacy, APIs and the
+  non-custodial GSN boundary remain unchanged.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
@@ -1005,6 +1015,12 @@ Rules:
 - On phone, the default front door shows the current finance state, four compact
   money facts, one primary `Review money` action, and one collapsed
   `Choose another task` disclosure. The richer quick snapshot is desktop-only.
+- Canonical Finance lane ownership remains Money Summary, Money In, Money Out,
+  Banking Rails, Records / Events, Signals / Readiness and Pipeline Credits,
+  but the member-facing chooser must use direct words: `Money in`, `Money
+  out`, `Payment setup`, `Money history`, `Payment status`, `Support money`,
+  `Support readiness` and `Service credits`. The visible label may change; the
+  existing route, stable action ID and financial meaning must not.
 - Opening a phone detail lane replaces the front door until the member uses the
   visible `Back to tasks` control; closed deep panels must not form a card stack.
 - Pipeline Credits is a pricing/planning lane for base access plus prepaid usage value.

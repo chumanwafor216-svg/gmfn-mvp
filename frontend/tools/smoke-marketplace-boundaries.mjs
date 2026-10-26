@@ -474,21 +474,16 @@ async function run() {
     process.exit(1);
   }
 
-  await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-trade-evidence`, {
+  await page.goto(`${baseURL}/app/marketplace?community=8&source=shop-control#marketplace-trade-evidence`, {
     waitUntil: "networkidle",
     timeout: 30000,
   });
-  await page.locator('[data-cta-id="marketplace.progressive-tools.toggle"]').click({
-    timeout: 30000,
-  });
-  await page
-    .locator('[data-cta-id="marketplace.progressive.trade-evidence"]')
-    .click({ timeout: 30000 });
   await waitForDebugSelector(
     page,
     '[data-gmfn-debug-id="marketplace.trade.evidence-module"]',
     "trade"
   );
+  await page.waitForTimeout(600);
   await page.screenshot({
     path: join(screenshotDir, "marketplace-trade-boundaries-390x844.png"),
     fullPage: false,
@@ -498,7 +493,40 @@ async function run() {
     const trade = document.querySelector(
       '[data-gmfn-debug-id="marketplace.trade.evidence-module"]'
     );
-    const overflow = Array.from(document.querySelectorAll("body *"))
+    const isVisible = (element) => {
+      if (!element) return false;
+      if (typeof element.checkVisibility === "function") {
+        return element.checkVisibility({
+          checkOpacity: true,
+          checkVisibilityCSS: true,
+        });
+      }
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+    const outcomeButtons = ["good", "blocked", "issue"].map((key) => {
+      const element = trade?.querySelector(
+        `[data-cta-id="marketplace.protected-trade.outcome.${key}"]`
+      );
+      const rect = element?.getBoundingClientRect();
+      return {
+        key,
+        visible: isVisible(element),
+        top: rect ? Math.round(rect.top) : null,
+        bottom: rect ? Math.round(rect.bottom) : null,
+        inFirstViewport: Boolean(
+          rect && rect.top >= 0 && rect.bottom <= window.innerHeight
+        ),
+      };
+    });
+    const more = trade?.querySelector(
+      '[data-cta-id="marketplace.protected-trade.more.summary"]'
+    );
+    const moreDetails = more?.closest("details");
+    const recordUpdate = trade?.querySelector(
+      '[data-cta-id="marketplace.protected-trade.record-update"]'
+    );
+    const overflow = Array.from(trade?.querySelectorAll("*") || [])
       .filter((element) => {
         const rect = element.getBoundingClientRect();
         return (
@@ -523,8 +551,23 @@ async function run() {
         };
       });
     return {
+      scrollY: Math.round(window.scrollY),
+      sectionRect: (() => {
+        const section = document.getElementById("marketplace-trade-evidence");
+        const rect = section?.getBoundingClientRect();
+        return rect
+          ? { top: Math.round(rect.top), bottom: Math.round(rect.bottom) }
+          : null;
+      })(),
+      landingTrace: JSON.parse(
+        sessionStorage.getItem("gmfn_marketplace_landing_trace") || "[]"
+      ).slice(-5),
       tradeExists: Boolean(trade),
-      tradeTitle: trade?.textContent?.includes("Trade Evidence Record") || false,
+      tradeTitle: trade?.textContent?.includes("Trade record") || false,
+      nextStep:
+        trade?.textContent?.includes("What to do next") &&
+        trade?.textContent?.includes("Confirm what happened with") ||
+        false,
       outcomeTitle: trade?.textContent?.includes("Confirm outcome") || false,
       receivedOk: Boolean(
         trade?.querySelector('[data-cta-id="marketplace.protected-trade.outcome.good"]')
@@ -536,6 +579,10 @@ async function run() {
         trade?.querySelector('[data-cta-id="marketplace.protected-trade.outcome.issue"]')
       ),
       noHumanScore: trade?.textContent?.includes("not a human score") || false,
+      outcomeButtons,
+      moreVisible: isVisible(more),
+      moreOpen: Boolean(moreDetails?.open),
+      recordUpdateVisible: isVisible(recordUpdate),
       overflow,
     };
   });
@@ -543,11 +590,19 @@ async function run() {
   if (
     !tradeFacts.tradeExists ||
     !tradeFacts.tradeTitle ||
+    !tradeFacts.nextStep ||
     !tradeFacts.outcomeTitle ||
     !tradeFacts.receivedOk ||
     !tradeFacts.notReceived ||
     !tradeFacts.openIssue ||
-    !tradeFacts.noHumanScore
+    !tradeFacts.noHumanScore ||
+    tradeFacts.outcomeButtons.some(
+      (button) => !button.visible || !button.inFirstViewport
+    ) ||
+    !tradeFacts.moreVisible ||
+    tradeFacts.moreOpen ||
+    tradeFacts.recordUpdateVisible ||
+    tradeFacts.overflow.length
   ) {
     console.error("Marketplace Trade Evidence outcome smoke failed:", tradeFacts);
     process.exit(1);
