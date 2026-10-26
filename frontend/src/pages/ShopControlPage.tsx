@@ -3628,6 +3628,8 @@ export default function ShopControlPage() {
   );
   const shopDiaryTaskFocused =
     safeStr(location.hash).replace(/^#/, "") === "shop-assets-diary";
+  const shopPictureTaskFocused =
+    safeStr(location.hash).replace(/^#/, "") === "shop-assets-picture";
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -3889,6 +3891,12 @@ export default function ShopControlPage() {
         "shop-control.route.details",
         { hash: OWNER_SHOP_HASHES.billboard }
       ),
+      shopPicture: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.picture",
+        { hash: "shop-assets-picture" }
+      ),
       shopSummary: routeTarget(
         "shop",
         effectiveShopClanId,
@@ -3916,11 +3924,15 @@ export default function ShopControlPage() {
         effectiveShopClanId,
         "shop-control.route.subscription-spotlight"
       ),
-      paidRepost: routeTarget(
-        "marketplace",
-        effectiveShopClanId,
-        "shop-control.route.paid-repost",
-        { hash: PAID_REPOST_HASH }
+      paidRepost: appendRouteQueryParam(
+        routeTarget(
+          "marketplace",
+          effectiveShopClanId,
+          "shop-control.route.paid-repost",
+          { hash: PAID_REPOST_HASH }
+        ),
+        "source",
+        "shop-control"
       ),
       vaultControl: routeTarget(
         "vaultControl",
@@ -3971,6 +3983,8 @@ export default function ShopControlPage() {
       return isMerchantReleaseControlTarget(rawTargetId);
     }
   }, [location.hash, location.search]);
+  const communityPackageTaskFocused =
+    safeStr(location.hash).replace(/^#/, "") === OWNER_SHOP_HASHES.communityPackage;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -7371,7 +7385,10 @@ export default function ShopControlPage() {
       <ShopControlFieldPolish />
       <PageTopNav
         sectionLabel={
-          ownerProductManageFocusRequested || shopDiaryTaskFocused
+          ownerProductManageFocusRequested ||
+          shopDiaryTaskFocused ||
+          shopPictureTaskFocused ||
+          communityPackageTaskFocused
             ? "Focused task"
             : "Shop Control"
         }
@@ -7380,6 +7397,10 @@ export default function ShopControlPage() {
             ? "Manage product"
             : shopDiaryTaskFocused
               ? "Write shop update"
+              : shopPictureTaskFocused
+                ? "Change shop picture"
+                : communityPackageTaskFocused
+                  ? "Add more selling space"
               : "Shop Control"
         }
         subtitle={
@@ -7387,6 +7408,10 @@ export default function ShopControlPage() {
             ? "Change or remove the exact public-shop item you opened."
             : shopDiaryTaskFocused
               ? "Publish one short message for visitors."
+              : shopPictureTaskFocused
+                ? "Choose the picture people should recognise as your shop."
+                : communityPackageTaskFocused
+                  ? "Choose the extra shop or community service you need."
               : ""
         }
         homeTo={routes.dashboard}
@@ -7396,6 +7421,10 @@ export default function ShopControlPage() {
             ? ownerProductManageReturnPath || ownerPublicShopPath || routes.marketplace
             : shopDiaryTaskFocused
               ? routes.shopGallery
+              : shopPictureTaskFocused
+                ? routes.shopGallery
+                : communityPackageTaskFocused
+                  ? routes.shopGallery
               : routes.marketplace
         }
         backLabel={
@@ -7403,6 +7432,10 @@ export default function ShopControlPage() {
             ? "Public Shop"
             : shopDiaryTaskFocused
               ? "Gallery tools"
+              : shopPictureTaskFocused
+                ? "Shop items"
+                : communityPackageTaskFocused
+                  ? "Shop items"
               : "Marketplace"
         }
       />
@@ -7606,53 +7639,9 @@ export default function ShopControlPage() {
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
         >
-          {!ownerProductManageFocusRequested && !shopDiaryTaskFocused ? (
-            <div
-              style={{
-                marginBottom: 14,
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
-                border: "1px solid rgba(214,170,69,0.16)",
-              }}
-            >
-              <div style={sectionLabel()}>Shop Gallery</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-                What do you want to change?
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Add or change products below. Use a shortcut for your shop picture, a short update,
-                or more selling space.
-              </div>
-              <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
-                <StableCtaLink
-                  to={routes.shopDetails}
-                  kind="secondary"
-                  fullWidth
-                  debugId="shop-control.gallery.shop-billboard"
-                >
-                  Change shop picture
-                </StableCtaLink>
-                <StableCtaLink
-                  to={routes.shopDiary}
-                  kind="secondary"
-                  fullWidth
-                  debugId="shop-control.gallery.write-diary"
-                >
-                  Write shop update
-                </StableCtaLink>
-                <StableCtaLink
-                  to={routes.communityPackages}
-                  kind="secondary"
-                  fullWidth
-                  debugId="shop-control.gallery.community-package"
-                >
-                  Add more selling space
-                </StableCtaLink>
-              </div>
-            </div>
-          ) : null}
           <ShopAssetsPage
             embedded
-            embeddedSection={shopDiaryTaskFocused ? "diary" : "products"}
+            embeddedSection={shopPictureTaskFocused ? "picture" : shopDiaryTaskFocused ? "diary" : "products"}
             preferredClanId={effectiveShopClanId || selectedClanId || null}
             preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id) || null}
             focusedProductReturnPath={ownerProductManageReturnPath || null}
@@ -7665,6 +7654,56 @@ export default function ShopControlPage() {
               )
             }
           />
+          {!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused ? (
+            <details
+              data-shop-items-other-tasks="true"
+              open={isCompact ? undefined : true}
+              style={{
+                marginTop: 14,
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
+                border: "1px solid rgba(214,170,69,0.16)",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="shop-control.gallery.other-tasks.toggle"
+                stableHeight={isCompact ? 52 : 46}
+                style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}
+              >
+                Other shop tasks
+              </StableDisclosureSummary>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  Change your shop picture, write an update, or add more selling space.
+                </div>
+                <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
+                  <StableCtaLink
+                    to={routes.shopPicture}
+                    kind="secondary"
+                    fullWidth
+                    debugId="shop-control.gallery.shop-billboard"
+                  >
+                    Change shop picture
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.shopDiary}
+                    kind="secondary"
+                    fullWidth
+                    debugId="shop-control.gallery.write-diary"
+                  >
+                    Write shop update
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.communityPackages}
+                    kind="secondary"
+                    fullWidth
+                    debugId="shop-control.gallery.community-package"
+                  >
+                    Add more selling space
+                  </StableCtaLink>
+                </div>
+              </div>
+            </details>
+          ) : null}
         </section>
       ) : null}
       {activeOwnerLayer === "paid-tools" ? (
@@ -7673,13 +7712,19 @@ export default function ShopControlPage() {
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
         <div style={sectionLabel()}>
-          {merchantReleaseHashFocused ? "Merchant Release Rail" : "Optional paid tools"}
+          {communityPackageTaskFocused
+            ? "More selling space"
+            : merchantReleaseHashFocused
+              ? "Merchant Release Rail"
+              : "Optional paid tools"}
         </div>
 
         <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          {merchantReleaseHashFocused
-            ? "This is a paid verification and release-evidence activity. Start here when a merchant or outside buyer needs a signed rail for the minimum trade packet."
-            : "These are optional. Use them only when you need private viewing, public verification, or paid spotlight priority."}
+          {communityPackageTaskFocused
+            ? "Choose one extra space or community service. GSN creates a bank-transfer reference only after you choose."
+            : merchantReleaseHashFocused
+              ? "This is a paid verification and release-evidence activity. Start here when a merchant or outside buyer needs a signed rail for the minimum trade packet."
+              : "These are optional. Use them only when you need private viewing, public verification, or paid spotlight priority."}
         </div>
 
         <div
@@ -7692,6 +7737,8 @@ export default function ShopControlPage() {
             gap: 12,
           }}
         >
+          {!communityPackageTaskFocused ? (
+          <>
           <div
             id="shop-control-vault-subscription"
             style={{
@@ -8119,9 +8166,12 @@ export default function ShopControlPage() {
               {spotlightEvidenceText}
             </div>
           </div>
+          </>
+          ) : null}
 
           <div
             id="shop-control-community-packages"
+            data-shop-space-first-view="true"
             style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #FFF8DE 100%)")}
           >
             <div style={sectionLabel()}>More shop & community space</div>
@@ -8141,37 +8191,57 @@ export default function ShopControlPage() {
                   : "No request yet"}
               </span>
             </div>
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 8,
-              }}
+            <details
+              data-shop-space-status="true"
+              open={isCompact ? undefined : true}
+              style={{ marginTop: 12 }}
             >
-              {communityPackageStatusText.map((text) => (
-                <div
-                  key={text}
-                  style={{
-                    minHeight: 38,
-                    borderRadius: 14,
-                    border: "1px solid rgba(13,95,168,0.11)",
-                    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF7FF 100%)",
-                    color: "#1D4267",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "8px 10px",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {text}
-                </div>
-              ))}
-            </div>
+              <StableDisclosureSummary
+                debugId="shop-control.package.status.toggle"
+                stableHeight={48}
+                style={{
+                  display: isCompact ? "grid" : "none",
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+                  padding: "8px 12px",
+                  color: "#0B2D4A",
+                  fontSize: 13,
+                  fontWeight: 950,
+                }}
+              >
+                What you already have
+              </StableDisclosureSummary>
+              <div
+                style={{
+                  marginTop: isCompact ? 10 : 0,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {communityPackageStatusText.map((text) => (
+                  <div
+                    key={text}
+                    style={{
+                      minHeight: 38,
+                      borderRadius: 14,
+                      border: "1px solid rgba(13,95,168,0.11)",
+                      background: "linear-gradient(180deg, #FFFFFF 0%, #EEF7FF 100%)",
+                      color: "#1D4267",
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 10px",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {text}
+                  </div>
+                ))}
+              </div>
+            </details>
             {latestCommunityPackagePayment ? (
               <div
                 style={{
@@ -8307,9 +8377,33 @@ export default function ShopControlPage() {
                 Meeting support
               </SecondaryButton>
             </div>
-            <div
+            <details
+              data-shop-space-service-tools="true"
+              open={isCompact ? undefined : true}
+              style={{ marginTop: 12 }}
+            >
+              <StableDisclosureSummary
+                debugId="shop-control.package.service-tools.toggle"
+                stableHeight={52}
+                style={{
+                  display: isCompact ? "grid" : "none",
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
+                  padding: "8px 12px",
+                  color: "#0B2D4A",
+                  fontSize: 13,
+                  fontWeight: 950,
+                }}
+              >
+                <span style={{ display: "grid", gap: 2 }}>
+                  <span>Use purchased services</span>
+                  <span style={{ color: "#617085", fontSize: 11, fontWeight: 800 }}>
+                    Run a ROSCA cycle or plan a community meeting
+                  </span>
+                </span>
+              </StableDisclosureSummary>
+              <div
               style={{
-                marginTop: 12,
+                marginTop: isCompact ? 10 : 0,
                 ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
                 border: "1px solid rgba(13,95,168,0.10)",
               }}
@@ -8878,6 +8972,7 @@ export default function ShopControlPage() {
               GSN keeps the ROSCA and meeting records. It does not move ROSCA money,
               and meeting conversations still happen through WhatsApp.
             </div>
+            </details>
           </div>
         </div>
       </section>

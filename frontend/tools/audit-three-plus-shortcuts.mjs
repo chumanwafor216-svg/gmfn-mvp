@@ -95,13 +95,13 @@ assertContains(
 );
 assertContains(
   'control',
-  /activeOwnerLayer === "products"[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused \? \([\s\S]*?Shop Gallery[\s\S]*?Change shop picture[\s\S]*?Write shop update[\s\S]*?Add more selling space[\s\S]*?embeddedSection=\{shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}/,
-  'Ordinary Gallery Tools must show its shortcuts, while exact-product and Diary handoffs each reveal only their requested task.'
+  /activeOwnerLayer === "products"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused \? \([\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?Other shop tasks[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?Write shop update[\s\S]*?Add more selling space/,
+  'Ordinary Shop items must lead with its requested task and retain secondary shortcuts behind one disclosure, while exact-product, picture, and update handoffs expose only their requested task.'
 );
 assertContains(
   'assets',
-  /embeddedSection\?: "products" \| "diary"[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?embedded && embeddedSection === "products"/,
-  'Embedded Shop Assets must keep the Shop Diary and Products & Services tasks separate.'
+  /embeddedSection\?: "products" \| "diary" \| "picture"[\s\S]*?!embedded \|\| pictureTaskFocused[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?embedded && embeddedSection === "products"/,
+  'Embedded Shop Assets must keep the Shop picture, Shop update, and Shop items tasks separate.'
 );
 assertContains(
   'assets',

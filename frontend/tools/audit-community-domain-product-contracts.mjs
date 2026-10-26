@@ -2586,7 +2586,7 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.edit"[\s\S]*disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.add"[\s\S]*disabled=\{vaultFeatureOff \|\| creatingLink\}[\s\S]*debugId="vault-control\.link\.create-or-replace"[\s\S]*disabled=\{vaultFeatureOff \|\| Boolean\(selectedBlockPrimaryLink && busyLinkId === firstTruthy\(selectedBlockPrimaryLink\.id\)\)\}[\s\S]*debugId="vault-control\.link\.extend"[\s\S]*disabled=\{vaultFeatureOff \|\| savingProduct\}[\s\S]*debugId="vault-control\.editor\.save"/,
+  /disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.edit"[\s\S]*disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.add"[\s\S]*disabled=\{vaultFeatureOff \|\| creatingLink\}[\s\S]*debugId="vault-control\.link\.create-or-replace"[\s\S]*disabled=\{vaultFeatureOff \|\| Boolean\(selectedBlockPrimaryLink && busyLinkId === firstTruthy\(selectedBlockPrimaryLink\.id\)\)\}[\s\S]*debugId="vault-control\.link\.extend"[\s\S]*disabled=\{vaultFeatureOff \|\| savingProduct \|\| Boolean\(videoSound && !videoSound\.rightsConfirmed\)\}[\s\S]*debugId="vault-control\.editor\.save"/,
   "Vault Control must visibly disable add/edit, new private link, link extension, and editor save controls when Vault is off.",
   { frontend: true }
 );

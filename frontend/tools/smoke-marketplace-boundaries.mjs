@@ -86,6 +86,24 @@ function mockData(baseURL) {
     },
   ];
 
+  const products = [
+    {
+      id: 77,
+      shop_id: 55,
+      clan_id: 8,
+      name: "Community meal tray",
+      description: "[BLOCK:2] A family meal tray.",
+      price: "12500",
+      currency: "NGN",
+      image_url: "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+      video_url: "",
+      visibility_mode: "community_visible",
+      public_block_number: 2,
+      distribution_slots_remaining: 3,
+      is_active: true,
+    },
+  ];
+
   const protectedTrade = {
     id: 900,
     trade_code: "GSN-TRADE-SMOKE-900",
@@ -149,7 +167,7 @@ function mockData(baseURL) {
     ],
   };
 
-  return { me, clan, members, shops, protectedTrade, baseURL };
+  return { me, clan, members, shops, products, protectedTrade, baseURL };
 }
 
 async function installApiMocks(page, baseURL) {
@@ -169,16 +187,22 @@ async function installApiMocks(page, baseURL) {
       );
     }
     if (/^\/marketplace\/shops\/55\/spotlight-status/.test(path)) {
-      return route.fulfill(json({ active: false, followers: 0 }));
+      return route.fulfill(
+        json({ active: false, followers: 0, available_paid_credits: 1 })
+      );
     }
-    if (/^\/marketplace\/shops\/mine/.test(path)) {
-      return route.fulfill(json({ shop: data.shops[0], products: [] }));
+    if (/^\/marketplace\/shops\/(?:me|mine)/.test(path)) {
+      return route.fulfill(
+        json({ shop: data.shops[0], products: data.products })
+      );
     }
     if (/^\/marketplace\/shops/.test(path)) {
       return route.fulfill(json({ items: data.shops, shops: data.shops }));
     }
     if (/^\/marketplace\/products/.test(path)) {
-      return route.fulfill(json({ items: [], products: [] }));
+      return route.fulfill(
+        json({ items: data.products, products: data.products })
+      );
     }
     if (/^\/pool\/me/.test(path)) {
       return route.fulfill(
@@ -262,20 +286,32 @@ async function run() {
     support: false,
   });
 
-  await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-trade-evidence`, {
+  await page.goto(
+    `${baseURL}/app/marketplace?community=8&source=shop-control#marketplace-paid-network-placement`,
+    {
     waitUntil: "networkidle",
     timeout: 60000,
-  });
-  await page.locator('[data-cta-id="marketplace.progressive-tools.toggle"]').click({
-    timeout: 30000,
-  });
-  await page.locator('[data-cta-id="marketplace.progressive.marketing"]').click({
-    timeout: 30000,
-  });
+    }
+  );
   await waitForDebugSelector(
     page,
     '[data-gmfn-debug-id="marketplace.network-repost.surface"]',
     "marketing tools"
+  );
+  await page
+    .locator(
+      '[data-gmfn-debug-id="marketplace.network-repost.public-block-select"][data-gmfn-control-state="ready"]'
+    )
+    .waitFor({ state: "visible", timeout: 30000 });
+  await page.waitForFunction(
+    () =>
+      document
+        .getElementById("marketplace-paid-network-placement")
+        ?.textContent?.includes(
+          "What to do next: Choose the receiving community"
+        ),
+    undefined,
+    { timeout: 30000 }
   );
   await page.screenshot({
     path: join(screenshotDir, "marketplace-marketing-tools-390x844.png"),
@@ -286,20 +322,23 @@ async function run() {
     const tools = document.getElementById("marketplace-owned-links");
     const text = tools?.textContent || "";
     const required = [
-      "Marketing Tools",
+      "Promote in another community",
       "Selected Marketing Tool",
       "Back to Marketing Tools",
-      "4 marketing jobs",
-      "Repost selected",
-      "Marketplace-safe",
-      "Free Spotlight",
-      "Subscription Spotlight",
-      "Trade Evidence",
+      "What to do next: Choose the receiving community",
+      "Shop item",
+      "Community ID",
+      "How long",
     ];
     const forbidden = [
       "Access & Public Links",
       "Selected Link Center tool",
       "Back to Link Center",
+      "Free Spotlight",
+      "Subscription Spotlight",
+      "Trade Evidence",
+      "Get payment code",
+      "Publish promotion",
     ];
     return {
       toolsExists: Boolean(tools),
@@ -317,9 +356,134 @@ async function run() {
     process.exit(1);
   }
 
-  await page.locator('[data-cta-id="marketplace.marketing.trade-evidence"]').click({
+  await page
+    .locator(
+      '[data-gmfn-debug-id="marketplace.network-repost.target-community-input"]'
+    )
+    .fill("GMFN-C-000009");
+  await page
+    .locator('[data-cta-id="marketplace.network-repost.place"]')
+    .waitFor({ state: "visible", timeout: 30000 });
+
+  const publishFacts = await page.evaluate(() => {
+    const publish = document.querySelector(
+      '[data-cta-id="marketplace.network-repost.place"]'
+    );
+    const payment = document.querySelector(
+      '[data-cta-id="marketplace.network-repost.generate-payment-code"]'
+    );
+    const rect = publish?.getBoundingClientRect();
+    const promotion = document.getElementById(
+      "marketplace-paid-network-placement"
+    );
+    const overflow = Array.from(
+      promotion?.querySelectorAll("*") || []
+    )
+      .filter((element) => {
+        const candidate = element.getBoundingClientRect();
+        return (
+          candidate.width > 0 &&
+          (candidate.left < -2 || candidate.right > window.innerWidth + 2)
+        );
+      })
+      .slice(0, 8)
+      .map((element) => {
+        const candidate = element.getBoundingClientRect();
+        return {
+          tag: element.tagName,
+          id: element.id,
+          debug: element.getAttribute("data-gmfn-debug-id"),
+          cta: element.getAttribute("data-cta-id"),
+          text: (element.textContent || "").trim().slice(0, 80),
+          rect: {
+            left: Math.round(candidate.left),
+            right: Math.round(candidate.right),
+            width: Math.round(candidate.width),
+          },
+        };
+      });
+    return {
+      label: publish?.textContent?.trim() || "",
+      visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+      inFirstViewport: Boolean(rect && rect.bottom <= window.innerHeight),
+      publishRect: rect
+        ? {
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            height: Math.round(rect.height),
+          }
+        : null,
+      layout: [
+        ["promotion", promotion],
+        [
+          "next",
+          promotion?.querySelector(
+            '[data-gmfn-debug-id="marketplace.network-repost.next-step"]'
+          ),
+        ],
+        [
+          "item",
+          promotion?.querySelector(
+            '[data-gmfn-debug-id="marketplace.network-repost.public-block-select"]'
+          ),
+        ],
+        [
+          "community",
+          promotion?.querySelector(
+            '[data-gmfn-debug-id="marketplace.network-repost.target-community-input"]'
+          ),
+        ],
+        [
+          "duration",
+          promotion?.querySelector(
+            '[data-gmfn-debug-id="marketplace.network-repost.duration-select"]'
+          ),
+        ],
+        [
+          "target-help",
+          promotion?.querySelector(
+            '[data-cta-id="marketplace.network-repost.target-help.summary"]'
+          ),
+        ],
+      ].map(([name, element]) => {
+        const candidate = element?.getBoundingClientRect();
+        return {
+          name,
+          top: candidate ? Math.round(candidate.top) : null,
+          bottom: candidate ? Math.round(candidate.bottom) : null,
+          height: candidate ? Math.round(candidate.height) : null,
+        };
+      }),
+      paymentVisible: Boolean(
+        payment &&
+          payment.getBoundingClientRect().width > 0 &&
+          payment.getBoundingClientRect().height > 0
+      ),
+      overflow,
+    };
+  });
+
+  if (
+    publishFacts.label !== "Publish promotion" ||
+    !publishFacts.visible ||
+    !publishFacts.inFirstViewport ||
+    publishFacts.paymentVisible ||
+    publishFacts.overflow.length
+  ) {
+    console.error("Marketplace focused promotion smoke failed:", publishFacts);
+    process.exit(1);
+  }
+
+  await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-trade-evidence`, {
+    waitUntil: "networkidle",
     timeout: 30000,
   });
+  await page.locator('[data-cta-id="marketplace.progressive-tools.toggle"]').click({
+    timeout: 30000,
+  });
+  await page
+    .locator('[data-cta-id="marketplace.progressive.trade-evidence"]')
+    .click({ timeout: 30000 });
   await waitForDebugSelector(
     page,
     '[data-gmfn-debug-id="marketplace.trade.evidence-module"]',

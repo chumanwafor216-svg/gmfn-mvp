@@ -6728,6 +6728,8 @@ export default function MarketplacePage() {
       hasRepostContext &&
       (routeRepostSource === "shop-diaries" ||
         routeRepostSource === "shop-control-gallery" ||
+        routeRepostSource === "shop-control" ||
+        routeRepostSource === "community-shop-control" ||
         Boolean(routeRepostProductId || routeRepostBlockNumber));
     if (!openedFromShopBlock) return;
 

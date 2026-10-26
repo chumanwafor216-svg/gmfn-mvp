@@ -8,6 +8,223 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Promote in another community phone progression - 2026-10-26
+
+- Continued the owner-requested shop simplification into the existing
+  Marketplace paid Network Repost task. Investigation found a real launcher
+  defect: both Shop Control surfaces generated the paid-placement hash without
+  the source context that Marketplace intentionally requires, so the shortcut
+  could land in Marketplace without opening the requested tool.
+- Both launchers now add an explicit Shop Control source. The naked-hash guard
+  remains intact. On phone, the focused lane says Promote in another
+  community, gives one state-aware What to do next, uses Shop item,
+  Community ID and How long, and shows only the payment or publish controls
+  relevant to the current state. The final action is Publish promotion.
+  Desktop keeps the complete operational control set.
+- The generic public-link explanation and unrelated Free Spotlight,
+  Subscription Spotlight and Trade Evidence shortcuts no longer lengthen the
+  focused phone task. They remain unchanged on desktop and on their own routes.
+  Product identity, target suggestions, payment code/proof review, credit
+  confirmation, duration pricing, placement permissions, backend routes and
+  direct paid-Spotlight separation are unchanged.
+- The 293-module production build and the Marketplace action, inventory,
+  records/links, button-line, front-package, helper-lane, lazy-boundary and
+  touch-blocker audits passed after implementation. The records/links audit was
+  intentionally updated from the retired Paid Repost/technical copy to the
+  approved owner wording. The 390x844 browser smoke proved the explicit Shop
+  Control source opens the focused task, no premature payment/publish control
+  appears before a destination, and confirmed credit plus a destination exposes
+  Publish promotion inside the first viewport with no competing payment action
+  or promotion-surface overflow. The complete protected-button freeze also
+  passed across Marketplace, Shop Control, Dashboard, Market Wisdom, Community
+  Home, Action Inbox, entry/auth, shared tap guards and global action hygiene.
+  This package is local and not deployed.
+
+## Paid promotion phone progression - 2026-10-26
+
+- Continued the owner-requested shop simplification into
+  `/app/shop-control/subscription-spotlight`. The phone surface now says
+  `Paid promotion`, gives one state-aware `What to do next`, leads with only
+  the relevant plan/payment/publisher/live stage, and keeps the complete other
+  stages reachable behind closed disclosures. Desktop retains the complete
+  workbench.
+- The composer now asks what the owner is promoting, puts the picture/video
+  requirement first, keeps optional video controls closed on phone, and exposes
+  one clear action. Automatically finished video first uses `Prepare video
+  preview`; after that required preview is ready, the same action becomes
+  `Publish paid promotion`.
+- No payment, pricing, credit, permission, Community Domain, identity,
+  one-live-run, media-integrity, authoritative-persistence, serving, pacing or
+  exposure contract changed. This package is local and not deployed.
+- Verification passed: TypeScript, the 293-module production build,
+  `audit:spotlight-controls`, payment-instruction phone rows, media quality,
+  action-response, proof-surface and route-fallthrough audits, plus the complete
+  protected-button freeze. The 390x844 Playwright smoke covers activation,
+  open-payment, ready-to-publish and live states, keeps only one stage open,
+  finds no horizontal overflow or business write, and now fails if the real
+  `Publish paid promotion` button ends below the first 844px viewport.
+- Unrelated repository-wide debt remains unchanged: the standalone Community
+  Domain product-contract audit still reports the existing marketplace backend
+  and Shop Assets patterns, and standalone button-stability still reports the
+  unchanged Shop Gallery pattern. The Paid promotion-focused assertions pass.
+
+## Private offers phone guidance - 2026-10-26
+
+- Continued the owner-requested shop simplification into `/app/vault-control`.
+  The route always led with a large `Vault Control` banner and the activation/
+  payment purchase surface, including for an owner who had already paid and
+  only needed to add an offer or manage its private link.
+- The phone task now uses the member-facing name `Private offers`, a compact
+  shop identity, and one authoritative `What to do next` reading. No paid
+  space leads to `Activate a private space`; paid but empty space leads to
+  `Add your private offer`; a saved offer leads to `Create the private link`
+  or `Share or manage your private link` when an active link exists.
+- Only that next panel starts open and it is ordered directly after the phone
+  identity card. Activation, payment, offer-space, private-link and short
+  process-reminder panels all remain reachable. The complete desktop
+  workbench remains available.
+- Corrected a truthful-state defect discovered by the new guard: the shared
+  `isUsableVaultLink` helper treated a missing link as active because its
+  status fallback was `active`. A null link now remains absent, so the owner
+  sees `Create the private link` rather than false share/manage guidance.
+- Quote agreement remains distinct from payment confirmation. GBP 5 pricing,
+  the two-space maximum, payment code/proof flow, private product media,
+  permanent deletion, exact-offer links, copy/share/open/extend/revoke,
+  identity/domain gates, action inventory, API calls and backend contracts are
+  unchanged.
+- TypeScript, the 37-family Vault Control inventory, the action-response audit,
+  and the mocked 390x844 empty/paid-empty/offer-ready browser states passed.
+  All three screenshots were visually reviewed, had no horizontal overflow,
+  placed the relevant task in the first viewport, and emitted no business
+  write on navigation. The 293-module production build and complete protected-
+  button freeze suite also passed. Physical-phone review and live payment/
+  offer/link operations remain outstanding.
+- Separate repository truth: the standalone Community Domain product-contract
+  audit still reports existing Marketplace-backend and Shop Assets patterns;
+  its Vault-specific assertion passes after being aligned with the existing
+  sound-rights save guard. The standalone button-stability audit reports the
+  unchanged Public Shop pattern, while trust-actions reports Companion,
+  DemandBox and earlier doctrine-copy findings. These broader failures were
+  not repaired or hidden inside this focused package.
+- Deployment truth: this correction and the preceding More selling space,
+  Shop items, Shop update and Shop picture packages are local, uncommitted,
+  unpushed and undeployed. Commit `84fe4b68` remains the latest deployed
+  application commit.
+
+## More selling space phone first-view simplification - 2026-10-26
+
+- Continued the owner-requested simplification into
+  `/app/shop-control#shop-control-community-packages`. The direct task
+  previously rendered the complete paid-tools layer, including Vault,
+  verification and Subscription Spotlight before the requested capacity card,
+  then exposed the full ROSCA and meeting operating forms on the first phone
+  surface.
+- The exact hash is now a focused task. It shows only `More shop & community
+  space`, the unchanged price boundary, the four existing purchase choices,
+  any current payment reference/proof control, and two compact disclosures.
+  `What you already have` and `Use purchased services` stay closed on phone
+  and open on desktop.
+- The ROSCA cycle/payout and complete meeting/reminder/interest/attendance/
+  summary controls remain reachable inside `Use purchased services`.
+  Unrelated Vault, visitor-verification and paid-Spotlight cards are absent
+  only from this focused hash and remain unchanged on their own paid-tools
+  surfaces.
+- Prices, package codes, bank-transfer references, proof upload, confirmation,
+  entitlements, ROSCA records, meeting records, attendance Presence Evidence,
+  permissions, action inventory, API calls and backend contracts are
+  unchanged.
+- TypeScript, the Shop Control inventory, and the mocked 390x844 browser flow
+  passed. The browser proved that purchase choices appear before the closed
+  operating forms, both operating lanes remain reachable, there is no
+  horizontal overflow, and navigation creates no business write. The
+  293-module production build and complete protected-button freeze suite also
+  passed. Physical-phone review and a live package purchase remain
+  outstanding.
+- Deployment truth: this correction and the preceding Shop items, Shop update
+  and Shop picture packages are local, uncommitted, unpushed and undeployed.
+  Commit `84fe4b68` remains the latest deployed application commit.
+
+## Shop picture focused-task correction - 2026-10-26
+
+- Continued the owner-requested simplification from Shop items into its
+  `Change shop picture` handoff. Investigation found a real route defect:
+  the action opened `#shop-control-details`, whose current approved form has
+  no picture control.
+- The action now opens the focused existing picture editor at
+  `/app/shop-control#shop-assets-picture`. Phone shows only the current
+  preview, `Choose a picture`, the existing file field, and one primary
+  `Save picture` action. The pasted public-image URL remains available
+  behind closed `Use a picture link instead (optional)`; reset and remove
+  actions remain reachable.
+- The focused task returns to Shop items and does not expose Shop items, Shop
+  Update, Vault, or the full Pictures & Products workbench beside the picture
+  task. The standalone `/app/shop-assets` workbench remains unchanged.
+- Existing shop-image save/remove behavior, stored name/contact/description
+  fields, upload handling, policy gates, routes outside the new hash, action
+  inventory, permissions, API calls and backend contracts are unchanged.
+- Shop Assets, Shop Control, shortcut, and both Shop Diary audits plus
+  TypeScript and the mocked 390x844 Shop items -> picture -> return -> update
+  browser flow passed. The flow confirmed navigation made no business write.
+  The 293-module production build and complete protected-button freeze suite
+  also passed. Physical-phone review and a live picture save remain
+  outstanding.
+- Deployment truth: this correction, Shop items, and Shop update are local,
+  uncommitted, unpushed and undeployed. Commit `84fe4b68` remains the latest
+  deployed application commit.
+
+## Shop update phone first-view simplification - 2026-10-26
+
+- Continued the owner-requested correction into
+  `/app/shop-control#shop-assets-diary`. The focused route previously led
+  with internal `Shop Diary` wording, repeated an add-update heading and
+  exposed the optional activity/date/item/evidence form before the owner could
+  write the message.
+- The phone first view now says `Shop update`, explains in one line that this
+  is a short public-shop message, and immediately asks `What should visitors
+  know?`. The text box and existing `Publish update` action remain direct.
+  Optional metadata is behind `More details (optional)`; `Recent updates`
+  stays closed on phone and open on desktop.
+- This is a presentation and wording correction only. The one-text-update
+  model, 24-hour public window, activity/date/item fields, confirmed Trade
+  Evidence boundary, sharing, history, Spotlight review handoff, product/Diary
+  separation, permissions, API calls and backend contracts are unchanged.
+- Focused Shop Diary Phase 1/2, Shop Assets, Shop Control and shortcut audits,
+  TypeScript, the mocked 390x844 focused-task browser flow, the rebuilt
+  293-module production bundle, all 17 compiled visual scenarios at
+  360/390/430px, and the complete protected-button freeze suite passed.
+  Physical-phone review and live publishing remain outstanding.
+- Deployment truth: this continuation and the Shop items package below are
+  local, uncommitted, unpushed and undeployed. The earlier simplification
+  batch remains the latest deployed application commit.
+
+## Shop items phone first-view simplification - 2026-10-26
+
+- Continued the owner-requested correction into
+  `/app/shop-control#shop-control-gallery-tools`. The route previously showed
+  a separate Shop Gallery explanation and three secondary shortcuts before
+  the actual item task.
+- Phone now leads with `Shop items`, the truthful filled-space count and one
+  `+ Add item` action. The existing numbered `Your shop items` shelf remains
+  closed until requested.
+- Shop picture, Shop Update and extra selling space remain reachable after the
+  item task behind one phone-closed `Other shop tasks` disclosure; desktop
+  keeps it open. All six standard spaces and the existing add, edit, permanent
+  delete, copy, repost, exact-product, media and Diary behavior are preserved.
+- Static Shop Control, Shop Assets and shortcut audits, TypeScript, and the
+  mocked 390x844 add/save/public-link/Diary browser workflow passed. Physical
+  phone review and live product writes remain outstanding.
+- Deployment truth: this continuation began after the prior batch was
+  deployed. It is local, uncommitted, unpushed and undeployed.
+
+## Shop simplification deployment - 2026-10-26
+
+- Free Spotlight, Shop Control overview, Shop Details and Shop Activity were
+  committed as `84fe4b68`, pushed to the working branch and `main`, and
+  deployed through GitHub Actions run `40299673176`.
+- The exact frontend commit reached Render `live`, and the workflow's public
+  URL build-marker check passed. The batch changed no backend files, so the
+  workflow correctly skipped the API deploy.
+
 ## Shop Activity phone first-view simplification - 2026-10-26
 
 - Continued the owner-requested plain-language correction into
@@ -36,10 +253,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Known unrelated audit state: `audit-link-contracts` still has the existing
   Community Home `Manage shop` and Login publish-return expectation failures;
   neither route was changed by this package.
-- Test limitation and deployment truth: verification used a mocked 390x844
-  browser rather than the owner's physical phone or live analytics data. This
-  continuation is local only and remains uncommitted, unpushed and undeployed
-  with the wider simplification batch.
+- Test limitation: verification used a mocked 390x844 browser rather than the
+  owner's physical phone or live analytics data.
 
 ## Shop Details phone simplification - 2026-10-26
 
@@ -67,8 +282,6 @@ under `docs/` or `docs/archive/`, then link that file here.
   Community Home `Manage shop` and Login publish-return expectations. The
   updated Shop Details save assertion passed before those later failures; this
   package did not change either unrelated page.
-- Deployment truth: this continuation is local only and remains in the same
-  uncommitted, unpushed and undeployed simplification batch.
 
 ## Shop Control first-view simplification - 2026-10-26
 
@@ -94,9 +307,6 @@ under `docs/` or `docs/archive/`, then link that file here.
   the 390x844 Shop Control overview/analytics browser visual audit, the
   293-module production frontend build, the complete protected-button freeze
   suite, and scoped `git diff --check`.
-- Deployment truth: this continuation is local only. It is not committed,
-  pushed, or deployed, and remains in the same unpublished batch as the Free
-  Spotlight phone correction below.
 
 ## Free Spotlight phone publish-path correction - 2026-10-26
 
@@ -124,9 +334,6 @@ under `docs/` or `docs/archive/`, then link that file here.
   `audit:shop-control-button-inventory`, the full
   `audit:protected-button-freeze` suite, and `npm --prefix frontend run build`
   all passed. `git diff --check` passed for the scoped implementation files.
-- Deployment truth: this correction is implemented and verified locally but is
-  not yet committed, pushed, or deployed. Do not report it live until an exact
-  revision is promoted to `main` and Render acceptance/live evidence exists.
 
 ## Pre-React phone shortcut startup recovery - 2026-10-25
 

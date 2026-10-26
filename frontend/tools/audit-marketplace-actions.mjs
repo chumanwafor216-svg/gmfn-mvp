@@ -336,6 +336,30 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /paidRepost: appendRouteQueryParam\([\s\S]*?PAID_REPOST_HASH[\s\S]*?"source",[\s\S]*?"shop-control"/,
+  "Shop Control Promote in another community must carry an explicit source so Marketplace opens the paid-promotion task without weakening the naked-hash guard."
+);
+
+assertContains(
+  "src/components/CommunityShopControlPanel.tsx",
+  /paidRepost: appendRouteQueryParam\([\s\S]*?PAID_REPOST_HASH[\s\S]*?"source",[\s\S]*?"community-shop-control"/,
+  "Embedded Community Shop Control must carry an explicit source into the paid-promotion task."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /routeRepostSource === "shop-control"[\s\S]*?routeRepostSource === "community-shop-control"[\s\S]*?setActiveLinkCenterTool\("repost"\)/,
+  "Marketplace must accept the two explicit Shop Control promotion sources while continuing to reject a naked paid-promotion hash."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /What to do next:[\s\S]*?marketplaceRepostNextTitle[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?Get payment code[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?Publish promotion/,
+  "Marketplace paid promotion must lead the phone owner through one next step and expose a plainly named publish action."
+);
+
+assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?function writePaidRepostHandoff\(product: ShopProduct\)[\s\S]*?source: "shop-diaries"[\s\S]*?shopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originShopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originCommunityId: positiveNumber\([\s\S]*?ownerCommunityId: ownerSurfaceCommunityId[\s\S]*?window\.sessionStorage\.setItem[\s\S]*?function paidRepostHandoffHandler\(product: ShopProduct\)[\s\S]*?<StableCtaLink[\s\S]*?to=\{blockPlacementPath\(product\)\}[\s\S]*?onClick=\{paidRepostHandoffHandler\(product\)\}[\s\S]*?Repost/,
   "Products & Services Repost must store the exact public block plus source shop/community handoff before routing into Marketplace Paid Repost."

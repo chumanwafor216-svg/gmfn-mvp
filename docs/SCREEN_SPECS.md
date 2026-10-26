@@ -890,6 +890,16 @@ Rules:
   alter DemandBox ownership, provider-match order, neutral discovery, finance
   calculations, permissions, or route handoffs.
 - The Needs heading may expose one compact 48px `Add request` plus only when the authenticated member's community list contains the selected community and community policy permits DemandBox. A route parameter alone is not authorization. It opens and focuses the existing DemandBox request form with the selected community and an explicit origin/back path. Opening the shortcut creates nothing and must not enable relay consent, cross-community reach, paid capacity, or any other governed option.
+- Promote in another community remains the existing paid Network Repost
+  workflow, not a new advertising route. Shop Control must open it with an
+  explicit trusted source; a naked hash still must not expose the
+  finance-adjacent panel. On phone, the focused task uses one state-aware
+  What to do next path: choose one public shop item, choose a permitted
+  community and duration, get or refresh the exact payment code only when
+  credit is missing, then Publish promotion. Other marketing routes and
+  technical credit detail stay secondary. Product identity, target
+  suggestions, paid credits, proof review, pricing and placement permissions
+  remain unchanged.
 - When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
@@ -1412,7 +1422,7 @@ Shop Diary contract:
 - On Public Shop, the exact authenticated owner may see one compact 48px `Add diary entry` plus beside the Shop Diary/Shop Update heading. It opens the existing Shop Assets Diary form with the current community and origin/back path, performs no write on open, and replaces the redundant empty-state add action. Visitors and non-owners do not see it. Delegated editor exposure remains unavailable until a shop-scoped editor authorization contract exists.
 - Products & Services remain separate from Shop Diary. Each product/service card keeps its internal open `+` that becomes `×` when opened. Only the exact signed-in shop owner may see one separate 48px media-management `+` inside the expanded action dock after Close, Share, and Repost. It opens the existing Shop Gallery Tools lane on that exact product/block, where Change media or details and Delete permanently are the first decisions. Permanent deletion requires owner confirmation, removes the product row and reposts, retires its Vault payload/access and linked Spotlight delivery, queues only canonically unreferenced GSN-managed media for bounded retry, preserves minimal immutable trust/commercial/exposure evidence with the deleted catalog link detached, and offers no restore path; the owner uploads a new item if it is needed again. The same exact-owner permanent-delete contract applies in Vault Control. It performs no write on open, stays hidden on closed cards, never opens/plays media, and never appears to visitors or non-owners. Do not place it as a floating media overlay.
 - When Shop Gallery Tools is opened through that exact product-management `+`, it is a focused task: open the requested block immediately, show only Change media or details and Delete permanently as the first decisions, and hide the generic Shop Gallery introduction/shortcuts, numbered-block chooser, quick Add, Copy, and Repost controls. The top return action goes to that exact Public Shop product/block. Choosing Change opens the existing editor with plain `Save changes` / `Close form` actions; the unrelated Copy shop link action stays hidden in this focused editor. After a successful save, show `View updated product` beside the result. After permanent deletion, keep the emptied block and deletion result visible and offer `Back to public shop`; re-upload remains available in the same block.
-- Ordinary Shop Gallery entry retains a short introduction and three plain-language shortcuts, then exposes only the Products & Services task. User-facing copy says `shop items` and `shop spaces`; `block` and `numbered block` remain internal contract terms and must not lead the ordinary owner experience. Choosing `Write shop update` opens only the existing Shop Diary task; `Change shop picture` remains the separate Shop Details task; `Add more selling space` retains the existing paid-capacity contract but presents it as `More shop & community space`, with plain choices, prices, payment-reference guidance, ROSCA support, and meeting support. The standalone Pictures & Products route retains its complete multi-section owner workbench but labels it in owner language: manage the shop, see items at a glance, follow the simple starting order, add a shop or Vault item, and review saved items. Marketplace Shops policy alone controls product Add/Edit/Save; disabling Shop Diary must not disable product management. On phones, an Add/Save/Delete result or blocked quick-add must reopen the affected numbered block and return focus to its visible result; a successful operation must not appear inert because its disclosure closed during refresh. A successful ordinary public-product save exposes one `View product in public shop` continuation to that exact saved product/block; it stays absent for failed saves, permanent deletions, and submissions still awaiting review.
+- Ordinary Shop Gallery entry retains a short introduction and three plain-language shortcuts, then exposes only the Products & Services task. User-facing copy says `shop items` and `shop spaces`; `block` and `numbered block` remain internal contract terms and must not lead the ordinary owner experience. Choosing `Write shop update` opens only the existing Shop Diary task; `Change shop picture` opens only the existing picture editor as a focused task; `Add more selling space` retains the existing paid-capacity contract but presents it as `More shop & community space`, with plain choices, prices, payment-reference guidance, ROSCA support, and meeting support. The standalone Pictures & Products route retains its complete multi-section owner workbench but labels it in owner language: manage the shop, see items at a glance, follow the simple starting order, add a shop or Vault item, and review saved items. Marketplace Shops policy alone controls product Add/Edit/Save; disabling Shop Diary must not disable product management. On phones, an Add/Save/Delete result or blocked quick-add must reopen the affected numbered block and return focus to its visible result; a successful operation must not appear inert because its disclosure closed during refresh. A successful ordinary public-product save exposes one `View product in public shop` continuation to that exact saved product/block; it stays absent for failed saves, permanent deletions, and submissions still awaiting review.
 - New product, Vault, Community Notice, and Spotlight video publishing uses the shared GSN Media Quality Gate v1. The browser should reject obviously unreadable or technically unusable files early, but the backend is authoritative and must inspect the real file rather than trust the filename, declared MIME type, or client-supplied duration. Members are not required to know or manually meet the public clip duration: a supported phone browser prepares the clip locally when possible, and otherwise sends a bounded source of up to 100 MB to the authenticated server. The practical hard-rejection floor is a playable source at least one second long, at least 360 pixels on its short edge, at least 15 frames per second, and no wider/taller than a 2.4:1 ratio. A usable 576x1296 downloaded social portrait is accepted; GSN must not require 720p merely because a clear source falls below HD. The backend physically keeps only the opening 10 seconds, produces an output no larger than 15 MB in MP4/H.264 with web-safe pixel format and fast-start metadata, caps the long edge at 1280 without upscaling, and applies modest AAC loudness normalisation when audio exists. Preparation improves compatibility and consistency but cannot recreate missing visual detail, invent content, or become an AI/video-editing tool. Silent product video remains valid.
 - Every verified video receives `GSN Clear Finish` automatically through conservative denoise, brightness/contrast/saturation and mild sharpening before publication. This shared preparation is non-generative: it must not recreate missing detail, hide condition, or materially change product colour, shape or identity. The optional branded `GSN Natural Finish` remains a separate seller choice.
 - Every current product-photo upload must use the authenticated GSN image route and receive `GSN Clear Finish`: EXIF orientation correction, no upscaling, a 1920-pixel maximum long edge, a conservative brightness/contrast/colour/sharpness adjustment, metadata removal, and web-ready JPEG or transparency-preserving WebP output under 4 MB. The finish must not generate or invent detail, hide product condition, materially change colour/shape/identity, or imply GSN endorsement. The response must identify the source/output dimensions, formats and bytes. Legacy direct R2 presigns are not part of this verified contract until a post-upload worker can inspect their stored objects.
@@ -1471,6 +1481,81 @@ Owner-approved 2026-10-26 first-view correction:
   disclosure on phone. Desktop may keep that report open. Do not delete or
   change calculations, source data, panel routes, Attention Spine behavior or
   Dashboard Market Wisdom while simplifying the first surface.
+- Shop items (`#shop-control-gallery-tools`) must lead with the actual item
+  task on phone: the `Shop items` heading, current filled-space count, and one
+  `+ Add item` primary action. Keep the numbered `Your shop items` shelf closed
+  until the owner requests it.
+- Move the shop-picture, shop-update, and extra-selling-space shortcuts after
+  the item task and keep them behind one closed `Other shop tasks` disclosure
+  on phone. Desktop may keep that disclosure open. Preserve all numbered
+  spaces, add/edit/delete/copy/repost actions, exact-product focus, media
+  preparation, Diary separation, routes, permissions and backend contracts.
+- Shop picture (`#shop-assets-picture`) must be a focused reuse of the
+  existing picture editor. On phone, show the current preview, `Choose a
+  picture`, the existing file field and one primary `Save picture` action.
+  Keep the pasted public-image URL behind closed `Use a picture link instead
+  (optional)`; retain reset and remove-picture actions and return to Shop
+  items. Do not expose the wider shop-details form, Shop items, Shop Update,
+  Vault or the standalone workbench beside this focused task.
+- The focused picture hash corrects the prior broken handoff to Shop Details,
+  which has no picture control. Preserve the existing shop-image
+  save/remove payload, stored shop information, upload preparation, policy
+  gates, permissions and backend contracts. The standalone
+  `/app/shop-assets` workbench remains complete and unchanged.
+- More selling space (`#shop-control-community-packages`) must be a focused
+  task rather than the whole paid-tools page. Lead with `More shop & community
+  space`, the unchanged GBP 60/year ROSCA price and GBP 1 other-choice
+  boundary, the four existing purchase choices, and any current payment
+  reference/proof action. Do not place Vault, visitor verification, or
+  Subscription Spotlight cards before or beside this focused task.
+- Keep current entitlements behind phone-closed `What you already have`.
+  Keep the complete ROSCA cycle/payout and meeting reminder/interest/
+  attendance/summary tools behind phone-closed `Use purchased services`.
+  Desktop may keep both disclosures open. Preserve package codes, prices,
+  bank-reference/proof flow, confirmation, entitlements, Presence Evidence,
+  permissions, API calls and backend contracts.
+- Private offers (`/app/vault-control`) must use `Private offers` as the phone
+  task name and derive one `What to do next` reading from authoritative paid
+  space, private-product and private-link state. No paid space leads to
+  activation; paid but empty space leads to adding an offer; a saved offer
+  leads to creating its link or managing an existing active link.
+- On phone, order that relevant panel directly after the compact shop identity
+  and start only that panel open. Keep activation, payment, private-space,
+  exact-offer link and short process-reminder panels reachable. Desktop keeps
+  the complete workbench. A missing link must never be classified as active.
+- Preserve quote-agreement/payment-confirmation separation, GBP 5 pricing,
+  two-space maximum, bank reference and transfer-receipt upload, product media quality gate,
+  permanent deletion, exact private-link scope, copy/share/open/extend/revoke,
+  identity and Community Domain gates, action/field inventory, API calls and
+  backend contracts.
+- Paid promotion (`/app/shop-control/subscription-spotlight`) must use
+  `Paid promotion` as the phone task name and derive one `What to do next`
+  reading from authoritative live-promotion, ready-credit, open-payment or
+  activation state. A live promotion leads with its wait state; a ready credit
+  leads with creation; an open payment leads with bank transfer/receipt; all
+  other usable states lead with plan choice.
+- On phone, order only that relevant stage directly after the compact identity
+  and keep the complete other stages reachable behind closed disclosures.
+  Desktop retains the complete Subscription Spotlight workbench. The required
+  composer asks `What are you promoting?`, then asks for a picture or short
+  video, and keeps optional sound and automatic finishing inside closed
+  `Video options`.
+- The main composer action must remain visible and truthful: for a video with
+  automatic finishing enabled it says `Prepare video preview`, preserves the
+  mandatory review, then becomes `Publish paid promotion`. Preserve all
+  pricing, quote agreement, bank instructions, receipt upload, confirmation,
+  paid-credit, identity/domain, one-live-run, media, authoritative persistence,
+  serving, pacing and exposure contracts.
+- Shop update (`#shop-assets-diary`) must use the member-facing `Shop
+  update` name and lead with one direct question, `What should visitors
+  know?`. Keep the text box and `Publish update` action in the first task
+  view. Put activity type, date, related item and confirmed Trade Evidence
+  behind `More details (optional)`; keep `Recent updates` closed on phone
+  and open on desktop.
+- Do not expose the internal `Shop Diary` name in this focused owner task.
+  Preserve the text-only update rule, 24-hour public visibility, sharing,
+  history, confirmed-evidence safeguards, review-before-Spotlight handoff,
+  product/update separation, routes, permissions and backend contracts.
 
 Rules:
 - Identity-lock and protected-shop-action blockers must explain why Shop

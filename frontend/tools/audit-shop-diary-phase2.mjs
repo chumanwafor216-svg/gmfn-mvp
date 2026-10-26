@@ -53,7 +53,7 @@ assertContains(
 assertContains(files.assets, "listProtectedTrades", "Owner diary must load existing Trade Evidence records instead of accepting typed ids.");
 assertContains(files.assets, "SHOP_DIARY_CONFIRMED_TRADE_STATES", "Owner diary selector must filter to confirmed Trade Evidence states.");
 assertContains(files.assets, "isConfirmedShopTradeForDiary", "Owner diary selector must filter by current shop and confirmation state.");
-assertContains(files.assets, "No confirmed Trade Evidence linked to this shop yet.", "Owner diary must explain when safe stronger evidence linkage is unavailable.");
+assertContains(files.assets, "No confirmed Trade Evidence is linked to this shop yet.", "Owner diary must explain when safe stronger evidence linkage is unavailable.");
 assertContains(files.assets, "Promote this update", "Owner diary must expose the deliberate Spotlight handoff action.");
 assertContains(files.assets, "appendShopDiarySpotlightHandoff", "Promote action must open the canonical Shop Control Spotlight route with handoff context.");
 assertContains(files.assets, "writeShopDiarySpotlightHandoff", "Promote action must carry safe prefill context via scoped session storage.");
@@ -67,7 +67,15 @@ assertContains(files.control, "Diary update loaded. Review it before publishing 
 assertNotContains(files.control, "source_diary_entry_id", "Phase 2 must not force a risky frozen Spotlight model migration.");
 
 assertContains(files.gallery, "featuredDiaryEntry = liveShopDiaryEntries[0] || null", "Public Shop must keep one current live diary update as the featured entry.");
-assertNotContains(files.gallery, /promot/i, "Public Shop diary ranking/presentation must not imply promoted means confirmed or featured.");
+const gallerySource = read(files.gallery);
+const publicDiarySection = gallerySource.match(
+  /<section\s+id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?<\/section>\s*<\/div>\s*<\/details>/
+)?.[0];
+if (!publicDiarySection) {
+  findings.push(`${path.relative(repo, files.gallery)}: Public Shop diary presentation boundary must remain auditable.`);
+} else if (/promot/i.test(publicDiarySection)) {
+  findings.push(`${path.relative(repo, files.gallery)}: Public Shop diary ranking/presentation must not imply promoted means confirmed or featured.`);
+}
 assertNotContains(files.gallery, "featuredDiaryEntry.evidence_label", "Public Shop diary must not expose owner/evidence labels in visitor copy.");
 assertNotContains(files.gallery, "evidence_boundary ||", "Public Shop diary must not expose evidence boundary paragraphs in visitor copy.");
 

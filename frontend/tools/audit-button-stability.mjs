@@ -1870,7 +1870,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/SubscriptionSpotlightPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId=\{`subscription-spotlight\.credit\.\$\{credit\}`\}[\s\S]*?debugId="subscription-spotlight\.confirm-quote"[\s\S]*?debugId="subscription-spotlight\.generate-payment-code"[\s\S]*?debugId="subscription-spotlight\.copy-payment-details"[\s\S]*?debugId="subscription-spotlight\.check-payment-status"[\s\S]*?debugId="subscription-spotlight\.publish"/,
+  /import \{[\s\S]*?PrimaryButton,[\s\S]*?SecondaryButton,[\s\S]*?StableDisclosureSummary,[\s\S]*?SubtleButton,[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?debugId=\{`subscription-spotlight\.credit\.\$\{credit\}`\}[\s\S]*?debugId="subscription-spotlight\.confirm-quote"[\s\S]*?debugId="subscription-spotlight\.generate-payment-code"[\s\S]*?debugId="subscription-spotlight\.copy-payment-details"[\s\S]*?debugId="subscription-spotlight\.check-payment-status"[\s\S]*?debugId="subscription-spotlight\.publish"/,
   "Subscription Spotlight page must use shared stable button primitives for credit selection, quote, payment, and publish actions."
 );
 

@@ -118,6 +118,13 @@ function routeTarget(
   }).to as string;
 }
 
+function appendRouteQueryParam(to: string, key: string, value: string): string {
+  const [baseAndQuery, hash = ""] = to.split("#");
+  const separator = baseAndQuery.includes("?") ? "&" : "?";
+  const query = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return `${baseAndQuery}${separator}${query}${hash ? `#${hash}` : ""}`;
+}
+
 function resolveImageSrc(raw: any): string {
   const value = safeStr(raw);
   if (!value) return "";
@@ -497,11 +504,15 @@ export default function CommunityShopControlPanel({
         selectedClanId,
         "community-shop-control.route.subscription-spotlight"
       ),
-      paidRepost: routeTarget(
-        "marketplace",
-        selectedClanId,
-        "community-shop-control.route.paid-repost",
-        { hash: PAID_REPOST_HASH }
+      paidRepost: appendRouteQueryParam(
+        routeTarget(
+          "marketplace",
+          selectedClanId,
+          "community-shop-control.route.paid-repost",
+          { hash: PAID_REPOST_HASH }
+        ),
+        "source",
+        "community-shop-control"
       ),
       vaultControl: routeTarget(
         "vaultControl",

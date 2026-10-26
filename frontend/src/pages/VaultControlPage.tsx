@@ -176,7 +176,7 @@ type VaultConfigRecord = {
   billing_cycle?: string | null;
 };
 
-type VaultPanelKey = "payment" | "blocks" | "link" | "flow";
+type VaultPanelKey = "activation" | "payment" | "blocks" | "link" | "flow";
 
 const VAULT_SLOT_LIMIT = 2;
 const VAULT_PAYMENT_DUE_DAYS = 7;
@@ -934,7 +934,7 @@ function vaultLinkStatus(link: VaultLinkItem | null | undefined): string {
 }
 
 function isUsableVaultLink(link: VaultLinkItem | null | undefined): boolean {
-  return vaultLinkStatus(link) === "active";
+  return Boolean(link) && vaultLinkStatus(link) === "active";
 }
 
 function vaultLinkMatchesProduct(link: VaultLinkItem, product: ProductRecord | null | undefined): boolean {
@@ -974,6 +974,7 @@ export default function VaultControlPage() {
   const [confirmedPaymentQuoteKey, setConfirmedPaymentQuoteKey] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
   const [openVaultPanels, setOpenVaultPanels] = useState<Record<VaultPanelKey, boolean>>({
+    activation: true,
     payment: false,
     blocks: false,
     link: false,
@@ -1001,6 +1002,7 @@ export default function VaultControlPage() {
   const loadSeqRef = useRef(0);
   const imagePrepJobRef = useRef(0);
   const videoPrepJobRef = useRef(0);
+  const initialPhoneGuidanceAppliedRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -1249,6 +1251,50 @@ export default function VaultControlPage() {
   }
   const shopHeroImageUrl = resolveAssetSrc(shop?.image_url);
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
+  const activeVaultPaymentStatus = firstTruthy(activeVaultPayment?.status).toLowerCase();
+  const vaultPaymentNeedsAction = Boolean(
+    activeVaultPayment &&
+      !isConfirmedPayment(activeVaultPayment) &&
+      !["expired", "cancelled", "canceled"].includes(activeVaultPaymentStatus)
+  );
+  const selectedBlockHasUsableLink = isUsableVaultLink(selectedBlockPrimaryLink);
+  const vaultGuidedPanel: VaultPanelKey = confirmedVaultSlots > 0
+    ? selectedProduct
+      ? "link"
+      : "blocks"
+    : vaultPaymentNeedsAction
+      ? "payment"
+      : "activation";
+  const vaultNextStepTitle = vaultGuidedPanel === "activation"
+    ? "Activate a private space"
+    : vaultGuidedPanel === "payment"
+      ? "Complete the bank transfer"
+      : vaultGuidedPanel === "blocks"
+        ? "Add your private offer"
+        : selectedBlockHasUsableLink
+          ? "Share or manage your private link"
+          : "Create the private link";
+  const vaultNextStepDetail = vaultGuidedPanel === "activation"
+    ? "Choose one or two spaces. Each space costs GBP 5 and opens only after payment is confirmed."
+    : vaultGuidedPanel === "payment"
+      ? "Use the payment code below, then upload proof or check the confirmation status."
+      : vaultGuidedPanel === "blocks"
+        ? "Choose an active space and add the offer that invited customers should see."
+        : selectedBlockHasUsableLink
+          ? "Copy, share, open, extend or revoke the link for the selected offer."
+          : "Create one controlled link for the selected offer before sharing it.";
+
+  useEffect(() => {
+    if (!isCompact || loading || initialPhoneGuidanceAppliedRef.current) return;
+    initialPhoneGuidanceAppliedRef.current = true;
+    setOpenVaultPanels({
+      activation: vaultGuidedPanel === "activation",
+      payment: vaultGuidedPanel === "payment",
+      blocks: vaultGuidedPanel === "blocks",
+      link: vaultGuidedPanel === "link",
+      flow: false,
+    });
+  }, [isCompact, loading, vaultGuidedPanel]);
   const vaultPaymentDueDays = Math.max(
     1,
     Number(vaultConfig?.payment_instruction_expiry_days || VAULT_PAYMENT_DUE_DAYS)
@@ -1348,6 +1394,19 @@ export default function VaultControlPage() {
 
   function toggleVaultPanel(panel: VaultPanelKey) {
     setOpenVaultPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  }
+
+  function vaultPhonePanelOrder(panel: VaultPanelKey): number | undefined {
+    if (!isCompact) return undefined;
+    const defaultOrder: Record<VaultPanelKey, number> = {
+      activation: 2,
+      payment: 3,
+      blocks: 4,
+      link: 5,
+      flow: 6,
+    };
+    const guidedOrder = panel === vaultGuidedPanel ? 1 : defaultOrder[panel];
+    return editorOpen ? guidedOrder + 1 : guidedOrder;
   }
 
   function panelHeader(
@@ -1622,7 +1681,7 @@ export default function VaultControlPage() {
       if (!mountedRef.current) return;
       setVaultInstruction(result as ExpectedPaymentRecord);
       setVaultSettlement((result?.settlement || vaultSettlement || null) as SettlementRecord | null);
-      setOpenVaultPanels((prev) => ({ ...prev, payment: true }));
+      setOpenVaultPanels((prev) => ({ ...prev, activation: false, payment: true }));
       await loadPage();
       if (!mountedRef.current) return;
       const reference = firstTruthy(result?.reference_display, result?.reference);
@@ -1754,6 +1813,7 @@ export default function VaultControlPage() {
       if (!mountedRef.current) return;
       resetProductForm();
       setEditorOpen(false);
+      setOpenVaultPanels((prev) => ({ ...prev, blocks: false, link: true }));
       showNotice("success", nextVideoUrl ? "Vault block saved with video." : "Vault block saved.");
     } catch (err: any) {
       if (!mountedRef.current) return;
@@ -1787,6 +1847,7 @@ export default function VaultControlPage() {
       }
       await loadPage();
       if (!mountedRef.current) return;
+      setOpenVaultPanels((prev) => ({ ...prev, blocks: true, link: false }));
       showNotice(
         "success",
         "Vault offer permanently deleted. Upload it again if you need it later."
@@ -1915,7 +1976,7 @@ export default function VaultControlPage() {
     return (
       <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gap: 16 }}>
         <section style={pageCard()}>
-          <div style={helperText()}>Loading Vault Control...</div>
+          <div style={helperText()}>Loading private offers...</div>
         </section>
       </div>
     );
@@ -1926,32 +1987,74 @@ export default function VaultControlPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
+        data-vault-private-first-view="true"
+        data-vault-next-panel={vaultGuidedPanel}
         style={{
           ...pageCard(
             "radial-gradient(circle at 83% 12%, rgba(74,121,165,0.28), transparent 30%), linear-gradient(150deg, #06111F 0%, #082039 45%, #123E65 100%)"
           ),
-          padding: isCompact ? 22 : 30,
+          padding: isCompact ? 18 : 30,
           border: "1px solid rgba(243,208,106,0.22)",
           boxShadow:
             "0 28px 62px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+          order: 0,
         }}
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
           <div>
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>
-              {labelWithIcon("vault", "Vault Control")}
-            </div>
-            <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
-              {shopName}
-            </h1>
-            <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: isCompact ? 16 : 18, lineHeight: 1.55, maxWidth: 600, fontWeight: 760 }}>
-              Same shop signboard. Private blocks become available after payment confirmation. Access only through a link you create.
-            </div>
-            <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={vaultHeroBadge(true)}>{labelWithIcon("vault", "Vault")}</span>
-              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} active Vault slots</span>
-              <span style={vaultHeroBadge(false)}>One block at a time</span>
-            </div>
+            {isCompact ? (
+              <>
+                <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 13 }}>
+                  {labelWithIcon("vault", "Private offers")}
+                </div>
+                <h1 style={{ margin: "10px 0 0", color: "#FFFFFF", fontSize: 28, lineHeight: 1.08, fontWeight: 950, textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
+                  {shopName}
+                </h1>
+                <div style={{ marginTop: 8, color: "#E8F1FA", fontSize: 14, lineHeight: 1.45, fontWeight: 760 }}>
+                  Share one offer through a private link that you control.
+                </div>
+                <div
+                  data-vault-next-step="true"
+                  style={{
+                    marginTop: 14,
+                    borderRadius: 18,
+                    border: "1px solid rgba(243,208,106,0.26)",
+                    background: "rgba(255,255,255,0.08)",
+                    padding: 14,
+                  }}
+                >
+                  <div style={{ color: gmfnBrand.colors.gold, fontSize: 11, fontWeight: 950, letterSpacing: 0.8, textTransform: "uppercase" }}>
+                    What to do next
+                  </div>
+                  <div style={{ marginTop: 5, color: "#FFFFFF", fontSize: 18, fontWeight: 950, lineHeight: 1.25 }}>
+                    {vaultNextStepTitle}
+                  </div>
+                  <div style={{ marginTop: 5, color: "#D9E7F4", fontSize: 13, fontWeight: 760, lineHeight: 1.4 }}>
+                    {vaultNextStepDetail}
+                  </div>
+                  <div style={{ marginTop: 9, color: "#F8E6A2", fontSize: 12, fontWeight: 900 }}>
+                    {confirmedVaultSlots} of {VAULT_SLOT_LIMIT} private spaces active
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>
+                  {labelWithIcon("vault", "Vault Control")}
+                </div>
+                <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
+                  {shopName}
+                </h1>
+                <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: 18, lineHeight: 1.55, maxWidth: 600, fontWeight: 760 }}>
+                  Same shop signboard. Private blocks become available after payment confirmation. Access only through a link you create.
+                </div>
+                <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <span style={vaultHeroBadge(true)}>{labelWithIcon("vault", "Vault")}</span>
+                  <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} active Vault slots</span>
+                  <span style={vaultHeroBadge(false)}>One block at a time</span>
+                </div>
+              </>
+            )}
           </div>
           {isCompact ? null : (
             <div style={vaultGlassFrame()}>
@@ -1993,7 +2096,26 @@ export default function VaultControlPage() {
         </div>
       </section>
 
-      <section style={{ ...vaultLightPanel(), padding: 0, overflow: "hidden" }}>
+      <section
+        data-vault-activation-panel="true"
+        style={{
+          ...vaultLightPanel(),
+          padding: 0,
+          overflow: "hidden",
+          order: vaultPhonePanelOrder("activation"),
+        }}
+      >
+        {isCompact ? (
+          <div style={{ padding: 18 }}>
+            {panelHeader(
+              "activation",
+              1,
+              "Activate private space",
+              `GBP 5 each. ${confirmedVaultSlots} of ${VAULT_SLOT_LIMIT} spaces are active.`
+            )}
+          </div>
+        ) : null}
+        {!isCompact || openVaultPanels.activation ? (
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
           <div
             style={{
@@ -2003,9 +2125,9 @@ export default function VaultControlPage() {
                 "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(246,250,254,0.84))",
             }}
           >
-            <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
-            <div style={{ marginTop: isCompact ? 8 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
-              Choose the number of Vault blocks you want. Vault blocks become private positions only after payment confirmation.
+            {!isCompact ? <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div> : null}
+            <div style={{ marginTop: isCompact ? 0 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
+              Choose one or two private spaces. They become available only after payment is confirmed.
             </div>
             {!isCompact ? (
               <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
@@ -2127,9 +2249,10 @@ export default function VaultControlPage() {
             ) : null}
           </div>
         </div>
+        ) : null}
       </section>
 
-      <section style={vaultLightPanel()}>
+      <section data-vault-payment-panel="true" style={{ ...vaultLightPanel(), order: vaultPhonePanelOrder("payment") }}>
         {panelHeader(
           "payment",
           2,
@@ -2192,12 +2315,16 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
-      <section id="vault-private-block-room" style={vaultLightPanel()}>
+      <section
+        id="vault-private-block-room"
+        data-vault-offer-panel="true"
+        style={{ ...vaultLightPanel(), order: vaultPhonePanelOrder("blocks") }}
+      >
         {panelHeader(
           "blocks",
           3,
-          "Private Vault blocks",
-          `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} active Vault slots. Block #${selectedSlot} is selected.`
+          isCompact ? "Your private spaces" : "Private Vault blocks",
+          `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} active. Space #${selectedSlot} is selected.`
         )}
         {openVaultPanels.blocks ? (
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
@@ -2323,12 +2450,15 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
-      <section style={vaultLightPanel()}>
+      <section
+        data-vault-link-panel="true"
+        style={{ ...vaultLightPanel(), order: vaultPhonePanelOrder("link") }}
+      >
         {panelHeader(
           "link",
           5,
-          "Private block link",
-          selectedBlockPrimaryLink ? `${selectedBlockLinkStatus}. Block #${selectedSlot} link is available.` : `No link yet for Block #${selectedSlot}.`
+          isCompact ? "Private offer link" : "Private block link",
+          selectedBlockPrimaryLink ? `${selectedBlockLinkStatus}. Space #${selectedSlot} link is available.` : `No link yet for Space #${selectedSlot}.`
         )}
         {openVaultPanels.link ? (
         <>
@@ -2436,6 +2566,7 @@ export default function VaultControlPage() {
           border: "1px solid rgba(243,208,106,0.22)",
           boxShadow:
             "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
+          order: vaultPhonePanelOrder("flow"),
         }}
       >
         {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
@@ -2455,9 +2586,9 @@ export default function VaultControlPage() {
       </section>
 
       {editorOpen ? (
-        <section style={vaultLightPanel()}>
+        <section data-vault-offer-editor="true" style={{ ...vaultLightPanel(), order: isCompact ? 1 : undefined }}>
           <div style={sectionLabel()}>
-            {editingProductId ? `Edit Vault block #${selectedSlot}` : `Add Vault block #${selectedSlot}`}
+            {editingProductId ? `Edit private offer #${selectedSlot}` : `Add private offer #${selectedSlot}`}
           </div>
           <div style={{ marginTop: 8, ...helperText() }}>
             Add one private offer at a time. Picture or video is accepted; oversized media is prepared before upload.
@@ -2551,7 +2682,7 @@ export default function VaultControlPage() {
                     style={brandActionButton("primary", vaultFeatureOff || savingProduct)}
                     debugId="vault-control.editor.save"
                   >
-                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save Vault block"}
+                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save private offer"}
                   </PrimaryButton>
                   <SecondaryButton
                     onClick={() => { resetProductForm(); setEditorOpen(false); }}

@@ -515,9 +515,9 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
   if (pathname === "/app/vault-control") {
     return {
-      title: "Vault Control",
+      title: "Private offers",
       hint:
-        "Finish the private Vault setup first. You can return to Shop Control when you are done.",
+        "Create one private offer and share it through a link you control. Return to Shop Control when you are done.",
       actions: [
         makeShopControlItem(),
         makeCommunityItem(),
@@ -529,9 +529,9 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
   if (pathname === "/app/shop-control/subscription-spotlight") {
     return {
-      title: "Subscription Spotlight",
+      title: "Paid promotion",
       hint:
-        "Finish the paid Spotlight payment or publish step first.",
+        "Complete the next payment or publishing step for your shop.",
       actions: [
         makeShopControlItem(),
         makeCommunityItem(),
@@ -671,14 +671,14 @@ function getSpecialRouteMeta(
   if (pathname === "/app/vault-control") {
     return {
       section: "Focused task",
-      page: "Vault Control",
+      page: "Private offers",
     };
   }
 
   if (pathname === "/app/shop-control/subscription-spotlight") {
     return {
       section: "Focused task",
-      page: "Subscription Spotlight",
+      page: "Paid promotion",
     };
   }
 

@@ -426,6 +426,42 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
     joinRelationshipContext,
   } = data;
 
+  const marketplaceRepostStep = loadingRepostProducts
+    ? "loading"
+    : !selectedRepostProduct
+      ? "item"
+      : !resolvedRepostTargetCommunityInput
+        ? "community"
+        : loadingRepostCredits
+          ? "checking"
+          : !canPlaceMarketplaceRepost
+            ? "payment"
+            : "publish";
+  const marketplaceRepostNextTitle =
+    marketplaceRepostStep === "loading"
+      ? "Loading your shop items"
+      : marketplaceRepostStep === "item"
+        ? "Add a public shop item first"
+        : marketplaceRepostStep === "community"
+          ? "Choose the receiving community"
+          : marketplaceRepostStep === "checking"
+            ? "Checking your payment"
+            : marketplaceRepostStep === "payment"
+              ? "Pay for this promotion"
+              : "Ready to publish";
+  const marketplaceRepostNextBody =
+    marketplaceRepostStep === "item"
+      ? "This promotion needs one public item from your shop."
+      : marketplaceRepostStep === "community"
+        ? "Enter the community ID below, or ask GSN to find permitted communities."
+        : marketplaceRepostStep === "payment"
+          ? `Get a payment code for ${formatRailMoney(requiredMarketplaceRepostAmount, "GBP")}. After paying, refresh the payment status.`
+          : marketplaceRepostStep === "publish"
+            ? `Publish this shop item in the chosen community for ${resolvedRepostDurationDays} day${resolvedRepostDurationDays === 1 ? "" : "s"}.`
+            : marketplaceRepostStep === "checking"
+              ? "GSN is checking whether your paid promotion credit is ready."
+              : "Please wait a moment.";
+
   return (
     <>      {sectionsOpen.tools ? (
       <section
@@ -477,11 +513,13 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
           <div style={marketplaceLinkHeroBodyStyle(isCompact)}>
             <div>
               <div style={marketplaceLinkHeroTitleStyle(isCompact)}>
-                {activeLinkCenterTool === "repost" ? "Marketing Tools" : "Access & Public Links"}
+                {activeLinkCenterTool === "repost"
+                  ? "Promote in another community"
+                  : "Access & Public Links"}
               </div>
               <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
                 {activeLinkCenterTool === "repost"
-                  ? "Place a shop block into another Spotlight lane, open Spotlight, or record trade evidence."
+                  ? "Choose one shop item, one permitted community, and how long it should appear."
                   : "Verify the community, invite someone, start your own community, or share the public shop."}
               </div>
             </div>
@@ -502,7 +540,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
           </div>
         </div>
 
-        {sectionsOpen.tools ? (
+        {sectionsOpen.tools && activeLinkCenterTool !== "repost" ? (
           <RealLifeMeaningGuide
             compact={isCompact}
             guidance={getRealLifeTrustGuidance("marketplace-public-link-readiness")}
@@ -630,7 +668,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           : activeLinkCenterTool === "shopFace"
                           ? "Public Shop Face"
                           : activeLinkCenterTool === "repost"
-                            ? "Paid Repost"
+                            ? "Promote in another community"
                             : "Access & Public Links"}
                     </div>
                   </div>
@@ -1510,19 +1548,26 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        {isCompact ? "4. Repost" : "4. Paid Repost"}
+                        Promote one shop item
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                        Target, duration, credits.
+                        {marketplaceRepostNextTitle}
                       </div>
                     </div>
                     <span
-                      style={marketplaceLinkRowStatusStyle(
-                        selectedRepostProduct || canPlaceMarketplaceRepost ? "ready" : "idle",
-                        isCompact
-                      )}
+                      style={{
+                        ...marketplaceLinkRowStatusStyle(
+                          selectedRepostProduct || canPlaceMarketplaceRepost ? "ready" : "idle",
+                          isCompact
+                        ),
+                        display: isCompact ? "none" : undefined,
+                      }}
                     >
-                      {selectedRepostProduct || canPlaceMarketplaceRepost ? "Ready" : "Set up"}
+                      {canPlaceMarketplaceRepost
+                        ? "Ready"
+                        : selectedRepostProduct
+                          ? "Continue"
+                          : "Start"}
                     </span>
                   </div>
                   <div
@@ -1552,12 +1597,37 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                       {availableMarketplaceRepostCredits} credit{availableMarketplaceRepostCredits === 1 ? "" : "s"}
                     </span>
                   </div>
+                  <div
+                    data-gmfn-debug-id="marketplace.network-repost.next-step"
+                    style={{
+                      marginTop: 12,
+                      padding: isCompact ? "12px 13px" : "14px 16px",
+                      borderRadius: 18,
+                      border: canPlaceMarketplaceRepost
+                        ? "1px solid rgba(46, 155, 98, 0.24)"
+                        : "1px solid rgba(214, 170, 69, 0.28)",
+                      background: canPlaceMarketplaceRepost
+                        ? "rgba(46, 155, 98, 0.08)"
+                        : "rgba(255, 248, 228, 0.9)",
+                      display: "grid",
+                      gap: 4,
+                    }}
+                  >
+                    <div style={{ fontWeight: 950, color: "#0B1F33" }}>
+                      What to do next: {marketplaceRepostNextTitle}
+                    </div>
+                    {!isCompact || marketplaceRepostStep !== "publish" ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {marketplaceRepostNextBody}
+                      </div>
+                    ) : null}
+                  </div>
                   {selectedRepostProduct ? (
                     <div
                       style={{
                         marginTop: 12,
-                        minHeight: isCompact ? 92 : 190,
-                        padding: isCompact ? 9 : 12,
+                        minHeight: isCompact ? 70 : 190,
+                        padding: isCompact ? 7 : 12,
                         borderRadius: isCompact ? 17 : 20,
                         border: "1px solid rgba(11, 45, 74, 0.14)",
                         background:
@@ -1565,7 +1635,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         color: "#FFFFFF",
                         display: "grid",
                         gridTemplateColumns: isCompact
-                          ? "72px minmax(0, 1fr)"
+                          ? "56px minmax(0, 1fr)"
                           : "minmax(160px, 0.42fr) minmax(0, 1fr)",
                         gap: isCompact ? 9 : 12,
                         alignItems: isCompact ? "center" : "stretch",
@@ -1576,8 +1646,8 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     >
                       <div
                         style={{
-                          minHeight: isCompact ? 72 : 164,
-                          height: isCompact ? 72 : undefined,
+                          minHeight: isCompact ? 56 : 164,
+                          height: isCompact ? 56 : undefined,
                           borderRadius: isCompact ? 14 : 18,
                           overflow: "hidden",
                           background:
@@ -1597,7 +1667,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                             style={{
                               width: "100%",
                               height: "100%",
-                              minHeight: isCompact ? 72 : 164,
+                              minHeight: isCompact ? 56 : 164,
                               objectFit: "cover",
                               display: "block",
                             }}
@@ -1609,7 +1679,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                             style={{
                               width: "100%",
                               height: "100%",
-                              minHeight: isCompact ? 72 : 164,
+                              minHeight: isCompact ? 56 : 164,
                               objectFit: "cover",
                               display: "block",
                             }}
@@ -1844,7 +1914,9 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         gridColumn: isCompact ? "1 / -1" : undefined,
                       }}
                     >
-                      <span style={{ fontSize: 12 }}>Public block</span>
+                      <span style={{ fontSize: 12 }}>
+                        {isCompact ? "Shop item" : "Public block"}
+                      </span>
                       <select
                         {...marketplaceFieldTouchProps(
                           "marketplace.network-repost.public-block-select"
@@ -1881,7 +1953,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                       </select>
                     </label>
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
-                      <span style={{ fontSize: 12 }}>Target community ID</span>
+                      <span style={{ fontSize: 12 }}>Community ID</span>
                       <input
                         {...marketplaceFieldTouchProps(
                           "marketplace.network-repost.target-community-input"
@@ -1896,7 +1968,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                       />
                     </label>
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
-                      <span style={{ fontSize: 12 }}>Duration</span>
+                      <span style={{ fontSize: 12 }}>How long</span>
                       <select
                         {...marketplaceFieldTouchProps(
                           "marketplace.network-repost.duration-select"
@@ -1942,7 +2014,10 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                       borderRadius: 18,
                       border: "1px solid rgba(11, 45, 74, 0.12)",
                       background: "rgba(234, 243, 255, 0.72)",
-                      display: "grid",
+                      display:
+                        isCompact && resolvedRepostTargetCommunityInput
+                          ? "none"
+                          : "grid",
                       gap: 10,
                     }}
                   >
@@ -1960,7 +2035,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         gap: 10,
                       }}
                     >
-                      <span>Target help</span>
+                      <span>Find a community</span>
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="target" size={18} />
                       </span>
@@ -1985,7 +2060,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           Target help
                         </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Find communities that fit this block.
+                          Find permitted communities that may fit this shop item.
                         </div>
                       </div>
                       <StableButton
@@ -2024,7 +2099,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                             <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                               <MarketplaceGlyph name="target" size={18} />
                             </span>
-                            Targets
+                            Find communities
                           </>
                         )}
                       </StableButton>
@@ -2125,7 +2200,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                                 <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                                   <MarketplaceGlyph name="target" size={18} />
                                 </span>
-                                Use
+                                Use community
                               </StableButton>
                             </div>
                           );
@@ -2136,7 +2211,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                   <div
                     style={{
                       marginTop: 12,
-                      display: "grid",
+                      display: isCompact ? "none" : "grid",
                       gridTemplateColumns: isCompact
                         ? "1fr"
                         : "repeat(4, minmax(0, 1fr))",
@@ -2160,6 +2235,10 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     {...marketplaceSurfaceTouchProps("marketplace.network-repost.payment-actions")}
                     style={marketplaceInlineActionsStyle(isCompact)}
                   >
+                    {!isCompact ||
+                    (Boolean(selectedRepostProduct) &&
+                      Boolean(resolvedRepostTargetCommunityInput) &&
+                      !canPlaceMarketplaceRepost) ? (
                     <StableButton
                       type="button"
                       debugId="marketplace.network-repost.generate-payment-code"
@@ -2183,10 +2262,16 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                             <MarketplaceGlyph name="payment" size={18} />
                           </span>
-                          Pay Code
+                          Get payment code
                         </>
                       )}
                     </StableButton>
+                    ) : null}
+                    {!isCompact ||
+                    (Boolean(selectedRepostProduct) &&
+                      Boolean(resolvedRepostTargetCommunityInput) &&
+                      !canPlaceMarketplaceRepost &&
+                      Boolean(latestRepostPayment)) ? (
                     <StableButton
                       type="button"
                       debugId="marketplace.network-repost.refresh-credits"
@@ -2210,10 +2295,15 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                             <MarketplaceGlyph name="refresh" size={18} />
                           </span>
-                          Refresh
+                          Refresh payment
                         </>
                       )}
                     </StableButton>
+                    ) : null}
+                    {!isCompact ||
+                    (canPlaceMarketplaceRepost &&
+                      Boolean(selectedRepostProduct) &&
+                      Boolean(resolvedRepostTargetCommunityInput)) ? (
                     <StableButton
                       type="button"
                       debugId="marketplace.network-repost.place"
@@ -2236,10 +2326,11 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                             <MarketplaceGlyph name="spark" size={18} />
                           </span>
-                          Place
+                          Publish promotion
                         </>
                       )}
                     </StableButton>
+                    ) : null}
                   </div>
                   <details
                     open={!isCompact}
@@ -2252,7 +2343,12 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         ? "rgba(46, 155, 98, 0.08)"
                         : "rgba(214, 170, 69, 0.12)",
                       color: "#0B1F33",
-                      display: "grid",
+                      display:
+                        isCompact &&
+                        (!selectedRepostProduct ||
+                          !resolvedRepostTargetCommunityInput)
+                          ? "none"
+                          : "grid",
                       gap: 8,
                     }}
                   >
@@ -2344,6 +2440,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                       </Suspense>
                     ) : null}
                   </details>
+                    {!isCompact ? (
                     <div style={marketplaceInlineActionsStyle(isCompact)}>
                       <StableCtaLink
                         to={routeWithCommunity(APP_ROUTES.FREE_SPOTLIGHT, activeCommunityId)}
@@ -2382,6 +2479,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         Trade Evidence
                       </StableButton>
                     </div>
+                    ) : null}
                 </div>
                 ) : null}
 

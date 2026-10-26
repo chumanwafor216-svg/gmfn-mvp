@@ -274,8 +274,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /embeddedSection\?: "products" \| "diary"[\s\S]*?const embeddedSection = props\.embeddedSection \|\| "products"[\s\S]*?!embedded \? \([\s\S]*?Public shop picture[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?Shop Diary[\s\S]*?embedded && embeddedSection === "products"[\s\S]*?Products & Services[\s\S]*?Your shop items/,
-  "Embedded Gallery Tools must show only Products & Services or Shop Diary, while standalone Shop Assets retains the full workbench."
+  /embeddedSection\?: "products" \| "diary" \| "picture"[\s\S]*?const pictureTaskFocused = embedded && embeddedSection === "picture"[\s\S]*?!embedded \|\| pictureTaskFocused[\s\S]*?data-shop-picture-first-view=\{pictureTaskFocused \? "true" : undefined\}[\s\S]*?pictureTaskFocused \? "Shop picture" : "Public shop picture"[\s\S]*?!embedded \|\| embeddedSection === "diary"[\s\S]*?data-shop-update-first-view="true"[\s\S]*?Shop update[\s\S]*?embedded && embeddedSection === "products"[\s\S]*?data-shop-items-first-view="true"[\s\S]*?"Shop items"[\s\S]*?Add an item, or open Your shop items to change what customers can see\.[\s\S]*?Your shop items/,
+  "Embedded Shop picture, Shop Update, and Shop items must use their novice-first headings and remain separate, while standalone Shop Assets retains the full workbench."
 );
 
 assertContains(

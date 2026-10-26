@@ -51,6 +51,17 @@ const spotlight = {
   expires_at: '2026-10-17T14:35:00Z',
   lifecycle_writers_enabled: true,
 };
+const paidSpotlight = {
+  ...spotlight,
+  id: 502,
+  broadcast_id: 502,
+  spotlight_campaign_id: 702,
+  message: 'Paid promotion is live.',
+  priority_mode: 'paid',
+  activated_at: '2026-10-26T08:00:00Z',
+  authorized_expires_at: '2099-10-27T08:00:00Z',
+  expires_at: '2099-10-27T08:00:00Z',
+};
 const diary = {
   id: 91,
   shop_id: 101,
@@ -76,6 +87,21 @@ const product = {
   video_url: '',
   visibility_mode: 'community_visible',
   public_block_number: 2,
+  is_active: true,
+};
+const vaultProduct = {
+  id: 701,
+  shop_id: 101,
+  clan_id: 8,
+  name: 'Private catering offer',
+  description: 'Invitation-only catering package.',
+  price: '25000',
+  currency: 'NGN',
+  image_url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
+  video_url: '',
+  visibility_mode: 'vault_private',
+  vault_slot_number: 1,
+  vault_block_id: 9001,
   is_active: true,
 };
 
@@ -166,6 +192,19 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ items: [diary], total: 1 }));
     }
     if (path === '/marketplace/shops/101/spotlight-status') {
+      if (scenario.paidPromotionStage) {
+        const paidLive = scenario.paidPromotionStage === 'live';
+        const readyCredit = scenario.paidPromotionStage === 'publish';
+        return route.fulfill(json({
+          available_paid_credits: readyCredit ? 1 : 0,
+          active_paid_spotlights: paidLive ? 1 : 0,
+          can_publish_paid_spotlight: readyCredit,
+          owner_spotlight_inspection: {
+            state: paidLive ? 'live' : 'none',
+            item: paidLive ? paidSpotlight : null,
+          },
+        }));
+      }
       const state = scenario.ownerSpotlightState;
       return route.fulfill(json({
         owner_spotlight_inspection: {
@@ -189,6 +228,9 @@ async function installMocks(page, scenario) {
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
       return route.fulfill(json({ item: shop, shop, products: [product] }));
     }
+    if (path.startsWith(`/marketplace/shops/by-gmfn/${ownerId}`)) {
+      return route.fulfill(json({ item: shop, shop }));
+    }
     if (path === '/marketplace/shops' || path.startsWith('/marketplace/shops?')) {
       return route.fulfill(json({ items: [shop], shops: [shop] }));
     }
@@ -204,11 +246,38 @@ async function installMocks(page, scenario) {
         },
       }));
     }
+    if (path === '/marketplace/shops/101/vault-access-links') {
+      return route.fulfill(json({ items: [] }));
+    }
+    if (path === '/vault/shops/101/status') {
+      const paid = scenario.vaultStage === 'paid-empty' || scenario.vaultStage === 'offer-ready';
+      const offerReady = scenario.vaultStage === 'offer-ready';
+      return route.fulfill(json({
+        active_paid_slots: paid ? 1 : 0,
+        blocks: paid
+          ? [{
+              id: 9001,
+              shop_id: 101,
+              slot_number: 1,
+              state: 'active',
+              product_id: offerReady ? vaultProduct.id : null,
+              product: offerReady ? vaultProduct : null,
+            }]
+          : [],
+      }));
+    }
     if (path.startsWith('/marketplace/products')) {
-      return route.fulfill(json({ items: [product], products: [product] }));
+      const items = scenario.vaultStage === 'paid-empty'
+        ? []
+        : scenario.vaultStage === 'offer-ready'
+          ? [vaultProduct]
+          : [product];
+      return route.fulfill(json({ items, products: items }));
     }
     if (path.startsWith('/marketplace/broadcasts')) {
-      return route.fulfill(json({ items: [spotlight] }));
+      return route.fulfill(json({
+        items: scenario.paidPromotionStage === 'live' ? [paidSpotlight] : [spotlight],
+      }));
     }
     if (path.startsWith('/marketplace/requests')) {
       return route.fulfill(json({ items: [], total: 0 }));
@@ -220,6 +289,37 @@ async function installMocks(page, scenario) {
     if (path.startsWith('/pool')) return route.fulfill(json({ balance: 0, items: [] }));
     if (path.startsWith('/loans')) return route.fulfill(json({ items: [] }));
     if (path.startsWith('/protected-trades')) return route.fulfill(json({ items: [] }));
+    if (path === '/payment-instructions/my') {
+      return route.fulfill(json({
+        settlement: {
+          rail_name: 'Bank transfer',
+          bank_name: 'GSN Pilot Bank',
+          account_name: 'Global Support Network',
+          account_number: '12345678',
+          sort_code: '12-34-56',
+          country: 'GB',
+          region_code: 'uk',
+        },
+        spotlight_config: {
+          payment_instruction_expiry_days: 7,
+        },
+      }));
+    }
+    if (path.startsWith('/payment-instructions/my/expected')) {
+      const items = scenario.paidPromotionStage === 'payment'
+        ? [{
+            id: 801,
+            expected_type: 'spotlight_subscription',
+            amount: 1,
+            currency: 'GBP',
+            due_at: '2099-10-30T12:00:00Z',
+            reference_display: 'GSN-SPOT-801',
+            status: 'pending',
+            quantity_total: 1,
+          }]
+        : [];
+      return route.fulfill(json({ items }));
+    }
     if (path.startsWith('/payment-instructions')) return route.fulfill(json({ items: [] }));
     if (url.pathname.startsWith('/api/') || url.port === '8000') {
       return route.fulfill(json({ items: [], results: [], records: [], total: 0, status: 'ok' }));
@@ -500,7 +600,7 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
     timeout: 60_000,
   });
 
-  const productTask = page.getByText('Products & Services', { exact: true }).first();
+  const productTask = page.getByText('Shop items', { exact: true }).first();
   await productTask.waitFor({ state: 'visible', timeout: 30_000 });
   const addProduct = page.getByRole('button', { name: '+ Add item', exact: true });
   await addProduct.waitFor({ state: 'visible', timeout: 20_000 });
@@ -512,6 +612,14 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
   }
   if (await page.getByText('Public shop picture', { exact: true }).count()) {
     throw new Error('Ordinary Gallery Tools exposed the separate Shop billboard editor.');
+  }
+
+  const otherTasksDisclosure = page.locator('details[data-shop-items-other-tasks="true"]');
+  if ((await otherTasksDisclosure.getAttribute('open')) !== null) {
+    throw new Error('Ordinary phone Shop items exposed secondary shop tasks before the owner requested them.');
+  }
+  if (await page.getByRole('link', { name: 'Write shop update', exact: true }).isVisible()) {
+    throw new Error('Ordinary phone Shop items showed the update shortcut outside its closed disclosure.');
   }
 
   const blocksSummary = page.getByText('Your shop items', { exact: true });
@@ -565,18 +673,97 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
     throw new Error('Ordinary product save did not expose the exact saved-product Public Shop link.');
   }
 
+  await otherTasksDisclosure.getByText('Other shop tasks', { exact: true }).click();
+  const pictureShortcut = page.getByRole('link', { name: 'Change shop picture', exact: true });
+  await pictureShortcut.waitFor({ state: 'visible', timeout: 20_000 });
+  await pictureShortcut.click();
+  await page.waitForFunction(() => window.location.hash === '#shop-assets-picture', { timeout: 20_000 });
+  const shopPictureTask = page.locator('#shop-assets-picture[data-shop-picture-first-view="true"]');
+  await shopPictureTask.waitFor({ state: 'visible', timeout: 30_000 });
+  await shopPictureTask.getByText('Shop picture', { exact: true }).first().waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await shopPictureTask.getByText('Choose a picture', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await shopPictureTask.getByRole('button', { name: 'Save picture', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await shopPictureTask.getByText('Save shop info', { exact: true }).count()) {
+    throw new Error('Focused Shop picture task exposed the wider shop-information save task.');
+  }
+  if (await page.locator('[data-shop-items-first-view="true"]').count()) {
+    throw new Error('Focused Shop picture task still exposed Shop items controls.');
+  }
+  if (await page.locator('#shop-assets-diary').count()) {
+    throw new Error('Focused Shop picture task still exposed Shop update controls.');
+  }
+  const pictureLinkOption = shopPictureTask.getByText('Use a picture link instead (optional)', { exact: true });
+  await pictureLinkOption.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await pictureLinkOption.locator('..').evaluate((node) => node.open)) {
+    throw new Error('Focused phone Shop picture exposed the optional pasted-link field before the owner requested it.');
+  }
+  const pictureGeometry = await page.evaluate(() => ({
+    innerWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  if (pictureGeometry.scrollWidth > pictureGeometry.innerWidth) {
+    throw new Error(`Focused Shop picture widened horizontally: ${pictureGeometry.scrollWidth} > ${pictureGeometry.innerWidth}.`);
+  }
+  await page.screenshot({
+    path: join(screenshotDir, 'shop-picture-focused-390x844.png'),
+    fullPage: true,
+  });
+  const backToShopItems = page.getByRole('navigation', { name: 'Page navigation' }).getByRole('link').first();
+  const backToShopItemsTarget = new URL(await backToShopItems.getAttribute('href') || '', baseUrl);
+  if (
+    backToShopItemsTarget.pathname !== '/app/shop-control' ||
+    backToShopItemsTarget.hash !== '#shop-control-gallery-tools'
+  ) {
+    throw new Error(`Focused Shop picture return did not point back to Shop items: ${backToShopItemsTarget.href}.`);
+  }
+  await backToShopItems.click();
+  await page.waitForFunction(() => window.location.hash === '#shop-control-gallery-tools', { timeout: 20_000 });
+  await productTask.waitFor({ state: 'visible', timeout: 30_000 });
+  const returnedOtherTasks = page.locator('[data-shop-items-other-tasks="true"]');
+  await returnedOtherTasks.getByText('Other shop tasks', { exact: true }).click();
   const diaryShortcut = page.getByRole('link', { name: 'Write shop update', exact: true });
   await diaryShortcut.waitFor({ state: 'visible', timeout: 20_000 });
   await diaryShortcut.click();
   await page.waitForFunction(() => window.location.hash === '#shop-assets-diary', { timeout: 20_000 });
-  await page.locator('#shop-assets-diary').waitFor({ state: 'visible', timeout: 30_000 });
-  if (await page.getByText('Products & Services', { exact: true }).count()) {
-    throw new Error('Focused Shop Diary task still exposed Products & Services controls.');
+  const shopUpdateTask = page.locator('#shop-assets-diary[data-shop-update-first-view="true"]');
+  await shopUpdateTask.waitFor({ state: 'visible', timeout: 30_000 });
+  await shopUpdateTask.getByText('Shop update', { exact: true }).first().waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await shopUpdateTask.getByText('What should visitors know?', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await shopUpdateTask.getByText('Shop Diary', { exact: true }).count()) {
+    throw new Error('Focused Shop Update still exposed internal Diary language.');
+  }
+  if (await page.locator('[data-shop-items-first-view="true"]').count()) {
+    throw new Error('Focused Shop Diary task still exposed Shop items controls.');
   }
   if (await page.getByRole('link', { name: 'Change shop picture', exact: true }).count()) {
     throw new Error('Focused Shop Diary task still exposed the generic Gallery shortcuts.');
   }
-  const publishUpdate = page.getByRole('button', { name: 'Publish update', exact: true });
+  const moreUpdateDetails = shopUpdateTask.getByText('More details (optional)', { exact: true });
+  await moreUpdateDetails.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await moreUpdateDetails.locator('..').evaluate((node) => node.open)) {
+    throw new Error('Focused phone Shop update exposed optional details before the owner requested them.');
+  }
+  const recentUpdates = shopUpdateTask.getByText(/^Recent updates \(/).first();
+  await recentUpdates.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await recentUpdates.locator('..').evaluate((node) => node.open)) {
+    throw new Error('Focused phone Shop update exposed recent history before the owner requested it.');
+  }
+  const publishUpdate = shopUpdateTask.getByRole('button', { name: 'Publish update', exact: true });
   await publishUpdate.waitFor({ state: 'visible', timeout: 20_000 });
   if (await publishUpdate.isEnabled()) {
     throw new Error('Shop Diary policy OFF did not disable Diary publishing.');
@@ -634,10 +821,53 @@ async function testDeeperShopPlainLanguage(browser, baseUrl) {
     'One more member place',
     'ROSCA for one year',
     'Meeting support',
-    'Run a ROSCA cycle',
-    'Plan a community meeting',
   ]) {
     await capacity.getByText(label, { exact: true }).first().waitFor({ state: 'visible', timeout: 20_000 });
+  }
+  for (const unrelatedPaidTool of ['Vault Control', 'Visitor verification', 'Spotlight Subscription']) {
+    if (await page.getByText(unrelatedPaidTool, { exact: true }).count()) {
+      throw new Error('Focused selling-space task exposed unrelated paid tool: ' + unrelatedPaidTool + '.');
+    }
+  }
+  const capacityStatus = capacity.locator('[data-shop-space-status="true"]');
+  const purchasedServiceTools = capacity.locator('[data-shop-space-service-tools="true"]');
+  if ((await capacityStatus.getAttribute('open')) !== null) {
+    throw new Error('Focused phone selling-space task exposed current entitlement detail before the owner requested it.');
+  }
+  if ((await purchasedServiceTools.getAttribute('open')) !== null) {
+    throw new Error('Focused phone selling-space task exposed ROSCA and meeting operation forms before the owner requested them.');
+  }
+  await capacity.getByText('What you already have', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await capacity.getByText('Use purchased services', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  const capacityGeometry = await page.evaluate(() => ({
+    innerWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  if (capacityGeometry.scrollWidth > capacityGeometry.innerWidth) {
+    throw new Error(
+      'Focused selling-space task widened horizontally: ' +
+      capacityGeometry.scrollWidth +
+      ' > ' +
+      capacityGeometry.innerWidth +
+      '.'
+    );
+  }
+  await page.screenshot({
+    path: join(screenshotDir, 'shop-community-space-first-view-390x844.png'),
+    fullPage: true,
+  });
+  await purchasedServiceTools.locator('summary').click();
+  for (const label of ['Run a ROSCA cycle', 'Plan a community meeting']) {
+    await capacity.getByText(label, { exact: true }).first().waitFor({
+      state: 'visible',
+      timeout: 20_000,
+    });
   }
   for (const oldLabel of [
     'Marketplace capacity',
@@ -712,6 +942,200 @@ async function testDemandShortcut(browser, baseUrl, { demandPolicyOff = false, m
   await context.close();
 }
 
+async function testPrivateOffersGuidance(browser, baseUrl) {
+  const cases = [
+    {
+      stage: 'empty',
+      panel: 'activation',
+      nextStep: 'Activate a private space',
+      visibleAction: 'vault-control.confirm-quote',
+    },
+    {
+      stage: 'paid-empty',
+      panel: 'blocks',
+      nextStep: 'Add your private offer',
+      visibleAction: 'vault-control.selected-block.add',
+    },
+    {
+      stage: 'offer-ready',
+      panel: 'link',
+      nextStep: 'Create the private link',
+      visibleAction: 'vault-control.link.create-or-replace',
+    },
+  ];
+  const panelSelectors = {
+    activation: '[data-vault-activation-panel="true"]',
+    payment: '[data-vault-payment-panel="true"]',
+    blocks: '[data-vault-offer-panel="true"]',
+    link: '[data-vault-link-panel="true"]',
+  };
+
+  for (const testCase of cases) {
+    const scenario = {
+      identity: ownerId,
+      ownerSpotlightState: 'none',
+      demandPolicyOff: false,
+      memberOfCommunity: true,
+      vaultStage: testCase.stage,
+      mutations: [],
+    };
+    const { context, page } = await newPhonePage(browser, scenario);
+    await page.goto(`${baseUrl}/app/vault-control`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+
+    const firstView = page.locator('[data-vault-private-first-view="true"]');
+    await firstView.waitFor({ state: 'visible', timeout: 20_000 });
+    await firstView.getByText('Private offers', { exact: true }).waitFor({ state: 'visible' });
+    const actualPanel = await firstView.getAttribute('data-vault-next-panel');
+    const actualFirstViewText = (await firstView.innerText()).replace(/\s+/g, ' ').trim();
+    if (actualPanel !== testCase.panel || !actualFirstViewText.includes(testCase.nextStep)) {
+      throw new Error(
+        `Private offers ${testCase.stage} expected ${testCase.panel}/${testCase.nextStep}, ` +
+        `received ${actualPanel}/${actualFirstViewText}.`
+      );
+    }
+
+    const guidedToggle = page.locator(`[data-cta-id="vault-control.panel.${testCase.panel}.toggle"]`);
+    await guidedToggle.waitFor({ state: 'visible', timeout: 20_000 });
+    await page.waitForFunction(
+      ({ id }) => document.querySelector(`[data-cta-id="${id}"]`)?.getAttribute('aria-expanded') === 'true',
+      { id: `vault-control.panel.${testCase.panel}.toggle` },
+    );
+    await page.locator(`[data-cta-id="${testCase.visibleAction}"]`).waitFor({ state: 'visible', timeout: 20_000 });
+
+    for (const panel of Object.keys(panelSelectors)) {
+      if (panel === testCase.panel) continue;
+      const toggle = page.locator(`[data-cta-id="vault-control.panel.${panel}.toggle"]`);
+      if ((await toggle.getAttribute('aria-expanded')) === 'true') {
+        throw new Error(`Private offers ${testCase.stage} state exposed the unrelated ${panel} task.`);
+      }
+    }
+
+    const guidedBox = await page.locator(panelSelectors[testCase.panel]).boundingBox();
+    if (!guidedBox || guidedBox.y >= 844) {
+      throw new Error(`Private offers ${testCase.stage} task did not begin within the first phone viewport.`);
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (overflow > 1) {
+      throw new Error(`Private offers ${testCase.stage} state overflowed horizontally by ${overflow}px.`);
+    }
+    await page.screenshot({
+      path: join(screenshotDir, `private-offers-${testCase.stage}-390x844.png`),
+      fullPage: false,
+    });
+    const writes = businessWrites(scenario.mutations);
+    if (writes.length !== 0) {
+      throw new Error(`Private offers ${testCase.stage} navigation issued business write request(s): ${writes.join(', ')}.`);
+    }
+    await context.close();
+  }
+}
+
+async function testPaidPromotionGuidance(browser, baseUrl) {
+  const cases = [
+    {
+      stage: 'activate',
+      nextStep: 'Choose how many promotions you want',
+      visibleAction: 'subscription-spotlight.confirm-quote',
+    },
+    {
+      stage: 'payment',
+      nextStep: 'Complete your bank transfer',
+      visibleAction: 'subscription-spotlight.copy-payment-details',
+    },
+    {
+      stage: 'publish',
+      nextStep: 'Create your paid promotion',
+      visibleAction: 'subscription-spotlight.publish',
+    },
+    {
+      stage: 'live',
+      nextStep: 'Your paid promotion is live',
+      visibleText: 'Wait for the live paid spotlight to finish',
+    },
+  ];
+
+  for (const testCase of cases) {
+    const scenario = {
+      identity: ownerId,
+      ownerSpotlightState: 'none',
+      demandPolicyOff: false,
+      memberOfCommunity: true,
+      paidPromotionStage: testCase.stage,
+      mutations: [],
+    };
+    const { context, page } = await newPhonePage(browser, scenario);
+    await page.goto(`${baseUrl}/app/shop-control/subscription-spotlight`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+
+    await page.getByText('Paid promotion', { exact: true }).first()
+      .waitFor({ state: 'visible', timeout: 20_000 });
+    const guidance = page.locator('[data-paid-promotion-next-step]');
+    await guidance.waitFor({ state: 'visible', timeout: 20_000 });
+    const actualStage = await guidance.getAttribute('data-paid-promotion-next-step');
+    const guidanceText = (await guidance.innerText()).replace(/\s+/g, ' ').trim();
+    if (actualStage !== testCase.stage || !guidanceText.includes(testCase.nextStep)) {
+      throw new Error(
+        `Paid promotion ${testCase.stage} expected ${testCase.stage}/${testCase.nextStep}, ` +
+        `received ${actualStage}/${guidanceText}.`
+      );
+    }
+
+    const activeStages = page.locator('[data-paid-promotion-stage-active="true"]');
+    if (await activeStages.count() !== 1) {
+      throw new Error(`Paid promotion ${testCase.stage} exposed ${await activeStages.count()} active stages.`);
+    }
+    const activeStage = activeStages.first();
+    const renderedStage = await activeStage.getAttribute('data-paid-promotion-stage');
+    if (renderedStage !== testCase.stage) {
+      throw new Error(`Paid promotion ${testCase.stage} rendered ${renderedStage} as its active stage.`);
+    }
+    if (testCase.visibleAction) {
+      const visibleAction = page.locator(`[data-cta-id="${testCase.visibleAction}"]`);
+      await visibleAction.waitFor({ state: 'visible', timeout: 20_000 });
+      if (testCase.stage === 'publish') {
+        const actionBox = await visibleAction.boundingBox();
+        if (!actionBox || actionBox.y + actionBox.height > 844) {
+          throw new Error(
+            `Paid promotion publish action ended at ${actionBox ? actionBox.y + actionBox.height : 'missing'}, expected it inside the first 844px viewport.`
+          );
+        }
+      }
+    }
+    if (testCase.visibleText) {
+      await activeStage.getByText(testCase.visibleText, { exact: false })
+        .waitFor({ state: 'visible', timeout: 20_000 });
+    }
+    const openInactiveStages = page.locator(
+      '[data-paid-promotion-stage-active="false"] details[open]'
+    );
+    if (await openInactiveStages.count()) {
+      throw new Error(`Paid promotion ${testCase.stage} opened an unrelated stage.`);
+    }
+    const activeBox = await activeStage.boundingBox();
+    if (!activeBox || activeBox.y >= 844) {
+      throw new Error(`Paid promotion ${testCase.stage} did not begin within the first phone viewport.`);
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (overflow > 1) {
+      throw new Error(`Paid promotion ${testCase.stage} overflowed horizontally by ${overflow}px.`);
+    }
+    await page.screenshot({
+      path: join(screenshotDir, `paid-promotion-${testCase.stage}-390x844.png`),
+      fullPage: false,
+    });
+    const writes = businessWrites(scenario.mutations);
+    if (writes.length !== 0) {
+      throw new Error(`Paid promotion ${testCase.stage} navigation issued business write request(s): ${writes.join(', ')}.`);
+    }
+    await context.close();
+  }
+}
+
 const server = await createServer({
   root: frontendRoot,
   logLevel: 'silent',
@@ -731,6 +1155,8 @@ try {
   await testDemandShortcut(browser, baseUrl);
   await testDemandShortcut(browser, baseUrl, { demandPolicyOff: true });
   await testDemandShortcut(browser, baseUrl, { memberOfCommunity: false });
+  await testPrivateOffersGuidance(browser, baseUrl);
+  await testPaidPromotionGuidance(browser, baseUrl);
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
@@ -740,10 +1166,15 @@ try {
       'visitor owner shortcuts hidden',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
-      'ordinary Gallery Tools shows Products only; Diary handoff shows Diary only; Shop Diary policy OFF does not disable product Add',
+      'ordinary phone Shop items leads with Add item, keeps secondary shop tasks closed, and preserves the separate Diary handoff',
+      'focused phone Shop picture fixes the broken handoff, exposes Save picture, and keeps the optional pasted-link field closed',
+      'focused phone Shop update leads with one message question, keeps optional details and recent history closed, and exposes Publish update without product tools',
       'ordinary phone product Save reopens the numbered block, preserves its success notice, and returns focus to the result',
       'ordinary successful product Save exposes one exact-item View product in public shop action',
       'standalone Pictures & Products and deeper paid-space tasks use plain owner-facing language',
+      'focused phone selling space shows purchase choices first and keeps ROSCA/meeting operation forms closed until requested',
+      'Private offers phone guidance selects only activation, offer entry, or private-link management from empty, paid-empty, and offer-ready state',
+      'Paid promotion phone guidance selects only plan, bank transfer, publishing, or live state from authoritative payment and Spotlight status',
       'DemandBox create handoff preserves community and origin',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',

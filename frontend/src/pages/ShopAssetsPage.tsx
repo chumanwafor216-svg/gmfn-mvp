@@ -131,7 +131,7 @@ type CollapseState = {
 
 type ShopAssetsPageProps = {
   embedded?: boolean;
-  embeddedSection?: "products" | "diary";
+  embeddedSection?: "products" | "diary" | "picture";
   preferredClanId?: number | null;
   preferredGmfnId?: string | null;
   focusedProductReturnPath?: string | null;
@@ -466,7 +466,7 @@ function buildShopDiarySpotlightHandoffPayload(
   return {
     source: "shop_diary",
     diaryEntryId: Number(entry.id),
-    title: firstTruthy(entry.product_name, entry.activity_label, "Shop Diary update"),
+    title: firstTruthy(entry.product_name, entry.activity_label, "Shop update"),
     message: safeStr(entry.note),
     imageUrl: safeStr(entry.image_url) || null,
     videoUrl: safeStr(entry.video_url) || null,
@@ -1040,6 +1040,7 @@ function resolveAssetSrc(raw: unknown): string {
 export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const embedded = Boolean(props.embedded);
   const embeddedSection = props.embeddedSection || "products";
+  const pictureTaskFocused = embedded && embeddedSection === "picture";
   const ownerProductManageRequest = useMemo(() => {
     if (typeof window === "undefined") {
       return { productId: 0, blockNumber: 0, source: "" };
@@ -1201,7 +1202,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     shopDiaryDomainFeatureMatch
   );
   const shopDiaryFeatureOffText = communityDomainFeatureOffMessage(
-    "Shop Diary",
+    "Shop updates",
     shopDiaryDomainFeatureMatch?.domainName || domainPolicyFallbackName
   );
 
@@ -1764,7 +1765,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       return;
     }
     if (!shop?.id) {
-      setDiaryNotice({ tone: "error", text: "Save the public shop details before adding a diary update." });
+      setDiaryNotice({ tone: "error", text: "Save your shop details before publishing an update." });
       return;
     }
     if (!safeStr(diaryNote)) {
@@ -2827,8 +2828,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         </>
       ) : null}
 
-      {!embedded ? (
-      <section style={pageCard("#FFFFFF")}>
+      {!embedded || pictureTaskFocused ? (
+      <section
+        id="shop-assets-picture"
+        data-shop-picture-first-view={pictureTaskFocused ? "true" : undefined}
+        style={pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -2839,24 +2844,27 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={sectionLabel()}>{labelWithIcon("image", "Public shop picture")}</div>
+            <div style={sectionLabel()}>{labelWithIcon("image", pictureTaskFocused ? "Shop picture" : "Public shop picture")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This picture belongs to this shop only. It does not change the
-              community picture or any other member's shop.
+              {pictureTaskFocused
+                ? "Choose the picture people should recognise as your shop. It will not change your community picture."
+                : "This picture belongs to this shop only. It does not change the community picture or any other member's shop."}
             </div>
           </div>
 
-          <SubtleButton
-            onClick={() => setSectionCollapsed("signboard", !collapsed.signboard)}
-            stableHeight={48}
-            fullWidth={isCompact}
-            debugId="shop-assets.toggle-signboard"
-          >
-            {collapsed.signboard ? "Open" : "Collapse"}
-          </SubtleButton>
+          {!pictureTaskFocused ? (
+            <SubtleButton
+              onClick={() => setSectionCollapsed("signboard", !collapsed.signboard)}
+              stableHeight={48}
+              fullWidth={isCompact}
+              debugId="shop-assets.toggle-signboard"
+            >
+              {collapsed.signboard ? "Open" : "Collapse"}
+            </SubtleButton>
+          ) : null}
         </div>
 
-        {!collapsed.signboard ? (
+        {!collapsed.signboard || pictureTaskFocused ? (
         <div
           style={{
             marginTop: 14,
@@ -2944,12 +2952,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Picture control</div>
+              <div style={sectionLabel()}>{pictureTaskFocused ? "Choose a picture" : "Picture control"}</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Save the shop name, contact handles, note, and optional picture
-                together. You can save this information without adding a
-                picture.
+                {pictureTaskFocused
+                  ? "Choose a clear picture, check the preview, then save it."
+                  : "Save the shop name, contact handles, note, and optional picture together. You can save this information without adding a picture."}
               </div>
 
               {marketplaceShopsFeatureOff ? (
@@ -2968,18 +2976,42 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   style={inputStyle()}
                 />
 
-                <input
-                  value={shopImageUrlInput}
-                  onChange={(e) => {
-                    setShopImageUrlInput(e.target.value);
-                    if (!shopSelectedFile) {
-                      setShopPreviewUrl(e.target.value);
-                    }
-                  }}
-                  placeholder="Or paste public shop image URL"
-                  style={inputStyle()}
-                />
+                {pictureTaskFocused ? (
+                  <details data-shop-picture-link-option="true" style={{ ...innerCard("#FFFFFF"), padding: 12 }}>
+                    <StableDisclosureSummary
+                      debugId="shop-assets.picture.link-option"
+                      stableHeight={44}
+                      style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}
+                    >
+                      Use a picture link instead (optional)
+                    </StableDisclosureSummary>
+                    <input
+                      value={shopImageUrlInput}
+                      onChange={(e) => {
+                        setShopImageUrlInput(e.target.value);
+                        if (!shopSelectedFile) {
+                          setShopPreviewUrl(e.target.value);
+                        }
+                      }}
+                      placeholder="Paste public shop image URL"
+                      style={{ ...inputStyle(), marginTop: 10 }}
+                    />
+                  </details>
+                ) : (
+                  <input
+                    value={shopImageUrlInput}
+                    onChange={(e) => {
+                      setShopImageUrlInput(e.target.value);
+                      if (!shopSelectedFile) {
+                        setShopPreviewUrl(e.target.value);
+                      }
+                    }}
+                    placeholder="Or paste public shop image URL"
+                    style={inputStyle()}
+                  />
+                )}
 
+                {!pictureTaskFocused ? (
                 <div
                   style={{
                     display: "grid",
@@ -3027,6 +3059,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     />
                   </div>
                 </div>
+                ) : null}
 
                 <div style={ownerActionGrid(isCompact)}>
                   <PrimaryButton
@@ -3038,7 +3071,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId="shop-assets.signboard.save"
                   >
-                    Save shop info
+                    {pictureTaskFocused ? "Save picture" : "Save shop info"}
                   </PrimaryButton>
 
                   <SecondaryButton
@@ -3088,7 +3121,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       ) : null}
 
       {!embedded || embeddedSection === "diary" ? (
-      <section id="shop-assets-diary" style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}>
+      <section
+        id="shop-assets-diary"
+        data-shop-update-first-view="true"
+        style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}
+      >
         <div
           style={{
             display: "flex",
@@ -3099,9 +3136,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={sectionLabel()}>{labelWithIcon("document", "Shop Diary")}</div>
+            <div style={sectionLabel()}>{labelWithIcon("document", "Shop update")}</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Add one short message for visitors. Pictures and videos belong in Products & Services.
+              Write one short message for people who visit your shop. Use Shop items when you need a picture or video.
             </div>
           </div>
           {iconBadge("document", <>{diaryEntries.length} updates</>, diaryEntries.length > 0)}
@@ -3162,20 +3199,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             alignItems: "start",
           }}
         >
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Add update</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: isCompact ? 20 : 24, fontWeight: 950, lineHeight: 1.12 }}>
-              Say what people need to know.
-            </div>
-
-            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div data-shop-update-composer="true" style={innerCard("#FCFEFF")}>
+            <div style={{ display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>Update text</div>
-                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
+                <div style={sectionLabel()}>What should visitors know?</div>
+                <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="For example: Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
               </div>
               <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
                 <StableDisclosureSummary debugId="shop-assets.diary.more-options" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
-                  More options
+                  More details (optional)
                 </StableDisclosureSummary>
                 <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
@@ -3192,20 +3224,20 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 12 }}>
                     <div>
-                      <div style={sectionLabel()}>Related product/service</div>
+                      <div style={sectionLabel()}>Related shop item (optional)</div>
                       <select value={diaryLinkedProductId} onChange={(event) => setDiaryLinkedProductId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
                         <option value="">No product link</option>
                         {publicProducts.map((item) => <option key={`diary-product-${item.id}`} value={String(item.id)}>{firstTruthy(item.name, `Shop item ${publicBlockNumberForProduct(item)}`)}</option>)}
                       </select>
                     </div>
                     <div>
-                      <div style={sectionLabel()}>Stronger evidence link</div>
+                      <div style={sectionLabel()}>Trade Evidence (optional)</div>
                       <select value={diaryLinkedTradeId} onChange={(event) => setDiaryLinkedTradeId(event.target.value)} style={{ ...inputStyle(), marginTop: 8 }}>
                         <option value="">No Trade Evidence link</option>
                         {diaryTradeOptions.map((trade) => <option key={`diary-trade-${trade.id}`} value={String(trade.id || "")}>{protectedTradeOptionLabel(trade)}</option>)}
                       </select>
                       <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                        {diaryTradeOptions.length > 0 ? "Only confirmed Trade Evidence records for this shop can strengthen a diary update." : "No confirmed Trade Evidence linked to this shop yet."}
+                        {diaryTradeOptions.length > 0 ? "Only confirmed Trade Evidence for this shop can strengthen this update." : "No confirmed Trade Evidence is linked to this shop yet."}
                       </div>
                     </div>
                   </div>
@@ -3268,14 +3300,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     ) : null}
                   </div>
                 </div>
-              )) : <div style={{ ...helperText(), padding: 12 }}>No business activity updates yet. Add the first update when something real happens.</div>}
+              )) : <div style={{ ...helperText(), padding: 12 }}>No shop updates yet. Publish the first message when you have something real to share.</div>}
             </div>
           </details>
         </div>
       </section>
       ) : null}
       {embedded && embeddedSection === "products" ? (
-        <section style={pageCard("#FFFFFF")}>
+        <section data-shop-items-first-view="true" style={pageCard("#FFFFFF")}>
           <div
             style={{
               display: "flex",
@@ -3289,12 +3321,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={sectionLabel()}>
                 {ownerProductManageFocusRequested
                   ? "Manage this product"
-                  : "Products & Services"}
+                  : "Shop items"}
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
                 {ownerProductManageFocusRequested
                   ? "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
-                  : "Add a product or service, or open Your shop items to change what is already showing."}
+                  : "Add an item, or open Your shop items to change what customers can see."}
               </div>
             </div>
 

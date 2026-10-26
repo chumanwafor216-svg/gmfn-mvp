@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableDisclosureSummary,
+  SubtleButton,
+} from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import VideoSoundEditor from "../components/VideoSoundEditor";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -445,6 +450,57 @@ function paymentInstructionValueStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
+type PaidPromotionStage = "activate" | "payment" | "publish" | "live";
+
+function PhonePaidPromotionStage({
+  isCompact,
+  active,
+  order,
+  label,
+  debugId,
+  stage,
+  children,
+}: {
+  isCompact: boolean;
+  active: boolean;
+  order: number;
+  label: string;
+  debugId: string;
+  stage: PaidPromotionStage;
+  children: React.ReactNode;
+}) {
+  if (!isCompact) return <>{children}</>;
+
+  return (
+    <div
+      data-paid-promotion-stage={stage}
+      data-paid-promotion-stage-active={active ? "true" : "false"}
+      style={{ order: active ? 2 : order }}
+    >
+      {active ? (
+        children
+      ) : (
+        <details
+          style={{
+            ...brandPageCard(),
+            padding: 12,
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%)",
+          }}
+        >
+          <StableDisclosureSummary
+            debugId={debugId}
+            stableHeight={48}
+            style={{ color: gmfnBrand.colors.ink, fontSize: 14, fontWeight: 950 }}
+          >
+            {label}
+          </StableDisclosureSummary>
+          <div style={{ marginTop: 12 }}>{children}</div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 export default function SubscriptionSpotlightPage() {
   const [loading, setLoading] = useState(true);
   const [isCompact, setIsCompact] = useState(false);
@@ -763,6 +819,51 @@ export default function SubscriptionSpotlightPage() {
   const canPublishPaid = Boolean(shop?.id) && usableCredits > 0 && effectiveActivePaidCount === 0;
   const hasReadyMedia = Boolean(imageFile || videoFile);
   const mediaPreparationFailed = mediaFeedback?.tone === 'error';
+  const latestPaymentStatus = safeStr(latestPayment?.status).toLowerCase();
+  const hasOpenPayment = Boolean(
+    latestPayment &&
+      !isConfirmedPayment(latestPayment) &&
+      !["expired", "cancelled", "canceled", "rejected", "void", "failed"].includes(
+        latestPaymentStatus
+      )
+  );
+  const paidPromotionStage: PaidPromotionStage =
+    effectiveActivePaidCount > 0
+      ? "live"
+      : canPublishPaid
+        ? "publish"
+        : hasOpenPayment
+          ? "payment"
+          : "activate";
+  const paidPromotionGuidance = spotlightFeatureOff
+    ? {
+        title: "Paid promotion is not available here",
+        text: spotlightFeatureOffText,
+      }
+    : identityBlocked && paidPromotionStage === "publish"
+      ? {
+          title: "Complete your identity review first",
+          text: "Your paid credit is safe. Finish identity review, then return here to publish your promotion.",
+        }
+      : paidPromotionStage === "live"
+        ? {
+            title: "Your paid promotion is live",
+            text: "Only one paid promotion can run at a time. Wait for this one to finish before publishing the next one.",
+          }
+        : paidPromotionStage === "publish"
+          ? {
+              title: "Create your paid promotion",
+              text: `You have ${usableCredits} paid credit${usableCredits === 1 ? "" : "s"} ready. Add what customers should see, then publish.`,
+            }
+          : paidPromotionStage === "payment"
+            ? {
+                title: "Complete your bank transfer",
+                text: "Use the exact payment code below. Upload your transfer receipt, then check again after GSN confirms it.",
+              }
+            : {
+                title: "Choose how many promotions you want",
+                text: "One paid credit publishes one paid promotion. Choose only what you need, confirm the price, then get the bank details.",
+              };
 
   async function createPaymentInstruction() {
     if (!shop?.id) {
@@ -978,6 +1079,14 @@ export default function SubscriptionSpotlightPage() {
     }
   }
 
+  async function runPaidPromotionPrimaryAction() {
+    if (videoFile && naturalFinishEnabled && !finishedVideoUrl) {
+      await prepareNaturalFinish();
+      return;
+    }
+    await publishSpotlight();
+  }
+
   async function publishSpotlight() {
     if (publishing) {
       showNotice("info", "Subscription Spotlight publish is already running.");
@@ -1116,49 +1225,66 @@ export default function SubscriptionSpotlightPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
+        data-paid-promotion-hero="true"
         style={{
           ...brandPageCard(
             "radial-gradient(circle at 84% 10%, rgba(74,121,165,0.28), transparent 30%), linear-gradient(150deg, #06111F 0%, #082039 45%, #123E65 100%)"
           ),
-          padding: isCompact ? 22 : 30,
+          padding: isCompact ? 14 : 30,
           border: "1px solid rgba(243,208,106,0.22)",
           boxShadow: "0 28px 62px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+          order: 0,
         }}
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 320px", gap: 26, alignItems: "center" }}>
           <div>
-            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>
+            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold, display: isCompact ? "none" : "block" }}>
               {labelWithIcon("shop", "Shop Control")}
             </div>
-            <h1 style={{ margin: "16px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase" }}>
-              Subscription Spotlight
+            <h1 style={{ margin: isCompact ? 0 : "16px 0 0", color: "#FFFFFF", fontSize: isCompact ? 24 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: isCompact ? "none" : "uppercase" }}>
+              {isCompact ? shopName : "Subscription Spotlight"}
             </h1>
-            <div style={{ marginTop: 12, color: "#F8FBFF", fontSize: isCompact ? 22 : 28, lineHeight: 1.1, fontWeight: 950 }}>
+            <div style={{ marginTop: 12, color: "#F8FBFF", fontSize: 28, lineHeight: 1.1, fontWeight: 950, display: isCompact ? "none" : "block" }}>
               {shopName}
             </div>
-            <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: isCompact ? 16 : 18, lineHeight: 1.55, maxWidth: 640, fontWeight: 760 }}>
+            <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: 18, lineHeight: 1.55, maxWidth: 640, fontWeight: 760, display: isCompact ? "none" : "block" }}>
               Paid priority for one clear shop update. Choose credits, confirm the exact price, pay through the bank rail, then publish from this page only.
             </div>
-            <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={heroBadge(true)}>{labelWithIcon("spark", "Subscription Spotlight")}</span>
-              <span style={heroBadge(usableCredits > 0)}>
-                {labelWithIcon("check", `${usableCredits} ready credit${usableCredits === 1 ? "" : "s"}`)}
-              </span>
-              <span style={heroBadge(effectiveActivePaidCount > 0)}>
-                {labelWithIcon("megaphone", <>Live paid: {effectiveActivePaidCount}</>)}
-              </span>
-              <span style={heroBadge(false)}>{labelWithIcon("lock", "One paid run at a time")}</span>
+            <div style={{ marginTop: 20, display: isCompact ? "none" : "flex", gap: 10, flexWrap: "wrap" }}>
+              {isCompact ? (
+                <span style={heroBadge(usableCredits > 0 || effectiveActivePaidCount > 0)}>
+                  {labelWithIcon(
+                    effectiveActivePaidCount > 0 ? "megaphone" : "check",
+                    effectiveActivePaidCount > 0
+                      ? "Promotion live"
+                      : usableCredits > 0
+                        ? `${usableCredits} paid credit${usableCredits === 1 ? "" : "s"} ready`
+                        : "Choose a plan"
+                  )}
+                </span>
+              ) : (
+                <>
+                  <span style={heroBadge(true)}>{labelWithIcon("spark", "Subscription Spotlight")}</span>
+                  <span style={heroBadge(usableCredits > 0)}>
+                    {labelWithIcon("check", `${usableCredits} ready credit${usableCredits === 1 ? "" : "s"}`)}
+                  </span>
+                  <span style={heroBadge(effectiveActivePaidCount > 0)}>
+                    {labelWithIcon("megaphone", <>Live paid: {effectiveActivePaidCount}</>)}
+                  </span>
+                  <span style={heroBadge(false)}>{labelWithIcon("lock", "One paid run at a time")}</span>
+                </>
+              )}
             </div>
           </div>
           <div
             style={{
+              display: isCompact ? "none" : "grid",
               minHeight: 220,
               borderRadius: 24,
               border: "1px solid rgba(243,208,106,0.26)",
               background: "linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05))",
               position: "relative",
               overflow: "hidden",
-              display: "grid",
               placeItems: "center",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(0,0,0,0.16)",
             }}
@@ -1177,19 +1303,45 @@ export default function SubscriptionSpotlightPage() {
         </div>
       </section>
 
-      <section style={{ ...brandPageCard(), padding: 0 }}>
+      <section
+        data-paid-promotion-next-step={paidPromotionStage}
+        style={{
+          ...brandPageCard("linear-gradient(180deg, #FFF9E7 0%, #FFFFFF 100%)"),
+          padding: isCompact ? 18 : 22,
+          order: 1,
+          display: isCompact ? "block" : "none",
+        }}
+      >
+        <div style={{ ...brandSectionLabel(), color: "#8A640E" }}>What to do next</div>
+        <div style={{ marginTop: 7, color: gmfnBrand.colors.ink, fontSize: isCompact ? 21 : 23, fontWeight: 950, lineHeight: 1.18 }}>
+          {paidPromotionGuidance.title}
+        </div>
+        <div style={{ marginTop: 8, ...brandHelperText(), fontWeight: 780 }}>
+          {paidPromotionGuidance.text}
+        </div>
+      </section>
+
+      <PhonePaidPromotionStage
+        isCompact={isCompact}
+        active={paidPromotionStage === "activate"}
+        order={3}
+        label="Choose another promotion plan"
+        debugId="subscription-spotlight.stage.activate"
+        stage="activate"
+      >
+      <section id="paid-promotion-plan" style={{ ...brandPageCard(), padding: 0 }}>
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
           <div style={{ padding: isCompact ? 20 : 24, borderRight: isCompact ? "none" : `1px solid ${gmfnBrand.colors.line}` }}>
-            <div style={sectionTitle()}>{labelWithIcon("spark", "1. Activate spotlight credits")}</div>
+            <div style={sectionTitle()}>{labelWithIcon("spark", "1. Choose a paid promotion plan")}</div>
             <div style={{ marginTop: 12, ...brandHelperText(), fontWeight: 760 }}>
-              Choose the number of paid spotlight credits you want now. Each confirmed credit lets you publish one paid spotlight run.
+              One credit lets you publish one paid promotion. Buy only what you need now.
             </div>
             <div style={{ marginTop: 14, ...brandInnerCard("linear-gradient(180deg, #FFF9E7 0%, #FFFFFF 100%)") }}>
               <div style={{ ...brandSectionLabel(), color: "#8A640E" }}>
-                {labelWithIcon("tag", "Pricing rule")}
+                {labelWithIcon("tag", "Price")}
               </div>
               <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontWeight: 900, lineHeight: 1.45 }}>
-                1-5 credits are GBP 1 each. The 6-credit bundle is GBP 5.
+                1 to 5 promotions cost GBP 1 each. Six promotions cost GBP 5.
               </div>
             </div>
             <div role="radiogroup" aria-label="Spotlight credits" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
@@ -1219,25 +1371,25 @@ export default function SubscriptionSpotlightPage() {
 
           <div style={{ padding: isCompact ? 20 : 24, background: "linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))" }}>
             <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.accent }}>
-              {labelWithIcon("card", "Payment preview")}
+              {labelWithIcon("card", "Your price")}
             </div>
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedCredits} credit{selectedCredits === 1 ? "" : "s"} selected = {selectedLabel}
             </div>
             <div style={{ marginTop: 14, ...brandHelperText(), fontWeight: 760 }}>
-              Confirm this quote first. GSN will generate the payment code against this exact credit count and amount so the bank rail can cross-check the transfer.
+              Confirm this price before GSN creates bank payment instructions for the exact amount.
             </div>
             <PrimaryButton
               type="button"
               onClick={() => {
                 setConfirmedQuoteKey(currentQuoteKey);
-                showNotice("success", `Subscription Spotlight quote confirmed: ${agreementText}.`);
+                showNotice("success", `Paid promotion price confirmed: ${agreementText}.`);
               }}
               stableHeight={62}
               debugId="subscription-spotlight.confirm-quote"
               style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
             >
-              {labelWithIcon("check", <>Agree: {agreementText}</>)}
+              {labelWithIcon("check", <>Confirm {agreementText}</>)}
             </PrimaryButton>
             <SecondaryButton
               type="button"
@@ -1249,7 +1401,7 @@ export default function SubscriptionSpotlightPage() {
               debugId="subscription-spotlight.generate-payment-code"
               style={{ ...brandActionButton("secondary", creatingInstruction || !shop?.id || spotlightFeatureOff), marginTop: 10, minHeight: 54, width: "100%" }}
             >
-              {creatingInstruction ? "Generating payment code..." : "Generate payment code"}
+              {creatingInstruction ? "Preparing bank details..." : "Get bank payment details"}
             </SecondaryButton>
             {spotlightFeatureOff ? (
               <div
@@ -1279,9 +1431,18 @@ export default function SubscriptionSpotlightPage() {
           </div>
         </div>
       </section>
+      </PhonePaidPromotionStage>
 
-      <section style={brandPageCard()}>
-        <div style={sectionTitle()}>{labelWithIcon("bank", "2. Payment code and bank transfer")}</div>
+      <PhonePaidPromotionStage
+        isCompact={isCompact}
+        active={paidPromotionStage === "payment"}
+        order={4}
+        label="Bank transfer and receipt"
+        debugId="subscription-spotlight.stage.payment"
+        stage="payment"
+      >
+      <section id="paid-promotion-payment" style={brandPageCard()}>
+        <div style={sectionTitle()}>{labelWithIcon("bank", "2. Complete bank transfer")}</div>
         {latestPayment ? (
           <>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 14 }}>
@@ -1341,10 +1502,22 @@ export default function SubscriptionSpotlightPage() {
           </div>
         )}
       </section>
+      </PhonePaidPromotionStage>
 
-      <section style={brandPageCard()}>
-        <div style={sectionTitle()}>{labelWithIcon("megaphone", "3. Publish Subscription Spotlight")}</div>
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <PhonePaidPromotionStage
+        isCompact={isCompact}
+        active={paidPromotionStage === "publish" || paidPromotionStage === "live"}
+        order={5}
+        label="Create a paid promotion"
+        debugId="subscription-spotlight.stage.publish"
+        stage={paidPromotionStage === "live" ? "live" : "publish"}
+      >
+      <section
+        id="paid-promotion-publisher"
+        style={{ ...brandPageCard(), padding: isCompact ? 16 : 24 }}
+      >
+        <div style={sectionTitle()}>{labelWithIcon("megaphone", "3. Create your paid promotion")}</div>
+        <div style={{ marginTop: 12, display: isCompact ? "none" : "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={brandBadge(usableCredits > 0)}>
             {labelWithIcon("check", `${usableCredits} ready credit${usableCredits === 1 ? "" : "s"}`)}
           </span>
@@ -1386,7 +1559,16 @@ export default function SubscriptionSpotlightPage() {
 
         <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 340px", gap: 14 }}>
           <div style={{ ...brandInnerCard(), display: "grid", gap: 12 }}>
-            <textarea value={message} onChange={(event) => { setMessage(event.target.value); setFinishedVideoUrl(''); }} placeholder="Write the paid spotlight message people should see first." style={textAreaStyle()} />
+            <div>
+              <div style={brandSectionLabel()}>What are you promoting?</div>
+              <textarea
+                value={message}
+                onChange={(event) => { setMessage(event.target.value); setFinishedVideoUrl(''); }}
+                placeholder="Tell customers what you are offering."
+                style={{ ...textAreaStyle(), marginTop: 8, minHeight: isCompact ? 88 : 118 }}
+              />
+            </div>
+            <div style={brandSectionLabel()}>Add a picture or short video</div>
             <input
               type="file"
               data-gmfn-action-root="true"
@@ -1403,55 +1585,108 @@ export default function SubscriptionSpotlightPage() {
               onChange={(event) => void prepareVideo(event.target.files?.[0] || null)}
               style={inputStyle()}
             />
-            <div style={{ ...brandHelperText(), fontSize: 12 }}>
-              {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
-            </div>
             <div style={{ ...brandHelperText(), fontSize: 12, fontWeight: 850 }}>
-              A ready picture or short video is required. The publish button stays locked until media preparation succeeds.
+              A clear picture or short video is required before you can publish.
             </div>
-            {videoFile ? (
-              <>
-              <VideoSoundEditor
-                value={videoSound}
-                onChange={(sound) => { setVideoSound(sound); setFinishedVideoUrl(""); }}
-                disabled={preparingVideo || preparingFinish || publishing}
-                debugIdPrefix="subscription-spotlight.video-sound"
-              />
-              <div style={{ ...brandInnerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
-                <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 850, color: '#0B2D4A' }}>
-                  <input
-                    type="checkbox"
-                    checked={naturalFinishEnabled}
-                    onChange={(event) => { setNaturalFinishEnabled(event.target.checked); setFinishedVideoUrl(''); }}
-                  />
-                  Add GSN Natural Finish
-                </label>
-                <div style={{ ...brandHelperText(), fontSize: 12 }}>
-                  Gently improves clarity, reduces file size, and adds your shop name, public contact and logo. It does not change the product or certify its condition.
-                </div>
-                {naturalFinishEnabled ? (
-                  <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select
-                      value={naturalFinishSeconds}
-                      onChange={(event) => { setNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10); setFinishedVideoUrl(''); }}
-                      style={{ ...inputStyle(), width: 'auto', minWidth: 150 }}
-                    >
-                      <option value={5}>5-second finish</option>
-                      <option value={10}>10-second finish</option>
-                    </select>
-                    <SecondaryButton
-                      type="button"
-                      onClick={() => void prepareNaturalFinish()}
-                      disabled={preparingFinish}
-                      debugId="subscription-spotlight.video-finish"
-                    >
-                      {preparingFinish ? 'Preparing preview...' : finishedVideoUrl ? 'Prepare again' : 'Prepare finished preview'}
-                    </SecondaryButton>
-                    {finishedVideoUrl ? <span style={brandBadge(true)}>Finished preview ready</span> : null}
-                  </div>
-                ) : null}
+            <PrimaryButton
+              type="button"
+              onClick={() => void runPaidPromotionPrimaryAction()}
+              disabled={
+                publishing ||
+                spotlightFeatureOff ||
+                preparingImage ||
+                 preparingVideo ||
+                 preparingFinish ||
+                 !hasReadyMedia ||
+                 mediaPreparationFailed ||
+                 Boolean(videoSound && !videoSound.rightsConfirmed)
+              }
+              busy={publishing || preparingFinish}
+              busyLabel={preparingFinish ? "Preparing video preview..." : "Publishing..."}
+              stableHeight={58}
+              debugId="subscription-spotlight.publish"
+              data-paid-promotion-primary-action="true"
+              style={{ ...brandActionButton("primary", publishing || spotlightFeatureOff), minHeight: 58 }}
+            >
+              {preparingFinish
+                ? "Preparing video preview..."
+                : publishing
+                  ? "Publishing..."
+                  : videoFile && naturalFinishEnabled && !finishedVideoUrl
+                    ? "Prepare video preview"
+                    : "Publish paid promotion"}
+            </PrimaryButton>
+            <details
+              open={!isCompact}
+              style={{ ...brandInnerCard("#F8FBFF"), padding: 10 }}
+            >
+              <StableDisclosureSummary
+                debugId="subscription-spotlight.media-tips"
+                stableHeight={42}
+                style={{ color: gmfnBrand.colors.inkSoft, fontSize: 13, fontWeight: 900 }}
+              >
+                Picture and video tips
+              </StableDisclosureSummary>
+              <div style={{ marginTop: 8, ...brandHelperText(), fontSize: 12 }}>
+                {SPOTLIGHT_VIDEO_QUALITY_GUIDANCE}
               </div>
-              </>
+            </details>
+            {videoFile ? (
+              <details
+                open={!isCompact}
+                data-paid-promotion-video-options="true"
+                style={{ ...brandInnerCard('#F8FBFF'), padding: 12 }}
+              >
+                <StableDisclosureSummary
+                  debugId="subscription-spotlight.video-options"
+                  stableHeight={44}
+                  style={{ color: gmfnBrand.colors.ink, fontSize: 14, fontWeight: 950 }}
+                >
+                  Video options
+                </StableDisclosureSummary>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <VideoSoundEditor
+                    value={videoSound}
+                    onChange={(sound) => { setVideoSound(sound); setFinishedVideoUrl(""); }}
+                    disabled={preparingVideo || preparingFinish || publishing}
+                    debugIdPrefix="subscription-spotlight.video-sound"
+                  />
+                  <div style={{ ...brandInnerCard('#F8FBFF'), display: 'grid', gap: 10 }}>
+                    <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontWeight: 850, color: '#0B2D4A' }}>
+                      <input
+                        type="checkbox"
+                        checked={naturalFinishEnabled}
+                        onChange={(event) => { setNaturalFinishEnabled(event.target.checked); setFinishedVideoUrl(''); }}
+                      />
+                      Improve my video automatically
+                    </label>
+                    <div style={{ ...brandHelperText(), fontSize: 12 }}>
+                      GSN improves clarity, reduces file size, and adds your shop name, public contact and logo. It does not change the product or certify its condition.
+                    </div>
+                    {naturalFinishEnabled ? (
+                      <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                          value={naturalFinishSeconds}
+                          onChange={(event) => { setNaturalFinishSeconds(Number(event.target.value) === 5 ? 5 : 10); setFinishedVideoUrl(''); }}
+                          style={{ ...inputStyle(), width: 'auto', minWidth: 150 }}
+                        >
+                          <option value={5}>5-second finish</option>
+                          <option value={10}>10-second finish</option>
+                        </select>
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => void prepareNaturalFinish()}
+                          disabled={preparingFinish}
+                          debugId="subscription-spotlight.video-finish"
+                        >
+                          {preparingFinish ? 'Preparing preview...' : finishedVideoUrl ? 'Prepare again' : 'Prepare video preview'}
+                        </SecondaryButton>
+                        {finishedVideoUrl ? <span style={brandBadge(true)}>Video preview ready</span> : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </details>
             ) : null}
             {mediaFeedback ? (
               <div
@@ -1472,28 +1707,6 @@ export default function SubscriptionSpotlightPage() {
                 <span style={brandBadge(false)}>{labelWithIcon("refresh", "Preparing media")}</span>
               ) : null}
             </div>
-            <PrimaryButton
-              type="button"
-              onClick={() => void publishSpotlight()}
-              disabled={
-                publishing ||
-                spotlightFeatureOff ||
-                preparingImage ||
-                 preparingVideo ||
-                 preparingFinish ||
-                 !hasReadyMedia ||
-                 mediaPreparationFailed ||
-                 Boolean(videoFile && naturalFinishEnabled && !finishedVideoUrl)
-                 || Boolean(videoSound && !videoSound.rightsConfirmed)
-              }
-              busy={publishing}
-              busyLabel="Publishing..."
-              stableHeight={58}
-              debugId="subscription-spotlight.publish"
-              style={{ ...brandActionButton("primary", publishing || spotlightFeatureOff), minHeight: 58 }}
-            >
-              {publishing ? "Publishing..." : "Publish Subscription Spotlight"}
-            </PrimaryButton>
           </div>
           <div style={{ ...brandInnerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
             <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>
@@ -1524,6 +1737,7 @@ export default function SubscriptionSpotlightPage() {
           </div>
         </div>
       </section>
+      </PhonePaidPromotionStage>
     </div>
   );
 }

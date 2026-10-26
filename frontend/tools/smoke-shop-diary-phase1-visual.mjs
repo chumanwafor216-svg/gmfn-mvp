@@ -440,14 +440,14 @@ async function run() {
     browser = await chromium.launch({ headless: true });
 
     const cases = [
-      { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No business activity updates yet" },
+      { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No shop updates yet" },
       { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Delivered a weekend food tray" },
       { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
       { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
       { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services" },
       { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Shared item." },
       { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-assets-diary", width: 430, expect: "Shared a short video update" },
-      { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No confirmed Trade Evidence linked to this shop yet" },
+      { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No confirmed Trade Evidence is linked to this shop yet" },
       { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Promote this update" },
       { name: "10-public-shop-text-only-diary-360", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "without adding media" },
       { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },

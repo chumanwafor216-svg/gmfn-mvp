@@ -39,9 +39,12 @@ assertContains(files.route, "derive_protected_trade_outcome", "Trade Evidence li
 assertContains(files.api, "export type ShopDiaryEntryRecord", "Frontend API must expose a typed diary record.");
 assertContains(files.api, "getPublicShopDiaryEntries", "Public Shop must fetch diary entries separately from products.");
 assertContains(files.api, "createShopDiaryEntry", "Owner tools must create diary entries separately from products.");
-assertContains(files.assets, "Shop Diary", "Shop Control embedded tools must expose a Shop Diary owner lane.");
+assertContains(files.assets, "data-shop-update-first-view=\"true\"", "Shop Control embedded tools must expose the owner Shop Update lane.");
 assertContains(files.assets, "debugId=\"shop-assets.diary.submit\"", "Owner diary lane must have a traceable add-update action.");
-assertContains(files.assets, "Add one short message for visitors. Pictures and videos belong in Products & Services.", "Owner copy must keep the diary action text-only and separate from product offers.");
+assertContains(files.assets, "Write one short message for people who visit your shop. Use Shop items when you need a picture or video.", "Owner copy must use direct Shop Update language while keeping the action text-only and separate from product offers.");
+assertContains(files.assets, "data-shop-update-composer=\"true\"", "Shop Update must lead directly into its compact message composer.");
+assertContains(files.assets, "What should visitors know?", "Shop Update must ask one plain-language question before the message field.");
+assertContains(files.assets, "More details (optional)", "Shop Update must keep activity, date, product, and Trade Evidence fields behind an optional disclosure.");
 assertNotContains(files.assets, "debugId=\"shop-assets.diary.pick-media\"", "Owner diary must not expose a diary media picker while public updates are text-only.");
 assertNotContains(files.assets, "Paste video URL", "Owner diary must not accept diary video URLs while public updates are text-only.");
 assertContains(files.gallery, "loadPublicShopDiaryRows", "Public Shop must fetch public diary entries from the dedicated diary API instead of relying only on product/shop payloads.");

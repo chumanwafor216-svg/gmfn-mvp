@@ -357,13 +357,23 @@ assertVaultContains(
   "Vault Control must keep labelled upload and offer fields, explicit video removal, shared quality guidance, and no pasted-video bypass."
 );
 
+assertVaultContains(
+  /type VaultPanelKey = "activation" \| "payment" \| "blocks" \| "link" \| "flow"[\s\S]*?const vaultGuidedPanel: VaultPanelKey = confirmedVaultSlots > 0[\s\S]*?"Add your private offer"[\s\S]*?"Create the private link"[\s\S]*?data-vault-private-first-view="true"[\s\S]*?data-vault-next-panel=\{vaultGuidedPanel\}[\s\S]*?What to do next[\s\S]*?data-vault-activation-panel="true"[\s\S]*?openVaultPanels\.activation[\s\S]*?data-vault-payment-panel="true"[\s\S]*?data-vault-offer-panel="true"[\s\S]*?data-vault-link-panel="true"/,
+  "Private offers must keep one state-aware phone next step, open only its relevant task, and retain every payment, offer, and private-link panel."
+);
+
+assertVaultContains(
+  /function isUsableVaultLink\(link: VaultLinkItem \| null \| undefined\): boolean \{[\s\S]*?return Boolean\(link\) && vaultLinkStatus\(link\) === "active";/,
+  "Private offers must not describe a missing Vault link as an active share link."
+);
+
 assertLayoutContains(
-  /if \(pathname === "\/app\/vault-control"\) \{[\s\S]*?title: "Vault Control"[\s\S]*?actions: \[[\s\S]*?makeShopControlItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?\]/,
+  /if \(pathname === "\/app\/vault-control"\) \{[\s\S]*?title: "Private offers"[\s\S]*?actions: \[[\s\S]*?makeShopControlItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?\]/,
   "Vault Control task mode must keep Shop Control, Community, Marketplace, and Dashboard as its focused escape actions."
 );
 
 assertLayoutContains(
-  /if \(pathname === "\/app\/vault-control"\) \{[\s\S]*?section: "Focused task"[\s\S]*?page: "Vault Control"/,
+  /if \(pathname === "\/app\/vault-control"\) \{[\s\S]*?section: "Focused task"[\s\S]*?page: "Private offers"/,
   "Vault Control app shell metadata must keep the page in focused-task mode."
 );
 

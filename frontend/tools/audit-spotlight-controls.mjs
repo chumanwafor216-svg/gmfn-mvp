@@ -235,8 +235,44 @@ assertContains(
 
 assertContains(
   'src/pages/SubscriptionSpotlightPage.tsx',
-  /data-subscription-spotlight-media-feedback[\s\S]*?disabled=\{[\s\S]*?!hasReadyMedia[\s\S]*?mediaPreparationFailed/,
+  /data-paid-promotion-primary-action="true"[\s\S]*?data-paid-promotion-video-options="true"[\s\S]*?data-subscription-spotlight-media-feedback/,
+  'Paid promotion must place its guarded primary action before optional video controls and preparation feedback.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /disabled=\{[\s\S]*?!hasReadyMedia[\s\S]*?mediaPreparationFailed[\s\S]*?debugId="subscription-spotlight\.publish"[\s\S]*?data-paid-promotion-primary-action="true"/,
   'Subscription Spotlight must keep media preparation feedback inline and disable Publish without ready media.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /type PaidPromotionStage = "activate" \| "payment" \| "publish" \| "live"[\s\S]*?const hasOpenPayment = Boolean\([\s\S]*?const paidPromotionStage: PaidPromotionStage =[\s\S]*?effectiveActivePaidCount > 0[\s\S]*?: canPublishPaid[\s\S]*?: hasOpenPayment[\s\S]*?data-paid-promotion-next-step=\{paidPromotionStage\}/,
+  'Paid promotion must derive one truthful phone next step from live, ready-credit, open-payment, or activation state.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /function PhonePaidPromotionStage[\s\S]*?data-paid-promotion-stage-active=\{active \? "true" : "false"\}[\s\S]*?<details[\s\S]*?<StableDisclosureSummary[\s\S]*?paidPromotionStage === "activate"[\s\S]*?paidPromotionStage === "payment"[\s\S]*?paidPromotionStage === "publish" \|\| paidPromotionStage === "live"/,
+  'Only the relevant Paid promotion stage may lead on phone; the other complete stages must remain behind disclosures.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /\{isCompact \? shopName : "Subscription Spotlight"\}[\s\S]*?display: isCompact \? "none" : "block"[\s\S]*?What to do next[\s\S]*?1\. Choose a paid promotion plan[\s\S]*?2\. Complete bank transfer[\s\S]*?3\. Create your paid promotion/,
+  'Paid promotion must use direct member wording on phone while preserving the desktop Subscription Spotlight identity.'
+);
+
+assertContains(
+  'src/pages/SubscriptionSpotlightPage.tsx',
+  /async function runPaidPromotionPrimaryAction\(\)[\s\S]*?prepareNaturalFinish\(\)[\s\S]*?publishSpotlight\(\)[\s\S]*?What are you promoting\?[\s\S]*?Add a picture or short video[\s\S]*?"Publish paid promotion"[\s\S]*?open=\{!isCompact\}[\s\S]*?data-paid-promotion-video-options="true"/,
+  'Paid promotion must show the required content first, keep phone video options closed, and expose one truthful prepare-or-publish action.'
+);
+
+assertContains(
+  'src/layout/AppLayout.tsx',
+  /pathname === "\/app\/shop-control\/subscription-spotlight"[\s\S]*?title: "Paid promotion"[\s\S]*?Complete the next payment or publishing step for your shop[\s\S]*?pathname === "\/app\/shop-control\/subscription-spotlight"[\s\S]*?page: "Paid promotion"/,
+  'The focused-route shell must call the member task Paid promotion and explain its next action plainly.'
 );
 
 if (findings.length > 0) {

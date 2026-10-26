@@ -434,7 +434,7 @@ assertShopContains(
 );
 
 assertShopContains(
-  /merchantReleaseHashFocused \? "Merchant Release Rail" : "Optional paid tools"[\s\S]*?This is a paid verification and release-evidence activity[\s\S]*?order: merchantReleaseHashFocused \? 2 : 0[\s\S]*?id="shop-control-merchant-release-rail"[\s\S]*?order: merchantReleaseHashFocused \? 1 : 0/,
+  /communityPackageTaskFocused[\s\S]*?merchantReleaseHashFocused[\s\S]*?"Merchant Release Rail"[\s\S]*?"Optional paid tools"[\s\S]*?This is a paid verification and release-evidence activity[\s\S]*?!communityPackageTaskFocused \? \([\s\S]*?order: merchantReleaseHashFocused \? 2 : 0[\s\S]*?id="shop-control-merchant-release-rail"[\s\S]*?order: merchantReleaseHashFocused \? 1 : 0/,
   "Merchant Release hash focus must lead with the Merchant Release rail instead of only showing the generic optional paid tools page."
 );
 
@@ -707,8 +707,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery[\s\S]*?What do you want to change\?[\s\S]*?Change shop picture[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?Write shop update[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Add more selling space/,
-  "Shop Control gallery must use plain owner-facing wording while preserving the picture, update, and capacity routes."
+  /id="shop-control-gallery-tools"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused[\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?open=\{isCompact \? undefined : true\}[\s\S]*?debugId="shop-control\.gallery\.other-tasks\.toggle"[\s\S]*?Other shop tasks[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?Write shop update[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Add more selling space/,
+  "Shop items must lead with the item task and keep the picture, update, and capacity routes behind one phone-closed disclosure."
 );
 
 if (
@@ -726,8 +726,8 @@ if (
 }
 
 assertShopContains(
-  /More shop & community space[\s\S]*?Choose what you need\.[\s\S]*?bank-transfer reference[\s\S]*?Other choices: GBP 1 each[\s\S]*?Latest payment reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
-  "Shop Control must explain paid space in plain language and keep the ROSCA purchase, cycle, and payout controls connected."
+  /data-shop-space-first-view="true"[\s\S]*?More shop & community space[\s\S]*?Choose what you need\.[\s\S]*?bank-transfer reference[\s\S]*?Other choices: GBP 1 each[\s\S]*?data-shop-space-status="true"[\s\S]*?What you already have[\s\S]*?Latest payment reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?data-shop-space-service-tools="true"[\s\S]*?Use purchased services[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
+  "Shop Control must lead with paid-space choices, keep current entitlements reachable, and preserve ROSCA purchase/cycle/payout controls behind the phone disclosure."
 );
 
 assertShopContains(
