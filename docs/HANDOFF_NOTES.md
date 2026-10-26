@@ -3174,9 +3174,10 @@ under `docs/` or `docs/archive/`, then link that file here.
   11.52 seconds for the simulated 6.5-second auth retry against 6.5, 7.5, and
   9-second limits. These results vary materially because Vite cold-compiles
   large route modules; the thresholds were not relaxed to manufacture a pass.
-  The web-push readiness audit also remains independently red because the
-  current manifests intentionally use browser display mode while that audit
-  expects standalone mode.
+  The Web Push readiness guard now protects that same intentional browser
+  display contract instead of incorrectly requiring standalone mode. The
+  notice-board phone-notification, link-contract, Web Push readiness, and PWA
+  boot-recovery audits pass together.
 - This batch is local only. It has not been pushed, promoted to `main`, sent to
   Render, or deployed because the owner explicitly requested milestone-based
   releases while pilot users are active.
