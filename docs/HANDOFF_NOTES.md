@@ -8,6 +8,20 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Next-session product queue - 2026-10-27
+
+- The owner asked to resume from the Community Confirmation Inbox milestone,
+  then review the remaining busy My GSN & I / cover-related surfaces, connect
+  commerce intelligence to Market Wisdom, compact the Dashboard Photo Frame
+  affordance, audit account suspension/closure/removal capability, and design
+  respectful inactivity reminders from GSN to the user.
+- Exact scope, decision questions, safety boundaries, and acceptance checks are
+  recorded in
+  [`NEXT_SESSION_PLAN_2026-10-27.md`](NEXT_SESSION_PLAN_2026-10-27.md).
+- This is a planning record only. No runtime code, backend contract, push, or
+  deployment was performed. Continue locally and deploy only when the owner
+  explicitly says `deploy`.
+
 ## Community Confirmation Inbox first-surface cleanup - 2026-10-26
 
 - Simplified the authenticated `/app/community-confirmations` first surface
