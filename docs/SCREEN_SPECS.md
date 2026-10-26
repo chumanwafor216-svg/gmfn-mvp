@@ -1931,6 +1931,7 @@ Rules:
 - The route and every related API action must remain platform-admin only.
 - GSN house promotions form a central inventory and may overlap. This exception applies only to the reserved `GSN-HOUSE` system publisher; ordinary member/shop campaigns retain the one-active-owner rule.
 - Publication identity is the reserved non-login system publisher `GSN-HOUSE`; the signed-in admin remains the audit actor.
+- On phone, keep the first surface compact: show one draft summary plus the current campaign state and expiry. Keep the live message, delivery figures, destination controls, and emergency stop inside one clearly named delivery-report disclosure. Refresh status must remain immediately available, and the disclosure label must make the campaign controls discoverable.
 - Destination discovery and selection must use human-readable community names/codes; raw internal ids must not be the primary operator-facing label.
 - An explicitly selected active free community is eligible by default. It does not need a Community Domain record before GSN advertising can enter available Spotlight space.
 - A linked Community Domain may block GSN house campaigns by recording `domain.central_advertising.allow_gsn_house_campaigns: false`. An inactive community/domain or a Domain Spotlight mode of `off` also blocks delivery.

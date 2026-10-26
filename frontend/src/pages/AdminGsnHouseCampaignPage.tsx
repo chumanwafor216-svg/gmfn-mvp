@@ -1475,24 +1475,18 @@ export default function AdminGsnHouseCampaignPage() {
                 Global Support Network
               </h1>
               <p style={{ margin: "10px 0 0", color: "#D7E3EF", lineHeight: 1.65, maxWidth: 760 }}>
-                The public author is GSN-HOUSE. Your signed-in admin identity is kept separately as the audit actor. This tool does not borrow a member, shop, or community identity.
+                GSN-HOUSE publishes the message. Your admin account stays in the audit trail; no member, shop, or community is presented as the author.
               </p>
             </div>
           </div>
-          <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-            {[
-              ["Publisher", "GSN-HOUSE"],
-              ["Expiry control", "Admin-selected"],
-              ["Selected", String(selectedRows.length)],
-              ["Media", mediaQueue.length > 0 ? `${mediaQueue.length} prepared` : "Not ready"],
-              ['Group expiry', dateTimeLabel(campaignExpiryIso(expiryInput))],
-              ['Timing', scheduleMode === 'timed' ? `Every ${scheduleIntervalMinutes || '?'} min` : 'Normal rotation'],
-            ].map(([label, value]) => (
-              <div key={label} style={{ ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
-                <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
-                <div style={{ marginTop: 7, color: "#FFFFFF", fontSize: 16, fontWeight: 900 }}>{value}</div>
-              </div>
-            ))}
+          <div style={{ marginTop: 18, ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
+            <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>Current draft</div>
+            <div style={{ marginTop: 7, color: "#FFFFFF", fontSize: 15, fontWeight: 900, lineHeight: 1.55 }}>
+              {selectedRows.length} communit{selectedRows.length === 1 ? "y" : "ies"} selected · {mediaQueue.length} media prepared · {scheduleMode === "timed" ? `Every ${scheduleIntervalMinutes || "?"} min` : "Normal rotation"}
+            </div>
+            <div style={{ marginTop: 4, color: "#D7E3EF", fontSize: 13, lineHeight: 1.5 }}>
+              Draft expiry: {dateTimeLabel(campaignExpiryIso(expiryInput))}
+            </div>
           </div>
         </section>
 
@@ -1504,7 +1498,7 @@ export default function AdminGsnHouseCampaignPage() {
                 Active inventory and truthful delivery report
               </h2>
               <p style={{ margin: "8px 0 0", ...helper() }}>
-                GSN separates promotions issued for delivery from promotions that became visibly present. It does not infer handset receipt, playback, completion, sales, or verified-human reach.
+                See what is live now. Open the full report only when you need delivery figures or campaign controls.
               </p>
             </div>
             <StableButton
@@ -1534,6 +1528,17 @@ export default function AdminGsnHouseCampaignPage() {
                   Expires {dateTimeLabel(operations.current.expires_at)}
                 </div>
               </div>
+              <details style={{ marginTop: 12, ...institutionalInnerCard("#FFFFFF") }}>
+                <StableDisclosureSummary
+                  debugId="admin-gsn-campaign.current-report.summary"
+                  stableHeight={44}
+                  style={{ color: "#0B1F33", fontWeight: 900 }}
+                >
+                  Open delivery report and campaign controls
+                </StableDisclosureSummary>
+                <div style={{ marginTop: 10, ...helper(), fontSize: 13 }}>
+                  “Issued by GSN” and “Seen” are different. Neither proves handset receipt, playback, a sale, or verified-human reach.
+                </div>
               <p style={{ margin: "12px 0 0", color: "#0B1F33", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
                 {operations.current.content.message}
               </p>
@@ -1630,6 +1635,7 @@ export default function AdminGsnHouseCampaignPage() {
                   </div>
                 </details>
               ) : null}
+              </details>
             </div>
           ) : (
             <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>

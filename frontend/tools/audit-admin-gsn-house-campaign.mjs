@@ -115,7 +115,10 @@ for (const text of [
   "idempotencyKey: makeIdempotencyKey()",
   "idempotency_key: item.idempotencyKey",
   "Preparation and review do not publish anything",
+  "Current draft",
   "Active inventory and truthful delivery report",
+  'debugId="admin-gsn-campaign.current-report.summary"',
+  "Open delivery report and campaign controls",
   "Issued by GSN",
   '"Seen"',
   "operations.active_count",
@@ -142,6 +145,18 @@ for (const text of [
   "tap Refresh status first",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
+}
+requireText(
+  specsFile,
+  specs,
+  "keep the first surface compact",
+  "The phone-first campaign disclosure rule is missing from the screen spec."
+);
+if (page.includes('["Publisher", "GSN-HOUSE"]')) {
+  findings.push({
+    file: pageFile,
+    message: "The compact publisher hero must not regress to the six-tile draft summary.",
+  });
 }
 for (const text of [
   "Specific window and interval",

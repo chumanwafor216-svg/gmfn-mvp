@@ -8,6 +8,30 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre GSN campaign first-surface cleanup - 2026-10-26
+
+- Simplified the platform-admin-only `/app/command-center/gsn-campaigns`
+  first phone surface without changing publishing, preview, schedule, expiry,
+  destination, stop, permission, API or payment behaviour.
+- Replaced six exposed draft tiles with one compact draft summary. A live
+  campaign now keeps its state and expiry visible while its message, delivery
+  figures, destination controls and guarded emergency stop sit behind the
+  clearly named `Open delivery report and campaign controls` disclosure.
+  Refresh status remains immediately available.
+- The screen specification and focused campaign audit now protect the compact
+  disclosure boundary. Deployment remains intentionally deferred under the
+  owner's milestone rule; do not push or deploy this cleanup without explicit
+  approval.
+- The complete protected-button check exposed an earlier Bank Console smooth
+  auto-scroll that could move a tapped control under a phone user's finger.
+  It now reveals the requested section with immediate scrolling; the target
+  and action are unchanged.
+- Verification passed: Admin GSN campaign and admin-route contracts, action-ID
+  and raw-action checks, button stability, phone-surface simplicity, mobile
+  route coverage, mobile tap stability, the complete protected-button freeze,
+  the full 390x844 mocked mobile visual sweep, and the 295-module production
+  frontend build.
+
 ## Render OOM cleanup deployed and under observation - 2026-10-26
 
 - Render confirmed five `gmfn-api` 512 MiB OOM kills today, not one harmless

@@ -887,7 +887,7 @@ export default function BankConsolePage() {
   function revealSection(key: keyof CollapseState, selector: string) {
     setCollapsed((prev) => ({ ...prev, [key]: false }));
     window.setTimeout(() => {
-      document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelector(selector)?.scrollIntoView({ behavior: "auto", block: "start" });
     }, 0);
   }
 
