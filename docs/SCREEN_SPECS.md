@@ -1899,6 +1899,39 @@ Primary action:
 Open source details
 ```
 
+## AdminIncompleteLoansPage
+
+Route: `/app/command-center/incomplete-loans`.
+
+Purpose:
+Give admins a compact selected-community queue for incomplete support items that need a decision, coverage, or time review.
+
+Must show:
+- Command Centre navigation
+- selected community context
+- one compact `What needs attention?` summary
+- incomplete-item, ending-soon, and missing-decision counts
+- total coverage gap and locked support coverage in one compact block
+- a plain warning that locked support coverage is a recorded support position, not proof of cash received or payment made
+- each support item's amount, requester reference, status, support decisions, coverage gap, and time remaining
+- copyable bounded queue and per-item snapshots
+- Support Summary as the primary per-item action
+- Copy queue, Operations, Bank Console, and Command Centre inside one compact `Queue tools` disclosure
+
+Rules:
+- Keep the route admin-only and scoped to one selected community at a time.
+- Do not change the existing incomplete-support endpoint, permission check, or support-record fields for this presentation cleanup.
+- This queue does not approve a whole support request, confirm payment or cash receipt, settle exposure, or authorize release of goods or money.
+- On phone, do not repeat the page purpose in a second explanation block or expose all queue tools before the support list.
+- Keep support and queue snapshots bounded by their existing privacy, evidence, and authority limitations.
+- Present one support item at a time as a compact three-fact review: support decisions, coverage gap, and time remaining.
+
+Primary action:
+
+```text
+Support Summary
+```
+
 ## AdminSupportPage
 
 Route: `/app/command-center/support`.

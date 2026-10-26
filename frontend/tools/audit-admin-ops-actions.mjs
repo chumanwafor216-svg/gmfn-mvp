@@ -231,14 +231,32 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /Incomplete Support[\s\S]*?support decisions, coverage gaps[\s\S]*?does not approve the whole support request, authorize release, or show that money moved[\s\S]*?Open the support item[\s\S]*?Missing support decisions[\s\S]*?Locked support coverage[\s\S]*?Support decisions/,
-  "Admin Incomplete Loans must frame the queue as support-item, support-decision, and coverage review, not whole-loan approval, release authority, or money movement."
+  /What needs attention\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?Missing decisions[\s\S]*?Locked support coverage is a recorded support position, not proof that cash was received or payment was made[\s\S]*?debugId="admin-incomplete-loans\.queue-tools\.summary"[\s\S]*?Queue tools[\s\S]*?Support decisions[\s\S]*?Coverage gap[\s\S]*?Time left/,
+  "Admin Incomplete Loans must keep one compact attention summary, a clear money boundary, collapsed queue tools, and three-fact support rows."
 );
 
 assertNotContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /Incomplete Loans|Incomplete loans|Incomplete-loan|Open the loan|Loan #|Loan:|Borrower #|Borrower:|whole loan|Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
+  /<ExplainToggle|>\s*Incomplete Support Queue\s*</i,
   "Admin Incomplete Loans must not use broad approval, custody, or old loan/borrower wording for support-decision coverage review."
+);
+
+assertNotContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /What this screen does|What to do next|Incomplete Loans|Incomplete loans|Incomplete-loan|Open the loan|Loan #|Loan:|Borrower #|Borrower:|whole loan|Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
+  "Admin Incomplete Loans must not restore old loan, borrower, approval, custody, or first-surface guidance wording."
+);
+
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /AdminIncompleteLoansPage \(`\/app\/command-center\/incomplete-loans`;/,
+  "Admin Incomplete Loans must remain explicitly named in the screen registry."
+);
+
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## AdminIncompleteLoansPage[\s\S]*?recorded support position, not proof of cash received or payment made[\s\S]*?inside one compact `Queue tools` disclosure/,
+  "Admin Incomplete Loans must keep its compact selected-community queue specification."
 );
 
 assertContains(

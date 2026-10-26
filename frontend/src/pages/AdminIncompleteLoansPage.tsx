@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   getAdminIncompleteLoans,
@@ -54,31 +53,6 @@ function card(): React.CSSProperties {
     background: "#FFFFFF",
     boxShadow: "0 18px 50px rgba(15,23,42,0.05)",
     padding: 22,
-  };
-}
-
-function statTile(): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    border: "1px solid rgba(108,138,184,0.16)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
-    padding: 16,
-    boxShadow: "0 14px 28px rgba(15,23,42,0.04)",
-  };
-}
-
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#475569",
-    fontSize: 12,
-    fontWeight: 1000,
-    whiteSpace: "normal",
   };
 }
 
@@ -388,99 +362,106 @@ export default function AdminIncompleteLoansPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Incomplete Support" title="Incomplete Support" subtitle="Find the support items that need action now." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="See unresolved support items, support decisions, coverage gaps, and time pressure for this community."
-        why="This is an admin review queue; it does not approve the whole support request, authorize release, or show that money moved."
-        next="Open the support item that needs follow-up now."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
+      <PageTopNav sectionLabel="Command Centre" title="Incomplete Support" subtitle="Review support items that need admin attention." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Centre" />
 
       <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE" }}>
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Support Queue</div>
-          <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
-            Check {communityLabel} for items short on support decisions, coverage, or time.
-          </div>
+          <div style={sectionLabel()}>Community queue - {communityLabel}</div>
+          <h1 style={{ margin: "10px 0 0", fontSize: "clamp(26px, 6vw, 36px)", lineHeight: 1.1, fontWeight: 1000, color: "#0B1F33" }}>
+            What needs attention?
+          </h1>
+          <p style={{ margin: "9px 0 0", ...helperText(), color: "#0B1F33" }}>
+            Start with support items short on decisions, coverage, or time.
+          </p>
 
-          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Context: {communityLabel}</span>
-            <span style={badge(false)}>Incomplete: {rows.length}</span>
-            <span style={badge(false)}>Ending soon: {queueSummary.urgentCount}</span>
-            <span style={badge(false)}>Missing support decisions: {queueSummary.missingPledgeDecisionCount}</span>
+          <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {[
+              ["Incomplete", rows.length],
+              ["Ending soon", queueSummary.urgentCount],
+              ["Missing decisions", queueSummary.missingPledgeDecisionCount],
+            ].map(([label, value]) => (
+              <div key={String(label)} style={{ borderRadius: 14, border: "1px solid rgba(108,138,184,0.16)", background: "rgba(255,255,255,0.78)", padding: "11px 9px", minWidth: 0 }}>
+                <div style={{ color: "#0B63D1", fontSize: 20, fontWeight: 1000 }}>{value}</div>
+                <div style={{ marginTop: 3, color: "#526579", fontSize: 11.5, fontWeight: 900, lineHeight: 1.25 }}>{label}</div>
+              </div>
+            ))}
           </div>
 
           {notice ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#ECFDF3", border: "1px solid #A7F3D0", color: "#166534", fontWeight: 900 }}>{notice}</div> : null}
           {err ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", fontWeight: 900 }}>{err}</div> : null}
 
-          <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <div style={statTile()}>
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, borderRadius: 16, border: "1px solid rgba(108,138,184,0.16)", background: "#FFFFFF", padding: 13 }}>
+            <div>
               <div style={sectionLabel()}>Coverage gap</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>{fmtMoney(queueSummary.totalGap)}</div>
-              <div style={{ marginTop: 6, ...helperText() }}>Remaining support gap.</div>
+              <div style={{ marginTop: 5, color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>{fmtMoney(queueSummary.totalGap)}</div>
             </div>
-            <div style={statTile()}>
+            <div>
               <div style={sectionLabel()}>Locked support coverage</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>{fmtMoney(queueSummary.lockedCoverage)}</div>
-              <div style={{ marginTop: 6, ...helperText() }}>Support coverage already recorded.</div>
-            </div>
-            <div style={statTile()}>
-              <div style={sectionLabel()}>What to do next</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Open the support item first. Use Bank Console only when the finance trail needs review.
-              </div>
+              <div style={{ marginTop: 5, color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>{fmtMoney(queueSummary.lockedCoverage)}</div>
             </div>
           </div>
+          <p style={{ margin: "10px 0 0", color: "#526579", fontSize: 12.5, lineHeight: 1.55 }}>
+            Locked support coverage is a recorded support position, not proof that cash was received or payment was made. This queue does not approve the whole support request or authorize release.
+          </p>
 
-          <div
-            style={{
-              marginTop: 18,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
-              gap: 10,
-            }}
-          >
-            <SecondaryButton
-              onClick={copyQueueSnapshot}
-              disabled={loading}
-              fullWidth
-              stableHeight={52}
-              debugId="admin-incomplete-loans.copy-queue"
-              style={adminIncompleteLoanActionStyle("secondary")}
+          <details style={{ marginTop: 16, ...card(), padding: 14 }}>
+            <StableDisclosureSummary
+              debugId="admin-incomplete-loans.queue-tools.summary"
+              stableHeight={46}
+              style={{ color: "#0B1F33", fontWeight: 900 }}
             >
-              {actionText("copy", "Copy queue")}
-            </SecondaryButton>
-            <StableCtaLink
-              to={routes.systemOperations}
-              debugId="admin-incomplete-loans.route.system-operations"
-              fullWidth
-              stableHeight={52}
-              style={adminIncompleteLoanActionStyle("primary")}
+              Queue tools
+            </StableDisclosureSummary>
+            <p style={{ margin: "10px 0 0", ...helperText(), fontSize: 13 }}>
+              Copy this review queue or open an operational page only when needed.
+            </p>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+                gap: 10,
+              }}
             >
-              {actionText("briefcase", "Operations")}
-            </StableCtaLink>
-            <StableCtaLink
-              to={routes.bankConsole}
-              debugId="admin-incomplete-loans.route.bank-console"
-              fullWidth
-              stableHeight={52}
-              style={adminIncompleteLoanActionStyle("secondary")}
-            >
-              {actionText("bank", "Bank Console")}
-            </StableCtaLink>
-            <StableCtaLink
-              to={routes.commandCenter}
-              debugId="admin-incomplete-loans.route.command-center"
-              fullWidth
-              stableHeight={52}
-              style={adminIncompleteLoanActionStyle("soft")}
-            >
-              {actionText("home", "Command Center")}
-            </StableCtaLink>
-          </div>
+              <SecondaryButton
+                onClick={copyQueueSnapshot}
+                disabled={loading}
+                fullWidth
+                stableHeight={52}
+                debugId="admin-incomplete-loans.copy-queue"
+                style={adminIncompleteLoanActionStyle("secondary")}
+              >
+                {actionText("copy", "Copy queue")}
+              </SecondaryButton>
+              <StableCtaLink
+                to={routes.systemOperations}
+                debugId="admin-incomplete-loans.route.system-operations"
+                fullWidth
+                stableHeight={52}
+                style={adminIncompleteLoanActionStyle("primary")}
+              >
+                {actionText("briefcase", "Operations")}
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.bankConsole}
+                debugId="admin-incomplete-loans.route.bank-console"
+                fullWidth
+                stableHeight={52}
+                style={adminIncompleteLoanActionStyle("secondary")}
+              >
+                {actionText("bank", "Bank Console")}
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.commandCenter}
+                debugId="admin-incomplete-loans.route.command-center"
+                fullWidth
+                stableHeight={52}
+                style={adminIncompleteLoanActionStyle("soft")}
+              >
+                {actionText("home", "Command Centre")}
+              </StableCtaLink>
+            </div>
+          </details>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
             {loading ? <div style={{ ...card(), color: "#7A8D9F" }}>Loading the current community incomplete support queue...</div> : null}
@@ -499,21 +480,21 @@ export default function AdminIncompleteLoansPage() {
                     <div style={{ color: "#0B1F33", fontWeight: 1000 }}>{fmtMoney(loan?.amount ?? "0")} {safeStr(loan?.currency || "NGN")}</div>
                   </div>
 
-                  <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                    <div>
-                      <div style={sectionLabel()}>Support progress</div>
-                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Support decisions {toNum(loan?.approved_guarantors)} / {toNum(loan?.guarantors_required)}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Pending support responses: {toNum(loan?.pending_guarantors)}</div>
+                  <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>Support decisions</div>
+                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>{toNum(loan?.approved_guarantors)} / {toNum(loan?.guarantors_required)}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 12 }}>{toNum(loan?.pending_guarantors)} pending</div>
                     </div>
-                    <div>
-                      <div style={sectionLabel()}>Coverage</div>
-                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Locked support coverage {fmtMoney(loan?.locked_coverage ?? 0)}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Gap: {fmtMoney(loan?.required_gap ?? 0)}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>Coverage gap</div>
+                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>{fmtMoney(loan?.required_gap ?? 0)}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 12 }}>Locked {fmtMoney(loan?.locked_coverage ?? 0)}</div>
                     </div>
-                    <div>
-                      <div style={sectionLabel()}>Time remaining</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>Time left</div>
                       <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>{formatRemaining(loan?.auto_cancel_remaining_seconds)}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Decision started: {safeStr(loan?.decision_at || "Not started")}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 12 }}>Started: {safeStr(loan?.decision_at || "Not started")}</div>
                     </div>
                   </div>
 

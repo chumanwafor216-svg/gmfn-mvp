@@ -1929,14 +1929,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /Incomplete Support[\s\S]*?support decisions, coverage gaps[\s\S]*?does not approve the whole support request, authorize release, or show that money moved[\s\S]*?Open the support item[\s\S]*?Missing support decisions[\s\S]*?Locked support coverage[\s\S]*?Support decisions/,
-  "Admin Incomplete Loans must frame the queue as support-item, support-decision, and coverage review, not whole-loan approval, release authority, or money movement."
+  /What needs attention\?[\s\S]*?Missing decisions[\s\S]*?Locked support coverage is a recorded support position, not proof that cash was received or payment was made[\s\S]*?Queue tools[\s\S]*?Support decisions[\s\S]*?Coverage gap[\s\S]*?Time left/,
+  "Admin Incomplete Loans must frame the compact queue as support-decision, coverage, and time review with a clear money boundary."
 );
 
 assertNotContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /Incomplete Loans|Incomplete loans|Incomplete-loan|Open the loan|Loan #|Loan:|Borrower #|Borrower:|whole loan|Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
+  /<ExplainToggle|>\s*Incomplete Support Queue\s*</i,
   "Admin Incomplete Loans must not use broad approval, custody, or old loan/borrower wording for support-decision coverage review."
+);
+
+assertNotContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /What this screen does|What to do next|Incomplete Loans|Incomplete loans|Incomplete-loan|Open the loan|Loan #|Loan:|Borrower #|Borrower:|whole loan|Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
+  "Admin Incomplete Loans must not restore old loan, borrower, approval, custody, or first-surface guidance wording."
 );
 
 assertContains(

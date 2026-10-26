@@ -12,6 +12,7 @@ const files = {
   moneyIn: "src/pages/PaymentInstructionsPage.tsx",
   moneyOut: "src/pages/WithdrawalInstructionsPage.tsx",
   adminTrustEvents: "src/pages/AdminTrustEventsPage.tsx",
+  adminIncompleteLoans: "src/pages/AdminIncompleteLoansPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -65,6 +66,11 @@ assertContains(
   "adminTrustEvents",
   /What needs review\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?A negative delta is a review signal, not proof of wrongdoing[\s\S]*?debugId="admin-trust-events\.deeper-analysis\.summary"[\s\S]*?Open deeper analysis/,
   "Admin Trust Events must keep one compact review summary and collapse secondary analysis destinations."
+);
+assertContains(
+  "adminIncompleteLoans",
+  /What needs attention\?[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?Locked support coverage is a recorded support position[\s\S]*?debugId="admin-incomplete-loans\.queue-tools\.summary"[\s\S]*?Queue tools/,
+  "Admin Incomplete Support must keep one compact attention summary and collapse secondary queue tools."
 );
 
 if (findings.length > 0) {

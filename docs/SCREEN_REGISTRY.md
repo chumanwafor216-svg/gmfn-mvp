@@ -62,6 +62,7 @@ Bottom navigation is allowed here.
 21. DemandBoxPage (`/app/demand-box`; authenticated needs lifecycle owner, novice-first phone surface reviewed 2026-10-17)
 22. AdminGsnHouseCampaignPage (`/app/command-center/gsn-campaigns`; platform-admin-only central GSN Spotlight publisher)
 23. AdminTrustEventsPage (`/app/command-center/trust-events`; admin-only recent Trust Event evidence review)
+24. AdminIncompleteLoansPage (`/app/command-center/incomplete-loans`; admin-only incomplete support attention queue)
 
 ## Current Repo Name Notes
 

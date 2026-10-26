@@ -8,6 +8,36 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre Incomplete Support first-surface cleanup - 2026-10-26
+
+- Simplified the admin-only `/app/command-center/incomplete-loans` first
+  surface without changing `GET /admin/loans/incomplete`, admin permission
+  checks, selected-community scope, support fields, snapshots, routes or
+  business behavior.
+- Replaced the repeated explanation, four badges, three large guidance tiles
+  and four exposed queue actions with one `What needs attention?` summary.
+  It shows incomplete, ending-soon and missing-decision counts, followed by
+  one compact coverage-gap and locked-support block.
+- Added a direct boundary that locked support coverage is a recorded support
+  position, not proof of cash receipt or payment. The queue does not approve
+  the whole support request or authorize release.
+- Copy queue, Operations, Bank Console and Command Centre remain available
+  inside one stable `Queue tools` disclosure. Each support row now presents
+  decisions, coverage gap and time remaining as three compact facts while
+  preserving amount, requester reference, status, Copy support and Support
+  Summary.
+- Registered and specified the existing screen, and extended the Admin/
+  Operations, Trust, phone-simplicity and button-stability audits to protect
+  the compact structure and authority boundary.
+- Verification passed: Admin/Operations actions, admin route guards, Trust
+  actions, institutional evidence surfaces, GSN visible language,
+  phone-surface simplicity, button stability, global action IDs and raw
+  actions, mobile tap stability, mobile route coverage, the complete
+  protected-button freeze, the 295-module production frontend build, and the
+  full mocked 390x844 mobile visual sweep.
+- Deployment remains intentionally deferred under the owner's milestone rule;
+  do not push or deploy this cleanup without explicit approval.
+
 ## Command Centre Trust Events first-surface cleanup - 2026-10-26
 
 - Simplified the admin-only `/app/command-center/trust-events` first surface
