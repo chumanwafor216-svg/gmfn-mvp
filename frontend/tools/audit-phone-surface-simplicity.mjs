@@ -19,6 +19,7 @@ const files = {
   exposureAdmin: "src/pages/ExposureAdminPage.tsx",
   trustAnalytics: "src/pages/TrustAnalyticsPage.tsx",
   adminTrustGraph: "src/pages/AdminTrustGraphPage.tsx",
+  systemOperations: "src/pages/SystemOperationsPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -112,6 +113,11 @@ assertContains(
   "adminTrustGraph",
   /data-gsn-trust-graph-summary="true"[\s\S]*?What does the relationship record show\?[\s\S]*?Community[\s\S]*?Graph feed[\s\S]*?Evidence signals[\s\S]*?Watch or flagged[\s\S]*?data-gsn-trust-graph-priority="true"[\s\S]*?debugId="admin-trust-graph\.review-priority"[\s\S]*?Review evidence signals[\s\S]*?Read structure limits/,
   "Admin Trust Graph must keep one honest relationship-evidence summary and one state-aware action before closed structure, signal, and next-page details."
+);
+assertContains(
+  "systemOperations",
+  /data-gsn-system-operations-summary="true"[\s\S]*?What needs attention\?[\s\S]*?Community[\s\S]*?Entry needing help[\s\S]*?Immediate queue[\s\S]*?Identity cases[\s\S]*?debugId="system-operations\.priority-action"[\s\S]*?data-gsn-system-operations-overview="true"[\s\S]*?data-gsn-system-operations-intake="true"[\s\S]*?data-gsn-system-operations-signals="true"/,
+  "System Operations must keep one compact queue summary and one state-aware action before closed operational detail."
 );
 
 if (findings.length > 0) {

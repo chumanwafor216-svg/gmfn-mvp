@@ -108,7 +108,7 @@ assertContains(
 );
 assertContains(
   "src/pages/SystemOperationsPage.tsx",
-  /const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn\.systemOperations\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?intake: true,[\s\S]*?signals: true,[\s\S]*?queues: true,[\s\S]*?routes: true,/,
+  /const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn\.systemOperations\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?intake: true,[\s\S]*?signals: true,[\s\S]*?queues: true,[\s\S]*?routes: true,/,
   "System Operations must default deeper overview, intake, signals, queues, and route grids closed while keeping the live operations reading visible."
 );
 
@@ -127,6 +127,26 @@ assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /data-trust-command-current-action="true"[\s\S]*?sectionLabelWithIcon\("navigation", "What needs attention now"\)[\s\S]*?debugId="trust-command\.executive\.next-action"[\s\S]*?data-trust-command-signal-rows="true"[\s\S]*?System and readiness[\s\S]*?Trust and identity[\s\S]*?Money and support/,
   "Trust Command Centre must expose one live recommendation and three compact signal rows before deeper operator material."
+);
+assertContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /data-gsn-system-operations-summary="true"[\s\S]*?What needs attention\?[\s\S]*?Community[\s\S]*?Entry needing help[\s\S]*?Immediate queue[\s\S]*?Identity cases[\s\S]*?debugId="system-operations\.priority-action"/,
+  "System Operations must show one compact live summary and one state-aware first action."
+);
+assertNotContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /<ExplainToggle|Operator overview|Live operational reading for|Role: \{roleLabel\}|How to use this/,
+  "System Operations must not restore repeated guidance or operator biography on the first surface."
+);
+assertRepoContains(
+  "docs/SCREEN_REGISTRY.md",
+  /SystemOperationsPage \(`\/app\/command-center\/system-operations`;/,
+  "System Operations must remain explicitly named in the screen registry."
+);
+assertRepoContains(
+  "docs/SCREEN_SPECS.md",
+  /## SystemOperationsPage[\s\S]*?one compact `What needs attention\?` summary[\s\S]*?queue readings are not proof of wrongdoing,[\s\S]*?overview, entry support, live signals, operational queues, and next pages/,
+  "System Operations must keep its compact live-queue triage specification."
 );
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",

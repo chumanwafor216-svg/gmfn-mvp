@@ -1972,6 +1972,52 @@ Primary action:
 Open signal record
 ```
 
+## SystemOperationsPage
+
+Route: `/app/command-center/system-operations`.
+
+Purpose:
+Give a platform admin one live reading of entry-support, bank, incomplete-support,
+pool, expected-payment, identity, and system-readiness pressure before opening
+the queue or page that owns the work.
+
+Must show:
+- Command Centre navigation
+- one compact `What needs attention?` summary
+- selected community, entry-needing-help count, immediate-queue count, and
+  high identity-case count
+- one visible state-aware action that opens the matching local disclosure or
+  owning admin page
+- a plain boundary that queue readings are not proof of wrongdoing, payment,
+  settlement, or authority to release money, goods, or credit
+- overview, entry support, live signals, operational queues, and next pages in
+  closed disclosures
+
+Rules:
+- Keep the route platform-admin-only.
+- Preserve the existing endpoint scopes, row limits, signal ordering, identity
+  photo review controls, correction reason, audit messages, and private photo
+  evidence handling.
+- Entry records needing help take first priority, followed by missing community
+  context, unmatched bank events, incomplete support close to auto-cancel,
+  pending pool review, high identity signals, open expected-payment records,
+  unhealthy diagnostics, and calm-state review.
+- The first action may reveal the existing overview, entry-support, or signal
+  disclosure, or navigate to the existing page that owns the intervention. It
+  must not itself approve, reject, reconcile, settle, release, or mutate a
+  record.
+- Do not expose the signed-in operator name or role as operational facts.
+- Do not restore repeated explanation panels, an exposed six-tile overview,
+  open applicant records, open live signals, or exposed next-page actions.
+- Reset the disclosure-storage version when introducing this compact default so
+  returning pilot users do not inherit the superseded exposed layout.
+
+Primary action:
+
+```text
+Review entry support
+```
+
 ## AdminTrustGraphPage
 
 Route: `/app/command-center/trust-graph`.

@@ -68,6 +68,7 @@ Bottom navigation is allowed here.
 27. ExposureAdminPage (`/app/command-center/exposure`; selected-community platform-admin exposure and action-queue review; compact first surface reviewed 2026-10-26)
 28. TrustAnalyticsPage (`/app/command-center/trust-analytics`; platform-admin selected-community Trust Event pattern reading with compact state-aware first action; reviewed 2026-10-26)
 29. AdminTrustGraphPage (`/app/command-center/trust-graph`; platform-admin selected-community relationship-evidence fallback with an explicit unconnected community-graph boundary; reviewed 2026-10-26)
+30. SystemOperationsPage (`/app/command-center/system-operations`; platform-admin live queue triage with one state-aware first action and closed operational details; reviewed 2026-10-26)
 
 ## Current Repo Name Notes
 

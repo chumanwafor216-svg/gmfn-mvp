@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
-  institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import {
@@ -14,7 +12,6 @@ import {
   getAdminIdentityRisk,
   getAdminIncompleteLoans,
   getCurrentClan,
-  getMe,
   getSelectedClanId,
   getSystemDiagnostics,
   correctIdentityVerificationCheck,
@@ -46,7 +43,16 @@ type CollapseState = {
   routes: boolean;
 };
 
-const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn.systemOperations.sections.v2";
+type OperationalFocus = {
+  title: string;
+  detail: string;
+  actionLabel: string;
+  actionIcon: GsnIconName;
+  targetSection?: keyof CollapseState;
+  to?: string;
+};
+
+const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn.systemOperations.sections.v3";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -83,13 +89,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     border: "1px solid rgba(20,52,83,0.24)",
     boxShadow:
       "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
-  };
-}
-
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(20,52,83,0.20)",
   };
 }
 
@@ -504,7 +503,6 @@ export default function SystemOperationsPage() {
   );
 
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [identityRisk, setIdentityRisk] = useState<any[]>([]);
@@ -516,6 +514,9 @@ export default function SystemOperationsPage() {
   const [pilotIntake, setPilotIntake] = useState<any>(null);
   const [reviewingCheckId, setReviewingCheckId] = useState<number | null>(null);
   const [reviewMessage, setReviewMessage] = useState<string>("");
+  const overviewSectionRef = useRef<HTMLElement | null>(null);
+  const intakeSectionRef = useRef<HTMLElement | null>(null);
+  const signalsSectionRef = useRef<HTMLElement | null>(null);
   const operationsLoadSeqRef = useRef(0);
   const operationsLoadContextRef = useRef("");
 
@@ -565,14 +566,12 @@ export default function SystemOperationsPage() {
 
       try {
         const [
-          meRes,
           clanRes,
           diagnosticsRes,
           identityRiskRes,
           pilotIntakeRes,
           clanOpsRes,
         ] = await Promise.all([
-          getMe().catch(() => null),
           getCurrentClan().catch(() => null),
           getSystemDiagnostics().catch(() => null),
           getAdminIdentityRisk(100).catch(() => ({ items: [] })),
@@ -604,7 +603,6 @@ export default function SystemOperationsPage() {
           expectedPaymentsRes,
         ] = clanOpsRes;
 
-        setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setDiagnostics(diagnosticsRes || null);
         setIdentityRisk(rowsOf<any>(identityRiskRes));
@@ -624,18 +622,6 @@ export default function SystemOperationsPage() {
     };
   }, [selectedClanId]);
 
-  const operatorName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Operator"
-    );
-  }, [me]);
-
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -646,12 +632,6 @@ export default function SystemOperationsPage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [currentClan, selectedClanId]);
-
-  const roleLabel = useMemo(() => {
-    return (
-      firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
-    );
-  }, [me]);
 
   async function handleIdentityPhotoDecision(
     checkId: number,
@@ -849,52 +829,79 @@ export default function SystemOperationsPage() {
     return "No urgent entry-support problem is visible now. Keep watching new create and join rows as applicants continue.";
   }, [pilotIntake, pilotIntakeSummary]);
 
-  const operationalFocus = useMemo(() => {
+  const urgentIncompleteCount = useMemo(
+    () =>
+      incompleteLoans.filter((row) => {
+        const remaining = toNum(row?.auto_cancel_remaining_seconds);
+        return remaining > 0 && remaining <= 60;
+      }).length,
+    [incompleteLoans]
+  );
+
+  const immediateQueueCount =
+    bankUnmatched.length + urgentIncompleteCount + pendingPool.length;
+
+  const operationalFocus = useMemo<OperationalFocus>(() => {
     if (pilotIntakeSummary.needsAttention > 0) {
       return {
+        title: "Entry support needs attention.",
         detail:
           pilotIntakeSummary.needsAttention === 1
             ? "One entry-support record needs help. Check whether the applicant should continue, sign in, or receive an activation link."
             : `${pilotIntakeSummary.needsAttention} entry-support records need help. Check whether applicants should continue, sign in, or receive activation links.`,
+        actionLabel: "Review entry support",
+        actionIcon: "user",
+        targetSection: "intake",
       };
     }
 
     if (!selectedClanId) {
       return {
+        title: "Choose a community before reviewing local queues.",
         detail:
           "Choose the current community first so the admin queues can load the bank, pool, and incomplete-support signals for the right place.",
+        actionLabel: "Choose community",
+        actionIcon: "community",
+        to: routes.dashboard,
       };
     }
 
     if (bankUnmatched.length > 0) {
       return {
+        title: "Bank matching needs attention.",
         detail:
           bankUnmatched.length === 1
             ? "One bank event is still unmatched. Reconcile it before treating the finance reading as settlement-ready."
             : `${bankUnmatched.length} bank events are still unmatched. Reconcile them before treating the finance reading as settlement-ready.`,
+        actionLabel: "Open Bank Console",
+        actionIcon: "bank",
+        to: routes.bankConsole,
       };
     }
 
-    const urgentIncomplete = incompleteLoans.filter((row) => {
-      const remaining = toNum(row?.auto_cancel_remaining_seconds);
-      return remaining > 0 && remaining <= 60;
-    }).length;
-
-    if (urgentIncomplete > 0) {
+    if (urgentIncompleteCount > 0) {
       return {
+        title: "Incomplete support is close to auto-cancel.",
         detail:
-          urgentIncomplete === 1
+          urgentIncompleteCount === 1
             ? "One incomplete support item is close to auto-cancel. Review support decisions and coverage now."
-            : `${urgentIncomplete} incomplete support items are close to auto-cancel. Review support decisions and coverage now.`,
+            : `${urgentIncompleteCount} incomplete support items are close to auto-cancel. Review support decisions and coverage now.`,
+        actionLabel: "Review incomplete support",
+        actionIcon: "document",
+        to: routes.incompleteLoans,
       };
     }
 
     if (pendingPool.length > 0) {
       return {
+        title: "Pool finance review is waiting.",
         detail:
           pendingPool.length === 1
             ? "One pool event is waiting for finance review. Record its review before the money queue drifts."
             : `${pendingPool.length} pool events are waiting for finance review. Record their review before the money queue drifts.`,
+        actionLabel: "Open Bank Console",
+        actionIcon: "wallet",
+        to: routes.bankConsole,
       };
     }
 
@@ -904,45 +911,73 @@ export default function SystemOperationsPage() {
 
     if (highIdentity > 0) {
       return {
+        title: "Identity evidence needs review.",
         detail:
           highIdentity === 1
             ? "One identity-risk case needs intervention before it becomes a trust or access problem."
             : `${highIdentity} identity-risk cases need intervention before they become trust or access problems.`,
+        actionLabel: "Review identity evidence",
+        actionIcon: "id",
+        to: routes.identityRisk,
       };
     }
 
     if (expectedPayments.length > 0) {
       return {
+        title: "Expected payment records remain open.",
         detail:
           "Expected payment items are still open. Keep the money path readable until those expectations clear through finance evidence.",
+        actionLabel: "Open Bank Console",
+        actionIcon: "calendar",
+        to: routes.bankConsole,
       };
     }
 
     if (diagnostics?.ok === false) {
       return {
+        title: "System readiness needs attention.",
         detail:
           "System diagnostics are not healthy yet. Confirm runtime and database state before trusting the calmer queues.",
+        actionLabel: "Check system readiness",
+        actionIcon: "alert",
+        to: routes.commandCenter,
       };
     }
 
     if (bankRecent.length > 0) {
       return {
+        title: "The visible queues are calm.",
         detail:
           "The live admin queues look calm right now. Open a deeper admin page only if you need more investigation.",
+        actionLabel: "Review live signals",
+        actionIcon: "spark",
+        targetSection: "signals",
       };
     }
 
-    return null;
+    return {
+      title: "No immediate queue is visible.",
+      detail:
+        "Nothing in the loaded admin queues is asking for immediate action. Review the totals only if you need a wider check.",
+      actionLabel: "Review queue totals",
+      actionIcon: "chart",
+      targetSection: "overview",
+    };
   }, [
     bankRecent.length,
     bankUnmatched.length,
     diagnostics?.ok,
     expectedPayments.length,
     identityRisk,
-    incompleteLoans,
     pilotIntakeSummary.needsAttention,
     pendingPool.length,
+    routes.bankConsole,
+    routes.commandCenter,
+    routes.dashboard,
+    routes.identityRisk,
+    routes.incompleteLoans,
     selectedClanId,
+    urgentIncompleteCount,
   ]);
 
   const recentSignals = useMemo(() => {
@@ -1100,6 +1135,22 @@ export default function SystemOperationsPage() {
     }));
   }
 
+  function openOperationalFocusSection() {
+    const targetSection = operationalFocus.targetSection;
+    if (!targetSection) return;
+
+    setCollapsed((prev) => ({ ...prev, [targetSection]: false }));
+    window.setTimeout(() => {
+      const target =
+        targetSection === "intake"
+          ? intakeSectionRef.current
+          : targetSection === "signals"
+            ? signalsSectionRef.current
+            : overviewSectionRef.current;
+      target?.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 0);
+  }
+
   if (loading) {
     return (
       <div
@@ -1141,103 +1192,81 @@ export default function SystemOperationsPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="System Operations"
+        sectionLabel="Command Centre"
         title="System Operations"
-        subtitle="See the live pressure, then open the right admin task."
+        subtitle="See the strongest live admin pressure and take the next safe action."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
-      <ExplainToggle
-        label="How to use this"
-        what="This page gathers the live admin pressure in one place."
-        why="It helps you act on the strongest signal first."
-        next="Read what matters now, then open the page that matches the work."
-        tone="light"
-      />
-
       <section
+        data-gsn-system-operations-summary="true"
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
+        <div>{sectionLabelWithIcon("alert", "What needs attention?", "gold")}</div>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            marginTop: 10,
+            color: "#F8FBFF",
+            fontWeight: 900,
+            fontSize: isCompact ? 27 : 34,
+            lineHeight: 1.12,
           }}
         >
-          <div>
-            {sectionLabelWithIcon("navigation", "Operator overview", "gold")}
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
-              }}
-            >
-              Live operational reading for {operatorName}
-            </div>
-
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              See what is happening now, what needs follow-up, and where to move next.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {badgeWithIcon("user", <>Role: {roleLabel}</>, true, "blue")}
-              {badgeWithIcon("community", <>Community: {communityLabel}</>)}
-              {badgeWithIcon("chart", "Operations")}
-            </div>
-          </div>
-
-          <div style={softCard("#FFFFFF")}>
-            {sectionLabelWithIcon("alert", "What matters now", operationalFocus ? "gold" : "green")}
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
-              }}
-            >
-              {operationalFocus
-                ? "There is a visible operational focus."
-                : "No immediate operational focus is visible."}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText() }}>
-              {operationalFocus
-                ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the right admin page.")
-                : "No admin queue is dominating the live feed right now."}
-            </div>
-          </div>
+          {operationalFocus.title}
         </div>
-
-        <ExplainToggle
-          label="Focus"
-          what="The strongest signal is shown first."
-          why="Not every queue deserves the same urgency."
-          next="Confirm the numbers below, then move into the matching page."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
+        <div style={{ marginTop: 10, color: "#D8E7F6", fontSize: 14.5, lineHeight: 1.65 }}>
+          {operationalFocus.detail}
+        </div>
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 10,
+          }}
+        >
+          {[
+            ["Community", communityLabel],
+            ["Entry needing help", pilotIntakeSummary.needsAttention],
+            ["Immediate queue", immediateQueueCount],
+            ["Identity cases", summary.identityInterventions],
+          ].map(([label, value]) => (
+            <div key={String(label)} style={{ ...innerCard("rgba(255,255,255,0.96)"), minWidth: 0 }}>
+              <div style={sectionLabel()}>{label}</div>
+              <div style={{ marginTop: 7, color: "#0B1F33", fontWeight: 900, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 14, color: "#D8E7F6", fontSize: 13.5, lineHeight: 1.6 }}>
+          These are admin queue readings. They are not proof of wrongdoing, payment, settlement, or authority to release money, goods, or credit.
+        </div>
+        {operationalFocus.to ? (
+          <StableCtaLink
+            to={operationalFocus.to}
+            kind="primary"
+            debugId="system-operations.priority-action"
+            style={{ width: "100%", marginTop: 14 }}
+          >
+            {actionLabel(operationalFocus.actionIcon, operationalFocus.actionLabel, "blue")}
+          </StableCtaLink>
+        ) : (
+          <PrimaryButton
+            onClick={openOperationalFocusSection}
+            stableHeight={56}
+            debugId="system-operations.priority-action"
+            style={{ width: "100%", marginTop: 14 }}
+          >
+            {actionLabel(operationalFocus.actionIcon, operationalFocus.actionLabel, "blue")}
+          </PrimaryButton>
+        )}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={overviewSectionRef} data-gsn-system-operations-overview="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1362,7 +1391,7 @@ export default function SystemOperationsPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={intakeSectionRef} data-gsn-system-operations-intake="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -1388,15 +1417,6 @@ export default function SystemOperationsPage() {
             {collapsed.intake ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
-
-        <ExplainToggle
-          label="Entry help"
-          what="This monitor shows the last known entry stage."
-          why="A stuck applicant needs the next step, not a long explanation."
-          next="Use the stage and next action to guide the person."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         {!collapsed.intake ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
@@ -1871,7 +1891,7 @@ export default function SystemOperationsPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section ref={signalsSectionRef} data-gsn-system-operations-signals="true" style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",

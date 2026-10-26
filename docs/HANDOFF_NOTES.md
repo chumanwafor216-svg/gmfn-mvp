@@ -8,6 +8,41 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Command Centre System Operations first-surface cleanup - 2026-10-26
+
+- Simplified the platform-admin-only
+  `/app/command-center/system-operations` first surface without changing its
+  queue endpoints, request limits, priority order, signal ordering, identity
+  photo decisions, correction reason, evidence access, or audit messages.
+- Removed three repeated explanation panels, the operator-name/role biography,
+  and the extra page-level `/auth/me` request. Replaced them with one
+  `What needs attention?` summary: Community, Entry needing help, Immediate
+  queue, and Identity cases.
+- Added one state-aware first action. Entry support opens locally; unmatched
+  bank, pending pool, and expected-payment pressure go to Bank Console;
+  near-auto-cancel support goes to Incomplete Support; high identity pressure
+  goes to Identity Risk; unhealthy diagnostics go to Command Centre readiness;
+  and calm states reveal signals or queue totals.
+- Overview, entry support, live signals, operational queues, and next pages
+  remain closed. The disclosure-storage key moved to `v3` so returning pilot
+  users do not inherit the superseded exposed layout. Sensitive identity-photo
+  controls remain inside the deliberately opened entry-support monitor.
+- Added the missing screen registry/spec entry, source guards, and a focused
+  entry-pressure/calm-state 390x844 browser smoke. No matching reference
+  mockup exists; the approved compact Command Centre pattern remains the visual
+  source of truth.
+- Verification passed: the 295-module production build, Admin/Operations,
+  Trust, phone-surface, button-stability, admin-route, institutional-proof,
+  visible-language, global action-ID/raw-action and tap-stability audits,
+  mobile route coverage, the focused 390x844 browser smoke, the complete
+  protected button/frozen-surface suite, and the full mocked 390x844 mobile
+  visual sweep.
+- Confirmed limitation: these local mocked checks prove UI behavior and
+  contract preservation, not that every production queue endpoint is healthy.
+  Existing per-endpoint failure fallbacks remain unchanged.
+- This continuation is local only. Do not push, promote to `main`, or deploy
+  it until the owner explicitly says `deploy`.
+
 ## Command Centre Trust Graph safety and first-surface cleanup - 2026-10-26
 
 - Simplified the platform-admin-only `/app/command-center/trust-graph`
