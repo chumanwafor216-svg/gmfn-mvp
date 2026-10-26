@@ -147,8 +147,8 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function getMyTrustSlip\(params\?: \{ fresh\?: boolean \}\): Promise<any> \{[\s\S]*?if \(params\?\.fresh\) clearStartupSectionCacheByLabel\("getMyTrustSlip"\);[\s\S]*?return httpJson\("\/trust-slips\/me", "GET"\);[\s\S]*?\}/,
-  "Signed-in holder TrustSlip lookup must keep using the authenticated /trust-slips/me wrapper."
+  /export async function getMyTrustSlip\(params\?: \{ fresh\?: boolean \}\): Promise<any> \{[\s\S]*?if \(params\?\.fresh\) clearStartupSectionCacheByLabel\("getMyTrustSlip"\);[\s\S]*?return cachedStartupSectionRead\([\s\S]*?startupSectionCacheKey\("getMyTrustSlip"\)[\s\S]*?httpJson\("\/trust-slips\/me", "GET"\)[\s\S]*?\);[\s\S]*?\}/,
+  "Signed-in holder TrustSlip lookup must keep using the authenticated /trust-slips/me wrapper through the shared startup cache with explicit fresh invalidation."
 );
 
 assertContains(

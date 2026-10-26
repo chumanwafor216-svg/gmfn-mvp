@@ -197,7 +197,7 @@ assertContains(
 );
 
 assertContains(
-  /async function refreshTrustSlipAfterIdentityChange\([\s\S]*?const nextTrustSlip = await getMyTrustSlip\(\);[\s\S]*?setTrustSlip\(normalizeTrustSlipRecord\(nextTrustSlip\)\)[\s\S]*?const out = await confirmSignedInPhoneVerification[\s\S]*?const nextTrustSlip = await refreshTrustSlipAfterIdentityChange\(\)[\s\S]*?TrustSlip code and QR are now ready/,
+  /async function refreshTrustSlipAfterIdentityChange\([\s\S]*?const nextTrustSlip = await getMyTrustSlip\(\{ fresh: true \}\);[\s\S]*?setTrustSlip\(normalizeTrustSlipRecord\(nextTrustSlip\)\)[\s\S]*?const out = await confirmSignedInPhoneVerification[\s\S]*?const nextTrustSlip = await refreshTrustSlipAfterIdentityChange\(\)[\s\S]*?TrustSlip code and QR are now ready/,
   "Identity Integrity must refetch/auto-issue TrustSlip after phone confirmation so joined members do not remain visibly pending after the phone code succeeds."
 );
 
@@ -247,8 +247,8 @@ assertContains(
 );
 
 assertContains(
-  /fetchIdentityIntegrityData[\s\S]*?listMyClans\(\{ timeoutMs: 6500 \}\)[\s\S]*?getMyTrustSlip\(\)[\s\S]*?communities: rowsOf<IdentityCommunityRow>\(clansRes\)[\s\S]*?trustSlip: normalizeTrustSlipRecord\(trustSlipRes\)/,
-  "Identity Integrity must read the existing member community list and TrustSlip through the shared refresh loader before rendering the GSN Identity Card footprint."
+  /async function getMyTrustSlipForIdentityIntegrity[\s\S]*?getMyTrustSlip\(\{ fresh: true \}\)[\s\S]*?trustSlipIssueBlockerFromError[\s\S]*?fetchIdentityIntegrityData[\s\S]*?listMyClans\(\{ timeoutMs: 6500 \}\)[\s\S]*?getMyTrustSlipForIdentityIntegrity\(\)[\s\S]*?communities: rowsOf<IdentityCommunityRow>\(clansRes\)[\s\S]*?trustSlip: trustSlipRes/,
+  "Identity Integrity must read the existing member community list and TrustSlip through the failure-aware shared refresh loader before rendering the GSN Identity Card footprint."
 );
 
 assertContains(
@@ -306,7 +306,7 @@ assertContains(
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?setIdentityPackageView\("anchor"\)[\s\S]*?Verify phone first[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?setIdentityPackageView\("anchor"\)[\s\S]*?showNotice\(\s*"error",\s*trustSlipPendingDetail\s*\)[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
   "GSN Identity Card must share the visible card as a PNG when the phone browser supports file sharing, while keeping the phone/TrustSlip gate."
 );
 
