@@ -26,6 +26,7 @@ import {
   decideCommunityNoticeReviewSubmission,
   acknowledgeCommunityNotice,
   listCommunityNoticeAcknowledgements,
+  listCommunityNoticePollRollCall,
   listCommunityNoticeReviewQueue,
   listCommunityNotices,
   recordCommunityMeetingInterest,
@@ -204,10 +205,12 @@ type CommunityNoticeItem = {
   poll_enabled?: boolean | null;
   poll_question?: string | null;
   poll_options?: string[] | null;
+  poll_selection_mode?: "single" | "multiple" | string | null;
   poll_summary?: {
     counts?: Record<string, number | string | null> | null;
     total?: number | string | null;
     own_response?: string | null;
+    own_responses?: string[] | null;
   } | null;
   board_hint?: string | null;
   marketplace_broadcast_id?: number | string | null;
@@ -235,6 +238,24 @@ type CommunityNoticeRollCall = {
   } | null;
   acknowledged?: CommunityNoticeRollCallMember[] | null;
   not_acknowledged?: CommunityNoticeRollCallMember[] | null;
+};
+
+type CommunityNoticePollRollCallMember = {
+  user_id?: number | string | null;
+  display_name?: string | null;
+  gmfn_id?: string | null;
+  role?: string | null;
+  options?: string[] | null;
+  responded_at?: string | null;
+};
+
+type CommunityNoticePollRollCall = {
+  summary?: {
+    counts?: Record<string, number | string | null> | null;
+    total_respondents?: number | string | null;
+  } | null;
+  by_option?: Record<string, CommunityNoticePollRollCallMember[] | null> | null;
+  responses?: CommunityNoticePollRollCallMember[] | null;
 };
 type CommunityNoticeReviewSubmission = {
   submission_event_id?: number | string | null;
@@ -1923,6 +1944,9 @@ export default function CommunityHomePage() {
   const [noticeAcknowledgementBusy, setNoticeAcknowledgementBusy] = useState("");
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
   const [noticePollBusy, setNoticePollBusy] = useState("");
+  const [noticePollSelectionsByNotice, setNoticePollSelectionsByNotice] = useState<Record<string, string[]>>({});
+  const [noticePollRollCallBusy, setNoticePollRollCallBusy] = useState("");
+  const [noticePollRollCallByNotice, setNoticePollRollCallByNotice] = useState<Record<string, CommunityNoticePollRollCall>>({});
   const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
   const [noticeDetailOpenId, setNoticeDetailOpenId] = useState("");
   const [selectedCommunityNoticeIndex, setSelectedCommunityNoticeIndex] = useState(0);
@@ -3170,17 +3194,60 @@ export default function CommunityHomePage() {
     );
   }
 
-  async function recordNoticePollChoice(
+  function storedNoticePollSelections(noticeItem: CommunityNoticeItem): string[] {
+    const responses = Array.isArray(noticeItem?.poll_summary?.own_responses)
+      ? noticeItem.poll_summary.own_responses.map((option) => firstTruthy(option)).filter(Boolean)
+      : [];
+    if (responses.length > 0) return responses;
+    const response = firstTruthy(noticeItem?.poll_summary?.own_response);
+    return response ? [response] : [];
+  }
+
+  function selectedNoticePollOptions(noticeItem: CommunityNoticeItem): string[] {
+    const noticeKey = firstTruthy(noticeItem?.notice_id, noticeItem?.event_id);
+    if (noticeKey && Object.prototype.hasOwnProperty.call(noticePollSelectionsByNotice, noticeKey)) {
+      return noticePollSelectionsByNotice[noticeKey] || [];
+    }
+    return storedNoticePollSelections(noticeItem);
+  }
+
+  function toggleNoticePollChoice(
     event: React.SyntheticEvent<HTMLElement>,
     noticeItem: CommunityNoticeItem,
-    option: string,
-    optionIndex: number
+    option: string
+  ) {
+    consumeCommunityButtonEvent(event);
+    const noticeKey = firstTruthy(noticeItem?.notice_id, noticeItem?.event_id);
+    if (!noticeKey || !option) {
+      showNotice("error", "This announcement poll is not ready yet.");
+      return;
+    }
+    const mode = noticeItem?.poll_selection_mode === "multiple" ? "multiple" : "single";
+    const current = selectedNoticePollOptions(noticeItem);
+    const alreadySelected = current.some((selected) => selected.toLowerCase() === option.toLowerCase());
+    const next = mode === "multiple"
+      ? alreadySelected
+        ? current.filter((selected) => selected.toLowerCase() !== option.toLowerCase())
+        : [...current, option]
+      : [option];
+    setNoticePollSelectionsByNotice((state) => ({ ...state, [noticeKey]: next }));
+  }
+
+  async function submitNoticePollChoices(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
   ) {
     consumeCommunityButtonEvent(event);
     const clanId = noticeClanId(noticeItem, selectedClan);
     const eventId = firstTruthy(noticeItem?.event_id);
-    if (!clanId || !eventId || !option) {
+    const noticeKey = firstTruthy(noticeItem?.notice_id, eventId);
+    const options = selectedNoticePollOptions(noticeItem);
+    if (!clanId || !eventId || !noticeKey) {
       showNotice("error", "This announcement poll is not ready yet.");
+      return;
+    }
+    if (options.length === 0) {
+      showNotice("error", "Choose an answer before you press OK.");
       return;
     }
     if (noticePollBusy) {
@@ -3188,21 +3255,89 @@ export default function CommunityHomePage() {
       return;
     }
 
-    const busyKey = `${eventId}:${optionIndex}`;
-    setNoticePollBusy(busyKey);
+    setNoticePollBusy(noticeKey);
     try {
       const result = await recordCommunityNoticePollResponse(eventId, {
         clan_id: clanId,
-        option,
+        options,
       });
       const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
-      showNotice("success", firstTruthy(result?.message, `Poll response saved: ${option}.`));
+      setNoticePollSelectionsByNotice((state) => {
+        const next = { ...state };
+        delete next[noticeKey];
+        return next;
+      });
+      showNotice("success", firstTruthy(result?.message, "Your poll response was saved."));
     } catch (error: any) {
       showNotice("error", error?.message || "Your poll response could not be saved.");
     } finally {
       setNoticePollBusy("");
     }
+  }
+
+  async function loadNoticePollRollCall(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = noticeClanId(noticeItem, selectedClan);
+    const eventId = firstTruthy(noticeItem?.event_id);
+    const noticeKey = firstTruthy(noticeItem?.notice_id, eventId);
+    if (!clanId || !eventId || !noticeKey || !canManageCommunityNoticeSettings) {
+      showNotice("error", "Only a community admin can open the poll roll call.");
+      return;
+    }
+    if (noticePollRollCallByNotice[noticeKey]) {
+      setNoticePollRollCallByNotice((state) => {
+        const next = { ...state };
+        delete next[noticeKey];
+        return next;
+      });
+      return;
+    }
+    if (noticePollRollCallBusy) return;
+    setNoticePollRollCallBusy(noticeKey);
+    try {
+      const result = await listCommunityNoticePollRollCall(eventId, { clan_id: clanId });
+      setNoticePollRollCallByNotice((state) => ({ ...state, [noticeKey]: result }));
+    } catch (error: any) {
+      showNotice("error", gsnGovernanceErrorMessage(error, "This poll roll call is only available to community admins."));
+    } finally {
+      setNoticePollRollCallBusy("");
+    }
+  }
+
+  function renderNoticePollRollCall(noticeItem: CommunityNoticeItem) {
+    const noticeKey = firstTruthy(noticeItem?.notice_id, noticeItem?.event_id);
+    const rollCall = noticeKey ? noticePollRollCallByNotice[noticeKey] : null;
+    if (!rollCall) return null;
+    const byOption = rollCall.by_option || {};
+    const options = Array.isArray(noticeItem.poll_options) ? noticeItem.poll_options : [];
+    return (
+      <div data-debug-id="community-home.bulletin.poll-roll-call-panel" style={{ ...innerCard("#FFFDF7"), display: "grid", gap: 9 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ color: "#07172C", fontSize: 13, fontWeight: 930 }}>Admin-only poll roll call</span>
+          <span style={badge(false)}>{noticeNumber(rollCall.summary?.total_respondents)} respondents</span>
+        </div>
+        {options.map((option) => {
+          const members = Array.isArray(byOption?.[option]) ? byOption[option] || [] : [];
+          return (
+            <div key={option} style={{ display: "grid", gap: 4 }}>
+              <span style={{ color: "#0B2D4A", fontSize: 12, fontWeight: 900 }}>{option} ({members.length})</span>
+              <span style={{ color: "#617085", fontSize: 12, fontWeight: 740 }}>
+                {members.length > 0
+                  ? members.map((member) => firstTruthy(member.display_name, member.gmfn_id, `Member ${member.user_id || ""}`)).join(", ")
+                  : "No members yet"}
+              </span>
+            </div>
+          );
+        })}
+        <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 720 }}>
+          Names are private to authorised community admins. A member appears under every choice they submitted.
+        </span>
+      </div>
+    );
   }
 
   function renderNoticeChoicePoll(noticeItem: CommunityNoticeItem) {
@@ -3213,8 +3348,11 @@ export default function CommunityHomePage() {
     if (!noticeItem?.poll_enabled || !question || options.length < 2 || !noticeItem?.event_id) {
       return null;
     }
-    const ownResponse = firstTruthy(noticeItem?.poll_summary?.own_response);
+    const selectedOptions = selectedNoticePollOptions(noticeItem);
     const counts = noticeItem?.poll_summary?.counts || {};
+    const noticeKey = firstTruthy(noticeItem?.notice_id, noticeItem?.event_id);
+    const multiple = noticeItem?.poll_selection_mode === "multiple";
+    const hasStoredResponse = storedNoticePollSelections(noticeItem).length > 0;
 
     return (
       <div
@@ -3230,18 +3368,16 @@ export default function CommunityHomePage() {
           }}
         >
           {options.map((option, index) => {
-            const selected = ownResponse.toLowerCase() === option.toLowerCase();
-            const busyKey = `${noticeItem.event_id}:${index}`;
+            const selected = selectedOptions.some((answer) => answer.toLowerCase() === option.toLowerCase());
             const count = noticeNumber(counts?.[option]);
             return (
               <StableButton
                 key={`${option}-${index}`}
                 type="button"
                 debugId={`community-home.bulletin.poll-option.${index}`}
-                onClick={(buttonEvent) => recordNoticePollChoice(buttonEvent, noticeItem, option, index)}
+                onClick={(buttonEvent) => toggleNoticePollChoice(buttonEvent, noticeItem, option)}
+                aria-pressed={selected}
                 aria-disabled={noticePollBusy ? true : undefined}
-                busy={noticePollBusy === busyKey}
-                busyLabel="Saving"
                 style={{
                   ...communityActionStyle(selected ? "primary" : "soft", Boolean(noticePollBusy)),
                   minHeight: 40,
@@ -3253,11 +3389,49 @@ export default function CommunityHomePage() {
                   boxShadow: "none",
                 }}
               >
-                {option}{count > 0 ? ` (${count})` : ""}
+                {selected ? "✓ " : ""}{option} ({count})
               </StableButton>
             );
           })}
         </div>
+        <span style={{ color: "#617085", fontSize: 12, fontWeight: 760 }}>
+          {multiple ? "Tap one or more answers, then press OK." : "Tap one answer, then press OK."} No writing is needed.
+        </span>
+        <StableButton
+          type="button"
+          debugId="community-home.bulletin.poll-submit"
+          onClick={(event) => submitNoticePollChoices(event, noticeItem)}
+          aria-disabled={Boolean(noticePollBusy) || selectedOptions.length === 0}
+          busy={noticePollBusy === noticeKey}
+          busyLabel="Saving"
+          style={{
+            ...communityActionStyle("primary", Boolean(noticePollBusy) || selectedOptions.length === 0),
+            minHeight: 42,
+            width: "100%",
+            borderRadius: 13,
+            fontSize: 13,
+            textTransform: "none",
+          }}
+        >
+          {hasStoredResponse ? "OK — update response" : "OK — send response"}
+        </StableButton>
+        <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 720 }}>
+          {noticeNumber(noticeItem?.poll_summary?.total)} people have responded. Totals count each selected choice; each person counts once as a respondent.
+        </span>
+        {canManageCommunityNoticeSettings ? (
+          <StableButton
+            type="button"
+            debugId="community-home.bulletin.poll-roll-call"
+            onClick={(event) => loadNoticePollRollCall(event, noticeItem)}
+            busy={noticePollRollCallBusy === noticeKey}
+            busyLabel="Loading"
+            aria-expanded={Boolean(noticeKey && noticePollRollCallByNotice[noticeKey])}
+            style={{ ...communityActionStyle("soft", Boolean(noticePollRollCallBusy)), minHeight: 40, width: "100%", borderRadius: 12, fontSize: 12, boxShadow: "none" }}
+          >
+            {noticeKey && noticePollRollCallByNotice[noticeKey] ? "Close poll roll call" : "Poll roll call"}
+          </StableButton>
+        ) : null}
+        {renderNoticePollRollCall(noticeItem)}
       </div>
     );
   }
@@ -3829,6 +4003,7 @@ export default function CommunityHomePage() {
       attachment_kind?: "link" | "video" | "poster" | "document" | null;
       poll_question?: string | null;
       poll_options?: string[] | null;
+      poll_selection_mode?: "single" | "multiple";
     }
   ) {
     const clanId = getClanId(selectedClan);

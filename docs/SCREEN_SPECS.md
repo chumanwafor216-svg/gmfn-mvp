@@ -153,6 +153,11 @@ Rules:
   entry surfaces where installation does not compete with the page's main job.
 - The prompt must stay compact, must not replace the main page action, and must
   disappear when GSN is already running from a home-screen install.
+- On Sign In, the unopened phone-shortcut reminder is transient: it disappears
+  after 10 seconds and exposes one close control. Opening the phone steps pauses
+  automatic dismissal so instructions do not vanish while the user follows
+  them. Closing is limited to the current mounted visit; a later entry visit may
+  show the reminder again.
 - On iPhone/iPad, do not promise the Android native install prompt. If the user
   may be inside WhatsApp, explain the Safari path: open in Safari, tap Share,
   then Add to Home Screen.
@@ -451,6 +456,10 @@ Rules:
   after Sign in; all secondary actions stay hidden until it is opened.
 - Membership activation and new-community setup stay secondary inside the
   compact disclosure instead of competing with the sign-in form.
+- An expired-session explanation must preserve the existing return target and
+  media-reselection warning, expose one close control, and disappear after 12
+  seconds if untouched. It is guidance, not a permanent part of the sign-in
+  form.
 
 Primary action:
 
@@ -645,9 +654,11 @@ Must show, in phone-first order:
   - one compact live announcement presentation
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
   - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
-  - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices; this poll is separate from the existing Yes/Maybe/No availability control
-  - an authenticated active member may select one custom poll choice and may change that choice; the latest choice is authoritative and counts once
-  - the expanded authenticated notice may show response totals, but the detached public package must not expose member lists or aggregate response totals
+  - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices and choose whether members may select one answer or multiple answers; this poll is separate from the existing Yes/Maybe/No availability control
+  - an authenticated active member taps the choice or choices and then presses one `OK` action; no written reply is required, and the member's latest submitted set replaces their earlier set
+  - the expanded authenticated notice shows aggregate totals per choice and one unique respondent total; in multiple-choice mode one member increments every choice they selected but counts once in the respondent total
+  - authorised community admins may deliberately open an admin-only `Poll roll call` to see who selected each choice when follow-up is necessary; names stay collapsed and are not part of the normal member poll view
+  - the detached public package must not expose member lists or admin roll call; after a signed-in active member submits their poll response, show that member the aggregate choice totals and unique respondent total
   - on phone, keep one compact red/amber/green timing strip showing `Now`, `72h`, and `Clear` counts inside Bulletin; keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
   - keep up to the last 10 expired items reachable through one closed `Previous announcements` disclosure; do not expose the history by default and do not silently discard it from the member surface
   - no Ask Community / market-need records in the Bulletin by default
@@ -2430,7 +2441,7 @@ Must show when supplied by the notice:
 - verified published announcer WhatsApp/call actions, or a truthful message that contact was not published
 - acknowledgement action
 - existing Yes/Maybe/No availability action when enabled
-- a custom single-choice poll when enabled, preserving the creator's question and two to seven choices
+- a custom one-answer or multiple-answer poll when enabled, preserving the creator's question and two to seven choices
 
 Rules:
 - Reading, opening attachments, copying and sharing remain public.
@@ -2439,10 +2450,19 @@ Rules:
   requirement and offer sign-in without inventing a public response.
 - Yes/Maybe/No availability and the custom-choice poll are distinct contracts.
   Do not nest weekdays or other poll options under Yes/Maybe/No.
-- The latest custom-poll choice from a member replaces that member's earlier
-  choice and counts once.
+- A member taps one or more permitted choices and presses one `OK` action; no
+  typed response is required. The latest submitted set replaces that member's
+  earlier set.
+- The authenticated Community Bulletin may show aggregate counts per choice.
+  In multiple-answer mode, a member counts once under every selected choice
+  and once in the unique respondent total. Authorised community admins may
+  deliberately open a private Poll roll call for necessary follow-up.
+- On the detached package, show aggregate poll results after a signed-in active
+  member submits a valid response. Do not publish those totals in the anonymous
+  notice payload.
 - Do not expose the creator, creator tools, wider community navigation, member
-  lists, acknowledgement roll call, availability totals or poll totals.
+  lists, acknowledgement roll call, poll roll call, availability totals or
+  poll totals to an anonymous visitor on this detached public page.
 - Expose announcer contact only when the sender deliberately published a
   verified public contact with the notice.
 - Reuse the existing Community Notice Trust Event, verified-media, WhatsApp

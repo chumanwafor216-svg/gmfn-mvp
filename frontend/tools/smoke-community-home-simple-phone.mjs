@@ -14,6 +14,7 @@ function json(body, status = 200) {
 }
 
 async function installApiMocks(page, { includeSecondClan = false } = {}) {
+  const state = { pollRequests: [], pollSelections: [] };
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
@@ -70,16 +71,52 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
     if (path === "/pool/me") {
       return route.fulfill(json({ clan_id: 8, currency: "NGN", balance: 0 }));
     }
+    if (path === "/community-notices/81/poll-response" && route.request().method() === "POST") {
+      const payload = route.request().postDataJSON();
+      state.pollRequests.push(payload);
+      state.pollSelections = Array.isArray(payload?.options) ? payload.options : [];
+      return route.fulfill(json({
+        ok: true,
+        message: `Poll response saved: ${state.pollSelections.join(", ")}.`,
+        poll_summary: {
+          counts: {
+            Friday: state.pollSelections.includes("Friday") ? 1 : 0,
+            Saturday: state.pollSelections.includes("Saturday") ? 1 : 0,
+            Sunday: state.pollSelections.includes("Sunday") ? 1 : 0,
+          },
+          total: 1,
+          own_response: state.pollSelections[0] || null,
+          own_responses: state.pollSelections,
+        },
+      }));
+    }
     if (/^\/community-notices(?:\/|$)/.test(path)) {
       return route.fulfill(json({
         notices: [
           {
             notice_id: "notice-8-1",
+            event_id: 81,
+            clan_id: 8,
             body: "Please read this community update before Wednesday and check the next step.",
             full_body: "Please read this community update before Wednesday. The full response tools belong behind one clear action.",
-            created_at: "2026-10-15T09:00:00Z",
+            created_at: "2026-10-27T09:00:00Z",
+            expires_at: "2026-11-03T09:00:00Z",
             acknowledgement_enabled: false,
             availability_enabled: false,
+            poll_enabled: true,
+            poll_question: "Which days suit you?",
+            poll_options: ["Friday", "Saturday", "Sunday"],
+            poll_selection_mode: "multiple",
+            poll_summary: {
+              counts: {
+                Friday: state.pollSelections.includes("Friday") ? 1 : 0,
+                Saturday: state.pollSelections.includes("Saturday") ? 1 : 0,
+                Sunday: state.pollSelections.includes("Sunday") ? 1 : 0,
+              },
+              total: state.pollSelections.length > 0 ? 1 : 0,
+              own_response: state.pollSelections[0] || null,
+              own_responses: state.pollSelections,
+            },
             source: "community_notice",
           },
         ],
@@ -97,6 +134,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
     }
     return route.continue();
   });
+  return state;
 }
 
 async function collectOverflow(page) {
@@ -137,7 +175,11 @@ async function run() {
       deviceScaleFactor: 2,
       isMobile: true,
     });
-    await installApiMocks(page);
+    page.on("pageerror", (error) => console.error("Community Home phone page error:", error));
+    page.on("console", (message) => {
+      if (message.type() === "error") console.error("Community Home phone console error:", message.text());
+    });
+    const apiState = await installApiMocks(page);
     await page.addInitScript(() => {
       localStorage.setItem("access_token", "local-community-home-simple-token");
       localStorage.setItem("gmfn_selected_clan_id", "8");
@@ -206,7 +248,7 @@ async function run() {
       defaultState.pulseCount !== 0 ||
       defaultState.calendarTileCount !== 0 ||
       defaultState.phoneIndicatorCount !== 1 ||
-      defaultState.phoneIndicatorText !== "1Now072h0Clear" ||
+      defaultState.phoneIndicatorText !== "0Now072h1Clear" ||
       defaultState.phoneIndicatorHeight === null ||
       defaultState.phoneIndicatorHeight > 40 ||
       defaultState.urgencyTones.join(",") !== "red,yellow,green" ||
@@ -226,6 +268,24 @@ async function run() {
     await page.waitForSelector('[data-debug-id="community-home.bulletin.reactions-panel"]', { timeout: 30000 });
     if (!(await page.getByText("Full notice", { exact: true }).isVisible())) {
       console.error("Community Home Open notice did not reveal the full notice.");
+      process.exitCode = 1;
+      return;
+    }
+    await page.waitForSelector('[data-debug-id="community-home.bulletin.choice-poll"]', { timeout: 30000 });
+    await page.locator('[data-cta-id="community-home.bulletin.poll-option.0"]').click();
+    await page.locator('[data-cta-id="community-home.bulletin.poll-option.2"]').click();
+    if (apiState.pollRequests.length !== 0) {
+      console.error("Community Home poll wrote a response before the member pressed OK.", apiState.pollRequests);
+      process.exitCode = 1;
+      return;
+    }
+    await page.locator('[data-cta-id="community-home.bulletin.poll-submit"]').click();
+    await page.waitForFunction(() => document.body.textContent?.includes("Poll response saved: Friday, Sunday."));
+    if (
+      apiState.pollRequests.length !== 1 ||
+      JSON.stringify(apiState.pollRequests[0]?.options) !== JSON.stringify(["Friday", "Sunday"])
+    ) {
+      console.error("Community Home poll did not send one confirmed multiple-choice response.", apiState.pollRequests);
       process.exitCode = 1;
       return;
     }

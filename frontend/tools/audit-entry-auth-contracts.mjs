@@ -77,6 +77,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /const LOGIN_SESSION_NOTICE_MS = 12_000;[\s\S]*?setSessionNotice\(null\)[\s\S]*?debugId="login\.session-expired\.dismiss"[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="login"[\s\S]*?autoDismissMs=\{LOGIN_SHORTCUT_REMINDER_MS\}[\s\S]*?dismissible/,
+  "Expired-session guidance and the Login shortcut reminder must be transient and explicitly dismissible without changing sign-in recovery."
+);
+
+assertContains(
+  "src/components/GsnInstallPrompt.tsx",
+  /autoDismissMs\?: number;[\s\S]*?dismissible\?: boolean;[\s\S]*?manualOpen \|\|[\s\S]*?window\.setTimeout\(\(\) => \{[\s\S]*?setVisible\(false\)[\s\S]*?debugId=\{`gsn-install\.\$\{surface\}\.dismiss`\}/,
+  "A transient install reminder must pause while its manual steps are open and provide a stable close action."
+);
+
+assertContains(
   "src/lib/api.ts",
   /function normalizeApiBaseUrl\(raw: unknown\): string \{[\s\S]*?if \(path\.toLowerCase\(\) === "\/api"\) \{[\s\S]*?return url\.origin;[\s\S]*?function resolveApiBaseUrl\(raw: unknown\): string \{[\s\S]*?const normalized = normalizeApiBaseUrl\(raw\);/,
   "Production API bases such as https://gmfn-api.onrender.com/api must normalize to the backend origin before login appends /auth/login."

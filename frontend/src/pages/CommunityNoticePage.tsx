@@ -177,7 +177,11 @@ export default function CommunityNoticePage() {
   const [signInRequired, setSignInRequired] = useState(false);
   const [ownAcknowledged, setOwnAcknowledged] = useState(false);
   const [ownAvailability, setOwnAvailability] = useState<"yes" | "maybe" | "no" | "">("");
-  const [ownPollOption, setOwnPollOption] = useState("");
+  const [pollSelections, setPollSelections] = useState<string[]>([]);
+  const [pollResult, setPollResult] = useState<{
+    counts?: Record<string, number | string | null>;
+    total?: number | string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -245,6 +249,7 @@ export default function CommunityNoticePage() {
   const pollOptions = Array.isArray(notice?.poll_options)
     ? notice.poll_options.map((option: unknown) => safeText(option)).filter(Boolean).slice(0, 7)
     : [];
+  const pollSelectionMode = notice?.poll_selection_mode === "multiple" ? "multiple" : "single";
   const pollEnabled = Boolean(notice?.poll_enabled && pollQuestion && pollOptions.length >= 2 && noticeEventId && clanId);
   const senderWhatsAppNumber = safeText(notice?.sender_whatsapp_number);
   const senderWhatsAppLabel = safeText(notice?.sender_whatsapp_label, "the announcer");
@@ -343,17 +348,32 @@ export default function CommunityNoticePage() {
     }
   }
 
-  async function answerPoll(option: string) {
+  function togglePollOption(option: string) {
     if (!pollEnabled || actionBusy) return;
-    setActionBusy(`poll-${option}`);
+    setPollSelections((current) => {
+      const selected = current.some((answer) => answer.toLowerCase() === option.toLowerCase());
+      if (pollSelectionMode === "single") return [option];
+      return selected
+        ? current.filter((answer) => answer.toLowerCase() !== option.toLowerCase())
+        : [...current, option];
+    });
+  }
+
+  async function submitPollResponse() {
+    if (!pollEnabled || actionBusy) return;
+    if (pollSelections.length === 0) {
+      showAction("error", "Choose an answer before you press OK.");
+      return;
+    }
+    setActionBusy("poll-submit");
     setSignInRequired(false);
     try {
       const result = await recordCommunityNoticePollResponse(noticeEventId, {
         clan_id: clanId,
-        option,
+        options: pollSelections,
       });
-      setOwnPollOption(option);
-      showAction("success", safeText(result?.message, `Poll response saved: ${option}.`));
+      setPollResult(result?.poll_summary || null);
+      showAction("success", safeText(result?.message, "Your poll response was saved."));
     } catch (error: any) {
       handleActionError(error, "Your poll response could not be saved.");
     } finally {
@@ -471,20 +491,54 @@ export default function CommunityNoticePage() {
                         {pollOptions.map((option: string, index: number) => (
                           <StableButton
                             key={`${option}-${index}`}
-                            kind={ownPollOption === option ? "primary" : "secondary"}
+                            kind={pollSelections.some((answer) => answer.toLowerCase() === option.toLowerCase()) ? "primary" : "secondary"}
                             debugId={`community-notice.poll-option.${index}`}
-                            onClick={() => void answerPoll(option)}
+                            onClick={() => togglePollOption(option)}
+                            aria-pressed={pollSelections.some((answer) => answer.toLowerCase() === option.toLowerCase())}
                             disabled={Boolean(actionBusy)}
-                            busy={actionBusy === `poll-${option}`}
-                            busyLabel="Saving..."
                           >
-                            {option}
+                            {pollSelections.some((answer) => answer.toLowerCase() === option.toLowerCase()) ? "✓ " : ""}{option}
                           </StableButton>
                         ))}
                       </div>
                       <p style={{ ...helper(), margin: 0 }}>
-                        Choose one option. You may change your answer while this announcement remains active.
+                        {pollSelectionMode === "multiple"
+                          ? "Tap one or more answers, then press OK."
+                          : "Tap one answer, then press OK."} No writing is needed.
                       </p>
+                      <StableButton
+                        kind="primary"
+                        debugId="community-notice.poll-submit"
+                        onClick={() => void submitPollResponse()}
+                        disabled={Boolean(actionBusy) || pollSelections.length === 0}
+                        busy={actionBusy === "poll-submit"}
+                        busyLabel="Saving..."
+                        fullWidth
+                      >
+                        OK — send response
+                      </StableButton>
+                      {pollResult ? (
+                        <div
+                          data-debug-id="community-notice.poll-results"
+                          style={{ ...softCard(), display: "grid", gap: 7, padding: 12 }}
+                        >
+                          <div style={{ color: "#091B2E", fontSize: 13, fontWeight: 900 }}>
+                            Poll result · {Number(pollResult.total || 0)} respondents
+                          </div>
+                          {pollOptions.map((option: string) => (
+                            <div
+                              key={`result-${option}`}
+                              style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#48657D", fontSize: 13, fontWeight: 800 }}
+                            >
+                              <span>{option}</span>
+                              <span>{Number(pollResult.counts?.[option] || 0)}</span>
+                            </div>
+                          ))}
+                          <p style={{ ...helper(), margin: 0 }}>
+                            These are aggregate totals. Member names remain private to authorised community admins.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

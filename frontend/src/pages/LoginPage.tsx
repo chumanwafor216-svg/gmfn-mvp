@@ -33,6 +33,9 @@ import {
 import { APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE } from "../lib/appRoutes";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
+const LOGIN_SESSION_NOTICE_MS = 12_000;
+const LOGIN_SHORTCUT_REMINDER_MS = 10_000;
+
 function pageShell(compact = false): React.CSSProperties {
   return {
     minHeight: "100vh",
@@ -592,13 +595,14 @@ export default function LoginPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(() =>
+  const [sessionNotice, setSessionNotice] = useState<string | null>(() =>
     sessionExpired
       ? publishRecoveryReturnTarget
         ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
         : "Your previous sign-in expired while GSN was closed. Sign in again to continue."
       : null
   );
+  const [msg, setMsg] = useState<string | null>(null);
   const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -670,6 +674,16 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
+    if (!sessionNotice) return;
+
+    const timerId = window.setTimeout(() => {
+      setSessionNotice(null);
+    }, LOGIN_SESSION_NOTICE_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [sessionNotice]);
+
+  useEffect(() => {
     (async () => {
       try {
         if (!getAccessToken()) return;
@@ -690,6 +704,7 @@ export default function LoginPage() {
 
     setBusy(true);
     setErr(null);
+    setSessionNotice(null);
     setMsg(null);
     setActivationPath(null);
 
@@ -1332,6 +1347,45 @@ export default function LoginPage() {
             </div>
           ) : null}
 
+          {sessionNotice ? (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                marginBottom: 16,
+                ...noticeStyle("success"),
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              <span>{sessionNotice}</span>
+              <SubtleButton
+                type="button"
+                aria-label="Close sign-in message"
+                onClick={() => setSessionNotice(null)}
+                stableHeight={44}
+                minWidth={44}
+                debugId="login.session-expired.dismiss"
+                style={{
+                  width: 44,
+                  height: 44,
+                  minWidth: 44,
+                  padding: 0,
+                  borderRadius: 12,
+                  border: "1px solid rgba(6,95,70,0.18)",
+                  background: "rgba(255,255,255,0.58)",
+                  color: "#065F46",
+                  fontSize: 24,
+                  lineHeight: 1,
+                }}
+              >
+                {String.fromCharCode(215)}
+              </SubtleButton>
+            </div>
+          ) : null}
+
           {msg ? (
             <div style={{ marginBottom: 16, ...noticeStyle("success") }}>{msg}</div>
           ) : null}
@@ -1852,6 +1906,8 @@ export default function LoginPage() {
             tone="dark"
             compact={isCompact}
             surface="login"
+            autoDismissMs={LOGIN_SHORTCUT_REMINDER_MS}
+            dismissible
           />
           </div>
         </div>

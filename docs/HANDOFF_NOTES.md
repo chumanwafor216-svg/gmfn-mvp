@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local Login transient-guidance correction - 2026-10-27
+
+- Owner-approved scope: stop the expired-session explanation and the Login
+  phone-shortcut reminder from occupying the Sign In screen permanently.
+- `LoginPage.tsx` now keeps the existing ordinary-versus-Spotlight recovery
+  wording and return-target behavior, but the explanation clears after 12
+  seconds or immediately through `login.session-expired.dismiss`.
+- The shared `GsnInstallPrompt` accepts optional transient/dismissible behavior.
+  Login opts into a 10-second unopened reminder and
+  `gsn-install.login.dismiss`; opening the three phone steps pauses automatic
+  dismissal. Welcome and other existing prompt mounts do not opt in and remain
+  unchanged.
+- No authentication API, token, permission, route, native-install, PWA asset,
+  or return-to-Spotlight behavior changed. Entry/auth, member-entry, link and
+  complete protected-button audits passed; the 295-module production build
+  passed. A 390x844 production-preview smoke proved the 10-second shortcut
+  dismissal, 12-second session dismissal, instruction-open pause, both explicit
+  closes and 44px tap areas. This remains local and is not deployed; publish
+  only when the owner explicitly approves the current batch.
+
 ## Next-session product queue - 2026-10-27
 
 - The owner resumed and completed the Community Confirmation Inbox milestone
@@ -30,6 +50,34 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The linked queue file remains a planning record. Completed runtime work is
   recorded in the milestone sections below. Continue locally and deploy only
   when the owner explicitly says `deploy`.
+
+## Local Community Bulletin poll response correction - 2026-10-27
+
+- Extended the already-deployed custom-choice poll without creating a new
+  engine, table or migration. The creator now chooses `Choose one answer` or
+  `Choose more than one answer`.
+- On authenticated Community Home and the detached announcement package,
+  tapping a choice only selects it locally. A response is recorded once, when
+  the member presses `OK`; no written reply is required.
+- The existing Community Notice Trust Event stores the latest selected set.
+  Aggregate counts increment every selected choice, while `total` remains the
+  number of unique respondents. A later submission replaces that member's
+  earlier set.
+- Normal members see aggregate choice totals on Community Home. Authorised
+  community admins may deliberately open a collapsed `Poll roll call` showing
+  who selected each choice; the same member can appear under Friday and Sunday.
+  After a signed-in active member submits on the detached announcement package,
+  that member also sees the aggregate totals. The anonymous notice payload has
+  no totals, and the detached package never exposes member names.
+- Backward compatibility is preserved: old one-option requests and old notices
+  still behave as single-choice polls. Focused backend verification passes
+  (`34 passed`), the four scoped Community Home/WhatsApp contract audits and
+  the complete protected-button/frozen-surface suite pass, and the 295-module
+  TypeScript/Vite production build passes. The 390x844
+  Community Home phone smoke proves Friday and Sunday create no write before
+  `OK`, then produce one request containing both choices without horizontal
+  overflow. This correction is local and must not be described as deployed
+  until it is committed, pushed and the Render deployment is verified.
 
 ## Community announcement package and custom-choice poll - 2026-10-27
 

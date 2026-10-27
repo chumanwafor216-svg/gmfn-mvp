@@ -266,6 +266,7 @@ def test_community_notice_choice_poll_uses_existing_notice_engine_and_keeps_publ
     assert notice["poll_enabled"] is True
     assert notice["poll_question"] == "Which day is best for you?"
     assert notice["poll_options"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    assert notice["poll_selection_mode"] == "single"
     assert notice["poll_summary"]["total"] == 0
 
     public_res = client.get(f"/community-notices/public/{notice['public_code']}")
@@ -282,6 +283,7 @@ def test_community_notice_choice_poll_uses_existing_notice_engine_and_keeps_publ
     )
     assert first_response.status_code == 200, first_response.text
     assert first_response.json()["poll_summary"]["own_response"] == "Monday"
+    assert first_response.json()["poll_summary"]["own_responses"] == ["Monday"]
     assert first_response.json()["poll_summary"]["counts"]["Monday"] == 1
 
     changed_response = client.post(
@@ -300,6 +302,104 @@ def test_community_notice_choice_poll_uses_existing_notice_engine_and_keeps_publ
         json={"clan_id": 1, "option": "Sunday"},
     )
     assert invalid_response.status_code == 422, invalid_response.text
+
+
+def test_community_notice_multiple_choice_poll_counts_each_choice_and_keeps_one_respondent(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose every suitable meeting day.",
+            "poll_question": "Which days suit you?",
+            "poll_options": ["Friday", "Saturday", "Sunday"],
+            "poll_selection_mode": "multiple",
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+    assert notice["poll_selection_mode"] == "multiple"
+
+    first_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "options": ["Friday", "Sunday"]},
+    )
+    assert first_response.status_code == 200, first_response.text
+    first_summary = first_response.json()["poll_summary"]
+    assert first_summary["own_responses"] == ["Friday", "Sunday"]
+    assert first_summary["counts"] == {"Friday": 1, "Saturday": 0, "Sunday": 1}
+    assert first_summary["total"] == 1
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice['event_id']}/poll-roll-call",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 200, roll_call_res.text
+    roll_call = roll_call_res.json()
+    assert roll_call["summary"] == {
+        "counts": {"Friday": 1, "Saturday": 0, "Sunday": 1},
+        "total_respondents": 1,
+    }
+    assert roll_call["by_option"]["Friday"][0]["user_id"] == 1
+    assert roll_call["by_option"]["Sunday"][0]["user_id"] == 1
+    assert roll_call["responses"][0]["options"] == ["Friday", "Sunday"]
+
+    changed_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "options": ["Saturday"]},
+    )
+    assert changed_response.status_code == 200, changed_response.text
+    changed_summary = changed_response.json()["poll_summary"]
+    assert changed_summary["own_responses"] == ["Saturday"]
+    assert changed_summary["counts"] == {"Friday": 0, "Saturday": 1, "Sunday": 0}
+    assert changed_summary["total"] == 1
+
+
+def test_community_notice_single_choice_poll_rejects_multiple_selections(
+    client, override_current_user
+):
+    _seed_notice_community()
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose one day.",
+            "poll_question": "Which day is best?",
+            "poll_options": ["Friday", "Saturday", "Sunday"],
+        },
+    )
+    notice = post_res.json()["notice"]
+    response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "options": ["Friday", "Sunday"]},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_community_notice_poll_roll_call_is_not_available_to_ordinary_members(
+    client, override_current_user_user
+):
+    _seed_notice_community(membership_role="member")
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose one day.",
+            "poll_question": "Which day is best?",
+            "poll_options": ["Friday", "Saturday"],
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice['event_id']}/poll-roll-call",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 403, roll_call_res.text
 
 
 def test_community_notice_choice_poll_rejects_missing_or_duplicate_choices(

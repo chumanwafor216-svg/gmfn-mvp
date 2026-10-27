@@ -10,11 +10,11 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 34;
+const expectedStableButtonTemplateCount = 36;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 3;
 const expectedMobileShellBreakdown = { top: 2, drawer: 25, pageTools: 8, bottom: 5 };
-const expectedExpandedRouteLocalActionTemplates = 34;
+const expectedExpandedRouteLocalActionTemplates = 36;
 const expectedMobileShellActionCount = Object.values(expectedMobileShellBreakdown).reduce((sum, count) => sum + count, 0);
 const expectedWholeMobileRouteActionTemplates = expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 
@@ -96,6 +96,8 @@ assertContains(/useParams<\{ clanId\?: string \}>\(\)[\s\S]*?routeClanIdFromPara
 assertContains(/getCommunityReference\(selectedClan\)[\s\S]*?getCommunityMemberCount\(selectedClan\)[\s\S]*?data-debug-id="community-home\.identity-card"[\s\S]*?selectedCommunityReference[\s\S]*?selectedCommunityRoleLabel[\s\S]*?selectedCommunityStatusLabel/s, "Community Home first screen must be selected-community identity with reference, role, and status.");
 assertContains(/id="community-home-bulletin"[\s\S]*?renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/s, "Community Home Bulletin must remain immediately available after identity.");
 assertContains(/recordCommunityNoticePollResponse[\s\S]*?data-debug-id="community-home\.bulletin\.choice-poll"[\s\S]*?community-home\.bulletin\.poll-option/s, "Community Home expanded Bulletin must keep the approved custom-choice poll inside the existing notice engine.");
+assertContains(/toggleNoticePollChoice[\s\S]*?submitNoticePollChoices[\s\S]*?community-home\.bulletin\.poll-submit[\s\S]*?OK — (?:update|send) response/s, "Community Home poll choices must remain tap-only until the member presses one explicit OK action.");
+assertContains(/listCommunityNoticePollRollCall[\s\S]*?community-home\.bulletin\.poll-roll-call[\s\S]*?Admin-only poll roll call/s, "Community Home must keep poll identities behind an authorised admin-only roll-call action.");
 assertContains(/function renderCommunityBulletinPulse\(\)[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-indicators"[\s\S]*?\(\["red", "yellow", "green"\] as CommunityBulletinNoticeUrgencyTone\[\]\)[\s\S]*?data-bulletin-urgency-tone=\{tone\}[\s\S]*?"Now"[\s\S]*?"72h"[\s\S]*?"Clear"/s, "Community Home phone Bulletin must retain the traffic-light timing summary without restoring the full Pulse dashboard.");
 assertContains(/const communityAttentionItems = useMemo\([\s\S]*?noticeSupportsAvailability[\s\S]*?noticeOwnAcknowledged[\s\S]*?canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0/s, "Community Home attention strip must be based on real selected-community notice actions only.");
 assertContains(/debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.trust"/s, "Community Home Go to group must stay compact and route to owning surfaces.");

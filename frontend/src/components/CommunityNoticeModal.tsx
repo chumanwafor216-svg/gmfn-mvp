@@ -44,6 +44,7 @@ type Props = {
       attachment_kind?: NoticeAttachmentKind | null;
       poll_question?: string | null;
       poll_options?: string[] | null;
+      poll_selection_mode?: "single" | "multiple";
       notice_mode?: CommunityNoticeModalMode;
     }
   ) => Promise<void> | void;
@@ -113,6 +114,7 @@ export default function CommunityNoticeModal({
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [pollSelectionMode, setPollSelectionMode] = useState<"single" | "multiple">("single");
   const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -285,6 +287,7 @@ export default function CommunityNoticeModal({
         attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
         poll_question: pollEnabled ? pollQuestion.trim() : undefined,
         poll_options: pollEnabled ? cleanPollOptions : undefined,
+        poll_selection_mode: pollEnabled ? pollSelectionMode : undefined,
       });
     } catch (error: any) {
       setSubmitError(
@@ -303,6 +306,7 @@ export default function CommunityNoticeModal({
     setPollEnabled(false);
     setPollQuestion("");
     setPollOptions(["", ""]);
+    setPollSelectionMode("single");
     setAttachmentPanelOpen(false);
     clearAttachmentState();
   }
@@ -584,6 +588,20 @@ export default function CommunityNoticeModal({
             {pollEnabled ? (
               <div style={attachmentPanelStyle} data-debug-id="community-notice-modal.poll-panel">
                 <div style={fieldGroupStyle}>
+                  <label style={fieldLabelStyle} htmlFor="community-notice-poll-selection-mode">
+                    How may members answer?
+                  </label>
+                  <select
+                    id="community-notice-poll-selection-mode"
+                    value={pollSelectionMode}
+                    onChange={(event) => setPollSelectionMode(event.target.value as "single" | "multiple")}
+                    style={fieldStyle}
+                  >
+                    <option value="single">Choose one answer</option>
+                    <option value="multiple">Choose more than one answer</option>
+                  </select>
+                </div>
+                <div style={fieldGroupStyle}>
                   <label style={fieldLabelStyle} htmlFor="community-notice-poll-question">
                     Poll question
                   </label>
@@ -639,7 +657,9 @@ export default function CommunityNoticeModal({
                   </StableButton>
                 ) : null}
                 <p style={attachmentHelpStyle}>
-                  Members choose one answer. Use choices such as Monday, Tuesday, or Wednesday. This is separate from Yes / Maybe / No availability.
+                  {pollSelectionMode === "multiple"
+                    ? "Members may tap several answers, then tap OK to send them. Use choices such as Friday, Saturday, or Sunday."
+                    : "Members tap one answer, then tap OK to send it. Use choices such as Friday, Saturday, or Sunday."} This is separate from Yes / Maybe / No availability.
                 </p>
                 {pollInvalid ? (
                   <p style={errorTextStyle}>

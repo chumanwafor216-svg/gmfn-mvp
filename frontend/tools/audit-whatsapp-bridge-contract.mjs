@@ -74,12 +74,20 @@ mustInclude("CommunityNoticePage.tsx", publicNoticePage, "attachmentActionLabel"
 mustInclude("CommunityNoticePage.tsx", publicNoticePage, 'buttonLabel="Share announcement"');
 mustInclude("CommunityNoticePage.tsx", publicNoticePage, "recordCommunityNoticePollResponse");
 mustInclude("CommunityNoticePage.tsx", publicNoticePage, 'data-debug-id="community-notice.choice-poll"');
+mustInclude("CommunityNoticePage.tsx", publicNoticePage, 'debugId="community-notice.poll-submit"');
+mustInclude("CommunityNoticePage.tsx", publicNoticePage, "OK — send response");
+mustInclude("CommunityNoticePage.tsx", publicNoticePage, "No writing is needed.");
+mustInclude("CommunityNoticePage.tsx", publicNoticePage, 'data-debug-id="community-notice.poll-results"');
+mustInclude("CommunityNoticePage.tsx", publicNoticePage, "These are aggregate totals.");
+mustNotInclude("CommunityNoticePage.tsx", publicNoticePage, "poll-roll-call");
 mustNotInclude("CommunityNoticePage.tsx", publicNoticePage, "CommunityNoticeModal");
 mustNotInclude("CommunityNoticePage.tsx", publicNoticePage, "createCommunityNotice");
 
 mustInclude("community_notices.py", noticeApi, 'COMMUNITY_NOTICE_POLL_RESPONSE_EVENT = "community.notice.poll_response"');
 mustInclude("community_notices.py", noticeApi, "MAX_NOTICE_POLL_OPTIONS = 7");
 mustInclude("community_notices.py", noticeApi, '@router.post("/{notice_event_id}/poll-response")');
+mustInclude("community_notices.py", noticeApi, '@router.get("/{notice_event_id}/poll-roll-call")');
+mustInclude("community_notices.py", noticeApi, 'NOTICE_POLL_SELECTION_MULTIPLE = "multiple"');
 mustInclude("community_notices.py", noticeApi, '"poll_summary"');
 mustInclude("community_notices.py", noticeApi, '"sender_contact_ready"');
 

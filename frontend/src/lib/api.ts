@@ -1496,6 +1496,7 @@ export async function createCommunityNotice(payload: {
   attachment_kind?: "link" | "video" | "poster" | "document" | null;
   poll_question?: string | null;
   poll_options?: string[] | null;
+  poll_selection_mode?: "single" | "multiple";
   notice_mode?: "notice" | "market_need_pulse";
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
@@ -1541,6 +1542,17 @@ export async function listCommunityNoticeAcknowledgements(
     "GET"
   );
 }
+export async function listCommunityNoticePollRollCall(
+  noticeEventId: number | string,
+  params: { clan_id: number }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/${encodeURIComponent(String(noticeEventId))}/poll-roll-call${buildQuery({
+      clan_id: params.clan_id,
+    })}`,
+    "GET"
+  );
+}
 export async function acknowledgeCommunityNotice(
   noticeEventId: number | string,
   payload: { clan_id: number }
@@ -1564,7 +1576,7 @@ export async function recordCommunityNoticeAvailability(
 }
 export async function recordCommunityNoticePollResponse(
   noticeEventId: number | string,
-  payload: { clan_id: number; option: string }
+  payload: { clan_id: number; option?: string; options?: string[] }
 ): Promise<any> {
   return httpJson(
     `/community-notices/${encodeURIComponent(String(noticeEventId))}/poll-response`,

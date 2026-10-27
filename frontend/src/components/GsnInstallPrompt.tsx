@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import { PrimaryButton } from "./StableButton";
+import { PrimaryButton, SubtleButton } from "./StableButton";
 import {
   isGsnStandaloneDisplay,
   isIosManualInstallTarget,
@@ -14,6 +14,8 @@ type GsnInstallPromptProps = {
   tone?: InstallPromptTone;
   compact?: boolean;
   surface?: string;
+  autoDismissMs?: number;
+  dismissible?: boolean;
 };
 
 type InstallState = {
@@ -113,10 +115,13 @@ export default function GsnInstallPrompt({
   tone = "dark",
   compact = false,
   surface = "general",
+  autoDismissMs,
+  dismissible = false,
 }: GsnInstallPromptProps) {
   const [state, setState] = useState<InstallState>(() => readInstallState());
   const [manualOpen, setManualOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     return subscribePwaInstall(() => {
@@ -140,9 +145,27 @@ export default function GsnInstallPrompt({
     };
   }, []);
 
+  useEffect(() => {
+    if (
+      !visible ||
+      state.installed ||
+      manualOpen ||
+      !autoDismissMs ||
+      autoDismissMs <= 0
+    ) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setVisible(false);
+    }, autoDismissMs);
+
+    return () => window.clearTimeout(timerId);
+  }, [autoDismissMs, manualOpen, state.installed, visible]);
+
   const isIos = useMemo(() => isIosManualInstallTarget(), []);
 
-  if (state.installed) return null;
+  if (state.installed || !visible) return null;
 
   function handleInstall() {
     setManualOpen((current) => !current);
@@ -166,7 +189,9 @@ export default function GsnInstallPrompt({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "auto minmax(0, 1fr)",
+          gridTemplateColumns: dismissible
+            ? "auto minmax(0, 1fr) auto"
+            : "auto minmax(0, 1fr)",
           gap: 10,
           alignItems: "center",
           minWidth: 0,
@@ -201,6 +226,36 @@ export default function GsnInstallPrompt({
               : "Put a GSN icon on your phone screen."}
           </p>
         </div>
+        {dismissible ? (
+          <SubtleButton
+            type="button"
+            aria-label="Close phone shortcut reminder"
+            onClick={() => setVisible(false)}
+            stableHeight={44}
+            minWidth={44}
+            debugId={`gsn-install.${surface}.dismiss`}
+            style={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              padding: 0,
+              borderRadius: 12,
+              border:
+                tone === "dark"
+                  ? "1px solid rgba(220,231,243,0.18)"
+                  : "1px solid rgba(11,31,51,0.12)",
+              background:
+                tone === "dark"
+                  ? "rgba(6,24,39,0.36)"
+                  : "rgba(255,255,255,0.72)",
+              color: tone === "dark" ? "#F8FBFF" : "#24415C",
+              fontSize: 24,
+              lineHeight: 1,
+            }}
+          >
+            {String.fromCharCode(215)}
+          </SubtleButton>
+        ) : null}
       </div>
 
       <PrimaryButton
