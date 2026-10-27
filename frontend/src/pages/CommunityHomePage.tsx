@@ -4078,7 +4078,38 @@ export default function CommunityHomePage() {
       const result = await createCommunityNotice({ clan_id: clanId, body, ...options });
       const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
-      setSelectedCommunityNoticeIndex(0);
+      const refreshedNotices: CommunityNoticeItem[] = Array.isArray(res?.notices)
+        ? res.notices
+        : [];
+      const createdNoticeKey = firstTruthy(
+        result?.notice?.notice_id,
+        result?.notice?.event_id,
+        result?.notice?.meeting_id
+      );
+      const createdNoticeIndex = createdNoticeKey
+        ? refreshedNotices.findIndex(
+            (item) =>
+              firstTruthy(item?.notice_id, item?.event_id, item?.meeting_id) ===
+              createdNoticeKey
+          )
+        : 0;
+      const safeCreatedNoticeIndex = createdNoticeIndex >= 0 ? createdNoticeIndex : 0;
+      const createdNotice =
+        refreshedNotices[safeCreatedNoticeIndex] || result?.notice || null;
+      const visibleCreatedNoticeKey = firstTruthy(
+        createdNotice?.notice_id,
+        createdNotice?.event_id,
+        createdNotice?.meeting_id
+      );
+      setSelectedCommunityNoticeIndex(safeCreatedNoticeIndex);
+      if (
+        !result?.submitted_for_review &&
+        visibleCreatedNoticeKey &&
+        communityNoticePublicPath(createdNotice)
+      ) {
+        setNoticeDetailOpenId(visibleCreatedNoticeKey);
+        setNoticeReactionPanelOpenId(visibleCreatedNoticeKey);
+      }
       setNoticeModalOpen(false);
       showNotice(
         "success",

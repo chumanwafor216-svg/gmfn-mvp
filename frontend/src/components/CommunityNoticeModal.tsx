@@ -57,6 +57,10 @@ function countWords(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
+function firstWords(value: string, maxWords: number): string {
+  return value.trim().split(/\s+/).filter(Boolean).slice(0, maxWords).join(" ");
+}
+
 function isAllowedAttachmentUrl(value: string): boolean {
   const raw = value.trim();
   if (!raw) return true;
@@ -129,7 +133,14 @@ export default function CommunityNoticeModal({
   const [pendingVideoSound, setPendingVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [submitError, setSubmitError] = useState("");
   const words = useMemo(() => countWords(body), [body]);
-  const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
+  const bodyNeedsCompactPreview = words > 50;
+  const submittedBody = bodyNeedsCompactPreview ? firstWords(body, 50) : body.trim();
+  const submittedFullBody = includeFullBody && fullBody.trim()
+    ? fullBody.trim()
+    : bodyNeedsCompactPreview
+    ? body.trim()
+    : "";
+  const submittedFullWords = countWords(submittedFullBody);
   const attachmentUrlTrimmed = attachmentUrl.trim();
   const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isAllowedAttachmentUrl(attachmentUrlTrimmed);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
@@ -149,9 +160,8 @@ export default function CommunityNoticeModal({
   }, [isMarketNeedPulse, open]);
 
   const blocked =
-    words > 50 ||
     !body.trim() ||
-    (includeFullBody && fullWords > 600) ||
+    submittedFullWords > 600 ||
     attachmentUrlInvalid ||
     Boolean(pendingVideoFile) ||
     attachmentUploading ||
@@ -274,7 +284,7 @@ export default function CommunityNoticeModal({
     if (blocked) return;
     setSubmitError("");
     try {
-      await onSubmit(body.trim(), {
+      await onSubmit(submittedBody, {
         expiry_policy: expiryPolicy,
         expires_at:
           expiryPolicy === "event" && eventExpiresAt
@@ -283,7 +293,7 @@ export default function CommunityNoticeModal({
         public_qr_enabled: publicQrEnabled,
         availability_enabled: isMarketNeedPulse || availabilityEnabled,
         notice_mode: isMarketNeedPulse ? "market_need_pulse" : "notice",
-        full_body: includeFullBody ? fullBody.trim() || null : undefined,
+        full_body: submittedFullBody || undefined,
         attachment_url: attachmentUrlTrimmed || undefined,
         attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
         attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
@@ -700,8 +710,25 @@ export default function CommunityNoticeModal({
           </div>
         ) : null}
 
-        <div style={metaRowStyle}>
-          <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
+        {bodyNeedsCompactPreview ? (
+          <p
+            data-debug-id="community-notice-modal.compact-preview-note"
+            style={compactPreviewNoteStyle}
+          >
+            GSN will show the first 50 words on the board and keep your complete
+            message behind Open notice.
+          </p>
+        ) : null}
+
+        <details
+          data-debug-id="community-notice-modal.settings-summary"
+          style={settingsDetailsStyle}
+        >
+          <summary style={settingsSummaryStyle}>Notice settings</summary>
+          <div style={metaRowStyle}>
+            <span style={chipStyle}>
+              {bodyNeedsCompactPreview ? "50-word board preview" : `${words}/50 preview words`}
+            </span>
           <span style={chipStyle}>
             {isDemandBoxPulse
               ? "DemandBox request"
@@ -720,8 +747,10 @@ export default function CommunityNoticeModal({
               ? "Until event date"
               : "Pinned"}
           </span>
-          {includeFullBody ? (
-            <span style={fullWords > 600 ? warningStyle : chipStyle}>{fullWords}/600 full words</span>
+          {submittedFullBody ? (
+            <span style={submittedFullWords > 600 ? warningStyle : chipStyle}>
+              {submittedFullWords}/600 full words
+            </span>
           ) : null}
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>{isDemandBoxPulse ? "Private response path" : isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
@@ -731,7 +760,14 @@ export default function CommunityNoticeModal({
             </span>
           ) : null}
           {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
-        </div>
+          </div>
+        </details>
+
+        {!isReviewSubmission && publicQrEnabled ? (
+          <p data-debug-id="community-notice-modal.share-after-post" style={shareAfterPostStyle}>
+            Post first. GSN will then open this announcement and show Share announcement.
+          </p>
+        ) : null}
 
         <div style={actionsStyle}>
           <StableButton
@@ -916,6 +952,41 @@ const submitErrorStyle: React.CSSProperties = {
   fontSize: 12.5,
 };
 
+const compactPreviewNoteStyle: React.CSSProperties = {
+  margin: "10px 0 0",
+  padding: "9px 10px",
+  borderRadius: 12,
+  border: "1px solid rgba(21,90,50,0.16)",
+  background: "#F4FBF6",
+  color: "#155A32",
+  fontSize: 12.5,
+  fontWeight: 800,
+  lineHeight: 1.4,
+};
+
+const settingsDetailsStyle: React.CSSProperties = {
+  marginTop: 10,
+  borderRadius: 14,
+  border: "1px solid rgba(16,37,59,0.10)",
+  background: "#F8FBFF",
+};
+
+const settingsSummaryStyle: React.CSSProperties = {
+  cursor: "pointer",
+  padding: "11px 12px",
+  color: "#0B2D4A",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const shareAfterPostStyle: React.CSSProperties = {
+  margin: "10px 0 0",
+  color: "#48657D",
+  fontSize: 12.5,
+  fontWeight: 800,
+  lineHeight: 1.4,
+};
+
 const checkboxRowStyle: React.CSSProperties = {
   marginTop: 10,
   display: "flex",
@@ -927,6 +998,7 @@ const checkboxRowStyle: React.CSSProperties = {
 };
 const metaRowStyle: React.CSSProperties = {
   marginTop: 10,
+  padding: "0 10px 10px",
   display: "flex",
   flexWrap: "wrap",
   gap: 8,

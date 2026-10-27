@@ -13,8 +13,8 @@ function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
 }
 
-async function installApiMocks(page, { includeSecondClan = false } = {}) {
-  const state = { pollRequests: [], pollSelections: [], publicPollRequests: [] };
+async function installApiMocks(page, { includeSecondClan = false, canManage = false } = {}) {
+  const state = { pollRequests: [], pollSelections: [], publicPollRequests: [], noticePosts: [] };
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
@@ -29,7 +29,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
         user_id: 216,
         display_name: "Nwafor Chuma",
         gmfn_id: "GMFN-U-63655DE6",
-        role: "member",
+        role: canManage ? "admin" : "member",
       }));
     }
     if (path === "/clans/me") {
@@ -42,7 +42,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
           marketplace_name: "Homeland isa",
           community_code: "GMFN-C-000008",
           gmfn_id: "GMFN-C-000008",
-          role: "user",
+          role: canManage ? "admin" : "user",
           status: "active",
           membership_status: "active",
           member_count: 7,
@@ -149,9 +149,61 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
         },
       }));
     }
+    if (path === "/community-notices" && route.request().method() === "POST") {
+      const payload = route.request().postDataJSON();
+      state.noticePosts.unshift(payload);
+      return route.fulfill(json({
+        ok: true,
+        submitted_for_review: false,
+        notice: {
+          notice_id: "notice-8-created",
+          event_id: 82,
+          clan_id: 8,
+          body: payload.body,
+          full_body: payload.full_body,
+          created_at: "2026-10-27T14:05:00Z",
+          expires_at: "2026-11-03T14:05:00Z",
+          acknowledgement_enabled: true,
+          availability_enabled: Boolean(payload.availability_enabled),
+          poll_enabled: true,
+          poll_question: payload.poll_question,
+          poll_options: payload.poll_options,
+          poll_selection_mode: payload.poll_selection_mode,
+          poll_audience: payload.poll_audience,
+          poll_summary: { counts: { Friday: 0, Saturday: 0 }, total: 0 },
+          public_qr_enabled: true,
+          public_code: "notice-8-created-public",
+          public_path: "/community-notices/notice-8-created-public",
+          source: "community_notice",
+        },
+      }));
+    }
     if (/^\/community-notices(?:\/|$)/.test(path)) {
       return route.fulfill(json({
         notices: [
+          ...(state.noticePosts[0]
+            ? [{
+                notice_id: "notice-8-created",
+                event_id: 82,
+                clan_id: 8,
+                body: state.noticePosts[0].body,
+                full_body: state.noticePosts[0].full_body,
+                created_at: "2026-10-27T14:05:00Z",
+                expires_at: "2026-11-03T14:05:00Z",
+                acknowledgement_enabled: true,
+                availability_enabled: Boolean(state.noticePosts[0].availability_enabled),
+                poll_enabled: true,
+                poll_question: state.noticePosts[0].poll_question,
+                poll_options: state.noticePosts[0].poll_options,
+                poll_selection_mode: state.noticePosts[0].poll_selection_mode,
+                poll_audience: state.noticePosts[0].poll_audience,
+                poll_summary: { counts: { Friday: 0, Saturday: 0 }, total: 0 },
+                public_qr_enabled: true,
+                public_code: "notice-8-created-public",
+                public_path: "/community-notices/notice-8-created-public",
+                source: "community_notice",
+              }]
+            : []),
           {
             notice_id: "notice-8-1",
             event_id: 81,
@@ -184,7 +236,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
           },
         ],
         posting_policy: "members",
-        can_post_notice: false,
+        can_post_notice: canManage,
         can_submit_notice_for_review: false,
         pending_notice_review_count: 0,
       }));
@@ -416,6 +468,86 @@ async function run() {
     await multiCommunityPage.locator('[data-cta-id="community-home.switch.toggle"]').click();
     await multiCommunityPage.waitForSelector('[data-cta-id="community-home.switch.select.9"]', { state: "visible", timeout: 30000 });
     await multiCommunityPage.close();
+    const composerPage = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+    });
+    const composerState = await installApiMocks(composerPage, { canManage: true });
+    await composerPage.addInitScript(() => {
+      localStorage.setItem("access_token", "local-community-home-composer-token");
+      localStorage.setItem("gmfn_selected_clan_id", "8");
+    });
+    await composerPage.goto(`http://127.0.0.1:${port}/app/community/8`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    const composerDismiss = composerPage.getByRole("button", { name: "Dismiss", exact: true });
+    if (await composerDismiss.isVisible().catch(() => false)) {
+      await composerDismiss.click();
+    }
+    await composerPage.locator('[data-cta-id="community-home.admin.toggle"]').click();
+    await composerPage.locator('[data-cta-id="community-home.admin.notice.post"]').click();
+    const composerDialog = composerPage.getByRole("dialog", { name: "Post community notice" });
+    await composerDialog.waitFor({ state: "visible", timeout: 30000 });
+
+    const longNotice = Array.from({ length: 74 }, () => "word").join(" ");
+    await composerDialog.locator("textarea").first().fill(longNotice);
+    await composerDialog.locator('[data-cta-id="community-notice-modal.poll-toggle"]').click();
+    await composerDialog.getByLabel("Who can vote?").selectOption("public_link");
+    await composerDialog.getByLabel("Poll question").fill("Which day is most suitable?");
+    await composerDialog.getByLabel("Poll choice 1").fill("Friday");
+    await composerDialog.getByLabel("Poll choice 2").fill("Saturday");
+
+    const settingsSummary = composerDialog.locator(
+      '[data-debug-id="community-notice-modal.settings-summary"]'
+    );
+    if (
+      await settingsSummary.evaluate((element) => element.hasAttribute("open"))
+    ) {
+      console.error("Community Notice technical settings were open by default.");
+      process.exitCode = 1;
+      return;
+    }
+    await composerDialog
+      .locator('[data-debug-id="community-notice-modal.compact-preview-note"]')
+      .waitFor({ state: "visible", timeout: 30000 });
+    await composerDialog
+      .locator('[data-debug-id="community-notice-modal.share-after-post"]')
+      .waitFor({ state: "visible", timeout: 30000 });
+
+    const postNoticeButton = composerDialog.locator(
+      '[data-cta-id="community-notice-modal.post"]'
+    );
+    if (!(await postNoticeButton.isEnabled())) {
+      console.error("A valid 74-word notice still disabled Post notice.");
+      process.exitCode = 1;
+      return;
+    }
+    await composerPage.screenshot({
+      path: join(screenshotDir, "community-notice-composer-390x844.png"),
+      fullPage: false,
+    });
+    await postNoticeButton.click();
+    await composerDialog.waitFor({ state: "hidden", timeout: 30000 });
+    await composerPage
+      .locator('[data-cta-id="community-home.bulletin.share.notice-8-created"]')
+      .waitFor({ state: "visible", timeout: 30000 });
+
+    const createdPayload = composerState.noticePosts[0];
+    if (
+      createdPayload?.body?.trim().split(/\s+/).length !== 50 ||
+      createdPayload?.full_body !== longNotice ||
+      createdPayload?.poll_audience !== "public_link" ||
+      createdPayload?.public_qr_enabled !== true
+    ) {
+      console.error("Community Notice compact preview/share payload was wrong.", createdPayload);
+      process.exitCode = 1;
+      return;
+    }
+    await composerPage.close();
+
+
 
     const publicPollPage = await browser.newPage({
       viewport: { width: 390, height: 844 },

@@ -96,6 +96,17 @@ mustInclude("CommunityNoticeModal.tsx", noticeModal, "Community members only");
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "Anyone with the announcement link");
 mustInclude("CommunityNoticeModal.tsx", noticeModal, 'if (audience === "public_link") setPublicQrEnabled(true)');
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "public responses are anonymous browser counts.");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "function firstWords");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "bodyNeedsCompactPreview");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "full_body: submittedFullBody || undefined");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, 'data-debug-id="community-notice-modal.settings-summary"');
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "Notice settings");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "Post first. GSN will then open this announcement and show Share announcement.");
+mustNotInclude(
+  "CommunityNoticeModal.tsx",
+  noticeModal,
+  "const blocked =\n    words > 50 ||"
+);
 
 mustInclude("community_notices.py", noticeApi, 'COMMUNITY_NOTICE_POLL_RESPONSE_EVENT = "community.notice.poll_response"');
 mustInclude("community_notices.py", noticeApi, "MAX_NOTICE_POLL_OPTIONS = 7");
@@ -118,6 +129,9 @@ mustInclude("CommunityHomePage.tsx", communityHome, "SocialTagShareButton");
 mustInclude("CommunityHomePage.tsx", communityHome, 'buttonLabel="Share announcement"');
 mustInclude("CommunityHomePage.tsx", communityHome, "shareablePublicFrontendUrl");
 mustInclude("CommunityHomePage.tsx", communityHome, "community-home.bulletin.share.");
+mustInclude("CommunityHomePage.tsx", communityHome, "communityNoticePublicPath(createdNotice)");
+mustInclude("CommunityHomePage.tsx", communityHome, "setNoticeDetailOpenId(visibleCreatedNoticeKey)");
+mustInclude("CommunityHomePage.tsx", communityHome, "setNoticeReactionPanelOpenId(visibleCreatedNoticeKey)");
 mustNotInclude("CommunityHomePage.tsx", communityHome, 'id: `notice-response-${noticeKey}`');
 mustNotInclude("CommunityHomePage.tsx", communityHome, 'id: `notice-ack-${noticeKey}`');
 mustNotInclude("CommunityHomePage.tsx", communityHome, "routes.whatsappBridge");

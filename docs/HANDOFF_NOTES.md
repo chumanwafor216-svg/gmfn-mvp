@@ -4,6 +4,29 @@ This file is the compact current-state handoff required by `README.md` and
 `docs/PROJECT_PROTOCOL.md`. The fully repaired historical record through
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
+## Local Bulletin composer unblock and share handoff - 2026-10-27
+
+- Corrected the production-visible disabled-button trap: an announcement longer
+  than the 50-word board preview no longer disables `Post notice`. GSN sends
+  the first 50 words through the existing board-preview field and preserves the
+  complete entered message as the existing full notice, bounded by 600 words.
+- Moved the repeated posting-policy, visibility, word-count, comment, poll and
+  attachment badges behind one closed `Notice settings` disclosure. The
+  composer only surfaces a short explanation when it has compacted a longer
+  preview.
+- A public-link notice now says that sharing follows publishing. After a
+  successful publish, Community Home selects that exact refreshed notice and
+  opens its existing detail panel at `Share announcement`. Review-pending and
+  non-public notices do not receive a false share handoff.
+- No backend rule, route, permission, poll accounting, public package or sharing
+  engine changed. Scoped lint, the WhatsApp Bridge contract audit, the complete
+  protected-button/frozen-surface audit, the 295-module production build, and
+  the extended 390x844 Community Home phone smoke pass. The phone smoke proves
+  a valid 74-word notice keeps `Post notice` enabled, sends a 50-word preview,
+  preserves all 74 words as full text, keeps settings closed by default, and
+  surfaces the exact new public notice's existing share action after posting.
+
+
 
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
