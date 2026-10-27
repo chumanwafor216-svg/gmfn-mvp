@@ -3267,6 +3267,34 @@ def test_public_shop_name_is_not_downgraded_by_default_fallback(
     assert public_res.json()["item"]["name"] == "Ardent Ebony Uplift LTD"
 
 
+def test_public_gallery_capacity_requires_entitlement_for_higher_numbered_space():
+    assert marketplace_routes._public_product_capacity_allows_write(
+        active_product_count=0,
+        replaceable_product_count=0,
+        public_product_slots_total=1,
+        public_block_number=1,
+    )
+    assert not marketplace_routes._public_product_capacity_allows_write(
+        active_product_count=0,
+        replaceable_product_count=0,
+        public_product_slots_total=1,
+        public_block_number=2,
+    )
+    assert marketplace_routes._public_product_capacity_allows_write(
+        active_product_count=5,
+        replaceable_product_count=0,
+        public_product_slots_total=1,
+        public_block_number=4,
+        existing_product_keeps_slot=True,
+    )
+    assert not marketplace_routes._public_product_capacity_allows_write(
+        active_product_count=5,
+        replaceable_product_count=0,
+        public_product_slots_total=1,
+        public_block_number=5,
+    )
+
+
 def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
     client,
     override_current_user_user,
@@ -3312,7 +3340,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
                 """
             )
         )
-        for slot in range(1, 7):
+        for slot in range(1, 2):
             conn.execute(
                 text(
                     """
@@ -3337,8 +3365,8 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Seventh block",
-            "description": "[BLOCK:7] Should be rejected",
+            "name": "Second block",
+            "description": "[BLOCK:2] Should require paid space",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -3346,7 +3374,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         },
     )
     assert create_res.status_code == 400, create_res.text
-    assert "Maximum of 6 community-visible products" in create_res.json()["detail"]
+    assert "Maximum of 1 community-visible products" in create_res.json()["detail"]
 
 
 def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
@@ -3938,7 +3966,7 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
                 "expires_at": now + timedelta(days=365),
             },
         )
-        for slot in range(1, 9):
+        for slot in range(1, 4):
             conn.execute(
                 text(
                     """
@@ -3963,8 +3991,8 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Ninth block",
-            "description": "[BLOCK:9] Paid extra slot",
+            "name": "Fourth block",
+            "description": "[BLOCK:4] Paid extra slot",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -3973,10 +4001,10 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     )
     assert create_res.status_code == 200, create_res.text
     item = create_res.json()["item"]
-    assert item["public_block_number"] == 9
-    assert item["shop_product_slots_free"] == 6
+    assert item["public_block_number"] == 4
+    assert item["shop_product_slots_free"] == 1
     assert item["shop_product_slots_extra"] == 3
-    assert item["shop_product_slots_total"] == 9
+    assert item["shop_product_slots_total"] == 4
 
 
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):

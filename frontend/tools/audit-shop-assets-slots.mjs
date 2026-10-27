@@ -142,6 +142,26 @@ assertContains(
   "Shop Control summary must arrange public products by visible block and keep newest duplicate blocks, matching the embedded gallery."
 );
 
+[
+  ["src/pages/ShopAssetsPage.tsx", "PUBLIC_SHOP_STANDARD_SLOT_COUNT", "PUBLIC_SHOP_EXTRA_SLOT_LIMIT"],
+  ["src/pages/ShopControlPage.tsx", "PUBLIC_SHOP_STANDARD_SLOT_COUNT", "PUBLIC_SHOP_EXTRA_SLOT_LIMIT"],
+  ["src/pages/ShopGalleryPage.tsx", "GALLERY_STANDARD_SLOTS_TOTAL", "GALLERY_EXTRA_SLOTS_LIMIT"],
+].forEach(([file, freeConstant, paidConstant]) => {
+  assertContains(
+    file,
+    new RegExp(
+      `const ${freeConstant} = 1;[\\s\\S]*?const ${paidConstant} = 9;`
+    ),
+    `${file} must keep one free public shop space and up to nine paid spaces within the ten-space ceiling.`
+  );
+});
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /function normalizeShop\([\s\S]*?publicSlotsTotal: clampGallerySlotsTotal\([\s\S]*?src\?\.shop_product_slots_total[\s\S]*?src\?\.public_product_slots_total[\s\S]*?src\?\.publicSlotsTotal[\s\S]*?const gallerySlotsTotal = clampGallerySlotsTotal\(shop\?\.publicSlotsTotal\)/,
+  "Public Shop must read its authoritative paid-space capacity before deriving the progressive next empty space."
+);
+
 assertContains(
   "src/pages/ShopControlPage.tsx",
   /const publicProductSlotsTotal = useMemo\([\s\S]*?PUBLIC_SHOP_STANDARD_SLOT_COUNT[\s\S]*?const publicProductSlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicProductSlotCount = useMemo\([\s\S]*?publicProductSlots\.filter\(Boolean\)\.length/,

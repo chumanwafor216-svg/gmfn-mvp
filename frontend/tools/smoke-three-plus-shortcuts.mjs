@@ -149,6 +149,10 @@ async function installMocks(page, scenario) {
     const path = apiPath(route.request().url());
     const method = route.request().method();
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) scenario.mutations.push(`${method} ${path}`);
+    const scenarioShop = {
+      ...shop,
+      shop_product_slots_total: Number(scenario.shopProductSlotsTotal ?? 2),
+    };
 
     if (path === '/auth/me' || path === '/users/me') {
       return route.fulfill(json(member(scenario.identity)));
@@ -185,8 +189,8 @@ async function installMocks(page, scenario) {
         : [product];
       return route.fulfill(json({
         ok: true,
-        item: shop,
-        shop,
+        item: scenarioShop,
+        shop: scenarioShop,
         products: publicProducts,
         broadcasts: [spotlight],
         primary_broadcast: spotlight,
@@ -236,10 +240,10 @@ async function installMocks(page, scenario) {
         : scenario.emptyShop
         ? []
         : [product];
-      return route.fulfill(json({ item: shop, shop, products: ownerProducts }));
+      return route.fulfill(json({ item: scenarioShop, shop: scenarioShop, products: ownerProducts }));
     }
     if (path.startsWith(`/marketplace/shops/by-gmfn/${ownerId}`)) {
-      return route.fulfill(json({ item: shop, shop }));
+      return route.fulfill(json({ item: scenarioShop, shop: scenarioShop }));
     }
     if (path === '/marketplace/shops/101/follow-status') {
       return route.fulfill(json({
@@ -252,7 +256,7 @@ async function installMocks(page, scenario) {
       }));
     }
     if (path === '/marketplace/shops' || path.startsWith('/marketplace/shops?')) {
-      return route.fulfill(json({ items: [shop], shops: [shop] }));
+      return route.fulfill(json({ items: [scenarioShop], shops: [scenarioShop] }));
     }
     if (path === '/marketplace/products' && method === 'POST') {
       return route.fulfill(json({
@@ -634,6 +638,7 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     demandPolicyOff: false,
     memberOfCommunity: true,
     emptyShop: true,
+    shopProductSlotsTotal: 1,
     mutations: [],
   };
   const { context, page } = await newPhonePage(browser, scenario);
@@ -732,7 +737,7 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   }
   await visitor.context.close();
 
-  const progressingVisitorScenario = {
+  const freeFullVisitorScenario = {
     ...visitorScenario,
     emptyShop: false,
     publicProducts: [{
@@ -741,6 +746,24 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
       description: '[BLOCK:1] Jollof rice with chicken and plantain.',
     }],
     mutations: [],
+  };
+  const freeFullVisitor = await newPhonePage(browser, freeFullVisitorScenario);
+  await freeFullVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await freeFullVisitor.page.locator('#shop-block-1').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await freeFullVisitor.page.locator('[data-visitor-opening-soon-space]').count()) {
+    throw new Error('A full one-free-space shop exposed an unentitled second-space poster.');
+  }
+  await freeFullVisitor.context.close();
+
+  const progressingVisitorScenario = {
+    ...freeFullVisitorScenario,
+    shopProductSlotsTotal: 2,
   };
   const progressingVisitor = await newPhonePage(browser, progressingVisitorScenario);
   await progressingVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
@@ -1355,7 +1378,7 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'Public Shop exposes one progressive next space: owner plus for the exact owner and passive opening-soon poster for visitors',
+      'Public Shop exposes one free progressive space, no unentitled second-space prompt, and space 2 only when paid capacity is reported',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',

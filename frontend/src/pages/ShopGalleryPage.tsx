@@ -246,8 +246,8 @@ type ShopIconName = LegacyShopIconName | Gsn3DIconKey;
 
 type NoticeTone = "success" | "error";
 
-const GALLERY_STANDARD_SLOTS_TOTAL = 6;
-const GALLERY_EXTRA_SLOTS_LIMIT = 4;
+const GALLERY_STANDARD_SLOTS_TOTAL = 1;
+const GALLERY_EXTRA_SLOTS_LIMIT = 9;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
@@ -1196,6 +1196,11 @@ function normalizeShop(
     ),
     followerCount: positiveNumber(
       src?.follower_count || src?.followers_count || src?.shop_follower_count
+    ),
+    publicSlotsTotal: clampGallerySlotsTotal(
+      src?.shop_product_slots_total ||
+        src?.public_product_slots_total ||
+        src?.publicSlotsTotal
     ),
   };
 }

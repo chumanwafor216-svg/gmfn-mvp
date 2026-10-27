@@ -129,8 +129,8 @@ MARKETPLACE_LISTING_REVIEW_EVENT = "marketplace.listing.review_decided"
 MARKETPLACE_LISTING_REVIEW_PANEL_HASH = "marketplace-listing-review-panel"
 
 
-FREE_COMMUNITY_PRODUCT_SLOTS = 6
-MAX_EXTRA_PUBLIC_SHOP_BLOCKS = 4
+FREE_COMMUNITY_PRODUCT_SLOTS = 1
+MAX_EXTRA_PUBLIC_SHOP_BLOCKS = 9
 
 TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
@@ -3939,7 +3939,10 @@ def _display_public_block_assignments(
 
     assignments = dict(explicit)
     for product in sorted(overflow, key=_product_newest_rank, reverse=True):
-        for block_number in range(1, FREE_COMMUNITY_PRODUCT_SLOTS + 1):
+        for block_number in range(
+            1,
+            FREE_COMMUNITY_PRODUCT_SLOTS + MAX_EXTRA_PUBLIC_SHOP_BLOCKS + 1,
+        ):
             if block_number not in assignments:
                 assignments[block_number] = product
                 break
@@ -4115,12 +4118,19 @@ def _public_product_capacity_allows_write(
     replaceable_product_count: int,
     public_product_slots_total: int,
     public_block_number: Optional[int],
+    existing_product_keeps_slot: bool = False,
 ) -> bool:
+    if existing_product_keeps_slot:
+        return True
+
+    block_number = _safe_int(public_block_number, 0)
+    if block_number > int(public_product_slots_total):
+        return int(replaceable_product_count) > 0
+
     active_after_replacement = int(active_product_count) - int(replaceable_product_count)
     if active_after_replacement < int(public_product_slots_total):
         return True
 
-    block_number = _safe_int(public_block_number, 0)
     return (
         block_number >= 1
         and block_number <= int(public_product_slots_total)
@@ -6759,6 +6769,9 @@ def update_marketplace_product(
         VISIBILITY_COMMUNITY,
     )
     previous_active = bool(getattr(product, "is_active", True))
+    previous_public_block_number = _public_product_block_number(
+        getattr(product, "description", None)
+    )
 
     target_shop_id = int(product.shop_id)
     if "shop_id" in provided and payload.shop_id is not None and int(payload.shop_id) != int(product.shop_id):
@@ -6881,6 +6894,13 @@ def update_marketplace_product(
             replaceable_product_count=len(replaceable_products),
             public_product_slots_total=public_product_slots_total,
             public_block_number=target_public_block_number,
+            existing_product_keeps_slot=(
+                previous_active
+                and previous_visibility in {VISIBILITY_COMMUNITY, "public", "community"}
+                and int(previous_shop_id) == int(target_shop_id)
+                and previous_public_block_number is not None
+                and int(previous_public_block_number) == int(target_public_block_number or 0)
+            ),
         ):
             raise HTTPException(
                 status_code=400,

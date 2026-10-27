@@ -160,11 +160,24 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - Owner-approved correction implemented locally on the canonical Public Shop Products & Services shelf. It supersedes the earlier two-starter-card rule.
 - The shelf calculates one next empty shop space within the owner's existing available capacity. The exact owner sees one large circular `+`; a visitor or signed-in non-owner sees that same position as a passive branded `GSN - Shop opening soon` poster.
-- After product 1 occupies space 1, the prompt/poster advances to space 2, then space 3, and continues one position at a time until available capacity is full. The existing six free spaces and four paid extra-space maximum remain unchanged.
+- Space 1 is now the only free public product/service space. The prompt/poster advances beyond it only when the existing paid extra-shop-space entitlement supplies capacity, up to the unchanged ten-space shop ceiling (one free plus up to nine paid).
 - The owner plus routes to the existing Shop Control/Shop Assets task with the exact `manage_block`; opening the task creates nothing and makes no business write. Owner recognition remains bound to the exact shop through matching signed-in GSN identity or the authenticated backend `is_owner` result.
 - The old `No public items yet` shelf and its unrelated `Ask for Vault access` / copy actions are removed. The ordinary Vault section, Spotlight, payment, permissions, review and product engine are unchanged.
 - Scoped implementation files: `frontend/src/pages/ShopGalleryPage.tsx`, `frontend/tools/audit-shop-gallery-button-inventory.mjs`, `frontend/tools/audit-share-tag-actions.mjs`, `frontend/tools/smoke-three-plus-shortcuts.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
 - Verification passed: scoped ESLint; Public Shop button inventory, workflow-plus, Shop Assets slot, and share/tag audits; the 390x844 three-plus phone smoke; the complete protected-button freeze; and the 295-module production build. The phone smoke proves exactly one owner plus, no visitor creation control, the branded visitor poster in space 1, movement to space 2 after product 1 exists, exact existing add-item routing with no business write, backend owner recovery, and no horizontal phone overflow. Implementation commit `6bbafd76a8e221981ee28bd4112e24af085ccab5` was promoted to `main`; GitHub Actions run `40542346527` completed successfully; Render deploy `dep-dbgd5iivcj2c73broa2g` reached `live`; and the canonical Public Shop chunk was verified to contain the new poster contract without the old empty-state text/copy action.
+
+## One free public shop space - 2026-10-27
+
+- Owner correction: each shop receives one free public product/service space; spaces 2 through 10 are paid through the existing extra-shop-space payment and entitlement engine.
+- The overall shop ceiling remains ten. The capacity mix changed from six free plus four paid to one free plus up to nine paid.
+- The Public Shop now reads `shop_product_slots_total` from the authoritative shop payload, so a paid entitlement exposes the next progressive owner plus or visitor opening-soon poster.
+- The backend rejects both a second active product without entitlement and an attempt to jump directly into an unentitled higher-numbered space.
+- Existing products already occupying formerly free higher spaces are not deleted or hidden and may be edited in place; they do not grant any new free capacity.
+- Legacy unnumbered products retain deterministic display assignment across the ten-space ceiling, without changing the one-free-space write limit.
+- This correction does not change the current extra-space GBP price rail or settle the future Pipeline Credit valuation.
+- Verification passed: all 73 tests in `test_marketplace_public_shop.py`, scoped ESLint, the capacity-aware Shop Assets slot audit, Public Shop and Shop Control button inventories, workflow-plus audit, the 390x844 phone smoke, the complete protected-button freeze, and the 295-module production build.
+- The phone smoke proves an empty shop exposes space 1, a filled free space exposes no space-2 prompt, and an authoritative total of two exposes space 2.
+- Known unrelated baseline debt remains: `audit:link-contracts` expects an old `copyShopLink` function that is absent from the committed Share-button implementation; this capacity change does not rewrite that sharing contract.
 
 ## Local detached-announcement compactness correction - 2026-10-27
 
