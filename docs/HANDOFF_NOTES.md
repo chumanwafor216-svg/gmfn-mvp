@@ -13,13 +13,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The owner resumed and completed the Community Confirmation Inbox milestone
   below, then explicitly chose to skip the My GSN & I / cover-related review.
   The commerce-intelligence-to-Market-Wisdom milestone is now complete locally.
-  The next owner priorities are now: first define a truthful GSN Growth Partner
-  acquisition model for independent people who introduce and help activate
-  users/communities; second build the `revenue per module` map covering Shop,
-  Reel, TrustSlip and Merchant Verification, Community Domain, reactions, and
-  the other confirmed modules. Those tasks come before compacting the
-  Dashboard Photo Frame
-  affordance, audit account suspension/closure/removal capability, design
+  The owner clarified that the GSN Growth Partner and `revenue per module`
+  ideas are end-of-day strategy work, not the current runtime task. Resume the
+  previously agreed implementation queue with the compact Dashboard Photo
+  Frame affordance, followed by audit account
+  suspension/closure/removal capability, design
   respectful inactivity reminders from GSN to the user, and use a planned
   12-minute Spotlight recording to measure short dwell times and unequal
   appearance frequency before changing rotation policy. Source review already
@@ -156,6 +154,36 @@ under `docs/` or `docs/archive/`, then link that file here.
   commission, residual, payment movement or public programme was created.
 - Full ordered work is recorded under item 4 in
   `NEXT_SESSION_PLAN_2026-10-27.md`; the revenue-per-module map is now item 5.
+
+## Existing-engines growth flywheel brainstorm - 2026-10-27
+
+- Captured the owner's wider direction without authorising runtime work: GSN
+  should reuse and compose its existing engines/buttons into reasons to come,
+  activate, return, share and eventually create a measurable audience that
+  advertisers may pay to reach.
+- The four first-door expectations are buy/find, sell/promote, belong/organise,
+  and achieve/prove. Inviting friends, direct referrals and useful phone-media
+  preparation can strengthen those journeys but are not guaranteed income,
+  buyers or opportunity.
+- The future media direction is a small-business promotion assistant: ordinary
+  phone photo/video -> simple GSN preparation/template -> shop name, short
+  offer and contact/action -> preview -> owner-approved Shop/Spotlight
+  publication. First inventory Photo Frame, video/sound preparation, Shop
+  Assets, Spotlight, campaign renderer and GSN-HOUSE machinery; do not invent a
+  new media engine before proving those tools cannot compose the result.
+- Advertiser value is downstream of concentrated permitted audience, repeat
+  utility, truthful qualification, brand safety, measurement, action path,
+  pricing, billing and reporting. Account count alone does not create a
+  credible advertising market.
+- Before the day closes, complete the audience/gain/engine map, activation and
+  retention events, Growth Partner loop, media journey, advertiser readiness,
+  and revenue-per-module map; then revise the business plan and business
+  forecast prepared for Steliana with explicit evidence and
+  conservative/base/upside assumptions.
+- Full capture:
+  `GSN_EXISTING_ENGINES_GROWTH_FLYWHEEL_BRAINSTORM_2026-10-27.md`.
+- This capture creates no new engine, role, commission, reward, entitlement,
+  ad placement, payment, forecast claim, runtime source change, push or deploy.
 
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 

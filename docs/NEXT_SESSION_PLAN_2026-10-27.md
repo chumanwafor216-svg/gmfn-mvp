@@ -18,6 +18,17 @@ explicitly says `deploy`.
 
 ## Ordered work queue
 
+Execution-order clarification from the owner on 2026-10-27:
+- Items 4 and 5 are captured strategic brainstorms, not the current runtime
+  implementation task.
+- Resume the previously agreed implementation queue at item 6, the compact
+  Dashboard Photo Frame affordance.
+- Return to items 4 and 5 during the end-of-day strategy close, then revise the
+  business plan and business forecast prepared for Steliana using the completed
+  growth and module-economics map.
+- The full reuse-first growth-flywheel capture is recorded in
+  `GSN_EXISTING_ENGINES_GROWTH_FLYWHEEL_BRAINSTORM_2026-10-27.md`.
+
 ### 1. Continue Community Confirmation Inbox cleanup
 
 Current truth:
@@ -110,6 +121,9 @@ Candidate outcome to validate, not assume:
 
 ### 4. Define the GSN Growth Partner acquisition model
 
+Timing: deferred to the end-of-day strategy close; do not implement it while
+the current product queue is being resumed.
+
 Owner to-do update received 2026-10-27 at 08:27 Europe/London:
 - investigate whether GSN Independent Entrepreneurs can genuinely be described
   as affiliate marketers
@@ -186,6 +200,9 @@ Truth boundaries:
 
 ### 5. Map revenue per module
 
+Timing: deferred to the end-of-day strategy close, immediately after the
+reuse-first growth-flywheel and Growth Partner map.
+
 Owner direction:
 - Make the next development priority a module-by-module revenue model for GSN,
   including Shop, Reel, TrustSlip and Merchant Verification, Community Domain,
@@ -222,6 +239,9 @@ Truth boundaries:
   documentation confirm their exact product meaning
 
 ### 6. Compact the Dashboard Photo Frame affordance
+
+Status: current implementation item after the owner's instruction to capture,
+but not yet build, the growth-flywheel brainstorm.
 
 Owner direction:
 - The current Photo Frame button occupies too much Dashboard space.
