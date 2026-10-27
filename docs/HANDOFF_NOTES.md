@@ -8,7 +8,7 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
-## Local Shop paid-services consolidation - 2026-10-27
+## Deployed Shop paid-services consolidation - 2026-10-27
 
 - Owner-approved scope: make Public Shop the first established-shop action,
   remove the repeated Promote route, and bring current/future paid options into
@@ -28,7 +28,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No backend route, price, payment instruction, entitlement, permission,
   serving rule, Dashboard Market Wisdom, or Community Home behavior changed.
   The Shop Control action audit, 390x844 mobile visual audit, and 295-module
-  production build pass. This package is local and not deployed yet.
+  production build pass. Release commit
+  `8cf72e58f2aa7ec92ddb4d67144928eebcaa6c5f` was pushed to the pilot branch
+  and `main`. GitHub Actions run `40502616068` completed successfully after
+  Render accepted the exact frontend deploy and the live public-URL
+  verification passed. No backend deployment was required.
 
 ## Next Bulletin compactness and poll-audience amendment - 2026-10-27
 
