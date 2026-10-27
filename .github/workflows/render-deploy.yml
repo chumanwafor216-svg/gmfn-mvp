@@ -11,6 +11,14 @@ on:
         options:
           - "false"
           - "true"
+      api_plan:
+        description: "Optional gmfn-api compute plan change"
+        required: false
+        default: "keep"
+        type: choice
+        options:
+          - "keep"
+          - "1c-2g"
 
 permissions:
   contents: read
@@ -34,6 +42,7 @@ jobs:
       GSN_WEB_PUSH_PRIVATE_KEY: ${{ secrets.GSN_WEB_PUSH_PRIVATE_KEY }}
       GSN_WEB_PUSH_SUBJECT: ${{ secrets.GSN_WEB_PUSH_SUBJECT }}
       DEPLOY_API_INPUT: ${{ github.event.inputs.deploy_api || 'false' }}
+      API_PLAN_INPUT: ${{ github.event.inputs.api_plan || 'keep' }}
     steps:
       - name: Checkout commit
         uses: actions/checkout@v4
@@ -147,7 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           should_deploy_api="false"
-          if [ "$DEPLOY_API_INPUT" = "true" ]; then
+          if [ "$DEPLOY_API_INPUT" = "true" ] || [ "$API_PLAN_INPUT" != "keep" ]; then
             should_deploy_api="true"
           elif [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.event.before }}" ]; then
             if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | grep -Eq '^(gmfn_backend/|render\.yaml$)'; then
@@ -205,6 +214,29 @@ jobs:
         run: |
           echo "::error::RENDER_API_KEY is configured, but the workflow could not resolve the gmfn-api Render service. Set GitHub secret RENDER_API_SERVICE_ID to the gmfn-api service id."
           exit 1
+
+      - name: Update API compute plan
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' && env.API_PLAN_INPUT != 'keep' }}
+        env:
+          API_SERVICE_ID: ${{ steps.api_service.outputs.api_service_id }}
+        run: |
+          set -euo pipefail
+          if [ "$API_PLAN_INPUT" != "1c-2g" ]; then
+            echo "::error::Unsupported gmfn-api compute plan request: ${API_PLAN_INPUT}."
+            exit 1
+          fi
+          echo "Updating gmfn-api compute plan to ${API_PLAN_INPUT}."
+          update_json="$(curl -fsS -X PATCH "https://api.render.com/v1/services/${API_SERVICE_ID}" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            -H "content-type: application/json" \
+            --data "{\"serviceDetails\":{\"plan\":\"${API_PLAN_INPUT}\"}}")"
+          updated_plan="$(printf '%s' "$update_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); process.stdout.write(row?.service?.serviceDetails?.plan || row?.serviceDetails?.plan || ""); } catch { process.stdout.write(""); } });')"
+          if [ "$updated_plan" != "$API_PLAN_INPUT" ]; then
+            echo "::error::Render did not confirm the requested gmfn-api compute plan."
+            exit 1
+          fi
+          echo "Render accepted gmfn-api compute plan ${updated_plan}; the following deploy will apply it."
 
       - name: Sync backend Web Push env vars
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' && env.GSN_WEB_PUSH_PUBLIC_KEY != '' && env.GSN_WEB_PUSH_PRIVATE_KEY != '' && env.GSN_WEB_PUSH_SUBJECT != '' }}
@@ -287,3 +319,19 @@ jobs:
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' }}
         run: |
           node frontend/tools/audit-live-api-identity-routes.mjs --attempts 18 --delay-ms 20000
+
+      - name: Verify API compute plan
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' && env.API_PLAN_INPUT != 'keep' }}
+        env:
+          API_SERVICE_ID: ${{ steps.api_service.outputs.api_service_id }}
+        run: |
+          set -euo pipefail
+          service_json="$(curl -fsS "https://api.render.com/v1/services/${API_SERVICE_ID}" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}")"
+          live_plan="$(printf '%s' "$service_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); process.stdout.write(row?.service?.serviceDetails?.plan || row?.serviceDetails?.plan || ""); } catch { process.stdout.write(""); } });')"
+          if [ "$live_plan" != "$API_PLAN_INPUT" ]; then
+            echo "::error::gmfn-api compute plan is ${live_plan:-unknown}, expected ${API_PLAN_INPUT}."
+            exit 1
+          fi
+          echo "gmfn-api compute plan is ${live_plan}."

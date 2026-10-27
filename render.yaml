@@ -4,7 +4,7 @@ services:
     runtime: python
     rootDir: gmfn_backend
     region: frankfurt
-    plan: starter
+    plan: 1c-2g
     buildCommand: pip install --no-cache-dir -r requirements.txt
     preDeployCommand: alembic upgrade head
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
