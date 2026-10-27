@@ -126,6 +126,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
           event_id: 91,
           clan_id: 8,
           body: "Choose the best day for the public meeting.",
+          full_body: "This longer public announcement explains the meeting purpose, the people invited, the expected preparation, and the practical arrangements. It also includes enough additional detail to prove that a recipient sees only a short preview until they deliberately open the complete message on a phone.",
           created_at: "2026-10-27T09:00:00Z",
           expires_at: "2026-11-03T09:00:00Z",
           acknowledgement_enabled: false,
@@ -427,8 +428,38 @@ async function run() {
       timeout: 60000,
     });
     await publicPollPage.waitForSelector('[data-debug-id="community-notice.choice-poll"]', { timeout: 30000 });
-    await publicPollPage.getByText("Anyone with this announcement link may vote. No name is collected for a public-link response.", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    await publicPollPage.getByText("Anyone with this link can vote. No name is collected.", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
     await publicPollPage.getByText("Poll result · 0 responses", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    const fullMessageToggle = publicPollPage.locator('[data-cta-id="community-notice.full-message.toggle"]');
+    const fullMessageContent = publicPollPage.locator('[data-debug-id="community-notice.full-message.content"]');
+    await fullMessageToggle.waitFor({ state: "visible", timeout: 30000 });
+    if (await fullMessageContent.isVisible()) {
+      console.error("Detached public notice exposed the long full message by default.");
+      process.exitCode = 1;
+      return;
+    }
+    await fullMessageToggle.click();
+    await fullMessageContent.waitFor({ state: "visible", timeout: 30000 });
+    await fullMessageToggle.click();
+    await fullMessageContent.waitFor({ state: "hidden", timeout: 30000 });
+    const publicShareButton = publicPollPage.locator('[data-cta-id="community-notice.share"]');
+    const publicShareToggle = publicPollPage.locator('[data-cta-id="community-notice.share-package.toggle"]');
+    if (await publicShareButton.isVisible()) {
+      console.error("Detached public notice exposed secondary sharing controls by default.");
+      process.exitCode = 1;
+      return;
+    }
+    await publicShareToggle.click();
+    await publicShareButton.waitFor({ state: "visible", timeout: 30000 });
+    await publicPollPage.locator('[data-debug-id="community-notice.share-package.content"] svg').waitFor({ state: "visible", timeout: 30000 });
+    await publicShareToggle.click();
+    await publicShareButton.waitFor({ state: "hidden", timeout: 30000 });
+    const boundaryContent = publicPollPage.locator('[data-debug-id="community-notice.page-boundary.content"]');
+    if (await boundaryContent.isVisible()) {
+      console.error("Detached public notice exposed its longer boundary text by default.");
+      process.exitCode = 1;
+      return;
+    }
     await publicPollPage.locator('[data-cta-id="community-notice.poll-option.0"]').click();
     await publicPollPage.locator('[data-cta-id="community-notice.poll-submit"]').click();
     await publicPollPage.waitForSelector('[data-debug-id="community-notice.poll-results"]', { timeout: 30000 });

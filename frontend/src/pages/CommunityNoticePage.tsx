@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import {
   acknowledgeCommunityNotice,
   getPublicCommunityDomainNotice,
@@ -158,6 +158,101 @@ function actionGrid(): React.CSSProperties {
   };
 }
 
+type CompactDisclosureProps = {
+  debugId: string;
+  title: string;
+  summary: string;
+  preview?: React.ReactNode;
+  children: React.ReactNode;
+};
+
+function CompactDisclosure({
+  debugId,
+  title,
+  summary,
+  preview,
+  children,
+}: CompactDisclosureProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <details
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      data-debug-id={debugId}
+      style={{
+        borderRadius: 16,
+        border: "1px solid rgba(9,27,46,0.10)",
+        background: "#F8FBFF",
+        overflow: "hidden",
+      }}
+    >
+      {!open && preview ? (
+        <div
+          data-debug-id={`${debugId}.preview`}
+          style={{
+            padding: "11px 12px 6px",
+            background: "#FFFFFF",
+          }}
+        >
+          {preview}
+        </div>
+      ) : null}
+      <StableDisclosureSummary
+        debugId={`${debugId}.toggle`}
+        stableHeight={52}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "8px 12px",
+          color: "#091B2E",
+          background: "#F8FBFF",
+        }}
+      >
+        <span style={{ display: "grid", gap: 2, minWidth: 0, textAlign: "left" }}>
+          <span style={{ fontSize: 14, fontWeight: 950 }}>{title}</span>
+          <span style={{ color: "#617085", fontSize: 12, fontWeight: 750, lineHeight: 1.3 }}>
+            {summary}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 999,
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 auto",
+            color: "#0B2D4A",
+            background: "#FFFFFF",
+            border: "1px solid rgba(9,27,46,0.12)",
+            fontSize: 22,
+            fontWeight: 900,
+            lineHeight: 1,
+          }}
+        >
+          {open ? "−" : "+"}
+        </span>
+      </StableDisclosureSummary>
+      <div
+        data-debug-id={`${debugId}.content`}
+        style={{
+          borderTop: "1px solid rgba(9,27,46,0.08)",
+          padding: 12,
+          display: "grid",
+          gap: 10,
+          background: "#FFFFFF",
+        }}
+      >
+        {children}
+      </div>
+    </details>
+  );
+}
+
 function actionErrorMessage(error: any): string {
   const fallback = "GSN could not complete this announcement action.";
   return safeText(error?.detail?.message || error?.detail || error?.message || error, fallback);
@@ -276,6 +371,9 @@ export default function CommunityNoticePage() {
   const senderWhatsAppNumber = safeText(notice?.sender_whatsapp_number);
   const senderWhatsAppLabel = safeText(notice?.sender_whatsapp_label, "the announcer");
   const contactReady = Boolean(notice?.sender_contact_ready && senderWhatsAppNumber);
+  const fullBodyNeedsDisclosure =
+    fullBody.length > 220 ||
+    fullBody.split(/\r?\n/).filter((line) => line.trim()).length > 3;
   const shareMessage = [
     `${domainName} shared a GSN announcement.`,
     headline,
@@ -434,7 +532,7 @@ export default function CommunityNoticePage() {
       <PageTopNav
         sectionLabel="GSN transmission"
         title="Community announcement"
-        subtitle="Announcement-only public package"
+        subtitle="Public announcement"
       />
       <section style={pageInner()}>
         <div style={{ color: "#F8FBFF", display: "grid", gap: 8, padding: "8px 2px 0" }}>
@@ -447,8 +545,8 @@ export default function CommunityNoticePage() {
               </h1>
             </div>
           </div>
-          <p style={{ margin: 0, maxWidth: 680, color: "rgba(248,251,255,0.78)", lineHeight: 1.55 }}>
-            Read this announcement, take an available action, or share the same package.
+          <p style={{ margin: 0, color: "rgba(248,251,255,0.78)", lineHeight: 1.4 }}>
+            Read, respond, or share.
           </p>
         </div>
 
@@ -459,26 +557,49 @@ export default function CommunityNoticePage() {
             <div style={{ ...softCard(), background: "#FFF4D6", color: "#6B4A00" }}>{message}</div>
           ) : notice ? (
             <>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ display: "grid", gap: 8, minWidth: 0, flex: "1 1 260px" }}>
+              <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                   <div style={label()}>{domainName}</div>
                   <h2 style={{ margin: 0, fontSize: 25, lineHeight: 1.2, letterSpacing: 0, overflowWrap: "break-word" }}>
                     {headline}
                   </h2>
                   {fullBody && fullBody !== headline ? (
-                    <p style={{ ...helper(), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                      {fullBody}
-                    </p>
+                    fullBodyNeedsDisclosure ? (
+                      <CompactDisclosure
+                        debugId="community-notice.full-message"
+                        title="Read full message"
+                        summary="Open the complete announcement"
+                        preview={(
+                          <p
+                            style={{
+                              ...helper(),
+                              margin: 0,
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 3,
+                              overflow: "hidden",
+                              whiteSpace: "pre-wrap",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {fullBody}
+                          </p>
+                        )}
+                      >
+                        <p style={{ ...helper(), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                          {fullBody}
+                        </p>
+                      </CompactDisclosure>
+                    ) : (
+                      <p style={{ ...helper(), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                        {fullBody}
+                      </p>
+                    )
                   ) : null}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge()}>GSN announcement</span>
                     {createdAt ? <span style={badge()}>Posted {createdAt}</span> : null}
                     {expiresAt ? <span style={badge()}>Until {expiresAt}</span> : null}
                   </div>
-                </div>
-                <div style={{ borderRadius: 18, background: "#FFFFFF", border: "1px solid rgba(9,27,46,0.12)", padding: 10 }}>
-                  <QRCodeSVG value={pageUrl || code} size={128} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
-                </div>
               </div>
 
               {acknowledgementEnabled || availabilityEnabled || pollEnabled ? (
@@ -486,7 +607,7 @@ export default function CommunityNoticePage() {
                   <div style={label()}>Respond to this announcement</div>
                   {acknowledgementEnabled || availabilityEnabled ? (
                     <p style={{ ...helper(), margin: 0 }}>
-                      Acknowledgement and availability are for signed-in active members of {domainName}.
+                      Member acknowledgement and availability require sign-in.
                     </p>
                   ) : null}
                   {acknowledgementEnabled ? (
@@ -527,8 +648,8 @@ export default function CommunityNoticePage() {
                       <div style={{ color: "#091B2E", fontWeight: 900 }}>{pollQuestion}</div>
                       <p style={{ ...helper(), margin: 0 }}>
                         {pollAudience === "public_link"
-                          ? "Anyone with this announcement link may vote. No name is collected for a public-link response."
-                          : `Only signed-in active members of ${domainName} may vote.`}
+                          ? "Anyone with this link can vote. No name is collected."
+                          : "Community members must sign in to vote."}
                       </p>
                       <div style={actionGrid()}>
                         {pollOptions.map((option: string, index: number) => (
@@ -546,8 +667,8 @@ export default function CommunityNoticePage() {
                       </div>
                       <p style={{ ...helper(), margin: 0 }}>
                         {pollSelectionMode === "multiple"
-                          ? "Tap one or more answers, then press OK."
-                          : "Tap one answer, then press OK."} No writing is needed.
+                          ? "Choose one or more, then press OK."
+                          : "Choose one, then press OK."}
                       </p>
                       <StableButton
                         kind="primary"
@@ -579,8 +700,8 @@ export default function CommunityNoticePage() {
                           ))}
                           <p style={{ ...helper(), margin: 0 }}>
                             {pollAudience === "public_link"
-                              ? "These are aggregate responses. Public-link totals are browser-response counts, not proof of unique people."
-                              : "These are aggregate member totals. Member names remain private to authorised community admins."}
+                              ? "Browser-response counts are not proof of unique people."
+                              : "Member totals. Names stay private to authorised admins."}
                           </p>
                         </div>
                       ) : null}
@@ -589,13 +710,13 @@ export default function CommunityNoticePage() {
                 </div>
               ) : null}
 
-              <div style={softCard()} data-debug-id="community-notice.announcer-contact">
-                <div style={label()}>Contact the announcer</div>
+              <CompactDisclosure
+                debugId="community-notice.announcer-contact"
+                title="Contact announcer"
+                summary={contactReady ? `${senderWhatsAppLabel} · message or call` : "No public contact was added"}
+              >
                 {contactReady ? (
                   <>
-                    <p style={{ ...helper(), margin: 0 }}>
-                      {senderWhatsAppLabel} has chosen to publish this verified contact with the announcement.
-                    </p>
                     <div style={actionGrid()}>
                       <StableButton
                         kind="primary"
@@ -615,14 +736,17 @@ export default function CommunityNoticePage() {
                   </>
                 ) : (
                   <p style={{ ...helper(), margin: 0 }}>
-                    The announcer has not published a contact with this announcement.
+                    No public contact was published with this announcement.
                   </p>
                 )}
-              </div>
+              </CompactDisclosure>
 
               {attachmentUrl ? (
-                <div style={softCard()} data-debug-id="community-notice.attachment-package">
-                  <div style={label()}>{attachmentKind === "poster" ? "Poster" : "Announcement action"}</div>
+                <CompactDisclosure
+                  debugId="community-notice.attachment-package"
+                  title={attachmentKind === "poster" ? "Poster" : "Attachment"}
+                  summary={attachmentLabel}
+                >
                   {attachmentKind === "poster" ? (
                     <img
                       src={attachmentUrl}
@@ -642,14 +766,14 @@ export default function CommunityNoticePage() {
                   <StableButton kind="primary" debugId="community-notice.open-attachment" onClick={openAttachment} fullWidth>
                     {attachmentActionLabel}
                   </StableButton>
-                </div>
+                </CompactDisclosure>
               ) : null}
 
-              <div style={softCard()} data-debug-id="community-notice.share-package">
-                <div style={label()}>Share this announcement</div>
-                <p style={{ ...helper(), margin: 0 }}>
-                  Share this exact announcement package. GSN prepares it; you choose the channel and send it yourself.
-                </p>
+              <CompactDisclosure
+                debugId="community-notice.share-package"
+                title="Share announcement"
+                summary="WhatsApp, social channels, link or QR"
+              >
                 <div style={actionGrid()}>
                   <StableButton kind="secondary" debugId="community-notice.copy-link" onClick={copyLink}>
                     {copied ? "Copied" : "Copy announcement link"}
@@ -670,7 +794,21 @@ export default function CommunityNoticePage() {
                     onResult={(tone, text) => showAction(tone, text)}
                   />
                 </div>
-              </div>
+                <div
+                  style={{
+                    justifySelf: "center",
+                    borderRadius: 16,
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(9,27,46,0.12)",
+                    padding: 8,
+                  }}
+                >
+                  <QRCodeSVG value={pageUrl || code} size={112} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                </div>
+                <p style={{ ...helper(), margin: 0, textAlign: "center" }}>
+                  You choose the channel and send it yourself.
+                </p>
+              </CompactDisclosure>
 
               {actionMessage ? (
                 <div
@@ -699,12 +837,15 @@ export default function CommunityNoticePage() {
                 </div>
               ) : null}
 
-              <div style={{ ...softCard(), background: "#F5F0E6" }}>
-                <div style={label()}>Boundary</div>
+              <CompactDisclosure
+                debugId="community-notice.page-boundary"
+                title="About this page"
+                summary="Announcement only. Private community details stay hidden."
+              >
                 <p style={{ ...helper(), margin: 0 }}>
-                  {safeText(notice.boundary, "GSN shows this announcement package and its approved actions only. It does not expose the creator, member lists, private contacts, admin tools, open comments, or the wider community.")}
+                  {safeText(notice.boundary, "GSN shows this announcement and its approved actions. It does not expose member lists, private contacts, admin tools or the wider community.")}
                 </p>
-              </div>
+              </CompactDisclosure>
             </>
           ) : (
             <div style={softCard()}>GSN could not find this community message.</div>

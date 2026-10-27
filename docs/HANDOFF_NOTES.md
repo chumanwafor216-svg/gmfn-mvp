@@ -8,6 +8,24 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local detached-announcement compactness correction - 2026-10-27
+
+- The public page opened from WhatsApp/social links now leads with the community,
+  announcement headline, a short body/preview and any active response task.
+- Long full text uses `Read full message`. Attachment, announcer contact,
+  share/link/QR controls and the longer page boundary start as separate closed
+  plus/minus rows. Existing actions, permissions, poll accounting and public
+  payloads are unchanged.
+- Verification passed: scoped ESLint, the WhatsApp Bridge contract audit, the
+  complete protected-button/frozen-surface audit, the 295-module production
+  build, and the 390x844 phone smoke. The smoke proves the long message,
+  sharing/QR and boundary are closed by default, reopen correctly, preserve
+  public polling and do not overflow.
+- The broad Community Domain product audit now accepts this compact notice-page
+  contract, but that full audit remains red on two unrelated existing
+  Marketplace backend/Shop Assets policy assertions outside this work.
+- This correction is local only until the owner explicitly says `deploy`.
+
 ## Local Bulletin share-action restoration - 2026-10-27
 
 - The existing multi-channel `SocialTagShareButton` is now exposed directly in

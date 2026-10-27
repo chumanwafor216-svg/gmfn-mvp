@@ -2485,6 +2485,13 @@ Rules:
   table is allowed because Trust Events require a real user identity and must
   not falsely attribute anonymous votes. Do not create a standalone poll app,
   duplicate sharing system, public identity list or public roll call.
+- The detached phone package must stay compact: community identity, headline,
+  a short message or three-line preview, and any active response task remain
+  visible. A long full message opens through `Read full message`; attachment,
+  announcer contact, sharing/QR and the longer page boundary start behind
+  separate closed rows with explicit plus/minus state. Short helper and result
+  language must carry the same permission and accuracy meaning without
+  repeating paragraphs.
 - When an authenticated member opens a Bulletin announcement that has a public
   package, its detail panel must expose one `Share announcement` action using
   the existing social-share chooser. Keep that action behind `Open notice` on

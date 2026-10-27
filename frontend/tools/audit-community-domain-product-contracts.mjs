@@ -433,8 +433,8 @@ assertContains(
 
 assertContains(
   communityNoticePageFile,
-  /QRCodeSVG[\s\S]*getPublicCommunityDomainNotice[\s\S]*sermon topic, programme theme, reading note, or message of the day[\s\S]*does not expose member lists, open comments, prove attendance, collect money/,
-  "Public Community Notice page must render the message QR without exposing private membership, comments, payment, or attendance proof.",
+  /QRCodeSVG[\s\S]*getPublicCommunityDomainNotice[\s\S]*CompactDisclosure[\s\S]*Private community details stay hidden[\s\S]*does not expose member lists, private contacts, admin tools or the wider community/,
+  "Public Community Notice page must keep its message QR reachable behind the compact share disclosure without exposing private community details.",
   { frontend: true }
 );
 assertContains(
