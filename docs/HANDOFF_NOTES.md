@@ -6,6 +6,15 @@ This file is the compact current-state handoff required by `README.md` and
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
 
+## Android installed-app stale bundle repair - 2026-10-27
+
+- Owner phone evidence at 20:30 and 20:31 showed the installed Android app still running the older Shop Control Reel card and older odd-count Public Shop shelf after the corrected frontend had become live. The live CDN already contained `Create Reel from picture` and `Product coming soon`; the failure was the running installed-app shell, not either feature implementation.
+- Root cause: `checkForFreshInstalledShell()` detected a changed deployed shell but deliberately took no action for non-iOS standalone sessions. iPhone had an explicit update prompt; Android retained the in-memory bundle until a full close/reopen.
+- Commit `d08597c6f5a5e4b6a802983554d270cb16f7f26b` now reloads a stale Android standalone shell only when no `[aria-busy=true]` action or selected file upload is present. Busy/upload states remain untouched and are retried on a later focus, visibility or interval check. The current already-stale phone session still requires one full swipe-away/reopen because old JavaScript cannot apply its own replacement logic.
+- Verification: the targeted PWA boot-recovery audit and 295-module TypeScript/Vite production build passed. The broader link-contract audit reached the new Android assertion but still reports two separate pre-existing Shop Gallery link-pattern mismatches; do not call that full audit green.
+- Deployment evidence: GitHub Actions run `40579251320` passed as frontend-only; backend/API steps were skipped. Render frontend deploy `dep-dbgglnkot0ks73cpt1h0` is live on the exact commit. Public CDN inspection confirmed the safe reload branch invokes reload only when the busy/file guard is false, `Create Reel from picture` is present, obsolete `turn a still picture into video yet` copy is absent, and the Public Shop chunk contains the visitor `Product coming soon` placeholder contract.
+
+
 ## `gmfn-api` Render compute upgrade after repeated OOMs - 2026-10-27
 
 - Render event and metric evidence confirmed repeated out-of-memory restarts while `gmfn-api` was running on the legacy Starter allocation of 0.5 CPU and 512 MiB RAM. The latest observed OOM was at `2026-10-27T19:30:14Z`. Media processing with FFmpeg/Pillow is a credible burst source, but the available evidence does not prove a conventional memory leak or one exclusive cause.
