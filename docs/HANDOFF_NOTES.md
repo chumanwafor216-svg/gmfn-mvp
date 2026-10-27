@@ -156,16 +156,15 @@ under `docs/` or `docs/archive/`, then link that file here.
   route, permission, payment, payout or advertising behavior changed.
 - Full record: `docs/GSN_GROWTH_PARTNER_MODEL_2026-10-27.md`.
 
-## Local empty-owner Public Shop guidance - 2026-10-27
+## Progressive Public Shop next-space guidance - 2026-10-27
 
-- Owner-approved change implemented locally on the canonical Public Shop Products & Services shelf.
-- When the exact signed-in owner has no public items, the dead-end visitor empty state is replaced with two side-by-side owner-only shop-space cards. The first is `Add your product`; the second is `Add another product`, and both use a large plus.
-- After the first item is saved, the shelf keeps one next empty space visible until the existing six free spaces are filled. The existing six free spaces and four paid extra-space maximum remain unchanged.
-- Owner recognition now accepts either the matching signed-in GSN identity or the authenticated backend `is_owner` result for that exact shop. This covers the observed live symptom when route and stored identity labels differ; the result is shop-ID bound so it cannot leak across shops. The screenshot alone does not prove that identity mismatch was the live root cause, so the deployed phone retest remains authoritative.
-- Each card routes to the existing Shop Control/Shop Assets task with the exact `manage_block`; opening the task creates nothing and makes no business write. The focused task uses truthful Add wording for an empty space instead of the previous misleading Manage-product wording.
-- Visitors and signed-in non-owners still see `No public items yet` and receive no creation controls.
-- Files in this local correction: `frontend/src/pages/ShopGalleryPage.tsx`, `frontend/src/pages/ShopControlPage.tsx`, `frontend/src/pages/ShopAssetsPage.tsx`, `frontend/tools/audit-shop-gallery-button-inventory.mjs`, `frontend/tools/smoke-three-plus-shortcuts.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
-- The previous four-card/four-position acceptance statement is superseded by this two-card progressive rule. Verification passed: scoped ESLint; Public Shop button inventory, workflow-plus and Shop Assets slot audits; the complete protected-button freeze; the 295-module production build; and the 390x844 three-plus phone smoke. The smoke proves two starter cards, one continuing card after an item exists, exact existing add-item routing with no business write, shop-ID-bound backend owner recovery, visitor/non-owner separation, and no horizontal phone overflow. This correction is verified for the active pilot commit/deploy.
+- Owner-approved correction implemented locally on the canonical Public Shop Products & Services shelf. It supersedes the earlier two-starter-card rule.
+- The shelf calculates one next empty shop space within the owner's existing available capacity. The exact owner sees one large circular `+`; a visitor or signed-in non-owner sees that same position as a passive branded `GSN - Shop opening soon` poster.
+- After product 1 occupies space 1, the prompt/poster advances to space 2, then space 3, and continues one position at a time until available capacity is full. The existing six free spaces and four paid extra-space maximum remain unchanged.
+- The owner plus routes to the existing Shop Control/Shop Assets task with the exact `manage_block`; opening the task creates nothing and makes no business write. Owner recognition remains bound to the exact shop through matching signed-in GSN identity or the authenticated backend `is_owner` result.
+- The old `No public items yet` shelf and its unrelated `Ask for Vault access` / copy actions are removed. The ordinary Vault section, Spotlight, payment, permissions, review and product engine are unchanged.
+- Scoped implementation files: `frontend/src/pages/ShopGalleryPage.tsx`, `frontend/tools/audit-shop-gallery-button-inventory.mjs`, `frontend/tools/audit-share-tag-actions.mjs`, `frontend/tools/smoke-three-plus-shortcuts.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Verification passed: scoped ESLint; Public Shop button inventory, workflow-plus, Shop Assets slot, and share/tag audits; the 390x844 three-plus phone smoke; the complete protected-button freeze; and the 295-module production build. The phone smoke proves exactly one owner plus, no visitor creation control, the branded visitor poster in space 1, movement to space 2 after product 1 exists, exact existing add-item routing with no business write, backend owner recovery, and no horizontal phone overflow. Pilot commit/deployment remains to be recorded below.
 
 ## Local detached-announcement compactness correction - 2026-10-27
 

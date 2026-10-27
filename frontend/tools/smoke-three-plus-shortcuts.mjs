@@ -178,7 +178,11 @@ async function installMocks(page, scenario) {
       }));
     }
     if (path === `/marketplace/public/shop/${ownerId}`) {
-      const publicProducts = scenario.emptyShop ? [] : [product];
+      const publicProducts = Array.isArray(scenario.publicProducts)
+        ? scenario.publicProducts
+        : scenario.emptyShop
+        ? []
+        : [product];
       return route.fulfill(json({
         ok: true,
         item: shop,
@@ -227,7 +231,11 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ serving_contract_version: 2, items: [] }));
     }
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
-      const ownerProducts = scenario.emptyShop ? [] : [product];
+      const ownerProducts = Array.isArray(scenario.publicProducts)
+        ? scenario.publicProducts
+        : scenario.emptyShop
+        ? []
+        : [product];
       return route.fulfill(json({ item: shop, shop, products: ownerProducts }));
     }
     if (path.startsWith(`/marketplace/shops/by-gmfn/${ownerId}`)) {
@@ -636,15 +644,15 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
 
   const emptySpaces = page.locator('[data-owner-empty-shop-space]');
   await emptySpaces.first().waitFor({ state: 'visible', timeout: 20_000 });
-  if (await emptySpaces.count() !== 2) {
-    throw new Error(`Empty owner shop exposed ${await emptySpaces.count()} starter spaces, expected 2.`);
+  if (await emptySpaces.count() !== 1) {
+    throw new Error(`Empty owner shop exposed ${await emptySpaces.count()} next spaces, expected 1.`);
   }
   await page.getByRole('link', {
     name: 'Add your product, shop space 1',
     exact: true,
   }).waitFor({ state: 'visible', timeout: 20_000 });
-  if (await page.getByText('No public items yet.', { exact: true }).count()) {
-    throw new Error('Empty owner shop still showed the visitor-only dead-end message.');
+  if (await page.locator('[data-visitor-opening-soon-space]').count()) {
+    throw new Error('Empty owner shop received the visitor-only opening-soon poster.');
   }
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1
@@ -705,14 +713,47 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await visitor.page.getByText('No public items yet.', { exact: true }).waitFor({
+  await visitor.page.locator('[data-visitor-opening-soon-space="1"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await visitor.page.getByText('Shop opening soon', { exact: true }).waitFor({
     state: 'visible',
     timeout: 20_000,
   });
   if (await visitor.page.locator('[data-owner-empty-shop-space]').count()) {
     throw new Error('A non-owner received owner shop-space creation controls.');
   }
+  if (await visitor.page.getByText('No public items yet.', { exact: true }).count()) {
+    throw new Error('Visitor still received the old empty-shop dead end.');
+  }
+  if (await visitor.page.getByRole('button', { name: 'Ask for Vault access', exact: true }).count()) {
+    throw new Error('Visitor opening-soon shelf restored the unrelated Vault empty-state action.');
+  }
   await visitor.context.close();
+
+  const progressingVisitorScenario = {
+    ...visitorScenario,
+    emptyShop: false,
+    publicProducts: [{
+      ...product,
+      public_block_number: 1,
+      description: '[BLOCK:1] Jollof rice with chicken and plantain.',
+    }],
+    mutations: [],
+  };
+  const progressingVisitor = await newPhonePage(browser, progressingVisitorScenario);
+  await progressingVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await progressingVisitor.page
+    .locator('[data-visitor-opening-soon-space="2"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  if (await progressingVisitor.page.locator('[data-visitor-opening-soon-space="1"]').count()) {
+    throw new Error('Visitor opening-soon poster did not advance after shop space 1 was filled.');
+  }
+  await progressingVisitor.context.close();
 
   const backendOwnerScenario = {
     ...scenario,
@@ -727,8 +768,8 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   });
   const backendOwnerSpaces = backendOwner.page.locator('[data-owner-empty-shop-space]');
   await backendOwnerSpaces.first().waitFor({ state: 'visible', timeout: 20_000 });
-  if (await backendOwnerSpaces.count() !== 2) {
-    throw new Error('Backend-confirmed owner did not receive the two empty shop spaces.');
+  if (await backendOwnerSpaces.count() !== 1) {
+    throw new Error('Backend-confirmed owner did not receive the single next empty shop space.');
   }
   await backendOwner.context.close();
 }
@@ -1314,7 +1355,7 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'empty owner Public Shop exposes two progressive shop spaces while visitors retain the public empty state',
+      'Public Shop exposes one progressive next space: owner plus for the exact owner and passive opening-soon poster for visitors',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',

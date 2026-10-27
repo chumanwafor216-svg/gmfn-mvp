@@ -25,10 +25,10 @@ const shopDiaryVisualSmokeSource = readFileSync(
 const findings = [];
 
 const expectedPageSourceActions = {
-  PrimaryButton: 8,
-  SecondaryButton: 12,
+  PrimaryButton: 7,
+  SecondaryButton: 11,
   StableCtaLink: 6,
-  total: 26,
+  total: 24,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -208,8 +208,6 @@ const expectedActionOrder = [
   "shop-gallery.reconnect-owner-shop",
   "shop-gallery.sign-in-reconnect-shop",
   "shop-gallery.open-marketplace-refresh",
-  "shop-gallery.empty-ask-vault-access",
-  "shop-gallery.empty-copy-shop-link",
   "shop-gallery.product.${productOpenId}.toggle",
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
@@ -356,13 +354,13 @@ assertContains(
 );
 
 assertContains(
-  /const OWNER_STARTER_SHOP_SPACES = 2;[\s\S]*?const ownerEmptyProductSlots = useMemo\([\s\S]*?!signedInOwnsShop \|\| focusedBlockLinkActive[\s\S]*?OWNER_STARTER_SHOP_SPACES - visibleProductCount[\s\S]*?availableSlots\.slice\(0, spacesToShow\)/,
-  "Public Shop must expose two progressive starter spaces only to the exact signed-in owner and keep the existing slot capacity authoritative."
+  /const nextEmptyProductSlot = useMemo\([\s\S]*?focusedBlockLinkActive[\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\][\s\S]*?const visitorOpeningSoonSlot =/,
+  "Public Shop must derive one progressive next-empty space from the existing authoritative slot capacity for either owner or visitor presentation."
 );
 
 assertContains(
   /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?Tap to start selling[\s\S]*?This space is empty/,
-  "Each owner starter-space plus must hand the exact empty slot to the existing Shop Control item workflow with clear first and follow-on language."
+  "The owner's single progressive plus must hand the exact next empty slot to the existing Shop Control item workflow with clear first and follow-on language."
 );
 
 assertContains(
@@ -371,8 +369,13 @@ assertContains(
 );
 
 assertContains(
-  /visibleProducts\.length === 0 && !signedInOwnsShop[\s\S]*?No public items yet\.[\s\S]*?ownerEmptyProductSlots\.map/,
-  "The visitor empty state must remain separate from the owner setup path."
+  /visitorOpeningSoonSlot[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?<GSNBrandMark[\s\S]*?Shop opening soon[\s\S]*?The owner is preparing this space\.[\s\S]*?ownerEmptyProductSlots\.map/,
+  "Visitors must receive one passive GSN opening-soon poster in the next empty space while owner creation remains a separate control."
+);
+
+assertNotContains(
+  /No public items yet\.|shop-gallery\.empty-ask-vault-access|shop-gallery\.empty-copy-shop-link/,
+  "Public Shop must not restore the old visitor dead-end card or its unrelated Vault and copy actions."
 );
 
 assertContains(

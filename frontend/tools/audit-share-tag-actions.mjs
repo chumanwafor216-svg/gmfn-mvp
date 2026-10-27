@@ -220,11 +220,6 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /async function copyShopLink\(\)[\s\S]*const shareLink = attributedShopShareLink \|\| absoluteShopShareLink[\s\S]*safeCopy\(buildPublicShopMessage\(shareLink\)\)[\s\S]*trackShopShareAction\("copy_shop_link", shareLink\)[\s\S]*GSN public shop invitation copied\./,
-    "Public Shop Copy action must copy compact public-shop link text, not a full formal paper.",
-  ],
-  [
-    "src/pages/ShopGalleryPage.tsx",
     /showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
     "Shop Diary blocks must reserve the block social share slot for owners only.",
   ],

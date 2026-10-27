@@ -249,7 +249,6 @@ type NoticeTone = "success" | "error";
 const GALLERY_STANDARD_SLOTS_TOTAL = 6;
 const GALLERY_EXTRA_SLOTS_LIMIT = 4;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
-const OWNER_STARTER_SHOP_SPACES = 2;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
@@ -4470,33 +4469,24 @@ export default function ShopGalleryPage() {
           shopFollowState.shopId === positiveNumber(effectiveShop?.id) &&
           shopFollowState.isOwner))
   );
-  const ownerEmptyProductSlots = useMemo(() => {
-    if (!signedInOwnsShop || focusedBlockLinkActive) return [];
-
+  const nextEmptyProductSlot = useMemo(() => {
+    if (focusedBlockLinkActive) return 0;
     const occupiedSlots = new Set(
       products
         .map((product) => positiveNumber(product.slotNumber))
         .filter((slotNumber) => slotNumber > 0)
     );
-    const availableSlots = Array.from(
-      { length: gallerySlotsTotal },
-      (_, index) => index + 1
-    ).filter((slotNumber) => !occupiedSlots.has(slotNumber));
-    const visibleProductCount = Math.min(products.length, gallerySlotsTotal);
-    const spacesToShow =
-      visibleProductCount < OWNER_STARTER_SHOP_SPACES
-        ? OWNER_STARTER_SHOP_SPACES - visibleProductCount
-        : visibleProductCount < gallerySlotsTotal
-        ? 1
-        : 0;
-
-    return availableSlots.slice(0, spacesToShow);
-  }, [
-    focusedBlockLinkActive,
-    gallerySlotsTotal,
-    products,
-    signedInOwnsShop,
-  ]);
+    return (
+      Array.from(
+        { length: gallerySlotsTotal },
+        (_, index) => index + 1
+      ).find((slotNumber) => !occupiedSlots.has(slotNumber)) || 0
+    );
+  }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
+  const ownerEmptyProductSlots =
+    signedInOwnsShop && nextEmptyProductSlot ? [nextEmptyProductSlot] : [];
+  const visitorOpeningSoonSlot =
+    !signedInOwnsShop && nextEmptyProductSlot ? nextEmptyProductSlot : 0;
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
@@ -4782,32 +4772,6 @@ export default function ShopGalleryPage() {
     });
   }
 
-  async function copyShopLink() {
-    if (shopLoadFailed) {
-      setNotice({
-        tone: "error",
-        text: "This public shop link is not active yet. Ask the owner to refresh the shop link from Marketplace before copying it.",
-      });
-      return;
-    }
-
-    if (!absoluteShopShareLink) {
-      setNotice({ tone: "error", text: "Public shop link is not ready yet." });
-      return;
-    }
-
-    const shareLink = attributedShopShareLink || absoluteShopShareLink;
-    const copied = await safeCopy(buildPublicShopMessage(shareLink));
-    if (copied) {
-      trackShopShareAction("copy_shop_link", shareLink);
-    }
-    setNotice({
-      tone: copied ? "success" : "error",
-      text: copied
-        ? "GSN public shop invitation copied."
-        : "Clipboard copy was blocked. Use Share, or copy the page address from your browser.",
-    });
-  }
 
   function buildVaultRequestText() {
     const shopTitle = firstMeaningful(
@@ -7655,50 +7619,6 @@ export default function ShopGalleryPage() {
                 </StableCtaLink>
               </div>
             </div>
-          ) : visibleProducts.length === 0 && !signedInOwnsShop ? (
-            <div style={{ ...innerCard("#F8FBFF") }}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
-                No public items yet.
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Check back later, share this shop, or ask for Vault access.
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
-                  marginTop: 14,
-                }}
-              >
-                <PrimaryButton
-                  onClick={askForVaultAccess}
-                  fullWidth
-                  stableHeight={isCompact ? 52 : 48}
-                  debugId="shop-gallery.empty-ask-vault-access"
-                  style={{
-                    ...primaryBtn(false),
-                    minHeight: isCompact ? 52 : 48,
-                  }}
-                >
-                  Ask for Vault access
-                </PrimaryButton>
-                <SecondaryButton
-                  onClick={copyShopLink}
-                  fullWidth
-                  stableHeight={isCompact ? 52 : 48}
-                  debugId="shop-gallery.empty-copy-shop-link"
-                  style={{
-                    ...secondaryBtn(shopLoadFailed),
-                    minHeight: isCompact ? 52 : 48,
-                  }}
-                >
-                  Copy GSN shop paper
-                </SecondaryButton>
-              </div>
-            </div>
           ) : (
             <div
               className="shop-diaries-grid"
@@ -8211,6 +8131,84 @@ export default function ShopGalleryPage() {
                   </article>
                 );
               })}
+              {visitorOpeningSoonSlot ? (
+                <article
+                  aria-label={
+                    "GSN shop opening soon, shop space " + visitorOpeningSoonSlot
+                  }
+                  data-visitor-opening-soon-space={visitorOpeningSoonSlot}
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    minHeight: isCompact ? 258 : 300,
+                    aspectRatio: isCompact ? "0.72 / 1" : "1.22 / 1",
+                    borderRadius: isCompact ? 18 : 20,
+                    padding: isCompact ? 14 : 18,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: isCompact ? 8 : 10,
+                    textAlign: "center",
+                    color: "#FFFFFF",
+                    background:
+                      "radial-gradient(circle at 50% 18%, rgba(26,93,170,0.96) 0%, #0B326A 48%, #061A38 100%)",
+                    border: "1px solid rgba(221,178,72,0.78)",
+                    boxShadow:
+                      "0 18px 34px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.20)",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: isCompact ? 74 : 86,
+                      height: isCompact ? 82 : 96,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(245,211,119,0.34)",
+                    }}
+                  >
+                    <GSNBrandMark
+                      width={isCompact ? 48 : 56}
+                      height={isCompact ? 64 : 74}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      color: "#F4D57C",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 950,
+                      letterSpacing: "0.16em",
+                    }}
+                  >
+                    GSN
+                  </span>
+                  <strong
+                    style={{
+                      fontSize: isCompact ? 17 : 20,
+                      fontWeight: 950,
+                      lineHeight: 1.12,
+                    }}
+                  >
+                    Shop opening soon
+                  </strong>
+                  <span
+                    style={{
+                      maxWidth: 170,
+                      color: "rgba(237,245,255,0.82)",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 750,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    The owner is preparing this space.
+                  </span>
+                </article>
+              ) : null}
               {ownerEmptyProductSlots.map((slotNumber, index) => {
                 const isFirstShopStep = products.length === 0 && index === 0;
                 const actionLabel = isFirstShopStep
