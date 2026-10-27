@@ -39,6 +39,9 @@ Do not:
 
 ### 2. Re-audit the busy My GSN & I and cover/about surfaces
 
+Owner decision on 2026-10-27: skip this item. Do not perform this review as
+part of the current queue. Continue from completed item 1 directly to item 3.
+
 The owner's description may refer to both the My GSN & I authenticated page
 and the cover-page About GSN & I material. Confirm the exact routes and phone
 screens from code and current screenshots before editing.

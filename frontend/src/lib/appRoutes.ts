@@ -61,6 +61,10 @@ export const APP_ROUTES = {
   LOGIN: "/login",
 } as const;
 
+// Shop is the owner-approved authenticated starting surface. Explicit deep-link,
+// recovery, invite, and task return targets still take precedence over this default.
+export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES.SHOP_ME;
+
 export type AppRouteKey = keyof typeof APP_ROUTES;
 
 export type AppRouteContext = {

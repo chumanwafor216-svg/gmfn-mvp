@@ -156,8 +156,8 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /const inviteTarget = joinRedirectFromLoginSearch\(searchParams\);[\s\S]*if \(inviteTarget\) return inviteTarget;[\s\S]*return "\/app\/dashboard";/,
-  "Login must prefer invite-aware continuation before falling back to dashboard."
+  /const inviteTarget = joinRedirectFromLoginSearch\(searchParams\);[\s\S]*if \(inviteTarget\) return inviteTarget;[\s\S]*return DEFAULT_AUTHENTICATED_ROUTE;/,
+  "Login must prefer invite-aware continuation before falling back to the authenticated Shop home."
 );
 
 assertContains(

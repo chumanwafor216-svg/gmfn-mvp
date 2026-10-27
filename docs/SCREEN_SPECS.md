@@ -178,7 +178,14 @@ Rules:
 ## DashboardPage
 
 Purpose:
-Personal landing page across trust, attention, commitments, events, and next actions.
+Personal summary page across trust, attention, commitments, events, and next actions.
+
+Authenticated-entry rule:
+- Shop Control is the default authenticated starting surface.
+- The five-anchor mobile primary navigation remains visible on Shop Control.
+- Dashboard remains directly available from the primary phone navigation.
+- Explicit deep links, task returns, publish recovery, invite continuation, and
+  session-expiry return targets must not be overwritten by the Shop default.
 
 Must show:
 - Identity Passport hero
@@ -1191,6 +1198,15 @@ Must show:
   `Refresh inbox` when nothing is waiting
 - the existing request identity, purpose guide, aggregate response reading,
   private-note field, TrustSlip route, and full response-choice inventory
+- one active request card at a time, with a compact `Request x of y`
+  navigator when more than one request is waiting
+- all nine response choices visible on the active request, grouped as
+  `What you can confirm`, `Where caution is needed`, and
+  `What you cannot support`
+- selection without submission, followed by one explicit
+  `Record: <selected answer>` action
+- compact request facts before the choice task, with fuller purpose/evidence
+  context and the optional private note in separate closed disclosures
 - refresh and protected copy-summary controls inside a closed
   `Inbox tools` disclosure
 - reviewer queue, assignment, evidence, SLA-marker, and resolution controls
@@ -1205,6 +1221,9 @@ Rules:
   ordinary queue count must not.
 - The first action may reveal and scroll to an existing request. It must not
   answer, approve, certify, resolve, or otherwise mutate a request.
+- Previous/Next request navigation and response selection must not submit or
+  mutate a response. Only the explicit record action may call the existing
+  response contract.
 - Every response remains the signed-in responder's personal evidence, not a
   whole-community vote, parent-community certification, identity guarantee,
   payment confirmation, credit approval, or release authority.
@@ -1214,7 +1233,8 @@ Rules:
   response, reviewer-assignment, evidence, resolution, and policy contracts.
   Backend permission checks remain authoritative.
 - Keep all existing response choices visible once a request is deliberately
-  reviewed. Do not hide caution or objection behind a positive action.
+  reviewed. Do not hide caution or objection behind a positive action or a
+  collapsed category.
 - Do not restore the exposed explanation panel, reviewer controls, relay
   settings, or copy tools above the request task.
 

@@ -628,6 +628,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
 function shouldKeepBottomRailInTaskMode(pathname: string): boolean {
   return (
+    pathname === "/app/shop-control" ||
     pathname === "/app/loans" ||
     pathname === "/app/loan-readiness" ||
     pathname === "/app/loan-suggestions" ||
@@ -2143,7 +2144,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
     const items: NavLinkItem[] = [
-      makeDashboardItem(),
+      {
+        ...makeShopControlItem(),
+        label: "Shop",
+      },
       {
         label: "Community Home",
         to: "/app/community",
@@ -2152,15 +2156,12 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
           pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
-      {
-        ...makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
-        label: "Shop",
-      },
+      makeDashboardItem(),
       makeProfileItem(),
     ];
 
-    return items.filter((item) => !item.disabled || item.label === "Shop");
-  }, [myShopGalleryDisabled, myShopGalleryTo]);
+    return items;
+  }, []);
 
   const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {
     if (taskMode) {

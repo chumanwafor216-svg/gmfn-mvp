@@ -91,12 +91,15 @@ physical phone experience is perfect. The product owner has judged Community
 Home, Dashboard, and Shop Control close enough for now, roughly usable enough to
 shield while the team turns to the next unstable page family.
 
-As of 2026-07-09, the authenticated mobile bottom rail is intentionally a
-five-anchor rail: Dashboard, Community Home, Marketplace, Shop, and Profile.
-Finance, Loans, Trust, Admin, Shop Control, Identity, and related detail tools
-remain reachable through the drawer and route-local task/action surfaces. Do not
-restore the old seven-plus-domain bottom rail unless the product owner
-explicitly reopens the Present-style mobile benchmark decision.
+As of the owner-approved 2026-10-27 navigation update, the authenticated mobile
+bottom rail remains a five-anchor rail in this order: Shop, Community Home,
+Marketplace, Dashboard, and Profile. Shop now opens Shop Control, the
+authenticated owner operating hub; Public Shop remains a separate
+customer-facing storefront. Finance, Loans, Trust, Admin, Identity, and related
+detail tools remain reachable through the drawer and route-local task/action
+surfaces. Do not restore Dashboard-first order, point the primary Shop tab back
+to Public Shop, or restore the old seven-plus-domain bottom rail unless the
+product owner explicitly reopens this decision.
 
 That five-anchor rail is also intentionally fixed-slot and tap-only. It must not
 restore horizontal rail scrolling, scroll snap, or active-item auto-centering,

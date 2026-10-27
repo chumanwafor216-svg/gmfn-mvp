@@ -74,6 +74,14 @@ Examples:
 - `mobile/path/to/reference/behavior`
 
 Current explicit frozen paths:
+- `frontend/src/layout/AppLayout.tsx` authenticated mobile primary navigation
+  is owner-approved as `Shop -> Community Home -> Marketplace -> Dashboard ->
+  Profile` as of 2026-10-27. `Shop` opens Shop Control, while Public Shop
+  remains a separate customer-facing surface. The five-anchor rail remains
+  visible on the Shop Control home even while its internal work stays focused.
+  Do not restore Dashboard-first ordering, hide the primary rail on the Shop
+  home, or point the primary Shop tab back to Public Shop without an intentional
+  navigation review and matching audit updates.
 - `frontend/src/pages/CommitmentsPage.tsx` phone two-lane/focused-Shared presentation is reviewed as of 2026-10-15 and caged by `frontend/tools/audit-commitments-surface.mjs`, `frontend/tools/audit-action-surface-contracts.mjs`, and the mobile visual sweep; do not restore the duplicate phone heading, simultaneous lane chooser/workspace stack, raw action controls, or multi-column phone forms without intentional review.
 - `frontend/src/pages/DashboardPage.tsx` dashboard Market Wisdom presentation and interaction model only; other dashboard edits still require normal impact review.
 - `frontend/src/pages/DashboardPage.tsx` Dashboard button-route and mobile action geometry contracts are caged by `frontend/tools/audit-dashboard-button-inventory.mjs`; do not change Dashboard button targets, action counts, Focus Commitments routing, mobile shell controls, or action geometry without an intentional Dashboard stability audit update.

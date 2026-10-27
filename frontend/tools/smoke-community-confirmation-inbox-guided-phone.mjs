@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const recordedResponses = [];
 
 function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
@@ -146,6 +147,17 @@ async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}
       }));
     }
 
+    if (
+      route.request().method() === "POST" &&
+      /^\/community-confirmations\/\d+\/respond$/.test(path)
+    ) {
+      recordedResponses.push({
+        path,
+        body: JSON.parse(route.request().postData() || "{}"),
+      });
+      return route.fulfill(json({ status: "recorded" }));
+    }
+
     if (url.pathname.startsWith("/api/") || url.origin === "http://127.0.0.1:8012") {
       return route.fulfill(json({ items: [], results: [], status: "ok" }));
     }
@@ -217,16 +229,49 @@ async function run() {
       return rect.top >= 0 && rect.top < window.innerHeight;
     });
     assert(
-      await page.getByRole("button", { name: "Record: Known here", exact: true }).count() === 2,
-      "Both populated request cards must retain the Known here action."
+      await page.locator("#community-confirmation-request-101").count() === 1 &&
+        await page.locator("#community-confirmation-request-102").count() === 0,
+      "A populated inbox must show only one request decision card at a time."
     );
     assert(
-      await page.getByRole("button", { name: "Record caution", exact: true }).count() === 6,
-      "Both populated request cards must retain all three caution choices."
+      await page.getByText("Request 1 of 2", { exact: true }).count() === 1,
+      "A multi-request inbox must show the active request position."
     );
     assert(
-      await page.getByRole("button", { name: "Record objection", exact: true }).count() === 6,
-      "Both populated request cards must retain all three objection choices."
+      await page.getByRole("radio").count() === 9,
+      "The active request must keep all nine response choices visible."
+    );
+    assert(
+      await page.getByText("What you can confirm", { exact: true }).count() === 1 &&
+        await page.getByText("Where caution is needed", { exact: true }).count() === 1 &&
+        await page.getByText("What you cannot support", { exact: true }).count() === 1,
+      "Positive, caution, and objection choices must remain equally discoverable."
+    );
+    assert(
+      !(await detailsIsOpen(page.locator('[data-gsn-community-confirmation-request-evidence="true"]'))) &&
+        !(await detailsIsOpen(page.locator('[data-gsn-community-confirmation-private-note="true"]'))),
+      "Evidence detail and optional private context must start closed."
+    );
+    assert(
+      await page.getByRole("button", { name: "Choose one answer", exact: true }).isDisabled(),
+      "The record action must stay disabled until one answer is selected."
+    );
+
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.locator("#community-confirmation-request-102").waitFor();
+    assert(recordedResponses.length === 0, "Moving to the next request must not submit a response.");
+    await page.getByRole("button", { name: "Previous", exact: true }).click();
+    await page.locator("#community-confirmation-request-101").waitFor();
+    await page.getByRole("radio", { name: /Known here/ }).check();
+    assert(recordedResponses.length === 0, "Selecting an answer must not submit it.");
+    await page.getByRole("button", { name: "Record: Known here", exact: true }).click();
+    await page.locator("#community-confirmation-request-102").waitFor();
+    assert(
+      recordedResponses.length === 1 &&
+        recordedResponses[0].path === "/community-confirmations/101/respond" &&
+        recordedResponses[0].body.response_type === "known_here" &&
+        recordedResponses[0].body.response_reason === "direct_community_knowledge",
+      "Only the explicit record action may submit the selected backend response contract."
     );
     const hasHorizontalOverflow = await summary.evaluate(() =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
@@ -262,6 +307,11 @@ async function run() {
       "Focused notification must show only its requested response card."
     );
     assert(
+      await focusedPage.getByRole("radio").count() === 9 &&
+        await focusedPage.locator('[data-gsn-community-confirmation-request-navigator="true"]').count() === 0,
+      "A focused notification must retain every response choice without unrelated queue navigation."
+    );
+    assert(
       await focusedPage.locator('[data-gsn-community-confirmation-review-cases="true"]').count() === 0 &&
         await focusedPage.locator('[data-gsn-community-confirmation-relay-settings="true"]').count() === 0,
       "Focused notification must hide unrelated reviewer and relay sections."
@@ -286,7 +336,7 @@ async function run() {
     );
 
     console.log(
-      "Community Confirmation Inbox guided phone smoke passed: populated first action, complete response inventory, closed secondary work, empty refresh, focused request, focused review case, and 390x844 overflow."
+      "Community Confirmation Inbox guided phone smoke passed: one-request navigation, selection-before-record safety, complete grouped response inventory, closed detail work, empty refresh, focused request, focused review case, and 390x844 overflow."
     );
   } finally {
     await browser?.close();

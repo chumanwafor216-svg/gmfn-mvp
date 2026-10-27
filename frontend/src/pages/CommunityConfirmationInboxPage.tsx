@@ -148,6 +148,12 @@ type ResponseOption = {
   tone: "positive" | "caution" | "negative";
 };
 
+type ResponseGroup = {
+  tone: ResponseOption["tone"];
+  title: string;
+  guidance: string;
+};
+
 const RESPONSE_OPTIONS: ResponseOption[] = [
   {
     type: "known_here",
@@ -211,6 +217,24 @@ const RESPONSE_OPTIONS: ResponseOption[] = [
     meaning: "Use this when you cannot honestly confirm this person.",
     reasonTag: "not_known_sufficiently",
     tone: "negative",
+  },
+];
+
+const RESPONSE_GROUPS: ResponseGroup[] = [
+  {
+    tone: "positive",
+    title: "What you can confirm",
+    guidance: "Choose only what your direct community knowledge supports.",
+  },
+  {
+    tone: "caution",
+    title: "Where caution is needed",
+    guidance: "Use these when more evidence or a smaller risk would be safer.",
+  },
+  {
+    tone: "negative",
+    title: "What you cannot support",
+    guidance: "Use these when activity, knowledge, or a real concern prevents support.",
   },
 ];
 
@@ -551,12 +575,6 @@ function responseCategoryLabel(tone: ResponseOption["tone"]): string {
   return "Cannot support";
 }
 
-function responseActionLabel(option: ResponseOption): string {
-  if (option.tone === "positive") return `Record: ${option.label}`;
-  if (option.tone === "caution") return "Record caution";
-  return "Record objection";
-}
-
 const CONFIRMATION_REASON_LABELS: Record<string, string> = {
   community_standing_check: "Community standing check",
   referral_check: "Referral check",
@@ -734,6 +752,8 @@ function CommunityConfirmationInboxPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busyKey, setBusyKey] = useState("");
   const [responseNotes, setResponseNotes] = useState<Record<number, string>>({});
+  const [selectedResponseTypes, setSelectedResponseTypes] = useState<Record<number, string>>({});
+  const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewEvidence, setReviewEvidence] = useState<Record<number, ReviewEvidenceRow[]>>({});
   const [evidenceDrafts, setEvidenceDrafts] = useState<Record<number, EvidenceDraft>>({});
@@ -764,7 +784,14 @@ function CommunityConfirmationInboxPage() {
   const focusedRequestMissing = Boolean(
     focusedRequestId && !loading && focusedRows.length === 0
   );
-  const firstVisibleRequestId = focusedRows[0]?.id || null;
+  const activeRequestIndex = Math.max(
+    0,
+    focusedRows.findIndex((row) => row.id === activeRequestId)
+  );
+  const activeRequest = focusedRows[activeRequestIndex] || null;
+  const activeRequestRows = activeRequest ? [activeRequest] : [];
+  const firstVisibleRequestId = activeRequest?.id || null;
+  const activeRequestPosition = activeRequest ? activeRequestIndex + 1 : 0;
   const visibleReviewCases = useMemo(() => {
     if (!focusedReviewCaseId) return reviewCases;
     return reviewCases.filter((row) => row.reviewCaseId === focusedReviewCaseId);
@@ -1203,6 +1230,20 @@ function CommunityConfirmationInboxPage() {
   }, [location.search]);
 
   useEffect(() => {
+    if (focusedRows.length === 0) {
+      setActiveRequestId(null);
+      return;
+    }
+    if (focusedRequestId) {
+      setActiveRequestId(focusedRows[0]?.id || null);
+      return;
+    }
+    if (!focusedRows.some((row) => row.id === activeRequestId)) {
+      setActiveRequestId(focusedRows[0].id);
+    }
+  }, [activeRequestId, focusedRequestId, focusedRows]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const targetId = focusedRequestId
       ? `community-confirmation-request-${focusedRequestId}`
@@ -1262,6 +1303,11 @@ function CommunityConfirmationInboxPage() {
       });
       setRows((prev) => prev.filter((item) => item.id !== row.id));
       setResponseNotes((prev) => {
+        const next = { ...prev };
+        delete next[row.id];
+        return next;
+      });
+      setSelectedResponseTypes((prev) => {
         const next = { ...prev };
         delete next[row.id];
         return next;
@@ -2678,7 +2724,53 @@ function CommunityConfirmationInboxPage() {
             </p>
           </div>
         ) : (
-          focusedRows.map((row) => {
+          <>
+            {!isRequestFocusMode && focusedRows.length > 1 ? (
+              <div
+                data-gsn-community-confirmation-request-navigator="true"
+                style={{
+                  ...innerCard("#F8FBFF"),
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                    Request {activeRequestPosition} of {focusedRows.length}
+                  </div>
+                  <p style={{ margin: "5px 0 0", ...helperText(), fontSize: 13 }}>
+                    GSN shows one person and one decision at a time. Moving between requests does not record an answer.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setActiveRequestId(focusedRows[activeRequestIndex - 1]?.id || null)}
+                    disabled={activeRequestIndex <= 0 || Boolean(busyKey)}
+                    stableHeight={isCompact ? 48 : 44}
+                    fullWidth={isCompact}
+                    minWidth={110}
+                    debugId="community-confirmation-inbox.requests.previous"
+                  >
+                    {labelWithIcon("chevronUp", "Previous")}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setActiveRequestId(focusedRows[activeRequestIndex + 1]?.id || null)}
+                    disabled={activeRequestIndex >= focusedRows.length - 1 || Boolean(busyKey)}
+                    stableHeight={isCompact ? 48 : 44}
+                    fullWidth={isCompact}
+                    minWidth={110}
+                    debugId="community-confirmation-inbox.requests.next"
+                  >
+                    {labelWithIcon("chevronDown", "Next")}
+                  </SecondaryButton>
+                </div>
+              </div>
+            ) : null}
+            {activeRequestRows.map((row) => {
             const counts = row.currentResponseCounts || {};
             const positiveCount = Number(counts.positive_count || 0);
             const cautionCount = Number(counts.caution_count || 0);
@@ -2773,19 +2865,62 @@ function CommunityConfirmationInboxPage() {
                         </div>
                       </div>
                     </div>
-                    <p style={{ margin: "12px 0 0", ...helperText() }}>
-                      Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Answer only if you genuinely know this member."}
-                      {" "}Your answer records what you personally know; it is not parent community certification or a whole-community vote.
+                    <p style={{ margin: "12px 0 0", ...helperText(), color: "#07172C", fontWeight: 850 }}>
+                      Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. Choose one answer from what you personally know.
                     </p>
                     <div
-                      data-gsn-confirmation-purpose-guide="responder"
+                      data-gsn-community-confirmation-request-facts="true"
                       style={{
                         marginTop: 12,
-                        ...innerCard("#F8FBFF"),
                         display: "grid",
-                        gap: 9,
+                        gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+                        gap: 8,
                       }}
                     >
+                      {[
+                        ["Purpose", reasonLabel(row.reasonType)],
+                        ["Window", requestWindowLabel(row)],
+                        ["Current answers", `${currentResponseTotal}`],
+                      ].map(([label, value]) => (
+                        <div key={label} style={innerCard("#F8FBFF")}>
+                          <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
+                          <div style={{ marginTop: 4, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <details
+                      data-gsn-community-confirmation-request-evidence="true"
+                      style={{ marginTop: 12, ...innerCard("#F8FBFF") }}
+                    >
+                      <StableDisclosureSummary
+                        debugId={`community-confirmation-inbox.${row.id}.evidence-toggle`}
+                        stableHeight={48}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                          gap: 10,
+                          alignItems: "center",
+                          color: "#07172C",
+                          fontWeight: 1000,
+                        }}
+                      >
+                        <span>{sectionLabelWithIcon("document", "Why GSN is asking")}</span>
+                        <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 20 }}>+</span>
+                      </StableDisclosureSummary>
+                      <p style={{ margin: "10px 0 0", ...helperText() }}>
+                        {row.readerNote || "Answer only if you genuinely know this member."} Your answer is personal evidence, not parent community certification or a whole-community vote.
+                      </p>
+                      <div
+                        data-gsn-confirmation-purpose-guide="responder"
+                        style={{
+                          marginTop: 12,
+                          ...innerCard("#FFFFFF"),
+                          display: "grid",
+                          gap: 9,
+                        }}
+                      >
                       <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 15 }}>
                         {purposeGuide.title}
                       </div>
@@ -2834,10 +2969,29 @@ function CommunityConfirmationInboxPage() {
                       trustSlipStatusLabel="This response is evidence for judgement, not parent community certification, payment approval, credit approval, or release authority"
                       style={{ marginTop: 12 }}
                     />
-                    <div style={{ marginTop: 12, ...innerCard("#F8FBFF") }}>
+                    </details>
+                    <details
+                      data-gsn-community-confirmation-private-note="true"
+                      style={{ marginTop: 12, ...innerCard("#F8FBFF") }}
+                    >
+                      <StableDisclosureSummary
+                        debugId={`community-confirmation-inbox.${row.id}.private-note-toggle`}
+                        stableHeight={48}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                          gap: 10,
+                          alignItems: "center",
+                          color: "#07172C",
+                          fontWeight: 1000,
+                        }}
+                      >
+                        <span>{sectionLabelWithIcon("document", "Add private context (optional)")}</span>
+                        <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 20 }}>+</span>
+                      </StableDisclosureSummary>
                       <label
                         htmlFor={`community-confirmation-note-${row.id}`}
-                        style={{ color: "#07172C", fontWeight: 1000, display: "block" }}
+                        style={{ marginTop: 10, color: "#07172C", fontWeight: 1000, display: "block" }}
                       >
                         Private context for GSN review
                       </label>
@@ -2874,7 +3028,7 @@ function CommunityConfirmationInboxPage() {
                       <div style={{ marginTop: 6, color: "#617085", fontSize: 12, fontWeight: 800 }}>
                         {(responseNotes[row.id] || "").length}/500 characters
                       </div>
-                    </div>
+                    </details>
                   </div>
                   <SecondaryButton
                     type="button"
@@ -2889,78 +3043,122 @@ function CommunityConfirmationInboxPage() {
                 </div>
 
                 <div
+                  data-gsn-community-confirmation-response-groups="true"
                   style={{
                     marginTop: 14,
                     display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
                     gap: 10,
+                    alignItems: "start",
                   }}
                 >
-                  {RESPONSE_OPTIONS.map((option) => {
-                    const key = `${row.id}-${option.type}`;
-                    const positive = option.tone === "positive";
-                    return (
-                      <div
-                        key={option.type}
-                        style={{
-                          ...innerCard(
-                            positive
-                              ? "#F4FBF7"
-                              : option.tone === "caution"
-                                ? "#FFFBEB"
-                                : "#FEF2F2"
-                          ),
-                          display: "grid",
-                          gap: 8,
-                          alignContent: "space-between",
-                          minHeight: isCompact ? 0 : 174,
-                        }}
-                      >
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span style={pillStyle(option.tone)}>
-                            {responseCategoryLabel(option.tone)}
-                          </span>
-                        </div>
-                        <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 16 }}>
-                          {option.label}
-                        </div>
-                        <p style={{ margin: 0, ...helperText(), fontSize: 13 }}>
-                          {option.meaning}
-                        </p>
-                        {positive ? (
-                          <PrimaryButton
-                            type="button"
-                            onClick={() => void answer(row, option)}
-                            disabled={Boolean(busyKey)}
-                            busy={busyKey === key}
-                            busyLabel="Recording..."
-                            fullWidth
-                            stableHeight={isCompact ? 52 : 46}
-                            debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
-                          >
-                            {labelWithIcon("check", responseActionLabel(option))}
-                          </PrimaryButton>
-                        ) : (
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => void answer(row, option)}
-                            disabled={Boolean(busyKey)}
-                            busy={busyKey === key}
-                            busyLabel="Recording..."
-                            fullWidth
-                            stableHeight={isCompact ? 52 : 46}
-                            debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
-                          >
-                            {labelWithIcon(option.tone === "caution" ? "alert" : "shield", responseActionLabel(option))}
-                          </SecondaryButton>
-                        )}
+                  {RESPONSE_GROUPS.map((group) => (
+                    <section
+                      key={group.tone}
+                      style={innerCard(
+                        group.tone === "positive"
+                          ? "#F4FBF7"
+                          : group.tone === "caution"
+                            ? "#FFFBEB"
+                            : "#FEF2F2"
+                      )}
+                    >
+                      <span style={pillStyle(group.tone)}>{responseCategoryLabel(group.tone)}</span>
+                      <h3 style={{ margin: "10px 0 0", color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
+                        {group.title}
+                      </h3>
+                      <p style={{ margin: "5px 0 0", ...helperText(), fontSize: 12 }}>
+                        {group.guidance}
+                      </p>
+                      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                        {RESPONSE_OPTIONS.filter((option) => option.tone === group.tone).map((option) => {
+                          const selected = selectedResponseTypes[row.id] === option.type;
+                          return (
+                            <label
+                              key={option.type}
+                              style={{
+                                ...innerCard(selected ? "#FFFFFF" : "rgba(255,255,255,0.62)"),
+                                display: "grid",
+                                gridTemplateColumns: "22px minmax(0, 1fr)",
+                                gap: 9,
+                                alignItems: "start",
+                                border: selected
+                                  ? "2px solid rgba(11,99,209,0.78)"
+                                  : "1px solid rgba(37,78,119,0.14)",
+                                cursor: busyKey ? "default" : "pointer",
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name={`community-confirmation-response-${row.id}`}
+                                value={option.type}
+                                checked={selected}
+                                disabled={Boolean(busyKey)}
+                                onChange={() =>
+                                  setSelectedResponseTypes((prev) => ({
+                                    ...prev,
+                                    [row.id]: option.type,
+                                  }))
+                                }
+                                style={{ width: 18, height: 18, margin: "2px 0 0", accentColor: "#0B63D1" }}
+                              />
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", color: "#07172C", fontWeight: 1000, fontSize: 14 }}>
+                                  {option.label}
+                                </span>
+                                <span style={{ display: "block", marginTop: 3, ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                                  {option.meaning}
+                                </span>
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </section>
+                  ))}
                 </div>
+
+                {(() => {
+                  const selectedOption = RESPONSE_OPTIONS.find(
+                    (option) => option.type === selectedResponseTypes[row.id]
+                  );
+                  const selectedKey = selectedOption ? `${row.id}-${selectedOption.type}` : "";
+                  return (
+                    <div
+                      data-gsn-community-confirmation-record-answer="true"
+                      style={{ marginTop: 12, ...innerCard("#F8FBFF") }}
+                    >
+                      <p style={{ margin: "0 0 10px", ...helperText(), color: "#07172C", fontWeight: 850 }}>
+                        {selectedOption
+                          ? `Selected: ${selectedOption.label}. Check that this is what you personally know before recording it.`
+                          : "Choose one answer above. Nothing is recorded until you use the button below."}
+                      </p>
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => selectedOption && void answer(row, selectedOption)}
+                        disabled={!selectedOption || Boolean(busyKey)}
+                        busy={Boolean(selectedOption && busyKey === selectedKey)}
+                        busyLabel="Recording..."
+                        fullWidth
+                        stableHeight={isCompact ? 52 : 48}
+                        debugId={`community-confirmation-inbox.${row.id}.record-selected-response`}
+                      >
+                        {labelWithIcon(
+                          selectedOption?.tone === "caution"
+                            ? "alert"
+                            : selectedOption?.tone === "negative"
+                              ? "shield"
+                              : "check",
+                          selectedOption ? `Record: ${selectedOption.label}` : "Choose one answer"
+                        )}
+                      </PrimaryButton>
+                    </div>
+                  );
+                })()}
               </article>
             );
-          })
+            })}
+          </>
         )}
       </section>
     </div>

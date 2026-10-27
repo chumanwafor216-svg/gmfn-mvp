@@ -343,6 +343,86 @@ async function measureProfileBottomNavSettled(browser, baseURL) {
   };
 }
 
+async function measureShopDefaultAndPrimaryNav(browser, baseURL) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await installApiMocks(page, "shop-default");
+
+  await page.addInitScript(() => {
+    localStorage.setItem("access_token", "app-tab-first-paint-token");
+    localStorage.setItem("gmfn_selected_clan_id", "8");
+  });
+
+  await page.goto(baseURL + "/app", {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+  await page.waitForFunction(
+    () => window.location.pathname === "/app/shop-control",
+    undefined,
+    { timeout: MAX_FIRST_SURFACE_MS }
+  );
+  await page.waitForSelector('[data-gmfn-bottom-nav="true"]', {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+  await page.waitForSelector(
+    '[data-cta-id="app-layout.bottom-nav.shop"][data-bottom-nav-active="true"]',
+    { timeout: MAX_FIRST_SURFACE_MS }
+  );
+
+  const result = await page.evaluate(() => {
+    const items = Array.from(
+      document.querySelectorAll('[data-gmfn-bottom-nav-item="true"]')
+    );
+    return {
+      pathname: window.location.pathname,
+      labels: items.map((item) => (item.textContent || "").trim()),
+      pathnames: items.map((item) => {
+        const href = item.getAttribute("href") || "";
+        return href ? new URL(href, window.location.origin).pathname : "";
+      }),
+      activeIds: items
+        .filter((item) => item.getAttribute("data-bottom-nav-active") === "true")
+        .map((item) => item.getAttribute("data-cta-id") || ""),
+      noHorizontalOverflow:
+        document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+
+  await context.close();
+
+  const expectedLabels = [
+    "Shop",
+    "Community Home",
+    "Marketplace",
+    "Dashboard",
+    "Profile",
+  ];
+  const expectedPathnames = [
+    "/app/shop-control",
+    "/app/community",
+    "/app/marketplace",
+    "/app/dashboard",
+    "/app/my-gmfn-and-i",
+  ];
+
+  return {
+    name: "Shop-first authenticated default and primary navigation",
+    passed:
+      result.pathname === "/app/shop-control" &&
+      JSON.stringify(result.labels) === JSON.stringify(expectedLabels) &&
+      JSON.stringify(result.pathnames) === JSON.stringify(expectedPathnames) &&
+      result.activeIds.length === 1 &&
+      result.activeIds[0] === "app-layout.bottom-nav.shop" &&
+      result.noHorizontalOverflow,
+    result,
+  };
+}
+
 async function measureMyGsnMemberHomeSettled(browser, baseURL) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -835,6 +915,7 @@ async function run() {
     }
 
     const settledResults = [
+      await measureShopDefaultAndPrimaryNav(browser, baseURL),
       await measureProfileBottomNavSettled(browser, baseURL),
       await measureMyGsnMemberHomeSettled(browser, baseURL),
     ];

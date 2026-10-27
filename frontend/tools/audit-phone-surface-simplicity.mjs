@@ -130,6 +130,11 @@ assertContains(
   /data-gsn-community-confirmation-tools="true"[\s\S]*?data-gsn-community-confirmation-review-cases="true"[\s\S]*?data-gsn-community-confirmation-relay-settings="true"[\s\S]*?data-gsn-community-confirmation-requests="true"/,
   "Community Confirmation Inbox must keep tools, reviewer work, and relay settings closed before the request task."
 );
+assertContains(
+  "communityConfirmationInbox",
+  /data-gsn-community-confirmation-request-navigator="true"[\s\S]*?one person and one decision at a time[\s\S]*?data-gsn-community-confirmation-request-evidence="true"[\s\S]*?data-gsn-community-confirmation-private-note="true"[\s\S]*?data-gsn-community-confirmation-response-groups="true"/,
+  "Community Confirmation Inbox must show one request at a time, with evidence and optional private context collapsed before the grouped decision choices."
+);
 
 if (findings.length > 0) {
   console.error("Phone surface simplicity audit failed:");

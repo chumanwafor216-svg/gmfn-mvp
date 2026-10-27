@@ -351,12 +351,12 @@ assertContains(
 assertContains(
   "frontend/src/layout/AppLayout.tsx",
   appLayout,
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?\.\.\.makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)/,
-  "Ordinary mobile bottom navigation must remain focused on Dashboard, Community Home, Marketplace, Shop, and Profile."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopControlItem\(\)[\s\S]*?label: "Shop"[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeProfileItem\(\)/,
+  "Ordinary mobile bottom navigation must remain focused on Shop, Community Home, Marketplace, Dashboard, and Profile in that order."
 );
 
 const mobileBottomBlock =
-  appLayout.match(/const mobileBottomItems[\s\S]*?\}, \[myShopGalleryDisabled, myShopGalleryTo\]\);/)?.[0] || "";
+  appLayout.match(/const mobileBottomItems[\s\S]*?\}, \[\]\);/)?.[0] || "";
 assertNotContains(
   "frontend/src/layout/AppLayout.tsx",
   mobileBottomBlock,

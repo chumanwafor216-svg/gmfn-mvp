@@ -11,6 +11,13 @@ information-architecture work, and major navigation decisions.
 
 2026-10-08 Community Home CLOSED/FROZEN supersession: Community Home is no longer treated as the dominant all-communities portfolio. Current runtime ownership is `Community Home = me inside one selected community`; `My GSN = me across GSN`. Community Home must lead with selected community identity/reference/role/status, then Bulletin, real selected-community attention, compact handoffs, compact switching, and collapsed authorised admin entry. It must not fetch cumulative finance, fetch/render live Spotlight, or expose shop/Spotlight/Vault/merchant specialist controls that belong in Shop Control.
 
+2026-10-27 owner navigation direction: Shop Control is the authenticated
+starting surface and the first ordinary mobile navigation destination. The
+ordinary phone order is `Shop -> Community Home -> Marketplace -> Dashboard ->
+Profile`. This promotes the owner shop operating hub, not the public customer
+storefront. Explicit deep links, invite/task returns, publish recovery, and
+session-expiry return paths still take precedence over the default.
+
 If this document conflicts with earlier provisional architecture docs, this
 document wins until those docs are revised.
 

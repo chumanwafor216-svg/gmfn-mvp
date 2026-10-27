@@ -10,9 +10,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Next-session product queue - 2026-10-27
 
-- The owner asked to resume from the Community Confirmation Inbox milestone,
-  then review the remaining busy My GSN & I / cover-related surfaces, connect
-  commerce intelligence to Market Wisdom, compact the Dashboard Photo Frame
+- The owner resumed and completed the Community Confirmation Inbox milestone
+  below, then explicitly chose to skip the My GSN & I / cover-related review.
+  The next queue item is to connect commerce intelligence to Market Wisdom,
+  followed by compacting the Dashboard Photo Frame
   affordance, audit account suspension/closure/removal capability, design
   respectful inactivity reminders from GSN to the user, and use a planned
   12-minute Spotlight recording to measure short dwell times and unequal
@@ -23,9 +24,78 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Exact scope, decision questions, safety boundaries, and acceptance checks are
   recorded in
   [`NEXT_SESSION_PLAN_2026-10-27.md`](NEXT_SESSION_PLAN_2026-10-27.md).
-- This is a planning record only. No runtime code, backend contract, push, or
-  deployment was performed. Continue locally and deploy only when the owner
-  explicitly says `deploy`.
+- The linked queue file remains a planning record. Completed runtime work is
+  recorded in the milestone sections below. Continue locally and deploy only
+  when the owner explicitly says `deploy`.
+
+## Community Confirmation one-request decision flow - 2026-10-27
+
+- Completed the owner's next queue item on authenticated
+  `/app/community-confirmations`. An ordinary inbox now renders one active
+  request card at a time, with a compact `Request x of y` navigator. Previous
+  and Next only change the visible request and never record a response.
+- Preserved all nine response meanings and made the positive, caution, and
+  objection choices equally visible under `What you can confirm`, `Where
+  caution is needed`, and `What you cannot support`. Selecting a radio choice
+  performs no mutation; only the separate `Record: <selected answer>` action
+  calls the existing response endpoint.
+- Kept the member identity, community, purpose, request window, aggregate
+  count, TrustSlip route, optional private note, and full evidence context.
+  Longer evidence and the private note now start in separate closed
+  disclosures so the decision appears before operational detail.
+- Preserved exact `request_id` notification focus, exact `case_id` reviewer
+  focus, reviewer permissions, response payloads, private-note handling,
+  public/privacy boundaries, and every backend contract. No backend route,
+  schema, permission, response meaning, reviewer authority, or TrustSlip
+  behavior changed.
+- Verification passed: the 295-module production build; focused Community
+  Confirmation boundary, button-stability, and phone-simplicity audits; the
+  full protected-button/frozen-surface suite; and the populated, empty,
+  notification-focus, reviewer-focus 390x844 browser smoke. The browser also
+  proved that navigation and selection do not submit, the explicit record
+  action preserves the backend type/reason pair, and the route has no
+  horizontal overflow.
+- The owner explicitly skipped queue item 2, the My GSN & I / cover-related
+  re-audit. Continue next with queue item 3, commerce intelligence into the
+  existing frozen Market Wisdom interaction model.
+- This milestone is committed locally only. It has not been pushed, promoted
+  to `main`, or deployed; publication still requires the owner's explicit
+  `deploy` instruction.
+
+## Shop-first authenticated entry and primary navigation - 2026-10-27
+
+- Implemented the owner's decision that Shop is the authenticated starting
+  surface. A normal sign-in with no explicit continuation now opens
+  `/app/shop-control`, and bare `/app` resolves to the same owner Shop
+  surface.
+- Reordered the ordinary phone primary navigation to `Shop -> Community Home
+  -> Marketplace -> Dashboard -> Profile`. The Shop tab now opens Shop
+  Control and remains visibly active on that route. The five-anchor rail stays
+  visible on Shop Control even though its internal work continues to use the
+  focused-task model.
+- Public Shop remains a separate customer-facing storefront. It was not used as
+  the authenticated default because a new member may not yet have a configured
+  public shop; Shop Control can truthfully guide both setup and ongoing owner
+  work.
+- Preserved higher-priority continuation behavior: invite-aware sign-in,
+  explicit safe `next` targets, route-state returns, publish recovery,
+  session-expiry recovery, and remembered authenticated paths still return to
+  their intended task instead of being overwritten by the Shop default.
+- Added one shared `DEFAULT_AUTHENTICATED_ROUTE` contract and updated the
+  entry, route, surface-ownership, button-inventory, and production-browser
+  regression cages. No backend route, payload, permission, schema, Dashboard
+  Market Wisdom behavior, Shop Control business action, or Public Shop
+  contract changed.
+- Verification passed: the 295-module production frontend build; link,
+  route-fallthrough, entry/auth, surface-ownership, Dashboard, Marketplace,
+  Notifications, and Shop Control audits; the complete protected-button/frozen
+  surface suite; and the production-build 390x844 browser audit. The browser
+  proved that `/app` opens `/app/shop-control`, Shop is the only active tab,
+  all five labels and route targets are in the approved order, and there is no
+  horizontal overflow.
+- This milestone is local only. It has not been committed, pushed, promoted to
+  `main`, or deployed because the current pilot batch policy requires the
+  owner's separate publication instruction.
 
 ## Community Confirmation Inbox first-surface cleanup - 2026-10-26
 

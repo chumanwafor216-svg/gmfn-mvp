@@ -140,6 +140,24 @@ assertContains(
   "Community Confirmation Inbox response choices changed; preserve the full honest-answer inventory unless the product contract changes."
 );
 
+assertContains(
+  "inbox",
+  /activeRequestRows = activeRequest \? \[activeRequest\] : \[\][\s\S]*?data-gsn-community-confirmation-request-navigator="true"[\s\S]*?Request \{activeRequestPosition\} of \{focusedRows\.length\}[\s\S]*?activeRequestRows\.map/,
+  "Community Confirmation Inbox must keep one active request card and non-mutating queue navigation."
+);
+
+assertContains(
+  "inbox",
+  /title: "What you can confirm"[\s\S]*?title: "Where caution is needed"[\s\S]*?title: "What you cannot support"[\s\S]*?data-gsn-community-confirmation-response-groups="true"[\s\S]*?type="radio"/,
+  "Community Confirmation Inbox must keep positive, caution, and objection choices equally discoverable."
+);
+
+assertContains(
+  "inbox",
+  /Nothing is recorded until you use the button below\.[\s\S]*?onClick=\{\(\) => selectedOption && void answer\(row, selectedOption\)\}[\s\S]*?disabled=\{!selectedOption \|\| Boolean\(busyKey\)\}[\s\S]*?record-selected-response/,
+  "Community Confirmation Inbox must not submit a response until the responder explicitly records one selected answer."
+);
+
 assertNotContains(
   "inbox",
   /ExplainToggle|label="How to answer"/,

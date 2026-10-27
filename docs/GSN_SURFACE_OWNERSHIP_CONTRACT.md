@@ -129,10 +129,11 @@ Use these classifications when auditing visible blocks/actions:
 - `APP_ROUTES.PROFILE` intentionally resolves to the canonical My GSN member home
   (`/app/my-gmfn-and-i`). Explicit guide/help mode remains available at
   `/app/my-gmfn-and-i?tab=guide`.
-- Authenticated mobile bottom navigation labels Public Shop as `Shop`, while
-  authenticated owner operation remains Shop Control. Treat this as current
-  repository truth, not as permission to merge public supply and owner
-  operations.
+- Authenticated mobile bottom navigation labels Shop Control as `Shop` and
+  places it first, followed by Community Home, Marketplace, Dashboard, and
+  Profile. Shop remains the owner operating hub; Public Shop remains the
+  customer-facing storefront reached from Shop Control and other legitimate
+  public-shop links. Do not merge owner operations with public supply.
 - Community Home is the selected-community member home. It shows identity, Bulletin, real attention, compact handoffs, switching, and collapsed authorised admin entry. My GSN owns cross-GSN/community orientation. Marketplace is the one-community operating nucleus.
 - Community Domain and Command Center are allowed to be complex because they are
   operator surfaces. That complexity must not leak into ordinary member flows

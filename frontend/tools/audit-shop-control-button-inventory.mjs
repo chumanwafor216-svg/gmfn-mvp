@@ -48,7 +48,7 @@ const expectedMobileTaskShellBreakdown = {
   top: 2,
   drawer: 5,
   pageTools: 8,
-  bottom: 0,
+  bottom: 5,
 };
 const expectedMobileTaskShellActions = Object.values(
   expectedMobileTaskShellBreakdown
@@ -756,8 +756,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function shouldKeepBottomRailInTaskMode\(pathname: string\): boolean \{[\s\S]*?return \([\s\S]*?pathname === "\/app\/loans"[\s\S]*?\);[\s\S]*?\}[\s\S]*?const showMobileBottomRail =[\s\S]*?isMobile && \(!taskMode \|\| shouldKeepBottomRailInTaskMode\(location\.pathname\)\)/,
-  "Shop Control focused-task mode must keep the mobile bottom rail hidden unless the route is explicitly allowlisted."
+  /function shouldKeepBottomRailInTaskMode\(pathname: string\): boolean \{[\s\S]*?return \([\s\S]*?pathname === "\/app\/shop-control"[\s\S]*?pathname === "\/app\/loans"[\s\S]*?\);[\s\S]*?\}[\s\S]*?const showMobileBottomRail =[\s\S]*?isMobile && \(!taskMode \|\| shouldKeepBottomRailInTaskMode\(location\.pathname\)\)/,
+  "Shop Control is the authenticated home and must keep the five-anchor mobile bottom rail while preserving focused task behavior."
 );
 
 assertLayoutContains(

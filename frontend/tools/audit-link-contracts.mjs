@@ -225,8 +225,26 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?if \(token\)[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}/,
+  /function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?if \(token\)[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| DEFAULT_AUTHENTICATED_ROUTE\}/,
   "Signed-in PWA users must not be trapped on the public front door; they should enter the real app shell."
+);
+
+assertContains(
+  "src/lib/appRoutes.ts",
+  /export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES\.SHOP_ME;/,
+  "The authenticated default must remain the owner Shop surface."
+);
+
+assertContains(
+  "src/App.tsx",
+  /<Route index element=\{<Navigate to=\{DEFAULT_AUTHENTICATED_ROUTE\} replace \/>\} \/>/,
+  "The bare authenticated /app route must open the owner Shop surface."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /const redirectTarget = useMemo\([\s\S]*?return DEFAULT_AUTHENTICATED_ROUTE;/,
+  "Sign-in without an explicit safe return target must open the owner Shop surface."
 );
 
 assertContains(
@@ -519,7 +537,7 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function currentRoutePath[\s\S]*?#marketplace-owned-links[\s\S]*?#marketplace-rosca[\s\S]*?#marketplace-loans-support[\s\S]*?#marketplace-paid-network-placement[\s\S]*?safeHash[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function currentRoutePath[\s\S]*?#marketplace-owned-links[\s\S]*?#marketplace-rosca[\s\S]*?#marketplace-loans-support[\s\S]*?#marketplace-paid-network-placement[\s\S]*?safeHash[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| DEFAULT_AUTHENTICATED_ROUTE\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
   "Authenticated sessions that reach Cover/Welcome must recover to the app route, while temporary Marketplace section hashes are stripped from remembered app destinations."
 );
 
@@ -808,8 +826,8 @@ assertContains(
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /return items\.filter\(\(item\) => !item\.disabled \|\| item\.label === "Shop"\);/,
-  "Mobile bottom rail must keep the Shop anchor visible while the member GSN ID is pending."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopControlItem\(\)[\s\S]*?label: "Shop"[\s\S]*?return items;/,
+  "Mobile bottom rail must keep the owner Shop anchor available without waiting for a public-shop GSN ID."
 );
 
 assertContains(

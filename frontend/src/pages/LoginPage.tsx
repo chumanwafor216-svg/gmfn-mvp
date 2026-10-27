@@ -30,7 +30,7 @@ import {
   signInSupportEmailUrl,
   signInSupportWhatsAppUrl,
 } from "../lib/gsnSupportContacts";
-import { APP_ROUTES } from "../lib/appRoutes";
+import { APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE } from "../lib/appRoutes";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageShell(compact = false): React.CSSProperties {
@@ -579,7 +579,7 @@ export default function LoginPage() {
         routeState.from.hash || ""
       }`;
     }
-    return "/app/dashboard";
+    return DEFAULT_AUTHENTICATED_ROUTE;
   }, [publishRecoveryReturnTarget, routeState, searchParams]);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {

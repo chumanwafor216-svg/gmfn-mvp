@@ -179,7 +179,7 @@ assertNotContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{ APP_ROUTES \} from "\.\/lib\/appRoutes";/,
+  /import \{ APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE \} from "\.\/lib\/appRoutes";/,
   "The app shell must use the shared route registry instead of a local APP_ROUTES copy."
 );
 
@@ -510,8 +510,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /function responseCategoryLabel[\s\S]*?function responseActionLabel[\s\S]*?RESPONSE_OPTIONS\.map[\s\S]*?responseCategoryLabel\(option\.tone\)[\s\S]*?responseActionLabel\(option\)/,
-  "Community confirmation inbox response choices must keep compact category labels and answer-specific stable action labels."
+  /function responseCategoryLabel[\s\S]*?RESPONSE_GROUPS\.map[\s\S]*?RESPONSE_OPTIONS\.filter[\s\S]*?type="radio"[\s\S]*?selectedResponseTypes[\s\S]*?debugId=\{`community-confirmation-inbox\.\$\{row\.id\}\.record-selected-response`\}/,
+  "Community confirmation inbox response choices must keep grouped radio selection and one stable explicit record action."
 );
 
 assertContains(

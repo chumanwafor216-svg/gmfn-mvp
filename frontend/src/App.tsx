@@ -13,7 +13,7 @@ import {
   isSuspendedPublicFrontendHost,
   publicShopPath,
 } from "./lib/publicLinks";
-import { APP_ROUTES } from "./lib/appRoutes";
+import { APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE } from "./lib/appRoutes";
 import { clearAuthSession, getAccessToken } from "./lib/authSession";
 import {
   peekPublishRecoveryTarget,
@@ -473,7 +473,7 @@ function PublicEntryGuard(props: { children: React.ReactNode }) {
   if (token) {
     return (
       <Navigate
-        to={publishTarget || lastAuthenticatedAppPath() || APP_ROUTES.DASHBOARD}
+        to={publishTarget || lastAuthenticatedAppPath() || DEFAULT_AUTHENTICATED_ROUTE}
         replace
         state={{ recoveredFrom: currentRoutePath(location) }}
       />
@@ -999,7 +999,7 @@ export default function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route index element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
 
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="commitments" element={<CommitmentsPage />} />
