@@ -70,6 +70,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/services/market_wisdom_commerce_signal_service.py",
+  /def build_market_wisdom_commerce_signal[\s\S]*?MarketplaceShop\.owner_user_id == int\(user_id\)[\s\S]*?community_mismatch[\s\S]*?MarketplaceProduct\.is_active\.is_\(True\)[\s\S]*?MarketplaceAttentionEvent\.created_at >= attention_since[\s\S]*?MarketplaceRequest\.status == "open"[\s\S]*?"available": True[\s\S]*?"boundaries": \[/,
+  "Market Wisdom commerce input must remain owner-scoped, selected-community-safe, persisted, bounded, and explicit about evidence limits."
+);
+
+assertContains(
+  "gmfn_backend/app/services/daily_insight_service.py",
+  /commerce_signal = build_market_wisdom_commerce_signal\([\s\S]*?commerce_signal\.get\("ranking_signals"\)[\s\S]*?"signal_basis"[\s\S]*?"commerce_signal": commerce_signal/,
+  "Market Wisdom recommendation must rank approved guidance with the bounded server commerce signal and return that signal in the existing response."
+);
+
+assertContains(
   "gmfn_backend/app/services/daily_insight_service.py",
   /PILOT_WISDOM_DOMAIN_SEEDS[\s\S]*?PILOT_WISDOM_MOVE_SEEDS[\s\S]*?SEED_WISDOM_ENTRIES\.extend\([\s\S]*?for domain in PILOT_WISDOM_DOMAIN_SEEDS[\s\S]*?for move in PILOT_WISDOM_MOVE_SEEDS/,
   "Backend Market Wisdom must keep the curated pilot library generator instead of shrinking back to the compact seed list."
@@ -135,10 +147,16 @@ assertContains(
   "Market Wisdom Commitment Builder action must stay scoped to Dashboard Focus Commitments."
 );
 
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /setMarketWisdomCommerceSignal\([\s\S]*?\(res as any\)\?\.commerce_signal[\s\S]*?const marketWisdomCommerceActionRoute[\s\S]*?startsWith\("\/app\/"\)[\s\S]*?marketWisdomCommerceHeadline[\s\S]*?debugId="dashboard\.market-wisdom\.open-commerce-action"[\s\S]*?marketWisdomCommerceActionLabel/,
+  "The approved commerce handoff must consume only the server signal, reuse the Now reading, validate the app route, and expose one contextual action."
+);
+
 assertNotContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /debugId="dashboard\.market-wisdom\.(?!open-focus-commitments)[^"]+"/g,
-  "Frozen Market Wisdom must not gain extra route actions without an intentional audit update."
+  /debugId="dashboard\.market-wisdom\.(?!(?:open-focus-commitments|open-commerce-action))[^"]+"/g,
+  "Frozen Market Wisdom must not gain route actions beyond the approved Focus Commitments and commerce handoffs without an intentional audit update."
 );
 
 assertNotContains(
@@ -158,5 +176,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Market Wisdom contract audit passed: backend source, frontend daily insight, smart weighting, four-signal display, and frozen action scope are caged."
+  "Market Wisdom contract audit passed: backend source, bounded commerce evidence, smart weighting, four-signal display, and approved action scope are caged."
 );

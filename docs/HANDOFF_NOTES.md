@@ -12,8 +12,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 - The owner resumed and completed the Community Confirmation Inbox milestone
   below, then explicitly chose to skip the My GSN & I / cover-related review.
-  The next queue item is to connect commerce intelligence to Market Wisdom,
-  followed by compacting the Dashboard Photo Frame
+  The commerce-intelligence-to-Market-Wisdom milestone is now complete locally.
+  The next owner priority is a truthful `revenue per module` map covering
+  Shop, Reel, TrustSlip and Merchant Verification, Community Domain, reactions,
+  and the other confirmed modules. That work comes before compacting the
+  Dashboard Photo Frame
   affordance, audit account suspension/closure/removal capability, design
   respectful inactivity reminders from GSN to the user, and use a planned
   12-minute Spotlight recording to measure short dwell times and unequal
@@ -79,15 +82,46 @@ under `docs/` or `docs/archive/`, then link that file here.
   bounded Shop Analytics projection. It would influence approved-wisdom
   ranking and the existing `Now` reading without adding a fifth signal or
   redesigning the four-signal Market Wisdom model.
-- Runtime work is paused for one owner decision: approve or reject one compact
-  contextual handoff action beneath the existing reading. Without it, the
-  recommendation cannot take the user directly to Shop Control analytics,
-  Spotlight, DemandBox, Shop Assets, or Protected Trade.
+- The owner approved one compact contextual handoff action beneath the existing
+  reading. Runtime implementation and verification are recorded in the
+  completed milestone immediately below.
 - Full evidence, proposed response shape, route ownership, duplication risks,
   and implementation files are recorded in
   [`MARKET_WISDOM_COMMERCE_SIGNAL_MAP_2026-10-27.md`](MARKET_WISDOM_COMMERCE_SIGNAL_MAP_2026-10-27.md).
 - No runtime source, backend route, schema, permission, Market Wisdom UI,
   push, or deployment changed in this investigation.
+
+## Market Wisdom bounded commerce signal - 2026-10-27
+
+- Implemented an owner-scoped, selected-community-safe commerce projection in
+  `gmfn_backend/app/services/market_wisdom_commerce_signal_service.py`.
+  It reads active visible products, active serving Spotlight records,
+  seven-day persisted shop attention, and current open, non-expired community
+  DemandBox requests. It does not duplicate the richer Shop Analytics
+  diagnosis engine.
+- Extended the existing authenticated
+  `GET /market-wisdom/recommendation` response with optional
+  `commerce_signal`. Available signal tags influence only approved Market
+  Wisdom ranking. No owned shop or a selected-community mismatch stays
+  explicitly unavailable with no evidence counts or action route.
+- Dashboard keeps exactly four rotating readings: `Market`, `GSN`,
+  `Guide`, and `Now`. The bounded signal may shape `Now` and renders the
+  owner-approved single compact contextual action only when the server supplies
+  a valid `/app/` route. The existing Focus Commitments action remains
+  separately conditional on capability 22.
+- Truth boundaries remain explicit: views, opens, qualified Spotlight
+  impressions, clicks, and contact taps are attention rather than buyers,
+  sales, payments, delivery, verification, or trust score; DemandBox rows are
+  community request context rather than matches or orders.
+- Verification passed: 14 focused backend tests, Market Wisdom contract audit,
+  Dashboard button inventory (one intentional new StableButton), the
+  295-module production build, and the protected frozen-surface suite.
+- Next owner priority is the module economics/revenue map described in
+  `NEXT_SESSION_PLAN_2026-10-27.md`. Do not implement pricing from guesses:
+  first confirm module ownership, payer, value unit, payment route, cost,
+  evidence, and overlap.
+- This milestone is local only. It has not been pushed, promoted to `main`, or
+  deployed.
 
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 

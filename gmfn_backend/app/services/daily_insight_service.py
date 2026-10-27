@@ -16,6 +16,9 @@ from app.db.models import (
     MarketWisdomSource,
     User,
 )
+from app.services.market_wisdom_commerce_signal_service import (
+    build_market_wisdom_commerce_signal,
+)
 
 
 MARKET_WISDOM_STATUSES = {
@@ -1225,10 +1228,19 @@ def recommend_market_wisdom(
     signals: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
     ensure_seed_market_wisdom(db)
+    commerce_signal = build_market_wisdom_commerce_signal(
+        db,
+        user_id=getattr(user, "id", None),
+        clan_id=clan_id,
+    )
     signal_terms = {_normalise_text(context)}
     for signal in signals or []:
         if _safe_str(signal):
             signal_terms.add(_normalise_text(signal))
+    if commerce_signal.get("available"):
+        for signal in commerce_signal.get("ranking_signals") or []:
+            if _safe_str(signal):
+                signal_terms.add(_normalise_text(signal))
     signal_terms = {term for term in signal_terms if term}
 
     cooldown_since = _now() - timedelta(days=7)
@@ -1257,7 +1269,11 @@ def recommend_market_wisdom(
         .all()
     )
     if not entries:
-        return {"ok": True, "recommendation": get_daily_market_wisdom(db)}
+        return {
+            "ok": True,
+            "recommendation": get_daily_market_wisdom(db),
+            "commerce_signal": commerce_signal,
+        }
 
     marketplace_request = any(
         term in {"marketplace", "market", "shop", "trade", "merchant", "demand", "spotlight"}
@@ -1335,7 +1351,9 @@ def recommend_market_wisdom(
     ranked = sorted(entries, key=lambda item: (score(item), item.public_id), reverse=True)
     selected = ranked[0]
     why = "Selected from approved Market Wisdom entries."
-    signal_basis = "inferred" if signal_terms else "general"
+    signal_basis = "server_commerce" if commerce_signal.get("available") else (
+        "inferred" if signal_terms else "general"
+    )
     if signal_terms:
         why = "Selected because the current context overlaps with approved behaviour and module tags."
     if selected.id in exposed_ids:
@@ -1349,6 +1367,7 @@ def recommend_market_wisdom(
         "signal_basis": signal_basis,
         "confidence_level": selected.confidence_level,
         "recommended_next_action": selected.action_prompt,
+        "commerce_signal": commerce_signal,
         "policy": {
             "describes_behaviour_not_character": True,
             "no_social_scoring": True,

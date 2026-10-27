@@ -3473,6 +3473,8 @@ export default function DashboardPage() {
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
+  const [marketWisdomCommerceSignal, setMarketWisdomCommerceSignal] =
+    useState<any>(null);
   const marketWisdomExposureRef = useRef<string>("");
   const marketWisdomRecommendationKeyRef = useRef<string>("");  const [demandGuideOpen] = useState<boolean>(false);
 
@@ -5209,6 +5211,7 @@ export default function DashboardPage() {
 
     if (marketWisdomRecommendationKeyRef.current === key) return;
     marketWisdomRecommendationKeyRef.current = key;
+    setMarketWisdomCommerceSignal(null);
 
     const timer = window.setTimeout(() => {
       getMarketWisdomRecommendation({
@@ -5217,12 +5220,20 @@ export default function DashboardPage() {
         signals,
       })
         .then((res) => {
+          if (marketWisdomRecommendationKeyRef.current !== key) return;
+          setMarketWisdomCommerceSignal(
+            (res as any)?.commerce_signal || null
+          );
           const recommendation = (res as any)?.recommendation || res;
           if (marketWisdomPairFromDailyInsight(recommendation)) {
             setInsight(recommendation);
           }
         })
-        .catch(() => undefined);
+        .catch(() => {
+          if (marketWisdomRecommendationKeyRef.current === key) {
+            setMarketWisdomCommerceSignal(null);
+          }
+        });
     }, 1200);
 
     return () => window.clearTimeout(timer);
@@ -5254,6 +5265,26 @@ export default function DashboardPage() {
   );
 
   const activeWisdomCategory = safeStr((activeWisdom as any)?.category || "");
+  const marketWisdomCommerceAvailable = Boolean(
+    marketWisdomCommerceSignal?.available
+  );
+  const marketWisdomCommerceHeadline = marketWisdomCommerceAvailable
+    ? safeStr(marketWisdomCommerceSignal?.headline)
+    : "";
+  const marketWisdomCommerceWhy = marketWisdomCommerceAvailable
+    ? safeStr(marketWisdomCommerceSignal?.why_it_matters)
+    : "";
+  const marketWisdomCommerceActionLabel = marketWisdomCommerceAvailable
+    ? safeStr(marketWisdomCommerceSignal?.first_action_label)
+    : "";
+  const marketWisdomCommerceActionRouteCandidate =
+    marketWisdomCommerceAvailable
+      ? safeStr(marketWisdomCommerceSignal?.first_action_route)
+      : "";
+  const marketWisdomCommerceActionRoute =
+    marketWisdomCommerceActionRouteCandidate.startsWith("/app/")
+      ? marketWisdomCommerceActionRouteCandidate
+      : "";
   const activeWisdomGuideCapability = useMemo(() => {
     const seed = [
       activeWisdomTitle,
@@ -5318,6 +5349,10 @@ export default function DashboardPage() {
       return "Your DemandBox is active. Read the current need before you act.";
     }
 
+    if (marketWisdomCommerceHeadline) {
+      return marketWisdomCommerceHeadline;
+    }
+
     if (pendingRequests.length > 0) {
       return "Support requests are waiting. Review and respond when ready.";
     }
@@ -5370,6 +5405,7 @@ export default function DashboardPage() {
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
+    marketWisdomCommerceHeadline,
   ]);
 
   const marketWisdomGuideLine = useMemo(() => {
@@ -5419,6 +5455,19 @@ export default function DashboardPage() {
         border: "rgba(220,38,38,0.18)",
         background:
           "linear-gradient(180deg, rgba(254,226,226,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (marketWisdomCommerceHeadline) {
+      return {
+        label: "Shop activity",
+        detail:
+          marketWisdomCommerceWhy ||
+          "Your owner-scoped shop evidence is shaping the current reading.",
+        accent: "#0F766E",
+        border: "rgba(15,118,110,0.16)",
+        background:
+          "linear-gradient(180deg, rgba(220,252,231,0.88) 0%, rgba(255,255,255,0.96) 100%)",
       };
     }
 
@@ -5502,6 +5551,8 @@ export default function DashboardPage() {
     dashboardNoticeSummary.counts.unread,
     focusSummary.behindCount,
     focusSummary.watchCount,
+    marketWisdomCommerceHeadline,
+    marketWisdomCommerceWhy,
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
@@ -10622,6 +10673,60 @@ export default function DashboardPage() {
                   {activeMarketWisdomSignal.text}
                 </div>
               </div>
+            </div>
+          ) : null}
+
+          {marketWisdomCommerceActionLabel &&
+          marketWisdomCommerceActionRoute ? (
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.68)",
+                border: "1px solid rgba(15,118,110,0.14)",
+              }}
+            >
+              <div
+                style={{
+                  flex: "1 1 210px",
+                  color: DASHBOARD_BRAND.helper,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                }}
+              >
+                {marketWisdomCommerceWhy ||
+                  "Open the owning shop screen for the first useful step."}
+              </div>
+
+              <StableButton
+                debugId="dashboard.market-wisdom.open-commerce-action"
+                type="button"
+                onClick={(event) =>
+                  openDashboardRoute(
+                    event,
+                    marketWisdomCommerceActionRoute
+                  )
+                }
+                onPointerDown={consumeDashboardPointerEvent}
+                style={dashboardStableActionFrame({
+                  ...secondaryBtn(false),
+                  minHeight: 40,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  background: "rgba(255,255,255,0.94)",
+                  color: "#0F4F4A",
+                  border: "1px solid rgba(15,118,110,0.18)",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
+                })}
+              >
+                {marketWisdomCommerceActionLabel}
+              </StableButton>
             </div>
           ) : null}
 

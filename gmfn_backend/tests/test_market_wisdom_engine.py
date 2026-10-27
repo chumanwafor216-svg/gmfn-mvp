@@ -154,6 +154,151 @@ def test_recommendation_returns_policy_and_no_character_scoring(
     assert "untrustworthy person" not in joined
 
 
+def test_recommendation_reports_missing_owned_shop_without_manufacturing_zero_activity(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    res = client.get("/market-wisdom/recommendation?context=dashboard&clan_id=1")
+
+    assert res.status_code == 200
+    signal = res.json()["commerce_signal"]
+    assert signal["available"] is False
+    assert signal["state"] == "no_owned_shop"
+    assert signal["evidence_counts"] == {}
+    assert signal["first_action_route"] == ""
+    assert "Missing commerce data is not a zero-activity finding." in signal["boundaries"]
+
+
+def test_recommendation_uses_owner_and_community_scoped_shop_setup_signal(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                )
+                VALUES (11, 1, 1, 'Owner Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    res = client.get("/market-wisdom/recommendation?context=dashboard&clan_id=1")
+
+    assert res.status_code == 200
+    body = res.json()
+    signal = body["commerce_signal"]
+    assert body["signal_basis"] == "server_commerce"
+    assert signal["available"] is True
+    assert signal["state"] == "setup_needed"
+    assert signal["shop_id"] == 11
+    assert signal["clan_id"] == 1
+    assert signal["evidence_counts"]["active_products"] == 0
+    assert signal["first_action_label"] == "Add a shop item"
+    assert signal["first_action_route"] == "/app/shop-assets"
+
+
+def test_recommendation_treats_attention_and_demand_as_bounded_evidence(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                )
+                VALUES (11, 1, 1, 'Owner Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title,
+                    visibility_mode, is_active, created_at
+                )
+                VALUES (
+                    21, 1, 11, 1, 'Visible service',
+                    'community_visible', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_requests (
+                    id, clan_id, user_id, title, status, created_at
+                )
+                VALUES (31, 1, 1, 'Current community request', 'open', CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_attention_events (
+                    id, event_type, shop_id, clan_id, shop_owner_user_id,
+                    source, dedupe_key, created_at
+                )
+                VALUES (
+                    41, 'contact_tap', 11, 1, 1,
+                    'public_shop', 'market-wisdom-contact-1', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    res = client.get("/market-wisdom/recommendation?context=dashboard&clan_id=1")
+
+    assert res.status_code == 200
+    signal = res.json()["commerce_signal"]
+    assert signal["available"] is True
+    assert signal["state"] == "intent_recorded"
+    assert signal["evidence_counts"]["active_products"] == 1
+    assert signal["evidence_counts"]["contact_taps_7d"] == 1
+    assert signal["evidence_counts"]["open_community_demands"] == 1
+    assert signal["first_action_route"] == "/app/shop-control#shop-control-counts"
+    joined = " ".join(signal["boundaries"]).lower()
+    assert "not buyers" in joined
+    assert "not confirmed matches" in joined
+
+
+def test_recommendation_does_not_cross_selected_community_boundary(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                )
+                VALUES (11, NULL, 1, 'Unscoped Owner Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    res = client.get("/market-wisdom/recommendation?context=dashboard&clan_id=1")
+
+    assert res.status_code == 200
+    signal = res.json()["commerce_signal"]
+    assert signal["available"] is False
+    assert signal["state"] == "community_mismatch"
+    assert signal["evidence_counts"] == {}
+    assert signal["first_action_route"] == ""
+
+
 def test_marketplace_recommendation_prefers_marketplace_tagged_entries(
     client,
     override_current_user_user,

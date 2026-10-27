@@ -1,6 +1,6 @@
 # Market Wisdom Commerce Signal Map - 2026-10-27
 
-Status: evidence map and smallest-gap proposal; no runtime implementation yet.
+Status: implemented and verified locally; not pushed or deployed.
 
 ## Owner outcome
 
@@ -174,9 +174,22 @@ The first implementation should use only these real inputs:
   Dashboard Market Wisdom audit cages
 - `docs/SCREEN_SPECS.md` and `docs/HANDOFF_NOTES.md`
 
-## Approval decision before runtime work
+## Implemented result
 
-Approve or reject the single compact contextual action inside the existing
-Market Wisdom section. The server-side commerce input can be added without it,
-but the user would receive advice without the required direct handoff to the
-owning screen.
+- The owner approved the single compact contextual action.
+- `GET /market-wisdom/recommendation` now returns one optional
+  `commerce_signal` from the bounded backend service.
+- The service uses only the signed-in user's owned shop, enforces the requested
+  community boundary, and reads active visible products, active serving
+  Spotlight records, seven-day persisted attention, and current open,
+  non-expired community DemandBox requests.
+- Missing shop and selected-community mismatch remain explicit unavailable
+  states with empty evidence counts and no route.
+- Available commerce tags can influence the existing approved-entry ranking.
+  Dashboard reuses the existing `Now` reading and displays exactly one
+  server-labelled contextual action to an existing owning route.
+- The four rotating signals, existing Focus Commitments exception, exposure
+  cooldown, permission model, and Shop Analytics diagnosis remain intact.
+- Focused backend tests, the Market Wisdom contract audit, the Dashboard button
+  inventory, the 295-module production build, and the protected frozen-surface
+  audit passed.

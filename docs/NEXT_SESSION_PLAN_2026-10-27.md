@@ -61,6 +61,10 @@ Acceptance question:
 
 ### 3. Connect commerce intelligence to Market Wisdom
 
+Status: completed locally on 2026-10-27. The existing four-part presentation
+now consumes a bounded owner/community-scoped server commerce signal and may
+show one approved contextual handoff. It has not been pushed or deployed.
+
 Owner direction:
 - Shop Analytics should help a seller understand what is and is not working.
 - Spotlight activity and performance should contribute useful evidence.
@@ -104,7 +108,44 @@ Candidate outcome to validate, not assume:
   persisted signals, with stale/missing-data handling and one clear route to
   the owning analytics/action screen
 
-### 4. Compact the Dashboard Photo Frame affordance
+### 4. Map revenue per module
+
+Owner direction:
+- Make the next development priority a module-by-module revenue model for GSN,
+  including Shop, Reel, TrustSlip and Merchant Verification, Community Domain,
+  reactions, and other confirmed product modules.
+- `Revenue per module` is the working interpretation of the owner's phrase
+  `revenue per mile` because the supplied examples are product modules. Keep
+  the owner's original phrase in view and correct this interpretation if the
+  owner says it was literal.
+
+Required first deliverable before pricing or payment implementation:
+- confirm each named capability and its actual route, backend owner, current
+  maturity, and existing payment/revenue contract
+- identify who receives value, who can realistically pay, the chargeable value
+  unit, collection route, direct cost driver, and evidence of willingness to
+  pay for each module
+- separate platform revenue, community revenue, merchant revenue, pass-through
+  money, and third-party costs
+- distinguish one-off fees, subscriptions, transaction fees, verification
+  fees, promotion/visibility fees, and revenue-share candidates
+- mark modules that should remain free because they drive trust, safety,
+  adoption, or evidence needed by a paid module
+- produce a conservative module economics table and dependency map before
+  changing code
+
+Truth boundaries:
+- current views, reactions, requests, verifications, or records are not revenue
+- do not invent conversion rates, willingness to pay, market size, or unit
+  economics where GSN lacks evidence
+- do not double-charge the same value through overlapping Shop, Spotlight,
+  Community Domain, TrustSlip, or Merchant Verification fees
+- do not add payment logic until the payer, entitlement, refund/failure,
+  accounting, evidence, and permission contracts are explicit
+- treat `Reel` and `reactions` as owner-supplied module names until code and
+  documentation confirm their exact product meaning
+
+### 5. Compact the Dashboard Photo Frame affordance
 
 Owner direction:
 - The current Photo Frame button occupies too much Dashboard space.
@@ -125,7 +166,7 @@ Acceptance:
 - it performs exactly the same action as before
 - it does not create horizontal overflow or a competing Dashboard card
 
-### 5. Audit account suspension, closure, and removal capability
+### 6. Audit account suspension, closure, and removal capability
 
 First determine what already exists in frontend routes, backend services,
 models, permissions, and audit records. Treat these as different operations:
@@ -156,7 +197,7 @@ Expected first deliverable:
 - a confirmed capability map and smallest safe gap proposal before any
   destructive implementation
 
-### 6. Design respectful inactivity reminders from GSN
+### 7. Design respectful inactivity reminders from GSN
 
 Owner intent:
 GSN should have a useful one-to-one relationship with a member and notice when
@@ -196,7 +237,7 @@ Implementation preference:
 - route the user to the existing owning screen rather than creating a new
   reminder dashboard
 
-### 7. Measure and correct Spotlight rotation timing and fairness
+### 8. Measure and correct Spotlight rotation timing and fairness
 
 Owner observation:
 - Spotlight rotation has improved materially, but some media still disappear

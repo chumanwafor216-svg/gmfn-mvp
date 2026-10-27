@@ -200,6 +200,16 @@ Frozen:
 - Market Wisdom presentation and interaction model
 
 Rules:
+- Owner-approved exception (2026-10-27): the existing four-part
+  `Market -> GSN -> Guide -> Now` presentation may consume one optional,
+  server-owned commerce signal and show one compact contextual handoff beneath
+  the reading. The signal must be scoped to the signed-in shop owner and
+  selected community, must preserve missing data as unavailable, and must
+  describe Shop/Spotlight attention and DemandBox requests as bounded evidence
+  rather than buyers, sales, payments, delivery, verification, or matched
+  demand. The handoff must use the server-provided label and an existing
+  `/app/` owning route. It must not add a fifth rotating signal or expose an
+  action when commerce data is unavailable.
 - Passport picture frame tools must sit under one visible Frame tools button.
 - Frame tools must tap open and tap closed, then reveal Upload, Change, and Remove.
 - Upload and Change must open the active file picker from the visible passport block.
