@@ -752,6 +752,46 @@ try {
   }
   const reelPilotFinding = await collectPanelAudit(page, "shop-reel:free-pilot-first-view");
   if (reelPilotFinding) findings.push(reelPilotFinding);
+
+  await page.evaluate(() => {
+    window.sessionStorage.setItem(
+      "gsn.shop-reel.prepared:GMFN-U-SHOP-QC",
+      JSON.stringify({
+        owner_gsn_id: "GMFN-U-SHOP-QC",
+        video_url: "data:video/mp4;base64,AAAA",
+        prepared_at: new Date().toISOString(),
+      })
+    );
+  });
+  await page.reload({ waitUntil: "networkidle", timeout: 25000 });
+  const restoredReelPilot = page.locator('[data-gsn-shop-reel="free-pilot"]');
+  await restoredReelPilot.waitFor({ state: "visible", timeout: 20000 });
+  const restoredReelText = (await restoredReelPilot.innerText()).replace(/\s+/g, " ").trim().toLowerCase();
+  const missingRestoredReelText = [
+    "share reel from phone",
+    "choose link channel",
+    "download reel",
+    "demand box",
+    "trustslip",
+  ].filter((text) => !restoredReelText.includes(text));
+  const restoredReelActions = await restoredReelPilot.locator(
+    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.share"], [data-cta-id="shop-control.reel.download"]'
+  ).count();
+  if (missingRestoredReelText.length > 0 || restoredReelActions !== 3) {
+    findings.push({
+      label: "shop-reel:restored-package",
+      findings: [
+        ...(missingRestoredReelText.length > 0
+          ? [`missing restored Reel package labels: ${missingRestoredReelText.join(", ")}`]
+          : []),
+        ...(restoredReelActions !== 3
+          ? [`expected three restored Reel actions; found ${restoredReelActions}`]
+          : []),
+      ],
+    });
+  }
+  const restoredReelFinding = await collectPanelAudit(page, "shop-reel:restored-package");
+  if (restoredReelFinding) findings.push(restoredReelFinding);
   await page.goto(`${baseUrl}/app/shop-control#shop-control-counts`, { waitUntil: "networkidle", timeout: 25000 });
   const activityReading = page.locator('[data-shop-activity-reading="true"]');
   await activityReading.waitFor({ state: "visible", timeout: 20000 });

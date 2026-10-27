@@ -106,6 +106,7 @@ import type {
 
 const ShopControlSpotlightWorkflow = React.lazy(() => import("./shopControl/ShopControlSpotlightWorkflow"));
 const SHOP_CONTROL_BACKGROUND_REFRESH_MS = 5 * 60 * 1000;
+const SHOP_REEL_SESSION_STORAGE_PREFIX = "gsn.shop-reel.prepared";
 
 type ShopRecord = {
   id: number;
@@ -4974,6 +4975,66 @@ export default function ShopControlPage() {
         "gsn_shop_reel"
       )
     : "";
+  const shopReelSessionStorageKey = ownerShopGsnId
+    ? `${SHOP_REEL_SESSION_STORAGE_PREFIX}:${ownerShopGsnId}`
+    : "";
+
+  useEffect(() => {
+    if (!shopReelSessionStorageKey || typeof window === "undefined") return;
+
+    try {
+      const raw = window.sessionStorage.getItem(shopReelSessionStorageKey);
+      if (!raw) {
+        setLastPreparedShopReelUrl("");
+        return;
+      }
+      const stored = JSON.parse(raw);
+      const storedOwnerGsnId = safeStr(stored?.owner_gsn_id);
+      const storedVideoUrl = safeStr(stored?.video_url);
+      if (storedOwnerGsnId !== ownerShopGsnId || !storedVideoUrl) {
+        window.sessionStorage.removeItem(shopReelSessionStorageKey);
+        setLastPreparedShopReelUrl("");
+        return;
+      }
+      setLastPreparedShopReelUrl(storedVideoUrl);
+    } catch {
+      try {
+        window.sessionStorage.removeItem(shopReelSessionStorageKey);
+      } catch {
+        // Session storage can be unavailable in a restricted browser context.
+      }
+      setLastPreparedShopReelUrl("");
+    }
+  }, [ownerShopGsnId, shopReelSessionStorageKey]);
+
+  function clearPreparedShopReel() {
+    setLastPreparedShopReelUrl("");
+    if (!shopReelSessionStorageKey || typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(shopReelSessionStorageKey);
+    } catch {
+      // The in-memory clear still prevents the previous Reel from being used.
+    }
+  }
+
+  function rememberPreparedShopReel(videoUrl: string) {
+    const safeVideoUrl = safeStr(videoUrl);
+    if (!safeVideoUrl) return;
+    setLastPreparedShopReelUrl(safeVideoUrl);
+    if (!shopReelSessionStorageKey || typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        shopReelSessionStorageKey,
+        JSON.stringify({
+          owner_gsn_id: ownerShopGsnId,
+          video_url: safeVideoUrl,
+          prepared_at: new Date().toISOString(),
+        })
+      );
+    } catch {
+      // Sharing still works for the current page even without session restore.
+    }
+  }
   const shopRecordReady = Boolean(shop?.id);
   const publicShopReady = Boolean(shopRecordReady && ownerPublicShopPath);
   const currentSpotlightServingStatus = firstTruthy(
@@ -6732,7 +6793,7 @@ export default function ShopControlPage() {
       return;
     }
 
-    setLastPreparedShopReelUrl('');
+    clearPreparedShopReel();
 
     if (isSpotlightImageFile(file)) {
       setSpotlightVideoInputKey((prev) => prev + 1);
@@ -6837,7 +6898,7 @@ export default function ShopControlPage() {
       );
       if (!url) throw new Error('GSN prepared the video but did not return a preview link.');
       setSpotlightFinishedVideoUrl(url);
-      setLastPreparedShopReelUrl(url);
+      rememberPreparedShopReel(url);
       setSpotlightMediaFeedback({
         tone: 'success',
         text: "Your improved video is ready to check.",

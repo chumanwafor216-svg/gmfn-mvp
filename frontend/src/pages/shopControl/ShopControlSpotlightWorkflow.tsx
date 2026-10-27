@@ -294,6 +294,14 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     shop?.description,
     "See what is available from this GSN shop."
   );
+  const shopReelSocialMessage = `${shopReelMessage} Browse the shop and current Spotlight. Use GSN Demand Box when you cannot find what you need, and check any available TrustSlip separately before a serious trade decision.`;
+  const shopReelShareTarget = {
+    title: shopReelTitle,
+    url: routes.publicShopReel,
+    socialUrl: routes.publicShopReelSocialPreview || routes.publicShopReel,
+    message: shopReelSocialMessage,
+    socialMessage: shopReelSocialMessage,
+  };
 
   async function downloadShopReel() {
     if (!resolvedShopReelVideoUrl) {
@@ -334,7 +342,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
       typeof navigator.share !== "function" ||
       typeof navigator.canShare !== "function"
     ) {
-      showNotice("info", "This browser cannot attach the reel. Download it, then use Share shop link.");
+      showNotice("info", "This browser cannot attach the reel. Download it, then use Choose link channel.");
       return;
     }
     try {
@@ -348,16 +356,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
         showNotice("info", "This phone cannot attach the reel here. Download it, then post it yourself.");
         return;
       }
-      const nativeTarget = shareTargetForChannel(
-        {
-          title: shopReelTitle,
-          url: routes.publicShopReel,
-          socialUrl: routes.publicShopReelSocialPreview || routes.publicShopReel,
-          message: shopReelMessage,
-          socialMessage: shopReelMessage,
-        },
-        "native"
-      );
+      const nativeTarget = shareTargetForChannel(shopReelShareTarget, "native");
       await navigator.share({
         title: nativeTarget.title,
         text: buildPublicShareText(nativeTarget),
@@ -1280,29 +1279,23 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 />
               </div>
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
-                <SocialTagShareButton
-                  target={{
-                    title: shopReelTitle,
-                    url: routes.publicShopReel,
-                    socialUrl: routes.publicShopReelSocialPreview || routes.publicShopReel,
-                    message: shopReelMessage,
-                    socialMessage: shopReelMessage,
-                  }}
-                  buttonLabel="Share shop link"
-                  buttonKind="primary"
-                  fullWidth
-                  stableHeight={50}
-                  debugId="shop-control.reel.share"
-                  onResult={(tone, text) => showNotice(tone, text)}
-                />
-                <SecondaryButton
+                <PrimaryButton
                   type="button"
                   onClick={() => { void shareShopReelVideo(); }}
                   fullWidth
                   debugId="shop-control.reel.share-video"
                 >
-                  Share video from phone
-                </SecondaryButton>
+                  Share Reel from phone
+                </PrimaryButton>
+                <SocialTagShareButton
+                  target={shopReelShareTarget}
+                  buttonLabel="Choose link channel"
+                  buttonKind="secondary"
+                  fullWidth
+                  stableHeight={50}
+                  debugId="shop-control.reel.share"
+                  onResult={(tone, text) => showNotice(tone, text)}
+                />
                 <SecondaryButton
                   type="button"
                   onClick={() => { void downloadShopReel(); }}
@@ -1311,6 +1304,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 >
                   Download reel
                 </SecondaryButton>
+              </div>
+              <div style={{ marginTop: 9, color: "#D7E3F1", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
+                Package: reviewed video + public shop link + a short GSN note about Spotlight, Demand Box and separately checked TrustSlip evidence.
               </div>
             </>
           ) : (

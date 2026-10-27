@@ -35,8 +35,8 @@ const ownerShopHandlesSource = readFileSync(
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 12,
-  SecondaryButton: 25,
+  PrimaryButton: 13,
+  SecondaryButton: 24,
   SubtleButton: 3,
   StableButton: 5,
   StableCtaLink: 14,
@@ -465,7 +465,7 @@ assertShopContains(
   "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
 );
 assertShopContains(
-  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?buttonLabel="Share shop link"[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share video from phone[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?What this pilot does[\s\S]*?does not post automatically[\s\S]*?turn a still picture into video yet/,
+  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?What this pilot does[\s\S]*?does not post automatically[\s\S]*?turn a still picture into video yet/,
   "Free Spotlight must place the free GSN Shop Reel pilot directly below the composer, keep posting user-controlled, and state the production boundary truthfully."
 );
 assertShopContains(
