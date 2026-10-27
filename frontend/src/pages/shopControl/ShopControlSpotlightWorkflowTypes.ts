@@ -167,6 +167,8 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightVideoFile: File | null;
   spotlightVideoSound: MarketplaceVideoSoundOptions | null;
   setSpotlightVideoSound: Dispatch<SetStateAction<MarketplaceVideoSoundOptions | null>>;
+  shopReelPictureSound: MarketplaceVideoSoundOptions | null;
+  setShopReelPictureSound: Dispatch<SetStateAction<MarketplaceVideoSoundOptions | null>>;
   spotlightHasVideo: boolean;
   spotlightVideoDurationSeconds: number | null;
   spotlightNaturalFinishEnabled: boolean;
@@ -175,6 +177,7 @@ export type ShopControlSpotlightWorkflowProps = {
   setSpotlightNaturalFinishSeconds: Dispatch<SetStateAction<5 | 10>>;
   spotlightFinishedVideoUrl: string;
   shopReelVideoUrl: string;
+  clearPreparedShopReel: () => void;
   preparingShopReelFromImage: boolean;
   prepareShopReelFromImage: () => Promise<string | null>;
   setSpotlightFinishedVideoUrl: Dispatch<SetStateAction<string>>;

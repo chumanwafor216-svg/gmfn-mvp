@@ -177,6 +177,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightVideoFile,
     spotlightVideoSound,
     setSpotlightVideoSound,
+    shopReelPictureSound,
+    setShopReelPictureSound,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightNaturalFinishEnabled,
@@ -185,6 +187,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     setSpotlightNaturalFinishSeconds,
     spotlightFinishedVideoUrl,
     shopReelVideoUrl,
+    clearPreparedShopReel,
     preparingShopReelFromImage,
     prepareShopReelFromImage,
     setSpotlightFinishedVideoUrl,
@@ -1351,6 +1354,16 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                       <option value={10}>Full · 10 seconds</option>
                     </select>
                   </label>
+                  <VideoSoundEditor
+                    value={shopReelPictureSound}
+                    onChange={(sound) => {
+                      setShopReelPictureSound(sound);
+                      clearPreparedShopReel();
+                    }}
+                    disabled={preparingShopReelFromImage}
+                    debugIdPrefix="shop-control.reel.picture-sound"
+                    silentSource
+                  />
                   <div style={{ marginTop: 10 }}>
                     <PrimaryButton
                       type="button"
@@ -1392,7 +1405,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               What this pilot does
             </StableDisclosureSummary>
             <div style={{ marginTop: 8, color: "#D7E3F1", fontSize: 12, lineHeight: 1.45 }}>
-              It can make a bounded five- or ten-second video from your selected picture, or reuse your reviewed video, then share it with your shop link. Picture Reels are silent in this version. It does not post automatically, prove delivery or sales, invent product detail, or use private Vault content. Use only sound you created or may legally use on an uploaded video.
+              It can make a bounded five- or ten-second video from your selected picture, optionally add sound you own or may use, or reuse your reviewed video, then share it with your shop link. It does not post automatically, prove delivery or sales, invent product detail, use private Vault content, or supply a built-in music catalogue.
             </div>
           </details>
         </div>

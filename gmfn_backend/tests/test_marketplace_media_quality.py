@@ -13,6 +13,7 @@ from PIL import Image
 
 from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited_upload
 from app.api.routes.marketplace import _require_verified_marketplace_video
+from app.db.database import engine
 from app.services.marketplace_media_quality_service import (
     FFMPEG_THREAD_LIMIT,
     MAX_GSN_NATURAL_FINISH_BYTES,
@@ -320,6 +321,115 @@ def test_image_reel_creates_bounded_vertical_managed_video(tmp_path: Path):
     assert result.output.codec == "h264"
     assert result.output_has_audio is False
     assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
+
+
+def test_image_reel_adds_confirmed_owner_sound(tmp_path: Path):
+    prepared_image = tmp_path / "prepared-image"
+    normalize_marketplace_image(_image_bytes(size=(900, 1600)), prepared_image)
+    sound = _make_audio(tmp_path / "owner-sound.wav", frequency=440)
+    output = tmp_path / "qv1_picture_reel_with_sound.mp4"
+
+    result = render_marketplace_image_reel(
+        prepared_image,
+        output,
+        finish_profile=VideoFinishProfile(
+            duration_seconds=5,
+            brand_name="Ada Home Foods",
+        ),
+        sound_path=sound,
+    )
+
+    assert output.is_file()
+    assert result.added_sound is True
+    assert result.output_has_audio is True
+    assert result.output.duration_seconds <= 5.35
+    assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
+
+
+def _seed_picture_reel_shop() -> None:
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            """
+            INSERT INTO marketplace_shops (
+                id, clan_id, owner_user_id, shop_name, is_active
+            ) VALUES (1, 1, 1, 'Ada Home Foods', 1)
+            """
+        )
+
+
+def test_image_reel_upload_rejects_sound_without_rights_confirmation(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+    tmp_path: Path,
+):
+    _seed_picture_reel_shop()
+    sound = _make_audio(tmp_path / "unconfirmed-picture-reel.wav")
+
+    with sound.open("rb") as sound_stream:
+        response = client.post(
+            "/marketplace/media/image-reel",
+            data={
+                "duration_seconds": "5",
+                "shop_id": "1",
+                "sound_mode": "replace",
+            },
+            files={
+                "file": ("shop.jpg", _image_bytes(), "image/jpeg"),
+                "sound_file": (
+                    "unconfirmed-picture-reel.wav",
+                    sound_stream,
+                    "audio/wav",
+                ),
+            },
+        )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"]["code"] == "sound_rights_confirmation_required"
+
+
+def test_image_reel_upload_embeds_confirmed_owner_sound(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+    monkeypatch,
+    tmp_path: Path,
+):
+    _seed_picture_reel_shop()
+    upload_root = tmp_path / "uploads"
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+    sound = _make_audio(tmp_path / "confirmed-picture-reel.wav")
+
+    with sound.open("rb") as sound_stream:
+        response = client.post(
+            "/marketplace/media/image-reel",
+            data={
+                "duration_seconds": "5",
+                "shop_id": "1",
+                "sound_mode": "replace",
+                "sound_rights_confirmed": "true",
+            },
+            files={
+                "file": ("shop.jpg", _image_bytes(), "image/jpeg"),
+                "sound_file": (
+                    "confirmed-picture-reel.wav",
+                    sound_stream,
+                    "audio/wav",
+                ),
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["source_kind"] == "image"
+    assert body["quality_verified"] is True
+    assert body["sound"] == {
+        "added": True,
+        "mode": "replace",
+        "output_has_audio": True,
+        "rights_confirmed": True,
+    }
+    assert (upload_root / "marketplace" / "videos" / body["filename"]).is_file()
 
 
 def test_image_reel_rejects_unapproved_duration(tmp_path: Path):

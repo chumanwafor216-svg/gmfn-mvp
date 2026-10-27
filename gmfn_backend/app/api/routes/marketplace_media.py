@@ -545,6 +545,9 @@ async def upload_marketplace_image(
 @router.post("/image-reel")
 async def create_marketplace_image_reel(
     file: UploadFile = File(...),
+    sound_file: Optional[UploadFile] = File(default=None),
+    sound_mode: Optional[str] = Form(default=None),
+    sound_rights_confirmed: bool = Form(default=False),
     clan_id: Optional[int] = Form(default=None),
     duration_seconds: int = Form(default=10),
     shop_id: int = Form(...),
@@ -564,6 +567,54 @@ async def create_marketplace_image_reel(
     if int(selected_shop.owner_user_id) != int(current_user.id) and not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="You can only create a Reel for a shop you own.")
 
+    selected_sound_mode = str(sound_mode or "").strip().lower() or None
+    sound_ext = _safe_ext(sound_file.filename) if sound_file is not None else ""
+    if sound_file is not None:
+        if selected_sound_mode != "replace":
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_mode_invalid",
+                    "message": "A picture Reel can add one selected sound.",
+                },
+            )
+        if not sound_rights_confirmed:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_rights_confirmation_required",
+                    "message": "Confirm that you created this sound or have permission to use it.",
+                },
+            )
+        if sound_ext not in ALLOWED_AUDIO_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_format_unsupported",
+                    "message": "Use MP3, M4A, AAC, WAV, OGG, or WebM audio.",
+                },
+            )
+        sound_content_type = _normalize_content_type(sound_file.content_type)
+        if not (
+            sound_content_type in ALLOWED_AUDIO_CONTENT_TYPES
+            or sound_content_type in GENERIC_CONTENT_TYPES
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "sound_content_type_unsupported",
+                    "message": "The selected file is not a supported audio file.",
+                },
+            )
+    elif selected_sound_mode is not None or sound_rights_confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "sound_file_required",
+                "message": "Choose or record a sound before adding sound settings.",
+            },
+        )
+
     ext = _safe_ext(file.filename)
     content_type = _normalize_content_type(file.content_type)
     _validate_ext("image", ext)
@@ -577,6 +628,11 @@ async def create_marketplace_image_reel(
     processing_token = secrets.token_hex(8)
     prepared_image_path = _video_processing_dir() / f"{processing_token}.source"
     output_path = _video_processing_dir() / f"{processing_token}.image-reel.mp4"
+    sound_input_path = (
+        _video_processing_dir() / f"{processing_token}.sound{sound_ext}"
+        if sound_file is not None
+        else None
+    )
     filename = f"qv1_{_random_name('.mp4')}"
     filepath = _video_upload_dir() / filename
     finish = VideoFinishProfile(
@@ -589,10 +645,20 @@ async def create_marketplace_image_reel(
 
     try:
         prepared_image = normalize_marketplace_image(data, prepared_image_path)
+        if sound_file is not None and sound_input_path is not None:
+            sound_size_bytes = await _write_limited_upload(
+                sound_file,
+                sound_input_path,
+                MAX_SOURCE_AUDIO_BYTES,
+                file_label="sound file",
+            )
+            if sound_size_bytes <= 0:
+                raise HTTPException(status_code=400, detail="Sound file is empty.")
         reel = render_marketplace_image_reel(
             prepared_image_path,
             output_path,
             finish_profile=finish,
+            sound_path=sound_input_path,
         )
         shutil.move(str(output_path), str(filepath))
     except MediaQualityError as exc:
@@ -602,6 +668,8 @@ async def create_marketplace_image_reel(
         ) from exc
     finally:
         prepared_image_path.unlink(missing_ok=True)
+        if sound_input_path is not None:
+            sound_input_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
         output_path.with_suffix(".reel-frame.jpg").unlink(missing_ok=True)
         output_path.with_suffix(".overlay.png").unlink(missing_ok=True)
@@ -629,8 +697,10 @@ async def create_marketplace_image_reel(
             "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
         },
         "sound": {
-            "added": False,
-            "output_has_audio": False,
+            "added": reel.added_sound,
+            "mode": "replace" if reel.added_sound else None,
+            "output_has_audio": reel.output_has_audio,
+            "rights_confirmed": bool(sound_file is not None and sound_rights_confirmed),
         },
         "preparation": {
             "source_image": prepared_image.as_dict(),

@@ -217,6 +217,7 @@ class ImageReelVideo:
     duration_seconds: int
     size_bytes: int
     output_has_audio: bool = False
+    added_sound: bool = False
     visual_preparation: str = "gsn_image_reel"
     finish_profile: str = "gsn_natural"
 
@@ -231,6 +232,7 @@ class ImageReelVideo:
             "duration_seconds": self.duration_seconds,
             "size_bytes": self.size_bytes,
             "output_has_audio": self.output_has_audio,
+            "added_sound": self.added_sound,
             "visual_preparation": self.visual_preparation,
             "finish_profile": self.finish_profile,
         }
@@ -864,6 +866,7 @@ def render_marketplace_image_reel(
     output_path: str | Path,
     *,
     finish_profile: VideoFinishProfile,
+    sound_path: str | Path | None = None,
 ) -> ImageReelVideo:
     """Turn one truthful still shop picture into a bounded portrait MP4.
 
@@ -968,6 +971,19 @@ def render_marketplace_image_reel(
                 "GSN could not prepare Reels right now. Please try again shortly.",
             ) from exc
 
+        added_sound_path = Path(sound_path) if sound_path is not None else None
+        if added_sound_path is not None:
+            if not added_sound_path.is_file() or added_sound_path.stat().st_size <= 0:
+                raise MediaQualityError(
+                    "sound_empty",
+                    "The selected sound is empty or could not be read.",
+                )
+            if not _source_has_audio(ffmpeg_exe, added_sound_path):
+                raise MediaQualityError(
+                    "sound_unreadable",
+                    "GSN could not read the selected sound. Choose another audio file or record it again.",
+                )
+
         command = [
             ffmpeg_exe,
             "-y",
@@ -984,8 +1000,12 @@ def render_marketplace_image_reel(
             "30",
             "-i",
             str(frame_path),
-            "-t",
-            str(finish_seconds),
+        ]
+        if added_sound_path is not None:
+            command.extend(["-i", str(added_sound_path)])
+        command.extend([
+            "-t", str(finish_seconds),
+            "-map", "0:v:0",
             "-vf",
             (
                 "zoompan="
@@ -1016,9 +1036,24 @@ def render_marketplace_image_reel(
             "+faststart",
             "-map_metadata",
             "-1",
-            "-an",
-            str(destination),
-        ]
+        ])
+        if added_sound_path is not None:
+            duration_filter = (
+                f"atrim=0:{finish_seconds},apad=pad_dur={finish_seconds},"
+                f"atrim=0:{finish_seconds},asetpts=PTS-STARTPTS,"
+                "loudnorm=I=-16:TP=-1.5:LRA=11[prepared_audio]"
+            )
+            command.extend([
+                "-filter_complex_threads", str(FFMPEG_THREAD_LIMIT),
+                "-filter_complex", f"[1:a:0]{duration_filter}",
+                "-map", "[prepared_audio]",
+                "-c:a", "aac",
+                "-b:a", "96k",
+                "-shortest",
+            ])
+        else:
+            command.append("-an")
+        command.append(str(destination))
         try:
             completed = (
                 _run_video_process(command)
@@ -1059,6 +1094,12 @@ def render_marketplace_image_reel(
 
         output_inspection = inspect_video(destination)
         output_has_audio = _source_has_audio(ffmpeg_exe, destination)
+        if added_sound_path is not None and not output_has_audio:
+            destination.unlink(missing_ok=True)
+            raise MediaQualityError(
+                "sound_output_missing",
+                "GSN could not attach the selected sound to the picture Reel. Try another sound file.",
+            )
         if output_inspection.duration_seconds > finish_seconds + 0.35:
             destination.unlink(missing_ok=True)
             raise MediaQualityError(
@@ -1073,6 +1114,7 @@ def render_marketplace_image_reel(
             duration_seconds=finish_seconds,
             size_bytes=output_size,
             output_has_audio=output_has_audio,
+            added_sound=added_sound_path is not None,
         )
     finally:
         frame_path.unlink(missing_ok=True)

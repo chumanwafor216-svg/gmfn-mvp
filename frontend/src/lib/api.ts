@@ -8596,13 +8596,20 @@ export type MarketplaceVideoSoundOptions = {
 export async function uploadMarketplaceImageReelFile(
   file: File,
   clanId: number | null | undefined,
-  finish: MarketplaceVideoFinishOptions
+  finish: MarketplaceVideoFinishOptions,
+  sound?: MarketplaceVideoSoundOptions | null
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("duration_seconds", String(finish.durationSeconds));
   fd.append("shop_id", String(finish.shopId));
   if (finish.title?.trim()) fd.append("title", finish.title.trim());
+
+  if (sound) {
+    fd.append("sound_file", sound.file);
+    fd.append("sound_mode", "replace");
+    fd.append("sound_rights_confirmed", String(sound.rightsConfirmed));
+  }
 
   const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
   if (effectiveClanId > 0) {

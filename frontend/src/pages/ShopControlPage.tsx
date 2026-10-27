@@ -3737,6 +3737,8 @@ export default function ShopControlPage() {
   const [spotlightImageFile, setSpotlightImageFile] = useState<File | null>(null);
   const [spotlightVideoFile, setSpotlightVideoFile] = useState<File | null>(null);
   const [spotlightVideoSound, setSpotlightVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
+  const [shopReelPictureSound, setShopReelPictureSound] =
+    useState<MarketplaceVideoSoundOptions | null>(null);
   const [spotlightImagePreviewUrl, setSpotlightImagePreviewUrl] = useState("");
   const [spotlightVideoPreviewUrl, setSpotlightVideoPreviewUrl] = useState("");
   const [spotlightVideoDurationSeconds, setSpotlightVideoDurationSeconds] =
@@ -4134,6 +4136,7 @@ export default function ShopControlPage() {
     setSpotlightImageFile(null);
     setSpotlightVideoFile(null);
     setSpotlightVideoSound(null);
+    setShopReelPictureSound(null);
     setSpotlightVideoDurationSeconds(null);
     setSpotlightNaturalFinishEnabled(true);
     setSpotlightNaturalFinishSeconds(10);
@@ -6752,6 +6755,7 @@ export default function ShopControlPage() {
         setSpotlightFinishedVideoUrl('');
         clearPreparedShopReel();
       }
+      setShopReelPictureSound(null);
       setSpotlightImageFile(prepared.file);
       setSpotlightPublishFeedback(null);
       if (prepared.message) {
@@ -6921,6 +6925,10 @@ export default function ShopControlPage() {
 
   async function prepareShopReelFromImage(): Promise<string | null> {
     if (!spotlightImageFile || preparingShopReelFromImage) return null;
+    if (shopReelPictureSound && !shopReelPictureSound.rightsConfirmed) {
+      showNotice('info', 'Confirm that you created the added sound or have permission to use it.');
+      return null;
+    }
     setPreparingShopReelFromImage(true);
     try {
       const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
@@ -6938,7 +6946,8 @@ export default function ShopControlPage() {
           durationSeconds: spotlightNaturalFinishSeconds,
           shopId: Number(activeShop.id),
           title: firstTruthy(spotlightProductName, spotlightMessage),
-        }
+        },
+        shopReelPictureSound
       );
       const url = firstTruthy(
         uploadRes?.video_url,
@@ -7506,6 +7515,8 @@ export default function ShopControlPage() {
     spotlightVideoFile,
     spotlightVideoSound,
     setSpotlightVideoSound,
+    shopReelPictureSound,
+    setShopReelPictureSound,
     spotlightHasVideo,
     spotlightVideoDurationSeconds,
     spotlightNaturalFinishEnabled,
@@ -7516,6 +7527,7 @@ export default function ShopControlPage() {
     setSpotlightFinishedVideoUrl,
     preparingSpotlightFinish,
     shopReelVideoUrl: spotlightFinishedVideoUrl || lastPreparedShopReelUrl,
+    clearPreparedShopReel,
     preparingShopReelFromImage,
     prepareShopReelFromImage,
     prepareSpotlightNaturalFinish,

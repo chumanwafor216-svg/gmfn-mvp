@@ -59,6 +59,8 @@ requirePattern(service, /sound_mode[\s\S]*?\{"mix", "replace"\}[\s\S]*?amix=inpu
 requirePattern(mediaRoute, /sound_rights_confirmed[\s\S]*?sound_rights_confirmation_required[\s\S]*?MAX_SOURCE_AUDIO_BYTES/, "The video endpoint must require sound-rights confirmation and bound audio uploads.");
 requirePattern(mediaRoute, /@router\.post\("\/video"\)[\s\S]*?Depends\(get_current_user\)[\s\S]*?normalize_marketplace_video[\s\S]*?quality_verified": True/, "The authenticated video endpoint must inspect and mark only verified output.");
 requirePattern(mediaRoute, /@router\.post\("\/image-reel"\)[\s\S]*?Depends\(get_current_user\)[\s\S]*?owner_user_id[\s\S]*?normalize_marketplace_image[\s\S]*?render_marketplace_image_reel[\s\S]*?source_kind": "image"[\s\S]*?quality_verified": True/, "The image Reel endpoint must authenticate the owner, prepare the still image, and return only a verified managed video.");
+requirePattern(mediaRoute, /@router\.post\("\/image-reel"\)[\s\S]*?sound_rights_confirmed[\s\S]*?sound_rights_confirmation_required[\s\S]*?MAX_SOURCE_AUDIO_BYTES[\s\S]*?render_marketplace_image_reel/, "The image Reel endpoint must reuse bounded owner-sound and rights controls.");
+requirePattern(service, /def render_marketplace_image_reel[\s\S]*?sound_path[\s\S]*?sound_unreadable[\s\S]*?loudnorm=I=-16:TP=-1\.5:LRA=11\[prepared_audio\][\s\S]*?sound_output_missing/, "Picture Reel sound must be decoded, bounded, normalised, and verified in the output.");
 requirePattern(mediaRoute, /_write_limited_upload\([\s\S]*?MAX_SOURCE_VIDEO_BYTES[\s\S]*?normalize_marketplace_video/, "The server must stream a bounded large source before normalising it.");
 requirePattern(mediaRoute, /verified_video_upload_required/g, "Direct video upload bypasses must remain closed.");
 requirePattern(marketplaceRoute, /def _require_verified_marketplace_video[\s\S]*?is_verified_marketplace_video_url/, "Marketplace writes must retain the verified managed-video guard.");
@@ -68,6 +70,7 @@ requirePattern(pilot, /clean the lens[\s\S]*?good light[\s\S]*?quiet place[\s\S]
 requirePattern(serviceTests, /accepts_usable_576x1296_social_portrait[\s\S]*?size="576x1296"[\s\S]*?output\.short_edge >= MIN_VIDEO_SHORT_EDGE/, "Backend regression coverage must prove the reported 576x1296 portrait video is accepted and prepared.");
 requirePattern(serviceTests, /adds_sound_to_a_silent_video[\s\S]*?mixes_added_sound_with_original_audio[\s\S]*?rejects_sound_without_rights_confirmation/, "Backend regression coverage must prove sound insertion, mixing, and rights enforcement.");
 requirePattern(api, /sound_file[\s\S]*?sound_mode[\s\S]*?sound_rights_confirmed/, "The shared frontend upload helper must send all sound controls.");
+requirePattern(shopControlSpotlightWorkflow, /shop-control\.reel\.picture-sound[\s\S]*?silentSource/, "The picture Reel must expose the shared owner-sound editor without video mix controls.");
 for (const [source, name] of [
   [shopAssets, "Shop Assets"],
   [vault, "Vault Control"],

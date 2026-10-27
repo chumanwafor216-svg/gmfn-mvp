@@ -21,6 +21,7 @@ type Props = {
   onChange: (value: MarketplaceVideoSoundOptions | null) => void;
   disabled?: boolean;
   debugIdPrefix: string;
+  silentSource?: boolean;
 };
 
 function supportedRecordingMimeType(): string {
@@ -40,6 +41,7 @@ export default function VideoSoundEditor({
   onChange,
   disabled = false,
   debugIdPrefix,
+  silentSource = false,
 }: Props) {
   const [open, setOpen] = useState(Boolean(value));
   const [recording, setRecording] = useState(false);
@@ -76,7 +78,7 @@ export default function VideoSoundEditor({
     }
     onChange({
       file,
-      mode: value?.mode || "mix",
+      mode: silentSource ? "replace" : value?.mode || "mix",
       rightsConfirmed: false,
       source,
     });
@@ -163,7 +165,9 @@ export default function VideoSoundEditor({
       {open ? (
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
           <div>
-            <div style={brandSectionLabel()}>Sound for this video</div>
+            <div style={brandSectionLabel()}>
+              {silentSource ? "Sound for this picture Reel" : "Sound for this video"}
+            </div>
             <p style={{ ...brandHelperText(), margin: "5px 0 0" }}>
               Choose a sound file or record up to 10 seconds. Use only sound you own or can use.
             </p>
@@ -231,30 +235,36 @@ export default function VideoSoundEditor({
                 style={{ width: "100%" }}
                 data-audio-preview={debugIdPrefix}
               />
-              <div
-                role="group"
-                aria-label="How to add this sound"
-                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
-              >
-                {(
-                  [
-                    ["mix", "Add over video"],
-                    ["replace", "Replace video sound"],
-                  ] as const
-                ).map(([mode, label]) => (
-                  <StableButton
-                    key={mode}
-                    type="button"
-                    kind={value.mode === mode ? "primary" : "secondary"}
-                    disabled={disabled}
-                    onClick={() => updateMode(mode)}
-                    debugId={`${debugIdPrefix}.mode-${mode}`}
-                    style={{ minHeight: 48 }}
-                  >
-                    {label}
-                  </StableButton>
-                ))}
-              </div>
+              {silentSource ? (
+                <p style={{ ...brandHelperText(), margin: 0 }}>
+                  GSN will add this sound to the silent picture Reel.
+                </p>
+              ) : (
+                <div
+                  role="group"
+                  aria-label="How to add this sound"
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
+                >
+                  {(
+                    [
+                      ["mix", "Add over video"],
+                      ["replace", "Replace video sound"],
+                    ] as const
+                  ).map(([mode, label]) => (
+                    <StableButton
+                      key={mode}
+                      type="button"
+                      kind={value.mode === mode ? "primary" : "secondary"}
+                      disabled={disabled}
+                      onClick={() => updateMode(mode)}
+                      debugId={`${debugIdPrefix}.mode-${mode}`}
+                      style={{ minHeight: 48 }}
+                    >
+                      {label}
+                    </StableButton>
+                  ))}
+                </div>
+              )}
               <label
                 style={{
                   display: "flex",
