@@ -42,7 +42,7 @@ const expectedSourceActions = {
   StableCtaLink: 14,
   total: 60,
 };
-const expectedNativeFieldCount = 29;
+const expectedNativeFieldCount = 30;
 const expectedFileInputActionRoots = 2;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
@@ -466,7 +466,7 @@ assertShopContains(
   "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
 );
 assertShopContains(
-  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?Turn this picture into a short Reel[\s\S]*?Your Spotlight remains a picture[\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?What this pilot does[\s\S]*?Picture Reels are silent in this version[\s\S]*?does not post automatically[\s\S]*?invent product detail/,
+  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?Turn this picture into a short Reel[\s\S]*?Your Spotlight remains a picture[\s\S]*?Reel length[\s\S]*?data-reel-picture-length="true"[\s\S]*?Short · 5 seconds[\s\S]*?Full · 10 seconds[\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?What this pilot does[\s\S]*?Picture Reels are silent in this version[\s\S]*?does not post automatically[\s\S]*?invent product detail/,
   "Free Spotlight must keep the free GSN Shop Reel pilot directly below the composer, support a separate bounded picture Reel without changing Spotlight media, keep posting user-controlled, and state the production boundary truthfully."
 );
 assertShopContains(

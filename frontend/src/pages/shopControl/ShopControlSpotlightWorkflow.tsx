@@ -1319,6 +1319,38 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
                     GSN will keep your full picture visible, add gentle motion and your shop label, and create a {spotlightNaturalFinishSeconds}-second video. Your Spotlight remains a picture.
                   </div>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      marginTop: 10,
+                      fontSize: 12.5,
+                      fontWeight: 900,
+                      color: "#183451",
+                    }}
+                  >
+                    Reel length
+                    <select
+                      value={spotlightNaturalFinishSeconds}
+                      onChange={(event) => setSpotlightNaturalFinishSeconds(event.target.value === "5" ? 5 : 10)}
+                      data-reel-picture-length="true"
+                      style={{
+                        width: "100%",
+                        minHeight: 46,
+                        padding: "10px 12px",
+                        borderRadius: 14,
+                        border: "1px solid rgba(24,52,81,0.22)",
+                        background: "#FFFFFF",
+                        color: "#07172C",
+                        font: "inherit",
+                        fontSize: 16,
+                        fontWeight: 850,
+                      }}
+                    >
+                      <option value={5}>Short · 5 seconds</option>
+                      <option value={10}>Full · 10 seconds</option>
+                    </select>
+                  </label>
                   <div style={{ marginTop: 10 }}>
                     <PrimaryButton
                       type="button"
