@@ -8,6 +8,16 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local empty-owner Public Shop guidance - 2026-10-27
+
+- Owner-approved change implemented locally on the canonical Public Shop Products & Services shelf.
+- When the exact signed-in owner has no public items, the dead-end visitor empty state is replaced with four owner-only shop-space cards. The first is `Start your shop here`; the other available cards say `Add another shop item` and use a large plus.
+- With one to three items, the shelf keeps four total starter positions. From four to five items, it exposes only the next available free space. The existing six free spaces and four paid extra-space maximum remain unchanged.
+- Each card routes to the existing Shop Control/Shop Assets task with the exact `manage_block`; opening the task creates nothing and makes no business write. The focused task uses truthful Add wording for an empty space instead of the previous misleading Manage-product wording.
+- Visitors and signed-in non-owners still see `No public items yet` and receive no creation controls.
+- Files in this local correction: `frontend/src/pages/ShopGalleryPage.tsx`, `frontend/src/pages/ShopControlPage.tsx`, `frontend/src/pages/ShopAssetsPage.tsx`, `frontend/tools/audit-shop-gallery-button-inventory.mjs`, `frontend/tools/smoke-three-plus-shortcuts.mjs`, `docs/SCREEN_SPECS.md`, `docs/FREEZE_POLICY.md`, and this handoff.
+- Verification passed: scoped ESLint; Public Shop button inventory, workflow-plus and Shop Assets slot audits; the complete protected-button freeze; the 295-module production build; and the full 390x844 three-plus phone smoke. The smoke proves four cards for an empty owner shop, three follow-on cards after one existing item, exact empty-space routing into the existing Add task, no navigation business write, visitor/non-owner separation, and no horizontal phone overflow. This correction remains local until the owner explicitly says `deploy`.
+
 ## Local detached-announcement compactness correction - 2026-10-27
 
 - The public page opened from WhatsApp/social links now leads with the community,

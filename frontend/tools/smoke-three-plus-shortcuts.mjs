@@ -1,4 +1,4 @@
-/* global console, localStorage, URL, window */
+/* global console, document, localStorage, URL, window */
 
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -47,8 +47,8 @@ const spotlight = {
   serving_status: 'serving',
   campaign_serving_status: 'serving',
   activated_at: '2026-10-16T14:35:00Z',
-  authorized_expires_at: '2026-10-17T14:35:00Z',
-  expires_at: '2026-10-17T14:35:00Z',
+  authorized_expires_at: '2099-10-17T14:35:00Z',
+  expires_at: '2099-10-17T14:35:00Z',
   lifecycle_writers_enabled: true,
 };
 const paidSpotlight = {
@@ -178,11 +178,12 @@ async function installMocks(page, scenario) {
       }));
     }
     if (path === `/marketplace/public/shop/${ownerId}`) {
+      const publicProducts = scenario.emptyShop ? [] : [product];
       return route.fulfill(json({
         ok: true,
         item: shop,
         shop,
-        products: [product],
+        products: publicProducts,
         broadcasts: [spotlight],
         primary_broadcast: spotlight,
         clan_id: 8,
@@ -226,7 +227,8 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ serving_contract_version: 2, items: [] }));
     }
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
-      return route.fulfill(json({ item: shop, shop, products: [product] }));
+      const ownerProducts = scenario.emptyShop ? [] : [product];
+      return route.fulfill(json({ item: shop, shop, products: ownerProducts }));
     }
     if (path.startsWith(`/marketplace/shops/by-gmfn/${ownerId}`)) {
       return route.fulfill(json({ item: shop, shop }));
@@ -271,7 +273,9 @@ async function installMocks(page, scenario) {
         ? []
         : scenario.vaultStage === 'offer-ready'
           ? [vaultProduct]
-          : [product];
+          : scenario.emptyShop
+            ? []
+            : [product];
       return route.fulfill(json({ items, products: items }));
     }
     if (path.startsWith('/marketplace/broadcasts')) {
@@ -357,14 +361,35 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   const scenario = { identity: ownerId, ownerSpotlightState: ownerState, demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
   const { context, page } = await newPhonePage(browser, scenario);
   await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  const summary = page.locator('[data-public-shop-more="secondary"] summary');
+  const moreDetails = page.locator('[data-public-shop-more="secondary"]');
+  const summary = moreDetails.locator('summary');
   await summary.waitFor({ state: 'visible', timeout: 20_000 });
-  if ((await page.locator('[data-public-shop-more="secondary"]').getAttribute('open')) === null) await summary.click();
+  await summary.getByText(/Your Spotlight/).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await page.waitForTimeout(1_000);
+  if (!(await moreDetails.evaluate((node) => node.open))) await summary.click();
 
   const spotlightPlus = page.getByRole('link', { name: 'Add Spotlight' });
   const diaryPlus = page.getByRole('link', { name: 'Add diary entry' });
-  await spotlightPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  try {
+    await spotlightPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  } catch (error) {
+    throw new Error(
+      `Owner Spotlight shortcut was unavailable at ${page.url()}. Visible page: ` +
+      (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim().slice(0, 1200),
+      { cause: error },
+    );
+  }
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  const followOnSpaces = page.locator('[data-owner-empty-shop-space]');
+  if (await followOnSpaces.count() !== 3) {
+    throw new Error(`One-item owner shop exposed ${await followOnSpaces.count()} follow-on spaces, expected 3.`);
+  }
+  if (await page.getByText('Start your shop here', { exact: true }).count()) {
+    throw new Error('One-item owner shop kept the first-item wording after an item already existed.');
+  }
   await assertTouchTarget(spotlightPlus, 'Spotlight plus');
   await assertTouchTarget(diaryPlus, 'Shop Diary plus');
   if (await page.getByRole('link', { name: 'Manage media for Jollof tray' }).count()) {
@@ -582,6 +607,102 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
     throw new Error(`Focused save/delete emitted unexpected writes: ${writes.join(', ')}.`);
   }
   await context.close();
+}
+
+async function testOwnerEmptyShopSpaces(browser, baseUrl) {
+  const scenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'live',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    emptyShop: true,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+
+  const emptySpaces = page.locator('[data-owner-empty-shop-space]');
+  await emptySpaces.first().waitFor({ state: 'visible', timeout: 20_000 });
+  if (await emptySpaces.count() !== 4) {
+    throw new Error(`Empty owner shop exposed ${await emptySpaces.count()} starter spaces, expected 4.`);
+  }
+  await page.getByRole('link', {
+    name: 'Start your shop here, shop space 1',
+    exact: true,
+  }).waitFor({ state: 'visible', timeout: 20_000 });
+  if (await page.getByText('No public items yet.', { exact: true }).count()) {
+    throw new Error('Empty owner shop still showed the visitor-only dead-end message.');
+  }
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1
+  );
+  if (overflow) throw new Error('Empty owner shop spaces created horizontal phone overflow.');
+
+  await page.screenshot({
+    path: join(screenshotDir, 'public-shop-owner-empty-spaces-390x844.png'),
+    fullPage: true,
+  });
+
+  await emptySpaces.first().click();
+  await page.waitForFunction(() => {
+    const url = new URL(window.location.href);
+    return (
+      url.pathname === '/app/shop-control' &&
+      url.searchParams.get('manage_block') === '1' &&
+      url.searchParams.get('source') === 'public-shop-product' &&
+      url.searchParams.get('community') === '8' &&
+      url.hash === '#shop-control-gallery-tools'
+    );
+  }, { timeout: 30_000 });
+  const addShopItemHeading = page.getByText('Add a shop item', { exact: true }).first();
+  try {
+    await addShopItemHeading.waitFor({ state: 'visible', timeout: 30_000 });
+  } catch (error) {
+    throw new Error(
+      `Empty-space handoff reached ${page.url()} but did not show the add task. Visible page: ` +
+      (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim().slice(0, 1200),
+      { cause: error },
+    );
+  }
+  await page.getByText(
+    'This shop space is ready. Tap + Add item to add your product or service.',
+    { exact: true }
+  ).waitFor({ state: 'visible', timeout: 20_000 });
+  const addItem = page.getByRole('button', { name: '+ Add item', exact: true });
+  await addItem.waitFor({ state: 'visible', timeout: 20_000 });
+  await addItem.click();
+  await page.locator('#shop-assets-product-editor').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+
+  const writes = businessWrites(scenario.mutations);
+  if (writes.length !== 0) {
+    throw new Error(`Empty-space handoff issued business write request(s): ${writes.join(', ')}.`);
+  }
+  await context.close();
+
+  const visitorScenario = {
+    ...scenario,
+    identity: visitorId,
+    mutations: [],
+  };
+  const visitor = await newPhonePage(browser, visitorScenario);
+  await visitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await visitor.page.getByText('No public items yet.', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await visitor.page.locator('[data-owner-empty-shop-space]').count()) {
+    throw new Error('A non-owner received owner shop-space creation controls.');
+  }
+  await visitor.context.close();
 }
 
 async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
@@ -1146,6 +1267,7 @@ const baseUrl = server.resolvedUrls.local[0].replace(/\/+$/, '');
 const browser = await chromium.launch({ headless: true });
 
 try {
+  await testOwnerEmptyShopSpaces(browser, baseUrl);
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
   await testOwnerProductMediaShortcut(browser, baseUrl);
@@ -1164,6 +1286,8 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
+      'empty owner Public Shop exposes four progressive shop spaces while visitors retain the public empty state',
+      'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
       'ordinary phone Shop items leads with Add item, keeps secondary shop tasks closed, and preserves the separate Diary handoff',

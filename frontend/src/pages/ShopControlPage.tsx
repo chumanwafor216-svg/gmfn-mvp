@@ -3628,6 +3628,11 @@ export default function ShopControlPage() {
         ownerProductManageRequest.blockNumber > 0
       )
   );
+  const ownerProductCreateFocusRequested = Boolean(
+    ownerProductManageFocusRequested &&
+      ownerProductManageRequest.productId <= 0 &&
+      ownerProductManageRequest.blockNumber > 0
+  );
   const shopDiaryTaskFocused =
     safeStr(location.hash).replace(/^#/, "") === "shop-assets-diary";
   const shopPictureTaskFocused =
@@ -7459,7 +7464,9 @@ export default function ShopControlPage() {
         }
         title={
           ownerProductManageFocusRequested
-            ? "Manage product"
+            ? ownerProductCreateFocusRequested
+              ? "Add shop item"
+              : "Manage product"
             : shopDiaryTaskFocused
               ? "Write shop update"
               : shopPictureTaskFocused
@@ -7472,7 +7479,9 @@ export default function ShopControlPage() {
         }
         subtitle={
           ownerProductManageFocusRequested
-            ? "Change or remove the exact public-shop item you opened."
+            ? ownerProductCreateFocusRequested
+              ? `Use shop space ${ownerProductManageRequest.blockNumber} for your next product or service.`
+              : "Change or remove the exact public-shop item you opened."
             : shopDiaryTaskFocused
               ? "Publish one short message for visitors."
               : shopPictureTaskFocused
@@ -7487,7 +7496,9 @@ export default function ShopControlPage() {
         homeLabel="Dashboard"
         backTo={
           ownerProductManageFocusRequested
-            ? ownerProductManageReturnPath || ownerPublicShopPath || routes.marketplace
+            ? ownerProductCreateFocusRequested
+              ? ownerPublicShopPath || routes.marketplace
+              : ownerProductManageReturnPath || ownerPublicShopPath || routes.marketplace
             : shopDiaryTaskFocused
               ? routes.shopGallery
               : shopPictureTaskFocused

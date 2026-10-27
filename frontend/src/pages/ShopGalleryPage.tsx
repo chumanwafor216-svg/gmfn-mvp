@@ -248,6 +248,7 @@ type NoticeTone = "success" | "error";
 const GALLERY_STANDARD_SLOTS_TOTAL = 6;
 const GALLERY_EXTRA_SLOTS_LIMIT = 4;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
+const OWNER_STARTER_SHOP_SPACES = 4;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
@@ -4456,6 +4457,33 @@ export default function ShopGalleryPage() {
       shopOwnerGmfnId &&
       ownerSurfaceIdentityMatches(signedInGmfnId, shopOwnerGmfnId)
   );
+  const ownerEmptyProductSlots = useMemo(() => {
+    if (!signedInOwnsShop || focusedBlockLinkActive) return [];
+
+    const occupiedSlots = new Set(
+      products
+        .map((product) => positiveNumber(product.slotNumber))
+        .filter((slotNumber) => slotNumber > 0)
+    );
+    const availableSlots = Array.from(
+      { length: gallerySlotsTotal },
+      (_, index) => index + 1
+    ).filter((slotNumber) => !occupiedSlots.has(slotNumber));
+    const visibleProductCount = Math.min(products.length, gallerySlotsTotal);
+    const spacesToShow =
+      visibleProductCount < OWNER_STARTER_SHOP_SPACES
+        ? OWNER_STARTER_SHOP_SPACES - visibleProductCount
+        : visibleProductCount < gallerySlotsTotal
+        ? 1
+        : 0;
+
+    return availableSlots.slice(0, spacesToShow);
+  }, [
+    focusedBlockLinkActive,
+    gallerySlotsTotal,
+    products,
+    signedInOwnsShop,
+  ]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
@@ -4477,6 +4505,17 @@ export default function ShopGalleryPage() {
     const blockNumber = positiveNumber(product.slotNumber);
     if (productId) params.set("manage_product_id", String(productId));
     if (blockNumber) params.set("manage_block", String(blockNumber));
+    params.set("source", "public-shop-product");
+
+    return routeWithCommunity(
+      `${APP_ROUTES.SHOP_ME}?${params.toString()}#shop-control-gallery-tools`,
+      ownerSurfaceCommunityId
+    );
+  }
+
+  function ownerEmptyProductPath(blockNumber: number): string {
+    const params = new URLSearchParams();
+    params.set("manage_block", String(blockNumber));
     params.set("source", "public-shop-product");
 
     return routeWithCommunity(
@@ -7603,7 +7642,7 @@ export default function ShopGalleryPage() {
                 </StableCtaLink>
               </div>
             </div>
-          ) : visibleProducts.length === 0 ? (
+          ) : visibleProducts.length === 0 && !signedInOwnsShop ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
                 No public items yet.
@@ -8157,6 +8196,96 @@ export default function ShopGalleryPage() {
                       </div>
                     </div>
                   </article>
+                );
+              })}
+              {ownerEmptyProductSlots.map((slotNumber, index) => {
+                const isFirstShopStep = products.length === 0 && index === 0;
+                const actionLabel = isFirstShopStep
+                  ? "Start your shop here"
+                  : "Add another shop item";
+
+                return (
+                  <StableCtaLink
+                    key={`owner-empty-shop-space-${slotNumber}`}
+                    to={ownerEmptyProductPath(slotNumber)}
+                    kind="secondary"
+                    preserveOrigin={false}
+                    debugId={`shop-gallery.owner-empty-space.${slotNumber}`}
+                    stableHeight={isCompact ? 258 : 300}
+                    aria-label={`${actionLabel}, shop space ${slotNumber}`}
+                    data-owner-empty-shop-space={slotNumber}
+                    data-owner-empty-shop-primary={isFirstShopStep ? "true" : "false"}
+                    style={{
+                      width: "100%",
+                      minWidth: 0,
+                      minHeight: isCompact ? 258 : 300,
+                      aspectRatio: isCompact ? "0.72 / 1" : "1.22 / 1",
+                      borderRadius: isCompact ? 18 : 20,
+                      padding: isCompact ? 14 : 18,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: isCompact ? 10 : 12,
+                      textAlign: "center",
+                      whiteSpace: "normal",
+                      color: "#0B4EA2",
+                      background: isFirstShopStep
+                        ? "radial-gradient(circle at 50% 30%, rgba(255,255,255,0.98) 0%, rgba(255,248,219,0.96) 46%, rgba(242,216,147,0.88) 100%)"
+                        : "linear-gradient(145deg, #FFFFFF 0%, #F4F8FF 54%, #E6F0FC 100%)",
+                      border: isFirstShopStep
+                        ? "2px solid rgba(190,142,29,0.52)"
+                        : "1px dashed rgba(13,95,168,0.34)",
+                      boxShadow: isFirstShopStep
+                        ? "0 20px 36px rgba(122,86,10,0.16), inset 0 1px 0 rgba(255,255,255,0.96)"
+                        : "0 16px 30px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: isCompact ? 68 : 76,
+                        height: isCompact ? 68 : 76,
+                        borderRadius: 999,
+                        display: "inline-grid",
+                        placeItems: "center",
+                        color: isFirstShopStep ? "#7A4A00" : "#0B4EA2",
+                        background: "rgba(255,255,255,0.96)",
+                        border: isFirstShopStep
+                          ? "1px solid rgba(190,142,29,0.44)"
+                          : "1px solid rgba(13,95,168,0.25)",
+                        boxShadow:
+                          "0 12px 24px rgba(8,38,67,0.13), inset 0 1px 0 rgba(255,255,255,0.98)",
+                        fontSize: isCompact ? 44 : 50,
+                        fontWeight: 650,
+                        lineHeight: 1,
+                      }}
+                    >
+                      +
+                    </span>
+                    <span
+                      style={{
+                        color: "#07172C",
+                        fontSize: isCompact ? 15 : 17,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {actionLabel}
+                    </span>
+                    <span
+                      style={{
+                        color: "#526C84",
+                        fontSize: isCompact ? 11 : 12,
+                        fontWeight: 800,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Shop space {slotNumber}
+                    </span>
+                  </StableCtaLink>
                 );
               })}
             </div>

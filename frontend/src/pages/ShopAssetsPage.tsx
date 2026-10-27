@@ -1059,6 +1059,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ownerProductManageRequest.blockNumber > 0
       )
   );
+  const ownerProductCreateFocusRequested = Boolean(
+    ownerProductManageFocusRequested &&
+      ownerProductManageRequest.productId <= 0 &&
+      ownerProductManageRequest.blockNumber > 0
+  );
   const ownerProductManageAppliedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
@@ -1728,7 +1733,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setSelectedPublicSlot(matchedSlot);
     setGalleryActionNotice({
       tone: "info",
-      text: "This is the shop item you opened. Change its picture, video, or details, or delete it permanently.",
+      text: publicGallerySlots[matchedSlotIndex]
+        ? "This is the shop item you opened. Change its picture, video, or details, or delete it permanently."
+        : "This shop space is ready. Tap + Add item to add your product or service.",
       slotNumber: matchedSlot,
     });
 
@@ -3320,12 +3327,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div>
               <div style={sectionLabel()}>
                 {ownerProductManageFocusRequested
-                  ? "Manage this product"
+                  ? ownerProductCreateFocusRequested
+                    ? "Add a shop item"
+                    : "Manage this product"
                   : "Shop items"}
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
                 {ownerProductManageFocusRequested
-                  ? "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
+                  ? ownerProductCreateFocusRequested
+                    ? "This space is ready for the product or service you want customers to see."
+                    : "Choose Change media or details, or Delete permanently. Other shop tools stay out of the way."
                   : "Add an item, or open Your shop items to change what customers can see."}
               </div>
             </div>
@@ -3375,7 +3386,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             style={{ marginTop: 14, ...innerCard("#FCFEFF"), padding: isCompact ? 12 : 14 }}
           >
             <StableDisclosureSummary debugId="shop-assets.products.blocks.toggle" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
-              {ownerProductManageFocusRequested ? "This product" : "Your shop items"}
+              {ownerProductManageFocusRequested
+                ? ownerProductCreateFocusRequested
+                  ? "This shop space"
+                  : "This product"
+                : "Your shop items"}
             </StableDisclosureSummary>
             {!ownerProductManageFocusRequested ? (
             <div
@@ -3603,7 +3618,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               style={{ ...innerCard("#FCFEFF"), scrollMarginTop: embedded ? 118 : 24 }}
             >
               <div style={sectionLabel()}>
-                {ownerProductManageFocusRequested ? "Manage this shop item" : "Selected shop item"}
+                {ownerProductManageFocusRequested
+                  ? ownerProductCreateFocusRequested
+                    ? "Add to this shop space"
+                    : "Manage this shop item"
+                  : "Selected shop item"}
               </div>
               <div
                 style={{

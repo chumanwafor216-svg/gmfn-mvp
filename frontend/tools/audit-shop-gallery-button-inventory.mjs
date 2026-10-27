@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 8,
   SecondaryButton: 12,
-  StableCtaLink: 5,
-  total: 25,
+  StableCtaLink: 6,
+  total: 26,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -353,6 +353,21 @@ assertContains(
 assertContains(
   /Browse items\. Ask the owner about availability\./,
   "Public Shop product shelf must keep plain, concise commerce guidance without placeholder process chips."
+);
+
+assertContains(
+  /const OWNER_STARTER_SHOP_SPACES = 4;[\s\S]*?const ownerEmptyProductSlots = useMemo\([\s\S]*?!signedInOwnsShop \|\| focusedBlockLinkActive[\s\S]*?OWNER_STARTER_SHOP_SPACES - visibleProductCount[\s\S]*?availableSlots\.slice\(0, spacesToShow\)/,
+  "Public Shop must expose four progressive starter spaces only to the exact signed-in owner and keep the existing slot capacity authoritative."
+);
+
+assertContains(
+  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Start your shop here[\s\S]*?Add another shop item[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?Shop space \{slotNumber\}/,
+  "Each owner starter-space plus must hand the exact empty slot to the existing Shop Control item workflow with clear first and follow-on language."
+);
+
+assertContains(
+  /visibleProducts\.length === 0 && !signedInOwnsShop[\s\S]*?No public items yet\.[\s\S]*?ownerEmptyProductSlots\.map/,
+  "The visitor empty state must remain separate from the owner setup path."
 );
 
 assertContains(
