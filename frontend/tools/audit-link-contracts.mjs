@@ -189,6 +189,12 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
+  /if \(!shellUpdateShouldWait\(\)\) \{[\s\S]*?reloadForFreshShell\(latestSignature\)/,
+  "A stale installed Android shell must reload only when no upload or busy action is active."
+);
+
+assertContains(
+  "src/lib/pwaInstall.ts",
   /\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)[\s\S]*?if \(!isIosInstalledShortcut\(\)\) \{[\s\S]*?nudgeWaitingServiceWorker\(registration\)/,
   "The worker may activate in the background without interrupting the active GSN session."
 );

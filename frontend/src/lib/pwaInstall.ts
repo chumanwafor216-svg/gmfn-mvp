@@ -255,10 +255,14 @@ async function checkForFreshInstalledShell(): Promise<void> {
     if (latestSignature && latestSignature !== currentSignature) {
       if (isIosInstalledShortcut()) {
         offerIosShellUpdate(latestSignature);
+        return;
       }
-      // Keep an active browser session stable. The claimed worker and the
-      // network-first navigation strategy serve the new shell on the next
-      // full navigation or reopen without interrupting work in progress.
+
+      if (!shellUpdateShouldWait()) {
+        reloadForFreshShell(latestSignature);
+      }
+      // Busy actions and selected uploads remain untouched. The focus,
+      // visibility and interval checks will try again when the screen is safe.
     }
   } catch {
     // Installed shortcut freshness is helpful, but the app must still open offline.
