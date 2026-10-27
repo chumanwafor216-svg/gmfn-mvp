@@ -44,14 +44,19 @@ from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_s
 SPOTLIGHT_PRESENTATION_TOKEN_TYPE = "spotlight_presentation_v1"
 SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP = "public_shop_spotlight_rail"
 SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS = 30
-SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 30
-SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000
+SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 45
+SPOTLIGHT_PRESENTATION_IMAGE_ROTATION_MS = 5000
+SPOTLIGHT_PRESENTATION_VIDEO_MIN_ROTATION_MS = 8000
+SPOTLIGHT_PRESENTATION_VIDEO_MAX_ROTATION_MS = 10000
+# Compatibility/default value for clients that only understand one rotation.
+SPOTLIGHT_PRESENTATION_ROTATION_MS = SPOTLIGHT_PRESENTATION_IMAGE_ROTATION_MS
 SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000
 SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0.6
 SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000
 SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000
-SPOTLIGHT_PRESENTATION_REPLAY_LIMIT = 4
-SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT = 4
+SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW = 2
+SPOTLIGHT_PRESENTATION_REPLAY_LIMIT = SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW
+SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT = SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW
 SPOTLIGHT_PRESENTATION_VISIBILITY_SCAN_LIMIT = 64
 SPOTLIGHT_PRESENTATION_MAX_UNQUALIFIED_ATTEMPTS_PER_VIEWER = 2
 
@@ -81,6 +86,10 @@ class _SpotlightReservationUnavailable(RuntimeError):
 @dataclass(frozen=True)
 class SpotlightPresentationPolicy:
     passive_rotation_ms: int = SPOTLIGHT_PRESENTATION_ROTATION_MS
+    image_rotation_ms: int = SPOTLIGHT_PRESENTATION_IMAGE_ROTATION_MS
+    video_min_rotation_ms: int = SPOTLIGHT_PRESENTATION_VIDEO_MIN_ROTATION_MS
+    video_max_rotation_ms: int = SPOTLIGHT_PRESENTATION_VIDEO_MAX_ROTATION_MS
+    max_items_per_window: int = SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW
     qualifying_visible_ms: int = SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS
     minimum_visible_ratio: float = SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO
     hidden_tab_pause_enabled: bool = True
@@ -92,6 +101,10 @@ class SpotlightPresentationPolicy:
     def to_public_dict(self) -> dict[str, Any]:
         return {
             "passive_rotation_ms": int(self.passive_rotation_ms),
+            "image_rotation_ms": int(self.image_rotation_ms),
+            "video_min_rotation_ms": int(self.video_min_rotation_ms),
+            "video_max_rotation_ms": int(self.video_max_rotation_ms),
+            "max_items_per_window": int(self.max_items_per_window),
             "qualifying_visible_ms": int(self.qualifying_visible_ms),
             "minimum_visible_ratio": float(self.minimum_visible_ratio),
             "hidden_tab_pause_enabled": bool(self.hidden_tab_pause_enabled),

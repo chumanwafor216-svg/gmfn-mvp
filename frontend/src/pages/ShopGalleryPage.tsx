@@ -6,7 +6,9 @@ import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
-import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import SpotlightMediaFrame, {
+  type SpotlightMediaReadyDetails,
+} from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
 import {
@@ -59,7 +61,6 @@ import {
 import {
   PUBLIC_SHOP_SPOTLIGHT_INTERACTION_PAUSE_MS,
   PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO,
-  PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS,
   publicShopSpotlightRotationMs,
   PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
 } from "../lib/spotlightPresentationPolicy";
@@ -94,6 +95,14 @@ type ShopFollowState = {
   loading: boolean;
   busy: boolean;
 };
+
+type SpotlightMediaStatus =
+  | {
+      status: 'ready';
+      kind: SpotlightMediaReadyDetails['kind'];
+      durationSeconds: number | null;
+    }
+  | { status: 'unavailable' };
 
 type OwnerSpotlightInspection = {
   state: string;
@@ -2057,10 +2066,10 @@ export default function ShopGalleryPage() {
   const [spotlightFeedError, setSpotlightFeedError] = useState('');
   const [spotlightRefreshRetryTick, setSpotlightRefreshRetryTick] = useState(0);
   const [spotlightMediaStatusByKey, setSpotlightMediaStatusByKey] = useState<
-    Record<string, 'ready' | 'unavailable'>
+    Record<string, SpotlightMediaStatus>
   >({});
   const spotlightMediaStatusByKeyRef = useRef<
-    Record<string, 'ready' | 'unavailable'>
+    Record<string, SpotlightMediaStatus>
   >({});
   const [spotlightSoundEnabled, setSpotlightSoundEnabled] = useState(false);
   const galleryRevealFrameRef = useRef<number | null>(null);
@@ -3046,13 +3055,6 @@ export default function ShopGalleryPage() {
     return () => query.removeListener(update);
   }, []);
 
-  const spotlightRotationItemCount = useMemo(() => {
-    const uniqueKeys = new Set(
-      communitySpotlights.map(spotlightBroadcastKey).filter(Boolean)
-    );
-    return Math.max(uniqueKeys.size, communitySpotlights.length > 0 ? 1 : 0);
-  }, [communitySpotlights]);
-
   useEffect(() => {
     if (communitySpotlights.length <= 0 && miniSpotlightIndex !== 0) {
       setMiniSpotlightIndex(0);
@@ -3814,10 +3816,19 @@ export default function ShopGalleryPage() {
   );
 
   const reportSpotlightMediaStatus = useCallback(
-    (mediaKey: string, status: 'ready' | 'unavailable') => {
+    (mediaKey: string, status: SpotlightMediaStatus) => {
       if (!mediaKey) return;
       setSpotlightMediaStatusByKey((current) => {
-        if (current[mediaKey] === status) return current;
+        const previous = current[mediaKey];
+        if (
+          previous?.status === status.status &&
+          (status.status === 'unavailable' ||
+            (previous.status === 'ready' &&
+              previous.kind === status.kind &&
+              previous.durationSeconds === status.durationSeconds))
+        ) {
+          return current;
+        }
         const next = { ...current, [mediaKey]: status };
         spotlightMediaStatusByKeyRef.current = next;
         return next;
@@ -3833,12 +3844,42 @@ export default function ShopGalleryPage() {
   const spotlightRotationMediaSettled =
     !spotlightHasRenderableMedia ||
     Boolean(spotlightMediaStatusByKey[spotlightMediaKey]);
-  // Reduced Motion changes presentation motion, not queue fairness. Keeping
-  // the same dwell prevents device accessibility settings from turning a
-  // two-minute 30-item pass into a fifteen-minute pass.
-  const spotlightRotationDelayMs = publicShopSpotlightRotationMs(
-    spotlightRotationItemCount
-  );
+  const activeSpotlightMediaStatus = spotlightMediaStatusByKey[spotlightMediaKey];
+  // Reduced Motion changes playback, not the governed campaign dwell.
+  const governedSpotlightDwellMs = publicShopSpotlightRotationMs({
+    mediaKind:
+      activeSpotlightMediaStatus?.status === 'ready'
+        ? activeSpotlightMediaStatus.kind
+        : miniSpotlightView.videoUrl
+        ? 'video'
+        : 'image',
+    videoDurationSeconds:
+      activeSpotlightMediaStatus?.status === 'ready' &&
+      activeSpotlightMediaStatus.kind === 'video'
+        ? activeSpotlightMediaStatus.durationSeconds
+        : null,
+  });
+  // Terminally unavailable media has no user-facing dwell budget. Keep the
+  // active occurrence in place only until a ready successor can replace it.
+  const spotlightRotationDelayMs =
+    activeSpotlightMediaStatus?.status === 'unavailable'
+      ? 0
+      : governedSpotlightDwellMs;
+  const spotlightPresentationType = miniSpotlightIsOwnerInspection
+    ? 'owner-preview'
+    : miniSpotlight?.isCanonicalVisibility
+    ? 'visibility'
+    : miniSpotlight?.isCanonicalReplay
+    ? 'replay'
+    : miniSpotlight?.isCanonicalOpportunity
+    ? 'fresh'
+    : 'legacy';
+  const spotlightEffectiveMediaKind =
+    activeSpotlightMediaStatus?.status === 'ready'
+      ? activeSpotlightMediaStatus.kind
+      : spotlightHasRenderableMedia
+      ? 'pending'
+      : 'none';
   const spotlightRotationCanAdvance =
     communitySpotlights.length > 1 ||
     Boolean(
@@ -3867,7 +3908,7 @@ export default function ShopGalleryPage() {
 
     const timers = pendingMediaKeys.map((mediaKey) =>
       window.setTimeout(
-        () => reportSpotlightMediaStatus(mediaKey, 'unavailable'),
+        () => reportSpotlightMediaStatus(mediaKey, { status: 'unavailable' }),
         SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS
       )
     );
@@ -3917,7 +3958,7 @@ export default function ShopGalleryPage() {
       if (nextHasMedia && !nextMediaStatus) {
         return false;
       }
-      if (nextHasMedia && nextMediaStatus === 'unavailable') {
+      if (nextHasMedia && nextMediaStatus?.status === 'unavailable') {
         const remainingRows = activeRows.filter(
           (_, index) => index !== nextIndexBeforeRemoval
         );
@@ -3939,19 +3980,22 @@ export default function ShopGalleryPage() {
       miniSpotlightIndexRef.current = nextIndex;
       setCommunitySpotlights(nextRows);
       setMiniSpotlightIndex(nextIndex);
-      if (nextRows.length <= 2) {
+      if (nextRows.length <= 1) {
         void requestNextCanonicalSpotlight();
       }
       return true;
     };
 
-    const activeDeadlineMs = miniSpotlight?.isCanonicalOpportunity
-      ? publicShopSpotlightPresentationDeadlineMs(miniSpotlight)
-      : Number.NaN;
-    const minimumSafeStartMs = Math.min(
-      spotlightRotationDelayMs,
-      PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS
+    const activeRowsAtStart = communitySpotlightsRef.current;
+    const activeIndexAtStart = Math.min(
+      Math.max(miniSpotlightIndexRef.current, 0),
+      Math.max(activeRowsAtStart.length - 1, 0)
     );
+    const activeItemAtStart = activeRowsAtStart[activeIndexAtStart] || null;
+    const activeDeadlineMs = activeItemAtStart?.isCanonicalOpportunity
+      ? publicShopSpotlightPresentationDeadlineMs(activeItemAtStart)
+      : Number.NaN;
+    const minimumSafeStartMs = spotlightRotationDelayMs;
     if (
       Number.isFinite(activeDeadlineMs) &&
       activeDeadlineMs - Date.now() < minimumSafeStartMs
@@ -3999,8 +4043,6 @@ export default function ShopGalleryPage() {
     spotlightRotationDelayMs,
     spotlightRotationCanAdvance,
     spotlightRotationMediaSettled,
-    miniSpotlight,
-    nextSpotlightMediaKey,
     requestNextCanonicalSpotlight,
   ]);
 
@@ -4093,7 +4135,7 @@ export default function ShopGalleryPage() {
       ownerSpotlightPreviewAuthorized ||
       !spotlightHasRenderableMedia ||
       !spotlightMediaKey ||
-      spotlightMediaStatusByKey[spotlightMediaKey] !== 'ready'
+      spotlightMediaStatusByKey[spotlightMediaKey]?.status !== 'ready'
     ) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
@@ -4204,7 +4246,7 @@ export default function ShopGalleryPage() {
             }
             spotlightQualifiedKeysRef.current.add(presentationKey);
             recordAcceptedAttention();
-            if (communitySpotlightsRef.current.length <= 2) {
+            if (communitySpotlightsRef.current.length <= 1) {
               void requestNextCanonicalSpotlight();
             }
           })
@@ -6825,6 +6867,22 @@ export default function ShopGalleryPage() {
             ref={spotlightRailRef}
             className="public-shop-section public-shop-spotlight"
             data-spotlight-canonical={miniSpotlight?.isCanonicalOpportunity ? "true" : "false"}
+            data-spotlight-campaign-id={
+              miniSpotlight?.opportunityCampaignId || undefined
+            }
+            data-spotlight-presentation-type={spotlightPresentationType}
+            data-spotlight-media-kind={spotlightEffectiveMediaKind}
+            data-spotlight-dwell-ms={
+              activeSpotlightMediaStatus?.status === 'ready'
+                ? spotlightRotationDelayMs
+                : undefined
+            }
+            data-spotlight-next-media-status={
+              nextSpotlightMediaKey
+                ? spotlightMediaStatusByKey[nextSpotlightMediaKey]?.status || 'pending'
+                : 'none'
+            }
+            data-spotlight-queue-size={communitySpotlights.length}
             data-owner-spotlight-inspection={
               ownerSpotlightStatusView?.state || "visitor"
             }
@@ -7026,7 +7084,7 @@ export default function ShopGalleryPage() {
                     {spotlightFeedError}
                   </div>
                 ) : null}
-                {spotlightMediaStatusByKey[spotlightMediaKey] === 'unavailable' &&
+                {spotlightMediaStatusByKey[spotlightMediaKey]?.status === 'unavailable' &&
                 spotlightMediaKey ? (
                   <div
                     data-spotlight-media-status='unavailable'
@@ -7109,11 +7167,17 @@ export default function ShopGalleryPage() {
                     videoUrl={miniSpotlightView.videoUrl}
                     videoPoster={miniSpotlightView.imageUrl}
                     alt={miniSpotlightView.title}
-                    onMediaReady={() =>
-                      reportSpotlightMediaStatus(spotlightMediaKey, 'ready')
+                    onMediaReady={(details) =>
+                      reportSpotlightMediaStatus(spotlightMediaKey, {
+                        status: 'ready',
+                        kind: details.kind,
+                        durationSeconds: details.durationSeconds,
+                      })
                     }
                     onMediaUnavailable={() =>
-                      reportSpotlightMediaStatus(spotlightMediaKey, 'unavailable')
+                      reportSpotlightMediaStatus(spotlightMediaKey, {
+                        status: 'unavailable',
+                      })
                     }
                     fallback={
                       <div
@@ -7193,13 +7257,17 @@ export default function ShopGalleryPage() {
                       videoUrl={nextMiniSpotlightView.videoUrl}
                       videoPoster={nextMiniSpotlightView.imageUrl}
                       alt=''
-                      onMediaReady={() =>
-                        reportSpotlightMediaStatus(nextSpotlightMediaKey, 'ready')
+                      onMediaReady={(details) =>
+                        reportSpotlightMediaStatus(nextSpotlightMediaKey, {
+                          status: 'ready',
+                          kind: details.kind,
+                          durationSeconds: details.durationSeconds,
+                        })
                       }
                       onMediaUnavailable={() =>
                         reportSpotlightMediaStatus(
                           nextSpotlightMediaKey,
-                          'unavailable'
+                          { status: 'unavailable' }
                         )
                       }
                       fallback={null}

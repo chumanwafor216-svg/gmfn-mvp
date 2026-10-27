@@ -89,6 +89,7 @@ from app.services.vault_domain_service import (
     sync_legacy_entitlements_to_blocks,
 )
 from app.services.spotlight_presentation_service import (
+    SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,
     SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
     SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     PRESENTATION_REJECTION_OWNER_PREVIEW,
@@ -5280,6 +5281,7 @@ def get_public_shop_spotlight_opportunity(
     serving_contract = {
         "serving_contract_version": SPOTLIGHT_SERVING_CONTRACT_VERSION,
         "max_stale_display_seconds": SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS,
+        "max_items_per_window": SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,
         "fallback_allowed": False,
         'non_counting_visibility_allowed': True,
     }
@@ -5288,7 +5290,7 @@ def get_public_shop_spotlight_opportunity(
     visibility = list_spotlight_presentation_visibility(
         db,
         viewer_user_id=int(current_user.id),
-        limit=4,
+        limit=SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,
         window_sequence=(
             max(int(x_spotlight_visibility_window), 0)
             if x_spotlight_visibility_window is not None
@@ -5365,6 +5367,7 @@ def get_public_shop_spotlight_opportunity(
         db,
         viewer_user_id=int(current_user.id),
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+        limit=SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,
         exclude_campaign_ids=visible_campaign_ids,
         allow_due_campaign_ids=(
             set(selection.frequency_suppressed_campaign_ids)
@@ -5450,7 +5453,7 @@ def get_public_shop_spotlight_opportunity(
             replay
             for replay in replay_candidates
             if int(replay.candidate.campaign_id) not in response_campaign_ids
-        ][:max(5 - len(items), 0)]
+        ][:max(SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW - len(items), 0)]
     )
     for replay in replays:
         broadcast = db.get(

@@ -15,10 +15,10 @@ const syntheticSpotlightAudioPrefix = '/synthetic-spotlight-audio-';
 const syntheticSpotlightImage =
   `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f5fb7'/></svg>`;
 
-function syntheticSpotlightAudio() {
+function syntheticSpotlightAudio(durationSeconds = 12) {
   const sampleRate = 8_000;
-  const durationSeconds = 12;
-  const sampleCount = sampleRate * durationSeconds;
+  const safeDurationSeconds = Math.max(Number(durationSeconds || 0), 0.25);
+  const sampleCount = Math.round(sampleRate * safeDurationSeconds);
   const dataLength = sampleCount * 2;
   const audio = Buffer.alloc(44 + dataLength);
   audio.write('RIFF', 0, 'ascii');
@@ -262,10 +262,21 @@ async function installMocks(page, scenario) {
       requestPath.startsWith(syntheticSpotlightAudioPrefix) &&
       requestPath.endsWith('.wav')
     ) {
+      const streamIndex = Number(
+        requestPath.slice(syntheticSpotlightAudioPrefix.length).replace(/\.wav$/, '')
+      );
+      const delayMs = Number(scenario.videoResponseDelayMs || 0);
+      if (delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
       return route.fulfill({
         status: 200,
         contentType: 'audio/wav',
-        body: syntheticSpotlightAudio(),
+        body: syntheticSpotlightAudio(
+          Array.isArray(scenario.videoDurations)
+            ? scenario.videoDurations[streamIndex - 1]
+            : 12
+        ),
       });
     }
     if (requestPath === syntheticSpotlightImagePath) {
@@ -377,11 +388,15 @@ async function installMocks(page, scenario) {
         canonical: true,
         streamIndex,
         imageUrl: scenario.mediaUnavailable ? null : undefined,
-        videoUrl: (Array.isArray(scenario.videoMediaPattern)
-          ? scenario.videoMediaPattern[streamIndex - 1] === 'video'
-          : scenario.videoMedia)
-          ? `${syntheticSpotlightAudioPrefix}${streamIndex}.wav`
-          : null,
+        videoUrl:
+          Array.isArray(scenario.videoFailurePattern) &&
+          scenario.videoFailurePattern[streamIndex - 1]
+            ? `/missing-spotlight-video-${streamIndex}.mp4`
+            : (Array.isArray(scenario.videoMediaPattern)
+                ? scenario.videoMediaPattern[streamIndex - 1] === 'video'
+                : scenario.videoMedia)
+            ? `${syntheticSpotlightAudioPrefix}${streamIndex}.wav`
+            : null,
         presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
       });
       const items = [item];
@@ -890,7 +905,9 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   });
   await page.getByText('Community Spotlight 2', { exact: true }).waitFor({
     state: 'visible',
-    timeout: 15_000,
+    // The sound tap intentionally pauses rotation for eight seconds before
+    // the ten-second governed video dwell resumes.
+    timeout: 25_000,
   });
   await page.getByText('Community Spotlight 3', { exact: true }).waitFor({
     state: 'visible',
@@ -930,6 +947,191 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   await spotlightRail
     .getByRole('button', { name: 'Turn video sound on' })
     .waitFor({ state: 'visible', timeout: 10_000 });
+  await context.close();
+  return scenario;
+}
+
+async function waitForSpotlightDiagnostic(page, kind, dwellMs) {
+  await page.waitForFunction(
+    ({ expectedKind, expectedDwell }) => {
+      const rail = document.querySelector('#public-shop-spotlight');
+      return (
+        rail?.getAttribute('data-spotlight-media-kind') === expectedKind &&
+        Number(rail?.getAttribute('data-spotlight-dwell-ms') || 0) ===
+          expectedDwell
+      );
+    },
+    { expectedKind: kind, expectedDwell: dwellMs },
+    { timeout: 15_000 }
+  );
+}
+
+async function testVideoPosterDoesNotStartDwellBeforeVideoReady(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    videoMedia: true,
+    videoDurations: [12],
+    videoResponseDelayMs: 1_500,
+    presentationExpiresInMs: 45_000,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  const rail = page.locator('#public-shop-spotlight');
+  await page.waitForTimeout(500);
+  const pendingState = await rail.evaluate((element) => ({
+    kind: element.getAttribute('data-spotlight-media-kind'),
+    dwell: element.getAttribute('data-spotlight-dwell-ms'),
+  }));
+  if (pendingState.kind !== 'pending' || pendingState.dwell !== null) {
+    throw new Error(
+      `Poster opened the video dwell gate before video readiness: ${JSON.stringify(pendingState)}`
+    );
+  }
+  if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
+    throw new Error('Delayed video qualified while only its poster was available.');
+  }
+  await waitForSpotlightDiagnostic(page, 'video', 10_000);
+  await page.waitForTimeout(1_100);
+  if (scenario.qualifyCalls !== 1 || scenario.impressionCalls !== 1) {
+    throw new Error(
+      `Ready delayed video did not qualify exactly once: ${JSON.stringify(scenario)}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
+async function testFailedVideoUsesFiveSecondImageFallback(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    videoFailurePattern: [true],
+    presentationExpiresInMs: 45_000,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await waitForSpotlightDiagnostic(page, 'image', 5_000);
+  await page
+    .getByText('Video could not play here. Showing the cover for now.', {
+      exact: true,
+    })
+    .waitFor({ state: 'visible', timeout: 15_000 });
+  await context.close();
+  return scenario;
+}
+
+async function testMediaAwareSpotlightDwell(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 5,
+    videoMediaPattern: ['image', 'video', 'video', 'video', 'image'],
+    videoDurations: [null, 7, 9, 12, null],
+    presentationExpiresInMs: 45_000,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+
+  const cases = [
+    { label: 'Visitor eligible Spotlight', next: 'Community Spotlight 2', kind: 'image', dwell: 5_000 },
+    { label: 'Community Spotlight 2', next: 'Community Spotlight 3', kind: 'video', dwell: 8_000 },
+    { label: 'Community Spotlight 3', next: 'Community Spotlight 4', kind: 'video', dwell: 9_000 },
+    { label: 'Community Spotlight 4', next: 'Community Spotlight 5', kind: 'video', dwell: 10_000 },
+  ];
+  for (const dwellCase of cases) {
+    await page.getByText(dwellCase.label, { exact: true }).waitFor({
+      state: 'visible',
+      timeout: 15_000,
+    });
+    await waitForSpotlightDiagnostic(page, dwellCase.kind, dwellCase.dwell);
+    const startedAt = Date.now();
+    try {
+      await page.getByText(dwellCase.next, { exact: true }).waitFor({
+        state: 'visible',
+        timeout: dwellCase.dwell + 5_000,
+      });
+    } catch (error) {
+      const diagnostic = await page
+        .locator('#public-shop-spotlight')
+        .evaluate((element) => ({
+          campaignId: element.getAttribute('data-spotlight-campaign-id'),
+          presentationType: element.getAttribute('data-spotlight-presentation-type'),
+          mediaKind: element.getAttribute('data-spotlight-media-kind'),
+          dwellMs: element.getAttribute('data-spotlight-dwell-ms'),
+          nextMediaStatus: element.getAttribute('data-spotlight-next-media-status'),
+          queueSize: element.getAttribute('data-spotlight-queue-size'),
+          text: element.textContent,
+          rect: element.getBoundingClientRect().toJSON(),
+          viewportHeight: window.innerHeight,
+          documentVisibility: document.visibilityState,
+          activeElement: document.activeElement?.outerHTML?.slice(0, 240),
+          media: [...element.querySelectorAll('img, video')].map((media) => ({
+            tag: media.tagName,
+            src: media.getAttribute('src'),
+            complete: 'complete' in media ? media.complete : undefined,
+            naturalWidth: 'naturalWidth' in media ? media.naturalWidth : undefined,
+            readyState: 'readyState' in media ? media.readyState : undefined,
+            display: getComputedStyle(media).display,
+            opacity: getComputedStyle(media.parentElement || media).opacity,
+          })),
+        }));
+      throw new Error(
+        `${dwellCase.label} did not advance to ${dwellCase.next}: ${JSON.stringify({ diagnostic, scenario, cause: String(error) })}`
+      );
+    }
+    const elapsedMs = Date.now() - startedAt;
+    if (elapsedMs < dwellCase.dwell - 500) {
+      throw new Error(
+        `${dwellCase.label} advanced too early: expected ${dwellCase.dwell}ms, observed ${elapsedMs}ms.`
+      );
+    }
+  }
+  await waitForSpotlightDiagnostic(page, 'image', 5_000);
+  if (new Set(scenario.visibilityWindows).size < 3) {
+    throw new Error(
+      `Media-aware rotation did not advance governed windows: ${JSON.stringify(scenario.visibilityWindows)}`
+    );
+  }
   await context.close();
   return scenario;
 }
@@ -1298,25 +1500,36 @@ const baseUrl = server.resolvedUrls.local[0].replace(/\/+$/, "");
 const browser = await chromium.launch({ headless: true });
 
 try {
-  const results = [
-    await testOwnerReopenPreviewBackAndResume(browser, baseUrl),
-    await testDelayedOwnerAuthentication(browser, baseUrl),
-    await testExpiredSpotlightSessionReturnsToSignIn(browser, baseUrl),
-    await testVisitorCannotForceOwnerPreview(browser, baseUrl),
-    await testCanonicalIssuanceWaitsForVisibleSpotlightSurface(browser, baseUrl),
-    await testMediaLessSpotlightNeverQualifies(browser, baseUrl),
-    await testSpotlightSoundPersistsAcrossRotation(browser, baseUrl),
-    await testProductMediaRequiresVisibleDwell(browser, baseUrl),
-    await testExpiredOwnerContentFailsClosed(browser, baseUrl),
-    await testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
-      browser,
-      baseUrl
-    ),
-    await testFreshLeaseWinsOverWeightedReplay(browser, baseUrl),
-    await testRejectedQualificationRetriesBeforeAttention(browser, baseUrl),
-    await testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl),
-    await testPresentationExpiryRemovesContact(browser, baseUrl),
-  ];
+  const smokeCases = {
+    ownerReopen: testOwnerReopenPreviewBackAndResume,
+    delayedOwnerAuth: testDelayedOwnerAuthentication,
+    expiredSession: testExpiredSpotlightSessionReturnsToSignIn,
+    visitorPreviewBoundary: testVisitorCannotForceOwnerPreview,
+    visibleIssuance: testCanonicalIssuanceWaitsForVisibleSpotlightSurface,
+    mediaLess: testMediaLessSpotlightNeverQualifies,
+    delayedVideoReadiness: testVideoPosterDoesNotStartDwellBeforeVideoReady,
+    failedVideoFallback: testFailedVideoUsesFiveSecondImageFallback,
+    mediaAwareDwell: testMediaAwareSpotlightDwell,
+    soundPersistence: testSpotlightSoundPersistsAcrossRotation,
+    productVisibleDwell: testProductMediaRequiresVisibleDwell,
+    expiredOwnerContent: testExpiredOwnerContentFailsClosed,
+    replayAccounting: testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting,
+    freshLeasePriority: testFreshLeaseWinsOverWeightedReplay,
+    qualificationRetry: testRejectedQualificationRetriesBeforeAttention,
+    refreshFailure: testCanonicalRefreshFailureKeepsCurrentSpotlight,
+    presentationExpiry: testPresentationExpiryRemovesContact,
+  };
+  const requestedCase = String(process.env.GSN_SPOTLIGHT_SMOKE_CASE || '').trim();
+  const selectedCases = requestedCase
+    ? [[requestedCase, smokeCases[requestedCase]]]
+    : Object.entries(smokeCases);
+  if (selectedCases.some(([, testCase]) => typeof testCase !== 'function')) {
+    throw new Error(`Unknown GSN_SPOTLIGHT_SMOKE_CASE: ${requestedCase}`);
+  }
+  const results = [];
+  for (const [, testCase] of selectedCases) {
+    results.push(await testCase(browser, baseUrl));
+  }
   console.log(
     JSON.stringify(
       {

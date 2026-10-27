@@ -26,8 +26,13 @@ type SpotlightMediaFrameProps = {
   audioEnabled?: boolean;
   onAudioEnabledChange?: (enabled: boolean) => void;
   preserveVideoElement?: boolean;
-  onMediaReady?: () => void;
+  onMediaReady?: (details: SpotlightMediaReadyDetails) => void;
   onMediaUnavailable?: () => void;
+};
+
+export type SpotlightMediaReadyDetails = {
+  kind: 'image' | 'video';
+  durationSeconds: number | null;
 };
 
 function safeStr(value: unknown): string {
@@ -223,38 +228,49 @@ export default function SpotlightMediaFrame(
     Boolean(props.showAudioUnlock);
 
   useEffect(() => {
+    const video = videoRef.current;
+    if (
+      videoSrc &&
+      !videoFailed &&
+      video &&
+      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      mediaReportRef.current === 'pending'
+    ) {
+      reportMediaReady({
+        kind: 'video',
+        durationSeconds: readableVideoDurationSeconds(video),
+      });
+      return;
+    }
+
     const image = imageRef.current;
     if (
+      (!videoSrc || videoFailed) &&
       image &&
       image.complete &&
       image.naturalWidth > 0 &&
       mediaReportRef.current === 'pending'
     ) {
-      mediaReportRef.current = 'ready';
-      props.onMediaReady?.();
-      return;
+      reportMediaReady({ kind: 'image', durationSeconds: null });
     }
-
-    const video = videoRef.current;
-    if (
-      video &&
-      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      mediaReportRef.current === 'pending'
-    ) {
-      mediaReportRef.current = 'ready';
-      props.onMediaReady?.();
-    }
-  }, [imageSrc, props.onMediaReady, videoSrc]);
+  }, [imageSrc, props.onMediaReady, videoFailed, videoSrc]);
 
   function stopMediaControlEvent(event?: React.SyntheticEvent) {
     event?.preventDefault();
     event?.stopPropagation();
   }
 
-  function reportMediaReady() {
+  function readableVideoDurationSeconds(video: HTMLVideoElement): number | null {
+    const durationSeconds = Number(video.duration);
+    return Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? durationSeconds
+      : null;
+  }
+
+  function reportMediaReady(details: SpotlightMediaReadyDetails) {
     if (mediaReportRef.current === 'ready') return;
     mediaReportRef.current = 'ready';
-    props.onMediaReady?.();
+    props.onMediaReady?.(details);
   }
 
   function toggleAudio(event?: React.SyntheticEvent) {
@@ -520,11 +536,21 @@ export default function SpotlightMediaFrame(
       onError={() => {
         if (videoSrc) setVideoFailed(true);
       }}
-      onLoadedData={() => {
-        if (videoIsVisible) reportMediaReady();
+      onLoadedData={(event) => {
+        if (videoIsVisible) {
+          reportMediaReady({
+            kind: 'video',
+            durationSeconds: readableVideoDurationSeconds(event.currentTarget),
+          });
+        }
       }}
-      onCanPlay={() => {
-        if (videoIsVisible) reportMediaReady();
+      onCanPlay={(event) => {
+        if (videoIsVisible) {
+          reportMediaReady({
+            kind: 'video',
+            durationSeconds: readableVideoDurationSeconds(event.currentTarget),
+          });
+        }
       }}
       onLoadedMetadata={(event) => {
         if (!videoIsVisible) return;
@@ -599,7 +625,14 @@ export default function SpotlightMediaFrame(
       ref={imageRef}
       src={imageSrc}
       alt={props.alt}
-      onLoad={reportMediaReady}
+      onLoad={() => {
+        // A cover is not the effective medium while its video is pending.
+        // It becomes the governed image only when there is no video or the
+        // video has failed.
+        if (!videoSrc || videoFailed) {
+          reportMediaReady({ kind: 'image', durationSeconds: null });
+        }
+      }}
       onError={() => {
         setImageIndex((prev) => {
           const next = prev + 1;

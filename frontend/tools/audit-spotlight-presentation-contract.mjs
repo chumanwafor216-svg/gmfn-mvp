@@ -22,9 +22,10 @@ function satisfiesUpdatedSpotlightContract(message, text) {
   }
   if (message.includes('actual media has rendered')) {
     return (
-      text.includes("spotlightMediaStatusByKey[spotlightMediaKey] !== 'ready'") &&
-      text.includes("reportSpotlightMediaStatus(spotlightMediaKey, 'ready')") &&
-      text.includes("reportSpotlightMediaStatus(spotlightMediaKey, 'unavailable')")
+      text.includes("spotlightMediaStatusByKey[spotlightMediaKey]?.status !== 'ready'") &&
+      text.includes("onMediaReady={(details) =>") &&
+      text.includes("status: 'ready'") &&
+      text.includes("status: 'unavailable'")
     );
   }
   if (message.includes('30-item inventory')) {
@@ -34,10 +35,10 @@ function satisfiesUpdatedSpotlightContract(message, text) {
       text.includes('flattened[:candidate_count]')
     );
   }
-  if (message.includes('one stable four-campaign window')) {
+  if (message.includes('one stable two-campaign window')) {
     return (
       text.includes('visibility = list_spotlight_presentation_visibility(') &&
-      text.includes('limit=4,') &&
+      text.includes('limit=SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,') &&
       text.includes('window_campaign_ids = [') &&
       text.includes('candidate_campaign_ids=window_campaign_ids,') &&
       text.includes('for visible in visibility:') &&
@@ -70,7 +71,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/spotlight_presentation_service.py",
-  /SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 30[\s\S]*?SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?SPOTLIGHT_PRESENTATION_INTERACTION_PAUSE_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_REDUCED_MOTION_ROTATION_MS = 30000/,
+  /SPOTLIGHT_PRESENTATION_TOKEN_TTL_SECONDS = 30[\s\S]*?SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS = 45[\s\S]*?SPOTLIGHT_PRESENTATION_IMAGE_ROTATION_MS = 5000[\s\S]*?SPOTLIGHT_PRESENTATION_VIDEO_MIN_ROTATION_MS = 8000[\s\S]*?SPOTLIGHT_PRESENTATION_VIDEO_MAX_ROTATION_MS = 10000[\s\S]*?SPOTLIGHT_PRESENTATION_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW = 2/,
   "Backend presentation policy constants must be centralized and explicit."
 );
 
@@ -112,8 +113,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/spotlightPresentationPolicy.ts",
-  /PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS = 5000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_ROTATION_MS = 2000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MAX_CYCLE_MS = 120000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO = 0\.6[\s\S]*?publicShopSpotlightRotationMs[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_MAX_CYCLE_MS \/ safeItemCount/,
+  /PUBLIC_SHOP_SPOTLIGHT_IMAGE_ROTATION_MS = 5000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_VIDEO_MIN_ROTATION_MS = 8000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_VIDEO_MAX_ROTATION_MS = 10000[\s\S]*?PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS = 1000[\s\S]*?publicShopSpotlightRotationMs[\s\S]*?Number\.isFinite\(durationSeconds\)[\s\S]*?Math\.round\(durationSeconds \* 1000\)/,
   "Frontend Public Shop presentation policy constants must be centralized."
+);
+
+assertNotContains(
+  "frontend/src/lib/spotlightPresentationPolicy.ts",
+  /PUBLIC_SHOP_SPOTLIGHT_MIN_ROTATION_MS|PUBLIC_SHOP_SPOTLIGHT_MAX_CYCLE_MS|safeItemCount|cycleBoundRotationMs/,
+  "Public Shop must not compress readable dwell by handset queue size."
 );
 
 assertContains(
@@ -159,7 +166,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /prefers-reduced-motion: reduce[\s\S]*?spotlightRotationDelayMs = publicShopSpotlightRotationMs\([\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation[\s\S]*?autoPlayVideo=\{[\s\S]*?!spotlightReducedMotion/,
+  /prefers-reduced-motion: reduce[\s\S]*?governedSpotlightDwellMs = publicShopSpotlightRotationMs\([\s\S]*?spotlightRotationDelayMs[\s\S]*?spotlightHasKeyboardFocus[\s\S]*?pauseSpotlightPresentationRotation[\s\S]*?autoPlayVideo=\{[\s\S]*?!spotlightReducedMotion/,
   "Public Shop rotation must disable media motion without lengthening fair dwell, while respecting keyboard focus and interaction pause."
 );
 
@@ -327,7 +334,7 @@ assertContains(
 
 assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
-  /onMediaReady\?:[\s\S]*?onMediaUnavailable\?:[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?props\.onMediaUnavailable[\s\S]*?onLoadedData=\{\(\) => \{[\s\S]*?videoIsVisible[\s\S]*?reportMediaReady\(\)[\s\S]*?onCanPlay=\{\(\) => \{[\s\S]*?videoIsVisible[\s\S]*?reportMediaReady\(\)[\s\S]*?onLoad=\{reportMediaReady\}/,
+  /onMediaReady\?: \(details: SpotlightMediaReadyDetails\)[\s\S]*?kind: 'image' \| 'video'[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?video\.readyState >= HTMLMediaElement\.HAVE_CURRENT_DATA[\s\S]*?kind: 'video'[\s\S]*?\(!videoSrc \|\| videoFailed\)[\s\S]*?kind: 'image'[\s\S]*?A cover is not the effective medium while its video is pending/,
   'Shared Spotlight media must report real image/video readiness and terminal unavailability after bounded retries.'
 );
 
@@ -362,6 +369,18 @@ assertContains(
 );
 
 assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /activeRowsAtStart = communitySpotlightsRef[.]current[^]*?activeItemAtStart[^]*?minimumSafeStartMs = spotlightRotationDelayMs[^]*?spotlightRotationMediaSettled,[^]*?requestNextCanonicalSpotlight,/,
+  'The visible-time budget must be owned by the stable active key and must not restart when a refill or periodic object refresh changes queue objects.'
+);
+
+assertNotContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightRotationMediaSettled,\s*miniSpotlight,|spotlightRotationMediaSettled,\s*nextSpotlightMediaKey,/,
+  'Active Spotlight dwell must not reset merely because the active object or next-media key changed.'
+);
+
+assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
   /testCanonicalIssuanceWaitsForVisibleSpotlightSurface[^]*?canonicalCalls !== 0[^]*?scrollIntoViewIfNeeded[^]*?canonicalCalls < 1[^]*?qualifyCalls < 1/,
   'The phone smoke must prove off-screen loading cannot consume a presentation lease and visible media still qualifies normally.'
@@ -375,7 +394,7 @@ assertContains(
 
 assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
-  /imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?props[.]onMediaReady/,
+  /video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?props[.]onMediaReady/,
   'Cached image and video readiness must still reach the Public Shop qualification and dwell gates.'
 );
 
@@ -435,8 +454,8 @@ assertContains(
 
 assertContains(
   'gmfn_backend/app/api/routes/marketplace.py',
-  /replay_candidates = list_spotlight_presentation_replays[^]*?replay_campaign_ids[^]*?visibility = list_spotlight_presentation_visibility[^]*?exclude_campaign_ids=visible_campaign_ids \| replay_campaign_ids[^]*?Recent qualified replays are continuity-only fallbacks[^]*?replays = replay_candidates\[:max\(5 - len\(items\), 0\)\]/,
-  'Public Shop must select and render from one stable four-campaign window, with replays occupying their natural window position instead of residual slots.'
+  /SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW[^]*?limit=SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW[^]*?Recent qualified replays are continuity-only fallbacks[^]*?SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW - len\(items\)/,
+  'Public Shop must select and render from one stable two-campaign window, with replays occupying their natural window position instead of residual slots.'
 );
 
 assertContains(
@@ -447,14 +466,14 @@ assertContains(
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /minimumSafeStartMs = Math\.min\([^]*?PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS[^]*?activeDeadlineMs - Date\.now\(\) < minimumSafeStartMs/,
-  'The server-deadline guard must protect one standard readable dwell without dropping reduced-motion presentations immediately.'
+  /minimumSafeStartMs = spotlightRotationDelayMs[^]*?activeDeadlineMs - Date\.now\(\) < minimumSafeStartMs/,
+  'The server-deadline guard must protect the complete selected media-aware dwell.'
 );
 
 assertContains(
   'gmfn_backend/tests/test_spotlight_presentation_contract.py',
-  /test_nineteen_item_visibility_windows_advance_before_wrapping[^]*?candidate_count = 19[^]*?len\(set\(flattened\[:candidate_count\]\)\) == candidate_count/,
-  'The backend regression must prove bounded windows cover a 30-item inventory before wrapping.'
+  /test_thirty_item_visibility_windows_advance_before_wrapping[^]*?candidate_count = 30[^]*?batch_size = 2[^]*?len\(set\(flattened\[:candidate_count\]\)\) == candidate_count/,
+  'The backend regression must prove two-item windows cover a 30-item inventory before wrapping.'
 );
 
 assertContains(
@@ -489,8 +508,20 @@ assertContains(
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?nextRows.length <= 2[^]*?preloadVideo='auto'/,
+  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?nextRows.length <= 1[^]*?preloadVideo='auto'/,
   'Public Shop must preload the next asset, bound failed media, refill early, and keep the final row from stalling until server expiry.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /data-spotlight-campaign-id[^]*?data-spotlight-presentation-type[^]*?data-spotlight-media-kind[^]*?data-spotlight-dwell-ms/,
+  'Public Shop must expose non-user-visible campaign, presentation, effective-media, and selected-dwell diagnostics.'
+);
+
+assertContains(
+  'frontend/tools/test-spotlight-presentation-policy.mjs',
+  /three-second video[^]*?seven-second video[^]*?nine-second video[^]*?twelve-second video[^]*?missing-duration video[^]*?non-finite video/,
+  'Focused policy tests must cover image, short, bounded, long, missing, and non-finite media durations.'
 );
 
 assertContains(

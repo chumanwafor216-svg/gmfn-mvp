@@ -277,35 +277,38 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Full design:
   `GSN_RESPECTFUL_INACTIVITY_REMINDER_DESIGN_2026-10-27.md`.
 
-## Spotlight timing/fairness pre-measurement audit - 2026-10-27
+## Media-aware Spotlight timing and fairness correction - 2026-10-27
 
-- Completed a source/test audit only. No rotation, dwell, selection,
-  qualification, pacing, exposure, eligibility, quota, UI or frozen policy
-  behavior changed.
-- Corrected an important assumption: the count-aware formula can compress 30
-  queued items to four seconds and 40 to three seconds, but canonical v2
-  normally sends bounded windows of up to four and refills near the end. The
-  timer uses current handset queue length, not total server inventory. A total
-  inventory of 30-40 therefore does not by itself prove live compression.
-- If the planned recording proves two-to-four-second appearances, investigate
-  unexpected queue growth, stale deployed/PWA code, deadline churn,
-  refresh/state churn and media readiness before changing constants.
-- Existing exposure evidence records accepted one-second qualification, not
-  full visible dwell, media playback completion, transitions or tokenless
-  visibility/replay appearances. It cannot independently prove readability or
-  equal appearance frequency.
-- Current videos are prepared to at most ten seconds but normally receive the
-  same five-second card dwell as images. Even correctly delivered five-second
-  timing can therefore be too short for the message.
-- Fairness must be measured only among campaigns eligible for the exact viewer,
-  route and interval. Equal raw database counts would ignore self-exclusion,
-  route eligibility, expiry, relevance, frequency, pacing and entitlement.
-- Baseline `audit:spotlight-presentation-contract` and all 19 focused backend
-  presentation tests passed.
-- No recording file was attached or found. Next action is to timestamp the
-  planned 12-minute physical-phone recording and correlate it with the exact
-  build, API windows, campaigns, leases, exposures and pacing state.
-- Full measurement template and change gate:
+- Implemented the owner-approved Public Shop exception: images receive five
+  visible seconds; videos receive `clamp(reported duration, 8 seconds, 10
+  seconds)`; missing/non-finite video duration receives ten seconds; short
+  video keeps the existing loop; failed video with a loaded cover becomes a
+  five-second image. Queue-size compression, the two-minute target cycle and
+  the two-second floor are removed.
+- `SpotlightMediaFrame` now reports effective media kind and video duration.
+  A cover cannot open a pending video's readiness gate. Dwell and the separate
+  one-second qualification clock begin only after the effective media is ready.
+- Public Shop stores readiness/duration per media occurrence, preserves hidden,
+  off-screen, keyboard-focus and interaction pauses, preloads the successor,
+  requires the complete selected dwell to fit inside the server deadline and
+  exposes non-user campaign/presentation/media/dwell diagnostics.
+- The new phone timing test found and fixed one real refresh defect: the
+  30-second periodic refresh could replace the active object and restart its
+  dwell. The timer is now owned by the stable presentation/media key, so refill
+  and refresh state changes cannot reset already-earned visible time.
+- Canonical responses now contain at most two distinct campaign IDs. The client
+  refills at one remaining occurrence. Tokenless replay/visibility validity is
+  45 seconds; the fresh counted token stays 30 seconds. Eligibility,
+  self-exclusion, pacing, frequency, cursor order and accounting neutrality are
+  unchanged. Creative/media equality does not deduplicate distinct campaigns.
+- Verification passed: eight executable policy cases; the Spotlight contract
+  audit; all 19 focused presentation tests; all 24 media-quality/preparation
+  tests; the complete local Vite + mocked API phone smoke including real
+  5/8/9/10-second waits, delayed video readiness, image fallback, sound,
+  replay, retry, expiry and accounting; and the 295-module production build.
+- Dashboard Market Wisdom was not edited. A new ten-minute physical-phone
+  recording after deployment remains the required real-device acceptance gate.
+- Recording evidence, truth limits, frozen contract and post-deploy gate:
   `GSN_SPOTLIGHT_TIMING_FAIRNESS_PREMEASUREMENT_AUDIT_2026-10-27.md`.
 
 ## Shop-first authenticated entry and primary navigation - 2026-10-27

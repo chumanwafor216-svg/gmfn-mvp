@@ -219,6 +219,22 @@ def test_public_shop_presentation_fetch_reserves_round_but_consumes_nothing(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["max_stale_display_seconds"] == SPOTLIGHT_PRESENTATION_REPLAY_TTL_SECONDS
+    assert body["max_stale_display_seconds"] == 45
+    assert body["max_items_per_window"] == 2
+    assert body["policy"] == {
+        "passive_rotation_ms": 5000,
+        "image_rotation_ms": 5000,
+        "video_min_rotation_ms": 8000,
+        "video_max_rotation_ms": 10000,
+        "max_items_per_window": 2,
+        "qualifying_visible_ms": 1000,
+        "minimum_visible_ratio": 0.6,
+        "hidden_tab_pause_enabled": True,
+        "interaction_pause_enabled": True,
+        "interaction_pause_ms": 8000,
+        "reduced_motion_handling_enabled": True,
+        "reduced_motion_rotation_ms": 30000,
+    }
     assert body["item"]["is_canonical_opportunity"] is True
     assert body["presentation"]["surface"] == SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP
     assert body["presentation"]["delivery_round_consumed"] is False
@@ -944,12 +960,12 @@ def test_multiple_paced_campaigns_share_bounded_non_counting_rotation(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body['presentation'] is None
-    assert body['canonical_visibility']['count'] == 3
-    assert {int(item['opportunity_campaign_id']) for item in body['items']} == {
-        1,
-        2,
-        3,
-    }
+    assert body['canonical_visibility']['count'] == 2
+    assert len(body['items']) == 2
+    assert len({int(item['opportunity_campaign_id']) for item in body['items']}) == 2
+    # These campaigns deliberately share the same snapshot message. Campaign
+    # identity, not creative/media equality, governs whether both survive.
+    assert len({item['message'] for item in body['items']}) == 1
     assert all(item['is_canonical_visibility'] is True for item in body['items'])
     assert all(
         item['opportunity_counts_as_delivery'] is False
@@ -962,10 +978,10 @@ def test_multiple_paced_campaigns_share_bounded_non_counting_rotation(
 
 def test_thirty_item_visibility_windows_advance_before_wrapping():
     candidate_count = 30
-    batch_size = 4
+    batch_size = 2
     flattened: list[int] = []
 
-    for bucket in range(8):
+    for bucket in range(15):
         offset = presentations._spotlight_visibility_window_offset(
             viewer_user_id=1,
             bucket=bucket,
@@ -1043,7 +1059,7 @@ def test_thirty_two_campaign_endpoint_windows_cover_all_before_wrapping(
         )
 
     all_campaign_ids: list[int] = []
-    for sequence in range(8):
+    for sequence in range(16):
         response = client.get(
             '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
             headers={
@@ -1057,7 +1073,7 @@ def test_thirty_two_campaign_endpoint_windows_cover_all_before_wrapping(
             int(item['opportunity_campaign_id'])
             for item in body['items']
         ]
-        assert len(campaign_ids) == len(set(campaign_ids)) == 4
+        assert len(campaign_ids) == len(set(campaign_ids)) == 2
         all_campaign_ids.extend(campaign_ids)
 
     assert len(all_campaign_ids) == len(set(all_campaign_ids)) == 32
