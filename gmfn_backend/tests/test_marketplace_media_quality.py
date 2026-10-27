@@ -26,6 +26,7 @@ from app.services.marketplace_media_quality_service import (
     MediaQualityError,
     VideoFinishProfile,
     VideoInspection,
+    _build_finish_overlay,
     inspect_video,
     is_verified_marketplace_video_url,
     normalize_marketplace_image,
@@ -92,6 +93,21 @@ def test_image_finish_preserves_transparency_with_webp(tmp_path: Path):
     with Image.open(output) as prepared:
         assert prepared.mode == "RGBA"
         assert prepared.getchannel("A").getextrema() == (180, 180)
+
+
+def test_gsn_finish_overlay_has_standard_navy_and_gold_frame(tmp_path: Path):
+    overlay_path = tmp_path / "gsn-reel-frame.png"
+
+    _build_finish_overlay(
+        VideoFinishProfile(duration_seconds=5, brand_name="Ada Home Foods"),
+        720,
+        1280,
+        overlay_path,
+    )
+
+    with Image.open(overlay_path).convert("RGBA") as overlay:
+        assert overlay.getpixel((360, 8))[:3] == (6, 21, 42)
+        assert overlay.getpixel((360, 15))[:3] == (199, 158, 59)
 
 
 def test_image_finish_rejects_unreadable_input(tmp_path: Path):

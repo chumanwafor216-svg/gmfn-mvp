@@ -38,12 +38,12 @@ const expectedSourceActions = {
   PrimaryButton: 15,
   SecondaryButton: 24,
   SubtleButton: 3,
-  StableButton: 5,
+  StableButton: 7,
   StableCtaLink: 14,
-  total: 61,
+  total: 63,
 };
-const expectedNativeFieldCount = 31;
-const expectedFileInputActionRoots = 3;
+const expectedNativeFieldCount = 33;
+const expectedFileInputActionRoots = 4;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
   drawer: 5,
@@ -243,8 +243,10 @@ const expectedActionOrder = [
   "shop-control.spotlight.preview.back",
   "shop-control.reel.share-video",
   "shop-control.reel.download",
-  "shop-control.reel.create-from-picture",
   "shop-control.reel.choose-picture",
+  "shop-control.reel.choose-video",
+  "shop-control.reel.create-from-picture",
+  "shop-control.reel.create-from-video",
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
@@ -350,6 +352,7 @@ const expectedFileInputIds = [
   "shop-control.spotlight.image-file",
   "shop-control.spotlight.video-file",
   "shop-control.reel.image-file",
+  "shop-control.reel.video-file",
 ];
 for (const expectedId of expectedFileInputIds) {
   if (fileInputActionRoots.some((field) => field.id === expectedId)) continue;
@@ -468,16 +471,20 @@ assertShopContains(
   "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
 );
 assertShopContains(
-  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?Turn this picture into a short Reel[\s\S]*?Your Spotlight remains a picture[\s\S]*?Reel length[\s\S]*?data-reel-picture-length="true"[\s\S]*?Short · 5 seconds[\s\S]*?Full · 10 seconds[\s\S]*?debugIdPrefix="shop-control\.reel\.picture-sound"[\s\S]*?silentSource[\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?What this pilot does[\s\S]*?optionally add sound you own or may use[\s\S]*?does not post automatically[\s\S]*?invent product detail[\s\S]*?built-in music catalogue/,
-  "Free Spotlight must keep the free GSN Shop Reel pilot directly below the composer, support a separate bounded picture Reel with owner-provided sound without changing Spotlight media, keep posting user-controlled, and state the production boundary truthfully."
+  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Create your Shop Reel[\s\S]*?Picture \+ optional sound, or video with its own sound[\s\S]*?data-shop-reel-standard-frame="true"[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Ready: framed Reel \+ link to this shop[\s\S]*?debugId="shop-control\.reel\.choose-picture"[\s\S]*?debugId="shop-control\.reel\.choose-video"[\s\S]*?data-reel-picture-length="true"[\s\S]*?debugIdPrefix="shop-control\.reel\.picture-sound"[\s\S]*?silentSource[\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?data-reel-video-length="true"[\s\S]*?debugIdPrefix="shop-control\.reel\.video-sound"[\s\S]*?debugId="shop-control\.reel\.create-from-video"[\s\S]*?What this pilot does[\s\S]*?keep, mix or replace its sound[\s\S]*?does not auto-post[\s\S]*?use Vault content/,
+  "Free Spotlight must keep the concise framed GSN Shop Reel pilot directly below the composer, reuse the existing picture/video and sound engines, retain explicit owner-controlled sharing, and state the production boundary truthfully."
 );
 assertShopContains(
   /async function shareShopReelVideo\(\)[\s\S]*?navigator\.share[\s\S]*?navigator\.canShare[\s\S]*?files: \[file\][\s\S]*?shareTargetForChannel[\s\S]*?buildPublicShareText/,
   "GSN Shop Reel file sharing must use the explicit phone share sheet and retain the attributed public-shop link."
 );
 assertShopContains(
-  /spotlightImageFile \? \([\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?debugId="shop-control\.reel\.choose-picture"[\s\S]*?Choose picture for Reel[\s\S]*?id="shop-control-reel-image-file"[\s\S]*?data-cta-id="shop-control\.reel\.image-file"[\s\S]*?handleSpotlightImagePicked/,
-  "The empty GSN Shop Reel card must open the existing picture-preparation engine directly, and a selected picture must remain eligible even when a video is also selected."
+  /const shopReelSocialMessage = `[\s\S]*?Browse the shop and current Spotlight\.[\s\S]*?GSN Demand Box[\s\S]*?TrustSlip separately/,
+  "The concise Reel card must keep Demand Box and separately checked TrustSlip language in the outward share caption rather than exposing it as permanent card copy."
+);
+assertShopContains(
+  /data-shop-reel-source-picker="true"[\s\S]*?debugId="shop-control\.reel\.choose-picture"[\s\S]*?debugId="shop-control\.reel\.choose-video"[\s\S]*?id="shop-control-reel-image-file"[\s\S]*?data-cta-id="shop-control\.reel\.image-file"[\s\S]*?handleSpotlightImagePicked[\s\S]*?id="shop-control-reel-video-file"[\s\S]*?data-cta-id="shop-control\.reel\.video-file"[\s\S]*?handleSpotlightVideoPicked/,
+  "The GSN Shop Reel card must reuse both existing Spotlight media-preparation engines directly without adding another uploader or media contract."
 );
 assertShopContains(
   /const ownerPublicShopReelUrl = ownerShopGsnId[\s\S]*?publicShopShareUrl[\s\S]*?"gsn_share"[\s\S]*?"shop_reel"[\s\S]*?"utm_source"[\s\S]*?"gsn_shop_reel"[\s\S]*?const ownerPublicShopReelSocialPreviewUrl = ownerShopGsnId[\s\S]*?publicShopSocialPreviewUrl/,

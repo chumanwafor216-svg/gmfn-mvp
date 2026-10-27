@@ -401,6 +401,31 @@ def _ellipsize(draw: ImageDraw.ImageDraw, value: str, font: ImageFont.ImageFont,
 def _build_finish_overlay(profile: VideoFinishProfile, width: int, height: int, path: Path) -> None:
     canvas = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
+    outer_frame_width = max(10, int(width * 0.02))
+    outer_frame_margin = max(3, int(width * 0.006))
+    draw.rounded_rectangle(
+        (
+            outer_frame_margin,
+            outer_frame_margin,
+            width - outer_frame_margin - 1,
+            height - outer_frame_margin - 1,
+        ),
+        radius=max(18, int(width * 0.035)),
+        outline=(6, 21, 42, 255),
+        width=outer_frame_width,
+    )
+    gold_frame_margin = outer_frame_margin + outer_frame_width - 3
+    draw.rounded_rectangle(
+        (
+            gold_frame_margin,
+            gold_frame_margin,
+            width - gold_frame_margin - 1,
+            height - gold_frame_margin - 1,
+        ),
+        radius=max(14, int(width * 0.028)),
+        outline=(199, 158, 59, 255),
+        width=max(2, int(width * 0.004)),
+    )
     margin = max(12, int(width * 0.025))
     panel_height = max(90, min(int(height * 0.25), 190))
     top = height - panel_height - margin
@@ -934,22 +959,34 @@ def render_marketplace_image_reel(
         )
         foreground_x = (width - foreground.width) // 2
         foreground_y = max(42, (1010 - foreground.height) // 2)
+        media_frame_padding = 14
+        media_frame_box = (
+            foreground_x - media_frame_padding,
+            foreground_y - media_frame_padding,
+            foreground_x + foreground.width + media_frame_padding,
+            foreground_y + foreground.height + media_frame_padding,
+        )
         shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         shadow_draw = ImageDraw.Draw(shadow)
         shadow_draw.rounded_rectangle(
-            (
-                foreground_x - 10,
-                foreground_y - 10,
-                foreground_x + foreground.width + 10,
-                foreground_y + foreground.height + 10,
-            ),
-            radius=28,
+            media_frame_box,
+            radius=30,
             fill=(0, 0, 0, 128),
         )
         canvas = Image.alpha_composite(
             canvas,
             shadow.filter(ImageFilter.GaussianBlur(radius=16)),
         )
+        media_frame = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        media_frame_draw = ImageDraw.Draw(media_frame)
+        media_frame_draw.rounded_rectangle(
+            media_frame_box,
+            radius=28,
+            fill=(6, 21, 42, 252),
+            outline=(199, 158, 59, 255),
+            width=4,
+        )
+        canvas = Image.alpha_composite(canvas, media_frame)
         canvas.alpha_composite(foreground, (foreground_x, foreground_y))
 
         _build_finish_overlay(finish_profile, width, height, overlay_path)

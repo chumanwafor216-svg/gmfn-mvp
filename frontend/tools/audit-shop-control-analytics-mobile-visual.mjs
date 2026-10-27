@@ -730,21 +730,26 @@ try {
   const missingReelPilotText = [
     "gsn shop reel",
     "free pilot",
-    "take your shop outside gsn",
-    "choose picture for reel",
+    "create your shop reel",
+    "choose picture",
+    "choose video",
     "what this pilot does",
   ].filter((text) => !reelPilotText.includes(text));
   const reelBoundaryOpen = await reelPilot.locator("details").getAttribute("open");
   const directReelPictureActions = await reelPilot.locator(
     '[data-cta-id="shop-control.reel.choose-picture"]'
   ).count();
+  const directReelVideoActions = await reelPilot.locator(
+    '[data-cta-id="shop-control.reel.choose-video"]'
+  ).count();
   const prematureReelActions = await reelPilot.locator(
-    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"], [data-cta-id="shop-control.reel.create-from-picture"]'
+    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"], [data-cta-id="shop-control.reel.create-from-picture"], [data-cta-id="shop-control.reel.create-from-video"]'
   ).count();
   if (
     missingReelPilotText.length > 0 ||
     reelBoundaryOpen !== null ||
     directReelPictureActions !== 1 ||
+    directReelVideoActions !== 1 ||
     prematureReelActions > 0
   ) {
     findings.push({
@@ -755,6 +760,7 @@ try {
           : []),
         ...(reelBoundaryOpen !== null ? ["the Reel truth-boundary disclosure opened before the owner requested it"] : []),
         ...(directReelPictureActions !== 1 ? ["the empty Reel card did not expose exactly one direct picture action"] : []),
+        ...(directReelVideoActions !== 1 ? ["the empty Reel card did not expose exactly one direct video action"] : []),
         ...(prematureReelActions > 0 ? ["Reel file actions appeared before a finished video existed"] : []),
       ],
     });
@@ -780,13 +786,15 @@ try {
     "share reel from phone",
     "choose link channel",
     "download reel",
-    "demand box",
-    "trustslip",
+    "ready: framed reel + link to this shop",
   ].filter((text) => !restoredReelText.includes(text));
+  const restoredReelFrames = await restoredReelPilot.locator(
+    '[data-shop-reel-standard-frame="true"]'
+  ).count();
   const restoredReelActions = await restoredReelPilot.locator(
     '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.share"], [data-cta-id="shop-control.reel.download"]'
   ).count();
-  if (missingRestoredReelText.length > 0 || restoredReelActions !== 3) {
+  if (missingRestoredReelText.length > 0 || restoredReelActions !== 3 || restoredReelFrames !== 1) {
     findings.push({
       label: "shop-reel:restored-package",
       findings: [
@@ -795,6 +803,9 @@ try {
           : []),
         ...(restoredReelActions !== 3
           ? [`expected three restored Reel actions; found ${restoredReelActions}`]
+          : []),
+        ...(restoredReelFrames !== 1
+          ? [`expected one standard Reel preview frame; found ${restoredReelFrames}`]
           : []),
       ],
     });

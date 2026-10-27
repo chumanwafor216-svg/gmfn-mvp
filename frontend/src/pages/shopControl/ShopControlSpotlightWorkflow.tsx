@@ -307,6 +307,47 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     message: shopReelSocialMessage,
     socialMessage: shopReelSocialMessage,
   };
+  const [preferredShopReelSource, setPreferredShopReelSource] = React.useState<"image" | "video">("image");
+  const shopReelDraftSource = spotlightVideoFile && (!spotlightImageFile || preferredShopReelSource === "video")
+    ? "video"
+    : "image";
+
+  React.useEffect(() => {
+    if (spotlightVideoFile && !spotlightImageFile) {
+      setPreferredShopReelSource("video");
+    } else if (spotlightImageFile && !spotlightVideoFile) {
+      setPreferredShopReelSource("image");
+    }
+  }, [spotlightImageFile, spotlightVideoFile]);
+
+  function chooseShopReelPicture() {
+    setPreferredShopReelSource("image");
+    setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
+    const input = document.getElementById("shop-control-reel-image-file") as HTMLInputElement | null;
+    if (input) {
+      input.value = "";
+      input.click();
+    }
+  }
+
+  function chooseShopReelVideo() {
+    setPreferredShopReelSource("video");
+    setSpotlightMediaChoice(spotlightImageFile ? "both" : "video");
+    const input = document.getElementById("shop-control-reel-video-file") as HTMLInputElement | null;
+    if (input) {
+      input.value = "";
+      input.click();
+    }
+  }
+
+  async function createShopReelFromVideo() {
+    if (spotlightVideoSound && !spotlightVideoSound.rightsConfirmed) {
+      showNotice("info", "Confirm that you created the added sound or have permission to use it.");
+      return;
+    }
+    setSpotlightNaturalFinishEnabled(true);
+    await prepareSpotlightNaturalFinish();
+  }
 
   async function downloadShopReel() {
     if (!resolvedShopReelVideoUrl) {
@@ -1261,19 +1302,29 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             <span style={{ ...badge(true), background: "#FFF8DE", color: "#704600" }}>Free pilot</span>
           </div>
           <div style={{ marginTop: 8, fontSize: isCompact ? 19 : 22, fontWeight: 950, lineHeight: 1.15 }}>
-            Take your shop outside GSN
+            Create your Shop Reel
           </div>
           <div style={{ marginTop: 7, color: "#D7E3F1", fontSize: 13, fontWeight: 750, lineHeight: 1.45 }}>
-            Use a selected picture or finished short video. GSN pairs the Reel with your public-shop link; you review it, then choose where to post it.
+            Picture + optional sound, or video with its own sound. Your shop link stays attached.
           </div>
 
           {shopReelShareReady ? (
             <>
-              <div style={{ marginTop: 12 }}>
+              <div
+                data-shop-reel-standard-frame="true"
+                style={{
+                  marginTop: 12,
+                  padding: 6,
+                  borderRadius: 22,
+                  border: "2px solid #C79E3B",
+                  background: "linear-gradient(180deg, #06152A 0%, #0B3154 100%)",
+                  boxShadow: "0 16px 34px rgba(0,0,0,0.28)",
+                }}
+              >
                 <SpotlightMediaFrame
                   videoUrl={resolvedShopReelVideoUrl}
                   alt="Prepared GSN Shop Reel"
-                  frameStyle={{ minHeight: isCompact ? 220 : 280, height: isCompact ? 220 : 280, borderRadius: 18 }}
+                  frameStyle={{ minHeight: isCompact ? 220 : 280, height: isCompact ? 220 : 280, borderRadius: 16 }}
                   mediaStyle={{ width: "100%", height: "100%" }}
                   autoPlayVideo={false}
                   mutedVideo
@@ -1311,16 +1362,52 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 </SecondaryButton>
               </div>
               <div style={{ marginTop: 9, color: "#D7E3F1", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
-                Package: reviewed video + public shop link + a short GSN note about Spotlight, Demand Box and separately checked TrustSlip evidence.
+                Ready: framed Reel + link to this shop.
               </div>
             </>
           ) : (
             <div style={{ marginTop: 12, ...innerCard("rgba(255,255,255,0.96)"), color: "#07172C" }}>
-              {spotlightImageFile ? (
+              <div
+                data-shop-reel-source-picker="true"
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
+              >
+                <StableButton
+                  type="button"
+                  kind={shopReelDraftSource === "image" && spotlightImageFile ? "primary" : "secondary"}
+                  onClick={() => {
+                    if (spotlightImageFile) setPreferredShopReelSource("image");
+                    else chooseShopReelPicture();
+                  }}
+                  disabled={preparingSpotlightImage || preparingSpotlightVideo || creatingSpotlight}
+                  busy={preparingSpotlightImage}
+                  busyLabel="Preparing..."
+                  fullWidth
+                  debugId="shop-control.reel.choose-picture"
+                >
+                  {spotlightImageFile ? "Picture ready" : "Choose picture"}
+                </StableButton>
+                <StableButton
+                  type="button"
+                  kind={shopReelDraftSource === "video" && spotlightVideoFile ? "primary" : "secondary"}
+                  onClick={() => {
+                    if (spotlightVideoFile) setPreferredShopReelSource("video");
+                    else chooseShopReelVideo();
+                  }}
+                  disabled={preparingSpotlightImage || preparingSpotlightVideo || creatingSpotlight}
+                  busy={preparingSpotlightVideo}
+                  busyLabel="Preparing..."
+                  fullWidth
+                  debugId="shop-control.reel.choose-video"
+                >
+                  {spotlightVideoFile ? "Video ready" : "Choose video"}
+                </StableButton>
+              </div>
+
+              {shopReelDraftSource === "image" && spotlightImageFile ? (
                 <>
-                  <div style={{ fontSize: 14, fontWeight: 950 }}>Turn this picture into a short Reel.</div>
+                  <div style={{ marginTop: 10, fontSize: 14, fontWeight: 950 }}>Picture Reel</div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
-                    GSN will keep your full picture visible, add gentle motion and your shop label, and create a {spotlightNaturalFinishSeconds}-second video. Your Spotlight remains a picture.
+                    GSN frames your full picture and shop label. Sound is optional.
                   </div>
                   <label
                     style={{
@@ -1335,7 +1422,11 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     Reel length
                     <select
                       value={spotlightNaturalFinishSeconds}
-                      onChange={(event) => setSpotlightNaturalFinishSeconds(event.target.value === "5" ? 5 : 10)}
+                      onChange={(event) => {
+                        setSpotlightNaturalFinishSeconds(event.target.value === "5" ? 5 : 10);
+                        setSpotlightFinishedVideoUrl("");
+                        clearPreparedShopReel();
+                      }}
                       data-reel-picture-length="true"
                       style={{
                         width: "100%",
@@ -1378,54 +1469,118 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     </PrimaryButton>
                   </div>
                 </>
-              ) : (
+              ) : shopReelDraftSource === "video" && spotlightVideoFile ? (
                 <>
-                  <div style={{ fontSize: 14, fontWeight: 950 }}>Choose a picture to start your Reel.</div>
+                  <div style={{ marginTop: 10, fontSize: 14, fontWeight: 950 }}>Video Reel</div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
-                    GSN uses the same safe picture preparation already used by Spotlight. It does not create a second upload or publish your Spotlight.
+                    Your video keeps its own sound. Add or replace sound only if you want.
                   </div>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      marginTop: 10,
+                      fontSize: 12.5,
+                      fontWeight: 900,
+                      color: "#183451",
+                    }}
+                  >
+                    Reel length
+                    <select
+                      value={spotlightNaturalFinishSeconds}
+                      onChange={(event) => {
+                        setSpotlightNaturalFinishSeconds(event.target.value === "5" ? 5 : 10);
+                        setSpotlightFinishedVideoUrl("");
+                        clearPreparedShopReel();
+                      }}
+                      data-reel-video-length="true"
+                      style={{
+                        width: "100%",
+                        minHeight: 46,
+                        padding: "10px 12px",
+                        borderRadius: 14,
+                        border: "1px solid rgba(24,52,81,0.22)",
+                        background: "#FFFFFF",
+                        color: "#07172C",
+                        font: "inherit",
+                        fontSize: 16,
+                        fontWeight: 850,
+                      }}
+                    >
+                      <option value={5}>Short · 5 seconds</option>
+                      <option value={10}>Full · 10 seconds</option>
+                    </select>
+                  </label>
+                  <VideoSoundEditor
+                    value={spotlightVideoSound}
+                    onChange={(sound) => {
+                      setSpotlightVideoSound(sound);
+                      setSpotlightFinishedVideoUrl("");
+                      clearPreparedShopReel();
+                    }}
+                    disabled={preparingSpotlightVideo || preparingSpotlightFinish}
+                    debugIdPrefix="shop-control.reel.video-sound"
+                  />
                   <div style={{ marginTop: 10 }}>
                     <PrimaryButton
                       type="button"
-                      onClick={() => {
-                        setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
-                        const input = document.getElementById("shop-control-reel-image-file") as HTMLInputElement | null;
-                        if (input) {
-                          input.value = "";
-                          input.click();
-                        }
-                      }}
-                      disabled={preparingSpotlightImage || creatingSpotlight}
-                      busy={preparingSpotlightImage}
-                      busyLabel="Preparing picture..."
+                      onClick={() => { void createShopReelFromVideo(); }}
+                      disabled={preparingSpotlightVideo || preparingSpotlightFinish}
+                      busy={preparingSpotlightFinish}
+                      busyLabel="Creating Reel..."
                       fullWidth
-                      debugId="shop-control.reel.choose-picture"
+                      debugId="shop-control.reel.create-from-video"
                     >
-                      Choose picture for Reel
+                      Create Reel from video
                     </PrimaryButton>
                   </div>
-                  <input
-                    id="shop-control-reel-image-file"
-                    key={`shop-control-reel-image-${spotlightImageInputKey}`}
-                    type="file"
-                    data-gmfn-action-root="true"
-                    data-cta-id="shop-control.reel.image-file"
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-                    aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
-                    onClick={(event) => {
-                      if (preparingSpotlightImage || creatingSpotlight) {
-                        event.preventDefault();
-                        showNotice("info", "GSN is still preparing the current picture.");
-                      }
-                    }}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] || null;
-                      void handleSpotlightImagePicked(file);
-                    }}
-                    style={{ display: "none" }}
-                  />
                 </>
+              ) : (
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                  Choose a picture or short video. Both use the existing safe Spotlight media engine.
+                </div>
               )}
+
+              <input
+                id="shop-control-reel-image-file"
+                key={`shop-control-reel-image-${spotlightImageInputKey}`}
+                type="file"
+                data-gmfn-action-root="true"
+                data-cta-id="shop-control.reel.image-file"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+                aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
+                onClick={(event) => {
+                  if (preparingSpotlightImage || creatingSpotlight) {
+                    event.preventDefault();
+                    showNotice("info", "GSN is still preparing the current picture.");
+                  }
+                }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  void handleSpotlightImagePicked(file);
+                }}
+                style={{ display: "none" }}
+              />
+              <input
+                id="shop-control-reel-video-file"
+                key={`shop-control-reel-video-${spotlightVideoInputKey}`}
+                type="file"
+                data-gmfn-action-root="true"
+                data-cta-id="shop-control.reel.video-file"
+                accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
+                aria-disabled={preparingSpotlightVideo || creatingSpotlight || undefined}
+                onClick={(event) => {
+                  if (preparingSpotlightVideo || creatingSpotlight) {
+                    event.preventDefault();
+                    showNotice("info", "GSN is still preparing the current video.");
+                  }
+                }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  void handleSpotlightVideoPicked(file);
+                }}
+                style={{ display: "none" }}
+              />
             </div>
           )}
 
@@ -1445,7 +1600,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               What this pilot does
             </StableDisclosureSummary>
             <div style={{ marginTop: 8, color: "#D7E3F1", fontSize: 12, lineHeight: 1.45 }}>
-              It can make a bounded five- or ten-second video from your selected picture, optionally add sound you own or may use, or reuse your reviewed video, then share it with your shop link. It does not post automatically, prove delivery or sales, invent product detail, use private Vault content, or supply a built-in music catalogue.
+              Picture: add optional sound. Video: keep, mix or replace its sound. GSN adds your shop link. It does not auto-post, promise sales, use Vault content or provide music.
             </div>
           </details>
         </div>
