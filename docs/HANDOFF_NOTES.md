@@ -4,7 +4,7 @@ This file is the compact current-state handoff required by `README.md` and
 `docs/PROJECT_PROTOCOL.md`. The fully repaired historical record through
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
-## Local Bulletin composer unblock and share handoff - 2026-10-27
+## Deployed Bulletin composer unblock and share handoff - 2026-10-27
 
 - Corrected the production-visible disabled-button trap: an announcement longer
   than the 50-word board preview no longer disables `Post notice`. GSN sends
@@ -25,6 +25,11 @@ This file is the compact current-state handoff required by `README.md` and
   a valid 74-word notice keeps `Post notice` enabled, sends a 50-word preview,
   preserves all 74 words as full text, keeps settings closed by default, and
   surfaces the exact new public notice's existing share action after posting.
+- Application commit `f119476f617045e761fa8b367c8e89c37651477a` was pushed
+  to the pilot branch and promoted to `main`. GitHub Actions run `40520716153`
+  completed successfully: the frontend deploy hook and exact Render API deploy
+  steps succeeded, and the workflow verified the public frontend URL against
+  the deployed build.
 
 
 
