@@ -60,7 +60,15 @@ under `docs/` or `docs/archive/`, then link that file here.
   ESLint, WhatsApp Bridge and notice-board notification audits, all three
   Community Home frozen audits, the complete protected-button/frozen-surface
   suite including browser-backed visual checks, and the 295-module production
-  build. The batch remains local and is not deployed.
+  build.
+- Deployment completed from exact release commit
+  `6b40f7811587eb3445b746e30540faa01586b714`, pushed to both the working
+  branch and `main`. GitHub Actions run `40490560068` completed successfully
+  after the exact frontend and API Render deploys became live and the workflow's
+  public frontend/API checks passed. Independent post-live checks returned
+  HTTP 200 from the production frontend and API health endpoint, found the new
+  poll-response route in the live OpenAPI contract, and found the announcement
+  package markers in the deployed Community Notice chunk.
 
 ## Community Confirmation one-request decision flow - 2026-10-27
 
