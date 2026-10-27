@@ -6,6 +6,16 @@ This file is the compact current-state handoff required by `README.md` and
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
 
+## GSN Shop Reel free pilot - 2026-10-27
+
+- Owner decision implemented locally: `GSN Shop Reel` sits directly below the Free Spotlight composer inside Shop Control. The five first-level Shop actions and frozen Dashboard Market Wisdom remain unchanged.
+- The pilot is free. It creates no payment, entitlement or Pipeline Credit debit.
+- V1 reuses the existing reviewed five/ten-second `GSN Natural Finish`, distinctly attributed public-shop/social-preview links and Social/WhatsApp Bridge. It offers explicit `Share shop link`, supported-phone `Share video from phone`, and `Download reel` actions; GSN does not auto-post.
+- The most recently prepared finished video is retained for the current page session so it remains shareable after the Spotlight draft clears. A browser refresh does not currently restore that retained reel.
+- Truth boundary: production still-photo-to-video conversion is not built. `campaign_renderer/` is an offline review prototype and was not wired into the live app. Vault content is excluded, and GSN does not claim external delivery, reads, reach, sales or platform acceptance.
+- Verification: TypeScript, the Vite production build, the full protected-button freeze suite, the focused Shop Control/Spotlight/share audits, and the Shop Control phone visual audit pass. The phone audit now covers the compact Reel empty state and also exposed and verified a repair: navigating from focused Spotlight to another Shop hash closes the Spotlight portal. Shop Control inventory was intentionally updated from 57 to 59 source actions for the two explicit reel-file controls.
+
+
 ## Canonical Pipeline Credit migration map - 2026-10-27
 
 - Completed the repository-backed reuse and migration map in

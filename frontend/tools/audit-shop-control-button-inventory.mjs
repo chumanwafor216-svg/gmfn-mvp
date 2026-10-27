@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 12,
-  SecondaryButton: 23,
+  SecondaryButton: 25,
   SubtleButton: 3,
   StableButton: 5,
   StableCtaLink: 14,
-  total: 57,
+  total: 59,
 };
 const expectedNativeFieldCount = 29;
 const expectedFileInputActionRoots = 2;
@@ -241,6 +241,8 @@ const expectedActionOrder = [
   "shop-control.spotlight.upload.cancel",
   "shop-control.spotlight.preview.publish",
   "shop-control.spotlight.preview.back",
+  "shop-control.reel.share-video",
+  "shop-control.reel.download",
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
@@ -461,6 +463,18 @@ assertShopContains(
 assertShopContains(
   /data-spotlight-video-options[\s\S]*?debugId="shop-control\.spotlight\.video-options"[\s\S]*?Improve my video automatically[\s\S]*?Short · 5 seconds[\s\S]*?Full · 10 seconds[\s\S]*?<VideoSoundEditor/,
   "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
+);
+assertShopContains(
+  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?buttonLabel="Share shop link"[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share video from phone[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?What this pilot does[\s\S]*?does not post automatically[\s\S]*?turn a still picture into video yet/,
+  "Free Spotlight must place the free GSN Shop Reel pilot directly below the composer, keep posting user-controlled, and state the production boundary truthfully."
+);
+assertShopContains(
+  /async function shareShopReelVideo\(\)[\s\S]*?navigator\.share[\s\S]*?navigator\.canShare[\s\S]*?files: \[file\][\s\S]*?shareTargetForChannel[\s\S]*?buildPublicShareText/,
+  "GSN Shop Reel file sharing must use the explicit phone share sheet and retain the attributed public-shop link."
+);
+assertShopContains(
+  /const ownerPublicShopReelUrl = ownerShopGsnId[\s\S]*?publicShopShareUrl[\s\S]*?"gsn_share"[\s\S]*?"shop_reel"[\s\S]*?"utm_source"[\s\S]*?"gsn_shop_reel"[\s\S]*?const ownerPublicShopReelSocialPreviewUrl = ownerShopGsnId[\s\S]*?publicShopSocialPreviewUrl/,
+  "GSN Shop Reel links must retain distinct Reel attribution while reusing the canonical public-shop and social-preview routes."
 );
 assertShopContains(
   /async function openSpotlightReview\(\)[\s\S]*?prepareSpotlightNaturalFinish\(\)[\s\S]*?setSpotlightFlowStep\("preview"\)[\s\S]*?Check before publishing[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"[\s\S]*?Publish now/,

@@ -1,5 +1,6 @@
 import React from "react";
 import SpotlightMediaFrame from "../../components/SpotlightMediaFrame";
+import SocialTagShareButton from "../../components/SocialTagShareButton";
 import VideoSoundEditor from "../../components/VideoSoundEditor";
 import {
   PrimaryButton,
@@ -9,6 +10,7 @@ import {
 } from "../../components/StableButton";
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
+import { buildPublicShareText, shareTargetForChannel } from "../../lib/share";
 import { publicApiOrigin } from "../../lib/publicLinks";
 import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
@@ -182,6 +184,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightNaturalFinishSeconds,
     setSpotlightNaturalFinishSeconds,
     spotlightFinishedVideoUrl,
+    shopReelVideoUrl,
     setSpotlightFinishedVideoUrl,
     preparingSpotlightFinish,
     prepareSpotlightNaturalFinish,
@@ -280,6 +283,92 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightVideoSound ? "Sound added" : "",
   ].filter(Boolean).join(" · ");
 
+  const resolvedShopReelVideoUrl = resolveSpotlightMediaSrc(shopReelVideoUrl);
+  const shopReelShareReady = Boolean(
+    resolvedShopReelVideoUrl && safeSpotlightText(routes.publicShopReel)
+  );
+  const shopReelTitle = `${firstTruthy(shop?.name, shopName, "My GSN Shop")} | GSN Shop Reel`;
+  const shopReelMessage = firstTruthy(
+    spotlightPreviewMessage,
+    currentActiveSpotlight?.message,
+    shop?.description,
+    "See what is available from this GSN shop."
+  );
+
+  async function downloadShopReel() {
+    if (!resolvedShopReelVideoUrl) {
+      showNotice("info", "Prepare a finished short video first.");
+      return;
+    }
+    try {
+      const response = await fetch(resolvedShopReelVideoUrl);
+      if (!response.ok) throw new Error("Reel file could not be opened.");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "gsn-shop-reel.mp4";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      showNotice("success", "GSN Shop Reel downloaded. Review it before posting.");
+    } catch {
+      const opened = window.open(resolvedShopReelVideoUrl, "_blank", "noopener,noreferrer");
+      showNotice(
+        opened ? "info" : "error",
+        opened
+          ? "The reel opened in a new tab. Use your phone download control, then post it yourself."
+          : "The reel could not be downloaded. Keep this page open and try again."
+      );
+    }
+  }
+
+  async function shareShopReelVideo() {
+    if (!shopReelShareReady) {
+      showNotice("info", "Prepare a finished short video first.");
+      return;
+    }
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.share !== "function" ||
+      typeof navigator.canShare !== "function"
+    ) {
+      showNotice("info", "This browser cannot attach the reel. Download it, then use Share shop link.");
+      return;
+    }
+    try {
+      const response = await fetch(resolvedShopReelVideoUrl);
+      if (!response.ok) throw new Error("Reel file could not be opened.");
+      const blob = await response.blob();
+      const file = new File([blob], "gsn-shop-reel.mp4", {
+        type: blob.type || "video/mp4",
+      });
+      if (!navigator.canShare({ files: [file] })) {
+        showNotice("info", "This phone cannot attach the reel here. Download it, then post it yourself.");
+        return;
+      }
+      const nativeTarget = shareTargetForChannel(
+        {
+          title: shopReelTitle,
+          url: routes.publicShopReel,
+          socialUrl: routes.publicShopReelSocialPreview || routes.publicShopReel,
+          message: shopReelMessage,
+          socialMessage: shopReelMessage,
+        },
+        "native"
+      );
+      await navigator.share({
+        title: nativeTarget.title,
+        text: buildPublicShareText(nativeTarget),
+        files: [file],
+      });
+      showNotice("success", "Reel and shop link shared from your phone.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      showNotice("error", "The phone could not share the reel. Download it, then post it yourself.");
+    }
+  }
   return (
     <section
       id="shop-control-spotlight"
@@ -1153,6 +1242,107 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
           </>
         )}
       </div>
+      {!isPaidDraft ? (
+        <div
+          data-gsn-shop-reel="free-pilot"
+          style={{
+            marginTop: 14,
+            ...innerCard("linear-gradient(180deg, #07172C 0%, #0B3154 100%)"),
+            border: "1px solid rgba(246,215,122,0.34)",
+            color: "#F8FBFF",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>GSN Shop Reel</div>
+            <span style={{ ...badge(true), background: "#FFF8DE", color: "#704600" }}>Free pilot</span>
+          </div>
+          <div style={{ marginTop: 8, fontSize: isCompact ? 19 : 22, fontWeight: 950, lineHeight: 1.15 }}>
+            Take your shop outside GSN
+          </div>
+          <div style={{ marginTop: 7, color: "#D7E3F1", fontSize: 13, fontWeight: 750, lineHeight: 1.45 }}>
+            GSN pairs your finished short video with the public-shop link. You review it, then choose where to post it.
+          </div>
+
+          {shopReelShareReady ? (
+            <>
+              <div style={{ marginTop: 12 }}>
+                <SpotlightMediaFrame
+                  videoUrl={resolvedShopReelVideoUrl}
+                  alt="Prepared GSN Shop Reel"
+                  frameStyle={{ minHeight: isCompact ? 220 : 280, height: isCompact ? 220 : 280, borderRadius: 18 }}
+                  mediaStyle={{ width: "100%", height: "100%" }}
+                  autoPlayVideo={false}
+                  mutedVideo
+                  loopVideo
+                  showAudioUnlock
+                  audioUnlockLabel="Sound on"
+                  maxVideoSeconds={10}
+                />
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
+                <SocialTagShareButton
+                  target={{
+                    title: shopReelTitle,
+                    url: routes.publicShopReel,
+                    socialUrl: routes.publicShopReelSocialPreview || routes.publicShopReel,
+                    message: shopReelMessage,
+                    socialMessage: shopReelMessage,
+                  }}
+                  buttonLabel="Share shop link"
+                  buttonKind="primary"
+                  fullWidth
+                  stableHeight={50}
+                  debugId="shop-control.reel.share"
+                  onResult={(tone, text) => showNotice(tone, text)}
+                />
+                <SecondaryButton
+                  type="button"
+                  onClick={() => { void shareShopReelVideo(); }}
+                  fullWidth
+                  debugId="shop-control.reel.share-video"
+                >
+                  Share video from phone
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => { void downloadShopReel(); }}
+                  fullWidth
+                  debugId="shop-control.reel.download"
+                >
+                  Download reel
+                </SecondaryButton>
+              </div>
+            </>
+          ) : (
+            <div style={{ marginTop: 12, ...innerCard("rgba(255,255,255,0.96)"), color: "#07172C" }}>
+              <div style={{ fontSize: 14, fontWeight: 950 }}>Finish one short video above first.</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                Add a video, leave automatic improvement on, then tap Check and publish. The finished video will appear here for outside sharing.
+              </div>
+            </div>
+          )}
+
+          <details style={{ marginTop: 10 }}>
+            <StableDisclosureSummary
+              debugId="shop-control.reel.boundary"
+              stableHeight={42}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.10)",
+                color: "#F8FBFF",
+                fontSize: 12.5,
+                fontWeight: 900,
+              }}
+            >
+              What this pilot does
+            </StableDisclosureSummary>
+            <div style={{ marginTop: 8, color: "#D7E3F1", fontSize: 12, lineHeight: 1.45 }}>
+              It shares a reviewed video and shop link. It does not post automatically, prove delivery or sales, use private Vault content, or turn a still picture into video yet. Use only sound you created or may legally use.
+            </div>
+          </details>
+        </div>
+      ) : null}
     </section>
   );
 }

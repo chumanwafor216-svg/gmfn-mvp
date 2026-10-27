@@ -67,6 +67,8 @@ import {
   publicFrontendUrl,
   publicShopBlockPath,
   publicShopPath,
+  publicShopShareUrl,
+  publicShopSocialPreviewUrl,
 } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
@@ -3740,6 +3742,7 @@ export default function ShopControlPage() {
   const [spotlightNaturalFinishEnabled, setSpotlightNaturalFinishEnabled] = useState(true);
   const [spotlightNaturalFinishSeconds, setSpotlightNaturalFinishSeconds] = useState<5 | 10>(10);
   const [spotlightFinishedVideoUrl, setSpotlightFinishedVideoUrl] = useState('');
+  const [lastPreparedShopReelUrl, setLastPreparedShopReelUrl] = useState('');
   const [preparingSpotlightFinish, setPreparingSpotlightFinish] = useState(false);
   const [spotlightImageInputKey, setSpotlightImageInputKey] = useState(0);
   const [spotlightVideoInputKey, setSpotlightVideoInputKey] = useState(0);
@@ -4474,6 +4477,8 @@ export default function ShopControlPage() {
     }
 
     if (targetId !== "shop-control-spotlight") {
+      setSpotlightOpen(false);
+      setSpotlightFlowStep("upload");
       setActiveOwnerLayer(ownerShopLayerForTarget(targetId));
     }
 
@@ -4945,6 +4950,28 @@ export default function ShopControlPage() {
         `${ownerPublicShopPath}#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
         "owner_spotlight_preview",
         "1"
+      )
+    : "";
+  const ownerPublicShopReelUrl = ownerShopGsnId
+    ? appendRouteQueryParam(
+        appendRouteQueryParam(
+          publicShopShareUrl({ gmfnId: ownerShopGsnId }),
+          "gsn_share",
+          "shop_reel"
+        ),
+        "utm_source",
+        "gsn_shop_reel"
+      )
+    : "";
+  const ownerPublicShopReelSocialPreviewUrl = ownerShopGsnId
+    ? appendRouteQueryParam(
+        appendRouteQueryParam(
+          publicShopSocialPreviewUrl({ gmfnId: ownerShopGsnId }),
+          "gsn_share",
+          "shop_reel"
+        ),
+        "utm_source",
+        "gsn_shop_reel"
       )
     : "";
   const shopRecordReady = Boolean(shop?.id);
@@ -6705,6 +6732,8 @@ export default function ShopControlPage() {
       return;
     }
 
+    setLastPreparedShopReelUrl('');
+
     if (isSpotlightImageFile(file)) {
       setSpotlightVideoInputKey((prev) => prev + 1);
       setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
@@ -6808,6 +6837,7 @@ export default function ShopControlPage() {
       );
       if (!url) throw new Error('GSN prepared the video but did not return a preview link.');
       setSpotlightFinishedVideoUrl(url);
+      setLastPreparedShopReelUrl(url);
       setSpotlightMediaFeedback({
         tone: 'success',
         text: "Your improved video is ready to check.",
@@ -7332,6 +7362,8 @@ export default function ShopControlPage() {
     routes: {
       ...routes,
       publicShopSpotlightPreview: ownerPublicShopSpotlightPreviewPath,
+      publicShopReel: ownerPublicShopReelUrl,
+      publicShopReelSocialPreview: ownerPublicShopReelSocialPreviewUrl,
     },
     location,
     spotlightMediaChoice,
@@ -7369,6 +7401,7 @@ export default function ShopControlPage() {
     spotlightFinishedVideoUrl,
     setSpotlightFinishedVideoUrl,
     preparingSpotlightFinish,
+    shopReelVideoUrl: spotlightFinishedVideoUrl || lastPreparedShopReelUrl,
     prepareSpotlightNaturalFinish,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,

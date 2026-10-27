@@ -723,6 +723,35 @@ try {
   const shopDetailsFinding = await collectPanelAudit(page, "shop-details:first-view");
   if (shopDetailsFinding) findings.push(shopDetailsFinding);
 
+  await page.goto(`${baseUrl}/app/shop-control#shop-control-spotlight`, { waitUntil: "networkidle", timeout: 25000 });
+  const reelPilot = page.locator('[data-gsn-shop-reel="free-pilot"]');
+  await reelPilot.waitFor({ state: "visible", timeout: 20000 });
+  const reelPilotText = (await reelPilot.innerText()).replace(/\s+/g, " ").trim().toLowerCase();
+  const missingReelPilotText = [
+    "gsn shop reel",
+    "free pilot",
+    "take your shop outside gsn",
+    "finish one short video above first",
+    "what this pilot does",
+  ].filter((text) => !reelPilotText.includes(text));
+  const reelBoundaryOpen = await reelPilot.locator("details").getAttribute("open");
+  const prematureReelActions = await reelPilot.locator(
+    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"]'
+  ).count();
+  if (missingReelPilotText.length > 0 || reelBoundaryOpen !== null || prematureReelActions > 0) {
+    findings.push({
+      label: "shop-reel:free-pilot-first-view",
+      findings: [
+        ...(missingReelPilotText.length > 0
+          ? [`missing Reel pilot labels: ${missingReelPilotText.join(", ")}`]
+          : []),
+        ...(reelBoundaryOpen !== null ? ["the Reel truth-boundary disclosure opened before the owner requested it"] : []),
+        ...(prematureReelActions > 0 ? ["Reel file actions appeared before a finished video existed"] : []),
+      ],
+    });
+  }
+  const reelPilotFinding = await collectPanelAudit(page, "shop-reel:free-pilot-first-view");
+  if (reelPilotFinding) findings.push(reelPilotFinding);
   await page.goto(`${baseUrl}/app/shop-control#shop-control-counts`, { waitUntil: "networkidle", timeout: 25000 });
   const activityReading = page.locator('[data-shop-activity-reading="true"]');
   await activityReading.waitFor({ state: "visible", timeout: 20000 });

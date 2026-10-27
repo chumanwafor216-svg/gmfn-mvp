@@ -78,6 +78,8 @@ export type ShopControlSpotlightFeedback = {
 export type ShopControlSpotlightRoutes = {
   freeSpotlight: string;
   publicShopSpotlightPreview: string;
+  publicShopReel: string;
+  publicShopReelSocialPreview: string;
   shopGallery: string;
   subscriptionSpotlight: string;
 };
@@ -172,6 +174,7 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightNaturalFinishSeconds: 5 | 10;
   setSpotlightNaturalFinishSeconds: Dispatch<SetStateAction<5 | 10>>;
   spotlightFinishedVideoUrl: string;
+  shopReelVideoUrl: string;
   setSpotlightFinishedVideoUrl: Dispatch<SetStateAction<string>>;
   preparingSpotlightFinish: boolean;
   prepareSpotlightNaturalFinish: () => Promise<string | null>;
