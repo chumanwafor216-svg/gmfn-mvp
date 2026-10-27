@@ -394,6 +394,10 @@ Design result:
 
 ### 9. Measure and correct Spotlight rotation timing and fairness
 
+Status: source/test pre-measurement audit completed locally on 2026-10-27;
+physical-phone recording and evidence correlation remain pending. No Spotlight
+behavior or frozen policy changed.
+
 Owner observation:
 - Spotlight rotation has improved materially, but some media still disappear
   so quickly that their message loses meaning.
@@ -422,12 +426,18 @@ Evidence to collect from the planned 12-minute recording:
   eligibility changes explain an apparent short appearance
 
 Code and data investigation:
-- Confirmed current Public Shop rule:
+- Confirmed source rule:
   `min(5,000 ms, max(2,000 ms, floor(120,000 ms / item count)))`.
   Up to 24 queued items receive five seconds; 30 receive four seconds; 40
-  receive three seconds; and queues of 60 or more reach the two-second floor.
-  This intentional two-minute-cycle compression is a strong explanation for
-  the owner's report that mixed 30-40-item rotations lose meaning.
+  receive three seconds; and queues of 60 or more reach the two-second floor
+  **if that many items are actually present in the handset queue**.
+- Important audit correction: the canonical v2 endpoint normally returns a
+  bounded window of up to four items and refills near the end. The dwell
+  function receives current handset queue length, not total server inventory.
+  Therefore 30-40 eligible campaigns do not by themselves prove three-to-four
+  second live dwell under the current canonical path. The recording must test
+  unexpected queue growth, deadline/refresh/media churn, stale deployed code,
+  or a genuine five-second readability problem.
 - Map the rotation cursor/selection algorithm, eligibility filters,
   presentation lease, seen/qualification event, video playback, and expiry
   contracts around that confirmed timing rule.
@@ -460,6 +470,20 @@ Decision candidates to test, not assume:
   truncating an eligible short video incorrectly
 - correct selection/pacing independently if the appearance-count imbalance is
   not explained by policy or eligibility
+
+Pre-measurement audit result:
+- The existing exposure ledger proves accepted one-second qualification, not
+  full visible dwell, playback completion, transition gaps or non-counting
+  visibility/replay appearances.
+- Current ten-second prepared videos ordinarily receive the same five-second
+  card dwell as images, so even correct timing can cut the useful message.
+- Fairness must use the exact viewer/route eligible denominator; equal raw
+  counts across ineligible, self-excluded, expired, paced, frequency-capped or
+  differently entitled campaigns would be false.
+- Baseline Spotlight contract audit and all 19 focused backend presentation
+  tests pass.
+- Full measurement template, hypotheses and change gate:
+  `GSN_SPOTLIGHT_TIMING_FAIRNESS_PREMEASUREMENT_AUDIT_2026-10-27.md`.
 
 Required boundaries:
 - do not claim an issued presentation was seen unless the existing

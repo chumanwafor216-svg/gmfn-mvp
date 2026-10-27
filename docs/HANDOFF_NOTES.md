@@ -277,6 +277,37 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Full design:
   `GSN_RESPECTFUL_INACTIVITY_REMINDER_DESIGN_2026-10-27.md`.
 
+## Spotlight timing/fairness pre-measurement audit - 2026-10-27
+
+- Completed a source/test audit only. No rotation, dwell, selection,
+  qualification, pacing, exposure, eligibility, quota, UI or frozen policy
+  behavior changed.
+- Corrected an important assumption: the count-aware formula can compress 30
+  queued items to four seconds and 40 to three seconds, but canonical v2
+  normally sends bounded windows of up to four and refills near the end. The
+  timer uses current handset queue length, not total server inventory. A total
+  inventory of 30-40 therefore does not by itself prove live compression.
+- If the planned recording proves two-to-four-second appearances, investigate
+  unexpected queue growth, stale deployed/PWA code, deadline churn,
+  refresh/state churn and media readiness before changing constants.
+- Existing exposure evidence records accepted one-second qualification, not
+  full visible dwell, media playback completion, transitions or tokenless
+  visibility/replay appearances. It cannot independently prove readability or
+  equal appearance frequency.
+- Current videos are prepared to at most ten seconds but normally receive the
+  same five-second card dwell as images. Even correctly delivered five-second
+  timing can therefore be too short for the message.
+- Fairness must be measured only among campaigns eligible for the exact viewer,
+  route and interval. Equal raw database counts would ignore self-exclusion,
+  route eligibility, expiry, relevance, frequency, pacing and entitlement.
+- Baseline `audit:spotlight-presentation-contract` and all 19 focused backend
+  presentation tests passed.
+- No recording file was attached or found. Next action is to timestamp the
+  planned 12-minute physical-phone recording and correlate it with the exact
+  build, API windows, campaigns, leases, exposures and pacing state.
+- Full measurement template and change gate:
+  `GSN_SPOTLIGHT_TIMING_FAIRNESS_PREMEASUREMENT_AUDIT_2026-10-27.md`.
+
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 
 - Implemented the owner's decision that Shop is the authenticated starting
