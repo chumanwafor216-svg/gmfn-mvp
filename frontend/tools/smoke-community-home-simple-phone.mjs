@@ -14,10 +14,14 @@ function json(body, status = 200) {
 }
 
 async function installApiMocks(page, { includeSecondClan = false } = {}) {
-  const state = { pollRequests: [], pollSelections: [] };
+  const state = { pollRequests: [], pollSelections: [], publicPollRequests: [] };
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
+
+    if (route.request().resourceType() === "document" && !url.pathname.startsWith("/api/")) {
+      return route.continue();
+    }
 
     if (path === "/auth/me") {
       return route.fulfill(json({
@@ -90,6 +94,60 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
         },
       }));
     }
+    if (path === "/community-notices/91/poll-response" && route.request().method() === "POST") {
+      return route.fulfill(json({ detail: "Not authenticated" }, 401));
+    }
+    if (path === "/community-notices/public/public-poll-code/poll-response" && route.request().method() === "POST") {
+      const payload = route.request().postDataJSON();
+      state.publicPollRequests.push(payload);
+      const selections = Array.isArray(payload?.options) ? payload.options : [];
+      return route.fulfill(json({
+        ok: true,
+        message: `Poll response saved: ${selections.join(", ")}.`,
+        poll_summary: {
+          counts: {
+            Friday: selections.includes("Friday") ? 1 : 0,
+            Saturday: selections.includes("Saturday") ? 1 : 0,
+          },
+          total: 1,
+          member_response_count: 0,
+          public_response_count: 1,
+          own_response: selections[0] || null,
+          own_responses: selections,
+          respondent_boundary: "Public-link totals are browser-response counts, not verified unique people.",
+        },
+      }));
+    }
+    if (path === "/community-notices/public/public-poll-code" && route.request().method() === "GET") {
+      return route.fulfill(json({
+        ok: true,
+        notice: {
+          notice_id: "TE-91",
+          event_id: 91,
+          clan_id: 8,
+          body: "Choose the best day for the public meeting.",
+          created_at: "2026-10-27T09:00:00Z",
+          expires_at: "2026-11-03T09:00:00Z",
+          acknowledgement_enabled: false,
+          availability_enabled: false,
+          poll_enabled: true,
+          poll_question: "Which day works for you?",
+          poll_options: ["Friday", "Saturday"],
+          poll_selection_mode: "single",
+          poll_audience: "public_link",
+          poll_summary: {
+            counts: { Friday: 0, Saturday: 0 },
+            total: 0,
+            respondent_boundary: "Browser responses are not verified unique people.",
+          },
+          public_qr_enabled: true,
+          public_code: "public-poll-code",
+          public_path: "/community-notices/public-poll-code",
+          source_community_name: "Homeland isa",
+          community: { id: 8, name: "Homeland isa", code: "GMFN-C-000008" },
+        },
+      }));
+    }
     if (/^\/community-notices(?:\/|$)/.test(path)) {
       return route.fulfill(json({
         notices: [
@@ -107,6 +165,7 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
             poll_question: "Which days suit you?",
             poll_options: ["Friday", "Saturday", "Sunday"],
             poll_selection_mode: "multiple",
+            poll_audience: "members",
             poll_summary: {
               counts: {
                 Friday: state.pollSelections.includes("Friday") ? 1 : 0,
@@ -225,8 +284,9 @@ async function run() {
         calendarTileCount: document.querySelectorAll('[aria-label="Announcement date"]').length,
         phoneIndicatorCount: phoneIndicators ? 1 : 0,
         phoneIndicatorText: phoneIndicators?.textContent?.replace(/\s+/g, " ").trim() || "",
-        phoneIndicatorHeight: phoneIndicators instanceof HTMLElement ? Math.round(phoneIndicators.getBoundingClientRect().height) : null,
+        phoneIndicatorHeight: phoneIndicators instanceof globalThis.HTMLElement ? Math.round(phoneIndicators.getBoundingClientRect().height) : null,
         urgencyTones,
+        attentionCount: document.querySelectorAll('[data-debug-id="community-home.attention"]').length,
       };
     });
     const marketplaceVisibleBeforeOpen = await page.locator('[data-cta-id="community-home.goto.marketplace"]').isVisible();
@@ -252,6 +312,7 @@ async function run() {
       defaultState.phoneIndicatorHeight === null ||
       defaultState.phoneIndicatorHeight > 40 ||
       defaultState.urgencyTones.join(",") !== "red,yellow,green" ||
+      defaultState.attentionCount !== 0 ||
       marketplaceVisibleBeforeOpen ||
       overflow390.length > 0
     ) {
@@ -272,6 +333,11 @@ async function run() {
       return;
     }
     await page.waitForSelector('[data-debug-id="community-home.bulletin.choice-poll"]', { timeout: 30000 });
+    if (!(await page.getByText("Community members only", { exact: true }).isVisible())) {
+      console.error("Community Home poll did not show its members-only audience.");
+      process.exitCode = 1;
+      return;
+    }
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.0"]').click();
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.2"]').click();
     if (apiState.pollRequests.length !== 0) {
@@ -330,6 +396,40 @@ async function run() {
     await multiCommunityPage.locator('[data-cta-id="community-home.switch.toggle"]').click();
     await multiCommunityPage.waitForSelector('[data-cta-id="community-home.switch.select.9"]', { state: "visible", timeout: 30000 });
     await multiCommunityPage.close();
+
+    const publicPollPage = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+    });
+    const publicPollState = await installApiMocks(publicPollPage);
+    await publicPollPage.goto(`http://127.0.0.1:${port}/community-notices/public-poll-code`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await publicPollPage.waitForSelector('[data-debug-id="community-notice.choice-poll"]', { timeout: 30000 });
+    await publicPollPage.getByText("Anyone with this announcement link may vote. No name is collected for a public-link response.", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    await publicPollPage.getByText("Poll result · 0 responses", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    await publicPollPage.locator('[data-cta-id="community-notice.poll-option.0"]').click();
+    await publicPollPage.locator('[data-cta-id="community-notice.poll-submit"]').click();
+    await publicPollPage.waitForSelector('[data-debug-id="community-notice.poll-results"]', { timeout: 30000 });
+    if (
+      publicPollState.publicPollRequests.length !== 1 ||
+      JSON.stringify(publicPollState.publicPollRequests[0]?.options) !== JSON.stringify(["Friday"]) ||
+      String(publicPollState.publicPollRequests[0]?.response_token || "").length < 24
+    ) {
+      console.error("Detached public poll did not send one browser-token response.", publicPollState.publicPollRequests);
+      process.exitCode = 1;
+      return;
+    }
+    const publicPollOverflow = await collectOverflow(publicPollPage);
+    await publicPollPage.screenshot({ path: join(screenshotDir, "community-notice-public-poll-390x844.png"), fullPage: false });
+    if (publicPollOverflow.length > 0) {
+      console.error("Detached public poll overflowed on phone.", publicPollOverflow);
+      process.exitCode = 1;
+      return;
+    }
+    await publicPollPage.close();
 
     console.log(`Community Home simple phone smoke passed. Screenshots: ${screenshotDir}`);
   } finally {

@@ -11,6 +11,7 @@ import {
   getPublicCommunityNotice,
   recordCommunityNoticeAvailability,
   recordCommunityNoticePollResponse,
+  recordPublicCommunityNoticePollResponse,
 } from "../lib/api";
 import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 
@@ -162,6 +163,25 @@ function actionErrorMessage(error: any): string {
   return safeText(error?.detail?.message || error?.detail || error?.message || error, fallback);
 }
 
+function publicPollResponseToken(publicCode: string): string {
+  const storageKey = `gsn.communityNotice.publicPoll.${publicCode}`;
+  if (typeof window === "undefined") return "";
+  try {
+    const stored = window.localStorage.getItem(storageKey)?.trim();
+    if (stored) return stored;
+    const generated =
+      typeof window.crypto?.randomUUID === "function"
+        ? `${window.crypto.randomUUID()}.${window.crypto.randomUUID()}`
+        : typeof window.crypto?.getRandomValues === "function"
+          ? Array.from(window.crypto.getRandomValues(new Uint8Array(32)), (value) => value.toString(16).padStart(2, "0")).join("")
+          : `session.${Date.now().toString(36)}.${Math.random().toString(36).slice(2)}.${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(storageKey, generated);
+    return generated;
+  } catch {
+    return `session.${Date.now().toString(36)}.${Math.random().toString(36).slice(2)}.${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 export default function CommunityNoticePage() {
   const { publicCode } = useParams();
   const location = useLocation();
@@ -250,7 +270,9 @@ export default function CommunityNoticePage() {
     ? notice.poll_options.map((option: unknown) => safeText(option)).filter(Boolean).slice(0, 7)
     : [];
   const pollSelectionMode = notice?.poll_selection_mode === "multiple" ? "multiple" : "single";
+  const pollAudience = notice?.poll_audience === "public_link" ? "public_link" : "members";
   const pollEnabled = Boolean(notice?.poll_enabled && pollQuestion && pollOptions.length >= 2 && noticeEventId && clanId);
+  const visiblePollResult = pollResult || notice?.poll_summary || null;
   const senderWhatsAppNumber = safeText(notice?.sender_whatsapp_number);
   const senderWhatsAppLabel = safeText(notice?.sender_whatsapp_label, "the announcer");
   const contactReady = Boolean(notice?.sender_contact_ready && senderWhatsAppNumber);
@@ -368,10 +390,24 @@ export default function CommunityNoticePage() {
     setActionBusy("poll-submit");
     setSignInRequired(false);
     try {
-      const result = await recordCommunityNoticePollResponse(noticeEventId, {
-        clan_id: clanId,
-        options: pollSelections,
-      });
+      let result: any;
+      try {
+        result = await recordCommunityNoticePollResponse(noticeEventId, {
+          clan_id: clanId,
+          options: pollSelections,
+        });
+      } catch (memberError: any) {
+        const memberStatus = Number(memberError?.status || 0);
+        if (pollAudience !== "public_link" || ![401, 403].includes(memberStatus)) {
+          throw memberError;
+        }
+        const responseToken = publicPollResponseToken(code);
+        if (!responseToken) throw memberError;
+        result = await recordPublicCommunityNoticePollResponse(code, {
+          response_token: responseToken,
+          options: pollSelections,
+        });
+      }
       setPollResult(result?.poll_summary || null);
       showAction("success", safeText(result?.message, "Your poll response was saved."));
     } catch (error: any) {
@@ -412,7 +448,7 @@ export default function CommunityNoticePage() {
             </div>
           </div>
           <p style={{ margin: 0, maxWidth: 680, color: "rgba(248,251,255,0.78)", lineHeight: 1.55 }}>
-            One announcement package from {domainName}. Read it, use its approved actions, or share it onward without opening the announcement creator or the wider community.
+            Read this announcement, take an available action, or share the same package.
           </p>
         </div>
 
@@ -448,9 +484,11 @@ export default function CommunityNoticePage() {
               {acknowledgementEnabled || availabilityEnabled || pollEnabled ? (
                 <div style={softCard()} data-debug-id="community-notice.response-actions">
                   <div style={label()}>Respond to this announcement</div>
-                  <p style={{ ...helper(), margin: 0 }}>
-                    These actions use the existing GSN community record. You must be signed in as an active member of {domainName} to save a response.
-                  </p>
+                  {acknowledgementEnabled || availabilityEnabled ? (
+                    <p style={{ ...helper(), margin: 0 }}>
+                      Acknowledgement and availability are for signed-in active members of {domainName}.
+                    </p>
+                  ) : null}
                   {acknowledgementEnabled ? (
                     <StableButton
                       kind={ownAcknowledged ? "secondary" : "primary"}
@@ -487,6 +525,11 @@ export default function CommunityNoticePage() {
                   {pollEnabled ? (
                     <div style={{ display: "grid", gap: 8 }} data-debug-id="community-notice.choice-poll">
                       <div style={{ color: "#091B2E", fontWeight: 900 }}>{pollQuestion}</div>
+                      <p style={{ ...helper(), margin: 0 }}>
+                        {pollAudience === "public_link"
+                          ? "Anyone with this announcement link may vote. No name is collected for a public-link response."
+                          : `Only signed-in active members of ${domainName} may vote.`}
+                      </p>
                       <div style={actionGrid()}>
                         {pollOptions.map((option: string, index: number) => (
                           <StableButton
@@ -517,13 +560,13 @@ export default function CommunityNoticePage() {
                       >
                         OK — send response
                       </StableButton>
-                      {pollResult ? (
+                      {visiblePollResult ? (
                         <div
                           data-debug-id="community-notice.poll-results"
                           style={{ ...softCard(), display: "grid", gap: 7, padding: 12 }}
                         >
                           <div style={{ color: "#091B2E", fontSize: 13, fontWeight: 900 }}>
-                            Poll result · {Number(pollResult.total || 0)} respondents
+                            Poll result · {Number(visiblePollResult.total || 0)} responses
                           </div>
                           {pollOptions.map((option: string) => (
                             <div
@@ -531,11 +574,13 @@ export default function CommunityNoticePage() {
                               style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#48657D", fontSize: 13, fontWeight: 800 }}
                             >
                               <span>{option}</span>
-                              <span>{Number(pollResult.counts?.[option] || 0)}</span>
+                              <span>{Number(visiblePollResult.counts?.[option] || 0)}</span>
                             </div>
                           ))}
                           <p style={{ ...helper(), margin: 0 }}>
-                            These are aggregate totals. Member names remain private to authorised community admins.
+                            {pollAudience === "public_link"
+                              ? "These are aggregate responses. Public-link totals are browser-response counts, not proof of unique people."
+                              : "These are aggregate member totals. Member names remain private to authorised community admins."}
                           </p>
                         </div>
                       ) : null}

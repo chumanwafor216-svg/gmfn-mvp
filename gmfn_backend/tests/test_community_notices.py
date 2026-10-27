@@ -342,6 +342,8 @@ def test_community_notice_multiple_choice_poll_counts_each_choice_and_keeps_one_
     assert roll_call["summary"] == {
         "counts": {"Friday": 1, "Saturday": 0, "Sunday": 1},
         "total_respondents": 1,
+        "member_response_count": 1,
+        "public_response_count": 0,
     }
     assert roll_call["by_option"]["Friday"][0]["user_id"] == 1
     assert roll_call["by_option"]["Sunday"][0]["user_id"] == 1
@@ -377,6 +379,146 @@ def test_community_notice_single_choice_poll_rejects_multiple_selections(
         json={"clan_id": 1, "options": ["Friday", "Sunday"]},
     )
     assert response.status_code == 422, response.text
+
+
+def test_public_link_poll_accepts_anonymous_browser_responses_without_public_names(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose the best public meeting day.",
+            "poll_question": "Which day works?",
+            "poll_options": ["Friday", "Saturday", "Sunday"],
+            "poll_selection_mode": "multiple",
+            "poll_audience": "public_link",
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+    assert notice["poll_audience"] == "public_link"
+    assert notice["public_qr_enabled"] is True
+    assert notice["public_code"]
+
+    public_res = client.get(f"/community-notices/public/{notice['public_code']}")
+    assert public_res.status_code == 200, public_res.text
+    public_notice = public_res.json()["notice"]
+    assert public_notice["poll_audience"] == "public_link"
+    assert public_notice["poll_summary"] == {
+        "counts": {"Friday": 0, "Saturday": 0, "Sunday": 0},
+        "total": 0,
+        "respondent_boundary": (
+            "Totals combine member account responses and anonymous browser responses. "
+            "Browser responses are not verified unique people."
+        ),
+    }
+
+    first_token = "public-browser-token-aaaaaaaaaaaaaaaaaaaaaaaa"
+    first_response = client.post(
+        f"/community-notices/public/{notice['public_code']}/poll-response",
+        json={"response_token": first_token, "options": ["Friday", "Sunday"]},
+    )
+    assert first_response.status_code == 200, first_response.text
+    first_summary = first_response.json()["poll_summary"]
+    assert first_summary["counts"] == {"Friday": 1, "Saturday": 0, "Sunday": 1}
+    assert first_summary["total"] == 1
+    assert first_summary["member_response_count"] == 0
+    assert first_summary["public_response_count"] == 1
+    assert first_summary["own_responses"] == ["Friday", "Sunday"]
+    assert "unique people" in first_summary["respondent_boundary"]
+
+    changed_response = client.post(
+        f"/community-notices/public/{notice['public_code']}/poll-response",
+        json={"response_token": first_token, "options": ["Saturday"]},
+    )
+    assert changed_response.status_code == 200, changed_response.text
+    changed_summary = changed_response.json()["poll_summary"]
+    assert changed_summary["counts"] == {"Friday": 0, "Saturday": 1, "Sunday": 0}
+    assert changed_summary["total"] == 1
+
+    second_response = client.post(
+        f"/community-notices/public/{notice['public_code']}/poll-response",
+        json={
+            "response_token": "public-browser-token-bbbbbbbbbbbbbbbbbbbbbbbb",
+            "options": ["Friday"],
+        },
+    )
+    assert second_response.status_code == 200, second_response.text
+    second_summary = second_response.json()["poll_summary"]
+    assert second_summary["counts"] == {"Friday": 1, "Saturday": 1, "Sunday": 0}
+    assert second_summary["total"] == 2
+    assert second_summary["public_response_count"] == 2
+
+    refreshed_public_notice = client.get(
+        f"/community-notices/public/{notice['public_code']}"
+    ).json()["notice"]
+    assert refreshed_public_notice["poll_summary"]["counts"] == {
+        "Friday": 1,
+        "Saturday": 1,
+        "Sunday": 0,
+    }
+    assert refreshed_public_notice["poll_summary"]["total"] == 2
+    assert "member_counts" not in refreshed_public_notice["poll_summary"]
+    assert "public_counts" not in refreshed_public_notice["poll_summary"]
+
+    member_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "options": ["Sunday"]},
+    )
+    assert member_response.status_code == 200, member_response.text
+    member_summary = member_response.json()["poll_summary"]
+    assert member_summary["counts"] == {"Friday": 1, "Saturday": 1, "Sunday": 1}
+    assert member_summary["total"] == 3
+    assert member_summary["member_response_count"] == 1
+    assert member_summary["public_response_count"] == 2
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice['event_id']}/poll-roll-call",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 200, roll_call_res.text
+    roll_call = roll_call_res.json()
+    assert roll_call["summary"] == {
+        "counts": {"Friday": 1, "Saturday": 1, "Sunday": 1},
+        "total_respondents": 3,
+        "member_response_count": 1,
+        "public_response_count": 2,
+    }
+    assert roll_call["public_counts"] == {"Friday": 1, "Saturday": 1, "Sunday": 0}
+    assert len(roll_call["responses"]) == 1
+    assert roll_call["by_option"]["Sunday"][0]["user_id"] == 1
+    assert roll_call["by_option"]["Friday"] == []
+
+
+def test_members_only_poll_rejects_public_link_response(
+    client, override_current_user
+):
+    _seed_notice_community()
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose one member meeting day.",
+            "public_qr_enabled": True,
+            "poll_question": "Which day works?",
+            "poll_options": ["Friday", "Saturday"],
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+    assert notice["poll_audience"] == "members"
+
+    response = client.post(
+        f"/community-notices/public/{notice['public_code']}/poll-response",
+        json={
+            "response_token": "public-browser-token-cccccccccccccccccccccccc",
+            "options": ["Friday"],
+        },
+    )
+    assert response.status_code == 403, response.text
 
 
 def test_community_notice_poll_roll_call_is_not_available_to_ordinary_members(

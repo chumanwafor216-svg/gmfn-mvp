@@ -8,6 +8,36 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local Bulletin public-audience poll correction - 2026-10-27
+
+- The existing Community Bulletin poll composer now includes `Who can vote?`
+  with `Community members only` as the safe default and `Anyone with the
+  announcement link` as the explicit public option. Public audience
+  automatically creates the existing detached announcement/QR package.
+- Member votes continue to use identity-bearing Trust Events. Public-link
+  votes use the narrow `community_notice_public_poll_responses` table keyed by
+  a SHA-256 hash of a high-entropy browser token. It stores choices only: no
+  name, contact or raw IP. The public route validates the public code,
+  selected audience, expiry, shown choices and answer mode, and applies the
+  existing per-process IP/token rate limiter.
+- Aggregate results combine member and public responses. The admin roll call
+  keeps member names private to authorised admins and displays public votes as
+  anonymous counts only. UI copy labels public totals as browser responses,
+  not verified unique people; clearing storage or changing devices can still
+  create another response. Public-link visitors can see aggregate counts when
+  they open the announcement, before or after voting; the public payload does
+  not expose the member/public split or any roll-call identity.
+- Community Home no longer repeats ordinary-member acknowledgement/response
+  prompts in `Needs your attention` immediately below Bulletin. Distinct
+  officer review work remains. Pending-review cards now show a submitted
+  poll's question, choice count, answer mode and audience before approval.
+- Focused backend Community Notice tests pass (36), the single Alembic head is
+  `20261027_notice_public_poll`, the WhatsApp/Bulletin contract audit and full
+  protected-button/frozen-surface audit pass, the 295-module production build
+  passes, and the extended 390x844 phone smoke passes for both authenticated
+  Community Home polling and signed-out public-link polling. This package is
+  local and not deployed yet.
+
 ## Deployed Shop paid-services consolidation - 2026-10-27
 
 - Owner-approved scope: make Public Shop the first established-shop action,
@@ -33,24 +63,6 @@ under `docs/` or `docs/archive/`, then link that file here.
   and `main`. GitHub Actions run `40502616068` completed successfully after
   Render accepted the exact frontend deploy and the live public-URL
   verification passed. No backend deployment was required.
-
-## Next Bulletin compactness and poll-audience amendment - 2026-10-27
-
-- After the Shop paid-services release, review Community Bulletin again to
-  remove unnecessary wording and make the announcement package more compact
-  and intelligent. Reconcile the duplicate ordinary-member `Needs your
-  attention` pointer with the Bulletin while preserving distinct authorised
-  administrator review work.
-- The owner added a creator-selected poll audience setting: `Community members
-  only` (the current protected default) or `Anyone with the announcement link`
-  for charities, NGOs and public consultations whose respondents are not yet
-  GSN members.
-- Unabated boundary: the current poll-response API requires an authenticated
-  active community member and the admin roll call is member-identity based.
-  Public-link voting therefore requires an explicit non-member/anonymous
-  response identity, duplicate-abuse control, aggregate privacy policy, and a
-  rule that public respondents never enter the member roll call. Do not ship a
-  cosmetic setting that silently fails or globally weakens member-only polls.
 
 ## Local Login transient-guidance correction - 2026-10-27
 

@@ -45,6 +45,7 @@ type Props = {
       poll_question?: string | null;
       poll_options?: string[] | null;
       poll_selection_mode?: "single" | "multiple";
+      poll_audience?: "members" | "public_link";
       notice_mode?: CommunityNoticeModalMode;
     }
   ) => Promise<void> | void;
@@ -115,6 +116,7 @@ export default function CommunityNoticeModal({
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [pollSelectionMode, setPollSelectionMode] = useState<"single" | "multiple">("single");
+  const [pollAudience, setPollAudience] = useState<"members" | "public_link">("members");
   const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -288,6 +290,7 @@ export default function CommunityNoticeModal({
         poll_question: pollEnabled ? pollQuestion.trim() : undefined,
         poll_options: pollEnabled ? cleanPollOptions : undefined,
         poll_selection_mode: pollEnabled ? pollSelectionMode : undefined,
+        poll_audience: pollEnabled ? pollAudience : undefined,
       });
     } catch (error: any) {
       setSubmitError(
@@ -307,6 +310,7 @@ export default function CommunityNoticeModal({
     setPollQuestion("");
     setPollOptions(["", ""]);
     setPollSelectionMode("single");
+    setPollAudience("members");
     setAttachmentPanelOpen(false);
     clearAttachmentState();
   }
@@ -330,7 +334,7 @@ export default function CommunityNoticeModal({
             ? "Ask one simple market-need question from the official board. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
             : isReviewSubmission
             ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
-            : "Keep it short. GSN records who posted it and links your verified public WhatsApp contact when you have chosen to show one. Expired notices leave the active board but stay in Community Memory."}
+            : "Write the announcement, then add only the actions readers need. GSN records who posted it and keeps expired notices in Community Memory."}
         </p>
 
         <textarea
@@ -563,9 +567,13 @@ export default function CommunityNoticeModal({
                   type="checkbox"
                   checked={publicQrEnabled}
                   onChange={(event) => setPublicQrEnabled(event.target.checked)}
-                  disabled={busy}
+                  disabled={busy || (pollEnabled && pollAudience === "public_link")}
                 />
-                <span>Create public QR for this message</span>
+                <span>
+                  {pollEnabled && pollAudience === "public_link"
+                    ? "Public announcement link required for this poll"
+                    : "Create public QR for this message"}
+                </span>
               </label>
             ) : null}
           </>
@@ -588,8 +596,26 @@ export default function CommunityNoticeModal({
             {pollEnabled ? (
               <div style={attachmentPanelStyle} data-debug-id="community-notice-modal.poll-panel">
                 <div style={fieldGroupStyle}>
+                  <label style={fieldLabelStyle} htmlFor="community-notice-poll-audience">
+                    Who can vote?
+                  </label>
+                  <select
+                    id="community-notice-poll-audience"
+                    value={pollAudience}
+                    onChange={(event) => {
+                      const audience = event.target.value as "members" | "public_link";
+                      setPollAudience(audience);
+                      if (audience === "public_link") setPublicQrEnabled(true);
+                    }}
+                    style={fieldStyle}
+                  >
+                    <option value="members">Community members only</option>
+                    <option value="public_link">Anyone with the announcement link</option>
+                  </select>
+                </div>
+                <div style={fieldGroupStyle}>
                   <label style={fieldLabelStyle} htmlFor="community-notice-poll-selection-mode">
-                    How may members answer?
+                    How may each person answer?
                   </label>
                   <select
                     id="community-notice-poll-selection-mode"
@@ -658,8 +684,11 @@ export default function CommunityNoticeModal({
                 ) : null}
                 <p style={attachmentHelpStyle}>
                   {pollSelectionMode === "multiple"
-                    ? "Members may tap several answers, then tap OK to send them. Use choices such as Friday, Saturday, or Sunday."
-                    : "Members tap one answer, then tap OK to send it. Use choices such as Friday, Saturday, or Sunday."} This is separate from Yes / Maybe / No availability.
+                    ? "People may tap several answers, then OK."
+                    : "People tap one answer, then OK."}{" "}
+                  {pollAudience === "public_link"
+                    ? "The public link is created automatically; public responses are anonymous browser counts."
+                    : "Only active community members can vote."}
                 </p>
                 {pollInvalid ? (
                   <p style={errorTextStyle}>
@@ -696,7 +725,11 @@ export default function CommunityNoticeModal({
           ) : null}
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>{isDemandBoxPulse ? "Private response path" : isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
-          {pollEnabled ? <span style={chipStyle}>Choice poll</span> : null}
+          {pollEnabled ? (
+            <span style={chipStyle}>
+              {pollAudience === "public_link" ? "Public-link poll" : "Members-only poll"}
+            </span>
+          ) : null}
           {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
         </div>
 

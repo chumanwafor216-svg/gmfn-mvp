@@ -654,18 +654,17 @@ Must show, in phone-first order:
   - one compact live announcement presentation
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
   - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
-  - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices and choose whether members may select one answer or multiple answers; this poll is separate from the existing Yes/Maybe/No availability control
-  - an authenticated active member taps the choice or choices and then presses one `OK` action; no written reply is required, and the member's latest submitted set replaces their earlier set
-  - the expanded authenticated notice shows aggregate totals per choice and one unique respondent total; in multiple-choice mode one member increments every choice they selected but counts once in the respondent total
-  - authorised community admins may deliberately open an admin-only `Poll roll call` to see who selected each choice when follow-up is necessary; names stay collapsed and are not part of the normal member poll view
-  - the detached public package must not expose member lists or admin roll call; after a signed-in active member submits their poll response, show that member the aggregate choice totals and unique respondent total
+  - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices, choose one-answer or multiple-answer behavior, and set `Community members only` (default) or `Anyone with the announcement link`; this poll is separate from the existing Yes/Maybe/No availability control
+  - public-link audience automatically enables the existing public announcement/QR package; it does not create another announcement or sharing engine
+  - a respondent taps the permitted choice or choices and then presses one `OK` action; no written reply is required. A member's latest submitted set replaces their earlier account response; a public respondent's latest set replaces the earlier response for that hashed random browser token
+  - the expanded authenticated notice shows aggregate totals per choice and one response total; in multiple-choice mode one response increments every selected choice but counts once in the response total
+  - authorised community admins may deliberately open an admin-only `Poll roll call` when follow-up is necessary; member names stay collapsed and private, while public-link responses appear only as anonymous counts and never enter the member roll call
+  - the detached public package must not expose member lists or admin roll call; after any valid permitted poll response, show aggregate choice totals and the explicit browser-response accuracy boundary for public polls
   - on phone, keep one compact red/amber/green timing strip showing `Now`, `72h`, and `Clear` counts inside Bulletin; keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
   - keep up to the last 10 expired items reachable through one closed `Previous announcements` disclosure; do not expose the history by default and do not silently discard it from the member surface
   - no Ask Community / market-need records in the Bulletin by default
-- Needs your attention only when a real selected-community action exists
-  - notice response required
-  - notice acknowledgement required
-  - officer bulletin review waiting
+- Needs your attention must not repeat ordinary-member notice acknowledgement or response actions already visible in the immediately preceding Bulletin
+  - distinct officer bulletin review work may remain when approval is genuinely waiting
 - compact destination handoff group
   - Marketplace
   - Manage shop -> Shop Control
@@ -2453,29 +2452,37 @@ Must show when supplied by the notice:
 
 Rules:
 - Reading, opening attachments, copying and sharing remain public.
-- Acknowledgement, availability and custom-poll responses require a signed-in
-  active member of the source community. A signed-out attempt must explain the
-  requirement and offer sign-in without inventing a public response.
+- Acknowledgement and availability always require a signed-in active member of
+  the source community. Custom polls default to that same member-only rule.
+  When the creator explicitly selects `Anyone with the announcement link`, a
+  signed-out or non-member visitor may submit through the governed public poll
+  endpoint without being added to the community or member roll call.
 - Yes/Maybe/No availability and the custom-choice poll are distinct contracts.
   Do not nest weekdays or other poll options under Yes/Maybe/No.
-- A member taps one or more permitted choices and presses one `OK` action; no
-  typed response is required. The latest submitted set replaces that member's
-  earlier set.
+- A respondent taps one or more permitted choices and presses one `OK` action;
+  no typed response is required. The latest submitted set replaces the earlier
+  member-account response or public browser-token response as applicable.
 - The authenticated Community Bulletin may show aggregate counts per choice.
   In multiple-answer mode, a member counts once under every selected choice
   and once in the unique respondent total. Authorised community admins may
   deliberately open a private Poll roll call for necessary follow-up.
-- On the detached package, show aggregate poll results after a signed-in active
-  member submits a valid response. Do not publish those totals in the anonymous
-  notice payload.
+- On the detached package, show aggregate poll results after a valid permitted
+  response. Do not publish those totals in the anonymous notice payload.
+- Public-link responses use a high-entropy browser token that is hashed before
+  storage. Store choices only: no respondent name, contact or raw IP. Enforce
+  per-connection and per-token throttling. Label public totals as browser
+  responses, not verified unique people; clearing browser storage or changing
+  devices can still produce another response.
 - Do not expose the creator, creator tools, wider community navigation, member
   lists, acknowledgement roll call, poll roll call, availability totals or
   poll totals to an anonymous visitor on this detached public page.
 - Expose announcer contact only when the sender deliberately published a
   verified public contact with the notice.
 - Reuse the existing Community Notice Trust Event, verified-media, WhatsApp
-  Bridge and social-share engines. Do not create a standalone poll engine,
-  database table or duplicate sharing system for this package.
+  Bridge and social-share engines. One narrow aggregate-only public-response
+  table is allowed because Trust Events require a real user identity and must
+  not falsely attribute anonymous votes. Do not create a standalone poll app,
+  duplicate sharing system, public identity list or public roll call.
 
 ## WhatsAppBridgePage
 

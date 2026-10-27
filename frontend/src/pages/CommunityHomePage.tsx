@@ -206,11 +206,15 @@ type CommunityNoticeItem = {
   poll_question?: string | null;
   poll_options?: string[] | null;
   poll_selection_mode?: "single" | "multiple" | string | null;
+  poll_audience?: "members" | "public_link" | string | null;
   poll_summary?: {
     counts?: Record<string, number | string | null> | null;
     total?: number | string | null;
+    member_response_count?: number | string | null;
+    public_response_count?: number | string | null;
     own_response?: string | null;
     own_responses?: string[] | null;
+    respondent_boundary?: string | null;
   } | null;
   board_hint?: string | null;
   marketplace_broadcast_id?: number | string | null;
@@ -253,8 +257,11 @@ type CommunityNoticePollRollCall = {
   summary?: {
     counts?: Record<string, number | string | null> | null;
     total_respondents?: number | string | null;
+    member_response_count?: number | string | null;
+    public_response_count?: number | string | null;
   } | null;
   by_option?: Record<string, CommunityNoticePollRollCallMember[] | null> | null;
+  public_counts?: Record<string, number | string | null> | null;
   responses?: CommunityNoticePollRollCallMember[] | null;
 };
 type CommunityNoticeReviewSubmission = {
@@ -272,6 +279,10 @@ type CommunityNoticeReviewSubmission = {
   sender_whatsapp_number?: string | null;
   sender_whatsapp_label?: string | null;
   sender_contact_ready?: boolean;
+  poll_question?: string | null;
+  poll_options?: string[] | null;
+  poll_selection_mode?: "single" | "multiple" | string | null;
+  poll_audience?: "members" | "public_link" | string | null;
 };
 type MeetingInterestResponse = "yes" | "maybe" | "no";
 
@@ -3313,6 +3324,8 @@ export default function CommunityHomePage() {
     const rollCall = noticeKey ? noticePollRollCallByNotice[noticeKey] : null;
     if (!rollCall) return null;
     const byOption = rollCall.by_option || {};
+    const publicCounts = rollCall.public_counts || {};
+    const totalCounts = rollCall.summary?.counts || {};
     const options = Array.isArray(noticeItem.poll_options) ? noticeItem.poll_options : [];
     return (
       <div data-debug-id="community-home.bulletin.poll-roll-call-panel" style={{ ...innerCard("#FFFDF7"), display: "grid", gap: 9 }}>
@@ -3322,19 +3335,26 @@ export default function CommunityHomePage() {
         </div>
         {options.map((option) => {
           const members = Array.isArray(byOption?.[option]) ? byOption[option] || [] : [];
+          const publicCount = noticeNumber(publicCounts?.[option]);
+          const totalCount = noticeNumber(totalCounts?.[option]);
           return (
             <div key={option} style={{ display: "grid", gap: 4 }}>
-              <span style={{ color: "#0B2D4A", fontSize: 12, fontWeight: 900 }}>{option} ({members.length})</span>
+              <span style={{ color: "#0B2D4A", fontSize: 12, fontWeight: 900 }}>{option} ({totalCount})</span>
               <span style={{ color: "#617085", fontSize: 12, fontWeight: 740 }}>
                 {members.length > 0
                   ? members.map((member) => firstTruthy(member.display_name, member.gmfn_id, `Member ${member.user_id || ""}`)).join(", ")
                   : "No members yet"}
               </span>
+              {publicCount > 0 ? (
+                <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 760 }}>
+                  + {publicCount} anonymous public-link {publicCount === 1 ? "response" : "responses"}
+                </span>
+              ) : null}
             </div>
           );
         })}
         <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 720 }}>
-          Names are private to authorised community admins. A member appears under every choice they submitted.
+          Member names are private to authorised admins. Public-link responses are counts only and never enter the member roll call.
         </span>
       </div>
     );
@@ -3360,6 +3380,11 @@ export default function CommunityHomePage() {
         style={{ ...innerCard("#F8FBFF"), display: "grid", gap: 8, marginTop: 8 }}
       >
         <div style={{ color: "#07172C", fontSize: 14, fontWeight: 950 }}>{question}</div>
+        <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 820 }}>
+          {noticeItem?.poll_audience === "public_link"
+            ? "Anyone with the announcement link may vote"
+            : "Community members only"}
+        </span>
         <div
           style={{
             display: "grid",
@@ -3416,7 +3441,7 @@ export default function CommunityHomePage() {
           {hasStoredResponse ? "OK — update response" : "OK — send response"}
         </StableButton>
         <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 720 }}>
-          {noticeNumber(noticeItem?.poll_summary?.total)} people have responded. Totals count each selected choice; each person counts once as a respondent.
+          {noticeNumber(noticeItem?.poll_summary?.total)} responses. Each submitted response counts once; multiple-choice selections appear under every chosen option.
         </span>
         {canManageCommunityNoticeSettings ? (
           <StableButton
@@ -4004,6 +4029,7 @@ export default function CommunityHomePage() {
       poll_question?: string | null;
       poll_options?: string[] | null;
       poll_selection_mode?: "single" | "multiple";
+      poll_audience?: "members" | "public_link";
     }
   ) {
     const clanId = getClanId(selectedClan);
@@ -4375,41 +4401,6 @@ export default function CommunityHomePage() {
       adminReview?: boolean;
     }> = [];
 
-    activeCommunityNotices.forEach((item, index) => {
-      if (items.length >= 2) return;
-      const title = wordLimit(
-        firstTruthy(item?.title, item?.body, item?.purpose, "Community announcement"),
-        10
-      );
-      const noticeKey = firstTruthy(item?.notice_id, item?.event_id, item?.meeting_id, index);
-
-      if (noticeSupportsAvailability(item) && !meetingOwnInterest(item)) {
-        items.push({
-          id: `notice-response-${noticeKey}`,
-          title: "Response needed",
-          detail: `${title} still needs your reply.`,
-          actionLabel: "Open notice",
-          noticeIndex: index,
-        });
-        return;
-      }
-
-      if (
-        !isMeetingNotice(item) &&
-        item?.acknowledgement_enabled !== false &&
-        firstTruthy(item?.event_id) &&
-        !noticeOwnAcknowledged(item)
-      ) {
-        items.push({
-          id: `notice-ack-${noticeKey}`,
-        title: "Please confirm you saw this",
-        detail: "Open the announcement and confirm you saw it.",
-          actionLabel: "Open notice",
-          noticeIndex: index,
-        });
-      }
-    });
-
     if (canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0) {
       items.push({
         id: "notice-admin-review",
@@ -4422,7 +4413,6 @@ export default function CommunityHomePage() {
 
     return items.slice(0, 3);
   }, [
-    activeCommunityNotices,
     canManageCommunityNoticeSettings,
     pendingCommunityNoticeReviewCount,
   ]);
@@ -5049,6 +5039,11 @@ export default function CommunityHomePage() {
                           return (
                             <div key={`review-${submissionId}`} style={innerCard("#F8FBFF")}>
                               <div style={{ color: "#07172C", fontSize: 14, fontWeight: 920 }}>{wordLimit(firstTruthy(submission?.body, submission?.title, "Submitted announcement"), 16)}</div>
+                              {firstTruthy(submission?.poll_question) ? (
+                                <div style={{ marginTop: 6, color: "#617085", fontSize: 11.5, fontWeight: 760, lineHeight: 1.4 }}>
+                                  Poll: {firstTruthy(submission.poll_question)} · {Array.isArray(submission.poll_options) ? submission.poll_options.length : 0} choices · {submission.poll_selection_mode === "multiple" ? "multiple answers" : "one answer"} · {submission.poll_audience === "public_link" ? "anyone with the link" : "members only"}
+                                </div>
+                              ) : null}
                               <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                                 <StableButton type="button" debugId={`community-home.admin.review.approve.${submissionId}`} onClick={(event) => reviewCommunityNoticeSubmission(event, submission, "approve")} busy={communityNoticeReviewBusy === `approve:${submissionId}`} busyLabel="Approving" style={communityActionStyle("primary", Boolean(communityNoticeReviewBusy))}>Approve</StableButton>
                                 <StableButton type="button" debugId={`community-home.admin.review.reject.${submissionId}`} onClick={(event) => reviewCommunityNoticeSubmission(event, submission, "reject")} busy={communityNoticeReviewBusy === `reject:${submissionId}`} busyLabel="Rejecting" style={communityActionStyle("soft", Boolean(communityNoticeReviewBusy))}>Reject</StableButton>

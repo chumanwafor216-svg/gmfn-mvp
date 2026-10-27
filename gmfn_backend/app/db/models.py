@@ -2826,6 +2826,50 @@ def _annotate_trust_event_evidence_family(_mapper: Any, _connection: Any, target
         target._set_meta(annotated)
 
 
+class CommunityNoticePublicPollResponse(Base):
+    """Aggregate-only response from a non-member using a public notice link."""
+
+    __tablename__ = "community_notice_public_poll_responses"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "notice_event_id",
+            "responder_key_hash",
+            name="uq_notice_public_poll_notice_responder_v1",
+        ),
+        Index(
+            "ix_notice_public_poll_notice_created_v1",
+            "notice_event_id",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    notice_event_id: Mapped[int] = mapped_column(
+        ForeignKey("trust_events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    responder_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    options_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class EvidenceLifecycleMarker(Base):
     __tablename__ = "evidence_lifecycle_markers"
 
