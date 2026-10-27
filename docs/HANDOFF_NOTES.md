@@ -62,6 +62,33 @@ under `docs/` or `docs/archive/`, then link that file here.
   to `main`, or deployed; publication still requires the owner's explicit
   `deploy` instruction.
 
+## Market Wisdom commerce-signal investigation - 2026-10-27
+
+- Completed the required source map before touching the frozen Dashboard
+  Market Wisdom section. The existing owner-only Shop Analytics endpoint
+  already combines persisted shop attention, qualified Spotlight attention,
+  current community DemandBox context, and protected-trade evidence through
+  its Opportunity Engine. Dashboard Market Wisdom currently receives only
+  caller-composed context strings and does not query that owner evidence.
+- Confirmed the critical truth boundaries: Shop/Spotlight attention is not
+  sales or meaningful attention; current open DemandBox count is not matched
+  demand; and no shop/permission/read failure is missing data rather than a
+  zero reading.
+- The smallest proposal is one optional server-owned `commerce_signal` on the
+  existing `/market-wisdom/recommendation` response, sourced from a shared
+  bounded Shop Analytics projection. It would influence approved-wisdom
+  ranking and the existing `Now` reading without adding a fifth signal or
+  redesigning the four-signal Market Wisdom model.
+- Runtime work is paused for one owner decision: approve or reject one compact
+  contextual handoff action beneath the existing reading. Without it, the
+  recommendation cannot take the user directly to Shop Control analytics,
+  Spotlight, DemandBox, Shop Assets, or Protected Trade.
+- Full evidence, proposed response shape, route ownership, duplication risks,
+  and implementation files are recorded in
+  [`MARKET_WISDOM_COMMERCE_SIGNAL_MAP_2026-10-27.md`](MARKET_WISDOM_COMMERCE_SIGNAL_MAP_2026-10-27.md).
+- No runtime source, backend route, schema, permission, Market Wisdom UI,
+  push, or deployment changed in this investigation.
+
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 
 - Implemented the owner's decision that Shop is the authenticated starting
