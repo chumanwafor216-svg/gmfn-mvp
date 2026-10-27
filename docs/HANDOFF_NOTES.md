@@ -214,6 +214,40 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The frozen Market Wisdom section, profile-image API/data contract,
   permissions, authentication and backend were not changed.
 
+## Account lifecycle capability audit - 2026-10-27
+
+- Completed a read-only frontend/backend audit; no user, membership,
+  community, shop, authentication, schema, permission or deletion behavior was
+  changed.
+- GSN cannot currently suspend, close or delete a platform user account. The
+  `User` model has no lifecycle state and `get_current_user` performs no
+  lifecycle check.
+- Existing operations are subject-specific: platform-admin Community and
+  Community Domain lifecycle, ordinary Community soft membership removal, and
+  Community Domain membership deactivate/reactivate. None is a global account
+  ban.
+- Ordinary Community removal preserves the row with `left_at` but records no
+  reason, Trust Event or notice. Join approval can reactivate through
+  `ensure_membership`; direct admin re-add does not use that helper and risks
+  the unique `(clan_id, user_id)` constraint.
+- Community Domain member deactivation preserves history, protects owner/final
+  admin, logs a zero-delta Trust Event and blocks public active-member proof,
+  but stores only whether a note existed—not its text—and creates no notice or
+  appeal.
+- Shop has no normal pause/close/reactivate lifecycle contract. Pilot cleanup
+  can deactivate shop/product records but must not be reused as account
+  closure.
+- Authenticated Support Desk exists, but it cannot be the only appeal route
+  once suspended sessions are rejected.
+- Smallest safe proposed implementation: platform-admin user
+  suspension/reactivation only, with database lifecycle fields, preview and
+  confirmation, authentication/token-issuer enforcement, evidence
+  preservation, explicit public-surface rules, notice, and a pre-auth
+  appeal/recovery path. Do not implement closure or deletion until retention,
+  ownership, public identity and evidence rules are approved.
+- Full audit:
+  `GSN_ACCOUNT_LIFECYCLE_CAPABILITY_AUDIT_2026-10-27.md`.
+
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 
 - Implemented the owner's decision that Shop is the authenticated starting

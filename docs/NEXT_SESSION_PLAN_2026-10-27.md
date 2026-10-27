@@ -282,6 +282,9 @@ Implemented result:
 
 ### 7. Audit account suspension, closure, and removal capability
 
+Status: capability audit completed locally on 2026-10-27; no lifecycle code,
+schema, permission or deletion behavior changed.
+
 First determine what already exists in frontend routes, backend services,
 models, permissions, and audit records. Treat these as different operations:
 
@@ -310,6 +313,18 @@ Do not:
 Expected first deliverable:
 - a confirmed capability map and smallest safe gap proposal before any
   destructive implementation
+
+Audit result:
+- GSN has no platform-user account lifecycle state, endpoint or UI. Current
+  authentication cannot enforce a user suspension or closure.
+- Existing Community, Community Domain and membership lifecycle actions are
+  narrower operations and must not be relabelled as account suspension.
+- The smallest safe first implementation is platform-admin user
+  suspension/reactivation with preserved evidence, authentication enforcement,
+  preview/confirmation, notice, and a pre-auth appeal/recovery route. Closure
+  and deletion require a later retention, ownership and evidence policy.
+- Full evidence map and proposal:
+  `GSN_ACCOUNT_LIFECYCLE_CAPABILITY_AUDIT_2026-10-27.md`.
 
 ### 8. Design respectful inactivity reminders from GSN
 
