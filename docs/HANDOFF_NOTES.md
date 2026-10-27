@@ -13,9 +13,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The owner resumed and completed the Community Confirmation Inbox milestone
   below, then explicitly chose to skip the My GSN & I / cover-related review.
   The commerce-intelligence-to-Market-Wisdom milestone is now complete locally.
-  The next owner priority is a truthful `revenue per module` map covering
-  Shop, Reel, TrustSlip and Merchant Verification, Community Domain, reactions,
-  and the other confirmed modules. That work comes before compacting the
+  The next owner priorities are now: first define a truthful GSN Growth Partner
+  acquisition model for independent people who introduce and help activate
+  users/communities; second build the `revenue per module` map covering Shop,
+  Reel, TrustSlip and Merchant Verification, Community Domain, reactions, and
+  the other confirmed modules. Those tasks come before compacting the
   Dashboard Photo Frame
   affordance, audit account suspension/closure/removal capability, design
   respectful inactivity reminders from GSN to the user, and use a planned
@@ -122,6 +124,38 @@ under `docs/` or `docs/archive/`, then link that file here.
   evidence, and overlap.
 - This milestone is local only. It has not been pushed, promoted to `main`, or
   deployed.
+
+## GSN Growth Partner / affiliate terminology to-do - 2026-10-27 08:27
+
+- The owner wants independent people to help bring users and communities into
+  GSN and scale the network, and asked whether GSN Independent Entrepreneurs
+  can genuinely be called affiliate marketing.
+- Working answer: affiliate marketing describes a compensated, attributable
+  promotional activity; it is not the name of every entrepreneur. Use
+  `GSN Growth Partner` as the provisional umbrella, reserve
+  `Affiliate Partner` for disclosed link/code commission tied to a qualifying
+  click or paid sale, and keep `Independent Entrepreneur` for someone running
+  their own shop or service.
+- This distinction also prevents collision with the existing Community Domain
+  meaning of an acknowledged parent/affiliate institutional relationship.
+- Existing backend foundation:
+  `/network-growth/attributions` records consent-bound introduction claims,
+  participant acceptance/challenge, verified invite/QR evidence and bounded
+  activation milestones. Its explicit current contract has no financial
+  effect, commission, residual, payout, employment, territory or advertising
+  authority.
+- Before implementation, define the qualifying event, payer, reward formula,
+  attribution window, duplicate/dispute rule, refunds and reversals, fraud
+  controls, tax/KYC/accounting treatment, advertising disclosure, privacy and
+  employment-status assessment.
+- Keep any first pilot direct and single-tier. Never pay for recruiting other
+  recruiters or create a downline. A conservative candidate is a fixed or
+  capped first-sale reward after participant confirmation, collected
+  non-refunded GSN revenue and a cooling period.
+- This is planning only. No role, frontend, entitlement, ledger, payout,
+  commission, residual, payment movement or public programme was created.
+- Full ordered work is recorded under item 4 in
+  `NEXT_SESSION_PLAN_2026-10-27.md`; the revenue-per-module map is now item 5.
 
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 

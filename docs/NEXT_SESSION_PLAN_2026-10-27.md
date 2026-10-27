@@ -108,7 +108,83 @@ Candidate outcome to validate, not assume:
   persisted signals, with stale/missing-data handling and one clear route to
   the owning analytics/action screen
 
-### 4. Map revenue per module
+### 4. Define the GSN Growth Partner acquisition model
+
+Owner to-do update received 2026-10-27 at 08:27 Europe/London:
+- investigate whether GSN Independent Entrepreneurs can genuinely be described
+  as affiliate marketers
+- design the truthful route by which independent people can bring users and
+  communities into GSN and help the network scale
+
+Working terminology decision:
+- Do not call a person `affiliate marketing`. Affiliate marketing is an
+  activity/channel; a person doing it may be an affiliate or affiliate
+  marketer.
+- Use `GSN Growth Partner` as the provisional umbrella name for a person who
+  introduces and helps activate suitable users or communities.
+- Use `GSN Affiliate Partner` only for the narrower case where a trackable
+  link or code can earn a disclosed commission from a qualifying click or paid
+  sale.
+- Keep `Independent Entrepreneur` for a person operating their own shop,
+  services or commercial activity. Owning a GSN shop does not automatically
+  make that person a GSN affiliate.
+- GSN already uses `affiliate` for a parent-domain acknowledged Community
+  Domain relationship. Defaulting the growth programme to `Growth Partner`
+  avoids confusing a marketing relationship with an institutional affiliation.
+
+Confirmed existing foundation:
+- The consent-bound backend `/network-growth/attributions` spine already
+  records who says they introduced an existing GSN member, distinguishes
+  claimant statements from verified invite/QR evidence, lets only the
+  participant accept or challenge the attribution, and derives bounded
+  activation milestones.
+- That spine intentionally creates no Independent Entrepreneur role,
+  commission, residual, reward, payout, employment, territory or advertising
+  authority. It is attribution evidence only.
+- The social acquisition protocol already preserves campaign/source parameters
+  for the `/pilot/` funnel, but that is not yet a commission or guaranteed
+  visitor-tracking system.
+
+Required first commercial design:
+- separate three roles: independent seller/entrepreneur, direct referral Growth
+  Partner, and paid-sale Affiliate Partner
+- define the one-tier qualifying event: never a bare claimed introduction;
+  candidates include participant-confirmed entry, verified invite entry,
+  paid-module purchase, retained activation, or collected non-refunded revenue
+- decide who pays, how much, when entitlement becomes earned, attribution
+  window, duplicate resolution, refund/reversal treatment, payout threshold,
+  currency, tax evidence, identity/KYC need and accounting owner
+- define fraud controls for self-referral, duplicate identities, collusion,
+  fake activity and claimant disputes
+- define advertising disclosure for compensated promotion and preserve the
+  difference between a genuine recommendation and an advertisement
+- assess the real working relationship before using `independent` or
+  `self-employed`; a label or contract alone cannot decide employment status
+- keep the first pilot direct and single-tier; do not pay people for recruiting
+  other recruiters and do not create a downline or recruitment-funded reward
+  structure
+- obtain UK legal/accounting review before money movement or public launch
+
+Suggested first pilot to evaluate, not yet approve:
+- one direct Growth Partner introduces one new customer/community through a
+  unique link, invite or campaign code
+- the participant confirms the relationship
+- reward becomes eligible only after a named paid GSN product produces
+  collected, non-refunded platform revenue and passes a defined cooling period
+- no reward for raw clicks, unverified sign-ups, recruiting another Growth
+  Partner, or activity that produces no qualifying value
+- fixed or capped first-sale reward before considering recurring commission
+
+Truth boundaries:
+- attribution is not causation, reward entitlement or proof of a sale
+- a membership, shop, Spotlight campaign, reaction or TrustSlip is not revenue
+- commissions and commercial relationships must be disclosed clearly in
+  promotional content
+- never describe a recruitment chain as entrepreneurship or affiliate marketing
+- do not expose participant activation details to the introducer beyond the
+  minimum status required for a transparent reward decision
+
+### 5. Map revenue per module
 
 Owner direction:
 - Make the next development priority a module-by-module revenue model for GSN,
@@ -145,7 +221,7 @@ Truth boundaries:
 - treat `Reel` and `reactions` as owner-supplied module names until code and
   documentation confirm their exact product meaning
 
-### 5. Compact the Dashboard Photo Frame affordance
+### 6. Compact the Dashboard Photo Frame affordance
 
 Owner direction:
 - The current Photo Frame button occupies too much Dashboard space.
@@ -166,7 +242,7 @@ Acceptance:
 - it performs exactly the same action as before
 - it does not create horizontal overflow or a competing Dashboard card
 
-### 6. Audit account suspension, closure, and removal capability
+### 7. Audit account suspension, closure, and removal capability
 
 First determine what already exists in frontend routes, backend services,
 models, permissions, and audit records. Treat these as different operations:
@@ -197,7 +273,7 @@ Expected first deliverable:
 - a confirmed capability map and smallest safe gap proposal before any
   destructive implementation
 
-### 7. Design respectful inactivity reminders from GSN
+### 8. Design respectful inactivity reminders from GSN
 
 Owner intent:
 GSN should have a useful one-to-one relationship with a member and notice when
@@ -237,7 +313,7 @@ Implementation preference:
 - route the user to the existing owning screen rather than creating a new
   reminder dashboard
 
-### 8. Measure and correct Spotlight rotation timing and fairness
+### 9. Measure and correct Spotlight rotation timing and fairness
 
 Owner observation:
 - Spotlight rotation has improved materially, but some media still disappear
