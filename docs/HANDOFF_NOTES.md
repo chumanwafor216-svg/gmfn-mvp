@@ -8,6 +8,22 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local Bulletin share-action restoration - 2026-10-27
+
+- The existing multi-channel `SocialTagShareButton` is now exposed directly in
+  the opened Community Home Bulletin detail whenever the announcement has a
+  public package. The member-facing label is `Share announcement`; WhatsApp is
+  one channel in the chooser, not the name of the action.
+- The compact phone Bulletin remains closed by default. No new sharing engine,
+  backend route, permission, auto-posting behavior or Dashboard change was
+  introduced.
+- Verification passed: the scoped WhatsApp Bridge contract audit, the complete
+  protected-button/frozen-surface audit, the 295-module TypeScript/Vite
+  production build, and the 390x844 Community Home phone smoke. The phone
+  smoke opens the chooser, confirms WhatsApp, Facebook, X, LinkedIn and Copy
+  Message, and rejects horizontal overflow while the chooser is visible.
+- This correction is local only until the owner explicitly says `deploy`.
+
 ## Deployed Bulletin public-audience poll correction - 2026-10-27
 
 - The existing Community Bulletin poll composer now includes `Who can vote?`
@@ -127,9 +143,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Normal members see aggregate choice totals on Community Home. Authorised
   community admins may deliberately open a collapsed `Poll roll call` showing
   who selected each choice; the same member can appear under Friday and Sunday.
-  After a signed-in active member submits on the detached announcement package,
-  that member also sees the aggregate totals. The anonymous notice payload has
-  no totals, and the detached package never exposes member names.
+  The detached announcement package shows aggregate totals before and after a
+  response but never exposes member names, the member/public response split or
+  any roll-call identity.
 - Backward compatibility is preserved: old one-option requests and old notices
   still behave as single-choice polls. Focused backend verification passes
   (`34 passed`), the four scoped Community Home/WhatsApp contract audits and

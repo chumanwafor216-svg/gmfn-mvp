@@ -2466,16 +2466,18 @@ Rules:
   In multiple-answer mode, a member counts once under every selected choice
   and once in the unique respondent total. Authorised community admins may
   deliberately open a private Poll roll call for necessary follow-up.
-- On the detached package, show aggregate poll results after a valid permitted
-  response. Do not publish those totals in the anonymous notice payload.
+- On the detached package, show aggregate poll results before and after a
+  response so every reader can see the useful community count. Do not expose
+  member names or other roll-call identity there.
 - Public-link responses use a high-entropy browser token that is hashed before
   storage. Store choices only: no respondent name, contact or raw IP. Enforce
   per-connection and per-token throttling. Label public totals as browser
   responses, not verified unique people; clearing browser storage or changing
   devices can still produce another response.
 - Do not expose the creator, creator tools, wider community navigation, member
-  lists, acknowledgement roll call, poll roll call, availability totals or
-  poll totals to an anonymous visitor on this detached public page.
+  lists, acknowledgement roll call, poll roll call, availability totals,
+  member/public response splits or any response identity to an anonymous
+  visitor. Aggregate poll choice counts may remain visible.
 - Expose announcer contact only when the sender deliberately published a
   verified public contact with the notice.
 - Reuse the existing Community Notice Trust Event, verified-media, WhatsApp
@@ -2483,6 +2485,10 @@ Rules:
   table is allowed because Trust Events require a real user identity and must
   not falsely attribute anonymous votes. Do not create a standalone poll app,
   duplicate sharing system, public identity list or public roll call.
+- When an authenticated member opens a Bulletin announcement that has a public
+  package, its detail panel must expose one `Share announcement` action using
+  the existing social-share chooser. Keep that action behind `Open notice` on
+  phone; do not add a new bridge engine or auto-post to an external channel.
 
 ## WhatsAppBridgePage
 

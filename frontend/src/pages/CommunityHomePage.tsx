@@ -10,10 +10,12 @@ import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import SimpleCommunityInviteCard from "../components/SimpleCommunityInviteCard";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { shareablePublicFrontendUrl } from "../lib/publicLinks";
 import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
@@ -3732,6 +3734,17 @@ export default function CommunityHomePage() {
     const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
     const detailOpen = noticeDetailOpenId === noticeKey;
     const phoneNoticeOpen = detailOpen || reactionPanelOpen;
+    const publicNoticePath = communityNoticePublicPath(noticeItem);
+    const publicNoticeUrl = publicNoticePath
+      ? shareablePublicFrontendUrl(publicNoticePath)
+      : "";
+    const publicNoticeShareMessage = [
+      `${sourceLine} shared a GSN announcement.`,
+      rawBody,
+      fullBody && fullBody !== rawBody ? fullBody : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     const canOpenRollCall = canManageCommunityNoticeSettings && noticeClanId(noticeItem, selectedClan) === selectedClanId && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
     const canToggleFullNotice = Boolean(fullBody) || safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
 
@@ -3953,7 +3966,29 @@ export default function CommunityHomePage() {
             </div>
             {renderMeetingInterestShortcut(noticeItem)}
             {renderNoticeChoicePoll(noticeItem)}
-            {communityNoticePublicPath(noticeItem) ? (
+            {publicNoticeUrl ? (
+              <SocialTagShareButton
+                target={{
+                  title: `${sourceLine} announcement`,
+                  message: publicNoticeShareMessage,
+                  socialMessage: rawBody,
+                  socialUrl: publicNoticeUrl,
+                  url: publicNoticeUrl,
+                }}
+                buttonLabel="Share announcement"
+                buttonKind="primary"
+                debugId={`community-home.bulletin.share.${noticeKey}`}
+                stableHeight={48}
+                fullWidth
+                style={{
+                  borderRadius: 13,
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+                onResult={(tone, text) => showNotice(tone, text)}
+              />
+            ) : null}
+            {publicNoticePath ? (
               <StableButton
                 type="button"
                 debugId={`community-home.bulletin.public-qr.${noticeKey}`}

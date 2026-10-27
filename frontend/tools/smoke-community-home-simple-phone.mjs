@@ -176,6 +176,9 @@ async function installApiMocks(page, { includeSecondClan = false } = {}) {
               own_response: state.pollSelections[0] || null,
               own_responses: state.pollSelections,
             },
+            public_qr_enabled: true,
+            public_code: "notice-8-1-public",
+            public_path: "/community-notices/notice-8-1-public",
             source: "community_notice",
           },
         ],
@@ -338,6 +341,22 @@ async function run() {
       process.exitCode = 1;
       return;
     }
+    const shareAnnouncement = page.locator('[data-cta-id^="community-home.bulletin.share."]');
+    await shareAnnouncement.waitFor({ state: "visible", timeout: 30000 });
+    await shareAnnouncement.click();
+    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "visible", timeout: 30000 });
+    for (const channel of ["WhatsApp", "Facebook", "X", "LinkedIn", "Copy message"]) {
+      await page.getByRole("button", { name: channel, exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    }
+    const shareChooserOverflow = await collectOverflow(page);
+    await page.screenshot({ path: join(screenshotDir, "community-home-share-announcement-390x844.png"), fullPage: false });
+    if (shareChooserOverflow.length > 0) {
+      console.error("Community Home share chooser overflowed on phone:", shareChooserOverflow);
+      process.exitCode = 1;
+      return;
+    }
+    await page.locator('[data-cta-id="social-tag-share.close"]').click();
+    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "hidden", timeout: 30000 });
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.0"]').click();
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.2"]').click();
     if (apiState.pollRequests.length !== 0) {
