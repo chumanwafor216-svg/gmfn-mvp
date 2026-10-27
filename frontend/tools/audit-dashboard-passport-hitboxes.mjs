@@ -210,7 +210,57 @@ try {
     throw new Error(`Dashboard passive passport hitbox audit failed:\n- ${findings.join("\n- ")}`);
   }
 
-  console.log("Dashboard passive passport hitbox audit passed: Visible, Portable, and Usable remain passive under mobile taps.");
+  const pictureFrameTriggers = page.locator(
+    '[data-cta-id="picture-frame-tools.toggle"]'
+  );
+  const triggerCount = await pictureFrameTriggers.count();
+  if (triggerCount !== 2) {
+    throw new Error(
+      `Expected separate passport and large-picture frame triggers, found ${triggerCount}.`
+    );
+  }
+
+  const compactPictureTrigger = pictureFrameTriggers.nth(0);
+  await compactPictureTrigger.scrollIntoViewIfNeeded();
+  const compactTriggerBox = await compactPictureTrigger.boundingBox();
+  const compactTriggerText = (await compactPictureTrigger.innerText()).trim();
+  const compactTriggerLabel = await compactPictureTrigger.getAttribute("aria-label");
+
+  if (
+    !compactTriggerBox ||
+    compactTriggerBox.width > 120 ||
+    compactTriggerBox.height < 40 ||
+    !compactTriggerText.endsWith("Edit photo") ||
+    compactTriggerLabel !== "Open passport picture frame tools"
+  ) {
+    throw new Error(
+      `Compact picture-frame trigger contract failed: ${JSON.stringify({
+        box: compactTriggerBox,
+        text: compactTriggerText,
+        ariaLabel: compactTriggerLabel,
+      })}`
+    );
+  }
+
+  await compactPictureTrigger.tap();
+  await page.waitForTimeout(120);
+
+  if ((await compactPictureTrigger.getAttribute("aria-expanded")) !== "true") {
+    throw new Error("Compact picture-frame trigger did not open its tools rail.");
+  }
+
+  for (const action of ["upload", "change", "remove"]) {
+    const actionControl = page.locator(
+      `[data-cta-id="picture-frame-tools.action.${action}"]`
+    );
+    if ((await actionControl.count()) !== 1 || !(await actionControl.isVisible())) {
+      throw new Error(`Compact picture-frame rail did not expose ${action}.`);
+    }
+  }
+
+  console.log(
+    "Dashboard phone frame audit passed: passport status tiles remain passive and the compact Edit photo trigger preserves its stable tools rail."
+  );
 } finally {
   await context.close();
   await browser.close();

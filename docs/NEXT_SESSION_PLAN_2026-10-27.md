@@ -240,8 +240,7 @@ Truth boundaries:
 
 ### 6. Compact the Dashboard Photo Frame affordance
 
-Status: current implementation item after the owner's instruction to capture,
-but not yet build, the growth-flywheel brainstorm.
+Status: completed locally on 2026-10-27; not pushed or deployed.
 
 Owner direction:
 - The current Photo Frame button occupies too much Dashboard space.
@@ -261,6 +260,25 @@ Acceptance:
 - it remains easy to discover and tap on a phone
 - it performs exactly the same action as before
 - it does not create horizontal overflow or a competing Dashboard card
+
+Implemented result:
+- Source inspection proved the visible control is the passport `Frame tools`
+  trigger. The other `Picture frame` control is inside a legacy section that
+  is currently `display: none`; changing only that hidden control would not
+  have changed the owner's live Dashboard.
+- The visible trigger now uses a live 26px picture/initials preview plus
+  `Edit photo` in a fixed 108px phone slot and 116px wider-screen slot, instead
+  of consuming 88%/84% of the passport-card width.
+- Its existing accessible name, separate open state, fixed 40px/42px trigger
+  height, anchored overlay, file input, and Upload/Change/Remove actions remain
+  unchanged.
+- `PictureFrameToolsControl` gained only an optional visual trigger-content
+  slot. Existing callers still render their original text label by default.
+- The frozen Market Wisdom source was not changed.
+- Verification passed: Dashboard phone-button audit, Dashboard button
+  inventory, mobile tap-stability audit, production build (295 modules), and
+  the phone-browser frame audit covering the compact width, accessible name,
+  stable height, opening state, and all three tools.
 
 ### 7. Audit account suspension, closure, and removal capability
 

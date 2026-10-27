@@ -185,6 +185,35 @@ under `docs/` or `docs/archive/`, then link that file here.
 - This capture creates no new engine, role, commission, reward, entitlement,
   ad placement, payment, forecast claim, runtime source change, push or deploy.
 
+## Compact Dashboard Photo Frame affordance - 2026-10-27
+
+- Completed locally; not pushed or deployed.
+- The visible `/app/dashboard` photo control was the passport `Frame tools`
+  trigger. A second `Picture frame` control exists inside an always-hidden
+  legacy section, so changing that second control would not have fixed the
+  owner's live surface.
+- Replaced the visible wide trigger with a compact live picture/initials tile
+  plus `Edit photo`: 108px wide on phone, 116px on wider screens, while keeping
+  the existing 40px/42px fixed height.
+- The accessible name, stable shared button behavior, separate passport/main
+  open states, anchored overlay, active file input, and Upload, Change, Remove
+  actions remain unchanged.
+- Added an optional `triggerContent` slot to
+  `frontend/src/components/PictureFrameToolsControl.tsx`; callers without it
+  continue to show the original label.
+- Updated `SCREEN_SPECS.md`, the static Dashboard phone-button audit, and the
+  phone-browser Dashboard frame audit. The browser audit now proves the compact
+  trigger's width, height, accessible name, open state, and three visible tool
+  actions on a 390px phone viewport.
+- Passed:
+  - `npm run audit:dashboard-phone-buttons`
+  - `npm run audit:dashboard-button-inventory`
+  - `npm run audit:tap-stability`
+  - `npm run audit:dashboard-passport-hitboxes`
+  - `npm run build` (295 modules)
+- The frozen Market Wisdom section, profile-image API/data contract,
+  permissions, authentication and backend were not changed.
+
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 
 - Implemented the owner's decision that Shop is the authenticated starting

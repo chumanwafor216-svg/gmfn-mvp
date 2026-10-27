@@ -21,6 +21,7 @@ type PictureFrameToolsControlProps = {
   open: boolean;
   label: string;
   ariaLabel?: string;
+  triggerContent?: React.ReactNode;
   onToggle: (event: React.MouseEvent<HTMLButtonElement>) => void;
   actions: PictureFrameToolAction[];
   slotStyle: React.CSSProperties;
@@ -106,6 +107,7 @@ export default function PictureFrameToolsControl({
   open,
   label,
   ariaLabel,
+  triggerContent,
   onToggle,
   actions,
   slotStyle,
@@ -280,7 +282,7 @@ export default function PictureFrameToolsControl({
           debugId="picture-frame-tools.toggle"
           style={buttonStyle}
         >
-          {label}
+          {triggerContent ?? label}
         </SubtleButton>
       </div>
       {rail}

@@ -117,6 +117,12 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
+      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?ariaLabel="Open passport picture frame tools"[\s\S]*?triggerContent=\{[\s\S]*?avatarSrc[\s\S]*?profileInitials[\s\S]*?Edit photo[\s\S]*?width: isPhone \? 108 : 116[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}/,
+    message:
+      "Dashboard visible passport frame must keep its compact live-thumbnail trigger, accessible name, and stable phone hitbox.",
+  },
+  {
+    pattern:
       /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{dashboardAccordionButtonStyle\(/,
     message:
       "Dashboard app launcher toggle must remain a traceable stable accordion action.",

@@ -7649,6 +7649,67 @@ export default function DashboardPage() {
                 open={passportPictureToolsOpen}
                 label="Frame tools"
                 ariaLabel="Open passport picture frame tools"
+                triggerContent={
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: "100%",
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 26,
+                        height: 26,
+                        minWidth: 26,
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        display: "grid",
+                        placeItems: "center",
+                        border: "1px solid rgba(11,99,209,0.18)",
+                        background:
+                          "linear-gradient(180deg, rgba(239,246,255,0.98) 0%, rgba(219,234,254,0.96) 100%)",
+                        color: DASHBOARD_BRAND.accentDeep,
+                        fontSize: 9.5,
+                        fontWeight: 1000,
+                        letterSpacing: 0.3,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {avatarSrc ? (
+                        <img
+                          src={avatarSrc}
+                          alt=""
+                          onError={handleAvatarImageError}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            objectPosition: "center 16%",
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        profileInitials
+                      )}
+                    </span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Edit photo
+                    </span>
+                  </span>
+                }
                 onToggle={(event) =>
                   runDashboardUiMutation(event, () => {
                     setPictureToolsOpen(false);
@@ -7661,9 +7722,9 @@ export default function DashboardPage() {
                   height: isPhone ? 40 : 42,
                   minHeight: isPhone ? 40 : 42,
                   maxHeight: isPhone ? 40 : 42,
-                  width: isPhone ? "88%" : "84%",
-                  minWidth: 0,
-                  maxWidth: "100%",
+                  width: isPhone ? 108 : 116,
+                  minWidth: isPhone ? 108 : 116,
+                  maxWidth: isPhone ? 108 : 116,
                   display: "block",
                   flex: "0 0 auto",
                   justifySelf: "center",
@@ -7671,10 +7732,13 @@ export default function DashboardPage() {
                 }}
                 buttonStyle={{
                   ...dashboardFillButton(subtleBtn(false)),
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
                   height: isPhone ? 40 : 42,
                   minHeight: isPhone ? 40 : 42,
                   maxHeight: isPhone ? 40 : 42,
-                  padding: isPhone ? "0 12px" : "0 14px",
+                  padding: isPhone ? "0 7px" : "0 8px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

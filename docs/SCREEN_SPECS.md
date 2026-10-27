@@ -210,11 +210,19 @@ Rules:
   demand. The handoff must use the server-provided label and an existing
   `/app/` owning route. It must not add a fifth rotating signal or expose an
   action when commerce data is unavailable.
-- Passport picture frame tools must sit under one visible Frame tools button.
-- Frame tools must tap open and tap closed, then reveal Upload, Change, and Remove.
+- Passport picture frame tools must sit under one visible compact `Edit photo`
+  trigger that shows the current picture or member initials.
+- The compact photo trigger must tap open and tap closed, then reveal Upload,
+  Change, and Remove.
 - Upload and Change must open the active file picker from the visible passport block.
 - Opening/closing picture frame tools must not add/remove layout height; the tool rail opens as an anchored overlay near its trigger and must not leave a blank reserved gap when closed.
 - The dashboard passport frame and large picture frame must use separate open states; tapping one frame button must not open or resize the other frame rail.
+- Owner-approved exception (2026-10-27): the visible passport picture frame
+  uses one compact live-thumbnail `Edit photo` trigger instead of the previous
+  wide `Frame tools` presentation. It must retain its fixed phone tap target,
+  explicit accessible name, and the same anchored Upload, Change, and Remove
+  rail. The hidden legacy large-picture section is not the target of this
+  exception.
 - Frame buttons must sit in fixed-height slots with no transition-driven movement.
 - Frame button slots and picture-tool buttons must opt out of shrink, wrapping, and transition movement.
 - Picture tool rails must be anchored to their own frame button wrapper, not to the whole card.
