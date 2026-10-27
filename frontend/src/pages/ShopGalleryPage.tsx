@@ -88,6 +88,7 @@ type ShopProfile = {
 };
 
 type ShopFollowState = {
+  shopId: number;
   isFollowing: boolean;
   canFollow: boolean;
   isOwner: boolean;
@@ -248,7 +249,7 @@ type NoticeTone = "success" | "error";
 const GALLERY_STANDARD_SLOTS_TOTAL = 6;
 const GALLERY_EXTRA_SLOTS_LIMIT = 4;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
-const OWNER_STARTER_SHOP_SPACES = 4;
+const OWNER_STARTER_SHOP_SPACES = 2;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
@@ -2091,6 +2092,7 @@ export default function ShopGalleryPage() {
     null
   );
   const [shopFollowState, setShopFollowState] = useState<ShopFollowState>({
+    shopId: 0,
     isFollowing: false,
     canFollow: false,
     isOwner: false,
@@ -3179,6 +3181,7 @@ export default function ShopGalleryPage() {
 
     if (!shopId) {
       setShopFollowState({
+        shopId: 0,
         isFollowing: false,
         canFollow: false,
         isOwner: false,
@@ -3192,6 +3195,7 @@ export default function ShopGalleryPage() {
     if (!token) {
       setShopFollowState((current) => ({
         ...current,
+        shopId,
         isFollowing: false,
         canFollow: false,
         isOwner: false,
@@ -3204,6 +3208,10 @@ export default function ShopGalleryPage() {
     let alive = true;
     setShopFollowState((current) => ({
       ...current,
+      shopId,
+      isFollowing: false,
+      canFollow: false,
+      isOwner: false,
       followerCount: fallbackCount,
       loading: true,
     }));
@@ -3214,6 +3222,7 @@ export default function ShopGalleryPage() {
         const count = positiveNumber(res?.follower_count || res?.followers_count);
         setShopFollowState((current) => ({
           ...current,
+          shopId,
           isFollowing: Boolean(res?.is_following),
           canFollow: Boolean(res?.can_follow),
           isOwner: Boolean(res?.is_owner),
@@ -3225,6 +3234,7 @@ export default function ShopGalleryPage() {
         if (!alive) return;
         setShopFollowState((current) => ({
           ...current,
+          shopId,
           isFollowing: false,
           canFollow: false,
           isOwner: false,
@@ -4453,9 +4463,12 @@ export default function ShopGalleryPage() {
     ownerSpotlightStatusView?.state === 'none' ? 'create' : 'manage';
   const signedInOwnsShop = Boolean(
     ownerSessionPresent &&
-      signedInGmfnId &&
-      shopOwnerGmfnId &&
-      ownerSurfaceIdentityMatches(signedInGmfnId, shopOwnerGmfnId)
+      ((signedInGmfnId &&
+        shopOwnerGmfnId &&
+        ownerSurfaceIdentityMatches(signedInGmfnId, shopOwnerGmfnId)) ||
+        (positiveNumber(effectiveShop?.id) > 0 &&
+          shopFollowState.shopId === positiveNumber(effectiveShop?.id) &&
+          shopFollowState.isOwner))
   );
   const ownerEmptyProductSlots = useMemo(() => {
     if (!signedInOwnsShop || focusedBlockLinkActive) return [];
@@ -8201,8 +8214,8 @@ export default function ShopGalleryPage() {
               {ownerEmptyProductSlots.map((slotNumber, index) => {
                 const isFirstShopStep = products.length === 0 && index === 0;
                 const actionLabel = isFirstShopStep
-                  ? "Start your shop here"
-                  : "Add another shop item";
+                  ? "Add your product"
+                  : "Add another product";
 
                 return (
                   <StableCtaLink
@@ -8283,7 +8296,7 @@ export default function ShopGalleryPage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Shop space {slotNumber}
+                      {isFirstShopStep ? "Tap to start selling" : "This space is empty"}
                     </span>
                   </StableCtaLink>
                 );

@@ -55,8 +55,8 @@ assertContains(
 );
 assertContains(
   'shop',
-  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?signedInOwnsShop \? \([\s\S]*?label='Add Spotlight'[\s\S]*?shortcut='spotlight'/,
-  'Spotlight shortcut must be gated by the signed-in owner identity match.'
+  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?shopFollowState\.isOwner[\s\S]*?signedInOwnsShop \? \([\s\S]*?label='Add Spotlight'[\s\S]*?shortcut='spotlight'/,
+  'Spotlight shortcut must be gated by a matching signed-in identity or the authenticated backend owner result for the exact shop.'
 );
 assertContains(
   'shop',

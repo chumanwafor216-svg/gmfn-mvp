@@ -356,13 +356,18 @@ assertContains(
 );
 
 assertContains(
-  /const OWNER_STARTER_SHOP_SPACES = 4;[\s\S]*?const ownerEmptyProductSlots = useMemo\([\s\S]*?!signedInOwnsShop \|\| focusedBlockLinkActive[\s\S]*?OWNER_STARTER_SHOP_SPACES - visibleProductCount[\s\S]*?availableSlots\.slice\(0, spacesToShow\)/,
-  "Public Shop must expose four progressive starter spaces only to the exact signed-in owner and keep the existing slot capacity authoritative."
+  /const OWNER_STARTER_SHOP_SPACES = 2;[\s\S]*?const ownerEmptyProductSlots = useMemo\([\s\S]*?!signedInOwnsShop \|\| focusedBlockLinkActive[\s\S]*?OWNER_STARTER_SHOP_SPACES - visibleProductCount[\s\S]*?availableSlots\.slice\(0, spacesToShow\)/,
+  "Public Shop must expose two progressive starter spaces only to the exact signed-in owner and keep the existing slot capacity authoritative."
 );
 
 assertContains(
-  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Start your shop here[\s\S]*?Add another shop item[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?Shop space \{slotNumber\}/,
+  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?Tap to start selling[\s\S]*?This space is empty/,
   "Each owner starter-space plus must hand the exact empty slot to the existing Shop Control item workflow with clear first and follow-on language."
+);
+
+assertContains(
+  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, shopOwnerGmfnId\)[\s\S]*?shopFollowState\.shopId === positiveNumber\(effectiveShop\?\.id\)[\s\S]*?shopFollowState\.isOwner/,
+  "Public Shop owner controls must accept either the matching signed-in GSN identity or the authenticated backend ownership result for this exact shop."
 );
 
 assertContains(

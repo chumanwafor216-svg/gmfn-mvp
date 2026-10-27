@@ -233,6 +233,16 @@ async function installMocks(page, scenario) {
     if (path.startsWith(`/marketplace/shops/by-gmfn/${ownerId}`)) {
       return route.fulfill(json({ item: shop, shop }));
     }
+    if (path === '/marketplace/shops/101/follow-status') {
+      return route.fulfill(json({
+        ok: true,
+        shop_id: 101,
+        is_following: false,
+        can_follow: !scenario.authoritativeShopOwner,
+        is_owner: Boolean(scenario.authoritativeShopOwner),
+        follower_count: 0,
+      }));
+    }
     if (path === '/marketplace/shops' || path.startsWith('/marketplace/shops?')) {
       return route.fulfill(json({ items: [shop], shops: [shop] }));
     }
@@ -384,10 +394,10 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   }
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
   const followOnSpaces = page.locator('[data-owner-empty-shop-space]');
-  if (await followOnSpaces.count() !== 3) {
-    throw new Error(`One-item owner shop exposed ${await followOnSpaces.count()} follow-on spaces, expected 3.`);
+  if (await followOnSpaces.count() !== 1) {
+    throw new Error(`One-item owner shop exposed ${await followOnSpaces.count()} follow-on spaces, expected 1.`);
   }
-  if (await page.getByText('Start your shop here', { exact: true }).count()) {
+  if (await page.getByText('Add your product', { exact: true }).count()) {
     throw new Error('One-item owner shop kept the first-item wording after an item already existed.');
   }
   await assertTouchTarget(spotlightPlus, 'Spotlight plus');
@@ -626,11 +636,11 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
 
   const emptySpaces = page.locator('[data-owner-empty-shop-space]');
   await emptySpaces.first().waitFor({ state: 'visible', timeout: 20_000 });
-  if (await emptySpaces.count() !== 4) {
-    throw new Error(`Empty owner shop exposed ${await emptySpaces.count()} starter spaces, expected 4.`);
+  if (await emptySpaces.count() !== 2) {
+    throw new Error(`Empty owner shop exposed ${await emptySpaces.count()} starter spaces, expected 2.`);
   }
   await page.getByRole('link', {
-    name: 'Start your shop here, shop space 1',
+    name: 'Add your product, shop space 1',
     exact: true,
   }).waitFor({ state: 'visible', timeout: 20_000 });
   if (await page.getByText('No public items yet.', { exact: true }).count()) {
@@ -703,6 +713,24 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     throw new Error('A non-owner received owner shop-space creation controls.');
   }
   await visitor.context.close();
+
+  const backendOwnerScenario = {
+    ...scenario,
+    identity: visitorId,
+    authoritativeShopOwner: true,
+    mutations: [],
+  };
+  const backendOwner = await newPhonePage(browser, backendOwnerScenario);
+  await backendOwner.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  const backendOwnerSpaces = backendOwner.page.locator('[data-owner-empty-shop-space]');
+  await backendOwnerSpaces.first().waitFor({ state: 'visible', timeout: 20_000 });
+  if (await backendOwnerSpaces.count() !== 2) {
+    throw new Error('Backend-confirmed owner did not receive the two empty shop spaces.');
+  }
+  await backendOwner.context.close();
 }
 
 async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
@@ -1286,7 +1314,8 @@ try {
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'empty owner Public Shop exposes four progressive shop spaces while visitors retain the public empty state',
+      'empty owner Public Shop exposes two progressive shop spaces while visitors retain the public empty state',
+      'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
