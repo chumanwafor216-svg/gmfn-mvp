@@ -27,6 +27,8 @@ The repo currently contains two different credit systems:
 
 Neither is the owner-approved universal customer credit rail. Calling today's runtime unified would be false. The implementation must choose one canonical ledger, migrate or retire the duplicate meaning, preserve audit history, and keep the public product boundary non-cashable.
 
+The reuse-first ledger, catalogue, atomic-spend and migration design is mapped in `docs/GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`. It is architecture only and does not authorise payment activation.
+
 The canonical ledger must support a configurable credit catalogue by service and region. The denomination, divisibility and debit amounts must be chosen only after the exchange-rate and regional-pricing decisions are made.
 
 ## Provisional module register

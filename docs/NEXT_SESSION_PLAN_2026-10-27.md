@@ -225,6 +225,10 @@ Model result:
 Status: completed as a repository-backed truth map on 2026-10-27. Full result:
 `GSN_REVENUE_PER_MODULE_TRUTH_MAP_2026-10-27.md`.
 
+The follow-on canonical wallet and migration map is complete in
+`GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`; it changes no
+runtime payment behavior and leaves all values open for customer discovery.
+
 Timing: completed after the reuse-first growth-flywheel and Growth Partner
 map.
 

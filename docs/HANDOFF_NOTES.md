@@ -5,6 +5,41 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+
+## Canonical Pipeline Credit migration map - 2026-10-27
+
+- Completed the repository-backed reuse and migration map in
+  `docs/GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`. No price,
+  exchange rate, payment, schema, entitlement, balance or runtime behavior was
+  changed.
+- Runtime truth: the decimal Pipeline Credit ledger is currently an internal
+  provider/API cost-control account, while the integer member-credit engine is
+  an isolated test customer catalogue with only one Spotlight consumer. Neither
+  is today's universal customer wallet.
+- Recommended architecture, still requiring owner approval: reuse the decimal
+  Pipeline Credit ledger with explicit customer-service versus provider-cost
+  account purposes; import catalogue, quote, purchase-provenance, permission and
+  idempotent spend patterns from the member-credit engine; retire the second
+  customer balance after audited migration.
+- Customer service consumption and GSN provider cost must debit separate
+  accounts. Reuse the existing Feature Entitlement engine for delivered rights.
+  A service spend must be concurrency-safe and atomic with entitlement/delivery,
+  or use a tested reservation and reversal.
+- Migration must not convert provider budgets or synthetic/test credits into
+  customer value. Only verified non-refunded member purchases may transfer, and
+  existing direct-cash entitlements stay valid without a second charge. Each old
+  direct-purchase route retires only when its credit replacement passes rollback
+  tests.
+- Recommended regional design, not yet approved: account-scoped,
+  non-transferable credits with versioned regional top-up and service catalogues.
+  This avoids arbitrage from freely transferable credits acquired at different
+  regional cash rates.
+- Evidence validation: 54 focused Pipeline Credit, top-up, payment-boundary,
+  member-credit catalogue/purchase/profile and Spotlight tests passed. Two
+  migration-safety tests first hit a Windows pytest temporary-directory ACL
+  setup error, then both passed when rerun outside that sandbox. No frontend
+  build was needed because this batch changes documentation only.
+
 ## Revenue and Pipeline Credit owner correction - 2026-10-27
 
 - Updated the repository-backed revenue truth map and added

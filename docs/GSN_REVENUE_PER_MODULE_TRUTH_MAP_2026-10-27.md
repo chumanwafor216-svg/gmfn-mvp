@@ -29,6 +29,8 @@ The prices above express product direction. They are not all live runtime contra
 
 The detailed price, ledger, regional-pricing and Shop Reel implementation boundary is maintained in `docs/GSN_PIPELINE_CREDIT_AND_MODULE_PRICING_DECISION_REGISTER_2026-10-27.md`.
 
+The canonical-wallet reuse and migration design is maintained in `docs/GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`. It keeps customer service value separate from GSN's internal provider/API cost controls.
+
 ## Status language
 
 | Status | Meaning |
