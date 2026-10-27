@@ -1316,7 +1316,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             </>
           ) : (
             <div style={{ marginTop: 12, ...innerCard("rgba(255,255,255,0.96)"), color: "#07172C" }}>
-              {spotlightImageFile && !spotlightVideoFile ? (
+              {spotlightImageFile ? (
                 <>
                   <div style={{ fontSize: 14, fontWeight: 950 }}>Turn this picture into a short Reel.</div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
@@ -1380,10 +1380,50 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: 14, fontWeight: 950 }}>Add a picture or finish one short video above.</div>
+                  <div style={{ fontSize: 14, fontWeight: 950 }}>Choose a picture to start your Reel.</div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
-                    A picture can become a short GSN Reel here. For video, leave automatic improvement on, then tap Check and publish.
+                    GSN uses the same safe picture preparation already used by Spotlight. It does not create a second upload or publish your Spotlight.
                   </div>
+                  <div style={{ marginTop: 10 }}>
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => {
+                        setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
+                        const input = document.getElementById("shop-control-reel-image-file") as HTMLInputElement | null;
+                        if (input) {
+                          input.value = "";
+                          input.click();
+                        }
+                      }}
+                      disabled={preparingSpotlightImage || creatingSpotlight}
+                      busy={preparingSpotlightImage}
+                      busyLabel="Preparing picture..."
+                      fullWidth
+                      debugId="shop-control.reel.choose-picture"
+                    >
+                      Choose picture for Reel
+                    </PrimaryButton>
+                  </div>
+                  <input
+                    id="shop-control-reel-image-file"
+                    key={`shop-control-reel-image-${spotlightImageInputKey}`}
+                    type="file"
+                    data-gmfn-action-root="true"
+                    data-cta-id="shop-control.reel.image-file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
+                    aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
+                    onClick={(event) => {
+                      if (preparingSpotlightImage || creatingSpotlight) {
+                        event.preventDefault();
+                        showNotice("info", "GSN is still preparing the current picture.");
+                      }
+                    }}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      void handleSpotlightImagePicked(file);
+                    }}
+                    style={{ display: "none" }}
+                  />
                 </>
               )}
             </div>

@@ -731,14 +731,22 @@ try {
     "gsn shop reel",
     "free pilot",
     "take your shop outside gsn",
-    "add a picture or finish one short video above",
+    "choose picture for reel",
     "what this pilot does",
   ].filter((text) => !reelPilotText.includes(text));
   const reelBoundaryOpen = await reelPilot.locator("details").getAttribute("open");
+  const directReelPictureActions = await reelPilot.locator(
+    '[data-cta-id="shop-control.reel.choose-picture"]'
+  ).count();
   const prematureReelActions = await reelPilot.locator(
     '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"], [data-cta-id="shop-control.reel.create-from-picture"]'
   ).count();
-  if (missingReelPilotText.length > 0 || reelBoundaryOpen !== null || prematureReelActions > 0) {
+  if (
+    missingReelPilotText.length > 0 ||
+    reelBoundaryOpen !== null ||
+    directReelPictureActions !== 1 ||
+    prematureReelActions > 0
+  ) {
     findings.push({
       label: "shop-reel:free-pilot-first-view",
       findings: [
@@ -746,6 +754,7 @@ try {
           ? [`missing Reel pilot labels: ${missingReelPilotText.join(", ")}`]
           : []),
         ...(reelBoundaryOpen !== null ? ["the Reel truth-boundary disclosure opened before the owner requested it"] : []),
+        ...(directReelPictureActions !== 1 ? ["the empty Reel card did not expose exactly one direct picture action"] : []),
         ...(prematureReelActions > 0 ? ["Reel file actions appeared before a finished video existed"] : []),
       ],
     });

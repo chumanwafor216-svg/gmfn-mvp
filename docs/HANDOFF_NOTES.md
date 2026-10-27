@@ -5,6 +5,13 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## GSN Shop Reel direct phone-test entry - 2026-10-27
+
+- Owner phone evidence at 20:40 confirmed the corrected current bundle and paired Public Shop shelf, but also proved the Reel was not genuinely test-ready: its empty card only instructed the owner to add a picture elsewhere and exposed no action of its own.
+- The compact empty Reel card now exposes one primary `Choose picture for Reel` action. It opens a dedicated file-input control surface but reuses the existing `handleSpotlightImagePicked` preparation engine, validation, feedback and state. No uploader, backend route, media engine, payment or Pipeline Credit path was duplicated.
+- After preparation, the card changes to the existing `Create Reel from picture` flow. A selected picture remains eligible even when a video is also selected; creating the separate picture Reel still does not turn the Spotlight into video or publish it.
+- Verification passed: Shop Control action/field inventory (15 primary buttons, 31 native fields, 3 audited file-input roots), media-quality audit, the Shop Control phone visual audit, the complete protected-button freeze, and the 295-module TypeScript/Vite production build. The protected visual sweep still reports the known duplicate React key `0` browser warning three times; this correction neither introduced nor repaired that separate defect.
+
 
 ## Android installed-app stale bundle repair - 2026-10-27
 

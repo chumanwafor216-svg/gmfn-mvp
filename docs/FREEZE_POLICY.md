@@ -5,6 +5,8 @@ This file defines which parts of the repo are safe to edit freely and which part
 
 The goal is to let the assistant work autonomously in safe zones without damaging critical areas.
 
+Owner-approved 2026-10-27 GSN Shop Reel direct test-entry exception: the compact Reel card's empty state must expose one primary `Choose picture for Reel` control wired to the existing Spotlight picture-preparation handler, then expose `Create Reel from picture` after selection. This is a second control surface for the same engine, not a second uploader or media system. A selected picture remains eligible for picture-Reel creation when a video is also selected. No payment, Pipeline Credit, Shop navigation, Spotlight publication, media-verification, serving, pacing, entitlement, or Dashboard Market Wisdom contract changes.
+
 ---
 
 ## How to interpret freeze levels

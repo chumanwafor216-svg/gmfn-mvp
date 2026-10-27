@@ -35,15 +35,15 @@ const ownerShopHandlesSource = readFileSync(
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 14,
+  PrimaryButton: 15,
   SecondaryButton: 24,
   SubtleButton: 3,
   StableButton: 5,
   StableCtaLink: 14,
-  total: 60,
+  total: 61,
 };
-const expectedNativeFieldCount = 30;
-const expectedFileInputActionRoots = 2;
+const expectedNativeFieldCount = 31;
+const expectedFileInputActionRoots = 3;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
   drawer: 5,
@@ -244,6 +244,7 @@ const expectedActionOrder = [
   "shop-control.reel.share-video",
   "shop-control.reel.download",
   "shop-control.reel.create-from-picture",
+  "shop-control.reel.choose-picture",
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
@@ -348,6 +349,7 @@ if (fileInputActionRoots.length !== expectedFileInputActionRoots) {
 const expectedFileInputIds = [
   "shop-control.spotlight.image-file",
   "shop-control.spotlight.video-file",
+  "shop-control.reel.image-file",
 ];
 for (const expectedId of expectedFileInputIds) {
   if (fileInputActionRoots.some((field) => field.id === expectedId)) continue;
@@ -367,7 +369,7 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
     file: shopControlFile,
     line: 1,
     message:
-      "Shop Control data-gmfn-action-root/data-cta-id markers must stay limited to the two audited file-upload controls.",
+      "Shop Control data-gmfn-action-root/data-cta-id markers must stay limited to the three audited file-upload controls.",
     text: `Found ${allActionRootMarkers} action-root marker attributes.`,
   });
 }
@@ -472,6 +474,10 @@ assertShopContains(
 assertShopContains(
   /async function shareShopReelVideo\(\)[\s\S]*?navigator\.share[\s\S]*?navigator\.canShare[\s\S]*?files: \[file\][\s\S]*?shareTargetForChannel[\s\S]*?buildPublicShareText/,
   "GSN Shop Reel file sharing must use the explicit phone share sheet and retain the attributed public-shop link."
+);
+assertShopContains(
+  /spotlightImageFile \? \([\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?debugId="shop-control\.reel\.choose-picture"[\s\S]*?Choose picture for Reel[\s\S]*?id="shop-control-reel-image-file"[\s\S]*?data-cta-id="shop-control\.reel\.image-file"[\s\S]*?handleSpotlightImagePicked/,
+  "The empty GSN Shop Reel card must open the existing picture-preparation engine directly, and a selected picture must remain eligible even when a video is also selected."
 );
 assertShopContains(
   /const ownerPublicShopReelUrl = ownerShopGsnId[\s\S]*?publicShopShareUrl[\s\S]*?"gsn_share"[\s\S]*?"shop_reel"[\s\S]*?"utm_source"[\s\S]*?"gsn_shop_reel"[\s\S]*?const ownerPublicShopReelSocialPreviewUrl = ownerShopGsnId[\s\S]*?publicShopSocialPreviewUrl/,
