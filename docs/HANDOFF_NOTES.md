@@ -248,6 +248,35 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Full audit:
   `GSN_ACCOUNT_LIFECYCLE_CAPABILITY_AUDIT_2026-10-27.md`.
 
+## Respectful inactivity reminder design - 2026-10-27
+
+- Completed a design/evidence audit only; no reminder generation, scheduler,
+  notification, Web Push, setting, schema or screen behavior changed.
+- GSN has no platform-wide user activity timestamp, so it must not tell a
+  person that they are inactive. A reminder must name one owned surface, one
+  dated/countable observation, why it may matter and one first action.
+- Existing Action Inbox, Attention Spine, Web Push, Shop Analytics, follower,
+  product/Trust Event and Marketplace Attention records can be reused. No new
+  reminder dashboard or engagement score is proposed.
+- Companion quiet hours, daily limits and repeat windows are currently stored
+  and enforced in the browser. Backend UserSettings and Web Push cannot use
+  them for scheduled delivery. Notification rows also lack semantic dedupe,
+  snooze, category opt-out and delivery-state fields.
+- Shop Control already turns analytics into contextual guidance. Creating a
+  second in-app shop nudge would duplicate that work; the real missing
+  capability is governed, durable delivery away from that screen.
+- Recommended first pilot: enrolled active shop owners with public products,
+  verifiable stale seller action and a truthful follower/recent-attention
+  reason. Candidate parameters are 14 days without a public seller action, no
+  more than one Shop Growth reminder per seven days and one same-reason
+  reminder per 14 days, starting with a send-nothing dry run.
+- Block general inactivity, Shop Analytics non-visit, buyer-browsing and
+  Demand Box relevance reminders until the required evidence exists.
+- Web Push remains out of scope until server-owned category consent, timezone,
+  quiet hours, caps, digest, dedupe, snooze and opt-out are enforced.
+- Full design:
+  `GSN_RESPECTFUL_INACTIVITY_REMINDER_DESIGN_2026-10-27.md`.
+
 ## Shop-first authenticated entry and primary navigation - 2026-10-27
 
 - Implemented the owner's decision that Shop is the authenticated starting

@@ -328,6 +328,10 @@ Audit result:
 
 ### 8. Design respectful inactivity reminders from GSN
 
+Status: repository and external-pattern design completed locally on
+2026-10-27; no reminder, scheduled job, notification, Web Push, setting,
+schema or screen behavior changed.
+
 Owner intent:
 GSN should have a useful one-to-one relationship with a member and notice when
 their meaningful activity has gone quiet, similar to a platform reminding a
@@ -365,6 +369,28 @@ Implementation preference:
   auditable, and scoped to the signed-in user
 - route the user to the existing owning screen rather than creating a new
   reminder dashboard
+
+Design result:
+- User-facing language should be `useful follow-up reminder`, not a claim that
+  the person is inactive. GSN has no platform-wide `last_active_at`.
+- GSN already has contextual Shop Analytics guidance. Another on-screen shop
+  nudge would duplicate it; the missing capability is governed, durable
+  re-engagement outside that screen.
+- Existing Action Inbox, Attention Spine, Web Push, shop/follower/attention
+  records and Companion interaction ideas can be reused, but Companion
+  schedules/limits are currently browser-local and cannot govern a server
+  sender.
+- First recommended pilot: active shop owners with active public products,
+  dated seller-action evidence and a truthful follower/recent-attention reason;
+  14-day freshness candidate, at most one Shop Growth reminder per seven days,
+  dry-run first, then an enrolled Action Inbox pilot.
+- No new reminder Web Push until category consent, timezone, quiet hours,
+  frequency, digest, dedupe, snooze and opt-out are server-owned and enforced.
+- Block general-member inactivity, analytics-visit claims, buyer-browsing
+  re-engagement and Demand Box relevance claims until their evidence contracts
+  exist.
+- Full capability map and phased proposal:
+  `GSN_RESPECTFUL_INACTIVITY_REMINDER_DESIGN_2026-10-27.md`.
 
 ### 9. Measure and correct Spotlight rotation timing and fairness
 
