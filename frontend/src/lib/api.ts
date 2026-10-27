@@ -8593,6 +8593,41 @@ export type MarketplaceVideoSoundOptions = {
   source: "file" | "recording";
 };
 
+export async function uploadMarketplaceImageReelFile(
+  file: File,
+  clanId: number | null | undefined,
+  finish: MarketplaceVideoFinishOptions
+): Promise<any> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("duration_seconds", String(finish.durationSeconds));
+  fd.append("shop_id", String(finish.shopId));
+  if (finish.title?.trim()) fd.append("title", finish.title.trim());
+
+  const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
+  if (effectiveClanId > 0) {
+    fd.append("clan_id", String(effectiveClanId));
+  }
+
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+  if (effectiveClanId > 0) headers["X-Clan-Id"] = String(effectiveClanId);
+
+  const res = await fetchWithTimeout(
+    buildUrl("/marketplace/media/image-reel"),
+    {
+      method: "POST",
+      headers,
+      body: fd,
+    },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return readJsonOrTextSafe(res);
+}
+
 export async function uploadMarketplaceVideoFile(
   file: File,
   durationSeconds?: number | null,

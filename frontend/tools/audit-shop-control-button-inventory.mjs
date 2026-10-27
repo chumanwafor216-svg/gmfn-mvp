@@ -35,12 +35,12 @@ const ownerShopHandlesSource = readFileSync(
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 13,
+  PrimaryButton: 14,
   SecondaryButton: 24,
   SubtleButton: 3,
   StableButton: 5,
   StableCtaLink: 14,
-  total: 59,
+  total: 60,
 };
 const expectedNativeFieldCount = 29;
 const expectedFileInputActionRoots = 2;
@@ -243,6 +243,7 @@ const expectedActionOrder = [
   "shop-control.spotlight.preview.back",
   "shop-control.reel.share-video",
   "shop-control.reel.download",
+  "shop-control.reel.create-from-picture",
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
@@ -465,8 +466,8 @@ assertShopContains(
   "Shop Control video options must remain collapsed, optional and bounded to five/ten seconds while retaining shared sound controls."
 );
 assertShopContains(
-  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?What this pilot does[\s\S]*?does not post automatically[\s\S]*?turn a still picture into video yet/,
-  "Free Spotlight must place the free GSN Shop Reel pilot directly below the composer, keep posting user-controlled, and state the production boundary truthfully."
+  /data-gsn-shop-reel="free-pilot"[\s\S]*?GSN Shop Reel[\s\S]*?Free pilot[\s\S]*?Take your shop outside GSN[\s\S]*?debugId="shop-control\.reel\.share-video"[\s\S]*?Share Reel from phone[\s\S]*?buttonLabel="Choose link channel"[\s\S]*?debugId="shop-control\.reel\.download"[\s\S]*?Demand Box[\s\S]*?TrustSlip[\s\S]*?Turn this picture into a short Reel[\s\S]*?Your Spotlight remains a picture[\s\S]*?debugId="shop-control\.reel\.create-from-picture"[\s\S]*?What this pilot does[\s\S]*?Picture Reels are silent in this version[\s\S]*?does not post automatically[\s\S]*?invent product detail/,
+  "Free Spotlight must keep the free GSN Shop Reel pilot directly below the composer, support a separate bounded picture Reel without changing Spotlight media, keep posting user-controlled, and state the production boundary truthfully."
 );
 assertShopContains(
   /async function shareShopReelVideo\(\)[\s\S]*?navigator\.share[\s\S]*?navigator\.canShare[\s\S]*?files: \[file\][\s\S]*?shareTargetForChannel[\s\S]*?buildPublicShareText/,

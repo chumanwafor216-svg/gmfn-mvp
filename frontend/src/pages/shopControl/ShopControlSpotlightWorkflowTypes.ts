@@ -175,6 +175,8 @@ export type ShopControlSpotlightWorkflowProps = {
   setSpotlightNaturalFinishSeconds: Dispatch<SetStateAction<5 | 10>>;
   spotlightFinishedVideoUrl: string;
   shopReelVideoUrl: string;
+  preparingShopReelFromImage: boolean;
+  prepareShopReelFromImage: () => Promise<string | null>;
   setSpotlightFinishedVideoUrl: Dispatch<SetStateAction<string>>;
   preparingSpotlightFinish: boolean;
   prepareSpotlightNaturalFinish: () => Promise<string | null>;

@@ -185,6 +185,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     setSpotlightNaturalFinishSeconds,
     spotlightFinishedVideoUrl,
     shopReelVideoUrl,
+    preparingShopReelFromImage,
+    prepareShopReelFromImage,
     setSpotlightFinishedVideoUrl,
     preparingSpotlightFinish,
     prepareSpotlightNaturalFinish,
@@ -1259,7 +1261,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             Take your shop outside GSN
           </div>
           <div style={{ marginTop: 7, color: "#D7E3F1", fontSize: 13, fontWeight: 750, lineHeight: 1.45 }}>
-            GSN pairs your finished short video with the public-shop link. You review it, then choose where to post it.
+            Use a selected picture or finished short video. GSN pairs the Reel with your public-shop link; you review it, then choose where to post it.
           </div>
 
           {shopReelShareReady ? (
@@ -1311,10 +1313,34 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             </>
           ) : (
             <div style={{ marginTop: 12, ...innerCard("rgba(255,255,255,0.96)"), color: "#07172C" }}>
-              <div style={{ fontSize: 14, fontWeight: 950 }}>Finish one short video above first.</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
-                Add a video, leave automatic improvement on, then tap Check and publish. The finished video will appear here for outside sharing.
-              </div>
+              {spotlightImageFile && !spotlightVideoFile ? (
+                <>
+                  <div style={{ fontSize: 14, fontWeight: 950 }}>Turn this picture into a short Reel.</div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                    GSN will keep your full picture visible, add gentle motion and your shop label, and create a {spotlightNaturalFinishSeconds}-second video. Your Spotlight remains a picture.
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => { void prepareShopReelFromImage(); }}
+                      disabled={preparingShopReelFromImage}
+                      busy={preparingShopReelFromImage}
+                      busyLabel="Creating Reel..."
+                      fullWidth
+                      debugId="shop-control.reel.create-from-picture"
+                    >
+                      Create Reel from picture
+                    </PrimaryButton>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 14, fontWeight: 950 }}>Add a picture or finish one short video above.</div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                    A picture can become a short GSN Reel here. For video, leave automatic improvement on, then tap Check and publish.
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -1334,7 +1360,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               What this pilot does
             </StableDisclosureSummary>
             <div style={{ marginTop: 8, color: "#D7E3F1", fontSize: 12, lineHeight: 1.45 }}>
-              It shares a reviewed video and shop link. It does not post automatically, prove delivery or sales, use private Vault content, or turn a still picture into video yet. Use only sound you created or may legally use.
+              It can make a bounded five- or ten-second video from your selected picture, or reuse your reviewed video, then share it with your shop link. Picture Reels are silent in this version. It does not post automatically, prove delivery or sales, invent product detail, or use private Vault content. Use only sound you created or may legally use on an uploaded video.
             </div>
           </details>
         </div>

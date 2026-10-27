@@ -29,6 +29,7 @@ from app.services.marketplace_media_quality_service import (
     is_verified_marketplace_video_url,
     normalize_marketplace_image,
     normalize_marketplace_video,
+    render_marketplace_image_reel,
 )
 
 
@@ -289,6 +290,53 @@ def test_gsn_natural_finish_is_bounded_branded_profile(tmp_path: Path):
     assert result.trimmed is True
     assert result.output.duration_seconds <= 5.35
     assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
+
+
+def test_image_reel_creates_bounded_vertical_managed_video(tmp_path: Path):
+    prepared_image = tmp_path / "prepared-image"
+    normalize_marketplace_image(
+        _image_bytes(size=(1600, 900)),
+        prepared_image,
+    )
+    output = tmp_path / "qv1_picture_reel.mp4"
+
+    result = render_marketplace_image_reel(
+        prepared_image,
+        output,
+        finish_profile=VideoFinishProfile(
+            duration_seconds=5,
+            brand_name="Ada Home Foods",
+            title="Fresh soup packs",
+            public_contact="+234 800 000 0000",
+        ),
+    )
+
+    assert output.is_file()
+    assert result.source_width == 1600
+    assert result.source_height == 900
+    assert result.output.width == 720
+    assert result.output.height == 1280
+    assert result.output.duration_seconds <= 5.35
+    assert result.output.codec == "h264"
+    assert result.output_has_audio is False
+    assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
+
+
+def test_image_reel_rejects_unapproved_duration(tmp_path: Path):
+    prepared_image = tmp_path / "prepared-image"
+    normalize_marketplace_image(_image_bytes(), prepared_image)
+
+    with pytest.raises(MediaQualityError) as exc_info:
+        render_marketplace_image_reel(
+            prepared_image,
+            tmp_path / "bad-reel.mp4",
+            finish_profile=VideoFinishProfile(
+                duration_seconds=8,
+                brand_name="Ada Home Foods",
+            ),
+        )
+
+    assert exc_info.value.code == "image_reel_duration_invalid"
 
 
 def test_normalizer_caps_decoder_filter_and_encoder_threads(

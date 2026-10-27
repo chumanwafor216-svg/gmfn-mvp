@@ -11,7 +11,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import imageio_ffmpeg
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps, ImageStat, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps, ImageStat, UnidentifiedImageError
 
 from app.core.runtime_memory import log_runtime_event, memory_snapshot
 
@@ -206,6 +206,33 @@ class NormalizedVideo:
             "added_sound": self.added_sound,
             "sound_mode": self.sound_mode,
             "output_has_audio": self.output_has_audio,
+        }
+
+
+@dataclass(frozen=True)
+class ImageReelVideo:
+    source_width: int
+    source_height: int
+    output: VideoInspection
+    duration_seconds: int
+    size_bytes: int
+    output_has_audio: bool = False
+    visual_preparation: str = "gsn_image_reel"
+    finish_profile: str = "gsn_natural"
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "source": {
+                "kind": "image",
+                "width": self.source_width,
+                "height": self.source_height,
+            },
+            "output": self.output.as_dict(),
+            "duration_seconds": self.duration_seconds,
+            "size_bytes": self.size_bytes,
+            "output_has_audio": self.output_has_audio,
+            "visual_preparation": self.visual_preparation,
+            "finish_profile": self.finish_profile,
         }
 
 
@@ -830,6 +857,226 @@ def normalize_marketplace_video(
         sound_mode=selected_sound_mode,
         output_has_audio=output_has_audio,
     )
+
+
+def render_marketplace_image_reel(
+    source_path: str | Path,
+    output_path: str | Path,
+    *,
+    finish_profile: VideoFinishProfile,
+) -> ImageReelVideo:
+    """Turn one truthful still shop picture into a bounded portrait MP4.
+
+    The picture is contained without crop on a softly blurred presentation
+    canvas. A very small camera push and the existing GSN lower third provide
+    motion and attribution; no product pixels are generated or repaired.
+    """
+
+    input_path = Path(source_path)
+    destination = Path(output_path)
+    finish_seconds = int(finish_profile.duration_seconds)
+    if finish_seconds not in {5, 10}:
+        raise MediaQualityError(
+            "image_reel_duration_invalid",
+            "Choose a 5-second or 10-second GSN Reel.",
+        )
+
+    try:
+        with Image.open(input_path) as opened:
+            if bool(getattr(opened, "is_animated", False)) and int(
+                getattr(opened, "n_frames", 1) or 1
+            ) > 1:
+                raise MediaQualityError(
+                    "animated_image_unsupported",
+                    "Use one still JPG, PNG, or WebP picture for this Reel.",
+                )
+            opened.load()
+            prepared = ImageOps.exif_transpose(opened).convert("RGBA")
+    except MediaQualityError:
+        raise
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError) as exc:
+        raise MediaQualityError(
+            "invalid_image_file",
+            "This picture could not be read. Choose a valid JPG, PNG, or WebP image.",
+        ) from exc
+
+    source_width, source_height = prepared.size
+    if source_width <= 0 or source_height <= 0:
+        raise MediaQualityError(
+            "image_dimensions_unknown",
+            "GSN could not read this picture's dimensions. Save or export it again.",
+        )
+
+    width, height = 720, 1280
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    frame_path = destination.with_suffix(".reel-frame.jpg")
+    overlay_path = destination.with_suffix(".overlay.png")
+
+    try:
+        background = ImageOps.fit(
+            prepared.convert("RGB"),
+            (width, height),
+            method=_image_resample_filter(),
+            centering=(0.5, 0.5),
+        )
+        background = background.filter(ImageFilter.GaussianBlur(radius=28))
+        background = ImageEnhance.Brightness(background).enhance(0.48)
+        background = ImageEnhance.Color(background).enhance(0.82)
+        canvas = background.convert("RGBA")
+
+        foreground = ImageOps.contain(
+            prepared,
+            (width - 64, 900),
+            method=_image_resample_filter(),
+        )
+        foreground_x = (width - foreground.width) // 2
+        foreground_y = max(42, (1010 - foreground.height) // 2)
+        shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        shadow_draw = ImageDraw.Draw(shadow)
+        shadow_draw.rounded_rectangle(
+            (
+                foreground_x - 10,
+                foreground_y - 10,
+                foreground_x + foreground.width + 10,
+                foreground_y + foreground.height + 10,
+            ),
+            radius=28,
+            fill=(0, 0, 0, 128),
+        )
+        canvas = Image.alpha_composite(
+            canvas,
+            shadow.filter(ImageFilter.GaussianBlur(radius=16)),
+        )
+        canvas.alpha_composite(foreground, (foreground_x, foreground_y))
+
+        _build_finish_overlay(finish_profile, width, height, overlay_path)
+        with Image.open(overlay_path) as overlay:
+            canvas = Image.alpha_composite(canvas, overlay.convert("RGBA"))
+        canvas.convert("RGB").save(
+            frame_path,
+            format="JPEG",
+            quality=90,
+            optimize=True,
+            progressive=True,
+        )
+
+        try:
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except Exception as exc:
+            raise MediaQualityError(
+                "video_processor_unavailable",
+                "GSN could not prepare Reels right now. Please try again shortly.",
+            ) from exc
+
+        command = [
+            ffmpeg_exe,
+            "-y",
+            "-nostdin",
+            "-v",
+            "error",
+            "-threads",
+            str(FFMPEG_THREAD_LIMIT),
+            "-filter_threads",
+            str(FFMPEG_THREAD_LIMIT),
+            "-loop",
+            "1",
+            "-framerate",
+            "30",
+            "-i",
+            str(frame_path),
+            "-t",
+            str(finish_seconds),
+            "-vf",
+            (
+                "zoompan="
+                "z='min(zoom+0.00012,1.035)':"
+                "x='iw/2-(iw/zoom/2)':"
+                "y='ih/2-(ih/zoom/2)':"
+                "d=1:s=720x1280:fps=30,format=yuv420p"
+            ),
+            "-r",
+            "30",
+            "-c:v",
+            "libx264",
+            "-threads",
+            str(FFMPEG_THREAD_LIMIT),
+            "-x264-params",
+            f"threads={FFMPEG_THREAD_LIMIT}:lookahead_threads={FFMPEG_THREAD_LIMIT}",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-maxrate",
+            "1600k",
+            "-bufsize",
+            "3200k",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-map_metadata",
+            "-1",
+            "-an",
+            str(destination),
+        ]
+        try:
+            completed = (
+                _run_video_process(command)
+                if _runtime_memory_logging_enabled()
+                else subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    timeout=VIDEO_PROCESS_TIMEOUT_SECONDS,
+                    check=False,
+                )
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise MediaQualityError(
+                "image_reel_processing_timeout",
+                "This picture took too long to turn into a Reel. Try a smaller copy.",
+            ) from exc
+        except OSError as exc:
+            raise MediaQualityError(
+                "video_processor_unavailable",
+                "GSN could not prepare Reels right now. Please try again shortly.",
+            ) from exc
+
+        if completed.returncode != 0 or not destination.is_file():
+            destination.unlink(missing_ok=True)
+            raise MediaQualityError(
+                "image_reel_processing_failed",
+                "GSN could not turn this picture into a Reel. Try another JPG, PNG, or WebP image.",
+            )
+
+        output_size = destination.stat().st_size
+        if output_size <= 0 or output_size > MAX_GSN_NATURAL_FINISH_BYTES:
+            destination.unlink(missing_ok=True)
+            raise MediaQualityError(
+                "image_reel_output_too_large",
+                "The prepared Reel is still too large. Try a simpler picture.",
+            )
+
+        output_inspection = inspect_video(destination)
+        output_has_audio = _source_has_audio(ffmpeg_exe, destination)
+        if output_inspection.duration_seconds > finish_seconds + 0.35:
+            destination.unlink(missing_ok=True)
+            raise MediaQualityError(
+                "image_reel_duration_failed",
+                "GSN could not keep this Reel within the selected length. Try again.",
+            )
+
+        return ImageReelVideo(
+            source_width=source_width,
+            source_height=source_height,
+            output=output_inspection,
+            duration_seconds=finish_seconds,
+            size_bytes=output_size,
+            output_has_audio=output_has_audio,
+        )
+    finally:
+        frame_path.unlink(missing_ok=True)
+        overlay_path.unlink(missing_ok=True)
 
 
 def _uploads_root() -> Path:

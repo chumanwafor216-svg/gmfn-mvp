@@ -30,6 +30,7 @@ from app.services.marketplace_media_quality_service import (
     VideoFinishProfile,
     normalize_marketplace_image,
     normalize_marketplace_video,
+    render_marketplace_image_reel,
 )
 from app.services.storage_service import StorageServiceError, create_presigned_upload
 
@@ -538,6 +539,104 @@ async def upload_marketplace_image(
         "finish": "gsn_clear",
         "preparation": normalized.as_dict(),
         "boundary": "GSN applied a conservative non-generative finish; it did not invent detail or change product identity.",
+    }
+
+
+@router.post("/image-reel")
+async def create_marketplace_image_reel(
+    file: UploadFile = File(...),
+    clan_id: Optional[int] = Form(default=None),
+    duration_seconds: int = Form(default=10),
+    shop_id: int = Form(...),
+    title: Optional[str] = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """Create a reviewed short Reel from one owner-selected shop picture."""
+
+    _ensure_dirs()
+    if duration_seconds not in {5, 10}:
+        raise HTTPException(status_code=400, detail="Choose a 5-second or 10-second GSN Reel.")
+
+    selected_shop = db.query(MarketplaceShop).filter(MarketplaceShop.id == int(shop_id)).first()
+    if selected_shop is None:
+        raise HTTPException(status_code=404, detail="Shop not found.")
+    if int(selected_shop.owner_user_id) != int(current_user.id) and not _is_admin(current_user):
+        raise HTTPException(status_code=403, detail="You can only create a Reel for a shop you own.")
+
+    ext = _safe_ext(file.filename)
+    content_type = _normalize_content_type(file.content_type)
+    _validate_ext("image", ext)
+    _validate_content_type("image", content_type, ext)
+
+    data = await _read_limited_bytes(file, MAX_IMAGE_BYTES)
+    if not data:
+        raise HTTPException(status_code=400, detail="Image file is empty.")
+    _validate_decodable_image(data, ext=ext)
+
+    processing_token = secrets.token_hex(8)
+    prepared_image_path = _video_processing_dir() / f"{processing_token}.source"
+    output_path = _video_processing_dir() / f"{processing_token}.image-reel.mp4"
+    filename = f"qv1_{_random_name('.mp4')}"
+    filepath = _video_upload_dir() / filename
+    finish = VideoFinishProfile(
+        duration_seconds=int(duration_seconds),
+        brand_name=str(selected_shop.name or "").strip()[:120],
+        title=" ".join(str(title or "").split())[:80],
+        public_contact=str(selected_shop.whatsapp_number or "").strip()[:32],
+        logo_path=_verified_shop_logo_path(selected_shop.image_url),
+    )
+
+    try:
+        prepared_image = normalize_marketplace_image(data, prepared_image_path)
+        reel = render_marketplace_image_reel(
+            prepared_image_path,
+            output_path,
+            finish_profile=finish,
+        )
+        shutil.move(str(output_path), str(filepath))
+    except MediaQualityError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": exc.code, "message": str(exc)},
+        ) from exc
+    finally:
+        prepared_image_path.unlink(missing_ok=True)
+        output_path.unlink(missing_ok=True)
+        output_path.with_suffix(".reel-frame.jpg").unlink(missing_ok=True)
+        output_path.with_suffix(".overlay.png").unlink(missing_ok=True)
+
+    return {
+        "ok": True,
+        "kind": "video",
+        "source_kind": "image",
+        "filename": filename,
+        "content_type": "video/mp4",
+        "size_bytes": int(reel.size_bytes),
+        "source_size_bytes": len(data),
+        "duration_seconds": reel.output.duration_seconds,
+        "quality_verified": True,
+        "quality": reel.as_dict(),
+        "url": _public_url_for("videos", filename),
+        "clan_id": clan_id,
+        "finish": {
+            "profile": "gsn_natural",
+            "duration_seconds": int(finish.duration_seconds),
+            "brand_name": finish.brand_name,
+            "title": finish.title,
+            "public_contact_present": bool(finish.public_contact),
+            "logo_applied": bool(finish.logo_path),
+            "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
+        },
+        "sound": {
+            "added": False,
+            "output_has_audio": False,
+        },
+        "preparation": {
+            "source_image": prepared_image.as_dict(),
+            "motion": "gentle_camera_push",
+            "truth_boundary": "Presentation only: GSN contained the selected picture without product crop, added a subtle camera push and attribution, and did not invent or repair product detail.",
+        },
     }
 
 

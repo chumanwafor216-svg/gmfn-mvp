@@ -41,6 +41,7 @@ import {
   revokeVaultShopAccessLink,
   safeCopy,
   uploadMarketplaceImageFile,
+  uploadMarketplaceImageReelFile,
   uploadMarketplaceVideoFile,
   type MarketplaceVideoSoundOptions,
   type MarketplaceRequestItem,
@@ -3745,6 +3746,7 @@ export default function ShopControlPage() {
   const [spotlightFinishedVideoUrl, setSpotlightFinishedVideoUrl] = useState('');
   const [lastPreparedShopReelUrl, setLastPreparedShopReelUrl] = useState('');
   const [preparingSpotlightFinish, setPreparingSpotlightFinish] = useState(false);
+  const [preparingShopReelFromImage, setPreparingShopReelFromImage] = useState(false);
   const [spotlightImageInputKey, setSpotlightImageInputKey] = useState(0);
   const [spotlightVideoInputKey, setSpotlightVideoInputKey] = useState(0);
   const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
@@ -6746,6 +6748,10 @@ export default function ShopControlPage() {
         return;
       }
 
+      if (!spotlightVideoFile) {
+        setSpotlightFinishedVideoUrl('');
+        clearPreparedShopReel();
+      }
       setSpotlightImageFile(prepared.file);
       setSpotlightPublishFeedback(null);
       if (prepared.message) {
@@ -6910,6 +6916,53 @@ export default function ShopControlPage() {
       return null;
     } finally {
       setPreparingSpotlightFinish(false);
+    }
+  }
+
+  async function prepareShopReelFromImage(): Promise<string | null> {
+    if (!spotlightImageFile || preparingShopReelFromImage) return null;
+    setPreparingShopReelFromImage(true);
+    try {
+      const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
+      if (!activeShop?.id) {
+        throw new Error('Save your shop identity before creating a Reel.');
+      }
+      const targetClanId = Number(
+        activeShop.clan_id || effectiveShopClanId || selectedClanId || 0
+      );
+      const uploadRes = await uploadMarketplaceImageReelFile(
+        spotlightImageFile,
+        targetClanId || null,
+        {
+          profile: 'gsn_natural',
+          durationSeconds: spotlightNaturalFinishSeconds,
+          shopId: Number(activeShop.id),
+          title: firstTruthy(spotlightProductName, spotlightMessage),
+        }
+      );
+      const url = firstTruthy(
+        uploadRes?.video_url,
+        uploadRes?.url,
+        uploadRes?.file_url,
+        uploadRes?.path,
+        uploadRes?.data?.video_url
+      );
+      if (!url) throw new Error('GSN created the Reel but did not return a preview link.');
+      rememberPreparedShopReel(url);
+      setSpotlightMediaFeedback({
+        tone: 'success',
+        text: 'Your picture Reel is ready to review and share.',
+      });
+      showNotice('success', 'Your picture Reel is ready to review and share.');
+      return url;
+    } catch (err: any) {
+      showNotice(
+        'error',
+        safeStr(err?.message) || 'GSN could not turn this picture into a Reel.'
+      );
+      return null;
+    } finally {
+      setPreparingShopReelFromImage(false);
     }
   }
 
@@ -7463,6 +7516,8 @@ export default function ShopControlPage() {
     setSpotlightFinishedVideoUrl,
     preparingSpotlightFinish,
     shopReelVideoUrl: spotlightFinishedVideoUrl || lastPreparedShopReelUrl,
+    preparingShopReelFromImage,
+    prepareShopReelFromImage,
     prepareSpotlightNaturalFinish,
     spotlightCanContinueToPreview,
     setSpotlightFlowStep,

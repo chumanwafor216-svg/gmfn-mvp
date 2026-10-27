@@ -731,12 +731,12 @@ try {
     "gsn shop reel",
     "free pilot",
     "take your shop outside gsn",
-    "finish one short video above first",
+    "add a picture or finish one short video above",
     "what this pilot does",
   ].filter((text) => !reelPilotText.includes(text));
   const reelBoundaryOpen = await reelPilot.locator("details").getAttribute("open");
   const prematureReelActions = await reelPilot.locator(
-    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"]'
+    '[data-cta-id="shop-control.reel.share-video"], [data-cta-id="shop-control.reel.download"], [data-cta-id="shop-control.reel.create-from-picture"]'
   ).count();
   if (missingReelPilotText.length > 0 || reelBoundaryOpen !== null || prematureReelActions > 0) {
     findings.push({
