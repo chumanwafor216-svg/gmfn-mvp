@@ -222,8 +222,11 @@ Model result:
 
 ### 5. Map revenue per module
 
-Timing: deferred to the end-of-day strategy close, immediately after the
-reuse-first growth-flywheel and Growth Partner map.
+Status: completed as a repository-backed truth map on 2026-10-27. Full result:
+`GSN_REVENUE_PER_MODULE_TRUTH_MAP_2026-10-27.md`.
+
+Timing: completed after the reuse-first growth-flywheel and Growth Partner
+map.
 
 Owner direction:
 - Make the next development priority a module-by-module revenue model for GSN,
@@ -259,6 +262,20 @@ Truth boundaries:
   accounting, evidence, and permission contracts are explicit
 - treat `Reel` and `reactions` as owner-supplied module names until code and
   documentation confirm their exact product meaning
+
+Completed result:
+- no canonical Reel product exists; existing video belongs to Shop,
+  Spotlight and media-preparation engines
+- Bulletin reactions are not enabled by the backend and are not a paid module
+- Paid Spotlight and Paid Repost are one paid-visibility credit family and
+  must not be double-counted
+- Merchant Verification has payment/entitlement plumbing but no safe
+  server-owned approved price
+- Community Domain billing remains suspended; Additional Trade Records and
+  Advanced Shop Analytics/AI remain planned
+- willingness to pay and net margin remain unproven until reconciled payments,
+  renewals, refunds and delivery costs are measured
+
 
 ### 6. Compact the Dashboard Photo Frame affordance
 

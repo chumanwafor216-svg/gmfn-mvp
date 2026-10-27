@@ -4,6 +4,35 @@ This file is the compact current-state handoff required by `README.md` and
 `docs/PROJECT_PROTOCOL.md`. The fully repaired historical record through
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
+
+## Revenue-per-module truth map - 2026-10-27
+
+- Completed the repository-backed payer, value unit, price mechanism,
+  payment/entitlement, delivery-cost and willingness-to-pay audit in
+  `docs/GSN_REVENUE_PER_MODULE_TRUTH_MAP_2026-10-27.md`.
+- Confirmed the live server-priced families: shared Paid Spotlight/Paid Repost
+  visibility credits, Private Vault, extra public shop space, extra member
+  capacity, ROSCA yearly service and Community Meeting Pack. Paid Spotlight
+  and Paid Repost use one credit rail and must not be counted twice.
+- Confirmed Merchant Verification has a real payment and annual entitlement
+  rail, but its frontend supplies GBP 1 while the backend accepts any positive
+  client amount. That is not a safe approved price. Extra shop space is GBP 1
+  per annual unit in runtime while the earlier commercial decision remains
+  unresolved between GBP 1 and GBP 2.
+- Confirmed Community Domain pilot billing is suspended; Additional Trade
+  Records and Advanced Shop Analytics/AI remain planned; TrustSlip core,
+  Public Shop, Shop Update, DemandBox, Bulletin responses and sharing are not
+  direct revenue lines.
+- Confirmed there is no canonical Reel product. Bulletin reaction language
+  exists, but backend notice contracts currently return
+  `reactions_enabled: false`; reactions are not a paid product.
+- Confirmed the central advertiser settlement/payment/delivery-accounting rail
+  exists in the backend, but the house publisher remains quotation-only and no
+  complete ordinary frontend settlement workflow or proven advertiser demand
+  was found.
+- No price, payment route, entitlement, schema, runtime source, commission or
+  forecast was changed by this audit.
+
 ## Deployed Bulletin composer unblock and share handoff - 2026-10-27
 
 - Corrected the production-visible disabled-button trap: an announcement longer
