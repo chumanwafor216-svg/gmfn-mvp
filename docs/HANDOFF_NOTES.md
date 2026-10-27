@@ -5,33 +5,40 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
-## Revenue-per-module truth map - 2026-10-27
+## Revenue and Pipeline Credit owner correction - 2026-10-27
 
-- Completed the repository-backed payer, value unit, price mechanism,
-  payment/entitlement, delivery-cost and willingness-to-pay audit in
-  `docs/GSN_REVENUE_PER_MODULE_TRUTH_MAP_2026-10-27.md`.
-- Confirmed the live server-priced families: shared Paid Spotlight/Paid Repost
-  visibility credits, Private Vault, extra public shop space, extra member
-  capacity, ROSCA yearly service and Community Meeting Pack. Paid Spotlight
-  and Paid Repost use one credit rail and must not be counted twice.
-- Confirmed Merchant Verification has a real payment and annual entitlement
-  rail, but its frontend supplies GBP 1 while the backend accepts any positive
-  client amount. That is not a safe approved price. Extra shop space is GBP 1
-  per annual unit in runtime while the earlier commercial decision remains
-  unresolved between GBP 1 and GBP 2.
-- Confirmed Community Domain pilot billing is suspended; Additional Trade
-  Records and Advanced Shop Analytics/AI remain planned; TrustSlip core,
-  Public Shop, Shop Update, DemandBox, Bulletin responses and sharing are not
-  direct revenue lines.
-- Confirmed there is no canonical Reel product. Bulletin reaction language
-  exists, but backend notice contracts currently return
-  `reactions_enabled: false`; reactions are not a paid product.
-- Confirmed the central advertiser settlement/payment/delivery-accounting rail
-  exists in the backend, but the house publisher remains quotation-only and no
-  complete ordinary frontend settlement workflow or proven advertiser demand
-  was found.
-- No price, payment route, entitlement, schema, runtime source, commission or
-  forecast was changed by this audit.
+- Updated the repository-backed revenue truth map and added
+  `docs/GSN_PIPELINE_CREDIT_AND_MODULE_PRICING_DECISION_REGISTER_2026-10-27.md`.
+  The register separates confirmed runtime behavior, owner decisions and open
+  choices.
+- Owner decision: Paid Spotlight and Paid Repost are separate revenue lines and
+  delivery methods. Repost is provisionally 50% above the equivalent Spotlight
+  unit and also varies by governed reach. Current runtime still prices both alike.
+- Owner decision: chargeable GSN modules should consume a common, non-cashable
+  Pipeline Credit balance. The top-up is the funding event; consumed value must
+  be attributed to the actual service without counting both events as two sales.
+- Runtime truth: GSN currently has a decimal internal provider/API Pipeline
+  Credit ledger and a separate integer test Member Service Credit ledger.
+  Neither is yet the universal customer credit contract.
+- Owner decision: extra public shop space is provisionally 2 credits per extra
+  space for one year. Runtime remains GBP 1 per annual extra.
+- Owner decision: Community Domain is 10 credits monthly or 99 annually.
+  Domain pilot payment creation remains suspended.
+- Open conflict: Vault runtime is GBP 5 per slot for 30 days, while the owner's
+  latest wording conditionally mentioned GBP 5 per year. Do not migrate it
+  until duration is confirmed.
+- Open price: Merchant Verification has an annual payment/entitlement rail but
+  no preserved approved amount; the current client-supplied GBP 1 is unsafe.
+- Extra DemandBox must use credits, but no paid entitlement or chargeable unit
+  exists. Extra-member pricing also remains to be confirmed.
+- GSN Shop Reel is now defined as a reuse-first promotional compositor built
+  from Shop, Shop Diary, Spotlight, media preparation, Campaign Renderer,
+  public links and Social/WhatsApp Bridge. It is not a new social feed.
+- Bulletin reactions remain organisation utility, not revenue.
+- The central advertiser settlement rail exists, but the house publisher is
+  quotation-only and peak/time/region multipliers are undecided.
+- No runtime price, payment route, entitlement, schema or deployed application
+  behavior changed in this documentation correction.
 
 ## Deployed Bulletin composer unblock and share handoff - 2026-10-27
 

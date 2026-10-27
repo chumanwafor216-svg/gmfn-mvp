@@ -1,6 +1,6 @@
 # GSN Revenue Per Module Truth Map - 2026-10-27
 
-Status: owner decision record and implementation audit. This document does not approve a new price, forecast revenue, activate billing, or authorise a commission.
+Status: living owner decision record and implementation audit. The 2026-10-27 owner corrections below are provisional commercial decisions, not proof of demand, revenue, margin or renewal. This document does not activate billing or authorise a commission.
 
 ## Executive decision
 
@@ -11,6 +11,23 @@ The correct present-tense statement is:
 > GSN has several technically chargeable services, but willingness to pay, conversion, renewal, refunds, support cost and net margin are not yet proven by recorded customer transactions.
 
 No business plan or affiliate reward should treat a module as revenue merely because it has a button, payment instruction, price in code, entitlement, view, reaction, member-to-member sale, or forecast assumption.
+
+## Owner corrections recorded on 2026-10-27
+
+These decisions supersede the earlier interpretation in this file where they conflict:
+
+- GSN intends one common, non-cashable prepaid usage system called **GSN Pipeline Credits** for chargeable GSN services. The planning anchor remains `1 Pipeline Credit = GBP 1 of prepaid usage value`.
+- Paid Spotlight and Paid Repost are **separate revenue lines and separate delivery methods**, even when funded from the same credit balance. Paid Repost has a provisional 50% price premium over the equivalent Paid Spotlight unit, with reach also affecting consumption.
+- Extra public shop space is provisionally **2 Pipeline Credits per additional shop space for one year**, above the six included spaces and subject to the existing four-extra-space cap.
+- Community Domain is provisionally **10 Pipeline Credits monthly or 99 Pipeline Credits annually**.
+- Vault, Merchant Verification, extra member capacity, extra DemandBox capacity and other paid services should ultimately consume Pipeline Credits rather than require a fresh cash payment for each action.
+- Spotlight advertising should ultimately consume credits by governed appearances/rotations, with reach, destination region and selected time affecting the quote. Exact regional and peak-time coefficients are not yet approved.
+- `GSN Shop Reel` means a future shop-promotion package assembled from the existing Shop, Shop Diary, Spotlight, media-preparation, Campaign Renderer, public-link and Social/WhatsApp Bridge engines. It is not a new general-purpose video feed.
+- Bulletin reactions remain an organisation feature, not a revenue product. TrustSlip remains the evidence surface within the Merchant Verification revenue family unless a genuinely additional paid output is later defined.
+
+The prices above express product direction. They are not all live runtime contracts yet.
+
+The detailed price, ledger, regional-pricing and Shop Reel implementation boundary is maintained in `docs/GSN_PIPELINE_CREDIT_AND_MODULE_PRICING_DECISION_REGISTER_2026-10-27.md`.
 
 ## Status language
 
@@ -27,16 +44,21 @@ No business plan or affiliate reward should treat a module as revenue merely bec
 
 | Commercial unit | Payer | Chargeable value | Current price mechanism | Payment and delivery contract | Main delivery cost | Willingness-to-pay evidence | Current verdict |
 |---|---|---|---|---|---|---|---|
-| Paid visibility credits: Paid Spotlight and cross-community Paid Repost | Shop owner | One day of governed paid visibility for one shop item | GBP 1 per credit; each full 6-credit bundle costs GBP 5 | Server-priced expected payment; reconciled payment grants `spotlight_priority`; one credit is consumed per paid day. Paid Repost consumes the same credit rail. | Payment handling, media storage/bandwidth, moderation, delivery measurement, support and disputes | No recorded paid-customer or renewal evidence was found | Live priced contract, but one revenue family, not two |
+| Paid Spotlight | Shop owner | Governed direct paid visibility for one shop item | Current runtime: GBP 1 per day-credit; each full 6-credit bundle costs GBP 5. Provisional future policy: one Pipeline Credit per base governed appearance before approved time/region factors. | Current server-priced expected payment grants and consumes `spotlight_priority`; future appearance-credit consumption is not implemented | Payment handling, media storage/bandwidth, moderation, delivery measurement, support and disputes | No recorded paid-customer or renewal evidence was found | Separate revenue line; current day-credit contract is live, future rotation pricing is not |
+| Paid Repost | Shop owner | Governed placement of a shop item outside its normal/direct community reach | Current runtime incorrectly uses the ordinary Spotlight day-credit price. Owner decision: 50% more than the equivalent Paid Spotlight unit, with reach affecting the final credit debit. | Current runtime consumes `spotlight_priority`; the separate Repost service code and 1.5x/reach quote are not implemented | Payment handling, destination governance, media delivery, moderation, measurement, support and disputes | No recorded paid-customer or renewal evidence was found | Separate revenue line and delivery method; approved provisional premium is not live |
 | Private Vault | Shop owner | One private link-only offer space for 30 days | GBP 5 per slot; maximum 2 active slots | Server-priced expected payment creates a Vault order; confirmed payment activates the selected blocks and link controls | Private media storage, access-link security, bandwidth, expiry, support and disputes | No recorded paid-customer or renewal evidence was found | Live priced pilot contract |
-| Extra public shop space | Shop owner | Capacity above 6 included public items, up to 4 extra items | Current server rail charges GBP 1 per unit; the generic 6-for-GBP-5 bundle cannot be reached within the four-space cap | Expected payment grants annual `extra_shop_block` entitlement; Public Shop capacity reads that entitlement | Storage, bandwidth, moderation, support and payment handling | No recorded paid-customer or renewal evidence was found | Technically live; commercial price decision remains unresolved |
+| Extra public shop space | Shop owner | Capacity above 6 included public items, up to 4 extra items | Owner decision: 2 Pipeline Credits per additional space for one year. Current runtime still charges GBP 1 per unit. | Current expected payment grants annual `extra_shop_block` entitlement; Public Shop capacity reads that entitlement. Credit-wallet purchase is not implemented. | Storage, bandwidth, moderation, support and payment handling | No recorded paid-customer or renewal evidence was found | Commercial amount now provisionally decided; runtime migration remains |
 | Extra community member capacity | Community owner/admin | Additional active member places above the selected package | GBP 1 per unit and GBP 5 per full six-unit bundle | Expected payment grants annual `community_member_capacity` entitlement | Database/storage, traffic, moderation, admin/support and privacy workload | No recorded paid-customer or renewal evidence was found | Live package rail; packaging and buyer value still need validation |
 | ROSCA yearly service | Community owner/admin | Access to deterministic ROSCA cycle records and contribution tracking for one year | GBP 60 for one annual service unit | Expected payment grants annual `rosca_cycle` entitlement; member contributions remain member/community money, not GSN revenue | Support, reconciliation records, dispute burden, security and compliance boundaries | No recorded paid-customer or renewal evidence was found | Live priced contract; must not count member contributions as GSN revenue |
 | Community Meeting Pack | Community owner/admin | Reminder evidence, WhatsApp share text, member notifications and later summary records | GBP 1 per unit and GBP 5 per full six-unit bundle | Expected payment grants annual `community_meeting_pack` units | Notification delivery, storage, support and any future messaging/AI provider cost | No recorded paid-customer or renewal evidence was found | Live package rail; value unit and consumption behavior need field proof |
 
-### Do not double-count visibility
+### Distinct revenue lines without double-counting the credit purchase
 
-Paid Spotlight and Paid Repost are two delivery modes using the same `spotlight_priority` credit and the same server pricing formula. They may be reported as separate usage channels, but they are not independent revenue products in a forecast. One collected credit sale must appear once in revenue.
+Paid Spotlight and Paid Repost are separate products because the payer buys different delivery value. Their consumed credits must post to separate service/revenue codes.
+
+The common Pipeline Credit top-up is only the funding event. Do not count both the top-up and the later module debit as two sales. Commercial reporting should retain the unconsumed balance as outstanding prepaid value and attribute consumed value to the service actually used, subject to professional accounting advice on timing, tax, expiry and refunds.
+
+The present runtime does not satisfy this policy: both modes consume the same integer `spotlight_priority` credit at the same price. A 1.5-credit Repost cannot be represented accurately in that integer ledger.
 
 Free Spotlight is acquisition/retention inventory. It is not revenue. A shop owner's sale after visibility is merchant revenue unless a separate GSN fee was collected.
 
@@ -46,7 +68,7 @@ Free Spotlight is acquisition/retention inventory. It is not revenue. A shop own
 |---|---|---|---|---|
 | Merchant verification | Shop owner/vendor | Expected payment, annual `merchant_verify` entitlement, reconciliation and TrustSlip public-status gating exist | The frontend submits GBP 1, while the backend accepts any positive client-supplied amount. The server has no canonical pricing function. GBP 1 is therefore a mutable implementation value, not an approved or protected price. | Live payment rail; price not safe to forecast or publish as validated |
 | Central advertiser campaign | External advertiser represented by a GSN payer account | Mounted backend supports settlement draft, advertiser expected payment, reconciled receipt, delivery finalisation, deductions and community earnings. Default configured community share is 5% of distributable net. | The house-campaign publisher labels its commercial equivalence as quotation-only and performs no charge. No complete ordinary frontend settlement workflow or customer price card was found. Gross price remains a manual campaign quote. | Backend-ready commercial rail, not proven self-service revenue |
-| Pipeline Credit top-up | Member or community account owner | A confirmed payment can add internal service credits; minimum top-up is GBP 1 | Credit is a funding/usage rail, not a chargeable customer outcome by itself. Cash received for unconsumed service credits should not be casually treated as earned module revenue; accounting treatment needs professional confirmation. | Reusable funding rail, not a standalone revenue module |
+| Pipeline Credit top-up | Member or community account owner | A confirmed payment can create a top-up instruction, but the current `PipelineCreditAccount` is documented as an internal provider/API usage meter. A separate integer-only Member Service Credit account exists for test Spotlight purchasing. | Neither ledger is yet the universal customer prepaid-credit contract described by the owner. Credit is also a funding rail, not a chargeable outcome by itself; unconsumed value must not be casually booked as module revenue. | Product direction approved; one-ledger customer implementation and accounting policy remain incomplete |
 
 ### Merchant verification and TrustSlip boundary
 
@@ -60,7 +82,7 @@ Payment must never be presented as proof that the merchant, identity, goods, lic
 
 | Module | Intended payer and value | Current truth | What must exist before forecasting revenue |
 |---|---|---|---|
-| Community Domain | Organisation, institution, sponsor or agreed third party pays for the governed organisational space and package | Reservation, lifecycle, feature policy, manual-quote and dormant subscription activation contracts exist. Current policy explicitly suspends pilot payment instructions and returns no price. GBP 25/month and other ranges in costing notes are hypotheses, not approved live prices. | Approved package, payer, regional/segment price, renewal, sponsor rule, support limit, activation boundary, recorded acceptance and actual collected payments |
+| Community Domain | Organisation, institution, sponsor or agreed third party pays for the governed organisational space and package | Reservation, lifecycle, feature policy, manual-quote and dormant subscription activation contracts exist. Owner decision: 10 Pipeline Credits monthly or 99 annually. Current policy still suspends pilot payment instructions and returns no price. | Credit-funded server price, package scope, payer, regional conversion, renewal, sponsor rule, grace/transition rule, support limit, activation boundary, recorded acceptance and actual collected payments |
 | Additional Trade Records | Shop owner or organisation pays for additional protected evidence capacity | Current Trade Records remain available; no paid additional-record entitlement or price is connected | Capacity unit, retention/storage cost, free allowance, entitlement, price and buyer test |
 | Advanced Shop Analytics and AI | Shop owner, Community Domain or sponsor pays for deeper decision support beyond current Shop Activity and Market Wisdom teaser | Opportunity/analytics concept exists, but no paid price, entitlement or connected AI provider exists | Named output, data boundary, provider and human-review cost, usage cap, entitlement, price and willingness-to-pay test |
 | External verification credits | Member, organisation, vendor or sponsor pays for third-party ID/document checks | Costing model describes it; no external verification provider is connected | Provider, exact cost, consent, compliance, failure/refund rule, credit debit and payer commitment |
@@ -72,7 +94,7 @@ Payment must never be presented as proof that the merchant, identity, goods, lic
 | Module or label | Repository truth | Correct business treatment |
 |---|---|---|
 | Public Shop | Six public item spaces are included; shop sales are not GSN sales | Acquisition, merchant utility and retention. Revenue comes only from a separately collected add-on such as extra capacity, Vault or visibility. |
-| Reel | No canonical Reel route, model, service, screen contract or handoff contract was found | Do not add a Reel revenue line. Existing video belongs to Shop/Spotlight/media preparation until the owner approves a distinct product. |
+| GSN Shop Reel | The intended product is now defined, but no canonical route/model/service exists. Existing Shop/Public Shop, Shop Diary, Spotlight, media preparation, Campaign Renderer, public share cards/links and Social/WhatsApp Bridge provide reusable parts. | Treat it as a planned acquisition/promotion compositor, not a standalone social feed. Do not forecast Reel revenue until basic versus paid export value, render cost, entitlement and buyer evidence are defined. |
 | Reactions | Bulletin interface language exists, but backend notice payloads return `reactions_enabled: false` | Engagement idea only; no charge, entitlement or direct revenue. Acknowledgement, availability and choice polls are distinct governed response engines. |
 | Shop Update / Shop Diary | Live 24-hour text update and optional handoff into the existing Spotlight publisher | Free retention/communication feature. Only the separately confirmed paid Spotlight action can create platform revenue. |
 | Bulletin, polls and acknowledgements | Community coordination and response statistics | Included Community Domain utility. Do not charge separately while presenting them as included domain basics. |
@@ -130,21 +152,23 @@ Views, members, posts, reactions, TrustSlips, payment instructions and merchant 
 1. Fix merchant verification so the server owns an approved price or blocks payment while pricing is undecided.
 2. Test one existing low-risk paid product with real buyers. Paid visibility credits are the cleanest candidate because price, payment, entitlement and consumption already connect.
 3. Test Vault separately because its value and 30-day delivery unit differ from visibility.
-4. Treat Paid Spotlight and Paid Repost as one paid-visibility credit family in accounting, while measuring usage by delivery mode.
-5. Keep Community Domain payment suspended until the owner approves a package and a real organisation or sponsor accepts it.
+4. Test Paid Spotlight and Paid Repost as separate service lines funded from the common credit balance. Do not count both the top-up and credit consumption as separate revenue.
+5. Keep Community Domain payment suspended until the 10-credit monthly / 99-credit annual package is implemented safely and a real organisation or sponsor accepts it.
 6. Connect the existing central-advertising settlement rail to a governed admin workflow only after GSN has permitted audience, brand-safety, delivery and pricing evidence.
-7. Do not build Reel, paid reactions, additional Trade Records or Advanced Analytics billing before the incremental paid value is defined and tested.
+7. Prototype GSN Shop Reel by composing the existing Shop, media, renderer and share engines. Do not create a new feed or paid entitlement until the output and incremental value are tested.
 8. Select any Growth Partner reward only from collected, non-refunded contribution margin of one approved product. Do not reward raw traffic, registration or member-to-member sales.
 
 ## Immediate owner decisions
 
 The next decisions are deliberately small:
 
-- approve, change or pause the current merchant verification GBP 1 annual amount, then move the price to a server-owned rule;
-- confirm whether extra public shop space is intentionally GBP 1 per annual slot in the current runtime, because earlier pricing notes still describe GBP 1 versus GBP 2 as unresolved;
+- choose the Merchant Verification annual credit amount, then move the price to a server-owned rule;
+- confirm whether Vault remains 5 credits per 30 days or becomes 5 credits per year;
+- migrate extra public shop space from the current GBP 1 runtime amount to the owner-approved provisional 2-credit annual amount only after the canonical credit ledger is chosen;
+- define the chargeable unit for extra DemandBox capacity and confirm extra-member pricing;
 - choose one first paid-value test: paid visibility credits or Vault;
 - decide whether central advertising remains operator-quoted or needs a standard pilot package;
-- keep Community Domain pricing in discovery until one named buyer, sponsor or budget-holder accepts a defined package.
+- keep Community Domain billing paused until its credit-funded package is safe and one named buyer, sponsor or budget-holder accepts it.
 
 ## Source-of-truth files inspected
 

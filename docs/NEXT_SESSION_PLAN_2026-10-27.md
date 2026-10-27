@@ -263,16 +263,23 @@ Truth boundaries:
 - treat `Reel` and `reactions` as owner-supplied module names until code and
   documentation confirm their exact product meaning
 
-Completed result:
-- no canonical Reel product exists; existing video belongs to Shop,
-  Spotlight and media-preparation engines
+Completed result after the owner correction:
+- the owner defined GSN Shop Reel as a future reusable shop-promotion package
+  composed from Shop, media, Campaign Renderer and Social/WhatsApp Bridge, not a
+  new social feed
 - Bulletin reactions are not enabled by the backend and are not a paid module
-- Paid Spotlight and Paid Repost are one paid-visibility credit family and
-  must not be double-counted
-- Merchant Verification has payment/entitlement plumbing but no safe
-  server-owned approved price
-- Community Domain billing remains suspended; Additional Trade Records and
-  Advanced Shop Analytics/AI remain planned
+- Paid Spotlight and Paid Repost are separate revenue lines and delivery
+  methods; Repost is provisionally 50% above equivalent Spotlight and also
+  depends on reach, while current runtime still prices both alike
+- the common Pipeline Credit balance is a funding rail, but the repo currently
+  has two non-equivalent credit ledgers and neither is the completed universal
+  customer service-credit contract
+- extra shop space is provisionally 2 credits per additional space per year;
+  Community Domain is 10 credits monthly or 99 annually, while Domain pilot
+  billing remains suspended
+- Vault remains 5 GBP per 30 days in runtime, conflicting with the owner's
+  conditional 5-per-year wording; Merchant Verification has no preserved safe
+  owner-approved price
 - willingness to pay and net margin remain unproven until reconciled payments,
   renewals, refunds and delivery costs are measured
 
