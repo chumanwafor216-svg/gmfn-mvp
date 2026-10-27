@@ -8,7 +8,7 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
-## Local Bulletin public-audience poll correction - 2026-10-27
+## Deployed Bulletin public-audience poll correction - 2026-10-27
 
 - The existing Community Bulletin poll composer now includes `Who can vote?`
   with `Community members only` as the safe default and `Anyone with the
@@ -35,8 +35,13 @@ under `docs/` or `docs/archive/`, then link that file here.
   `20261027_notice_public_poll`, the WhatsApp/Bulletin contract audit and full
   protected-button/frozen-surface audit pass, the 295-module production build
   passes, and the extended 390x844 phone smoke passes for both authenticated
-  Community Home polling and signed-out public-link polling. This package is
-  local and not deployed yet.
+  Community Home polling and signed-out public-link polling. A fresh SQLite
+  migration rehearsal reached the new head successfully.
+- Exact application commit
+  `2b41caabf85cbf438ce3820b06e4560c768489c0` was pushed to the pilot branch
+  and `main`. Backend CI run `40506695922` passed. Render workflow
+  `40506954539` completed successfully after the exact frontend and API
+  deploys became live and the workflow's live API identity checks passed.
 
 ## Deployed Shop paid-services consolidation - 2026-10-27
 
