@@ -51,7 +51,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   recorded in the milestone sections below. Continue locally and deploy only
   when the owner explicitly says `deploy`.
 
-## Local Community Bulletin poll response correction - 2026-10-27
+## Deployed Community Bulletin poll response correction - 2026-10-27
 
 - Extended the already-deployed custom-choice poll without creating a new
   engine, table or migration. The creator now chooses `Choose one answer` or
@@ -76,8 +76,16 @@ under `docs/` or `docs/archive/`, then link that file here.
   TypeScript/Vite production build passes. The 390x844
   Community Home phone smoke proves Friday and Sunday create no write before
   `OK`, then produce one request containing both choices without horizontal
-  overflow. This correction is local and must not be described as deployed
-  until it is committed, pushed and the Render deployment is verified.
+  overflow.
+- Deployed exact release commit `f4d26c28dfab52e0fc514304c4bcd748e8657cd2`
+  to both the working branch and `main`. Backend CI run `40497751630` passed.
+  API-enabled Render workflow run `40498056230` completed successfully after
+  the exact frontend and API deploys became live and its public checks passed.
+  Independent post-live checks returned API health `ok`, found both
+  `/community-notices/{notice_event_id}/poll-response` and
+  `/community-notices/{notice_event_id}/poll-roll-call` in live OpenAPI, and
+  found the new poll UI markers in the deployed Community Home and composer
+  bundles.
 
 ## Community announcement package and custom-choice poll - 2026-10-27
 
