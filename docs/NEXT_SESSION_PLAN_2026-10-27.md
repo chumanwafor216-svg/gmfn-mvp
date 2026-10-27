@@ -121,6 +121,10 @@ Candidate outcome to validate, not assume:
 
 ### 4. Define the GSN Growth Partner acquisition model
 
+Status: commercial and implementation-readiness model completed locally on
+2026-10-27; no partner enrolment, reward, payout, advertising authority,
+schema, route or UI behavior changed.
+
 Timing: deferred to the end-of-day strategy close; do not implement it while
 the current product queue is being resumed.
 
@@ -197,6 +201,24 @@ Truth boundaries:
 - never describe a recruitment chain as entrepreneurship or affiliate marketing
 - do not expose participant activation details to the introducer beyond the
   minimum status required for a transparent reward decision
+
+Model result:
+
+- Independent Entrepreneurs remain sellers/operators of their own genuine
+  activity; they are not automatically GSN affiliates.
+- `GSN Growth Partner` is the introducer umbrella. `GSN Affiliate Partner`
+  applies only to a separately approved performance-advertising contract with
+  a trackable source and an eligible collected GSN platform sale.
+- The existing participant-controlled attribution spine is reusable, but GSN
+  has no connected frontend partner surface, signed social-source contract,
+  eligible-sale link, reward ledger, reversal handling or affiliate payout
+  engine.
+- The recommended pilot is invite-only, single-tier and first-sale only. It
+  pays nothing for clicks, registrations, ordinary membership, free activity,
+  member-to-member trade or recruitment of another partner.
+- No eligible product or public reward is approved until revenue-per-module
+  work proves net platform revenue and maximum affordable acquisition cost.
+- Full model: `GSN_GROWTH_PARTNER_MODEL_2026-10-27.md`.
 
 ### 5. Map revenue per module
 

@@ -8,6 +8,26 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local GSN Growth Partner model - 2026-10-27
+
+- Completed the truth test: Independent Entrepreneurs cannot all be called
+  affiliate marketers. `GSN Growth Partner` is the introducer umbrella;
+  `GSN Affiliate Partner` is reserved for an approved performance-advertising
+  and commission contract.
+- Confirmed the mounted Network Growth Attribution routes already provide
+  self-claim prevention, participant accept/challenge authority, one accepted
+  introducer, verified invite evidence and bounded activation evidence. They
+  deliberately create no commission or payout, and no frontend Growth Partner
+  surface connects them.
+- Defined a single-tier, invite-only first-sale pilot boundary. No reward is
+  allowed for clicks, raw registrations, ordinary membership, free activity,
+  member-to-member trade or recruiting another partner. No product or amount
+  is approved until revenue-per-module work proves net platform revenue.
+- Recorded current UK disclosure, privacy/PECR, employment-status, tax, fraud,
+  reversal, visibility, ledger and implementation gates. No runtime, schema,
+  route, permission, payment, payout or advertising behavior changed.
+- Full record: `docs/GSN_GROWTH_PARTNER_MODEL_2026-10-27.md`.
+
 ## Local empty-owner Public Shop guidance - 2026-10-27
 
 - Owner-approved change implemented locally on the canonical Public Shop Products & Services shelf.
