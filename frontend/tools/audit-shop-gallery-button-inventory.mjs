@@ -354,12 +354,12 @@ assertContains(
 );
 
 assertContains(
-  /const nextEmptyProductSlot = useMemo\([\s\S]*?focusedBlockLinkActive[\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\][\s\S]*?const visitorOpeningSoonSlot =/,
+  /const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;[\s\S]*?products\.slice\(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT\)[\s\S]*?const nextEmptyProductSlot = useMemo\([\s\S]*?focusedBlockLinkActive[\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const progressiveEmptySlotVisible =[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\][\s\S]*?const visitorOpeningSoonSlot =/,
   "Public Shop must derive one progressive next-empty space from the existing authoritative slot capacity for either owner or visitor presentation."
 );
 
 assertContains(
-  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?Tap to start selling[\s\S]*?This space is empty/,
+  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?Tap to start selling[\s\S]*?Awaiting your product/,
   "The owner's single progressive plus must hand the exact next empty slot to the existing Shop Control item workflow with clear first and follow-on language."
 );
 
@@ -369,8 +369,13 @@ assertContains(
 );
 
 assertContains(
-  /visitorOpeningSoonSlot[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?<GSNBrandMark[\s\S]*?Shop opening soon[\s\S]*?The owner is preparing this space\.[\s\S]*?ownerEmptyProductSlots\.map/,
-  "Visitors must receive one passive GSN opening-soon poster in the next empty space while owner creation remains a separate control."
+  /visitorOpeningSoonSlot[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?<GSNBrandMark[\s\S]*?Product coming soon[\s\S]*?The owner is preparing this space\.[\s\S]*?ownerEmptyProductSlots\.map/,
+  "Visitors must receive one passive GSN product-coming-soon poster in the next empty space while owner creation remains a separate control."
+);
+
+assertContains(
+  /const hiddenShelfEntryCount =[\s\S]*?products\.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?nextEmptyProductSlot[\s\S]*?hiddenShelfEntryCount > 0 \|\| showAllProducts[\s\S]*?`Show \$\{hiddenShelfEntryCount\} more`/,
+  "Public Shop must show at most six shelf entries before one truthful Show more control, including a hidden progressive next space in its count."
 );
 
 assertNotContains(
@@ -379,7 +384,7 @@ assertNotContains(
 );
 
 assertContains(
-  /function publicShopBlockLabel\(product: ShopProduct\): string \{[\s\S]*?return `Shop item \$\{product\.slotNumber\}`;[\s\S]*?"1 shop item showing"[\s\S]*?`\$\{publicBlockCount\} shop items showing`[\s\S]*?"Shared item"/,
+  /function publicShopBlockLabel\(product: ShopProduct\): string \{[\s\S]*?return `Shop item \$\{product\.slotNumber\}`;[\s\S]*?"1 shop item"[\s\S]*?`\$\{publicBlockCount\} shop items`[\s\S]*?"Shared item"/,
   "Public Shop counts, focused labels, and shared-product labels must use shop-item language instead of exposing internal block terms."
 );
 

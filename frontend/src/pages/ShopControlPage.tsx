@@ -563,7 +563,7 @@ type NoticeTone = "success" | "error" | "info";
 type SpotlightFeedbackState = ShopControlSpotlightFeedback;
 
 const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 1;
-const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 9;
+const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 11;
 const PUBLIC_SHOP_MAX_SLOT_COUNT =
   PUBLIC_SHOP_STANDARD_SLOT_COUNT + PUBLIC_SHOP_EXTRA_SLOT_LIMIT;
 

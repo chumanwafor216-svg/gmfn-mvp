@@ -722,10 +722,21 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     state: 'visible',
     timeout: 20_000,
   });
-  await visitor.page.getByText('Shop opening soon', { exact: true }).waitFor({
+  await visitor.page.getByText('Product coming soon', { exact: true }).waitFor({
     state: 'visible',
     timeout: 20_000,
   });
+  const emptyVisitorGridBox = await visitor.page.locator('.shop-diaries-grid').boundingBox();
+  const emptyVisitorPosterBox = await visitor.page
+    .locator('[data-visitor-opening-soon-space="1"]')
+    .boundingBox();
+  if (
+    !emptyVisitorGridBox ||
+    !emptyVisitorPosterBox ||
+    emptyVisitorPosterBox.width < emptyVisitorGridBox.width * 0.9
+  ) {
+    throw new Error('An empty visitor shop did not give its single coming-soon card both columns.');
+  }
   if (await visitor.page.locator('[data-owner-empty-shop-space]').count()) {
     throw new Error('A non-owner received owner shop-space creation controls.');
   }
@@ -773,10 +784,62 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   await progressingVisitor.page
     .locator('[data-visitor-opening-soon-space="2"]')
     .waitFor({ state: 'visible', timeout: 20_000 });
+  const firstProductBox = await progressingVisitor.page.locator('#shop-block-1').boundingBox();
+  const pairedPosterBox = await progressingVisitor.page
+    .locator('[data-visitor-opening-soon-space="2"]')
+    .boundingBox();
+  const progressingGridBox = await progressingVisitor.page.locator('.shop-diaries-grid').boundingBox();
+  if (
+    !firstProductBox ||
+    !pairedPosterBox ||
+    !progressingGridBox ||
+    pairedPosterBox.width > progressingGridBox.width * 0.6 ||
+    Math.abs(firstProductBox.y - pairedPosterBox.y) > 4
+  ) {
+    throw new Error('One product and its next coming-soon space did not form one paired row.');
+  }
   if (await progressingVisitor.page.locator('[data-visitor-opening-soon-space="1"]').count()) {
     throw new Error('Visitor opening-soon poster did not advance after shop space 1 was filled.');
   }
   await progressingVisitor.context.close();
+
+  const twelveItemVisitorScenario = {
+    ...visitorScenario,
+    emptyShop: false,
+    shopProductSlotsTotal: 12,
+    publicProducts: Array.from({ length: 12 }, (_, index) => ({
+      ...product,
+      id: 800 + index,
+      name: `Shop item ${index + 1}`,
+      description: `[BLOCK:${index + 1}] Public shop item ${index + 1}.`,
+      public_block_number: index + 1,
+    })),
+    mutations: [],
+  };
+  const twelveItemVisitor = await newPhonePage(browser, twelveItemVisitorScenario);
+  await twelveItemVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await twelveItemVisitor.page.getByRole('button', { name: 'Show 6 more', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await twelveItemVisitor.page.locator('[id^="shop-block-"]').count() !== 6) {
+    throw new Error('Public Shop did not keep the first phone shelf to six product cards.');
+  }
+  await twelveItemVisitor.page.getByRole('button', { name: 'Show 6 more', exact: true }).click();
+  await twelveItemVisitor.page.locator('#shop-block-12').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await twelveItemVisitor.page.locator('[id^="shop-block-"]').count() !== 12) {
+    throw new Error('Public Shop did not reveal all twelve entitled product cards.');
+  }
+  if (await twelveItemVisitor.page.locator('[data-visitor-opening-soon-space]').count()) {
+    throw new Error('A full twelve-space shop exposed a thirteenth coming-soon poster.');
+  }
+  await twelveItemVisitor.context.close();
 
   const backendOwnerScenario = {
     ...scenario,
@@ -1379,6 +1442,8 @@ try {
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
       'Public Shop exposes one free progressive space, no unentitled second-space prompt, and space 2 only when paid capacity is reported',
+      'an empty next-space card spans both columns while one product and its next space form one paired row',
+      'the Public Shop shows six cards first, reveals all twelve through Show 6 more, and exposes no thirteenth prompt',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',

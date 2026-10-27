@@ -247,8 +247,9 @@ type ShopIconName = LegacyShopIconName | Gsn3DIconKey;
 type NoticeTone = "success" | "error";
 
 const GALLERY_STANDARD_SLOTS_TOTAL = 1;
-const GALLERY_EXTRA_SLOTS_LIMIT = 9;
+const GALLERY_EXTRA_SLOTS_LIMIT = 11;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
+const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
@@ -3676,12 +3677,6 @@ export default function ShopGalleryPage() {
   }, [effectiveShop?.id]);
 
   useEffect(() => {
-    if (products.length <= gallerySlotsTotal && showAllProducts) {
-      setShowAllProducts(false);
-    }
-  }, [gallerySlotsTotal, products.length, showAllProducts]);
-
-  useEffect(() => {
     if (
       openProductId !== null &&
       !products.some((product) => (product.id ?? product.slotNumber) === openProductId)
@@ -3720,12 +3715,10 @@ export default function ShopGalleryPage() {
 
   const visibleProducts = useMemo(() => {
     if (focusedBlockLinkActive) return focusedBlockProduct ? [focusedBlockProduct] : [];
-    return showAllProducts ? products : products.slice(0, gallerySlotsTotal);
-  }, [focusedBlockLinkActive, focusedBlockProduct, gallerySlotsTotal, products, showAllProducts]);
-
-  const overflowProductCount = focusedBlockLinkActive
-    ? 0
-    : Math.max(0, products.length - gallerySlotsTotal);
+    return showAllProducts
+      ? products
+      : products.slice(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT);
+  }, [focusedBlockLinkActive, focusedBlockProduct, products, showAllProducts]);
 
   const liveShopDiaryEntries = useMemo(() => {
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -4488,10 +4481,26 @@ export default function ShopGalleryPage() {
       ).find((slotNumber) => !occupiedSlots.has(slotNumber)) || 0
     );
   }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
+  const progressiveEmptySlotVisible = Boolean(
+    nextEmptyProductSlot &&
+      (showAllProducts || products.length < GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
+  );
   const ownerEmptyProductSlots =
-    signedInOwnsShop && nextEmptyProductSlot ? [nextEmptyProductSlot] : [];
+    signedInOwnsShop && progressiveEmptySlotVisible ? [nextEmptyProductSlot] : [];
   const visitorOpeningSoonSlot =
-    !signedInOwnsShop && nextEmptyProductSlot ? nextEmptyProductSlot : 0;
+    !signedInOwnsShop && progressiveEmptySlotVisible ? nextEmptyProductSlot : 0;
+  const progressiveSlotSpansPair = visibleProducts.length % 2 === 0;
+  const hiddenShelfEntryCount = focusedBlockLinkActive
+    ? 0
+    : Math.max(0, products.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT) +
+      (nextEmptyProductSlot && products.length >= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT ? 1 : 0);
+
+  useEffect(() => {
+    const totalShelfEntries = products.length + (nextEmptyProductSlot ? 1 : 0);
+    if (totalShelfEntries <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT && showAllProducts) {
+      setShowAllProducts(false);
+    }
+  }, [nextEmptyProductSlot, products.length, showAllProducts]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
@@ -4642,19 +4651,19 @@ export default function ShopGalleryPage() {
     shopDescriptionText.toLowerCase() !== shopCategoryText.toLowerCase();
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
-  const publicBlockCount = Math.min(products.length, gallerySlotsTotal);
+  const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
   const publicBlockText = autoRefreshingShop
     ? "Reconnecting shop"
     : shopLoadFailed
     ? "Shop not connected"
     : publicBlockCount === 1
-      ? "1 shop item showing"
-      : `${publicBlockCount} shop items showing`;
+      ? "1 shop item"
+      : `${publicBlockCount} shop items`;
   const shopDiaryCounterText = autoRefreshingShop
     ? "Refreshing"
     : shopLoadFailed
     ? "Needs refresh"
-    : `${publicBlockCount}/${gallerySlotsTotal}`;
+    : `${publicBlockCount} ${publicBlockCount === 1 ? "item" : "items"}`;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
@@ -8139,14 +8148,21 @@ export default function ShopGalleryPage() {
               {visitorOpeningSoonSlot ? (
                 <article
                   aria-label={
-                    "GSN shop opening soon, shop space " + visitorOpeningSoonSlot
+                    "GSN product coming soon, shop space " + visitorOpeningSoonSlot
                   }
                   data-visitor-opening-soon-space={visitorOpeningSoonSlot}
                   style={{
+                    gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                     width: "100%",
                     minWidth: 0,
                     minHeight: isCompact ? 258 : 300,
-                    aspectRatio: isCompact ? "0.72 / 1" : "1.22 / 1",
+                    aspectRatio: progressiveSlotSpansPair
+                      ? isCompact
+                        ? "1.55 / 1"
+                        : "2.5 / 1"
+                      : isCompact
+                        ? "0.72 / 1"
+                        : "1.22 / 1",
                     borderRadius: isCompact ? 18 : 20,
                     padding: isCompact ? 14 : 18,
                     display: "flex",
@@ -8199,7 +8215,7 @@ export default function ShopGalleryPage() {
                       lineHeight: 1.12,
                     }}
                   >
-                    Shop opening soon
+                    Product coming soon
                   </strong>
                   <span
                     style={{
@@ -8232,10 +8248,17 @@ export default function ShopGalleryPage() {
                     data-owner-empty-shop-space={slotNumber}
                     data-owner-empty-shop-primary={isFirstShopStep ? "true" : "false"}
                     style={{
+                      gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                       width: "100%",
                       minWidth: 0,
                       minHeight: isCompact ? 258 : 300,
-                      aspectRatio: isCompact ? "0.72 / 1" : "1.22 / 1",
+                      aspectRatio: progressiveSlotSpansPair
+                        ? isCompact
+                          ? "1.55 / 1"
+                          : "2.5 / 1"
+                        : isCompact
+                          ? "0.72 / 1"
+                          : "1.22 / 1",
                       borderRadius: isCompact ? 18 : 20,
                       padding: isCompact ? 14 : 18,
                       display: "flex",
@@ -8299,7 +8322,9 @@ export default function ShopGalleryPage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      {isFirstShopStep ? "Tap to start selling" : "This space is empty"}
+                      {isFirstShopStep
+                        ? "Tap to start selling"
+                        : "Awaiting your product"}
                     </span>
                   </StableCtaLink>
                 );
@@ -8307,7 +8332,7 @@ export default function ShopGalleryPage() {
             </div>
           )}
 
-          {overflowProductCount > 0 ? (
+          {hiddenShelfEntryCount > 0 || showAllProducts ? (
             <SecondaryButton
               onClick={() => setShowAllProducts((current) => !current)}
               fullWidth
@@ -8319,7 +8344,7 @@ export default function ShopGalleryPage() {
                 marginTop: 14,
               }}
             >
-              {showAllProducts ? "Show less" : `Show ${overflowProductCount} more`}
+              {showAllProducts ? "Show less" : `Show ${hiddenShelfEntryCount} more`}
             </SecondaryButton>
           ) : null}
         </section>

@@ -150,9 +150,9 @@ assertContains(
   assertContains(
     file,
     new RegExp(
-      `const ${freeConstant} = 1;[\\s\\S]*?const ${paidConstant} = 9;`
+      `const ${freeConstant} = 1;[\\s\\S]*?const ${paidConstant} = 11;`
     ),
-    `${file} must keep one free public shop space and up to nine paid spaces within the ten-space ceiling.`
+    `${file} must keep one free public shop space and up to eleven paid spaces within the twelve-space ceiling.`
   );
 });
 

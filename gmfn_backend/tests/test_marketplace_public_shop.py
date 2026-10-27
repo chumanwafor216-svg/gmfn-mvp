@@ -3899,7 +3899,7 @@ def test_public_gallery_reads_hide_older_duplicate_active_numbered_blocks(
     ]
 
 
-def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
+def test_public_gallery_extra_shop_block_entitlement_clamps_at_twelve(
     client,
     override_current_user_user,
 ):
@@ -3956,7 +3956,7 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
                     payment_reference
                 ) VALUES (
                     1, 2, 1, 1, 'extra_shop_block', 'extra_shop_blocks',
-                    3, 0, 'active', :starts_at, :expires_at,
+                    30, 0, 'active', :starts_at, :expires_at,
                     'GMFN-EXTRA-BLOCKS'
                 )
                 """
@@ -3991,8 +3991,8 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Fourth block",
-            "description": "[BLOCK:4] Paid extra slot",
+            "name": "Twelfth block",
+            "description": "[BLOCK:12] Paid extra slot",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -4001,10 +4001,26 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     )
     assert create_res.status_code == 200, create_res.text
     item = create_res.json()["item"]
-    assert item["public_block_number"] == 4
+    assert item["public_block_number"] == 12
     assert item["shop_product_slots_free"] == 1
-    assert item["shop_product_slots_extra"] == 3
-    assert item["shop_product_slots_total"] == 4
+    assert item["shop_product_slots_extra"] == 11
+    assert item["shop_product_slots_total"] == 12
+
+    over_limit_res = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "name": "Thirteenth block",
+            "description": "[BLOCK:13] Beyond the shop ceiling",
+            "price": "3000",
+            "currency": "NGN",
+            "image_url": "/uploads/marketplace/images/over-limit.jpg",
+            "visibility_mode": "community_visible",
+        },
+    )
+    assert over_limit_res.status_code == 400, over_limit_res.text
+    assert "Maximum of 12 community-visible products" in over_limit_res.json()["detail"]
 
 
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):
