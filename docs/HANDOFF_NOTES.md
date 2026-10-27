@@ -12,21 +12,24 @@ This file is the compact current-state handoff required by `README.md` and
   The register separates confirmed runtime behavior, owner decisions and open
   choices.
 - Owner decision: Paid Spotlight and Paid Repost are separate revenue lines and
-  delivery methods. Repost is provisionally 50% above the equivalent Spotlight
-  unit and also varies by governed reach. Current runtime still prices both alike.
+  delivery methods. Both must consume Pipeline Credits, but neither future debit
+  is fixed. Current runtime still prices both alike.
 - Owner decision: chargeable GSN modules should consume a common, non-cashable
   Pipeline Credit balance. The top-up is the funding event; consumed value must
   be attributed to the actual service without counting both events as two sales.
+- The exchange rate is deliberately undecided. Approximately five Pipeline
+  Credits per GBP 1 is a working thought, not an approved conversion. Likewise,
+  one credit for a day of normal Spotlight and five credits for Repost reach
+  across five average communities or a target region are discovery examples,
+  not prices.
 - Runtime truth: GSN currently has a decimal internal provider/API Pipeline
   Credit ledger and a separate integer test Member Service Credit ledger.
   Neither is yet the universal customer credit contract.
-- Owner decision: extra public shop space is provisionally 2 credits per extra
-  space for one year. Runtime remains GBP 1 per annual extra.
-- Owner decision: Community Domain is 10 credits monthly or 99 annually.
-  Domain pilot payment creation remains suspended.
-- Open conflict: Vault runtime is GBP 5 per slot for 30 days, while the owner's
-  latest wording conditionally mentioned GBP 5 per year. Do not migrate it
-  until duration is confirmed.
+- Extra shop/member/DemandBox capacity, Community Domain, Vault, Merchant
+  Verification, ROSCA and Meeting Pack must use Pipeline Credits, but their
+  debit, duration and renewal units remain open. Historical/runtime cash amounts
+  are evidence, not approved future credit prices. Domain pilot payment creation
+  remains suspended.
 - Open price: Merchant Verification has an annual payment/entitlement rail but
   no preserved approved amount; the current client-supplied GBP 1 is unsafe.
 - Extra DemandBox must use credits, but no paid entitlement or chargeable unit
@@ -37,8 +40,34 @@ This file is the compact current-state handoff required by `README.md` and
 - Bulletin reactions remain organisation utility, not revenue.
 - The central advertiser settlement rail exists, but the house publisher is
   quotation-only and peak/time/region multipliers are undecided.
+- Customer discovery must set regional service debits using the buyer, region,
+  interest/use case, governed reach and delivery cost. A regional-credit design
+  must also prevent cash-out, transfer and cross-region arbitrage.
 - No runtime price, payment route, entitlement, schema or deployed application
   behavior changed in this documentation correction.
+
+## Verified local Bulletin voting-audience visibility correction - 2026-10-27
+
+- Investigation proved the public-link poll engine was not removed. The
+  deployed frontend bundle, frontend payload, backend create/list/response
+  routes and focused tests already supported creator-selected `members` or
+  `public_link` voting. The defect was discoverability: the choice sat inside a
+  normal dropdown and was easy to miss.
+- The existing dropdown is now two visible choices: `Members only` and
+  `Anyone with the link`. Selecting the latter also preserves the existing
+  public-link/QR enablement and explains that outsiders may vote from the shared
+  announcement but cannot post announcements or enter private community areas.
+- No new poll engine, public-posting permission, membership bypass, response
+  accounting, schema, API route or Dashboard Market Wisdom behavior was added
+  or changed. Existing notices retain the audience selected when they were
+  created; this correction does not silently convert older member-only polls.
+- Verification passed targeted ESLint, the WhatsApp Bridge contract audit, all
+  36 focused Community Notice backend tests, the 295-module production build,
+  the complete protected-button/frozen-surface audit and the 390x844 Community
+  Home phone smoke. The phone smoke proves the public choice activates and the
+  anonymous public poll path remains usable. Its PNG was generated, but the
+  local image-viewer was blocked by the Windows split-root sandbox, so no
+  separate human visual inspection is claimed.
 
 ## Deployed Bulletin composer unblock and share handoff - 2026-10-27
 

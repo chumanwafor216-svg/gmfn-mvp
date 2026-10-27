@@ -606,22 +606,42 @@ export default function CommunityNoticeModal({
             {pollEnabled ? (
               <div style={attachmentPanelStyle} data-debug-id="community-notice-modal.poll-panel">
                 <div style={fieldGroupStyle}>
-                  <label style={fieldLabelStyle} htmlFor="community-notice-poll-audience">
-                    Who can vote?
-                  </label>
-                  <select
-                    id="community-notice-poll-audience"
-                    value={pollAudience}
-                    onChange={(event) => {
-                      const audience = event.target.value as "members" | "public_link";
-                      setPollAudience(audience);
-                      if (audience === "public_link") setPublicQrEnabled(true);
-                    }}
-                    style={fieldStyle}
+                  <div style={fieldLabelStyle}>Who can vote?</div>
+                  <div
+                    role="group"
+                    aria-label="Who can vote?"
+                    data-debug-id="community-notice-modal.poll-audience"
+                    style={pollAudienceGridStyle}
                   >
-                    <option value="members">Community members only</option>
-                    <option value="public_link">Anyone with the announcement link</option>
-                  </select>
+                    <StableButton
+                      type="button"
+                      kind={pollAudience === "members" ? "primary" : "secondary"}
+                      aria-pressed={pollAudience === "members"}
+                      onClick={() => setPollAudience("members")}
+                      debugId="community-notice-modal.poll-audience.members"
+                      stableHeight={52}
+                    >
+                      Members only
+                    </StableButton>
+                    <StableButton
+                      type="button"
+                      kind={pollAudience === "public_link" ? "primary" : "secondary"}
+                      aria-pressed={pollAudience === "public_link"}
+                      onClick={() => {
+                        setPollAudience("public_link");
+                        setPublicQrEnabled(true);
+                      }}
+                      debugId="community-notice-modal.poll-audience.public-link"
+                      stableHeight={52}
+                    >
+                      Anyone with the link
+                    </StableButton>
+                  </div>
+                  <p style={attachmentHelpStyle}>
+                    {pollAudience === "public_link"
+                      ? "People outside the community can vote from the shared announcement. They cannot post announcements or enter private community areas."
+                      : "Only signed-in active community members can vote."}
+                  </p>
                 </div>
                 <div style={fieldGroupStyle}>
                   <label style={fieldLabelStyle} htmlFor="community-notice-poll-selection-mode">
@@ -895,6 +915,12 @@ const fieldLabelStyle: React.CSSProperties = {
   color: "#48657D",
   fontSize: 12,
   fontWeight: 900,
+};
+
+const pollAudienceGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 8,
 };
 
 const fieldStyle: React.CSSProperties = {

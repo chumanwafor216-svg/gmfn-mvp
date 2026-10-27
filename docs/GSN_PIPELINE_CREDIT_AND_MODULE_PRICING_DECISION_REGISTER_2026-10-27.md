@@ -1,6 +1,6 @@
 # GSN Pipeline Credit And Module Pricing Decision Register - 2026-10-27
 
-Status: provisional owner decisions plus implementation-gap audit. These amounts structure customer discovery. They do not prove willingness to pay, renewal, revenue, margin or regional affordability.
+Status: owner-approved payment-model direction plus implementation-gap audit. Credit value and module debit amounts remain deliberately unfixed pending regional customer discovery.
 
 ## Commercial model
 
@@ -14,7 +14,7 @@ Customer pays GSN
   -> GSN reports consumed value by service line
 ```
 
-One Pipeline Credit currently has the planning value of GBP 1. Credits are usage rights, not money, savings, a bank balance, lending or a cash-out product. Transfers between users are not approved.
+The cash value of one Pipeline Credit is not decided. The owner's current working thought is approximately five Pipeline Credits per GBP 1, but this is an example for later testing, not an approved exchange rate. Credits are usage rights, not money, savings, a bank balance, lending or a cash-out product. Transfers between users are not approved.
 
 The top-up and the later debit must not both be counted as two sales. The top-up funds the balance; consumption identifies the service revenue line. Recognition timing, tax, expiry, refunds and unused balances require professional accounting advice.
 
@@ -27,23 +27,23 @@ The repo currently contains two different credit systems:
 
 Neither is the owner-approved universal customer credit rail. Calling today's runtime unified would be false. The implementation must choose one canonical ledger, migrate or retire the duplicate meaning, preserve audit history, and keep the public product boundary non-cashable.
 
-Decimal credits are required if Paid Repost is exactly 50% above a one-credit Spotlight unit. The integer member-service ledger cannot represent a 1.5-credit debit.
+The canonical ledger must support a configurable credit catalogue by service and region. The denomination, divisibility and debit amounts must be chosen only after the exchange-rate and regional-pricing decisions are made.
 
 ## Provisional module register
 
-| Revenue line | Provisional customer price/unit | Historical/runtime truth | Decision state |
+| Revenue line | Working example, not price | Historical/runtime truth | Decision state |
 |---|---:|---|---|
-| Paid Spotlight | Base future unit: 1 credit per governed appearance before approved time/region factors | Current runtime sells one day-credit at GBP 1, with six credits for GBP 5 | Future appearance model recorded; migration not implemented |
-| Paid Repost | 1.5 times the equivalent Paid Spotlight unit, then adjusted for selected reach/destinations and any approved time/region factors | Current runtime consumes the same one-credit-per-day entitlement as Paid Spotlight; no 50% rule was found in the searchable record | Owner decision recorded; separate pricing/service code not implemented |
-| Extra public shop space | 2 credits per additional space for one year | Six spaces included, maximum four paid extras; runtime still charges GBP 1 per annual extra | Owner amount recorded; runtime not migrated |
-| Community Domain | 10 credits monthly or 99 credits annually | This GBP 10/GBP 99 proposal exists in the Community Domain amendment register; payment creation is currently suspended | Owner amount reconfirmed; billing remains paused |
-| Private Vault | Unresolved | Runtime is GBP 5 per private slot for 30 days, maximum two. The owner's latest wording mentioned GBP 5 per year conditionally. These differ by a factor of about twelve. | Owner must confirm duration before migration |
-| Merchant Verification | Unresolved | Annual entitlement and payment rail exist, but the frontend sends GBP 1 while the backend accepts any positive amount. No preserved approved amount was found. | Price must be chosen and made server-owned |
+| Paid Spotlight | Example: one credit for one day of normal rotation | Current runtime sells one day-credit at GBP 1, with six credits for GBP 5 | Must use Pipeline Credits; debit remains undecided |
+| Paid Repost | Example: five credits for governed reach across five average communities or a defined target region | Current runtime consumes the same one-credit-per-day entitlement as Paid Spotlight | Must use Pipeline Credits under a separate service code; debit and reach bands remain undecided |
+| Extra public shop space | No fixed credit amount yet | Six spaces are included, with a maximum of four paid extras; runtime charges GBP 1 per annual extra and an earlier owner discussion used GBP 2 | Must use Pipeline Credits; debit and period remain to be confirmed |
+| Community Domain | No fixed credit amount yet | A GBP 10 monthly / GBP 99 annual cash proposal exists in the amendment register; payment creation is currently suspended | Must use Pipeline Credits; regional debit and package remain undecided |
+| Private Vault | No fixed credit amount yet | Runtime is GBP 5 per private slot for 30 days, maximum two; later discussion mentioned GBP 5 per year conditionally | Must use Pipeline Credits; debit and duration remain undecided |
+| Merchant Verification | No fixed credit amount yet | Annual entitlement and payment rail exist, but the frontend sends GBP 1 while the backend accepts any positive amount. No preserved approved amount was found. | Must use Pipeline Credits; debit must be chosen and server-owned |
 | TrustSlip core | Included inside trust/evidence infrastructure; no duplicate charge | Merchant Verification can govern the active public merchant-verification status. Core TrustSlip issue/read has no separate paid entitlement. | Keep within Merchant Verification family unless incremental paid value is defined |
-| Extra member capacity | Credit-funded; exact price unresolved | Fifteen members are included. Runtime uses annual extra-member entitlement at GBP 1 per place, with six units for GBP 5. | Funding method decided; price needs owner confirmation |
-| Extra DemandBox capacity | Credit-funded; unit and price unresolved | DemandBox exists, but no paid extra-capacity entitlement, free allowance or canonical chargeable unit was found. | Define unit before price |
-| ROSCA yearly service | 60 credits per annual service if the GBP1-per-credit anchor is retained | Runtime has a server-owned GBP 60 annual service price | Straight conversion candidate, still unproven commercially |
-| Community Meeting Pack | Credit-funded; exact future debit unresolved | Runtime currently uses GBP 1 per unit and six for GBP 5 | Convert only after the unit and consumption value are validated |
+| Extra member capacity | No fixed credit amount yet | Fifteen members are included. Runtime uses annual extra-member entitlement at GBP 1 per place, with six units for GBP 5. | Must use Pipeline Credits; debit needs regional discovery |
+| Extra DemandBox capacity | No fixed unit or credit amount yet | DemandBox exists, but no paid extra-capacity entitlement, free allowance or canonical chargeable unit was found. | Define the unit before its Pipeline Credit debit |
+| ROSCA yearly service | No fixed credit amount yet | Runtime has a server-owned GBP 60 annual service price | Must use Pipeline Credits; debit and regional policy remain undecided |
+| Community Meeting Pack | No fixed credit amount yet | Runtime currently uses GBP 1 per unit and six for GBP 5 | Must use Pipeline Credits after the unit and consumption value are validated |
 | Advanced Shop Analytics/AI | Unresolved | Basic Shop Activity is included. No connected paid advanced entitlement or AI-provider cost exists. | Planned product, not forecastable revenue |
 | Additional Trade Records | Unresolved | No paid capacity entitlement exists | Define free allowance, record unit, retention cost and entitlement first |
 | GSN Shop Reel | Basic/free versus premium export unresolved | The component engines exist in parts; no composed product or paid entitlement exists | Growth product definition approved, commercial boundary open |
@@ -57,18 +57,19 @@ Paid Spotlight and Paid Repost are separate revenue lines even though both draw 
 - `paid_repost_appearance`;
 - `central_advertising_appearance`.
 
-The provisional pricing structure is:
+The configurable pricing structure is:
 
 ```text
 Paid Spotlight credits
-  = governed appearance units
+  = catalogued base debit
+  x governed appearance or day units
   x approved time factor
   x approved region factor
 
 Paid Repost credits
-  = equivalent Paid Spotlight credits
-  x 1.50 repost premium
+  = catalogued repost base debit
   x governed reach/destination factor
+  x approved time/region factors
 
 Central advertising credits
   = promotion count
@@ -83,13 +84,13 @@ Reach must never be sold as guaranteed viewing. A paid unit buys a governed elig
 
 ## Regional pricing boundary
 
-GBP remains the base planning currency. Regional cash equivalents can reflect purchasing power and local delivery cost, but a transferable credit cannot secretly have different cash values in different regions without creating arbitrage and accounting problems.
+The base planning currency and the credit-to-cash exchange rate are not frozen. Customer discovery should determine locally acceptable top-up value and service debits for each region, participant type and use case. Credits must remain non-cashable and account-scoped if regional rates differ, otherwise people could arbitrage conflicting regional values.
 
 Before regional pricing goes live, GSN must choose one safe policy:
 
-- account-scoped, non-transferable regional credits; or
-- one global credit acquisition value with explicit service discounts/sponsor grants; or
-- region-specific service quotes while the underlying credit value remains constant.
+- account-scoped, non-transferable regional credit rates;
+- one global credit value with explicit regional service discounts or sponsor grants; or
+- region-specific service debits while the top-up exchange rate remains constant.
 
 The current decision does not choose among those three.
 
@@ -113,12 +114,12 @@ Do not build automatic posting, a music-rights library, a creator marketplace, a
 
 ## Decisions still required
 
-1. Is Vault 5 credits per slot for 30 days, or 5 credits per slot for one year?
-2. What is the annual Merchant Verification credit price? The repo does not preserve a trustworthy prior answer.
-3. Should extra member capacity keep the current one-credit-per-member-year and six-for-five bundle, or use a new price?
-4. What exactly is one extra DemandBox unit: an additional simultaneously active request, longer duration, wider reach, or something else?
-5. What time, regional and reach multipliers apply to Spotlight, Repost and central advertising?
-6. Will Shop Reel have a free basic export and a paid premium export, or remain entirely an acquisition feature during the pilot?
+1. After regional customer discovery, choose the credit-to-cash top-up rate; approximately five credits per GBP 1 is only the current working thought.
+2. Define the debit, duration and renewal unit for Vault, Merchant Verification, extra shop space, extra members, Community Domain, ROSCA and Meeting Pack.
+3. Define what one extra DemandBox unit actually buys before assigning credits.
+4. Define region, participant, interest, reach and time bands for Spotlight, Repost and central advertising.
+5. Decide whether credit balances are region/account-scoped or use one global value with regional service discounts.
+6. Decide whether Shop Reel has a free basic export and paid premium export, or remains entirely an acquisition feature during the pilot.
 
 ## Evidence rule
 

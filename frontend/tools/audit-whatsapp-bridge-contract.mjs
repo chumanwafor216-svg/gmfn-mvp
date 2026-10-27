@@ -92,9 +92,12 @@ mustNotInclude("CommunityNoticePage.tsx", publicNoticePage, "CommunityNoticeModa
 mustNotInclude("CommunityNoticePage.tsx", publicNoticePage, "createCommunityNotice");
 
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "Who can vote?");
-mustInclude("CommunityNoticeModal.tsx", noticeModal, "Community members only");
-mustInclude("CommunityNoticeModal.tsx", noticeModal, "Anyone with the announcement link");
-mustInclude("CommunityNoticeModal.tsx", noticeModal, 'if (audience === "public_link") setPublicQrEnabled(true)');
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "Members only");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "Anyone with the link");
+mustInclude("CommunityNoticeModal.tsx", noticeModal, 'debugId="community-notice-modal.poll-audience.members"');
+mustInclude("CommunityNoticeModal.tsx", noticeModal, 'debugId="community-notice-modal.poll-audience.public-link"');
+mustInclude("CommunityNoticeModal.tsx", noticeModal, 'setPublicQrEnabled(true);');
+mustInclude("CommunityNoticeModal.tsx", noticeModal, "People outside the community can vote from the shared announcement. They cannot post announcements or enter private community areas.");
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "public responses are anonymous browser counts.");
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "function firstWords");
 mustInclude("CommunityNoticeModal.tsx", noticeModal, "bodyNeedsCompactPreview");

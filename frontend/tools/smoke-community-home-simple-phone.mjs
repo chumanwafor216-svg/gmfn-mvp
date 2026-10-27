@@ -494,7 +494,12 @@ async function run() {
     const longNotice = Array.from({ length: 74 }, () => "word").join(" ");
     await composerDialog.locator("textarea").first().fill(longNotice);
     await composerDialog.locator('[data-cta-id="community-notice-modal.poll-toggle"]').click();
-    await composerDialog.getByLabel("Who can vote?").selectOption("public_link");
+    const anyoneWithLinkButton = composerDialog.getByRole("button", { name: "Anyone with the link", exact: true });
+    await anyoneWithLinkButton.click();
+    if ((await anyoneWithLinkButton.getAttribute("aria-pressed")) !== "true") {
+      throw new Error("Public-link voting choice did not become active.");
+    }
+    await composerDialog.getByText("People outside the community can vote from the shared announcement.", { exact: false }).waitFor({ state: "visible", timeout: 30000 });
     await composerDialog.getByLabel("Poll question").fill("Which day is most suitable?");
     await composerDialog.getByLabel("Poll choice 1").fill("Friday");
     await composerDialog.getByLabel("Poll choice 2").fill("Saturday");

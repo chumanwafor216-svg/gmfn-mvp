@@ -269,17 +269,23 @@ Completed result after the owner correction:
   new social feed
 - Bulletin reactions are not enabled by the backend and are not a paid module
 - Paid Spotlight and Paid Repost are separate revenue lines and delivery
-  methods; Repost is provisionally 50% above equivalent Spotlight and also
-  depends on reach, while current runtime still prices both alike
+  methods; both must consume Pipeline Credits, but their future debits are not
+  fixed and current runtime still prices both alike
 - the common Pipeline Credit balance is a funding rail, but the repo currently
   has two non-equivalent credit ledgers and neither is the completed universal
   customer service-credit contract
-- extra shop space is provisionally 2 credits per additional space per year;
-  Community Domain is 10 credits monthly or 99 annually, while Domain pilot
-  billing remains suspended
-- Vault remains 5 GBP per 30 days in runtime, conflicting with the owner's
-  conditional 5-per-year wording; Merchant Verification has no preserved safe
-  owner-approved price
+- the credit-to-cash exchange rate remains undecided; approximately five
+  Pipeline Credits per GBP 1 is a working thought, not an approved conversion
+- one credit for a day of normal Spotlight and five credits for Repost reach
+  across five average communities or a target region are discovery examples,
+  not approved prices
+- extra shop/member/DemandBox capacity, Community Domain, Vault, Merchant
+  Verification, ROSCA and Meeting Pack must use Pipeline Credits, while their
+  debits, durations and renewal units remain open; Domain billing remains
+  suspended
+- regional customer discovery must test the buyer, participant/use case,
+  interest, reach, delivery cost, affordability and renewal before amounts are
+  frozen
 - willingness to pay and net margin remain unproven until reconciled payments,
   renewals, refunds and delivery costs are measured
 
