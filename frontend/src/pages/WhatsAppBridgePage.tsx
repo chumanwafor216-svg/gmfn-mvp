@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import { getCurrentClan, listCommunityNotices, safeCopy } from "../lib/api";
@@ -210,6 +211,13 @@ export default function WhatsAppBridgePage() {
         .join("\n")
     : "";
   const whatsappShareUrl = canBroadcast ? buildPublicWhatsAppUrl(broadcastMessage) : "";
+  const bulletinShareTarget = {
+    title: `${communityName} GSN announcement`,
+    message: broadcastMessage,
+    socialMessage: noticeHeadline,
+    socialUrl: publicNoticeUrl,
+    url: publicNoticeUrl,
+  };
 
   async function copyText(text: string, success: string) {
     if (!text) {
@@ -323,7 +331,7 @@ export default function WhatsAppBridgePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
+              gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
               gap: 10,
             }}
           >
@@ -354,6 +362,21 @@ export default function WhatsAppBridgePage() {
             >
               Share to WhatsApp
             </StableButton>
+            <SocialTagShareButton
+              target={bulletinShareTarget}
+              disabled={!canBroadcast}
+              buttonLabel="Share bulletin"
+              buttonKind="secondary"
+              debugId="whatsapp-bridge.share-bulletin"
+              stableHeight={54}
+              fullWidth
+              onResult={(tone, text) => {
+                setCopyNotice(text);
+                if (typeof window !== "undefined") {
+                  window.setTimeout(() => setCopyNotice(""), tone === "success" ? 2400 : 3600);
+                }
+              }}
+            />
           </div>
           {copyNotice ? (
             <div
@@ -399,9 +422,9 @@ export default function WhatsAppBridgePage() {
       <section style={{ ...brandSoftCard("#EEF6FF"), display: "grid", gap: 8, color: gmfnBrand.colors.ink }}>
         <div style={{ fontWeight: 1000 }}>Decision boundary</div>
         <div style={{ ...brandHelperText(), fontWeight: 760 }}>
-          GSN records GSN actions only. The Community Domain Bulletin Bridge broadcasts public bulletin
-          outputs only. Replies, acknowledgements, interest, approval, and
-          verification must happen inside the owning GSN screen.
+          GSN records GSN actions only. The Community Domain Bulletin Bridge distributes public announcement
+          packages only. Acknowledgement, availability and poll responses happen inside the detached GSN
+          announcement package; approval and administration remain inside their owning GSN screens.
         </div>
       </section>
     </div>

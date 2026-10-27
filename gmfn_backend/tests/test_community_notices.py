@@ -190,7 +190,7 @@ def test_community_officer_can_post_and_members_can_read_notice(
         assert notifications[0].is_read is False
 
 
-def test_community_notice_public_qr_exposes_full_details_without_private_fields(
+def test_community_notice_public_qr_exposes_action_package_without_private_records(
     client, override_current_user
 ):
     _seed_notice_community()
@@ -236,10 +236,97 @@ def test_community_notice_public_qr_exposes_full_details_without_private_fields(
     assert public_notice["attachment_kind"] == "document"
     assert public_notice["community"]["name"] == "Nigerian Society"
     assert "posted_by_user_id" not in public_notice
-    assert "sender_whatsapp_number" not in public_notice
+    assert public_notice["sender_whatsapp_number"] == "+447700900123"
+    assert public_notice["sender_whatsapp_label"] == "notice-admin@example.com"
+    assert public_notice["sender_contact_ready"] is True
     assert "acknowledgement_summary" not in public_notice
     assert "availability_summary" not in public_notice
+    assert "poll_summary" not in public_notice
     assert "member lists" in public_notice["boundary"]
+
+
+def test_community_notice_choice_poll_uses_existing_notice_engine_and_keeps_public_counts_private(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose the best meeting day.",
+            "public_qr_enabled": True,
+            "poll_question": "Which day is best for you?",
+            "poll_options": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        },
+    )
+
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+    assert notice["poll_enabled"] is True
+    assert notice["poll_question"] == "Which day is best for you?"
+    assert notice["poll_options"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    assert notice["poll_summary"]["total"] == 0
+
+    public_res = client.get(f"/community-notices/public/{notice['public_code']}")
+    assert public_res.status_code == 200, public_res.text
+    public_notice = public_res.json()["notice"]
+    assert public_notice["poll_enabled"] is True
+    assert public_notice["poll_question"] == "Which day is best for you?"
+    assert public_notice["poll_options"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    assert "poll_summary" not in public_notice
+
+    first_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "option": "Monday"},
+    )
+    assert first_response.status_code == 200, first_response.text
+    assert first_response.json()["poll_summary"]["own_response"] == "Monday"
+    assert first_response.json()["poll_summary"]["counts"]["Monday"] == 1
+
+    changed_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "option": "Wednesday"},
+    )
+    assert changed_response.status_code == 200, changed_response.text
+    changed_summary = changed_response.json()["poll_summary"]
+    assert changed_summary["own_response"] == "Wednesday"
+    assert changed_summary["counts"]["Monday"] == 0
+    assert changed_summary["counts"]["Wednesday"] == 1
+    assert changed_summary["total"] == 1
+
+    invalid_response = client.post(
+        f"/community-notices/{notice['event_id']}/poll-response",
+        json={"clan_id": 1, "option": "Sunday"},
+    )
+    assert invalid_response.status_code == 422, invalid_response.text
+
+
+def test_community_notice_choice_poll_rejects_missing_or_duplicate_choices(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    missing_question = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose a day.",
+            "poll_options": ["Monday", "Tuesday"],
+        },
+    )
+    assert missing_question.status_code == 422, missing_question.text
+
+    duplicate_choices = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choose a day.",
+            "poll_question": "Which day?",
+            "poll_options": ["Monday", "monday"],
+        },
+    )
+    assert duplicate_choices.status_code == 422, duplicate_choices.text
 
 
 def test_community_notice_source_and_acknowledgement_are_scoped_to_selected_community(

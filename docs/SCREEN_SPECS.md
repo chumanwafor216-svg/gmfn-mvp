@@ -645,6 +645,9 @@ Must show, in phone-first order:
   - one compact live announcement presentation
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
   - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
+  - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices; this poll is separate from the existing Yes/Maybe/No availability control
+  - an authenticated active member may select one custom poll choice and may change that choice; the latest choice is authoritative and counts once
+  - the expanded authenticated notice may show response totals, but the detached public package must not expose member lists or aggregate response totals
   - on phone, keep one compact red/amber/green timing strip showing `Now`, `72h`, and `Clear` counts inside Bulletin; keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
   - keep up to the last 10 expired items reachable through one closed `Previous announcements` disclosure; do not expose the history by default and do not silently discard it from the member surface
   - no Ask Community / market-need records in the Bulletin by default
@@ -2408,6 +2411,44 @@ Overbuilt systems to simplify on the first surface:
 - Policy, node, lineage, evidence metadata, and apply mechanics belong behind admin/advanced controls.
 - Do not delete heavy governance tools until route references, backend tests, and domain contracts prove they are unused.
 
+## CommunityNoticePage
+
+Route: `/community-notices/:publicCode`.
+
+Purpose:
+Present one detached, public announcement package produced by the existing
+Community Notice engine. It is the destination shared through the WhatsApp
+Bridge and existing social-share controls. It is not an announcement creator,
+community home, public directory or admin surface.
+
+Must show when supplied by the notice:
+- GSN transmission / community announcement identity
+- source community name, announcement headline, full message and published time
+- attachment action and an inline image preview when the attachment is a poster
+- public QR code and a copy-link action
+- existing social-share chooser, including WhatsApp and Facebook where supported
+- verified published announcer WhatsApp/call actions, or a truthful message that contact was not published
+- acknowledgement action
+- existing Yes/Maybe/No availability action when enabled
+- a custom single-choice poll when enabled, preserving the creator's question and two to seven choices
+
+Rules:
+- Reading, opening attachments, copying and sharing remain public.
+- Acknowledgement, availability and custom-poll responses require a signed-in
+  active member of the source community. A signed-out attempt must explain the
+  requirement and offer sign-in without inventing a public response.
+- Yes/Maybe/No availability and the custom-choice poll are distinct contracts.
+  Do not nest weekdays or other poll options under Yes/Maybe/No.
+- The latest custom-poll choice from a member replaces that member's earlier
+  choice and counts once.
+- Do not expose the creator, creator tools, wider community navigation, member
+  lists, acknowledgement roll call, availability totals or poll totals.
+- Expose announcer contact only when the sender deliberately published a
+  verified public contact with the notice.
+- Reuse the existing Community Notice Trust Event, verified-media, WhatsApp
+  Bridge and social-share engines. Do not create a standalone poll engine,
+  database table or duplicate sharing system for this package.
+
 ## WhatsAppBridgePage
 
 Route: `/app/whatsapp-bridge` (`/whatsapp-bridge` redirects here).
@@ -2424,6 +2465,7 @@ Must show:
 - latest selected-community public bulletin link when one exists
 - Copy Bulletin Message action, enabled only when a public bulletin link exists
 - Share to WhatsApp action, enabled only when a public bulletin link exists
+- existing social-share chooser for the same public bulletin package
 - a no-bulletin-ready state when no public bulletin output exists
 - channel-governance framing for WhatsApp, social pages, and email groups
 - decision boundary that GSN records only actions completed inside GSN
@@ -2443,8 +2485,10 @@ Rules:
 - Automatic multi-channel forwarding requires governed channel connections,
   account authorization, consent/privacy review, and a delivery audit trail; do
   not present that as live until those integrations exist.
-- Replies, acknowledgements, interest, approval, and verification must happen
-  inside the owning GSN screen.
+- Acknowledgement, availability and custom-poll responses happen inside the
+  detached GSN announcement package after membership is verified. Approval,
+  verification and administration remain inside their owning authenticated GSN
+  screens.
 - WhatsApp Status may be a reminder only because it disappears.
 
 Primary action:

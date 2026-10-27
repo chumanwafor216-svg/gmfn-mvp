@@ -42,6 +42,8 @@ type Props = {
       attachment_url?: string | null;
       attachment_label?: string | null;
       attachment_kind?: NoticeAttachmentKind | null;
+      poll_question?: string | null;
+      poll_options?: string[] | null;
       notice_mode?: CommunityNoticeModalMode;
     }
   ) => Promise<void> | void;
@@ -108,6 +110,9 @@ export default function CommunityNoticeModal({
   const isMarketNeedPulse = mode === "market_need_pulse";
   const isDemandBoxPulse = isMarketNeedPulse && pulseDestination === "demand_box";
   const [availabilityEnabled, setAvailabilityEnabled] = useState(isMarketNeedPulse);
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
   const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -124,6 +129,12 @@ export default function CommunityNoticeModal({
   const attachmentUrlTrimmed = attachmentUrl.trim();
   const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isAllowedAttachmentUrl(attachmentUrlTrimmed);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
+  const cleanPollOptions = pollOptions.map((option) => option.trim()).filter(Boolean);
+  const pollOptionsUnique = new Set(cleanPollOptions.map((option) => option.toLowerCase())).size === cleanPollOptions.length;
+  const pollInvalid = Boolean(
+    pollEnabled &&
+      (!pollQuestion.trim() || cleanPollOptions.length < 2 || !pollOptionsUnique)
+  );
   useEffect(() => {
     if (open && isMarketNeedPulse) {
       setAvailabilityEnabled(true);
@@ -140,6 +151,7 @@ export default function CommunityNoticeModal({
     attachmentUrlInvalid ||
     Boolean(pendingVideoFile) ||
     attachmentUploading ||
+    pollInvalid ||
     eventExpiryMissing ||
     busy;
   const isReviewSubmission = submitMode === "review";
@@ -199,6 +211,23 @@ export default function CommunityNoticeModal({
     }
   }
 
+  function updatePollOption(index: number, value: string) {
+    setPollOptions((current) =>
+      current.map((option, optionIndex) => (optionIndex === index ? value : option))
+    );
+  }
+
+  function addPollOption() {
+    setPollOptions((current) => (current.length >= 7 ? current : [...current, ""]));
+  }
+
+  function removePollOption(index: number) {
+    setPollOptions((current) => {
+      if (current.length <= 2) return current;
+      return current.filter((_, optionIndex) => optionIndex !== index);
+    });
+  }
+
   async function preparePendingVideoUpload() {
     if (!pendingVideoFile || attachmentUploading) return;
     if (pendingVideoSound && !pendingVideoSound.rightsConfirmed) {
@@ -254,6 +283,8 @@ export default function CommunityNoticeModal({
         attachment_url: attachmentUrlTrimmed || undefined,
         attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
         attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
+        poll_question: pollEnabled ? pollQuestion.trim() : undefined,
+        poll_options: pollEnabled ? cleanPollOptions : undefined,
       });
     } catch (error: any) {
       setSubmitError(
@@ -269,6 +300,9 @@ export default function CommunityNoticeModal({
     setEventExpiresAt("");
     setPublicQrEnabled(false);
     setAvailabilityEnabled(false);
+    setPollEnabled(false);
+    setPollQuestion("");
+    setPollOptions(["", ""]);
     setAttachmentPanelOpen(false);
     clearAttachmentState();
   }
@@ -533,6 +567,90 @@ export default function CommunityNoticeModal({
           </>
         ) : null}
 
+        {!isMarketNeedPulse ? (
+          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+            <StableButton
+              type="button"
+              kind="secondary"
+              fullWidth
+              stableHeight={44}
+              disabled={busy}
+              onClick={() => setPollEnabled((current) => !current)}
+              debugId="community-notice-modal.poll-toggle"
+              aria-expanded={pollEnabled}
+            >
+              {pollEnabled ? "Remove choice poll" : "+ Add choice poll"}
+            </StableButton>
+            {pollEnabled ? (
+              <div style={attachmentPanelStyle} data-debug-id="community-notice-modal.poll-panel">
+                <div style={fieldGroupStyle}>
+                  <label style={fieldLabelStyle} htmlFor="community-notice-poll-question">
+                    Poll question
+                  </label>
+                  <input
+                    id="community-notice-poll-question"
+                    type="text"
+                    value={pollQuestion}
+                    onChange={(event) => setPollQuestion(event.target.value)}
+                    maxLength={180}
+                    placeholder="Which day is best for you?"
+                    style={fieldStyle}
+                  />
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {pollOptions.map((option, index) => (
+                    <div
+                      key={`poll-option-${index}`}
+                      style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8 }}
+                    >
+                      <input
+                        type="text"
+                        value={option}
+                        onChange={(event) => updatePollOption(index, event.target.value)}
+                        maxLength={60}
+                        placeholder={`Choice ${index + 1}${index === 0 ? " - Monday" : index === 1 ? " - Tuesday" : ""}`}
+                        aria-label={`Poll choice ${index + 1}`}
+                        style={fieldStyle}
+                      />
+                      {pollOptions.length > 2 ? (
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          stableHeight={46}
+                          onClick={() => removePollOption(index)}
+                          debugId={`community-notice-modal.poll-remove.${index}`}
+                        >
+                          Remove
+                        </StableButton>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                {pollOptions.length < 7 ? (
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={44}
+                    onClick={addPollOption}
+                    debugId="community-notice-modal.poll-add-option"
+                  >
+                    + Add another choice
+                  </StableButton>
+                ) : null}
+                <p style={attachmentHelpStyle}>
+                  Members choose one answer. Use choices such as Monday, Tuesday, or Wednesday. This is separate from Yes / Maybe / No availability.
+                </p>
+                {pollInvalid ? (
+                  <p style={errorTextStyle}>
+                    Add a question and at least two different choices.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div style={metaRowStyle}>
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
           <span style={chipStyle}>
@@ -558,6 +676,7 @@ export default function CommunityNoticeModal({
           ) : null}
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>{isDemandBoxPulse ? "Private response path" : isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
+          {pollEnabled ? <span style={chipStyle}>Choice poll</span> : null}
           {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
         </div>
 

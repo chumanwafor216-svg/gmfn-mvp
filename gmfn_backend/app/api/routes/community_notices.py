@@ -9,7 +9,7 @@ from typing import Any, Literal, Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -41,6 +41,7 @@ COMMUNITY_NOTICE_SUBMISSION_EVENT = "community.notice.submitted"
 COMMUNITY_NOTICE_REVIEW_EVENT = "community.notice.review_decided"
 COMMUNITY_NOTICE_ACK_EVENT = "community.notice.acknowledged"
 COMMUNITY_NOTICE_AVAILABILITY_EVENT = "community.notice.availability_response"
+COMMUNITY_NOTICE_POLL_RESPONSE_EVENT = "community.notice.poll_response"
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
@@ -48,15 +49,21 @@ MAX_NOTICE_FULL_WORDS = 600
 MAX_NOTICE_FULL_BODY_LENGTH = 4000
 MAX_NOTICE_ATTACHMENT_URL_LENGTH = 1000
 MAX_NOTICE_ATTACHMENT_LABEL_LENGTH = 80
+MAX_NOTICE_POLL_QUESTION_LENGTH = 180
+MAX_NOTICE_POLL_OPTION_LENGTH = 60
+MAX_NOTICE_POLL_OPTIONS = 7
 NOTICE_INTERNAL_MEDIA_ATTACHMENT_RE = re.compile(
     r"^/uploads/marketplace/(?:images|videos)/[^?#\s]+(?:[?#][^\s]*)?$",
     re.IGNORECASE,
 )
 NOTICE_PUBLIC_BOUNDARY = (
-    "Public Community Notice QR only. It shows the public-safe notice and any "
-    "attached full details selected by the poster. It does not expose member "
-    "lists, acknowledgement roll call, availability responses, private contact "
-    "records, payments, or admin authority."
+    "Public GSN announcement package only. It shows the public-safe notice, any "
+    "attachment selected by the poster, and a verified public WhatsApp contact "
+    "only when the announcer chose to publish it. Signed-in active members may "
+    "acknowledge, answer enabled availability, or select an enabled poll choice. "
+    "It does not expose "
+    "member lists, acknowledgement roll call, aggregate response records, private "
+    "contacts, payments, creation tools, or admin authority."
 )
 NOTICE_POSTING_POLICY_MEMBERS = "members"
 NOTICE_POSTING_POLICY_ADMINS = "admins"
@@ -904,6 +911,66 @@ def _notice_availability_summary(
     }
 
 
+def _notice_poll_options(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    options: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        option = _safe_str(item)
+        key = option.casefold()
+        if not option or key in seen:
+            continue
+        options.append(option[:MAX_NOTICE_POLL_OPTION_LENGTH])
+        seen.add(key)
+        if len(options) >= MAX_NOTICE_POLL_OPTIONS:
+            break
+    return options
+
+
+def _notice_poll_summary(
+    db: Session,
+    *,
+    clan_id: int,
+    notice_event_id: int,
+    poll_options: list[str],
+    viewer_user_id: int,
+) -> dict[str, Any]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_POLL_RESPONSE_EVENT,
+            or_(
+                TrustEvent.meta_json.like(f'%"notice_event_id": {int(notice_event_id)}%'),
+                TrustEvent.meta_json.like(f'%"notice_event_id":{int(notice_event_id)}%'),
+            ),
+        )
+        .order_by(TrustEvent.id.asc())
+        .all()
+    )
+    canonical_by_key = {option.casefold(): option for option in poll_options}
+    latest_response_by_user_id: dict[int, str] = {}
+    for row in rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if int(meta.get("notice_event_id") or 0) != int(notice_event_id):
+            continue
+        option = canonical_by_key.get(_safe_str(meta.get("option")).casefold())
+        user_id = int(getattr(row, "subject_user_id", 0) or 0)
+        if option and user_id:
+            latest_response_by_user_id[user_id] = option
+
+    counts = {
+        option: sum(1 for value in latest_response_by_user_id.values() if value == option)
+        for option in poll_options
+    }
+    return {
+        "counts": counts,
+        "total": len(latest_response_by_user_id),
+        "own_response": latest_response_by_user_id.get(int(viewer_user_id)),
+    }
+
+
 def _notice_ack_member_payload(
     *,
     user: User,
@@ -991,6 +1058,24 @@ def _event_to_notice(
         if availability_enabled and db is not None and clan_id and viewer_user_id
         else {"yes": 0, "maybe": 0, "no": 0, "total": 0, "planning_ready": False, "own_response": None}
     )
+    poll_options = _notice_poll_options(meta.get("poll_options"))
+    poll_question = _safe_str(meta.get("poll_question"))
+    poll_enabled = bool(poll_question and len(poll_options) >= 2)
+    poll_summary = (
+        _notice_poll_summary(
+            db,
+            clan_id=clan_id,
+            notice_event_id=int(event.id),
+            poll_options=poll_options,
+            viewer_user_id=int(viewer_user_id or 0),
+        )
+        if poll_enabled and db is not None and clan_id and viewer_user_id
+        else {
+            "counts": {option: 0 for option in poll_options},
+            "total": 0,
+            "own_response": None,
+        }
+    )
     return {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
@@ -1022,6 +1107,10 @@ def _event_to_notice(
         "acknowledgement_summary": ack_summary,
         "availability_enabled": availability_enabled,
         "availability_summary": availability_summary,
+        "poll_enabled": poll_enabled,
+        "poll_question": poll_question or None,
+        "poll_options": poll_options,
+        "poll_summary": poll_summary,
         "review_status": _safe_str(meta.get("review_status"), "published"),
         "approved_submission_event_id": meta.get("approved_submission_event_id"),
         "public_qr_enabled": bool(meta.get("public_qr_enabled")) and bool(_safe_str(meta.get("public_code"))),
@@ -1433,6 +1522,8 @@ class CommunityNoticeIn(BaseModel):
     attachment_url: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_URL_LENGTH)
     attachment_label: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_LABEL_LENGTH)
     attachment_kind: Optional[Literal["link", "video", "poster", "document"]] = "link"
+    poll_question: Optional[str] = Field(default=None, max_length=MAX_NOTICE_POLL_QUESTION_LENGTH)
+    poll_options: Optional[list[str]] = None
     notice_mode: Literal["notice", "market_need_pulse"] = NOTICE_MODE_NOTICE
 
     @field_validator("clan_id", mode="before")
@@ -1440,7 +1531,7 @@ class CommunityNoticeIn(BaseModel):
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "clan_id")
 
-    @field_validator("body", "full_body", "attachment_url", "attachment_label", mode="before")
+    @field_validator("body", "full_body", "attachment_url", "attachment_label", "poll_question", mode="before")
     @classmethod
     def _reject_non_text_notice_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -1480,6 +1571,50 @@ class CommunityNoticeIn(BaseModel):
         attachment_label = _safe_str(value)
         return attachment_label or None
 
+    @field_validator("poll_options", mode="before")
+    @classmethod
+    def _validate_poll_options_input(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if not isinstance(value, list):
+            raise ValueError("poll_options must be a list of text choices.")
+        if len(value) > MAX_NOTICE_POLL_OPTIONS:
+            raise ValueError(f"Announcement polls may have at most {MAX_NOTICE_POLL_OPTIONS} choices.")
+        cleaned: list[str] = []
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError("Each poll choice must be text.")
+            option = _safe_str(item)
+            if not option:
+                continue
+            if len(option) > MAX_NOTICE_POLL_OPTION_LENGTH:
+                raise ValueError(
+                    f"Each poll choice must be {MAX_NOTICE_POLL_OPTION_LENGTH} characters or fewer."
+                )
+            cleaned.append(option)
+        return cleaned or None
+
+    @model_validator(mode="after")
+    def _validate_poll_contract(self) -> "CommunityNoticeIn":
+        question = _safe_str(self.poll_question)
+        options = list(self.poll_options or [])
+        if not question and not options:
+            self.poll_question = None
+            self.poll_options = None
+            return self
+        if not question:
+            raise ValueError("Add a question for this announcement poll.")
+        if len(options) < 2:
+            raise ValueError("Announcement polls need at least two choices.")
+        keys = [option.casefold() for option in options]
+        if len(set(keys)) != len(keys):
+            raise ValueError("Announcement poll choices must be different.")
+        if self.notice_mode == NOTICE_MODE_MARKET_NEED_PULSE:
+            raise ValueError("Ask Community uses its existing yes, maybe, or no response and cannot add a second poll.")
+        self.poll_question = question
+        self.poll_options = options
+        return self
+
     @field_validator("expires_at")
     @classmethod
     def _enforce_notice_expiry(cls, value: Optional[datetime], info: Any) -> Optional[datetime]:
@@ -1513,6 +1648,21 @@ class CommunityNoticeAvailabilityIn(BaseModel):
     @classmethod
     def _reject_non_text_response(cls, value: Any) -> Any:
         return _reject_non_text_value(value, "response")
+
+
+class CommunityNoticePollResponseIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    option: str = Field(..., min_length=1, max_length=MAX_NOTICE_POLL_OPTION_LENGTH)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("option", mode="before")
+    @classmethod
+    def _reject_non_text_option(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "option")
 
 
 class CommunityNoticeAcknowledgementIn(BaseModel):
@@ -1771,6 +1921,8 @@ def create_notice(
     attachment_url = _clean_notice_attachment_url(payload.attachment_url)
     attachment_label = _safe_str(payload.attachment_label, "Open attachment")
     attachment_kind = _safe_str(payload.attachment_kind, "link")
+    poll_question = _safe_str(payload.poll_question)
+    poll_options = _notice_poll_options(payload.poll_options)
     expiry_policy = _normalize_notice_expiry_policy(payload.expiry_policy)
     notice_mode = _normalize_notice_mode(payload.notice_mode)
     is_market_need_pulse = notice_mode == NOTICE_MODE_MARKET_NEED_PULSE
@@ -1799,6 +1951,8 @@ def create_notice(
                 "attachment_url": attachment_url or None,
                 "attachment_label": attachment_label if attachment_url else None,
                 "attachment_kind": attachment_kind if attachment_url else None,
+                "poll_question": poll_question or None,
+                "poll_options": poll_options,
                 "public_qr_requested": bool(payload.public_qr_enabled),
                 "posting_policy": posting_policy,
                 "expiry_policy": expiry_policy,
@@ -1859,6 +2013,8 @@ def create_notice(
             "attachment_url": attachment_url or None,
             "attachment_label": attachment_label if attachment_url else None,
             "attachment_kind": attachment_kind if attachment_url else None,
+            "poll_question": poll_question or None,
+            "poll_options": poll_options,
             "posting_policy": posting_policy,
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
@@ -1981,11 +2137,9 @@ def get_public_community_notice(
     notice = _event_to_notice(event, db=db, viewer_user_id=None)
     for private_key in (
         "posted_by_user_id",
-        "sender_whatsapp_number",
-        "sender_whatsapp_label",
-        "sender_contact_ready",
         "acknowledgement_summary",
         "availability_summary",
+        "poll_summary",
     ):
         notice.pop(private_key, None)
     notice["boundary"] = _safe_str(meta.get("public_boundary"), NOTICE_PUBLIC_BOUNDARY)
@@ -2103,6 +2257,8 @@ def decide_notice_review_submission(
                 "full_body": full_body or None,
                 "full_word_count": _word_count(full_body) if full_body else 0,
                 **attachment_payload,
+                "poll_question": _safe_str(meta.get("poll_question")) or None,
+                "poll_options": _notice_poll_options(meta.get("poll_options")),
                 "posting_policy": _normalize_notice_posting_policy(meta.get("posting_policy")),
                 "expiry_policy": expiry_policy,
                 "expires_at": _iso(expires_at),
@@ -2390,6 +2546,71 @@ def record_notice_availability(
             if bool(meta.get("market_need_pulse"))
             else "Availability response saved."
         ),
+    }
+
+
+@router.post("/{notice_event_id}/poll-response")
+def record_notice_poll_response(
+    notice_event_id: int,
+    payload: CommunityNoticePollResponseIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_clan_member(db, clan_id=int(payload.clan_id), current_user=current_user)
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(payload.clan_id))
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message="This community setup has Community Records turned off.",
+            clan_id=int(payload.clan_id),
+            policy=records_policy,
+        )
+    notice_event = _get_notice_for_acknowledgement(
+        db,
+        clan_id=int(payload.clan_id),
+        notice_event_id=int(notice_event_id),
+    )
+    meta = _safe_meta(getattr(notice_event, "meta_json", None))
+    if _notice_is_expired(meta, created_at=getattr(notice_event, "created_at", None)):
+        raise HTTPException(status_code=409, detail="This notice has already left the active board")
+
+    poll_question = _safe_str(meta.get("poll_question"))
+    poll_options = _notice_poll_options(meta.get("poll_options"))
+    canonical_by_key = {option.casefold(): option for option in poll_options}
+    selected_option = canonical_by_key.get(_safe_str(payload.option).casefold())
+    if not poll_question or len(poll_options) < 2:
+        raise HTTPException(status_code=409, detail="This announcement does not have an open poll")
+    if not selected_option:
+        raise HTTPException(status_code=422, detail="Choose one of the poll options shown on this announcement")
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_NOTICE_POLL_RESPONSE_EVENT,
+        clan_id=int(payload.clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": COMMUNITY_NOTICE_SOURCE,
+            "reason": "community_notice_poll_response",
+            "notice_event_id": int(notice_event_id),
+            "notice_id": f"TE-{int(notice_event_id)}",
+            "poll_question": poll_question,
+            "option": selected_option,
+            "community_records_policy": records_policy,
+        },
+    )
+    return {
+        "ok": True,
+        "event_id": int(event.id),
+        "notice_event_id": int(notice_event_id),
+        "poll_summary": _notice_poll_summary(
+            db,
+            clan_id=int(payload.clan_id),
+            notice_event_id=int(notice_event_id),
+            poll_options=poll_options,
+            viewer_user_id=int(current_user.id),
+        ),
+        "message": f"Poll response saved: {selected_option}.",
     }
 
 

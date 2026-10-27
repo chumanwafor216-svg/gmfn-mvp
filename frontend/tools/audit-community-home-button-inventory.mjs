@@ -10,11 +10,11 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 33;
+const expectedStableButtonTemplateCount = 34;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 3;
 const expectedMobileShellBreakdown = { top: 2, drawer: 25, pageTools: 8, bottom: 5 };
-const expectedExpandedRouteLocalActionTemplates = 33;
+const expectedExpandedRouteLocalActionTemplates = 34;
 const expectedMobileShellActionCount = Object.values(expectedMobileShellBreakdown).reduce((sum, count) => sum + count, 0);
 const expectedWholeMobileRouteActionTemplates = expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 
@@ -95,6 +95,7 @@ if (nextActionGuideItemCount !== expectedNextActionGuideItemCount) {
 assertContains(/useParams<\{ clanId\?: string \}>\(\)[\s\S]*?routeClanIdFromParam\(routeParams\.clanId\)[\s\S]*?listMyClans\(\)[\s\S]*?requestedMatch[\s\S]*?This community is not available to your account/s, "Community Home route param must reconcile against listMyClans instead of silently rendering the stored selected community.");
 assertContains(/getCommunityReference\(selectedClan\)[\s\S]*?getCommunityMemberCount\(selectedClan\)[\s\S]*?data-debug-id="community-home\.identity-card"[\s\S]*?selectedCommunityReference[\s\S]*?selectedCommunityRoleLabel[\s\S]*?selectedCommunityStatusLabel/s, "Community Home first screen must be selected-community identity with reference, role, and status.");
 assertContains(/id="community-home-bulletin"[\s\S]*?renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/s, "Community Home Bulletin must remain immediately available after identity.");
+assertContains(/recordCommunityNoticePollResponse[\s\S]*?data-debug-id="community-home\.bulletin\.choice-poll"[\s\S]*?community-home\.bulletin\.poll-option/s, "Community Home expanded Bulletin must keep the approved custom-choice poll inside the existing notice engine.");
 assertContains(/function renderCommunityBulletinPulse\(\)[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-indicators"[\s\S]*?\(\["red", "yellow", "green"\] as CommunityBulletinNoticeUrgencyTone\[\]\)[\s\S]*?data-bulletin-urgency-tone=\{tone\}[\s\S]*?"Now"[\s\S]*?"72h"[\s\S]*?"Clear"/s, "Community Home phone Bulletin must retain the traffic-light timing summary without restoring the full Pulse dashboard.");
 assertContains(/const communityAttentionItems = useMemo\([\s\S]*?noticeSupportsAvailability[\s\S]*?noticeOwnAcknowledged[\s\S]*?canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0/s, "Community Home attention strip must be based on real selected-community notice actions only.");
 assertContains(/debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.trust"/s, "Community Home Go to group must stay compact and route to owning surfaces.");
@@ -104,7 +105,7 @@ assertContains(/profileSettings: APP_ROUTES\.SETTINGS[\s\S]*?communityHomeNeedsD
 assertContains(/showNotice\("success", "Spotlight now lives in Shop Control\."\)[\s\S]*?params\.delete\("guide"\)/s, "Community Home stale Spotlight guide query must be stripped and redirected conceptually to Shop Control.");
 
 assertNotContains(/getPoolMeSummary|poolSummary|netMoneyPosition|financeNeedsReview|moneyPositionLabel|moneyPositionDetail/, "Community Home must not fetch or synthesize cumulative finance status in Phase 1.");
-assertNotContains(/Payments (?:Â|Ã|·) No action shown/, "Community Home must not show the stale Payments mojibake/passive finance copy.");
+assertNotContains(/Payments (?:Ã‚|Ãƒ|Â·) No action shown/, "Community Home must not show the stale Payments mojibake/passive finance copy.");
 assertNotContains(/debugId="community-home\.(?:lane|spotlight-guided|spotlight-status|summary\.visible|selected\.open-marketplace)/, "Community Home must not render the old grouped lane or Spotlight launcher debug surfaces.");
 assertNotContains(/communitySpotlightFetch|listMarketplaceBroadcasts|getMarketplaceBroadcasts/, "Community Home must not fetch live Spotlight media or feed data.");
 assertNotContains(/CommunityMarketplaceSpotlight|CommunityShopControlPanel/, "Community Home must not revive stale embedded Spotlight/Shop Control components.");

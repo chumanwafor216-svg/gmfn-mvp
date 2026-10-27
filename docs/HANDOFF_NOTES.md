@@ -31,6 +31,37 @@ under `docs/` or `docs/archive/`, then link that file here.
   recorded in the milestone sections below. Continue locally and deploy only
   when the owner explicitly says `deploy`.
 
+## Community announcement package and custom-choice poll - 2026-10-27
+
+- Implemented the owner-approved distinction between the existing
+  Yes/Maybe/No availability response and a true custom-choice poll such as
+  `Which day is good for you?` with Monday through Friday choices.
+- Reused the Community Notice Trust Event engine. The creator may add one
+  optional question with two to seven unique choices; no standalone poll
+  application, table or migration was created. A member may change their
+  answer, and only their latest choice counts.
+- Expanded the detached `/community-notices/:publicCode` output into the
+  announcement-only package requested by the owner: full message,
+  attachment/poster, QR/link, acknowledgement, availability, custom poll,
+  deliberately published announcer contact and the existing social-share
+  chooser. It does not show the creator, wider community, member lists or
+  aggregate response totals.
+- Public reading and sharing remain available without sign-in. Acknowledgement,
+  availability and poll responses keep the existing active-membership gate and
+  offer sign-in when a public visitor attempts them.
+- Extended the existing WhatsApp Bridge with the shared social chooser; it
+  still distributes only an already-published public package and does not
+  create announcements, read WhatsApp, import replies or duplicate sharing
+  infrastructure.
+- This is an explicit frozen Community Home/Bulletin exception. Bulletin
+  placement, default phone disclosure, route identity, permissions, Dashboard
+  Market Wisdom and unrelated surfaces remain unchanged.
+- Verification passed: all 31 focused Community Notice backend tests, scoped
+  ESLint, WhatsApp Bridge and notice-board notification audits, all three
+  Community Home frozen audits, the complete protected-button/frozen-surface
+  suite including browser-backed visual checks, and the 295-module production
+  build. The batch remains local and is not deployed.
+
 ## Community Confirmation one-request decision flow - 2026-10-27
 
 - Completed the owner's next queue item on authenticated

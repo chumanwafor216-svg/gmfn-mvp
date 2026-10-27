@@ -1494,6 +1494,8 @@ export async function createCommunityNotice(payload: {
   attachment_url?: string | null;
   attachment_label?: string | null;
   attachment_kind?: "link" | "video" | "poster" | "document" | null;
+  poll_question?: string | null;
+  poll_options?: string[] | null;
   notice_mode?: "notice" | "market_need_pulse";
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
@@ -1556,6 +1558,16 @@ export async function recordCommunityNoticeAvailability(
 ): Promise<any> {
   return httpJson(
     `/community-notices/${encodeURIComponent(String(noticeEventId))}/availability`,
+    "POST",
+    payload
+  );
+}
+export async function recordCommunityNoticePollResponse(
+  noticeEventId: number | string,
+  payload: { clan_id: number; option: string }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/${encodeURIComponent(String(noticeEventId))}/poll-response`,
     "POST",
     payload
   );

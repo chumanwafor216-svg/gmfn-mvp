@@ -30,6 +30,7 @@ import {
   listCommunityNotices,
   recordCommunityMeetingInterest,
   recordCommunityNoticeAvailability,
+  recordCommunityNoticePollResponse,
   updateCommunityNoticeSettings,
   listMyCommunityDomains,
   listMyClans,
@@ -198,6 +199,14 @@ type CommunityNoticeItem = {
     no?: number | string | null;
     total?: number | string | null;
     planning_ready?: boolean | null;
+    own_response?: string | null;
+  } | null;
+  poll_enabled?: boolean | null;
+  poll_question?: string | null;
+  poll_options?: string[] | null;
+  poll_summary?: {
+    counts?: Record<string, number | string | null> | null;
+    total?: number | string | null;
     own_response?: string | null;
   } | null;
   board_hint?: string | null;
@@ -1913,6 +1922,7 @@ export default function CommunityHomePage() {
   const [noticePosting, setNoticePosting] = useState(false);
   const [noticeAcknowledgementBusy, setNoticeAcknowledgementBusy] = useState("");
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
+  const [noticePollBusy, setNoticePollBusy] = useState("");
   const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
   const [noticeDetailOpenId, setNoticeDetailOpenId] = useState("");
   const [selectedCommunityNoticeIndex, setSelectedCommunityNoticeIndex] = useState(0);
@@ -3160,6 +3170,98 @@ export default function CommunityHomePage() {
     );
   }
 
+  async function recordNoticePollChoice(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem,
+    option: string,
+    optionIndex: number
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = noticeClanId(noticeItem, selectedClan);
+    const eventId = firstTruthy(noticeItem?.event_id);
+    if (!clanId || !eventId || !option) {
+      showNotice("error", "This announcement poll is not ready yet.");
+      return;
+    }
+    if (noticePollBusy) {
+      showNotice("success", "Saving your poll answer now.");
+      return;
+    }
+
+    const busyKey = `${eventId}:${optionIndex}`;
+    setNoticePollBusy(busyKey);
+    try {
+      const result = await recordCommunityNoticePollResponse(eventId, {
+        clan_id: clanId,
+        option,
+      });
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
+      applyCommunityNoticeListResponse(res);
+      showNotice("success", firstTruthy(result?.message, `Poll response saved: ${option}.`));
+    } catch (error: any) {
+      showNotice("error", error?.message || "Your poll response could not be saved.");
+    } finally {
+      setNoticePollBusy("");
+    }
+  }
+
+  function renderNoticeChoicePoll(noticeItem: CommunityNoticeItem) {
+    const question = firstTruthy(noticeItem?.poll_question);
+    const options = Array.isArray(noticeItem?.poll_options)
+      ? noticeItem.poll_options.map((option) => firstTruthy(option)).filter(Boolean).slice(0, 7)
+      : [];
+    if (!noticeItem?.poll_enabled || !question || options.length < 2 || !noticeItem?.event_id) {
+      return null;
+    }
+    const ownResponse = firstTruthy(noticeItem?.poll_summary?.own_response);
+    const counts = noticeItem?.poll_summary?.counts || {};
+
+    return (
+      <div
+        data-debug-id="community-home.bulletin.choice-poll"
+        style={{ ...innerCard("#F8FBFF"), display: "grid", gap: 8, marginTop: 8 }}
+      >
+        <div style={{ color: "#07172C", fontSize: 14, fontWeight: 950 }}>{question}</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: 6,
+          }}
+        >
+          {options.map((option, index) => {
+            const selected = ownResponse.toLowerCase() === option.toLowerCase();
+            const busyKey = `${noticeItem.event_id}:${index}`;
+            const count = noticeNumber(counts?.[option]);
+            return (
+              <StableButton
+                key={`${option}-${index}`}
+                type="button"
+                debugId={`community-home.bulletin.poll-option.${index}`}
+                onClick={(buttonEvent) => recordNoticePollChoice(buttonEvent, noticeItem, option, index)}
+                aria-disabled={noticePollBusy ? true : undefined}
+                busy={noticePollBusy === busyKey}
+                busyLabel="Saving"
+                style={{
+                  ...communityActionStyle(selected ? "primary" : "soft", Boolean(noticePollBusy)),
+                  minHeight: 40,
+                  minWidth: 0,
+                  width: "100%",
+                  borderRadius: 12,
+                  fontSize: 12,
+                  textTransform: "none",
+                  boxShadow: "none",
+                }}
+              >
+                {option}{count > 0 ? ` (${count})` : ""}
+              </StableButton>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderCommunityBulletinPulse() {
     if (activeCommunityNotices.length === 0) return null;
 
@@ -3651,6 +3753,7 @@ export default function CommunityHomePage() {
               ) : null}
             </div>
             {renderMeetingInterestShortcut(noticeItem)}
+            {renderNoticeChoicePoll(noticeItem)}
             {communityNoticePublicPath(noticeItem) ? (
               <StableButton
                 type="button"
@@ -3724,6 +3827,8 @@ export default function CommunityHomePage() {
       attachment_url?: string | null;
       attachment_label?: string | null;
       attachment_kind?: "link" | "video" | "poster" | "document" | null;
+      poll_question?: string | null;
+      poll_options?: string[] | null;
     }
   ) {
     const clanId = getClanId(selectedClan);
