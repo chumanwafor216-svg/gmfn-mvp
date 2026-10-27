@@ -6,6 +6,16 @@ This file is the compact current-state handoff required by `README.md` and
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
 
+## `gmfn-api` Render compute upgrade after repeated OOMs - 2026-10-27
+
+- Render event and metric evidence confirmed repeated out-of-memory restarts while `gmfn-api` was running on the legacy Starter allocation of 0.5 CPU and 512 MiB RAM. The latest observed OOM was at `2026-10-27T19:30:14Z`. Media processing with FFmpeg/Pillow is a credible burst source, but the available evidence does not prove a conventional memory leak or one exclusive cause.
+- The owner approved a vertical upgrade. The live service is now on Render plan `1c-2g`: 1 CPU, 2 GB RAM, one instance. Its existing 10 GB persistent disk at `/var/data/gmfn-uploads` remains attached and unchanged.
+- Infrastructure source of truth now declares `plan: 1c-2g` in `render.yaml`. The secured `Trigger Render Deploy` workflow accepts only the explicit `1c-2g` API-plan change, applies it through the Render API, deploys the exact selected commit, and verifies the live plan afterward.
+- Deployment evidence: commit `22f59bfb0d48a1811f286dc28b63052fc448518e`; GitHub Actions run `40577060794`; Render deploy `dep-dbggfjmgekts738mq8l0`, live at `2026-10-27T20:24:02Z`. The public `/health` endpoint returned HTTP 200 with `{"ok":true,"dev_mode":false}`.
+- Independent post-deploy metrics reported a `2,147,483,600`-byte memory limit, 1 CPU, and one instance for the replacement server. Render recorded the plan-change, successful build/pre-deploy, server-available, and successful deploy events with no new OOM event in that deployment window.
+- Truth boundary: the upgrade supplies four times the previous memory and twice the CPU, but it is not proof that the underlying media-memory risk is eliminated. Continue monitoring controlled Reel/media tests; process concurrency, input limits, temporary-file cleanup and memory profiling remain the proper engineering follow-up if usage again approaches the new ceiling.
+
+
 ## GSN Shop Reel free pilot - 2026-10-27
 
 - Owner continuation `1` extends picture Reels with the existing owner-sound engine: the compact Reel card may accept a supported sound file or a phone recording, requires the existing creation/permission confirmation, forces the truthful single add-sound behavior for the otherwise silent picture source, normalises loudness, and rejects output that does not contain the selected audio. This is not a GSN music catalogue or a licensing claim.
