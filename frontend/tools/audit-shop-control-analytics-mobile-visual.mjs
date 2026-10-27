@@ -626,13 +626,12 @@ try {
   const overviewText = (await overview.innerText()).replace(/\s+/g, " ").trim();
   const normalizedOverviewText = overviewText.toLowerCase();
   const expectedOverviewText = [
-    "Your next step",
     "Your public shop",
-    "Shop items",
+    "Manage shop items",
+    "Promote your shop",
     "Shop activity",
-    "Shop promotion",
     "Shop update",
-    "More shop tools",
+    "Paid services & shop settings",
   ];
   const missingOverviewText = expectedOverviewText.filter((text) => !normalizedOverviewText.includes(text.toLowerCase()));
   if (missingOverviewText.length > 0) {
@@ -662,8 +661,35 @@ try {
       findings: [`expected five compact phone rows no taller than 96px; measured ${JSON.stringify(compactRowHeights)}`],
     });
   }
+  if (await page.locator('[data-cta-id^="shop-control.orientation.primary."]').count()) {
+    findings.push({
+      label: "overview:no-repeated-established-next-step",
+      findings: ["an established shop must not repeat one of the five permanent routes as a separate next-step card"],
+    });
+  }
   const overviewFinding = await collectPanelAudit(page, "overview:first-view");
   if (overviewFinding) findings.push(overviewFinding);
+  await page.locator('[data-cta-id="shop-control.more-tools.toggle"]').click();
+  await page.locator('[data-cta-id="shop-control.more.paid-services"]').click();
+  await page.locator('[data-paid-services-catalog="true"]').waitFor({ state: "visible", timeout: 10000 });
+  const paidServiceStates = await page
+    .locator('[data-paid-service-state]')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-paid-service-state")));
+  const expectedPaidServiceStates = { available: 5, paused: 1, planned: 2 };
+  const actualPaidServiceStates = paidServiceStates.reduce((counts, state) => {
+    if (state === "available" || state === "paused" || state === "planned") {
+      counts[state] += 1;
+    }
+    return counts;
+  }, { available: 0, paused: 0, planned: 0 });
+  if (JSON.stringify(actualPaidServiceStates) !== JSON.stringify(expectedPaidServiceStates)) {
+    findings.push({
+      label: "paid-services:truth-boundaries",
+      findings: [`expected ${JSON.stringify(expectedPaidServiceStates)}, received ${JSON.stringify(actualPaidServiceStates)}`],
+    });
+  }
+  const paidServicesFinding = await collectPanelAudit(page, "paid-services:catalog");
+  if (paidServicesFinding) findings.push(paidServicesFinding);
 
   await page.goto(`${baseUrl}/app/shop-control#shop-control-details`, { waitUntil: "networkidle", timeout: 25000 });
   const shopDetails = page.locator("#shop-control-details");

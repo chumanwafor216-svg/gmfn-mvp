@@ -1622,20 +1622,28 @@ Must show:
 - Grow Trusted Circle
 - Owner Spotlight Status
 
-Owner-approved 2026-10-26 first-view correction:
-- On phone, show the shop name and one state-aware `Your next step` before all
-  secondary routes. Do not repeat the same state as hero badges, an action
-  title, and large cards.
+Owner-approved 2026-10-26 first-view correction, amended 2026-10-27:
+- On phone, show the shop name and one state-aware `Your next step` only while
+  shop setup or the first shop item is incomplete. Once the shop is established,
+  do not repeat one of the permanent routes as a separate recommendation.
 - Keep the five required first-level routes, but present them as compact action
-  rows using member language: `Your public shop`, `Shop items`, `Shop
-  activity`, `Shop promotion`, and `Shop update`.
+  rows in this order using member language: `Your public shop`, `Manage shop
+  items`, `Promote your shop` with Free Spotlight stated explicitly, `Shop
+  activity`, and `Shop update`.
 - Shop Update must not display the number of public products as a Diary/update
   status. When no authoritative Diary count is loaded, invite the owner to
   `Write a short message` instead of inventing a count.
-- Keep private offers, paid promotion, cross-community promotion, extra space,
-  and trade records behind the closed `More shop tools` disclosure. This
-  correction changes no route, action inventory, permission, backend data,
-  Spotlight lifecycle, payment, quota, serving, or pacing behavior.
+- Keep shop details and one unified `Paid services` gateway behind the closed
+  `Paid services & shop settings` disclosure.
+- The `#shop-control-paid-services` catalogue brings together Paid Spotlight,
+  Private Vault, merchant verification, cross-community paid promotion, extra
+  shop space, Community Domain, additional Trade Records, and Advanced Shop
+  Analytics & AI. It is a catalogue over existing engines, not a new payment
+  engine. Community Domain must state that pilot billing is paused. Additional
+  paid Trade Records and paid Advanced Analytics/AI must state that their paid
+  upgrades are planned and must not collect payment or remove access to the
+  current Trade Records and Shop Activity surfaces before real payment and
+  entitlement contracts exist.
 - Shop Details (`#shop-control-details`) must use the state-aware heading `Set
   up your shop` or `Change what customers see`. Show shop name, WhatsApp number
   and the optional description first. Keep Telegram reachable behind one

@@ -2,6 +2,7 @@ export const OWNER_SHOP_HASHES = {
   overview: "shop-control-summary",
   billboard: "shop-control-details",
   diaries: "shop-control-gallery-tools",
+  paidServices: "shop-control-paid-services",
   freeSpotlight: "shop-control-spotlight",
   subscriptionSpotlight: "shop-control-paid-spotlight",
   communityPackage: "shop-control-community-packages",
@@ -133,6 +134,7 @@ export function ownerShopLayerForTarget(targetId: string):
   | "summary" {
   const normalized = String(targetId || "").replace(/^#/, "").toLowerCase();
   if (normalized.includes("overview")) return "overview";
+  if (normalized.includes("paid-services")) return "paid-tools";
   if (
     normalized.includes("products") ||
     normalized.includes("picture") ||

@@ -39,8 +39,8 @@ const expectedSourceActions = {
   SecondaryButton: 23,
   SubtleButton: 3,
   StableButton: 5,
-  StableCtaLink: 13,
-  total: 56,
+  StableCtaLink: 14,
+  total: 57,
 };
 const expectedNativeFieldCount = 29;
 const expectedFileInputActionRoots = 2;
@@ -75,6 +75,7 @@ const allowedDataDrivenShopControlDebugIds = new Set([
   "ownerPrimaryAction.debugId",
   "card.debugId",
   "tool.debugId",
+  "shop-control.paid-services.${service.key}",
 ]);
 
 function assertShopContains(
@@ -374,23 +375,28 @@ assertShopContains(
 );
 
 assertShopContains(
-  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?label: "Set up shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?label: "Add a shop item"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?label: "View live promotion"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?label: "Promote your shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
-  "Shop Control owner overview must derive one truthful primary next action from shop/product/Spotlight/public-shop state."
+  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?label: "Set up shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?label: "Add a shop item"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?return null;/,
+  "Shop Control owner overview must use primary guidance only while shop setup or the first item is incomplete."
 );
 
 assertShopContains(
-  /const ownerOrientationCards = \[[\s\S]*?label: "Your public shop"[\s\S]*?debugId: "shop-control\.orientation\.public-shop"[\s\S]*?label: "Shop items"[\s\S]*?debugId: "shop-control\.orientation\.products"[\s\S]*?label: "Shop activity"[\s\S]*?debugId: "shop-control\.orientation\.analytics"[\s\S]*?label: "Shop promotion"[\s\S]*?debugId: "shop-control\.orientation\.spotlight"[\s\S]*?label: "Shop update"[\s\S]*?value: "Write a short message"[\s\S]*?debugId: "shop-control\.orientation\.diary"/,
+  /const ownerOrientationCards = \[[\s\S]*?label: "Your public shop"[\s\S]*?debugId: "shop-control\.orientation\.public-shop"[\s\S]*?label: "Manage shop items"[\s\S]*?debugId: "shop-control\.orientation\.products"[\s\S]*?label: "Promote your shop"[\s\S]*?Free Spotlight\.[\s\S]*?debugId: "shop-control\.orientation\.spotlight"[\s\S]*?label: "Shop activity"[\s\S]*?debugId: "shop-control\.orientation\.analytics"[\s\S]*?label: "Shop update"[\s\S]*?value: "Write a short message"[\s\S]*?debugId: "shop-control\.orientation\.diary"/,
   "Shop Control overview must expose the five owner routes with direct member wording and must not invent a Diary count from shop-item data."
 );
 
 assertShopContains(
-  /const progressiveOwnerTools = \[[\s\S]*?debugId: "shop-control\.more\.details"[\s\S]*?debugId: "shop-control\.more\.vault"[\s\S]*?debugId: "shop-control\.more\.subscription-spotlight"[\s\S]*?debugId: "shop-control\.more\.paid-repost"[\s\S]*?debugId: "shop-control\.more\.community-packages"[\s\S]*?debugId: "shop-control\.more\.trade-evidence"/,
-  "Shop Control Analytics must stay first-level while advanced owner tools remain behind progressive disclosure."
+  /const progressiveOwnerTools = \[[\s\S]*?debugId: "shop-control\.more\.details"[\s\S]*?debugId: "shop-control\.more\.paid-services"/,
+  "Shop Control must keep shop settings and one unified Paid services gateway behind progressive disclosure."
 );
 
 assertShopContains(
-  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?Manage what customers see and choose what to do next\.[\s\S]*?Your next step[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?gridTemplateColumns: isCompact \? "minmax\(0, 1fr\) auto" : "1fr"[\s\S]*?display: isCompact \? "none" : undefined[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More shop tools[\s\S]*?Private offers · paid promotion · extra space[\s\S]*?debugId=\{tool\.debugId\}/,
-  "Shop Control first view must keep one primary next step, compress the five phone routes into action rows, and leave deeper shop tools behind disclosure."
+  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?Manage what customers see and choose what to do next\.[\s\S]*?ownerPrimaryAction \? \([\s\S]*?Your next step[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?Paid services & shop settings[\s\S]*?Shop details · subscriptions · paid options[\s\S]*?debugId=\{tool\.debugId\}/,
+  "Shop Control first view must reserve next-step guidance for incomplete setup, keep five compact routes, and group paid services behind one disclosure."
+);
+
+assertShopContains(
+  /const paidServiceCatalog = \[[\s\S]*?label: "Paid Spotlight"[\s\S]*?label: "Private Vault"[\s\S]*?label: "Merchant verification"[\s\S]*?label: "Promote in another community"[\s\S]*?label: "Extra shop space"[\s\S]*?label: "Community Domain"[\s\S]*?status: "Pilot: no payment now"[\s\S]*?label: "Additional trade records"[\s\S]*?status: "Paid upgrade planned"[\s\S]*?label: "Advanced Shop Analytics & AI"[\s\S]*?data-paid-services-catalog="true"[\s\S]*?debugId=\{`shop-control\.paid-services\.\$\{service\.key\}`\}/,
+  "Paid services must consolidate live payment options while marking Community Domain pilot billing and unbuilt paid upgrades truthfully."
 );
 
 assertShopDoesNotContain(

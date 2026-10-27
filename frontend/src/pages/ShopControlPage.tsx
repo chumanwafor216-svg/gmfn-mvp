@@ -3909,6 +3909,12 @@ export default function ShopControlPage() {
         "shop-control.route.summary",
         { hash: OWNER_SHOP_HASHES.summary }
       ),
+      paidServices: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.paid-services",
+        { hash: OWNER_SHOP_HASHES.paidServices }
+      ),
       communityPackages: routeTarget(
         "shop",
         effectiveShopClanId,
@@ -3950,8 +3956,21 @@ export default function ShopControlPage() {
         effectiveShopClanId,
         "shop-control.route.trust-slip"
       ),
+      merchantVerification: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.merchant-verification",
+        { hash: OWNER_SHOP_HASHES.merchantRelease }
+      ),
+      communityDomain: effectiveShopClanId || selectedClanId
+        ? appendRouteQueryParam(
+            "/app/community-domain",
+            "community_id",
+            String(effectiveShopClanId || selectedClanId)
+          )
+        : "/app/community-domain",
     }),
-    [effectiveShopClanId]
+    [effectiveShopClanId, selectedClanId]
   );
 
   useEffect(() => {
@@ -3991,6 +4010,8 @@ export default function ShopControlPage() {
   }, [location.hash, location.search]);
   const communityPackageTaskFocused =
     safeStr(location.hash).replace(/^#/, "") === OWNER_SHOP_HASHES.communityPackage;
+  const paidServicesHubFocused =
+    safeStr(location.hash).replace(/^#/, "") === OWNER_SHOP_HASHES.paidServices;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4970,29 +4991,8 @@ export default function ShopControlPage() {
         debugId: "shop-control.orientation.primary.products",
       };
     }
-    if (currentActiveSpotlight) {
-      return {
-        label: "View live promotion",
-        to: routes.freeSpotlight,
-        detail: "See what is showing or stop the promotion.",
-        debugId: "shop-control.orientation.primary.spotlight",
-      };
-    }
-    if (ownerPublicShopPath) {
-      return {
-        label: "Promote your shop",
-        to: routes.freeSpotlight,
-        detail: "Show one shop item to people in your community.",
-        debugId: "shop-control.orientation.primary.spotlight",
-      };
-    }
-    return {
-      label: "Review shop details",
-      to: routes.shopDetails,
-      detail: "Check the name, contact and description customers will see.",
-      debugId: "shop-control.orientation.primary.details",
-    };
-  }, [currentActiveSpotlight, occupiedPublicProductSlotCount, ownerPublicShopPath, routes.freeSpotlight, routes.shopDetails, routes.shopGallery, shopRecordReady]);
+    return null;
+  }, [occupiedPublicProductSlotCount, routes.shopDetails, routes.shopGallery, shopRecordReady]);
   const ownerOrientationCards = [
     {
       key: "public-shop",
@@ -5007,12 +5007,22 @@ export default function ShopControlPage() {
     {
       key: "products",
       icon: "cart" as GsnIconName,
-      label: "Shop items",
+      label: "Manage shop items",
       value: productStatusLabel,
       detail: "Add or change what customers can buy.",
       to: routes.shopGallery,
       action: "Manage items",
       debugId: "shop-control.orientation.products",
+    },
+    {
+      key: "spotlight",
+      icon: "megaphone" as GsnIconName,
+      label: "Promote your shop",
+      value: spotlightStatusLabel,
+      detail: `Free Spotlight. ${spotlightStatusDetail}`,
+      to: routes.freeSpotlight,
+      action: currentActiveSpotlight ? "View promotion" : "Promote shop",
+      debugId: "shop-control.orientation.spotlight",
     },
     {
       key: "analytics",
@@ -5023,16 +5033,6 @@ export default function ShopControlPage() {
       to: routes.shopSummary,
       action: "See activity",
       debugId: "shop-control.orientation.analytics",
-    },
-    {
-      key: "spotlight",
-      icon: "megaphone" as GsnIconName,
-      label: "Shop promotion",
-      value: spotlightStatusLabel,
-      detail: spotlightStatusDetail,
-      to: routes.freeSpotlight,
-      action: currentActiveSpotlight ? "View promotion" : "Promote shop",
-      debugId: "shop-control.orientation.spotlight",
     },
     {
       key: "diary",
@@ -5053,34 +5053,92 @@ export default function ShopControlPage() {
       debugId: "shop-control.more.details",
     },
     {
-      label: "Private offers",
-      detail: `${vaultStatusLabel}. Only invited customers can open them.`,
-      to: routes.vaultControl,
-      debugId: "shop-control.more.vault",
+      label: "Paid services",
+      detail: "Subscriptions, paid options, current pilot status, and planned upgrades in one place.",
+      to: routes.paidServices,
+      debugId: "shop-control.more.paid-services",
     },
+  ];
+  const paidServiceCatalog = [
     {
-      label: "Paid promotion",
-      detail: "Use a paid plan to keep promoting your shop.",
+      key: "paid-spotlight",
+      icon: "megaphone" as GsnIconName,
+      label: "Paid Spotlight",
+      detail: "Buy promotion credits and publish through the paid Spotlight lane.",
+      status: "Payment available",
+      state: "available",
+      action: "Open Paid Spotlight",
       to: routes.subscriptionSpotlight,
-      debugId: "shop-control.more.subscription-spotlight",
     },
     {
+      key: "private-vault",
+      icon: "vault" as GsnIconName,
+      label: "Private Vault",
+      detail: `${vaultStatusLabel}. Pay for private offer spaces and controlled viewing links.`,
+      status: "Paid spaces available",
+      state: "available",
+      action: "Open Private Vault",
+      to: routes.vaultControl,
+    },
+    {
+      key: "merchant-verification",
+      icon: "shield" as GsnIconName,
+      label: "Merchant verification",
+      detail: "Start or renew the shop verification subscription and its TrustSlip route.",
+      status: "Payment available",
+      state: "available",
+      action: "Open verification",
+      to: routes.merchantVerification,
+    },
+    {
+      key: "paid-repost",
+      icon: "community" as GsnIconName,
       label: "Promote in another community",
-      detail: "Show one shop item in another permitted community.",
+      detail: "Use paid placement credits to show one shop item in another permitted community.",
+      status: "Paid placement available",
+      state: "available",
+      action: "Open paid repost",
       to: routes.paidRepost,
-      debugId: "shop-control.more.paid-repost",
     },
     {
-      label: "Extra shop and community space",
-      detail: "Get more room for shop items or community members.",
+      key: "extra-space",
+      icon: "shop" as GsnIconName,
+      label: "Extra shop space",
+      detail: "Buy additional shop-item capacity through the existing community package rail.",
+      status: "Payment available",
+      state: "available",
+      action: "Open extra space",
       to: routes.communityPackages,
-      debugId: "shop-control.more.community-packages",
     },
     {
-      label: "Trade records",
-      detail: "Keep important buyer and seller records in Marketplace.",
+      key: "community-domain",
+      icon: "globe" as GsnIconName,
+      label: "Community Domain",
+      detail: "Reserve and configure an institution name. The subscription contract exists, but pilot billing is paused.",
+      status: "Pilot: no payment now",
+      state: "paused",
+      action: "Open Community Domain",
+      to: routes.communityDomain,
+    },
+    {
+      key: "trade-records",
+      icon: "document" as GsnIconName,
+      label: "Additional trade records",
+      detail: "Current protected Trade Records remain available. A paid additional-record entitlement is not connected yet.",
+      status: "Paid upgrade planned",
+      state: "planned",
+      action: "Open current records",
       to: routes.tradeEvidence,
-      debugId: "shop-control.more.trade-evidence",
+    },
+    {
+      key: "advanced-analytics",
+      icon: "chart" as GsnIconName,
+      label: "Advanced Shop Analytics & AI",
+      detail: "Current Shop Activity remains available. The paid advanced and AI-assisted subscription is not connected yet.",
+      status: "Paid upgrade planned",
+      state: "planned",
+      action: "Open current analytics",
+      to: routes.shopSummary,
     },
   ];
   const trackMarketIntelligenceAction = useCallback(
@@ -7394,7 +7452,8 @@ export default function ShopControlPage() {
           ownerProductManageFocusRequested ||
           shopDiaryTaskFocused ||
           shopPictureTaskFocused ||
-          communityPackageTaskFocused
+          communityPackageTaskFocused ||
+          paidServicesHubFocused
             ? "Focused task"
             : "Shop Control"
         }
@@ -7407,6 +7466,8 @@ export default function ShopControlPage() {
                 ? "Change shop picture"
                 : communityPackageTaskFocused
                   ? "Add more selling space"
+                  : paidServicesHubFocused
+                    ? "Paid services"
               : "Shop Control"
         }
         subtitle={
@@ -7418,6 +7479,8 @@ export default function ShopControlPage() {
                 ? "Choose the picture people should recognise as your shop."
                 : communityPackageTaskFocused
                   ? "Choose the extra shop or community service you need."
+                  : paidServicesHubFocused
+                    ? "Subscriptions, paid options, and planned upgrades in one truthful list."
               : ""
         }
         homeTo={routes.dashboard}
@@ -7431,6 +7494,8 @@ export default function ShopControlPage() {
                 ? routes.shopGallery
                 : communityPackageTaskFocused
                   ? routes.shopGallery
+                  : paidServicesHubFocused
+                    ? routes.shop
               : routes.marketplace
         }
         backLabel={
@@ -7442,6 +7507,8 @@ export default function ShopControlPage() {
                 ? "Shop items"
                 : communityPackageTaskFocused
                   ? "Shop items"
+                  : paidServicesHubFocused
+                    ? "Shop Control"
               : "Marketplace"
         }
       />
@@ -7492,7 +7559,10 @@ export default function ShopControlPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 220px",
+              gridTemplateColumns:
+                isCompact || !ownerPrimaryAction
+                  ? "1fr"
+                  : "minmax(0, 1fr) 220px",
               gap: 14,
               alignItems: "end",
             }}
@@ -7514,6 +7584,7 @@ export default function ShopControlPage() {
                 Manage what customers see and choose what to do next.
               </div>
             </div>
+            {ownerPrimaryAction ? (
             <div
               style={{
                 ...innerCard("rgba(255,255,255,0.96)"),
@@ -7536,6 +7607,7 @@ export default function ShopControlPage() {
                 {ownerPrimaryAction.label}
               </StableCtaLink>
             </div>
+            ) : null}
           </div>
 
           <div
@@ -7609,9 +7681,9 @@ export default function ShopControlPage() {
               }}
             >
               <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
-                <span>{labelWithIcon("shield", "More shop tools")}</span>
+                <span>{labelWithIcon("shield", "Paid services & shop settings")}</span>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#617085", fontSize: 11.5, fontWeight: 820 }}>
-                  Private offers · paid promotion · extra space
+                  Shop details · subscriptions · paid options
                 </span>
               </span>
 
@@ -7718,7 +7790,9 @@ export default function ShopControlPage() {
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
         <div style={sectionLabel()}>
-          {communityPackageTaskFocused
+          {paidServicesHubFocused
+            ? "Paid services"
+            : communityPackageTaskFocused
             ? "More selling space"
             : merchantReleaseHashFocused
               ? "Merchant Release Rail"
@@ -7726,13 +7800,80 @@ export default function ShopControlPage() {
         </div>
 
         <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          {communityPackageTaskFocused
+          {paidServicesHubFocused
+            ? "Choose an existing paid service or review what is still in pilot or planned. GSN will not ask for payment where no live payment contract exists."
+            : communityPackageTaskFocused
             ? "Choose one extra space or community service. GSN creates a bank-transfer reference only after you choose."
             : merchantReleaseHashFocused
               ? "This is a paid verification and release-evidence activity. Start here when a merchant or outside buyer needs a signed rail for the minimum trade packet."
               : "These are optional. Use them only when you need private viewing, public verification, or paid spotlight priority."}
         </div>
 
+        {paidServicesHubFocused ? (
+          <div
+            data-paid-services-catalog="true"
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {paidServiceCatalog.map((service) => (
+              <div
+                key={service.key}
+                data-paid-service-state={service.state}
+                style={{
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  display: "grid",
+                  gap: 10,
+                  alignContent: "space-between",
+                  border:
+                    service.state === "available"
+                      ? "1px solid rgba(13,95,168,0.14)"
+                      : service.state === "paused"
+                        ? "1px solid rgba(217,172,51,0.24)"
+                        : "1px solid rgba(97,112,133,0.16)",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                      gap: 8,
+                      alignItems: "start",
+                    }}
+                  >
+                    <span style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
+                      {inlineIcon(service.icon, "#0F5EAA", 17)}
+                      <span style={{ color: "#07172C", fontSize: 16, fontWeight: 950, lineHeight: 1.2 }}>
+                        {service.label}
+                      </span>
+                    </span>
+                    <span style={{ ...badge(service.state === "available"), justifySelf: "start", fontSize: 10.5 }}>
+                      {service.status}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12.5, lineHeight: 1.4 }}>
+                    {service.detail}
+                  </div>
+                </div>
+                <StableCtaLink
+                  to={service.to}
+                  kind={service.state === "available" ? "primary" : "secondary"}
+                  fullWidth
+                  stableHeight={48}
+                  debugId={`shop-control.paid-services.${service.key}`}
+                >
+                  {service.action}
+                </StableCtaLink>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div
           style={{
             marginTop: 14,
@@ -8981,6 +9122,7 @@ export default function ShopControlPage() {
             </details>
           </div>
         </div>
+        )}
       </section>
       ) : null}
 

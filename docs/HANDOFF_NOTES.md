@@ -8,6 +8,46 @@ This file is the compact current-state handoff required by `README.md` and
 Keep this file short. Put large work-package histories in a focused dated file
 under `docs/` or `docs/archive/`, then link that file here.
 
+## Local Shop paid-services consolidation - 2026-10-27
+
+- Owner-approved scope: make Public Shop the first established-shop action,
+  remove the repeated Promote route, and bring current/future paid options into
+  one truthful Shop Control catalogue without creating another payment engine.
+- `/app/shop-control` now keeps setup guidance only until the shop and first
+  item exist. Its five compact routes are ordered `Your public shop`, `Manage
+  shop items`, `Promote your shop` (Free Spotlight), `Shop activity`, and `Shop
+  update`. The closed `Paid services & shop settings` row contains Shop details
+  and one Paid services gateway.
+- `#shop-control-paid-services` lists eight owner-confirmed options. Paid
+  Spotlight, Private Vault, merchant verification, paid reposting, and extra
+  shop space route to their existing payment/credit engines. Community Domain
+  routes to its existing workspace and truthfully says pilot billing is
+  paused. Additional paid Trade Records and Advanced Shop Analytics & AI are
+  marked planned; their present working surfaces remain accessible and no
+  payment or entitlement is invented.
+- No backend route, price, payment instruction, entitlement, permission,
+  serving rule, Dashboard Market Wisdom, or Community Home behavior changed.
+  The Shop Control action audit, 390x844 mobile visual audit, and 295-module
+  production build pass. This package is local and not deployed yet.
+
+## Next Bulletin compactness and poll-audience amendment - 2026-10-27
+
+- After the Shop paid-services release, review Community Bulletin again to
+  remove unnecessary wording and make the announcement package more compact
+  and intelligent. Reconcile the duplicate ordinary-member `Needs your
+  attention` pointer with the Bulletin while preserving distinct authorised
+  administrator review work.
+- The owner added a creator-selected poll audience setting: `Community members
+  only` (the current protected default) or `Anyone with the announcement link`
+  for charities, NGOs and public consultations whose respondents are not yet
+  GSN members.
+- Unabated boundary: the current poll-response API requires an authenticated
+  active community member and the admin roll call is member-identity based.
+  Public-link voting therefore requires an explicit non-member/anonymous
+  response identity, duplicate-abuse control, aggregate privacy policy, and a
+  rule that public respondents never enter the member roll call. Do not ship a
+  cosmetic setting that silently fails or globally weakens member-only polls.
+
 ## Local Login transient-guidance correction - 2026-10-27
 
 - Owner-approved scope: stop the expired-session explanation and the Login
