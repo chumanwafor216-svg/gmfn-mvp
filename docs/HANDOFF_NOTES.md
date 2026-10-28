@@ -643,7 +643,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   the unique `(clan_id, user_id)` constraint.
 - Community Domain member deactivation preserves history, protects owner/final
   admin, logs a zero-delta Trust Event and blocks public active-member proof,
-  but stores only whether a note existed—not its text—and creates no notice or
+  but stores only whether a note existed-not its text-and creates no notice or
   appeal.
 - Shop has no normal pause/close/reactivate lifecycle contract. Pilot cleanup
   can deactivate shop/product records but must not be reused as account
@@ -2759,9 +2759,9 @@ under `docs/` or `docs/archive/`, then link that file here.
   for request `20` had also been marked read at 10:38 UTC after the decision.
 - Root cause: the dashboard treated the historical `approval_request`
   notification as an actionable item merely because its copy contained
-  “approve”, then mapped every generic act-now notification to the `demand`
-  operating class. That produced the false “request still needs your answer” /
-  “Open Demand” guide after the join request had been handled.
+  "approve", then mapped every generic act-now notification to the `demand`
+  operating class. That produced the false "request still needs your answer" /
+  "Open Demand" guide after the join request had been handled.
 - The live pending-join-request collection is now the approval source of truth;
   historical approval notifications no longer keep the Attention Guide active.
   Generic act-now notifications also no longer masquerade as DemandBox work.
@@ -3075,7 +3075,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   switch remains off and no provider or payment operation was activated.
 - Phone `live_ready` also now requires the configured Pipeline Credit account
   to exist, the configured cost to be a valid positive monetary amount, and
-  the ledger balance to cover at least one attempt—not merely non-empty account
+  the ledger balance to cover at least one attempt-not merely non-empty account
   and cost environment variables. Missing accounts, invalid costs, and
   insufficient balances retain an exact spend-gate status instead of being
   mislabeled ready.
@@ -3447,7 +3447,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Status: committed, pushed to the working branch and `main`, and deployed on
   the exact verified application commit recorded above.
 - The owner explicitly superseded the 2026-10-17 single-plus Public Shop
-  product-card rule. The existing card `+` / `×` remains the open/close
+  product-card rule. The existing card `+` / `�` remains the open/close
   control. When that exact product card is open, the exact signed-in shop owner
   now receives a separate 48px `+` after Close, Share, and Repost.
 - The new inner `+` performs no product write and never opens or plays the
@@ -3894,8 +3894,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 
 ## Spotlight expired-session truth repair - 2026-10-19
 
-- Production logs proved that the reported “could not connect this spotlight
-  to your shop” incident was not a media, community-link, or broadcast-write
+- Production logs proved that the reported "could not connect this spotlight
+  to your shop" incident was not a media, community-link, or broadcast-write
   failure. The affected phone received 401 Unauthorized twice from
   POST /marketplace/shops; no later broadcast publication request occurred.
   Other authenticated Spotlight/shop requests continued returning 200.
@@ -4211,77 +4211,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The public `/guide` destination opened by Cover's `About GSN & I` action is
   now a compact pre-auth introduction: one Back control, a short outcome-led
   hero, three cards (`Buy and sell`, `Grow your shop`, and
-## Public TrustSlip certificate face and progressive disclosure - 2026-10-28
 
-- Receiver presentation now starts as a sealed TrustSlip envelope on public
-  full/lite links. The envelope shows only the sender/holder, community context,
-  and one `Open TrustSlip` action. The certificate report is not mounted until
-  that action is used, so evidence and caution text cannot leak through the
-  sealed surface. Authenticated holder, no-code/error and QR `/card` views bypass
-  the envelope.
-- Owner-approved correction: the phone public TrustSlip now presents as an
-  evidence certificate instead of an exposed report. Its first face leads with
-  an encouraging result, holder, community, record and status facts, one short
-  support sentence, one next action, and a neutral purpose/community scope
-  line.
-- Caution-led wording is no longer shown on the first face. The complete formal
-  boundary remains available under `Scope & limits`; evidence truth, privacy,
-  and the non-credit/non-payment/non-universal-character boundaries were not
-  removed or weakened.
-- `Explore this TrustSlip` opens a chooser only. `Why this result`, `Evidence
-  summary`, `Source and date`, `Recorded pattern`, and `Scope & limits` are
-  separate disclosures. Opening one closes the previously open certificate
-  detail, so no single action reveals the complete record.
-- The shared Trust document disclosure component now supports an optional
-  one-open-at-a-time group. Existing ungrouped disclosures keep their previous
-  behavior. Stable TrustSlip disclosure IDs, public routes, API calls, evidence
-  derivation and private-data redaction remain unchanged.
-- Verification passed: 296-module production build, Public TrustSlip
-  first-viewport audit, full public verification state/browser smoke, direct
-  390x844 sealed-envelope visual inspection, and the complete
-  protected-button/frozen-surface suite. The evidence-display boundary
-  suite now accepts the certificate interaction but remains red on two unrelated
-  historical handoff assertions absent from the committed baseline. The known
-  Public Shop proof-surface copy-link assertion also remains unrelated debt.
-- This batch has not been committed, pushed or deployed. The current freeze
-  policy requires explicit owner approval before publishing routine batch work.
-
-
-## Community Bulletin progressive disclosure - 2026-10-28
-
-- The owner approved a phone-only Community Bulletin cleanup because opening
-  one announcement exposed too many controls and facts at once.
-- The default Bulletin now shows one meaningful timing status. The complete
-  `Now`/`72h`/`Clear` counts remain reachable under `Announcement
-  details`; no timing information was removed.
-- `Open notice` now reveals the full message and a compact chooser. Respond,
-  Contact, Share/QR, Attachment, Announcement details and authorised Admin
-  records remain separate, and opening one closes the previously open section.
-- Existing acknowledgement, availability, poll, WhatsApp contact, public
-  share/QR, attachment and roll-call behavior is preserved. No backend route,
-  API, schema, permission, desktop Bulletin or Dashboard Market Wisdom behavior
-  changed.
-- Verification passed: the 296-module production frontend build; focused
-  Community Home phone, action-inventory and billboard audits; the complete
-  protected-button/frozen-surface suite; and the 390x844 Community Home phone
-  browser smoke. The smoke proves the default state, opened-message chooser,
-  Respond, Share/QR and Announcement-details states, one-open-at-a-time
-  behavior, full timing-count reachability, poll submission, post-publish
-  sharing reachability and no horizontal overflow.
-- The smoke generated review captures under `C:\tmp\gmfn-community-home`.
-  The direct image-view tool was blocked by the Windows split-root sandbox, so
-  the four key states were combined into a downscaled contact sheet and
-  visually inspected through the conversation image channel. The default,
-  opened, Respond and Announcement-details states remain orderly: the tested
-  opened notice shows three closed choices, and selecting one does not expose
-  the others.
-- `smoke:community-home-domain-list` remains red because its separate
-  no-community empty-state scenario cannot find the expected `Start here`
-  text. This Bulletin change does not touch that path, but no pre-change
-  baseline was recorded for that specific smoke, so the failure is unresolved
-  rather than labelled pre-existing.
-- This work remains local and uncommitted as part of the current owner-directed
-  cleanup batch; it has not been pushed or deployed.
   `Keep community trust visible`), one closed full-capability disclosure, and
   one bottom Continue action.
 - The former featured-capability carousel, Previous/Next controls, technical
@@ -4601,3 +4531,103 @@ under `docs/` or `docs/archive/`, then link that file here.
 - This handoff evidence is published separately with `[skip render]` so
   recording the completed deployment does not trigger another pilot-facing
   restart.
+
+## Public TrustSlip certificate face and progressive disclosure - 2026-10-28
+
+- Receiver presentation now starts as a sealed TrustSlip envelope on public
+  full/lite links. The envelope shows only the sender/holder, community context,
+  and one `Open TrustSlip` action. The certificate report is not mounted until
+  that action is used, so evidence and caution text cannot leak through the
+  sealed surface. Authenticated holder, no-code/error and QR `/card` views bypass
+  the envelope.
+- Owner-approved correction: the phone public TrustSlip now presents as an
+  evidence certificate instead of an exposed report. Its first face leads with
+  an encouraging result, holder, community, record and status facts, one short
+  support sentence, one next action, and a neutral purpose/community scope
+  line.
+- Caution-led wording is no longer shown on the first face. The complete formal
+  boundary remains available under `Scope & limits`; evidence truth, privacy,
+  and the non-credit/non-payment/non-universal-character boundaries were not
+  removed or weakened.
+- `Explore this TrustSlip` opens a chooser only. `Why this result`, `Evidence
+  summary`, `Source and date`, `Recorded pattern`, and `Scope & limits` are
+  separate disclosures. Opening one closes the previously open certificate
+  detail, so no single action reveals the complete record.
+- The shared Trust document disclosure component now supports an optional
+  one-open-at-a-time group. Existing ungrouped disclosures keep their previous
+  behavior. Stable TrustSlip disclosure IDs, public routes, API calls, evidence
+  derivation and private-data redaction remain unchanged.
+- Verification passed: 296-module production build, Public TrustSlip
+  first-viewport audit, full public verification state/browser smoke, direct
+  390x844 sealed-envelope visual inspection, and the complete
+  protected-button/frozen-surface suite. The evidence-display boundary
+  suite now accepts the certificate interaction but remains red on two unrelated
+  historical handoff assertions absent from the committed baseline. The known
+  Public Shop proof-surface copy-link assertion also remains unrelated debt.
+- This batch has not been committed, pushed or deployed. The current freeze
+  policy requires explicit owner approval before publishing routine batch work.
+
+
+## Community Bulletin progressive disclosure - 2026-10-28
+
+- The owner approved a phone-only Community Bulletin cleanup because opening
+  one announcement exposed too many controls and facts at once.
+- The default Bulletin now shows one meaningful timing status. The complete
+  `Now`/`72h`/`Clear` counts remain reachable under `Announcement
+  details`; no timing information was removed.
+- `Open notice` now reveals the full message and a compact chooser. Respond,
+  Contact, Share/QR, Attachment, Announcement details and authorised Admin
+  records remain separate, and opening one closes the previously open section.
+- Existing acknowledgement, availability, poll, WhatsApp contact, public
+  share/QR, attachment and roll-call behavior is preserved. No backend route,
+  API, schema, permission, desktop Bulletin or Dashboard Market Wisdom behavior
+  changed.
+- Verification passed: the 296-module production frontend build; focused
+  Community Home phone, action-inventory and billboard audits; the complete
+  protected-button/frozen-surface suite; and the 390x844 Community Home phone
+  browser smoke. The smoke proves the default state, opened-message chooser,
+  Respond, Share/QR and Announcement-details states, one-open-at-a-time
+  behavior, full timing-count reachability, poll submission, post-publish
+  sharing reachability and no horizontal overflow.
+- The smoke generated review captures under `C:\tmp\gmfn-community-home`.
+  The direct image-view tool was blocked by the Windows split-root sandbox, so
+  the four key states were combined into a downscaled contact sheet and
+  visually inspected through the conversation image channel. The default,
+  opened, Respond and Announcement-details states remain orderly: the tested
+  opened notice shows three closed choices, and selecting one does not expose
+  the others.
+- `smoke:community-home-domain-list` remains red because its separate
+  no-community empty-state scenario cannot find the expected `Start here`
+  text. This Bulletin change does not touch that path, but no pre-change
+  baseline was recorded for that specific smoke, so the failure is unresolved
+  rather than labelled pre-existing.
+- This work was initially held as a local owner-directed cleanup batch. The
+  deployment evidence recorded below supersedes that pre-deploy state.
+
+
+## TrustSlip certificate and Community Bulletin deployment - 2026-10-28
+
+- Application commit `c7158d324d96d6cc746cbf9bb52ccd97c3dc72c2`
+  contains only the public TrustSlip receiver envelope/certificate progressive
+  disclosure, the phone Community Bulletin progressive disclosure, their
+  focused audits and browser smokes, and the matching frozen-contract records.
+- The commit was pushed to `codex/spotlight-rotation-continuity` and promoted
+  unchanged to `main`. Extensive unrelated worktree documents, screenshots,
+  configuration, campaign files, Marketplace edits and workflow experiments
+  were not staged.
+- GitHub Actions `Trigger Render Deploy` run `40778922533` completed
+  successfully for that exact commit. Render frontend deploy
+  `dep-dbh79dvlk1mc73amskcg` reached `live`, and the workflow verified that
+  the public frontend served the new TrustSlip bundle marker from
+  `assets/TrustSlipVerifyPage-DHQViXtb.js`.
+- The deployment was frontend-only. The workflow reported
+  `Backend deploy needed: false`; no backend service was restarted.
+- Release verification passed: 296-module production build, Public TrustSlip
+  first-viewport audit, TrustSlip receiver-state browser smoke, Community Home
+  phone and action-inventory audits, Community Home phone browser smoke, and
+  the complete protected-button/frozen-surface suite.
+- A broader evidence-display suite remains red on two handoff assertions that
+  are already present in `HEAD` while their expected historical handoff
+  sections are absent from `HEAD`. The TrustSlip-specific audit and browser
+  smoke pass; this baseline documentation inconsistency was not concealed or
+  expanded into the deployment batch.
