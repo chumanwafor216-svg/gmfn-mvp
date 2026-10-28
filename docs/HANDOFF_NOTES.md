@@ -4486,3 +4486,47 @@ under `docs/` or `docs/archive/`, then link that file here.
 - This handoff evidence is published separately with `[skip render]` so
   recording the completed deployment does not trigger another pilot-facing
   restart.
+
+## Public Shop restored as the primary Shop destination - 2026-10-28
+
+- The owner explicitly reversed the 2026-10-27 decision that made Shop Control
+  the first mobile Shop destination. The five-anchor order remains `Shop ->
+  Community Home -> Marketplace -> Dashboard -> Profile`, but `Shop` now opens
+  the signed-in member's canonical `/shop/{GSN_ID}` Public Shop.
+- Normal authenticated entry now uses the internal `/app/shop/me` resolver and
+  then leaves the app shell for that same member-scoped Public Shop. Dashboard
+  is used only as the safe fallback when a member GSN ID is unavailable.
+  Explicit safe `next` targets, invite/task returns, remembered app tasks,
+  publish recovery and session-expiry recovery retain higher priority.
+- Shop Control remains unchanged as the separate owner-management workspace.
+  It stays reachable through Menu, the signed-in Public Shop owner shortcuts,
+  and contextual management handoffs. Its business actions, fields, routes,
+  permissions and backend contracts were not changed. Dashboard Market Wisdom
+  was not changed.
+- Updated the frozen navigation, surface-ownership, canonical skeleton and
+  screen-spec records plus the Dashboard, Marketplace, Notifications, Shop
+  Control, link, surface-ownership, mobile visual-route and production-browser
+  regression cages.
+- Verification passed: 295-module production frontend build; entry/auth,
+  route-fallthrough, button-stability, surface-ownership, Dashboard,
+  Marketplace, Notifications and Shop Control audits; production-build app-tab
+  browser proof; and the complete protected-button/frozen-surface suite. The
+  browser proved the Shop href and both the Shop tap and bare `/app` destination
+  resolve to `/shop/GMFN-U-63655DE6` in the audited signed-in scenario.
+- Known pre-existing debt remains visible: `audit:link-contracts` is red on two
+  stale Public Shop assertions for the old copy-link function shape and the old
+  exact-product capacity expression. `ShopGalleryPage.tsx` and those two
+  assertions were not changed by this navigation work; the new navigation
+  assertions in the same audit pass. The checks were not weakened to create a
+  false green result.
+- Application commit `bb24a1416eff556dff6990a47aacfb972307e4d1` was
+  pushed to `codex/spotlight-rotation-continuity` and promoted unchanged to
+  `main`.
+- GitHub Actions `Trigger Render Deploy` run `40767733932` checked out that
+  exact commit. Render frontend deploy `dep-dbh63cvlk1mc73fc38p0` reached
+  `live`, and the workflow confirmed the public frontend was serving the build
+  marker. It reported `Backend deploy needed: false`; `gmfn-api` was not
+  redeployed.
+- This handoff evidence is published separately with `[skip render]` so
+  recording the completed deployment does not trigger another pilot-facing
+  restart.
