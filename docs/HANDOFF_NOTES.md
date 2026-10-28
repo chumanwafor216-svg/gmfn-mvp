@@ -4658,3 +4658,21 @@ under `docs/` or `docs/archive/`, then link that file here.
   first-viewport audit and the complete Public TrustSlip state browser smoke,
   including current, minimal, expired, revoked, frozen, low-data, no-relay,
   endpoint-error, Decision Pack, redacted-evidence and no-evidence states.
+- Application commit `3f56bc5fab5a4a8fcfc1ff2f6e51a37d4224ba02`
+  was pushed to `codex/spotlight-rotation-continuity` and promoted unchanged to
+  `main`.
+- GitHub Actions `Trigger Render Deploy` run `40783060176` completed
+  successfully. Render frontend deploy `dep-dbh7onnlk1mc73ao4pmg` reached
+  `live`, and the public frontend served the new bundle marker from
+  `assets/TrustSlipVerifyPage-CwMrLcns.js`.
+- The deployment was frontend-only. The workflow reported
+  `Backend deploy needed: false`; no backend service was restarted.
+- The complete protected-button/frozen-surface suite was not green in this
+  session: its dashboard visual subtest could not bind port 5173 because that
+  port was already occupied, and it reported pre-existing duplicate-key
+  Dashboard console errors. All TrustSlip-specific build, first-viewport,
+  public/private boundary and browser-state checks passed.
+- A 390x844 quick-decision screenshot was captured by the smoke, but the local
+  image viewer was blocked by the Windows split-root sandbox. DOM, ARIA,
+  interaction and overflow behavior were browser-verified; human visual review
+  from this session is not claimed.
