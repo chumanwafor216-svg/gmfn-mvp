@@ -204,7 +204,7 @@ Must show:
 - Picture frame control
 - picture tools: Upload, Change, Remove
 - Trust / CCI / TrustSlip status row
-- tappable GSN ID Card entry with shield mark, visible ID, and direct Identity Card destination
+- tappable GSN ID Card entry with shield mark, visible ID, and direct card-only destination
 - Market Wisdom presentation
 
 Frozen:
@@ -1210,6 +1210,10 @@ Rules:
   later.
 - Opening the card-action control reveals only the compact action chooser; it
   must not open Identity Anchor tasks or any secondary evidence section.
+- The Dashboard GSN ID Card entry uses the authenticated `display=card-only`
+  presentation. That presentation mounts the card and its covered actions only;
+  the page guide, Card/Anchor switch, Anchor package, and all secondary sections
+  must be absent rather than merely collapsed.
 - Use SVG pictograms from the app icon system for core identity tasks.
 - Do not use a large photo hero or long paragraph before the user sees current
   status and next action.

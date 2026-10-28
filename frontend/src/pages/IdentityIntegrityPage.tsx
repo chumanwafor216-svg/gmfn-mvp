@@ -1838,6 +1838,11 @@ export default function IdentityIntegrityPage() {
     return params.get("mode") === "complete";
   }, [location.search]);
 
+  const cardOnlyMode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("display") === "card-only";
+  }, [location.search]);
+
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -3344,25 +3349,27 @@ export default function IdentityIntegrityPage() {
     return (
       <div
         style={{
-          maxWidth: 1180,
+          maxWidth: cardOnlyMode ? 760 : 1180,
           margin: "0 auto",
           paddingBottom: 40,
           display: "grid",
           gap: 18,
         }}
       >
-        <PageTopNav
-          sectionLabel="Identity & Integrity"
-          title="Identity & Integrity"
-          subtitle="Loading your identity and integrity page..."
-          homeTo={routes.dashboard}
-          homeLabel="Dashboard"
-          backTo={routes.dashboard}
-        />
+        {!cardOnlyMode ? (
+          <PageTopNav
+            sectionLabel="Identity & Integrity"
+            title="Identity & Integrity"
+            subtitle="Loading your identity and integrity page..."
+            homeTo={routes.dashboard}
+            homeLabel="Dashboard"
+            backTo={routes.dashboard}
+          />
+        ) : null}
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading identity and integrity...
+            {cardOnlyMode ? "Loading your GSN ID Card..." : "Loading identity and integrity..."}
           </div>
         </section>
       </div>
@@ -3371,23 +3378,27 @@ export default function IdentityIntegrityPage() {
 
   return (
     <div
+      data-identity-integrity-display={cardOnlyMode ? "card-only" : "full"}
       style={{
-        maxWidth: 1180,
+        maxWidth: cardOnlyMode ? 760 : 1180,
         margin: "0 auto",
         paddingBottom: 40,
         display: "grid",
-        gap: 18,
+        gap: cardOnlyMode ? 8 : 18,
       }}
     >
-      <PageTopNav
-        sectionLabel="Identity & Integrity"
-        title="Identity & Integrity"
-        subtitle="Stable identity, current status, and the next clean evidence step."
-        homeTo={routes.dashboard}
-        homeLabel="Dashboard"
-        backTo={routes.dashboard}
-      />
+      {!cardOnlyMode ? (
+        <PageTopNav
+          sectionLabel="Identity & Integrity"
+          title="Identity & Integrity"
+          subtitle="Stable identity, current status, and the next clean evidence step."
+          homeTo={routes.dashboard}
+          homeLabel="Dashboard"
+          backTo={routes.dashboard}
+        />
+      ) : null}
 
+      {!cardOnlyMode ? (
       <section
         data-identity-integrity-secondary-section="evidence-meaning"
         style={decongestedSectionCard(collapsed.evidenceMeaning, isCompact)}
@@ -3414,9 +3425,11 @@ export default function IdentityIntegrityPage() {
           />
         ) : null}
       </section>
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {!cardOnlyMode ? (
       <section
         data-identity-package-view-toggle="true"
         style={{
@@ -3464,8 +3477,9 @@ export default function IdentityIntegrityPage() {
           );
         })}
       </section>
+      ) : null}
 
-      {identityPackageView === "anchor" ? (
+      {!cardOnlyMode && identityPackageView === "anchor" ? (
       <section
         data-identity-integrity-front-package="true"
         style={{
@@ -4351,7 +4365,7 @@ export default function IdentityIntegrityPage() {
       </section>
       ) : null}
 
-      {identityPackageView === "card" ? (
+      {cardOnlyMode || identityPackageView === "card" ? (
       <section
         data-gsn-identity-card="true"
         style={{
@@ -4826,6 +4840,8 @@ export default function IdentityIntegrityPage() {
       </section>
       ) : null}
 
+      {!cardOnlyMode ? (
+      <>
       <section data-identity-integrity-secondary-section="readings" style={decongestedSectionCard(collapsed.summary, isCompact)}>
         {sectionIconHeader(
           "chart",
@@ -5678,6 +5694,8 @@ export default function IdentityIntegrityPage() {
           </div>
         ) : null}
       </section>
+      </>
+      ) : null}
     </div>
   );
 }

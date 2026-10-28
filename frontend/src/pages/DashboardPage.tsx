@@ -8352,7 +8352,10 @@ export default function DashboardPage() {
             type="button"
             aria-label="Open your GSN ID Card"
             onClick={(event) =>
-              openDashboardRoute(event, `${DASHBOARD_TARGETS.CCI}?view=card`)
+              openDashboardRoute(
+                event,
+                `${DASHBOARD_TARGETS.CCI}?view=card&display=card-only`
+              )
             }
             onPointerDown={consumeDashboardPointerEvent}
             style={{

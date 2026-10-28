@@ -314,6 +314,10 @@ assertContains(
   /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?aria-expanded=\{identityCardActionsOpen\}[\s\S]*?Use this ID card[\s\S]*?identityCardActionsOpen \? \([\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?not a government ID or guarantee/i,
   "GSN Identity Card actions and concise no-overclaim boundary must stay covered by one closed control."
 );
+assertContains(
+  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?<PageTopNav[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-package-view-toggle="true"[\s\S]*?!cardOnlyMode && identityPackageView === "anchor"[\s\S]*?cardOnlyMode \|\| identityPackageView === "card"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-secondary-section="readings"/,
+  "Identity Integrity card-only mode must mount the GSN card without page navigation, package tabs, Anchor tasks, or secondary sections."
+);
 assertNotContains(
   /height: isCompact \? 240 : 270|<ExplainToggle[\s\S]*?What this screen does|Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it/g,
   "Identity Integrity must not regress to the oversized photo hero or long explanation-first header."

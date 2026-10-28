@@ -219,10 +219,29 @@ try {
 
   await idCardEntry.scrollIntoViewIfNeeded();
   await idCardEntry.tap();
-  await page.waitForURL(/\/app\/identity\?view=card$/, { timeout: 10000 });
+  await page.waitForURL(/\/app\/identity\?view=card&display=card-only$/, {
+    timeout: 10000,
+  });
 
   const identityCard = page.locator('[data-gsn-identity-card="true"]');
   await identityCard.waitFor({ state: "visible", timeout: 10000 });
+
+  const cardOnlyRoot = page.locator(
+    '[data-identity-integrity-display="card-only"]'
+  );
+  if ((await cardOnlyRoot.count()) !== 1) {
+    throw new Error("Dashboard ID entry did not open the card-only presentation.");
+  }
+
+  for (const selector of [
+    '[data-identity-package-view-toggle="true"]',
+    '[data-identity-integrity-front-package="true"]',
+    '[data-identity-integrity-secondary-section]',
+  ]) {
+    if ((await page.locator(selector).count()) !== 0) {
+      throw new Error(`Card-only presentation still mounted ${selector}.`);
+    }
+  }
 
   const cardActionsMenu = page.locator(
     '[data-gsn-identity-card-actions-menu="true"]'

@@ -423,8 +423,8 @@ assertContains(
 );
 
 assertContains(
-  /passportGlobalIdDisplay[\s\S]*?debugId="dashboard\.passport-gsn-id-card"[\s\S]*?aria-label="Open your GSN ID Card"[\s\S]*?DASHBOARD_TARGETS\.CCI\}\?view=card[\s\S]*?GSN ID Card[\s\S]*?Open your official GSN identity card[\s\S]*?\{passportGlobalIdDisplay\}/,
-  "Dashboard passport must make the visible GSN ID Card a direct, accessible card entry."
+  /passportGlobalIdDisplay[\s\S]*?debugId="dashboard\.passport-gsn-id-card"[\s\S]*?aria-label="Open your GSN ID Card"[\s\S]*?DASHBOARD_TARGETS\.CCI\}\?view=card&display=card-only[\s\S]*?GSN ID Card[\s\S]*?Open your official GSN identity card[\s\S]*?\{passportGlobalIdDisplay\}/,
+  "Dashboard passport must make the visible GSN ID Card a direct, accessible card-only entry."
 );
 
 assertNotContains(
