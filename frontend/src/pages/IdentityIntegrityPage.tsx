@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
-import PageTopNav from "../components/PageTopNav";
 import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import {
   CardActionRow,
@@ -2703,6 +2702,13 @@ export default function IdentityIntegrityPage() {
   const activeTask =
     identityTaskRows.find((item) => item.key === activeIdentityTask) ||
     identityTaskRows[0];
+  const recommendedIdentityTaskKey =
+    identityTaskRows.find((item) => item.tone !== "ready")?.key || "phone";
+
+  useEffect(() => {
+    if (requestedIdentityTask) return;
+    setActiveIdentityTask(recommendedIdentityTaskKey);
+  }, [recommendedIdentityTaskKey, requestedIdentityTask]);
 
   async function handleRecoverySetup(e: React.FormEvent) {
     e.preventDefault();
@@ -3346,17 +3352,6 @@ export default function IdentityIntegrityPage() {
           gap: 18,
         }}
       >
-        {!cardOnlyMode ? (
-          <PageTopNav
-            sectionLabel="Identity & Integrity"
-            title="Identity & Integrity"
-            subtitle="Loading your identity and integrity page..."
-            homeTo={routes.dashboard}
-            homeLabel="Dashboard"
-            backTo={routes.dashboard}
-          />
-        ) : null}
-
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.8 }}>
             {cardOnlyMode ? "Loading your GSN ID Card..." : "Loading identity and integrity..."}
@@ -3377,46 +3372,6 @@ export default function IdentityIntegrityPage() {
         gap: cardOnlyMode ? 8 : 18,
       }}
     >
-      {!cardOnlyMode ? (
-        <PageTopNav
-          sectionLabel="Identity & Integrity"
-          title="Identity & Integrity"
-          subtitle="Stable identity, current status, and the next clean evidence step."
-          homeTo={routes.dashboard}
-          homeLabel="Dashboard"
-          backTo={routes.dashboard}
-        />
-      ) : null}
-
-      {!cardOnlyMode ? (
-      <section
-        data-identity-integrity-secondary-section="evidence-meaning"
-        style={decongestedSectionCard(collapsed.evidenceMeaning, isCompact)}
-      >
-        {sectionIconHeader(
-          "shield",
-          "Evidence meaning",
-          "What this identity evidence means, why it matters, and what to do first.",
-          <SubtleButton
-            onClick={() => toggleSection("evidenceMeaning")}
-            stableHeight={52}
-            style={collapseToggle()}
-            debugId="identity-integrity.toggle-evidence-meaning"
-          >
-            {collapsed.evidenceMeaning ? "Open" : "Hide"}
-          </SubtleButton>
-        )}
-
-        {!collapsed.evidenceMeaning ? (
-          <RealLifeMeaningGuide
-            compact={isCompact}
-            guidance={getRealLifeTrustGuidance("identity-evidence")}
-            style={{ marginTop: 14 }}
-          />
-        ) : null}
-      </section>
-      ) : null}
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       {!cardOnlyMode ? (
@@ -3425,6 +3380,8 @@ export default function IdentityIntegrityPage() {
         style={{
           ...pageCard("#FFFFFF"),
           padding: isCompact ? 8 : 18,
+          display: "flex",
+          flexDirection: "column",
           border: "1px solid rgba(37,78,119,0.14)",
           boxShadow: "0 16px 38px rgba(7,23,44,0.08)",
         }}
@@ -3483,10 +3440,6 @@ export default function IdentityIntegrityPage() {
                 <GsnLegacyIcon name="shield" size={22} />
                 {identityHealthLabel}
               </span>
-              <span style={compactStatusChip("neutral")}>
-                <GsnLegacyIcon name="id" size={22} />
-                Identity anchor
-              </span>
             </div>
             <div
               style={{
@@ -3501,16 +3454,76 @@ export default function IdentityIntegrityPage() {
             >
               {displayName}
             </div>
-            <div style={{ marginTop: 6, ...compactHelperText() }}>
-              One stable person record. Finish the missing evidence steps one at a time.
+            <div style={{ marginTop: 6, ...compactHelperText(), overflowWrap: "anywhere" }}>
+              GSN ID: {gmfnId}
             </div>
           </div>
         </div>
 
+        <details
+          data-identity-integrity-tools="covered"
+          style={{
+            marginTop: isCompact ? 12 : 16,
+            borderRadius: 18,
+            border: "1px solid rgba(37,78,119,0.12)",
+            background: "#FFFFFF",
+            overflow: "hidden",
+            order: 2,
+          }}
+        >
+          <StableDisclosureSummary
+            debugId="identity-integrity.tools.toggle"
+            stableHeight={isCompact ? 58 : 56}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              padding: isCompact ? "10px 12px" : "10px 14px",
+              color: "#07172C",
+              background: "transparent",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <GsnLegacyIcon name="id" size={26} />
+              <span style={{ minWidth: 0, textAlign: "left" }}>
+                <span style={{ display: "block", fontSize: 14, fontWeight: 1000 }}>
+                  More identity tools
+                </span>
+                <span style={{ display: "block", marginTop: 2, color: "#64748B", fontSize: 11, fontWeight: 780 }}>
+                  Facts, copy actions, and other evidence steps
+                </span>
+              </span>
+            </span>
+            <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 24, lineHeight: 1 }}>
+              {"+"}
+            </span>
+          </StableDisclosureSummary>
+
+          <div
+            style={{
+              padding: isCompact ? "0 10px 10px" : "0 12px 12px",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+        <details
+          data-identity-integrity-tool-group="facts"
+          style={{ borderRadius: 14, border: "1px solid rgba(37,78,119,0.10)", overflow: "hidden" }}
+        >
+          <StableDisclosureSummary
+            debugId="identity-integrity.tools.facts"
+            stableHeight={52}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", color: "#07172C" }}
+          >
+            <span style={{ fontWeight: 1000 }}>Identity facts</span>
+            <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 22 }}>{"+"}</span>
+          </StableDisclosureSummary>
+          <div style={{ padding: "0 8px 8px" }}>
         <div
           data-identity-integrity-fact-grid="true"
           style={{
-            marginTop: isCompact ? 12 : 16,
+            marginTop: 8,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
             gap: isCompact ? 8 : 10,
@@ -3577,7 +3590,22 @@ export default function IdentityIntegrityPage() {
             </div>
           ))}
         </div>
+          </div>
+        </details>
 
+        <details
+          data-identity-integrity-tool-group="copy"
+          style={{ borderRadius: 14, border: "1px solid rgba(37,78,119,0.10)", overflow: "hidden" }}
+        >
+          <StableDisclosureSummary
+            debugId="identity-integrity.tools.copy"
+            stableHeight={52}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", color: "#07172C" }}
+          >
+            <span style={{ fontWeight: 1000 }}>Copy identity information</span>
+            <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 22 }}>{"+"}</span>
+          </StableDisclosureSummary>
+          <div style={{ padding: "0 8px 8px" }}>
         <div
           data-identity-integrity-copy-actions="true"
           style={{
@@ -3647,7 +3675,22 @@ export default function IdentityIntegrityPage() {
             </span>
           </SubtleButton>
         </div>
+          </div>
+        </details>
 
+        <details
+          data-identity-integrity-tool-group="tasks"
+          style={{ borderRadius: 14, border: "1px solid rgba(37,78,119,0.10)", overflow: "hidden" }}
+        >
+          <StableDisclosureSummary
+            debugId="identity-integrity.tools.tasks"
+            stableHeight={52}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", color: "#07172C" }}
+          >
+            <span style={{ fontWeight: 1000 }}>Choose another evidence step</span>
+            <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 22 }}>{"+"}</span>
+          </StableDisclosureSummary>
+          <div style={{ padding: "0 8px 8px" }}>
         <div
           data-identity-integrity-task-switcher="true"
           style={{
@@ -3707,6 +3750,10 @@ export default function IdentityIntegrityPage() {
             );
           })}
         </div>
+          </div>
+        </details>
+          </div>
+        </details>
 
         <div
           data-identity-integrity-active-task="true"
@@ -4782,7 +4829,79 @@ export default function IdentityIntegrityPage() {
       ) : null}
 
       {!cardOnlyMode ? (
-      <>
+      <details
+        data-identity-integrity-details="covered"
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: 0,
+          overflow: "hidden",
+          border: "1px solid rgba(37,78,119,0.12)",
+          boxShadow: "0 12px 30px rgba(7,23,44,0.06)",
+        }}
+      >
+        <StableDisclosureSummary
+          debugId="identity-integrity.details.toggle"
+          stableHeight={isCompact ? 64 : 60}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: isCompact ? "10px 14px" : "10px 16px",
+            color: "#07172C",
+            background: "transparent",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <GsnLegacyIcon name="shield" size={28} />
+            <span style={{ minWidth: 0, textAlign: "left" }}>
+              <span style={{ display: "block", fontSize: 15, fontWeight: 1000 }}>
+                More identity details
+              </span>
+              <span style={{ display: "block", marginTop: 2, color: "#64748B", fontSize: 11, fontWeight: 780 }}>
+                Readings, recovery, history, and guidance
+              </span>
+            </span>
+          </span>
+          <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 24, lineHeight: 1 }}>
+            {"+"}
+          </span>
+        </StableDisclosureSummary>
+
+        <div
+          style={{
+            padding: isCompact ? "0 10px 10px" : "0 12px 12px",
+            display: "grid",
+            gap: 10,
+          }}
+        >
+      <section
+        data-identity-integrity-secondary-section="evidence-meaning"
+        style={decongestedSectionCard(collapsed.evidenceMeaning, isCompact)}
+      >
+        {sectionIconHeader(
+          "shield",
+          "Evidence meaning",
+          "What this identity evidence means, why it matters, and what to do first.",
+          <SubtleButton
+            onClick={() => toggleSection("evidenceMeaning")}
+            stableHeight={52}
+            style={collapseToggle()}
+            debugId="identity-integrity.toggle-evidence-meaning"
+          >
+            {collapsed.evidenceMeaning ? "Open" : "Hide"}
+          </SubtleButton>
+        )}
+
+        {!collapsed.evidenceMeaning ? (
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("identity-evidence")}
+            style={{ marginTop: 14 }}
+          />
+        ) : null}
+      </section>
+
       <section data-identity-integrity-secondary-section="readings" style={decongestedSectionCard(collapsed.summary, isCompact)}>
         {sectionIconHeader(
           "chart",
@@ -5635,7 +5754,8 @@ export default function IdentityIntegrityPage() {
           </div>
         ) : null}
       </section>
-      </>
+        </div>
+      </details>
       ) : null}
     </div>
   );

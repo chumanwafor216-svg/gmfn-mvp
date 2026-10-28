@@ -300,6 +300,46 @@ try {
     }
   }
 
+  const recommendedTask = page.locator(
+    '[data-identity-integrity-active-task="true"]'
+  );
+  if ((await recommendedTask.count()) !== 1 || !(await recommendedTask.isVisible())) {
+    throw new Error("Normal Identity Integrity must show one recommended evidence task.");
+  }
+
+  for (const selector of [
+    '[data-identity-integrity-tools="covered"]',
+    '[data-identity-integrity-details="covered"]',
+  ]) {
+    const disclosure = page.locator(selector);
+    if (
+      (await disclosure.count()) !== 1 ||
+      (await disclosure.getAttribute("open")) !== null
+    ) {
+      throw new Error(`${selector} must exist and stay closed on first arrival.`);
+    }
+  }
+
+  const recommendedBox = await recommendedTask.boundingBox();
+  const toolsBox = await page
+    .locator('[data-identity-integrity-tools="covered"]')
+    .boundingBox();
+  if (!recommendedBox || !toolsBox || recommendedBox.y >= toolsBox.y) {
+    throw new Error("The recommended evidence task must appear before covered identity tools.");
+  }
+
+  for (const selector of [
+    '[data-identity-integrity-fact-grid="true"]',
+    '[data-identity-integrity-copy-actions="true"]',
+    '[data-identity-integrity-task-switcher="true"]',
+    '[data-identity-integrity-secondary-section]',
+  ]) {
+    const coveredContent = page.locator(selector).first();
+    if ((await coveredContent.count()) === 0 || (await coveredContent.isVisible())) {
+      throw new Error(`${selector} must be mounted but covered on first arrival.`);
+    }
+  }
+
   await page.goto(beforeUrl, { waitUntil: "networkidle", timeout: 20000 });
 
   const pictureFrameTriggers = page.locator(

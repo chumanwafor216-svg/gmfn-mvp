@@ -41,8 +41,8 @@ assertContains(
 );
 
 assertContains(
-  /Stable identity, current status, and the next clean evidence step\.[\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?gridTemplateColumns: isCompact \? "76px minmax\(0, 1fr\)" : "104px minmax\(0, 1fr\)"/,
-  "Identity Integrity front package must keep a compact phone header with a small photo anchor and short page subtitle."
+  /data-identity-integrity-front-package="true"[\s\S]*?gridTemplateColumns: isCompact \? "76px minmax\(0, 1fr\)" : "104px minmax\(0, 1fr\)"/,
+  "Identity Integrity front package must keep a compact phone header with a small photo anchor."
 );
 
 assertContains(
@@ -89,9 +89,29 @@ assertContains(
   "Identity Integrity real-life meaning guidance must be collapsed under Evidence meaning by default."
 );
 
+assertNotContains(
+  /PageTopNav/,
+  "Identity Integrity must not duplicate the app shell title and return path with a page-local navigation banner."
+);
+
 assertContains(
-  /<PageTopNav[\s\S]*?subtitle="Stable identity, current status, and the next clean evidence step\."[\s\S]*?<section[\s\S]*?data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?<section[\s\S]*?data-identity-integrity-front-package="true"/,
-  "Identity Integrity must keep the first explanation collapsed before the always-present Identity Anchor."
+  /recommendedIdentityTaskKey[\s\S]*?identityTaskRows\.find\(\(item\) => item\.tone !== "ready"\)[\s\S]*?setActiveIdentityTask\(recommendedIdentityTaskKey\)[\s\S]*?data-identity-integrity-active-task="true"/,
+  "Identity Integrity must surface the first incomplete evidence task as the recommended visible action."
+);
+
+assertContains(
+  /data-identity-integrity-front-package="true"[\s\S]*?display: "flex"[\s\S]*?flexDirection: "column"[\s\S]*?\{identityHealthLabel\}[\s\S]*?GSN ID: \{gmfnId\}[\s\S]*?data-identity-integrity-tools="covered"[\s\S]*?order: 2[\s\S]*?debugId="identity-integrity\.tools\.toggle"[\s\S]*?More identity tools[\s\S]*?data-identity-integrity-active-task="true"/,
+  "Identity Integrity must show only the compact identity header and recommended task before the visually ordered closed tools control."
+);
+
+assertContains(
+  /data-identity-integrity-tools="covered"[\s\S]*?data-identity-integrity-tool-group="facts"[\s\S]*?debugId="identity-integrity\.tools\.facts"[\s\S]*?data-identity-integrity-tool-group="copy"[\s\S]*?debugId="identity-integrity\.tools\.copy"[\s\S]*?data-identity-integrity-tool-group="tasks"[\s\S]*?debugId="identity-integrity\.tools\.tasks"/,
+  "More identity tools must reveal three independently opened rows instead of exposing every identity tool at once."
+);
+
+assertContains(
+  /data-identity-integrity-details="covered"[\s\S]*?debugId="identity-integrity\.details\.toggle"[\s\S]*?More identity details[\s\S]*?data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?data-identity-integrity-secondary-section="readings"[\s\S]*?data-identity-integrity-secondary-section="guides"/,
+  "All secondary Identity Integrity material must stay behind one closed master disclosure with independently closed section rows."
 );
 assertContains(
   /data-identity-integrity-secondary-section="guides"[\s\S]*?Evidence Guides[\s\S]*?debugId="identity-integrity\.toggle-guides"[\s\S]*?!collapsed\.guides[\s\S]*?data-identity-integrity-guide-stack="true"/,
@@ -320,8 +340,8 @@ assertNotContains(
   "GSN Identity Card must not render a duplicate action button below the card."
 );
 assertContains(
-  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?<PageTopNav[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-secondary-section="readings"/,
-  "Identity Integrity must keep its Anchor on the normal route and isolate the GSN card to card-only mode without page navigation or secondary sections."
+  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-details="covered"/,
+  "Identity Integrity must keep its Anchor on the normal route and isolate the GSN card to card-only mode without normal-page details."
 );
 assertNotContains(
   /height: isCompact \? 240 : 270|<ExplainToggle[\s\S]*?What this screen does|Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it/g,

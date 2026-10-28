@@ -1194,19 +1194,27 @@ Guide a signed-in member through identity status, missing evidence, and continui
 repair without turning the page into a long explanation document.
 
 Must show:
-- compact identity header with unobstructed photo/initials
-- GSN ID, selected community, continuity state, and TrustSlip state as short
-  SVG-led facts
-- evidence tasks for Phone, Community, Bank / Wallet, Passport / ID, and Recovery
-- one active evidence task with a clear action or explicit route-pending response
-- deeper readings, recovery form, reasons, timeline, and trust-document family
-  material below the front package or behind collapses
+- compact identity header with unobstructed photo/initials, readiness, name, and
+  GSN ID
+- one recommended evidence task: the first incomplete Phone, Community,
+  Bank / Wallet, Passport / ID, or Recovery step
+- one closed `More identity tools` control after the recommended task
+- independently closed tool rows for identity facts, copy actions, and choosing
+  another evidence step; opening the tools control must not expose all tools
+- one closed `More identity details` control for evidence meaning, readings,
+  recovery, reasons, timeline, next-step material, and reference guides
 - the normal Identity Integrity page shows the Identity Anchor only; it must not
   expose an Identity Card selector or render the GSN Identity Card
 
 Rules:
 - Use the mobile task protocol: short state first, next action first, details
   later.
+- The authenticated app shell owns the page title and return path. Do not add a
+  second page-local navigation or Back banner.
+- Do not expose the fact grid, copy controls, alternate evidence tasks, Evidence
+  Meaning, or any secondary section on first arrival.
+- Opening `More identity details` may reveal compact section rows only. Each
+  section remains independently closed until selected.
 - Keep the GSN Identity Card outside the normal Identity Integrity surface.
 - The Dashboard GSN ID Card entry uses the authenticated `display=card-only`
   presentation. That presentation mounts the card and its covered actions only;
