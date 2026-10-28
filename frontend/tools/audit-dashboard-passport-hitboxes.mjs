@@ -210,6 +210,51 @@ try {
     throw new Error(`Dashboard passive passport hitbox audit failed:\n- ${findings.join("\n- ")}`);
   }
 
+  const idCardEntry = page.locator(
+    '[data-cta-id="dashboard.passport-gsn-id-card"]'
+  );
+  if ((await idCardEntry.count()) !== 1) {
+    throw new Error("Dashboard must expose one direct GSN ID Card entry.");
+  }
+
+  await idCardEntry.scrollIntoViewIfNeeded();
+  await idCardEntry.tap();
+  await page.waitForURL(/\/app\/identity\?view=card$/, { timeout: 10000 });
+
+  const identityCard = page.locator('[data-gsn-identity-card="true"]');
+  await identityCard.waitFor({ state: "visible", timeout: 10000 });
+
+  const cardActionsMenu = page.locator(
+    '[data-gsn-identity-card-actions-menu="true"]'
+  );
+  if ((await cardActionsMenu.count()) !== 0) {
+    throw new Error("GSN ID Card actions must stay closed on first arrival.");
+  }
+
+  const cardActionsToggle = page.locator(
+    '[data-cta-id="identity-integrity.gsn-card.actions-toggle"]'
+  );
+  if (
+    (await cardActionsToggle.count()) !== 1 ||
+    (await cardActionsToggle.getAttribute("aria-expanded")) !== "false"
+  ) {
+    throw new Error("GSN ID Card must expose one closed card-action control.");
+  }
+
+  await cardActionsToggle.tap();
+  await cardActionsMenu.waitFor({ state: "visible", timeout: 5000 });
+
+  for (const action of ["share", "refresh", "copy", "copy-verify-link"]) {
+    const actionControl = page.locator(
+      `[data-cta-id="identity-integrity.gsn-card.${action}"]`
+    );
+    if ((await actionControl.count()) !== 1 || !(await actionControl.isVisible())) {
+      throw new Error(`GSN ID Card action chooser did not expose ${action}.`);
+    }
+  }
+
+  await page.goto(beforeUrl, { waitUntil: "networkidle", timeout: 20000 });
+
   const pictureFrameTriggers = page.locator(
     '[data-cta-id="picture-frame-tools.toggle"]'
   );
@@ -259,7 +304,7 @@ try {
   }
 
   console.log(
-    "Dashboard phone frame audit passed: passport status tiles remain passive and the compact Edit photo trigger preserves its stable tools rail."
+    "Dashboard phone frame audit passed: passive status tiles stay passive, GSN ID Card opens the covered card-action surface, and Edit photo preserves its stable tools rail."
   );
 } finally {
   await context.close();

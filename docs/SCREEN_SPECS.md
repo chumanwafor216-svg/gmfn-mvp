@@ -204,7 +204,7 @@ Must show:
 - Picture frame control
 - picture tools: Upload, Change, Remove
 - Trust / CCI / TrustSlip status row
-- GSN Global ID card with shield mark, centered permanent identity copy, and visible ID
+- tappable GSN ID Card entry with shield mark, visible ID, and direct Identity Card destination
 - Market Wisdom presentation
 
 Frozen:
@@ -1201,10 +1201,15 @@ Must show:
 - one active evidence task with a clear action or explicit route-pending response
 - deeper readings, recovery form, reasons, timeline, and trust-document family
   material below the front package or behind collapses
+- the GSN Identity Card itself remains visible, while share, refresh, copy-card,
+  copy-verification, and the short legal boundary remain behind one closed
+  `Use this ID card` control
 
 Rules:
 - Use the mobile task protocol: short state first, next action first, details
   later.
+- Opening the card-action control reveals only the compact action chooser; it
+  must not open Identity Anchor tasks or any secondary evidence section.
 - Use SVG pictograms from the app icon system for core identity tasks.
 - Do not use a large photo hero or long paragraph before the user sees current
   status and next action.

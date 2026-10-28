@@ -1860,6 +1860,7 @@ export default function IdentityIntegrityPage() {
     useState<IdentityPackageView>(() =>
       completionMode || requestedIdentityTask ? "anchor" : "card"
     );
+  const [identityCardActionsOpen, setIdentityCardActionsOpen] = useState(false);
   const [identityCardGeneratedAt, setIdentityCardGeneratedAt] = useState(() =>
     new Date().toISOString()
   );
@@ -3437,7 +3438,10 @@ export default function IdentityIntegrityPage() {
             <ViewButton
               key={item.key}
               type="button"
-              onClick={() => setIdentityPackageView(item.key)}
+              onClick={() => {
+                setIdentityPackageView(item.key);
+                setIdentityCardActionsOpen(false);
+              }}
               stableHeight={isCompact ? 52 : 50}
               fullWidth
               debugId={`identity-integrity.package-view.${item.key}`}
@@ -4740,57 +4744,84 @@ export default function IdentityIntegrityPage() {
           </div>
         </div>
 
-        <CardActionRow style={{ marginTop: 12 }}>
-          <SecondaryButton
-            onClick={() => void refreshGsnIdentityCard()}
-            stableHeight={isCompact ? 52 : 50}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 156}
-            disabled={identityCardRefreshing}
-            debugId="identity-integrity.gsn-card.refresh"
-          >
-            {identityCardRefreshing ? "Refreshing" : "Refresh card"}
-          </SecondaryButton>
-          <PrimaryButton
-            onClick={handleGsnIdentityCardPrimaryAction}
-            stableHeight={isCompact ? 52 : 50}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 172}
-            debugId="identity-integrity.gsn-card.share"
-          >
-            {identityCardValid ? "Share card" : "Finish card"}
-          </PrimaryButton>
-          <SecondaryButton
-            onClick={() => void copyGsnIdentityCard()}
-            stableHeight={isCompact ? 52 : 50}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 168}
-            debugId="identity-integrity.gsn-card.copy"
-          >
-            Copy card text
-          </SecondaryButton>
-          <SecondaryButton
-            onClick={() => void copyTrustSlipVerifyLink()}
-            stableHeight={isCompact ? 52 : 50}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 168}
-            debugId="identity-integrity.gsn-card.copy-verify-link"
-          >
-            Copy verify link
-          </SecondaryButton>
-        </CardActionRow>
-
         <div
-          data-gsn-identity-card-boundary="true"
-          style={{
-            marginTop: 10,
-            color: "#617085",
-            fontSize: 12,
-            fontWeight: 820,
-            lineHeight: 1.35,
-          }}
+          data-gsn-identity-card-actions="covered"
+          style={{ marginTop: 12, display: "grid", gap: 8 }}
         >
-          Public card hides community names and private documents. It is not government ID, professional licence proof, credit approval, payment guarantee, or future behaviour proof.
+          <PrimaryButton
+            type="button"
+            onClick={() => setIdentityCardActionsOpen((open) => !open)}
+            aria-expanded={identityCardActionsOpen}
+            stableHeight={isCompact ? 52 : 50}
+            fullWidth
+            debugId="identity-integrity.gsn-card.actions-toggle"
+          >
+            <GsnLegacyIcon name="id" size={24} />
+            {identityCardActionsOpen ? "Close card actions" : "Use this ID card"}
+          </PrimaryButton>
+
+          {identityCardActionsOpen ? (
+            <div
+              data-gsn-identity-card-actions-menu="true"
+              style={{
+                ...innerCard("#F8FBFF"),
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 8,
+                padding: 8,
+              }}
+            >
+              <PrimaryButton
+                onClick={handleGsnIdentityCardPrimaryAction}
+                stableHeight={50}
+                fullWidth
+                debugId="identity-integrity.gsn-card.share"
+              >
+                {identityCardValid ? "Share" : "Finish card"}
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => void refreshGsnIdentityCard()}
+                stableHeight={50}
+                fullWidth
+                disabled={identityCardRefreshing}
+                debugId="identity-integrity.gsn-card.refresh"
+              >
+                {identityCardRefreshing ? "Refreshing" : "Refresh"}
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void copyGsnIdentityCard()}
+                stableHeight={50}
+                fullWidth
+                debugId="identity-integrity.gsn-card.copy"
+              >
+                Copy card
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void copyTrustSlipVerifyLink()}
+                stableHeight={50}
+                fullWidth
+                debugId="identity-integrity.gsn-card.copy-verify-link"
+              >
+                Copy verify link
+              </SecondaryButton>
+
+              <div
+                data-gsn-identity-card-boundary="true"
+                style={{
+                  gridColumn: "1 / -1",
+                  color: "#617085",
+                  fontSize: 11,
+                  fontWeight: 820,
+                  lineHeight: 1.3,
+                  textAlign: "center",
+                }}
+              >
+                GSN identity record - not a government ID or guarantee.
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
       ) : null}

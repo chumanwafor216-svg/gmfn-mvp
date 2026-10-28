@@ -296,7 +296,7 @@ assertContains(
 );
 
 assertContains(
-  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
   "GSN Identity Card must keep separate live-card and verification targets: QR/live card to /card, copy verify link to /lite."
 );
 
@@ -311,8 +311,8 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-screenshot="true"[\s\S]*?<\/div>[\s\S]*?<CardActionRow[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Public card hides community names and private documents[\s\S]*?not government ID, professional licence proof, credit approval, payment guarantee, or future behaviour proof/i,
-  "GSN Identity Card must keep the privacy and no-overclaim boundary visible."
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?aria-expanded=\{identityCardActionsOpen\}[\s\S]*?Use this ID card[\s\S]*?identityCardActionsOpen \? \([\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?not a government ID or guarantee/i,
+  "GSN Identity Card actions and concise no-overclaim boundary must stay covered by one closed control."
 );
 assertNotContains(
   /height: isCompact \? 240 : 270|<ExplainToggle[\s\S]*?What this screen does|Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it/g,

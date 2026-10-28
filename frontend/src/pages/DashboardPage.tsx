@@ -8347,7 +8347,14 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div
+          <StableButton
+            debugId="dashboard.passport-gsn-id-card"
+            type="button"
+            aria-label="Open your GSN ID Card"
+            onClick={(event) =>
+              openDashboardRoute(event, `${DASHBOARD_TARGETS.CCI}?view=card`)
+            }
+            onPointerDown={consumeDashboardPointerEvent}
             style={{
               marginTop: 0,
               order: 40,
@@ -8375,6 +8382,8 @@ export default function DashboardPage() {
               overflowAnchor: "none",
               transition: "none",
               position: "relative",
+              cursor: "pointer",
+              font: "inherit",
             }}
           >
             <span
@@ -8492,7 +8501,7 @@ export default function DashboardPage() {
                   overflowWrap: "break-word",
                 }}
               >
-                <span>GSN Global ID</span>
+                <span>GSN ID Card</span>
                 <DashboardSignalIcon name="trust" size={isPhone ? 14 : 16} strokeWidth={2.2} />
               </span>
               <span
@@ -8504,7 +8513,20 @@ export default function DashboardPage() {
                   maxWidth: isPhone ? 210 : 360,
                 }}
               >
-                Your GSN identity record across the network
+                Open your official GSN identity card
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: DASHBOARD_BRAND.accentDeep,
+                  fontSize: isPhone ? 10 : 11.5,
+                  fontWeight: 1000,
+                  lineHeight: 1.1,
+                }}
+              >
+                Open card <span aria-hidden="true">&gt;</span>
               </span>
             </span>
 
@@ -8573,7 +8595,7 @@ export default function DashboardPage() {
                 </span>
               </span>
             </span>
-          </div>
+          </StableButton>
         </section>
 
       <section
