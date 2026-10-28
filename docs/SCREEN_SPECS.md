@@ -1202,13 +1202,14 @@ Must show:
 - deeper readings, recovery form, reasons, timeline, and trust-document family
   material below the front package or behind collapses
 - the GSN Identity Card itself remains visible, while share, refresh, copy-card,
-  copy-verification, and the short legal boundary remain behind one closed
-  `Use this ID card` control
+  copy-verification, and the short legal boundary remain behind its closed
+  `GSN Identity Card` title control; do not add a duplicate action below the card
 
 Rules:
 - Use the mobile task protocol: short state first, next action first, details
   later.
-- Opening the card-action control reveals only the compact action chooser; it
+- Tapping the `GSN Identity Card` title control reveals only the compact action
+  chooser; tapping it again closes that chooser. It
   must not open Identity Anchor tasks or any secondary evidence section.
 - The Dashboard GSN ID Card entry uses the authenticated `display=card-only`
   presentation. That presentation mounts the card and its covered actions only;

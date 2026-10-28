@@ -7,6 +7,7 @@ import {
   CardActionRow,
   PrimaryButton,
   SecondaryButton,
+  StableButton,
   StableCtaLink,
   StableDisclosureSummary,
   SubtleButton,
@@ -4529,10 +4530,23 @@ export default function IdentityIntegrityPage() {
                   alignItems: "center",
                 }}
               >
-                <span style={{ ...compactStatusChip(identitySignals.phoneVerified ? "ready" : "pending"), background: "rgba(255,255,255,0.12)", color: "#F8FBFF", border: "1px solid rgba(242,199,102,0.28)" }}>
+                <StableButton
+                  type="button"
+                  onClick={() => setIdentityCardActionsOpen((open) => !open)}
+                  aria-expanded={identityCardActionsOpen}
+                  aria-label={identityCardActionsOpen ? "Close GSN ID Card actions" : "Use this GSN ID Card"}
+                  debugId="identity-integrity.gsn-card.actions-toggle"
+                  style={{
+                    ...compactStatusChip(identitySignals.phoneVerified ? "ready" : "pending"),
+                    background: "rgba(255,255,255,0.12)",
+                    color: "#F8FBFF",
+                    border: "1px solid rgba(242,199,102,0.28)",
+                    cursor: "pointer",
+                  }}
+                >
                   <GsnLegacyIcon name="id" size={22} />
                   GSN Identity Card
-                </span>
+                </StableButton>
               </div>
               <div
                 style={{
@@ -4762,18 +4776,6 @@ export default function IdentityIntegrityPage() {
           data-gsn-identity-card-actions="covered"
           style={{ marginTop: 12, display: "grid", gap: 8 }}
         >
-          <PrimaryButton
-            type="button"
-            onClick={() => setIdentityCardActionsOpen((open) => !open)}
-            aria-expanded={identityCardActionsOpen}
-            stableHeight={isCompact ? 52 : 50}
-            fullWidth
-            debugId="identity-integrity.gsn-card.actions-toggle"
-          >
-            <GsnLegacyIcon name="id" size={24} />
-            {identityCardActionsOpen ? "Close card actions" : "Use this ID card"}
-          </PrimaryButton>
-
           {identityCardActionsOpen ? (
             <div
               data-gsn-identity-card-actions-menu="true"

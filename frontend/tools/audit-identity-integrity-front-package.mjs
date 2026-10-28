@@ -296,7 +296,7 @@ assertContains(
 );
 
 assertContains(
-  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
   "GSN Identity Card must keep separate live-card and verification targets: QR/live card to /card, copy verify link to /lite."
 );
 
@@ -311,8 +311,13 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?aria-expanded=\{identityCardActionsOpen\}[\s\S]*?Use this ID card[\s\S]*?identityCardActionsOpen \? \([\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?not a government ID or guarantee/i,
-  "GSN Identity Card actions and concise no-overclaim boundary must stay covered by one closed control."
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?aria-expanded=\{identityCardActionsOpen\}[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?GSN Identity Card[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?not a government ID or guarantee/i,
+  "GSN Identity Card title and concise no-overclaim boundary must stay behind one closed card-title control."
+);
+
+assertNotContains(
+  /Use this ID card|Close card actions/,
+  "GSN Identity Card must not render a duplicate action button below the card."
 );
 assertContains(
   /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?<PageTopNav[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-package-view-toggle="true"[\s\S]*?!cardOnlyMode && identityPackageView === "anchor"[\s\S]*?cardOnlyMode \|\| identityPackageView === "card"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-secondary-section="readings"/,

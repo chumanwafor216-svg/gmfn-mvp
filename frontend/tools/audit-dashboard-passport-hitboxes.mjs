@@ -260,6 +260,17 @@ try {
     throw new Error("GSN ID Card must expose one closed card-action control.");
   }
 
+  const cardTitleOwnsActions = await cardActionsToggle.evaluate((element) =>
+    Boolean(element.closest('[data-gsn-identity-card-screenshot="true"]'))
+  );
+  if (!cardTitleOwnsActions) {
+    throw new Error("The GSN Identity Card title must be the card-action control.");
+  }
+
+  if ((await page.getByText("Use this ID card", { exact: true }).count()) !== 0) {
+    throw new Error("GSN ID Card must not expose a duplicate action below the card.");
+  }
+
   await cardActionsToggle.tap();
   await cardActionsMenu.waitFor({ state: "visible", timeout: 5000 });
 
