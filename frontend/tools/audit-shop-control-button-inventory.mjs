@@ -791,7 +791,7 @@ assertLayoutContains(
 
 assertLayoutContains(
   /function shouldKeepBottomRailInTaskMode\(pathname: string\): boolean \{[\s\S]*?return \([\s\S]*?pathname === "\/app\/shop-control"[\s\S]*?pathname === "\/app\/loans"[\s\S]*?\);[\s\S]*?\}[\s\S]*?const showMobileBottomRail =[\s\S]*?isMobile && \(!taskMode \|\| shouldKeepBottomRailInTaskMode\(location\.pathname\)\)/,
-  "Shop Control is the authenticated home and must keep the five-anchor mobile bottom rail while preserving focused task behavior."
+  "Shop Control must keep the five-anchor mobile bottom rail as an escape path while preserving focused task behavior and remaining separate from the primary Public Shop tab."
 );
 
 assertLayoutContains(

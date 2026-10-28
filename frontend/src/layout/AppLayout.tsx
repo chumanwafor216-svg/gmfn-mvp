@@ -2145,7 +2145,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
     const items: NavLinkItem[] = [
       {
-        ...makeShopControlItem(),
+        ...makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
         label: "Shop",
       },
       {
@@ -2161,7 +2161,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     ];
 
     return items;
-  }, []);
+  }, [myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {
     if (taskMode) {
@@ -2808,7 +2808,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
         ) : null}
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
-        <Outlet />
+        <Outlet context={{ myShopGalleryTo, myShopGalleryDisabled }} />
       </main>
 
       {showMobileBottomRail ? (

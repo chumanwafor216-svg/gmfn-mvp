@@ -5,6 +5,7 @@ import {
   Navigate,
   Outlet,
   useLocation,
+  useOutletContext,
   useParams,
 } from "react-router-dom";
 
@@ -670,6 +671,22 @@ function RedirectPublicShopAlias() {
   );
 }
 
+function RedirectOwnPublicShop() {
+  const outletContext = useOutletContext<{
+    myShopGalleryTo?: string;
+    myShopGalleryDisabled?: boolean;
+  }>();
+  const target = String(outletContext?.myShopGalleryTo || "").trim();
+  const disabled = outletContext?.myShopGalleryDisabled === true;
+
+  return (
+    <Navigate
+      to={!disabled && target.startsWith("/shop/") ? target : APP_ROUTES.DASHBOARD}
+      replace
+    />
+  );
+}
+
 function RedirectCommunityMarketplaceAlias() {
   const location = useLocation();
   const params = useParams<Record<string, string | undefined>>();
@@ -1196,7 +1213,7 @@ export default function App() {
         <Route path="shop-manager" element={<PreserveRedirect to="/app/shop-control" />} />
         <Route path="shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="my-shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
-        <Route path="shop/me" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
+        <Route path="shop/me" element={<RedirectOwnPublicShop />} />
         <Route path="open-shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="open-shop/me" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />

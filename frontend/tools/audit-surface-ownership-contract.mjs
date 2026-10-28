@@ -80,8 +80,8 @@ assertContains(
 assertContains(
   "docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md",
   contract,
-  /Authenticated Shop navigation[\s\S]*?Shop Control \/ owner operations[\s\S]*?Public Shop[\s\S]*?Public supply\/offers/,
-  "Contract must record the repository-qualified Shop split."
+  /Authenticated Shop navigation[\s\S]*?primary Shop tab opens the signed-in member's Public Shop[\s\S]*?Public Shop[\s\S]*?Public supply\/offers[\s\S]*?Shop Control[\s\S]*?Shop setup, products, Vault, Spotlight controls/,
+  "Contract must record the Public-Shop-first navigation and separate owner-operations split."
 );
 
 assertContains(
@@ -351,12 +351,12 @@ assertContains(
 assertContains(
   "frontend/src/layout/AppLayout.tsx",
   appLayout,
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopControlItem\(\)[\s\S]*?label: "Shop"[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeProfileItem\(\)/,
-  "Ordinary mobile bottom navigation must remain focused on Shop, Community Home, Marketplace, Dashboard, and Profile in that order."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeProfileItem\(\)/,
+  "Ordinary mobile bottom navigation must keep Public Shop first, followed by Community Home, Marketplace, Dashboard, and Profile."
 );
 
 const mobileBottomBlock =
-  appLayout.match(/const mobileBottomItems[\s\S]*?\}, \[\]\);/)?.[0] || "";
+  appLayout.match(/const mobileBottomItems[\s\S]*?\}, \[myShopGalleryDisabled, myShopGalleryTo\]\);/)?.[0] || "";
 assertNotContains(
   "frontend/src/layout/AppLayout.tsx",
   mobileBottomBlock,

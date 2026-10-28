@@ -25,6 +25,7 @@ const routes = [
   "/app/marketplace/demand-box",
   "/app/demand-box?queue=open",
   "/app/notifications",
+  "/app/shop/me",
   "/app/shop-control",
   "/app/shop-control#shop-control-spotlight",
   "/app/shop-control/subscription-spotlight",

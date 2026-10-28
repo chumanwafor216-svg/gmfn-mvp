@@ -9,6 +9,7 @@ export const APP_ROUTES = {
   MARKETPLACE: "/app/marketplace",
   SHOP: "/app/shop-control",
   SHOP_ME: "/app/shop-control",
+  PUBLIC_SHOP_ME: "/app/shop/me",
   SHOP_ASSETS: "/app/shop-assets",
   VAULT_CONTROL: "/app/vault-control",
   FREE_SPOTLIGHT: "/app/shop-control#shop-control-spotlight",
@@ -61,9 +62,10 @@ export const APP_ROUTES = {
   LOGIN: "/login",
 } as const;
 
-// Shop is the owner-approved authenticated starting surface. Explicit deep-link,
-// recovery, invite, and task return targets still take precedence over this default.
-export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES.SHOP_ME;
+// The member's Public Shop is the owner-approved authenticated starting surface.
+// The /app/shop/me alias resolves the signed-in GSN ID before leaving the app shell.
+// Explicit deep-link, recovery, invite, and task return targets still take precedence.
+export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES.PUBLIC_SHOP_ME;
 
 export type AppRouteKey = keyof typeof APP_ROUTES;
 

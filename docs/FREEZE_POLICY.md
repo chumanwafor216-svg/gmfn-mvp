@@ -78,11 +78,14 @@ Examples:
 Current explicit frozen paths:
 - `frontend/src/layout/AppLayout.tsx` authenticated mobile primary navigation
   is owner-approved as `Shop -> Community Home -> Marketplace -> Dashboard ->
-  Profile` as of 2026-10-27. `Shop` opens Shop Control, while Public Shop
-  remains a separate customer-facing surface. The five-anchor rail remains
-  visible on the Shop Control home even while its internal work stays focused.
-  Do not restore Dashboard-first ordering, hide the primary rail on the Shop
-  home, or point the primary Shop tab back to Public Shop without an intentional
+  Profile`. The 2026-10-28 owner correction intentionally supersedes the
+  2026-10-27 Shop-Control destination: `Shop` now opens the signed-in member's
+  customer-facing Public Shop at `/shop/{GSN_ID}`. Shop Control remains a
+  separate owner workspace in Menu, Public Shop owner shortcuts, and legitimate
+  management handoffs. The five-anchor rail remains visible on Shop Control as
+  an escape path, but Shop Control is no longer represented as the active Shop
+  tab. Do not restore Dashboard-first ordering, hide the rail on Shop Control,
+  or point the primary Shop tab back to Shop Control without another intentional
   navigation review and matching audit updates.
 - `frontend/src/pages/CommitmentsPage.tsx` phone two-lane/focused-Shared presentation is reviewed as of 2026-10-15 and caged by `frontend/tools/audit-commitments-surface.mjs`, `frontend/tools/audit-action-surface-contracts.mjs`, and the mobile visual sweep; do not restore the duplicate phone heading, simultaneous lane chooser/workspace stack, raw action controls, or multi-column phone forms without intentional review.
 - `frontend/src/pages/DashboardPage.tsx` dashboard Market Wisdom presentation and interaction model only; other dashboard edits still require normal impact review.

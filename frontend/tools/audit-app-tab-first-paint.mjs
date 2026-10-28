@@ -357,24 +357,24 @@ async function measureShopDefaultAndPrimaryNav(browser, baseURL) {
     localStorage.setItem("gmfn_selected_clan_id", "8");
   });
 
-  await page.goto(baseURL + "/app", {
+  await page.goto(baseURL + "/app/dashboard?community=8", {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });
-  await page.waitForFunction(
-    () => window.location.pathname === "/app/shop-control",
-    undefined,
-    { timeout: MAX_FIRST_SURFACE_MS }
-  );
   await page.waitForSelector('[data-gmfn-bottom-nav="true"]', {
     timeout: MAX_FIRST_SURFACE_MS,
   });
-  await page.waitForSelector(
-    '[data-cta-id="app-layout.bottom-nav.shop"][data-bottom-nav-active="true"]',
+  await page.waitForFunction(
+    () => {
+      const shop = document.querySelector('[data-cta-id="app-layout.bottom-nav.shop"]');
+      const href = shop?.getAttribute("href") || "";
+      return href.includes("/shop/GMFN-U-63655DE6");
+    },
+    undefined,
     { timeout: MAX_FIRST_SURFACE_MS }
   );
 
-  const result = await page.evaluate(() => {
+  const primaryNav = await page.evaluate(() => {
     const items = Array.from(
       document.querySelectorAll('[data-gmfn-bottom-nav-item="true"]')
     );
@@ -393,6 +393,40 @@ async function measureShopDefaultAndPrimaryNav(browser, baseURL) {
     };
   });
 
+  await page.click('[data-cta-id="app-layout.bottom-nav.shop"]');
+  await page.waitForFunction(
+    () => window.location.pathname === "/shop/GMFN-U-63655DE6",
+    undefined,
+    { timeout: MAX_FIRST_SURFACE_MS }
+  );
+  await page.waitForSelector(".public-shop-shell", {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+  const shopTabDestination = await page.evaluate(() => ({
+    pathname: window.location.pathname,
+    hasPublicShop: Boolean(document.querySelector(".public-shop-shell")),
+    hasAuthenticatedBottomRail: Boolean(
+      document.querySelector('[data-gmfn-bottom-nav="true"]')
+    ),
+  }));
+
+  await page.goto(baseURL + "/app", {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+  await page.waitForFunction(
+    () => window.location.pathname === "/shop/GMFN-U-63655DE6",
+    undefined,
+    { timeout: MAX_FIRST_SURFACE_MS }
+  );
+  await page.waitForSelector(".public-shop-shell", {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+  const defaultDestination = await page.evaluate(() => ({
+    pathname: window.location.pathname,
+    hasPublicShop: Boolean(document.querySelector(".public-shop-shell")),
+  }));
+
   await context.close();
 
   const expectedLabels = [
@@ -403,7 +437,7 @@ async function measureShopDefaultAndPrimaryNav(browser, baseURL) {
     "Profile",
   ];
   const expectedPathnames = [
-    "/app/shop-control",
+    "/shop/GMFN-U-63655DE6",
     "/app/community",
     "/app/marketplace",
     "/app/dashboard",
@@ -411,15 +445,20 @@ async function measureShopDefaultAndPrimaryNav(browser, baseURL) {
   ];
 
   return {
-    name: "Shop-first authenticated default and primary navigation",
+    name: "Public-Shop-first authenticated default and primary navigation",
     passed:
-      result.pathname === "/app/shop-control" &&
-      JSON.stringify(result.labels) === JSON.stringify(expectedLabels) &&
-      JSON.stringify(result.pathnames) === JSON.stringify(expectedPathnames) &&
-      result.activeIds.length === 1 &&
-      result.activeIds[0] === "app-layout.bottom-nav.shop" &&
-      result.noHorizontalOverflow,
-    result,
+      primaryNav.pathname === "/app/dashboard" &&
+      JSON.stringify(primaryNav.labels) === JSON.stringify(expectedLabels) &&
+      JSON.stringify(primaryNav.pathnames) === JSON.stringify(expectedPathnames) &&
+      primaryNav.activeIds.length === 1 &&
+      primaryNav.activeIds[0] === "app-layout.bottom-nav.dashboard" &&
+      primaryNav.noHorizontalOverflow &&
+      shopTabDestination.pathname === "/shop/GMFN-U-63655DE6" &&
+      shopTabDestination.hasPublicShop &&
+      !shopTabDestination.hasAuthenticatedBottomRail &&
+      defaultDestination.pathname === "/shop/GMFN-U-63655DE6" &&
+      defaultDestination.hasPublicShop,
+    result: { primaryNav, shopTabDestination, defaultDestination },
   };
 }
 

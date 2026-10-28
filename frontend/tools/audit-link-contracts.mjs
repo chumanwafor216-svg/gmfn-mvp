@@ -237,20 +237,26 @@ assertContains(
 
 assertContains(
   "src/lib/appRoutes.ts",
-  /export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES\.SHOP_ME;/,
-  "The authenticated default must remain the owner Shop surface."
+  /PUBLIC_SHOP_ME: "\/app\/shop\/me"[\s\S]*?export const DEFAULT_AUTHENTICATED_ROUTE = APP_ROUTES\.PUBLIC_SHOP_ME;/,
+  "The authenticated default must resolve the signed-in member's Public Shop."
 );
 
 assertContains(
   "src/App.tsx",
   /<Route index element=\{<Navigate to=\{DEFAULT_AUTHENTICATED_ROUTE\} replace \/>\} \/>/,
-  "The bare authenticated /app route must open the owner Shop surface."
+  "The bare authenticated /app route must enter the own-Public-Shop resolver."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function RedirectOwnPublicShop\(\)[\s\S]*?useOutletContext[\s\S]*?target\.startsWith\("\/shop\/"\)[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?<Route path="shop\/me" element=\{<RedirectOwnPublicShop \/>\} \/>/,
+  "The authenticated Public Shop default must resolve a real member-scoped /shop/{GSN ID} path and use Dashboard only when identity is unavailable."
 );
 
 assertContains(
   "src/pages/LoginPage.tsx",
   /const redirectTarget = useMemo\([\s\S]*?return DEFAULT_AUTHENTICATED_ROUTE;/,
-  "Sign-in without an explicit safe return target must open the owner Shop surface."
+  "Sign-in without an explicit safe return target must open the member's Public Shop through the shared default."
 );
 
 assertContains(
@@ -832,8 +838,8 @@ assertContains(
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopControlItem\(\)[\s\S]*?label: "Shop"[\s\S]*?return items;/,
-  "Mobile bottom rail must keep the owner Shop anchor available without waiting for a public-shop GSN ID."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?\.\.\.makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?return items;[\s\S]*?\}, \[myShopGalleryDisabled, myShopGalleryTo\]\);/,
+  "Mobile bottom rail must resolve Shop to the member's Public Shop and stay disabled until the GSN ID is known."
 );
 
 assertContains(

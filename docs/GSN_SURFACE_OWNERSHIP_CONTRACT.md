@@ -43,7 +43,7 @@ simplification packages must respect before touching user-facing surfaces.
 | Community Domain | How do authorised operators administer this community/domain? | Operator/governance machinery, service policy, billing, official records, and readiness. | Ordinary member flow. |
 | DemandBox | What do I need? | Requests/needs and their lifecycle. | Full marketplace workspace or formal bilateral evidence. |
 | Marketplace | What can I do/find within this selected community marketplace? | One-community needs, Shops & Services discovery, contextual relevant provider connections, and action handoff. | DemandBox request lifecycle, Public Shop detail/contact, Shop Control owner management, cross-community identity, hidden ranking, or system analytics. |
-| Authenticated Shop navigation | How does the owner operate their shop? | In this repository, authenticated Shop navigation currently routes toward Shop Control / owner operations. | Public supply browsing. |
+| Authenticated Shop navigation | What does my shop look like to people? | The primary Shop tab opens the signed-in member's Public Shop. | Owner operations or analytics. |
 | Public Shop | What does this merchant/person offer? | Public supply/offers and legitimate contact paths. | Owner operations or analytics. |
 | Shop Control | How does the owner operate the shop? | Shop setup, products, Vault, Spotlight controls, owner analytics, and operating tools. | Public buyer browsing. |
 | Shop Diary | What ordinary merchant activity/history has been recorded? | Chronological shop-owned activity history with owner-claim default evidence and only same-shop confirmed Trade Evidence strengthening. | Products/services catalogue, Spotlight promotion, formal bilateral transaction/service evidence, analytics inference, or Dashboard content. |
@@ -129,11 +129,13 @@ Use these classifications when auditing visible blocks/actions:
 - `APP_ROUTES.PROFILE` intentionally resolves to the canonical My GSN member home
   (`/app/my-gmfn-and-i`). Explicit guide/help mode remains available at
   `/app/my-gmfn-and-i?tab=guide`.
-- Authenticated mobile bottom navigation labels Shop Control as `Shop` and
-  places it first, followed by Community Home, Marketplace, Dashboard, and
-  Profile. Shop remains the owner operating hub; Public Shop remains the
-  customer-facing storefront reached from Shop Control and other legitimate
-  public-shop links. Do not merge owner operations with public supply.
+- Authenticated mobile bottom navigation labels the member's Public Shop as
+  `Shop` and places it first, followed by Community Home, Marketplace,
+  Dashboard, and Profile. The 2026-10-28 owner correction makes the same
+  member-scoped Public Shop the normal authenticated default. Shop Control
+  remains separately reachable for owner operations through Menu, Public Shop
+  owner shortcuts, and legitimate management handoffs. Do not merge owner
+  operations into the public storefront.
 - Community Home is the selected-community member home. It shows identity, Bulletin, real attention, compact handoffs, switching, and collapsed authorised admin entry. My GSN owns cross-GSN/community orientation. Marketplace is the one-community operating nucleus.
 - Community Domain and Command Center are allowed to be complex because they are
   operator surfaces. That complexity must not leak into ordinary member flows

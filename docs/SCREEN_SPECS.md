@@ -186,11 +186,17 @@ Purpose:
 Personal summary page across trust, attention, commitments, events, and next actions.
 
 Authenticated-entry rule:
-- Shop Control is the default authenticated starting surface.
-- The five-anchor mobile primary navigation remains visible on Shop Control.
+- The signed-in member's Public Shop at `/shop/{GSN_ID}` is the default
+  authenticated starting surface.
+- The primary phone Shop tab opens that same customer-facing Public Shop.
+- Shop Control remains a separate owner-management surface available through
+  Menu, the Public Shop owner shortcuts, and contextual management handoffs.
+- The five-anchor mobile primary navigation remains visible on Shop Control as
+  an escape path, but Shop Control is not the active Shop-tab destination.
 - Dashboard remains directly available from the primary phone navigation.
 - Explicit deep links, task returns, publish recovery, invite continuation, and
-  session-expiry return targets must not be overwritten by the Shop default.
+  session-expiry return targets must not be overwritten by the Public Shop
+  default.
 
 Must show:
 - Identity Passport hero

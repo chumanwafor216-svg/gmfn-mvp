@@ -490,8 +490,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeShopControlItem\(\)[\s\S]*?label: "Shop"[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Dashboard mobile bottom rail must count the five stable route anchors in the owner-approved order: Shop, Community Home, Marketplace, Dashboard, and Profile."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Dashboard mobile bottom rail must keep Public Shop as the first of the five stable route anchors: Shop, Community Home, Marketplace, Dashboard, and Profile."
 );
 
 assertLayoutContains(
