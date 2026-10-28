@@ -4708,3 +4708,21 @@ under `docs/` or `docs/archive/`, then link that file here.
   reached `live`, and the workflow verified the public frontend build marker.
 - The deployment was frontend-only. The workflow reported
   `Backend deploy needed: false`; no backend service was restarted.
+
+## Dashboard GSN ID Card-only correction - 2026-10-28
+
+- The first Dashboard ID change opened the full Identity Integrity page with
+  the Card tab selected. The owner rejected that behavior because the request
+  was to open only the ID card, not the surrounding page.
+- Dashboard now opens `/app/identity?view=card&display=card-only`. In this mode
+  the GSN Identity Card and its one covered action control mount; PageTopNav,
+  Evidence Meaning, Card/Anchor tabs, Identity Anchor tasks, readings,
+  continuity, recovery, reasons, timeline, next steps and guides do not mount.
+- Production build, both focused static audits and the 390x844 Playwright phone
+  audit passed. The browser audit explicitly fails if tabs, Anchor tasks or any
+  Identity Integrity secondary section appears in the card-only destination.
+- Application commit `df217b56d5919add97688c41a83edddec6878b62` was pushed
+  to the pilot branch and promoted unchanged to `main`.
+- GitHub Actions run `40786484624` completed successfully. Exact Render
+  frontend deploy `dep-dbh85sa9bars73autpm0` reached `live`, and the public
+  frontend build marker was verified. `Backend deploy needed: false`.
