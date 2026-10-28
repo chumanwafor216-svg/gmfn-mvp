@@ -4676,3 +4676,35 @@ under `docs/` or `docs/archive/`, then link that file here.
   image viewer was blocked by the Windows split-root sandbox. DOM, ARIA,
   interaction and overflow behavior were browser-verified; human visual review
   from this session is not claimed.
+
+## Dashboard GSN ID Card entry and covered card actions - 2026-10-28
+
+- Owner review identified the Dashboard ID number as too passive and the
+  Identity Card follow-on controls as another exposed action stack.
+- The Dashboard passport now labels the identity block `GSN ID Card`. The
+  complete block is one accessible tap target and opens `/app/identity?view=card`
+  directly; the visible GSN ID, issuer and active/not-issued state remain.
+- The actual GSN Identity Card design, evidence tiles, QR and live status are
+  unchanged. The four follow-on controls and the legal boundary are now absent
+  on first arrival behind one `Use this ID card` control.
+- Opening that control reveals only the compact Share/Finish, Refresh, Copy
+  card and Copy verify link chooser. It does not open Identity Anchor tasks or
+  any secondary evidence section; switching Card/Anchor closes the chooser.
+- The former long exposed warning is reduced to one covered line: `GSN identity
+  record - not a government ID or guarantee.` No backend, ID format,
+  verification, sharing, permission or evidence contract changed.
+- Verification passed: Dashboard action audit, Identity Integrity front-package
+  audit, 297-module production frontend build, and the 390x844 Playwright phone
+  audit. The browser audit proves Dashboard-to-card routing, closed-first action
+  state, explicit open state, all four preserved actions, passive passport
+  status tiles and the existing Edit photo tools rail.
+- Human visual review is not claimed in this session. The browser verified the
+  requested DOM, ARIA and interaction states; final physical-phone appearance
+  remains the pilot owner's acceptance check.
+- Application commit `fcc1f2432776319965517a3f0eb74b3d3df42ed7` was pushed
+  to `codex/spotlight-rotation-continuity` and promoted unchanged to `main`.
+- GitHub Actions `Trigger Render Deploy` run `40785243088` completed
+  successfully. Exact Render frontend deploy `dep-dbh812ss728c73ag61f0`
+  reached `live`, and the workflow verified the public frontend build marker.
+- The deployment was frontend-only. The workflow reported
+  `Backend deploy needed: false`; no backend service was restarted.
