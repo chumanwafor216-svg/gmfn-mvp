@@ -5,6 +5,14 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## GSN card removed from normal Identity Integrity - 2026-10-28
+
+- Owner phone evidence showed the normal Identity Integrity page still exposing the `Identity Card / Identity Anchor` switch and therefore retaining a second home for the GSN card. The owner directed that the GSN Identity Card be removed from this page.
+- The normal `/app/identity` presentation is now Identity Anchor-only. The two-choice switch, its view state, and the normal-page card branch were removed rather than hidden.
+- The Dashboard contract is deliberately preserved: `/app/identity?view=card&display=card-only` still mounts the GSN card with its covered action chooser, but no PageTopNav, Anchor package, or secondary evidence sections.
+- Verification passed: Identity Integrity front-package audit, Dashboard action audit, 297-module TypeScript/Vite production build, and phone-browser route testing that proves normal Identity Integrity mounts neither the switch nor the GSN card while Dashboard card-only mode still works.
+- Deployment evidence: app commit `d3e4107037d520cb040ba76aef7fbdf291e4d007`; frontend-only GitHub Actions run `40789283675`; Render frontend deploy `dep-dbh8h7e1egvs73eqr580`, verified live on the exact commit. Backend deployment was correctly skipped.
+
 ## GSN ID-card title action - 2026-10-28
 
 - Owner clarification established that the pill labelled `GSN Identity Card` on the card itself must serve as the single `use this card` control. The separate full-width `Use this ID card` button below the card was duplicate surface clutter and has been removed.
