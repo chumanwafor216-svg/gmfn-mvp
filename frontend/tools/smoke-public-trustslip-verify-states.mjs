@@ -33,7 +33,7 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Explore this TrustSlip", "Verification paper details"],
+    expectedText: ["Recommended next"],
   },
   minimal: {
     code: "TS-MINIMAL-BOUNDARY",
@@ -87,11 +87,7 @@ const scenarios = {
     noSnapshotOrEvents: true,
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: [
-      "Use this as early identity and community evidence only. Ask for recent events or live community confirmation before a serious decision.",
-      "Not stated issued",
-      "Not stated expires",
-    ],
+    expectedText: ["Recommended next"],
   },
   noCommunityRelay: {
     code: "TS-NO-RELAY-BOUNDARY",
@@ -104,10 +100,7 @@ const scenarios = {
     relayAvailable: false,
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: [
-      "Live check not available",
-      "Community confirmation is not available for this TrustSlip yet.",
-    ],
+    expectedText: ["Recommended next"],
   },
   revoked: {
     code: "TS-REVOKED-BOUNDARY",
@@ -433,29 +426,28 @@ async function openRecipientEnvelope(page) {
   await expect(envelope).toBeVisible({ timeout: 30000 });
   await expect(envelope.getByRole("heading", { name: "A TrustSlip has arrived", exact: true })).toBeVisible();
   await expect(envelope.locator('[data-gsn-trustslip-envelope-object="closed"]')).toBeVisible();
-  await expect(envelope.getByText("Opens the certificate report.", { exact: true })).toBeVisible();
+  await expect(envelope.getByText("Opens a quick decision card.", { exact: true })).toBeVisible();
   await expect(envelope.locator("button")).toHaveCount(1);
-  await expect(page.locator('[data-gsn-trustslip-certificate="public-evidence-record"]')).toHaveCount(0);
+  await expect(page.locator('[data-gsn-trustslip-certificate="quick-decision"]')).toHaveCount(0);
   await expect(page.getByText("Scope & limits", { exact: true })).toHaveCount(0);
 
   await page.locator('[data-cta-id="trust-slip-verify.public.open-envelope"]').click();
   await expect(envelope).toHaveCount(0);
-  await expect(page.locator('[data-gsn-trustslip-certificate="public-evidence-record"]')).toBeVisible({
+  await expect(page.locator('[data-gsn-trustslip-certificate="quick-decision"]')).toBeVisible({
     timeout: 30000,
   });
 }
 
 async function assertPublicPaperBasics(page) {
   await openRecipientEnvelope(page);
-  await expect(page.getByRole("heading", { name: "Check this TrustSlip", exact: true })).toBeVisible({
+  await expect(page.locator('[data-gsn-public-decision-first="one-answer-one-action"]')).toBeVisible({
     timeout: 30000,
   });
-  await expect(page.getByText("This paper confirms", { exact: true })).toHaveCount(1);
-  await expect(page.getByText("This paper does not confirm", { exact: true })).toHaveCount(1);
-  await expect(page.getByText("Public paper ends here")).toBeVisible();
-  await expect(page.getByText("Private review area below")).toBeVisible();
-  await expect(page.getByText("Verification paper details", { exact: true })).toBeVisible();
-  await expect(page.getByText("Official record details", { exact: true })).toBeVisible();
+  await expect(page.locator('[data-gsn-trustslip-certificate-facts="person-community-only"]')).toBeVisible();
+  await expect(page.getByText("Recommended next", { exact: true })).toBeVisible();
+  await expect(page.getByText("Check this TrustSlip", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Official record details", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Verification paper details", { exact: true })).toHaveCount(0);
   await assertNoPublicPrivateLeaks(page);
 }
 
@@ -525,13 +517,13 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   }
 
   await assertPublicPaperBasics(page);
-  await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
-  await expectVisibleText(page, scenario.expectedStatusText);
-  await expect(page.getByText(scenario.expectedReadingTitle, { exact: true })).toBeVisible();
-
-  if (scenario.expectedReadingTitle !== "Current public slip") {
-    await expect(page.getByText("Current public slip", { exact: true })).toHaveCount(0);
+  const quickCapturePath = String(process.env.GSN_TRUSTSLIP_QUICK_CAPTURE_PATH || "").trim();
+  if (quickCapturePath && scenario.code === scenarios.current.code) {
+    await page.screenshot({ path: quickCapturePath, fullPage: true });
   }
+  await expectVisibleText(page, scenario.expectedStatusText);
+  await expect(page.locator('[data-gsn-public-decision-first="one-answer-one-action"] h1')).toHaveCount(1);
+  await expect(page.locator('[data-gsn-public-decision-first="one-answer-one-action"] h1')).toBeVisible();
 
   if (scenario.visibility_level === "minimal") {
     await expect(page.locator('img[alt="GSN holder GMFN-U-BOUNDARY profile"]')).toHaveCount(0);
@@ -568,6 +560,55 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   }
 
   await context.close();
+}
+
+async function expectQuickDecisionRecipientCard(page, { expectRedactedExtract = false, expectNoEvidence = false } = {}) {
+  await assertPublicPaperBasics(page);
+  const decisionCard = page.locator('[data-gsn-public-decision-first="one-answer-one-action"]');
+  const primaryAction = page.locator('[data-gsn-public-phone-primary-action="one-next-step"]');
+  await expect(decisionCard).toBeVisible({ timeout: 30000 });
+  await expect(primaryAction).toBeVisible({ timeout: 30000 });
+  await expect(primaryAction).toContainText("Ask community");
+
+  await page.locator('[data-cta-id="trust-slip-verify.public.quick-decision.review-evidence"]').click();
+  const reader = page.locator('[data-gsn-public-mobile-full-evidence="one-step-reader"]');
+  const next = page.locator('[data-cta-id="trust-slip-verify.public.evidence-step.next"]');
+  await expect(reader.locator('[data-gsn-public-evidence-step="1"]')).toBeVisible();
+  await expectVisibleText(page, "Why this result");
+  await expect(reader.locator('[data-gsn-public-evidence-step="2"]')).toHaveCount(0);
+
+  await next.click();
+  await expect(reader.locator('[data-gsn-public-evidence-step="2"]')).toBeVisible();
+  await expectVisibleText(page, "Evidence checked");
+  if (expectRedactedExtract) {
+    await expect(reader).toContainText("purpose-specific public-safe evidence area visible");
+    await expect(reader).not.toContainText("Community participation evidence");
+    await expect(reader).not.toContainText("149 public-safe records");
+  }
+  if (expectNoEvidence) {
+    await expect(reader).toContainText("No purpose-specific public-safe evidence is visible");
+  }
+
+  await page.waitForTimeout(700);
+  await next.click();
+  await expect(reader.locator('[data-gsn-public-evidence-step="3"]')).toBeVisible();
+  await expectVisibleText(page, "Source and date");
+  await page.waitForTimeout(700);
+  await next.click();
+  await expect(reader.locator('[data-gsn-public-evidence-step="4"]')).toBeVisible();
+  await expectVisibleText(page, "Scope");
+
+  const body = page.locator("body");
+  await expect(body).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
+  await expect(body).not.toContainText("Delivered to private address");
+  await expect(body).not.toContainText("public_context_from_link");
+  await expect(body).not.toContainText("backend_access_context_only");
+  await expect(body).not.toContainText("backend_access_recorded");
+  await expect(body).not.toContainText("public_decision_pack");
+
+  await page.waitForTimeout(700);
+  await next.click();
+  await expect(decisionCard).toBeVisible();
 }
 
 async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = false, expectNoEvidence = false } = {}) {
@@ -720,14 +761,14 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
       timeout: 60000,
     }
   );
-  await expectDecisionPackRecipientCard(page);
+  await expectQuickDecisionRecipientCard(page);
 
   const backendOnlyLogStart = requestLog.length;
   await page.goto(`${baseURL}/t/${encodeURIComponent(scenarios.backendContextOnly.code)}?level=standard`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await expectDecisionPackRecipientCard(page, { expectRedactedExtract: true });
+  await expectQuickDecisionRecipientCard(page, { expectRedactedExtract: true });
   const backendOnlyRequests = requestLog.slice(backendOnlyLogStart);
   if (backendOnlyRequests.some((entry) => entry.path.includes("decision_pack"))) {
     throw new Error(
@@ -742,7 +783,7 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await expectDecisionPackRecipientCard(page, { expectRedactedExtract: true });
+  await expectQuickDecisionRecipientCard(page, { expectRedactedExtract: true });
   const backendRecordedRequests = requestLog.slice(backendRecordedLogStart);
   if (backendRecordedRequests.some((entry) => entry.path.includes("decision_pack"))) {
     throw new Error(
@@ -757,7 +798,7 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await expectDecisionPackRecipientCard(page, { expectNoEvidence: true });
+  await expectQuickDecisionRecipientCard(page, { expectNoEvidence: true });
   const noEvidenceRequests = requestLog.slice(noEvidenceLogStart);
   if (noEvidenceRequests.some((entry) => entry.path.includes("decision_pack"))) {
     throw new Error(

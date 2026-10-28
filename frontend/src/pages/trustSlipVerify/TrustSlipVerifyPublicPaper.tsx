@@ -4,6 +4,7 @@ import CommunityProofPanel from "../../components/CommunityProofPanel";
 import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink, SubtleButton } from "../../components/StableButton";
+import TrustSlipQuickDecisionPaper from "./TrustSlipQuickDecisionPaper";
 import { revealElementWithoutJump } from "../../lib/mobileRevealStability";
 import {
   TrustPaperAuthorityStrip,
@@ -2980,6 +2981,33 @@ export default function TrustSlipVerifyPublicPaper({
       };
     }
   );
+
+  if (compact && !isLite && !isCard) {
+    return (
+      <TrustSlipQuickDecisionPaper
+        validNow={validNow}
+        validityLabel={publicValidityLabel}
+        holderName={holderName}
+        communityLabel={communityLabel}
+        supportLine={certificateSupportLine}
+        reasonRows={decisionTranslationRows.filter(
+          ([label]) => label === "Reason 1" || label === "Reason 2"
+        )}
+        evidenceRows={[
+          ["Evidence", purposeSignalText],
+          ["Recorded pattern", trustSlipPattern.reading],
+          ["Next check", trustSlipPattern.nextStep],
+        ]}
+        sourceRows={sourceFamilyRows}
+        resolvedCode={resolvedCode}
+        canAskCommunity={communityPulseAvailable && canRequestCommunityPulse}
+        confirmationBusy={confirmationBusy}
+        requestLockedReason={requestLockedReason}
+        memberCredentialPath={memberCredentialPath || ""}
+        onAskCommunity={() => onRequestCommunityPulse()}
+      />
+    );
+  }
 
   return (
     <section

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  quickDecision: "src/pages/trustSlipVerify/TrustSlipQuickDecisionPaper.tsx",
   disclosure: "src/components/TrustDocumentLanguage.tsx",
   recipientEnvelope: "src/pages/trustSlipVerify/TrustSlipRecipientEnvelope.tsx",
   routePage: "src/pages/TrustSlipVerifyPage.tsx",
@@ -122,8 +123,8 @@ assertContains(
 
 assertContains(
   "recipientEnvelope",
-  /data-gsn-trustslip-recipient-envelope="sealed"[\s\S]*?A TrustSlip has arrived[\s\S]*?shared a community evidence certificate with you\.[\s\S]*?data-gsn-trustslip-envelope-object="closed"[\s\S]*?Recipient copy[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?Open TrustSlip[\s\S]*?Opens the certificate report\./,
-  "The recipient surface must appear as a sealed TrustSlip envelope with one clear Open action before the certificate report."
+  /data-gsn-trustslip-recipient-envelope="sealed"[\s\S]*?A TrustSlip has arrived[\s\S]*?shared a community evidence certificate with you\.[\s\S]*?data-gsn-trustslip-envelope-object="closed"[\s\S]*?Recipient copy[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?Open TrustSlip[\s\S]*?Opens a quick decision card\./,
+  "The recipient surface must appear as a sealed TrustSlip envelope with one clear Open action before the quick decision card."
 );
 
 assertContains(
@@ -134,13 +135,13 @@ assertContains(
 
 assertContains(
   "routePage",
-  /const \[recipientEnvelopeOpened, setRecipientEnvelopeOpened\] = useState\(false\)[\s\S]*?if \(!isAppRoute\) setRecipientEnvelopeOpened\(false\)[\s\S]*?const showRecipientEnvelope =[\s\S]*?!isAppRoute[\s\S]*?!isCardRoute[\s\S]*?!noPublicCodeSupplied[\s\S]*?!publicVerifyEndpointErrorCopy[\s\S]*?!recipientEnvelopeOpened[\s\S]*?showRecipientEnvelope \? \([\s\S]*?<TrustSlipRecipientEnvelope[\s\S]*?onOpen=\{\(\) => setRecipientEnvelopeOpened\(true\)\}[\s\S]*?: \([\s\S]*?<React\.Suspense/,
-  "Public receiver links must show the envelope before the certificate, while authenticated and card-only routes bypass that gate."
+  /const \[recipientEnvelopeOpened, setRecipientEnvelopeOpened\] = useState\(false\)[\s\S]*?const isPublicReceiverDelivery =[\s\S]*?!isCardRoute && Boolean\(requestedCode \|\| requestedShareToken\)[\s\S]*?setRecipientEnvelopeOpened\(false\)[\s\S]*?const showRecipientEnvelope =[\s\S]*?isPublicReceiverDelivery[\s\S]*?!noPublicCodeSupplied[\s\S]*?!publicVerifyEndpointErrorCopy[\s\S]*?!recipientEnvelopeOpened[\s\S]*?showRecipientEnvelope \? \([\s\S]*?<TrustSlipRecipientEnvelope[\s\S]*?onOpen=\{\(\) => setRecipientEnvelopeOpened\(true\)\}/,
+  "Every public code or share delivery must show the envelope first, even inside the authenticated shell; only card-only routes bypass it."
 );
 
 assertContains(
   "routePage",
-  /noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary/,
+  /noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary/,
   "Supporting boundary content must remain hidden while the recipient envelope is still sealed."
 );
 
@@ -193,7 +194,7 @@ assertContains(
 );
 assertContains(
   "routePage",
-  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The public lite TrustSlip route must open as a focused card/paper without the extra boundary support section."
 );
 
@@ -210,7 +211,7 @@ assertContains(
 
 assertContains(
   "routePage",
-  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The TrustSlip verify page must render /card as a focused card-only public view without the extra boundary support section."
 );
 
@@ -308,6 +309,30 @@ assertContains(
   "publicPaper",
   /title="Explore this TrustSlip"[\s\S]*?summary="Choose one section at a time\."[\s\S]*?data-gsn-public-mobile-full-evidence="section-chooser"[\s\S]*?title="Why this result"[\s\S]*?debugId="trust-document\.section\.certificate-why"[\s\S]*?title="Evidence summary"[\s\S]*?debugId="trust-document\.section\.certificate-evidence"[\s\S]*?title="Source and date"[\s\S]*?debugId="trust-document\.section\.certificate-source"[\s\S]*?title="Recorded pattern"[\s\S]*?debugId="trust-document\.section\.certificate-pattern"[\s\S]*?title="Scope & limits"[\s\S]*?debugId="trust-document\.section\.certificate-scope"/,
   "The mobile certificate must reveal a chooser first and keep why, evidence, source, pattern, and limits in separate disclosures."
+);
+
+assertContains(
+  "publicPaper",
+  /if \(compact && !isLite && !isCard\) \{[\s\S]*?<TrustSlipQuickDecisionPaper[\s\S]*?reasonRows=[\s\S]*?evidenceRows=[\s\S]*?sourceRows=\{sourceFamilyRows\}[\s\S]*?canAskCommunity=\{communityPulseAvailable && canRequestCommunityPulse\}/,
+  "Phone recipients must leave the legacy report tree and enter the dedicated quick-decision surface."
+);
+
+assertContains(
+  "quickDecision",
+  /const \[step, setStep\] = useState<number \| null>\(null\)[\s\S]*?title: "Why this result"[\s\S]*?title: "Evidence checked"[\s\S]*?title: "Source and date"[\s\S]*?title: "Scope"[\s\S]*?const activeStep = step === null \? null : steps\[step\][\s\S]*?data-gsn-public-mobile-full-evidence="one-step-reader"[\s\S]*?activeStep && step !== null[\s\S]*?data-gsn-public-evidence-step=\{step \+ 1\}/,
+  "Phone evidence must be a numbered one-step reader that mounts only the active evidence step."
+);
+
+assertContains(
+  "quickDecision",
+  /data-gsn-public-decision-first="one-answer-one-action"[\s\S]*?Known in this community[\s\S]*?data-gsn-trustslip-certificate-facts="person-community-only"[\s\S]*?Person[\s\S]*?Community[\s\S]*?Recommended next[\s\S]*?data-gsn-public-phone-primary-action="one-next-step"/,
+  "The opened phone certificate must show one result, person, community, recommendation, and one primary next action."
+);
+
+assertContains(
+  "quickDecision",
+  /debugId="trust-slip-verify\.public\.quick-decision\.ask-community"[\s\S]*?debugId="trust-slip-verify\.public\.quick-decision\.check-membership"[\s\S]*?debugId="trust-slip-verify\.public\.quick-decision\.review-evidence"[\s\S]*?debugId="trust-slip-verify\.public\.evidence-step\.previous"[\s\S]*?debugId="trust-slip-verify\.public\.evidence-step\.next"/,
+  "The quick decision must select one useful action and let evidence move backward or forward without opening the full report."
 );
 
 assertContains(

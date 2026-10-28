@@ -4631,3 +4631,30 @@ under `docs/` or `docs/archive/`, then link that file here.
   sections are absent from `HEAD`. The TrustSlip-specific audit and browser
   smoke pass; this baseline documentation inconsistency was not concealed or
   expanded into the deployment batch.
+
+## Public TrustSlip quick-decision correction - 2026-10-28
+
+- Physical-phone owner review rated the deployed certificate presentation at
+  25% because the opened receiver view still exposed a large report heading,
+  four fact tiles, a report chooser and too much reading for a quick decision.
+  This feedback is accepted as a product-contract failure, not a spacing bug.
+- Public code/share deliveries now use the sealed receiver envelope even when
+  opened inside the authenticated shell. The signed-in holder workspace with
+  no receiver code/share token still bypasses the envelope, as do no-code,
+  endpoint-error and QR-card states.
+- The opened phone view now bypasses the legacy report tree and renders a
+  dedicated quick-decision certificate with one result, person, community,
+  recommendation and primary action. Record ID, source/date, reasoning and
+  limits are absent from the first face, and the duplicate app return panel is
+  suppressed for receiver deliveries.
+- `Review evidence` opens a four-step reader: Why, Evidence, Source/date and
+  Scope. Only the current numbered step is mounted; Back/Next never opens the
+  complete record. Detailed redacted categories and record counts are reduced
+  to an aggregate public-safe evidence-area signal on the phone surface.
+- No backend, permission, evidence-derivation or public-request contract was
+  changed. Desktop keeps the existing detailed public report in this scoped
+  correction.
+- Verification passed: 297-module production build, updated Public TrustSlip
+  first-viewport audit and the complete Public TrustSlip state browser smoke,
+  including current, minimal, expired, revoked, frozen, low-data, no-relay,
+  endpoint-error, Decision Pack, redacted-evidence and no-evidence states.

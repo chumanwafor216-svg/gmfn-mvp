@@ -162,7 +162,7 @@ export default function TrustSlipRecipientEnvelope({
           Open TrustSlip
         </PrimaryButton>
         <div style={{ color: "#BFD0E0", textAlign: "center", fontSize: 11.5, fontWeight: 800 }}>
-          Opens the certificate report.
+          Opens a quick decision card.
         </div>
       </div>
     </section>

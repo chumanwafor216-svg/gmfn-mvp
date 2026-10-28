@@ -517,11 +517,14 @@ export default function TrustSlipVerifyPage() {
     );
   }, [location.pathname, location.search]);
 
+  const isPublicReceiverDelivery =
+    !isCardRoute && Boolean(requestedCode || requestedShareToken);
+
   const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;
 
   useEffect(() => {
-    if (!isAppRoute) setRecipientEnvelopeOpened(false);
-  }, [isAppRoute, verifyContextKey]);
+    setRecipientEnvelopeOpened(false);
+  }, [verifyContextKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -826,8 +829,7 @@ export default function TrustSlipVerifyPage() {
     [publicVerifyEndpointError]
   );
   const showRecipientEnvelope =
-    !isAppRoute &&
-    !isCardRoute &&
+    isPublicReceiverDelivery &&
     !noPublicCodeSupplied &&
     !publicVerifyEndpointErrorCopy &&
     !recipientEnvelopeOpened;
@@ -896,7 +898,8 @@ export default function TrustSlipVerifyPage() {
       privateEvidenceBanner,
     ]
   );
-  const canShowPrivateEvidence = ownsVisibleTrustSlip && !isCardRoute;
+  const canShowPrivateEvidence =
+    ownsVisibleTrustSlip && !isCardRoute && !isPublicReceiverDelivery;
 
   const {
     profileImageUrl,
@@ -1451,7 +1454,7 @@ export default function TrustSlipVerifyPage() {
           gap: 18,
         }}
       >
-        {isAppRoute ? (
+        {isAppRoute && !isPublicReceiverDelivery ? (
           <PageTopNav
             sectionLabel="TrustSlip Verify"
             title="TrustSlip Verify"
@@ -1521,7 +1524,7 @@ export default function TrustSlipVerifyPage() {
           }
         }
       `}</style>
-      {isAppRoute ? (
+      {isAppRoute && !isPublicReceiverDelivery ? (
         <div className="print-trust-nav">
           <PageTopNav
             sectionLabel="TrustSlip Verify"
@@ -1724,7 +1727,7 @@ export default function TrustSlipVerifyPage() {
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || showRecipientEnvelope || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || showRecipientEnvelope || isLiteRoute || isCardRoute || isCompact ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {canShowPrivateEvidence ? (
         <details

@@ -9,6 +9,7 @@ const files = {
   app: "src/App.tsx",
   verify: "src/pages/TrustSlipVerifyPage.tsx",
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  quickDecision: "src/pages/trustSlipVerify/TrustSlipQuickDecisionPaper.tsx",
   verifyData: "src/pages/trustSlipVerify/trustSlipVerifyData.ts",
   viewModel: "src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts",
   privateEvidence: "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
@@ -263,8 +264,8 @@ assertContains(
 
 assertContains(
   "verify",
-  /const canShowPrivateEvidence = ownsVisibleTrustSlip && !isCardRoute;/,
-  "Private evidence visibility must stay tied to visible TrustSlip ownership."
+  /const canShowPrivateEvidence =[\s\S]*?ownsVisibleTrustSlip && !isCardRoute && !isPublicReceiverDelivery;/,
+  "Private evidence visibility must require visible TrustSlip ownership and must stay hidden during a receiver delivery."
 );
 
 assertContains(
@@ -288,8 +289,8 @@ assertCount(
 
 assertContains(
   "verify",
-  /\{isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : null\}/,
-  "Public TrustSlip Verify must not render app PageTopNav outside app routes."
+  /\{isAppRoute && !isPublicReceiverDelivery \? \([\s\S]*?<PageTopNav[\s\S]*?\) : null\}/,
+  "TrustSlip Verify must render app PageTopNav only for holder workspace routes, never for receiver deliveries."
 );
 
 assertOrder(
@@ -355,8 +356,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public TrustSlip[\s\S]*?Check this TrustSlip[\s\S]*?See what this record supports and what to check next[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?What this record says[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this answer[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?Evidence and record details[\s\S]*?title="Purpose and evidence"[\s\S]*?title="What it means"[\s\S]*?title="Source and date"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?What to do next[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?Evidence check[\s\S]*?What is shown and what to check next[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Official record details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
-  "Public TrustSlip paper must lead with decision support, show collapsed purpose evidence before confirmation choices on phone, then keep source-map and heavier authority/security details behind disclosures."
+  /if \(compact && !isLite && !isCard\) \{[\s\S]*?<TrustSlipQuickDecisionPaper[\s\S]*?reasonRows=[\s\S]*?evidenceRows=[\s\S]*?sourceRows=\{sourceFamilyRows\}[\s\S]*?return \([\s\S]*?data-gsn-trustslip-certificate="public-evidence-record"/,
+  "Phone recipients must use the bounded quick-decision paper before the legacy detailed desktop report."
 );
 assertContains(
   "publicPaper",
@@ -371,9 +372,9 @@ assertContains(
 );
 
 assertContains(
-  "publicPaper",
-  /title="Evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Purpose and evidence"[\s\S]*?rows=\{relevantEvidenceRows\}[\s\S]*?title="What it means"[\s\S]*?rows=\{suggestionRows\}[\s\S]*?title="Source and date"[\s\S]*?rows=\{sourceFamilyRows\}[\s\S]*?title="What to check next"[\s\S]*?rows=\{nextCheckRows\}[\s\S]*?title="What this cannot prove"[\s\S]*?rows=\{limitationRows\}/,
-  "Public TrustSlip paper must group purpose, relevant evidence, source/recency, next check, and limitations inside the full-evidence disclosure."
+  "quickDecision",
+  /const \[step, setStep\] = useState<number \| null>\(null\)[\s\S]*?title: "Why this result"[\s\S]*?title: "Evidence checked"[\s\S]*?title: "Source and date"[\s\S]*?title: "Scope"[\s\S]*?const activeStep = step === null \? null : steps\[step\][\s\S]*?data-gsn-public-evidence-step=\{step \+ 1\}/,
+  "Phone purpose evidence, source/recency and limits must stay in a one-active-step reader rather than one full-evidence disclosure."
 );
 
 assertContains(
