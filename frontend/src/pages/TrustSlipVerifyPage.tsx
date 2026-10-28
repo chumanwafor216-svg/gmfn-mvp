@@ -19,6 +19,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
+import TrustSlipRecipientEnvelope from "./trustSlipVerify/TrustSlipRecipientEnvelope";
 import TrustSlipVerifyResultCard from "./trustSlipVerify/TrustSlipVerifyResultCard";
 import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import {
@@ -318,6 +319,7 @@ export default function TrustSlipVerifyPage() {
     useState<CommunityConfirmationOutcome | null>(null);
   const [selectedConfirmationCommunityId, setSelectedConfirmationCommunityId] = useState("");
   const [privateEvidenceOpen, setPrivateEvidenceOpen] = useState(false);
+  const [recipientEnvelopeOpened, setRecipientEnvelopeOpened] = useState(false);
 
   const isAppRoute = location.pathname.startsWith("/app/");
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
@@ -516,6 +518,10 @@ export default function TrustSlipVerifyPage() {
   }, [location.pathname, location.search]);
 
   const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;
+
+  useEffect(() => {
+    if (!isAppRoute) setRecipientEnvelopeOpened(false);
+  }, [isAppRoute, verifyContextKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -819,6 +825,12 @@ export default function TrustSlipVerifyPage() {
         : null,
     [publicVerifyEndpointError]
   );
+  const showRecipientEnvelope =
+    !isAppRoute &&
+    !isCardRoute &&
+    !noPublicCodeSupplied &&
+    !publicVerifyEndpointErrorCopy &&
+    !recipientEnvelopeOpened;
   const publicVerifyEndpointErrorStyle = bannerToneStyle("error");
   const privateEvidenceCode = firstTruthy(privateEvidenceRecord?.code);
   const visibleRecordCode = firstTruthy(record?.code, resolvedCode);
@@ -1622,6 +1634,13 @@ export default function TrustSlipVerifyPage() {
           resolvedCode={resolvedCode || requestedCode}
           statusLabel={publicVerifyEndpointErrorCopy.statusLabel}
         />
+      ) : showRecipientEnvelope ? (
+        <TrustSlipRecipientEnvelope
+          compact={isCompact}
+          holderName={holderName}
+          communityLabel={communityLabel}
+          onOpen={() => setRecipientEnvelopeOpened(true)}
+        />
       ) : (
         <React.Suspense
           fallback={
@@ -1705,7 +1724,7 @@ export default function TrustSlipVerifyPage() {
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || showRecipientEnvelope || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {canShowPrivateEvidence ? (
         <details

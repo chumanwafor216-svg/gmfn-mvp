@@ -274,8 +274,8 @@ assertContains(
 );
 assertContains(
   "publicTrustSlipSmoke",
-  /async function expectDecisionPackRecipientCard[\s\S]*?toBeHidden[\s\S]*?full-evidence-and-record-details[\s\S]*?Decision Pack full-evidence summary started below the first phone viewport[\s\S]*?trust-document\.section\.employment-decision-pack[\s\S]*?decisionReading[\s\S]*?Decision evidence details[\s\S]*?trust-document\.section\.decision-evidence-details[\s\S]*?purposeFilteredEvidence[\s\S]*?public-purpose-filter/,
-  "Public TrustSlip smoke must keep phone evidence and Decision Pack details behind drawers before checking them."
+  /async function expectDecisionPackRecipientCard[\s\S]*?toBeHidden[\s\S]*?full-evidence-and-record-details[\s\S]*?Decision Pack full-evidence summary started below the first phone viewport[\s\S]*?section-chooser[\s\S]*?openCertificateChoices[\s\S]*?toHaveCount\(0\)[\s\S]*?certificate-why[\s\S]*?toHaveCount\(1\)[\s\S]*?certificate-evidence[\s\S]*?certificate-source[\s\S]*?certificate-scope[\s\S]*?trust-document\.section\.employment-decision-pack/,
+  "Public TrustSlip smoke must prove that the certificate chooser opens one detail at a time before deeper Decision Pack evidence."
 );
 
 assertContains(
@@ -291,7 +291,7 @@ assertContains(
 );
 assertContains(
   "publicTrustSlipSmoke",
-  /Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine\/private context across URL, backend-only, and backend-recorded paths/,
+  /Decision Pack recipient-card, reading, redacted evidence extract, and no-evidence empty state stayed human, decision-first, and hid raw machine\/private context across URL, backend-only, backend-recorded, and no-evidence paths/,
   "Public TrustSlip smoke summary must report the Decision Pack recipient-card, reading, and redacted evidence guard."
 );
 

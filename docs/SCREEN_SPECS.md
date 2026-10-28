@@ -659,7 +659,7 @@ Must show, in phone-first order:
 - Community Bulletin immediately after the identity hero
   - one compact live announcement presentation
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill
-  - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice and acknowledgement/contact/availability/attachment/QR actions together
+  - on phone, show the notice source, a two-line preview, and one `Open notice` action; opening it reveals the full notice plus a compact chooser. Keep `Respond`, `Contact`, `Share or open QR`, `Attachment`, `Announcement details`, and authorised `Admin records` separate, and allow at most one of those sections to be open at a time
   - the existing announcement composer may optionally add one custom-choice poll question with two to seven unique choices, choose one-answer or multiple-answer behavior, and set `Community members only` (default) or `Anyone with the announcement link`; this poll is separate from the existing Yes/Maybe/No availability control
   - public-link audience automatically enables the existing public announcement/QR package; it does not create another announcement or sharing engine
   - entering more than 50 words must not leave `Post notice` silently disabled: GSN uses the first 50 words as the compact board preview and preserves the complete entered message as full notice text within the 600-word limit. Duplicate status facts stay behind one closed `Notice settings` row. For a successfully published public package, close the composer and open that exact notice's existing detail panel so `Share announcement` is immediately reachable; a review-pending submission does not expose sharing
@@ -667,7 +667,7 @@ Must show, in phone-first order:
   - the expanded authenticated notice shows aggregate totals per choice and one response total; in multiple-choice mode one response increments every selected choice but counts once in the response total
   - authorised community admins may deliberately open an admin-only `Poll roll call` when follow-up is necessary; member names stay collapsed and private, while public-link responses appear only as anonymous counts and never enter the member roll call
   - the detached public package must not expose member lists or admin roll call; after any valid permitted poll response, show aggregate choice totals and the explicit browser-response accuracy boundary for public polls
-  - on phone, keep one compact red/amber/green timing strip showing `Now`, `72h`, and `Clear` counts inside Bulletin; keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
+  - on phone, show only the most meaningful current timing status on the default Bulletin surface; preserve the complete red/amber/green `Now`, `72h`, and `Clear` counts behind `Announcement details`. Keep the larger Community Pulse explanation/actions and calendar tile off the default phone surface
   - keep up to the last 10 expired items reachable through one closed `Previous announcements` disclosure; do not expose the history by default and do not silently discard it from the member surface
   - no Ask Community / market-need records in the Bulletin by default
 - Needs your attention must not repeat ordinary-member notice acknowledgement or response actions already visible in the immediately preceding Bulletin
@@ -1531,8 +1531,11 @@ Must show:
   evidence, and next safe reader action
 
 Rules:
-- On phones, lead with one decision answer, no more than two short reasons, and one recommended next action. Hide the duplicate evidence snapshot and behaviour-pattern stack inside Full evidence and record details.
-- The public first read must use direct reader language: `Public TrustSlip`, `Check this TrustSlip`, `What this record says`, `Why this answer`, `What to do next`, and `Limits of this check`. `Decision Pack` and evidence-profile terminology may remain in internal contracts, but must not be required to understand the public result.
+- Public receiver links must first show a sealed TrustSlip envelope, the sender/holder identity, community context, and one `Open TrustSlip` action. Do not mount or expose the certificate report until the receiver opens the envelope. The authenticated holder workspace, no-code/error states, and QR-focused card view do not use this gate.
+- On phones, present the public TrustSlip as an evidence certificate: one encouraging decision answer, holder/community/record/status facts, one short supporting sentence, one recommended next action, and one neutral purpose/community scope line.
+- Do not lead with cautionary language on the certificate face. Keep formal boundaries available under `Scope & limits`; do not remove or weaken the underlying evidence, privacy, credit, payment, or universal-character boundaries.
+- `Explore this TrustSlip` must open a chooser only. `Why this result`, `Evidence summary`, `Source and date`, `Recorded pattern`, and `Scope & limits` must open separately, with no more than one certificate detail open at a time. One button must never expose the complete record at once.
+- The public first read must use direct reader language: `Public TrustSlip`, `Check this TrustSlip`, `What this record says`, `Explore this TrustSlip`, `What to do next`, and `Scope of this record`. `Decision Pack` and evidence-profile terminology may remain in internal contracts, but must not be required to understand the public result.
 - Visible disclosure wording may change without changing its stable action/debug identity. The `full-evidence-and-record-details` and `audit-details` identifiers remain compatibility contracts even when their reader-facing labels are simplified.
 - Public links that already contain a code must open directly into the paper. The code-entry route must expose one code field and one primary check action without unrelated welcome/guide buttons.
 - When the TrustSlip carries both a Community ID/key and member GSN ID/key, the

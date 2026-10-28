@@ -322,7 +322,7 @@ async function run() {
       const identityText = document.querySelector('[data-debug-id="community-home.identity-card"]')?.textContent || "";
       const bulletinHeaderText = document.querySelector('[aria-label="Community announcements"]')?.textContent?.trim() || "";
       const actionSectionStyle = document.querySelector('[data-debug-id="community-home.go-to"]')?.getAttribute("style") || "";
-      const phoneIndicators = document.querySelector('[data-debug-id="community-home.bulletin.phone-indicators"]');
+      const phoneStatus = document.querySelector('[data-debug-id="community-home.bulletin.phone-status"]');
       const urgencyTones = Array.from(document.querySelectorAll("[data-bulletin-urgency-tone]")).map((node) => node.getAttribute("data-bulletin-urgency-tone"));
       return {
         hasName: identityText.includes("Homeland isa"),
@@ -338,9 +338,9 @@ async function run() {
         duplicatePhoneNavCount: document.querySelectorAll('[data-cta-id^="page-top-nav."]').length,
         pulseCount: document.querySelectorAll('[data-debug-id="community-home.bulletin.pulse"]').length,
         calendarTileCount: document.querySelectorAll('[aria-label="Announcement date"]').length,
-        phoneIndicatorCount: phoneIndicators ? 1 : 0,
-        phoneIndicatorText: phoneIndicators?.textContent?.replace(/\s+/g, " ").trim() || "",
-        phoneIndicatorHeight: phoneIndicators instanceof globalThis.HTMLElement ? Math.round(phoneIndicators.getBoundingClientRect().height) : null,
+        phoneStatusCount: phoneStatus ? 1 : 0,
+        phoneStatusText: phoneStatus?.textContent?.replace(/\s+/g, " ").trim() || "",
+        phoneStatusHeight: phoneStatus instanceof globalThis.HTMLElement ? Math.round(phoneStatus.getBoundingClientRect().height) : null,
         urgencyTones,
         attentionCount: document.querySelectorAll('[data-debug-id="community-home.attention"]').length,
       };
@@ -363,11 +363,11 @@ async function run() {
       defaultState.duplicatePhoneNavCount !== 0 ||
       defaultState.pulseCount !== 0 ||
       defaultState.calendarTileCount !== 0 ||
-      defaultState.phoneIndicatorCount !== 1 ||
-      defaultState.phoneIndicatorText !== "0Now072h1Clear" ||
-      defaultState.phoneIndicatorHeight === null ||
-      defaultState.phoneIndicatorHeight > 40 ||
-      defaultState.urgencyTones.join(",") !== "red,yellow,green" ||
+      defaultState.phoneStatusCount !== 1 ||
+      defaultState.phoneStatusText !== "All clear" ||
+      defaultState.phoneStatusHeight === null ||
+      defaultState.phoneStatusHeight > 36 ||
+      defaultState.urgencyTones.join(",") !== "green" ||
       defaultState.attentionCount !== 0 ||
       marketplaceVisibleBeforeOpen ||
       overflow390.length > 0
@@ -388,28 +388,28 @@ async function run() {
       process.exitCode = 1;
       return;
     }
+    for (const label of ["Respond", "Share or open QR", "Announcement details"]) {
+      await page.getByRole("button", { name: new RegExp(`^${label}`) }).waitFor({ state: "visible", timeout: 30000 });
+    }
+    if (
+      await page.locator('[data-debug-id="community-home.bulletin.choice-poll"]').isVisible().catch(() => false) ||
+      await page.locator('[data-cta-id^="community-home.bulletin.share."]').isVisible().catch(() => false) ||
+      await page.locator('[data-debug-id="community-home.bulletin.phone-timing-details"]').isVisible().catch(() => false)
+    ) {
+      console.error("Community Home Open notice exposed a secondary Bulletin tool before its row was chosen.");
+      process.exitCode = 1;
+      return;
+    }
+    await page.screenshot({ path: join(screenshotDir, "community-home-bulletin-open-390x844.png"), fullPage: false });
+
+    await page.locator('[data-cta-id="community-home.bulletin.phone-section-toggle.respond"]').click();
     await page.waitForSelector('[data-debug-id="community-home.bulletin.choice-poll"]', { timeout: 30000 });
     if (!(await page.getByText("Community members only", { exact: true }).isVisible())) {
       console.error("Community Home poll did not show its members-only audience.");
       process.exitCode = 1;
       return;
     }
-    const shareAnnouncement = page.locator('[data-cta-id^="community-home.bulletin.share."]');
-    await shareAnnouncement.waitFor({ state: "visible", timeout: 30000 });
-    await shareAnnouncement.click();
-    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "visible", timeout: 30000 });
-    for (const channel of ["WhatsApp", "Facebook", "X", "LinkedIn", "Copy message"]) {
-      await page.getByRole("button", { name: channel, exact: true }).waitFor({ state: "visible", timeout: 30000 });
-    }
-    const shareChooserOverflow = await collectOverflow(page);
-    await page.screenshot({ path: join(screenshotDir, "community-home-share-announcement-390x844.png"), fullPage: false });
-    if (shareChooserOverflow.length > 0) {
-      console.error("Community Home share chooser overflowed on phone:", shareChooserOverflow);
-      process.exitCode = 1;
-      return;
-    }
-    await page.locator('[data-cta-id="social-tag-share.close"]').click();
-    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "hidden", timeout: 30000 });
+    await page.screenshot({ path: join(screenshotDir, "community-home-bulletin-respond-390x844.png"), fullPage: false });
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.0"]').click();
     await page.locator('[data-cta-id="community-home.bulletin.poll-option.2"]').click();
     if (apiState.pollRequests.length !== 0) {
@@ -428,6 +428,36 @@ async function run() {
       return;
     }
     await page.waitForTimeout(420);
+
+    await page.locator('[data-cta-id="community-home.bulletin.phone-section-toggle.share"]').click();
+    await page.waitForSelector('[data-debug-id="community-home.bulletin.phone-section-panel.respond"]', { state: "hidden", timeout: 30000 });
+    const shareAnnouncement = page.locator('[data-cta-id^="community-home.bulletin.share."]');
+    await shareAnnouncement.waitFor({ state: "visible", timeout: 30000 });
+    await shareAnnouncement.click();
+    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "visible", timeout: 30000 });
+    for (const channel of ["WhatsApp", "Facebook", "X", "LinkedIn", "Copy message"]) {
+      await page.getByRole("button", { name: channel, exact: true }).waitFor({ state: "visible", timeout: 30000 });
+    }
+    const shareChooserOverflow = await collectOverflow(page);
+    await page.screenshot({ path: join(screenshotDir, "community-home-share-announcement-390x844.png"), fullPage: false });
+    if (shareChooserOverflow.length > 0) {
+      console.error("Community Home share chooser overflowed on phone:", shareChooserOverflow);
+      process.exitCode = 1;
+      return;
+    }
+    await page.locator('[data-cta-id="social-tag-share.close"]').click();
+    await page.getByRole("dialog", { name: "Choose share channel" }).waitFor({ state: "hidden", timeout: 30000 });
+
+    await page.locator('[data-cta-id="community-home.bulletin.phone-section-toggle.details"]').click();
+    await page.waitForSelector('[data-debug-id="community-home.bulletin.phone-section-panel.share"]', { state: "hidden", timeout: 30000 });
+    await page.waitForSelector('[data-debug-id="community-home.bulletin.phone-timing-details"]', { state: "visible", timeout: 30000 });
+    const detailTimingText = await page.locator('[data-debug-id="community-home.bulletin.phone-timing-details"]').textContent();
+    if (detailTimingText?.replace(/\s+/g, "") !== "0Now072h1Clear") {
+      console.error("Community Home Announcement details did not preserve all timing counts.", detailTimingText);
+      process.exitCode = 1;
+      return;
+    }
+    await page.screenshot({ path: join(screenshotDir, "community-home-bulletin-details-390x844.png"), fullPage: false });
     await page.getByRole("button", { name: "Close notice" }).click();
     await page.waitForSelector('[data-debug-id="community-home.bulletin.reactions-panel"]', { state: "hidden", timeout: 30000 });
 
@@ -535,6 +565,12 @@ async function run() {
     });
     await postNoticeButton.click();
     await composerDialog.waitFor({ state: "hidden", timeout: 30000 });
+    await composerPage
+      .locator('[data-cta-id="community-home.bulletin.phone-section-toggle.share"]')
+      .waitFor({ state: "visible", timeout: 30000 });
+    await composerPage
+      .locator('[data-cta-id="community-home.bulletin.phone-section-toggle.share"]')
+      .click();
     await composerPage
       .locator('[data-cta-id="community-home.bulletin.share.notice-8-created"]')
       .waitFor({ state: "visible", timeout: 30000 });

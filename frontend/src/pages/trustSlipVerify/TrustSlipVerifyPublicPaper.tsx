@@ -377,6 +377,14 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function encouragingCertificateHeadline(value: unknown, fallback: string): string {
+  const headline = firstTruthy(value, fallback);
+  const positiveLead = headline
+    .replace(/\s*(?:,|;|—)\s*(?:but\s+)?not\b.*$/i, "")
+    .trim();
+  return positiveLead || fallback;
+}
+
 function firstKnownBoolean(...values: unknown[]): boolean | null {
   for (const value of values) {
     if (typeof value === "boolean") return value;
@@ -1181,12 +1189,16 @@ function paperStatusPill(status: string): React.CSSProperties {
 function publicVerifyPaperShell(compact: boolean): React.CSSProperties {
   return {
     ...institutionalPageCard("#FFFFFF"),
-    borderRadius: compact ? 12 : 28,
+    borderRadius: compact ? 18 : 28,
     padding: 0,
-    border: compact ? "0" : "1px solid rgba(37,78,119,0.16)",
+    border: compact
+      ? "1px solid rgba(214,170,69,0.42)"
+      : "1px solid rgba(37,78,119,0.16)",
     position: "relative",
     overflow: "hidden",
-    boxShadow: compact ? "none" : "0 24px 60px rgba(15,23,42,0.12)",
+    boxShadow: compact
+      ? "0 18px 40px rgba(7,23,44,0.12), inset 0 0 0 3px rgba(246,215,122,0.12)"
+      : "0 24px 60px rgba(15,23,42,0.12)",
     background: "#FFFFFF",
   };
 }
@@ -2346,6 +2358,19 @@ export default function TrustSlipVerifyPublicPaper({
   });
   const decisionDisplayAnswer = tradePurpose ? tradeEvidenceReading.headline : purposeDecisionReading.headline || decisionFirstAnswer;
   const decisionReasonLine = tradePurpose ? tradeEvidenceReading.summary : purposeDecisionReading.conclusion;
+  const certificateDecisionAnswer = encouragingCertificateHeadline(
+    decisionDisplayAnswer,
+    validNow ? "Community evidence available" : "TrustSlip update needed"
+  );
+  const certificateSupportLine = validNow
+    ? purposeEvidenceExists
+      ? "Purpose-relevant community evidence is recorded in this TrustSlip."
+      : "This TrustSlip shows the community evidence currently available."
+    : "Refresh this TrustSlip to see the latest recorded community evidence.";
+  const certificateScopeLine = `Community evidence recorded for ${decisionPackPurpose} in ${communityLabel}.`;
+  const publicRecordSectionGroup = compact
+    ? "trustslip-certificate-record-sections"
+    : undefined;
   const purposeEvidenceLeadRows: Array<[string, string]> = (
     purposeSpecificPointerRows.length
       ? purposeSpecificPointerRows
@@ -2959,6 +2984,7 @@ export default function TrustSlipVerifyPublicPaper({
   return (
     <section
       className="print-trust-document"
+      data-gsn-trustslip-certificate="public-evidence-record"
       style={publicVerifyPaperShell(compact)}
     >
       {officialPaperWatermark(compact)}
@@ -3147,7 +3173,7 @@ export default function TrustSlipVerifyPublicPaper({
                   fontWeight: 1000,
                 }}
               >
-                {decisionDisplayAnswer}
+                {compact ? certificateDecisionAnswer : decisionDisplayAnswer}
               </h2>
               <div
                 style={{
@@ -3159,13 +3185,49 @@ export default function TrustSlipVerifyPublicPaper({
                   fontWeight: 850,
                 }}
               >
-                {decisionReasonLine}
+                {compact ? certificateSupportLine : decisionReasonLine}
               </div>
             </div>
             {!compact ? (
               <div style={paperStatusPill(publicValidityLabel)}>{publicValidityLabel}</div>
             ) : null}
           </div>
+
+          {compact ? (
+            <div
+              data-gsn-trustslip-certificate-facts="true"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 7,
+              }}
+            >
+              {[
+                ["Holder", holderName],
+                ["Community", communityLabel],
+                ["Record", resolvedCode || "Current TrustSlip"],
+                ["Status", publicValidityLabel],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    minWidth: 0,
+                    borderRadius: 10,
+                    border: "1px solid rgba(214,170,69,0.20)",
+                    background: "#FFFFFF",
+                    padding: "7px 8px",
+                  }}
+                >
+                  <div style={{ color: "#7A4A00", fontSize: 9.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                    {label}
+                  </div>
+                  <div style={{ marginTop: 2, color: "#07172C", fontSize: 11.5, fontWeight: 950, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div
             data-gsn-public-evidence-translation="decision-why"
@@ -3174,7 +3236,7 @@ export default function TrustSlipVerifyPublicPaper({
               border: "1px solid rgba(37,78,119,0.12)",
               background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
               padding: compact ? 7 : 12,
-              display: "grid",
+              display: compact ? "none" : "grid",
               gap: compact ? 7 : 9,
             }}
           >
@@ -3227,47 +3289,88 @@ export default function TrustSlipVerifyPublicPaper({
 
         {compact ? (
           <TrustDocumentDisclosureSection
-            title="Evidence and record details"
-            summary="Open for the purpose, evidence, source, next check, and limits."
+            title="Explore this TrustSlip"
+            summary="Choose one section at a time."
             debugId="trust-document.section.full-evidence-and-record-details"
+            groupName={publicRecordSectionGroup}
           >
             <div
-              data-gsn-public-mobile-full-evidence="collapsed-summary"
-              style={{ display: "grid", gap: 10 }}
+              data-gsn-public-mobile-full-evidence="section-chooser"
+              style={{ display: "grid", gap: 8 }}
             >
-              <OfficialResultTable
-                title="Purpose and evidence"
-                rows={relevantEvidenceRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="What it means"
-                rows={suggestionRows}
-                compact={compact}
-              />
-              <OfficialResultTable
+              <TrustDocumentDisclosureSection
+                title="Why this result"
+                summary="Two short reasons behind the reading."
+                debugId="trust-document.section.certificate-why"
+                groupName="trustslip-certificate-detail-choice"
+              >
+                <DecisionFactorTable
+                  rows={decisionTranslationRows.filter(
+                    ([label]) => label === "Reason 1" || label === "Reason 2"
+                  )}
+                  compact={compact}
+                />
+              </TrustDocumentDisclosureSection>
+
+              <TrustDocumentDisclosureSection
+                title="Evidence summary"
+                summary="Evidence for this purpose and what it supports."
+                debugId="trust-document.section.certificate-evidence"
+                groupName="trustslip-certificate-detail-choice"
+              >
+                <OfficialResultTable
+                  title="Purpose and evidence"
+                  rows={relevantEvidenceRows}
+                  compact={compact}
+                />
+                <OfficialResultTable
+                  title="What it means"
+                  rows={suggestionRows.filter(([label]) => label !== "Boundary")}
+                  compact={compact}
+                />
+              </TrustDocumentDisclosureSection>
+
+              <TrustDocumentDisclosureSection
                 title="Source and date"
-                rows={sourceFamilyRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="What to check next"
-                rows={nextCheckRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="What this cannot prove"
-                rows={limitationRows}
-                compact={compact}
-              />
-              <TrustSlipEvidencePatternStack
-                compact={compact}
-                title="Recorded evidence pattern"
-                reading={trustSlipPattern.reading}
-                items={trustSlipPattern.items}
-                nextStep={trustSlipPattern.nextStep}
-                boundary={trustSlipPattern.boundary}
-              />
+                summary="Where the record came from and how current it is."
+                debugId="trust-document.section.certificate-source"
+                groupName="trustslip-certificate-detail-choice"
+              >
+                <OfficialResultTable
+                  title="Source and date"
+                  rows={sourceFamilyRows}
+                  compact={compact}
+                />
+              </TrustDocumentDisclosureSection>
+
+              <TrustDocumentDisclosureSection
+                title="Recorded pattern"
+                summary="The evidence pattern currently visible."
+                debugId="trust-document.section.certificate-pattern"
+                groupName="trustslip-certificate-detail-choice"
+              >
+                <TrustSlipEvidencePatternStack
+                  compact={compact}
+                  title="Recorded evidence pattern"
+                  reading={trustSlipPattern.reading}
+                  items={trustSlipPattern.items}
+                  nextStep={trustSlipPattern.nextStep}
+                  boundary={trustSlipPattern.boundary}
+                />
+              </TrustDocumentDisclosureSection>
+
+              <TrustDocumentDisclosureSection
+                title="Scope & limits"
+                summary="The formal boundary, available only when needed."
+                debugId="trust-document.section.certificate-scope"
+                groupName="trustslip-certificate-detail-choice"
+              >
+                <OfficialResultTable
+                  title="Scope and limits"
+                  rows={limitationRows}
+                  compact={compact}
+                />
+              </TrustDocumentDisclosureSection>
             </div>
           </TrustDocumentDisclosureSection>
         ) : null}
@@ -3476,7 +3579,9 @@ export default function TrustSlipVerifyPublicPaper({
               gap: 8,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Limits of this check</div>
+            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+              {compact ? "Scope of this record" : "Limits of this check"}
+            </div>
             {compact ? (
               <div
                 style={{
@@ -3487,7 +3592,7 @@ export default function TrustSlipVerifyPublicPaper({
                   lineHeight: 1.32,
                 }}
               >
-                GSN checked {evidenceScopeIsWider ? "the main community and other recorded community evidence" : "the main community evidence"}. Use this to decide; it is not approval or a guarantee.
+                {certificateScopeLine}
               </div>
             ) : (
               <div
@@ -3515,6 +3620,7 @@ export default function TrustSlipVerifyPublicPaper({
           title={decisionPackPurpose}
           summary="Open for evidence related to this decision, its source, next check, and limits."
           defaultOpen={!compact}
+          groupName={publicRecordSectionGroup}
         >
         <div
           data-debug-id="trust-slip-verify.public.decision-pack-reading"
@@ -3730,6 +3836,7 @@ export default function TrustSlipVerifyPublicPaper({
           title="Official record details"
           summary="Open for community evidence, record checks, security, and limits."
           debugId="trust-document.section.audit-details"
+          groupName={publicRecordSectionGroup}
         >
           <div
             data-gsn-public-more-details="authority-evidence-limits"
@@ -3806,6 +3913,7 @@ export default function TrustSlipVerifyPublicPaper({
           title="Verification paper details"
           summary="Open for holder, public reading, community evidence, QR, and confirmation request."
           defaultOpen={!compact}
+          groupName={publicRecordSectionGroup}
         >
         <div style={publicVerifyShell("#F8FBFF", compact)}>
           <TrustPaperWatermark

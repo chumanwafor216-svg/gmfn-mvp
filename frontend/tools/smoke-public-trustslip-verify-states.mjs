@@ -33,7 +33,7 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Evidence and record details", "Verification paper details"],
+    expectedText: ["Explore this TrustSlip", "Verification paper details"],
   },
   minimal: {
     code: "TS-MINIMAL-BOUNDARY",
@@ -428,7 +428,25 @@ async function assertNoPublicPrivateLeaks(page) {
   await expect(page.getByText("SHOULD NOT RENDER")).toHaveCount(0);
 }
 
+async function openRecipientEnvelope(page) {
+  const envelope = page.locator('[data-gsn-trustslip-recipient-envelope="sealed"]');
+  await expect(envelope).toBeVisible({ timeout: 30000 });
+  await expect(envelope.getByRole("heading", { name: "A TrustSlip has arrived", exact: true })).toBeVisible();
+  await expect(envelope.locator('[data-gsn-trustslip-envelope-object="closed"]')).toBeVisible();
+  await expect(envelope.getByText("Opens the certificate report.", { exact: true })).toBeVisible();
+  await expect(envelope.locator("button")).toHaveCount(1);
+  await expect(page.locator('[data-gsn-trustslip-certificate="public-evidence-record"]')).toHaveCount(0);
+  await expect(page.getByText("Scope & limits", { exact: true })).toHaveCount(0);
+
+  await page.locator('[data-cta-id="trust-slip-verify.public.open-envelope"]').click();
+  await expect(envelope).toHaveCount(0);
+  await expect(page.locator('[data-gsn-trustslip-certificate="public-evidence-record"]')).toBeVisible({
+    timeout: 30000,
+  });
+}
+
 async function assertPublicPaperBasics(page) {
+  await openRecipientEnvelope(page);
   await expect(page.getByRole("heading", { name: "Check this TrustSlip", exact: true })).toBeVisible({
     timeout: 30000,
   });
@@ -497,6 +515,14 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
+
+  const envelopeCapturePath = String(process.env.GSN_TRUSTSLIP_ENVELOPE_CAPTURE_PATH || "").trim();
+  if (envelopeCapturePath && scenario.code === scenarios.current.code) {
+    await expect(page.locator('[data-gsn-trustslip-recipient-envelope="sealed"]')).toBeVisible({
+      timeout: 30000,
+    });
+    await page.screenshot({ path: envelopeCapturePath, fullPage: true });
+  }
 
   await assertPublicPaperBasics(page);
   await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
@@ -579,22 +605,60 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   }
 
   await mobileFullEvidenceSummary.click();
-  const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="collapsed-summary"]');
+  const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="section-chooser"]');
   await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
-  await expect(mobileFullEvidence).toContainText("Purpose and evidence");
-  await expect(mobileFullEvidence).toContainText("What it means");
+  await expect(mobileFullEvidence).toContainText("Why this result");
+  await expect(mobileFullEvidence).toContainText("Evidence summary");
   await expect(mobileFullEvidence).toContainText("Source and date");
-  await expect(mobileFullEvidence).toContainText("What to check next");
-  await expect(mobileFullEvidence).toContainText("What this cannot prove");
-  await expect(mobileFullEvidence).toContainText("Recorded evidence pattern");
+  await expect(mobileFullEvidence).toContainText("Recorded pattern");
+  await expect(mobileFullEvidence).toContainText("Scope & limits");
+
+  const openCertificateChoices = page.locator(
+    'details[data-gsn-trust-document-section-group="trustslip-certificate-detail-choice"][open]'
+  );
+  await expect(openCertificateChoices).toHaveCount(0);
+
+  const whySummary = page.locator('summary[data-cta-id="trust-document.section.certificate-why"]');
+  const whySection = whySummary.locator("xpath=..");
+  await whySummary.click();
+  await expect(whySection).toHaveAttribute("open", "");
+  await expect(whySection).toContainText("Reason 1");
+  await expect(whySection).toContainText("Reason 2");
+  await expect(openCertificateChoices).toHaveCount(1);
+
+  const evidenceSummary = page.locator('summary[data-cta-id="trust-document.section.certificate-evidence"]');
+  const evidenceSection = evidenceSummary.locator("xpath=..");
+  await evidenceSummary.click();
+  await expect(evidenceSection).toHaveAttribute("open", "");
+  await expect(whySection).not.toHaveAttribute("open", "");
+  await expect(evidenceSection).toContainText("Purpose and evidence");
+  await expect(evidenceSection).toContainText("What it means");
+  await expect(openCertificateChoices).toHaveCount(1);
   if (expectRedactedExtract) {
-    await expect(mobileFullEvidence).toContainText("Community participation evidence");
-    await expect(mobileFullEvidence).toContainText("149 public-safe records");
+    await expect(evidenceSection).toContainText("Community participation evidence");
+    await expect(evidenceSection).toContainText("149 public-safe records");
   }
   await expect(mobileFullEvidence).not.toContainText("Why received");
   await expect(mobileFullEvidence).not.toContainText("TrustSlip recipient");
 
+  const sourceSummary = page.locator('summary[data-cta-id="trust-document.section.certificate-source"]');
+  const sourceSection = sourceSummary.locator("xpath=..");
+  await sourceSummary.click();
+  await expect(sourceSection).toHaveAttribute("open", "");
+  await expect(evidenceSection).not.toHaveAttribute("open", "");
+  await expect(sourceSection).toContainText("Source and date");
+  await expect(openCertificateChoices).toHaveCount(1);
+
+  const scopeSummary = page.locator('summary[data-cta-id="trust-document.section.certificate-scope"]');
+  const scopeSection = scopeSummary.locator("xpath=..");
+  await scopeSummary.click();
+  await expect(scopeSection).toHaveAttribute("open", "");
+  await expect(sourceSection).not.toHaveAttribute("open", "");
+  await expect(scopeSection).toContainText("Scope and limits");
+  await expect(openCertificateChoices).toHaveCount(1);
+
   await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
+  await expect(mobileFullEvidenceSummary.locator("xpath=..")).not.toHaveAttribute("open", "");
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
   await expect(decisionReading).toContainText("What is shown and what to check next");

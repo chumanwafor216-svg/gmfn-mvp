@@ -4211,6 +4211,77 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The public `/guide` destination opened by Cover's `About GSN & I` action is
   now a compact pre-auth introduction: one Back control, a short outcome-led
   hero, three cards (`Buy and sell`, `Grow your shop`, and
+## Public TrustSlip certificate face and progressive disclosure - 2026-10-28
+
+- Receiver presentation now starts as a sealed TrustSlip envelope on public
+  full/lite links. The envelope shows only the sender/holder, community context,
+  and one `Open TrustSlip` action. The certificate report is not mounted until
+  that action is used, so evidence and caution text cannot leak through the
+  sealed surface. Authenticated holder, no-code/error and QR `/card` views bypass
+  the envelope.
+- Owner-approved correction: the phone public TrustSlip now presents as an
+  evidence certificate instead of an exposed report. Its first face leads with
+  an encouraging result, holder, community, record and status facts, one short
+  support sentence, one next action, and a neutral purpose/community scope
+  line.
+- Caution-led wording is no longer shown on the first face. The complete formal
+  boundary remains available under `Scope & limits`; evidence truth, privacy,
+  and the non-credit/non-payment/non-universal-character boundaries were not
+  removed or weakened.
+- `Explore this TrustSlip` opens a chooser only. `Why this result`, `Evidence
+  summary`, `Source and date`, `Recorded pattern`, and `Scope & limits` are
+  separate disclosures. Opening one closes the previously open certificate
+  detail, so no single action reveals the complete record.
+- The shared Trust document disclosure component now supports an optional
+  one-open-at-a-time group. Existing ungrouped disclosures keep their previous
+  behavior. Stable TrustSlip disclosure IDs, public routes, API calls, evidence
+  derivation and private-data redaction remain unchanged.
+- Verification passed: 296-module production build, Public TrustSlip
+  first-viewport audit, full public verification state/browser smoke, direct
+  390x844 sealed-envelope visual inspection, and the complete
+  protected-button/frozen-surface suite. The evidence-display boundary
+  suite now accepts the certificate interaction but remains red on two unrelated
+  historical handoff assertions absent from the committed baseline. The known
+  Public Shop proof-surface copy-link assertion also remains unrelated debt.
+- This batch has not been committed, pushed or deployed. The current freeze
+  policy requires explicit owner approval before publishing routine batch work.
+
+
+## Community Bulletin progressive disclosure - 2026-10-28
+
+- The owner approved a phone-only Community Bulletin cleanup because opening
+  one announcement exposed too many controls and facts at once.
+- The default Bulletin now shows one meaningful timing status. The complete
+  `Now`/`72h`/`Clear` counts remain reachable under `Announcement
+  details`; no timing information was removed.
+- `Open notice` now reveals the full message and a compact chooser. Respond,
+  Contact, Share/QR, Attachment, Announcement details and authorised Admin
+  records remain separate, and opening one closes the previously open section.
+- Existing acknowledgement, availability, poll, WhatsApp contact, public
+  share/QR, attachment and roll-call behavior is preserved. No backend route,
+  API, schema, permission, desktop Bulletin or Dashboard Market Wisdom behavior
+  changed.
+- Verification passed: the 296-module production frontend build; focused
+  Community Home phone, action-inventory and billboard audits; the complete
+  protected-button/frozen-surface suite; and the 390x844 Community Home phone
+  browser smoke. The smoke proves the default state, opened-message chooser,
+  Respond, Share/QR and Announcement-details states, one-open-at-a-time
+  behavior, full timing-count reachability, poll submission, post-publish
+  sharing reachability and no horizontal overflow.
+- The smoke generated review captures under `C:\tmp\gmfn-community-home`.
+  The direct image-view tool was blocked by the Windows split-root sandbox, so
+  the four key states were combined into a downscaled contact sheet and
+  visually inspected through the conversation image channel. The default,
+  opened, Respond and Announcement-details states remain orderly: the tested
+  opened notice shows three closed choices, and selecting one does not expose
+  the others.
+- `smoke:community-home-domain-list` remains red because its separate
+  no-community empty-state scenario cannot find the expected `Start here`
+  text. This Bulletin change does not touch that path, but no pre-change
+  baseline was recorded for that specific smoke, so the failure is unresolved
+  rather than labelled pre-existing.
+- This work remains local and uncommitted as part of the current owner-directed
+  cleanup batch; it has not been pushed or deployed.
   `Keep community trust visible`), one closed full-capability disclosure, and
   one bottom Continue action.
 - The former featured-capability carousel, Previous/Next controls, technical

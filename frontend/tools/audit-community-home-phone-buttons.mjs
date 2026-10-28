@@ -123,16 +123,20 @@ assertContains(
   "Community Home phone identity must not repeat the page name above the selected community name."
 );
 assertContains(
-  /minHeight: isCompact \? 0 : 250[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-indicators"[\s\S]*?data-bulletin-urgency-tone=\{tone\}[\s\S]*?!isCompact \? \(\s*<div style=\{announcementDateTileStyle\(false\)\}[\s\S]*?\{renderCommunityBulletinPulse\(\)\}/,
-  "Community Home phone Bulletin must restore its compact red, amber, and green timing indicators while keeping the large pulse dashboard and date tile off the default surface."
+  /minHeight: isCompact \? 0 : 250[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-status"[\s\S]*?data-bulletin-urgency-tone=\{phoneTone\}[\s\S]*?!isCompact \? \(\s*<div style=\{announcementDateTileStyle\(false\)\}[\s\S]*?\{renderCommunityBulletinPulse\(\)\}/,
+  "Community Home phone Bulletin must show one compact timing status while keeping full timing details and the large pulse dashboard off the default surface."
 );
 assertContains(
   /minHeight: isCompact \? 52 : 82[\s\S]*?!isCompact \? <span>Community <\/span> : null[\s\S]*?!isCompact \? \(\s*<span style=\{announcementBoardPillStyle\(\)\}>/,
   "Community Home phone Bulletin must keep one short Bulletin header without a repeated kind pill."
 );
 assertContains(
-  /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,
-  "Community Home phone Bulletin must use one Open notice control for the full notice and response actions."
+  /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticePhoneSectionOpenId\(""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,
+  "Community Home phone Bulletin must use one Open notice control for the full message and a closed action chooser."
+);
+assertContains(
+  /const \[noticePhoneSectionOpenId, setNoticePhoneSectionOpenId\] = useState\(""\)[\s\S]*?setNoticePhoneSectionOpenId\(\(current\) => \(current === sectionKey \? "" : sectionKey\)\)[\s\S]*?renderPhoneNoticeSection\([\s\S]*?"respond"[\s\S]*?renderPhoneNoticeSection\([\s\S]*?"share"[\s\S]*?renderPhoneNoticeSection\([\s\S]*?"details"/,
+  "Community Home phone Bulletin must keep Respond, Share/QR, and Details in one-open-at-a-time sections."
 );
 assertContains(
   /<details[\s\S]*?open=\{isCompact \? communityActionsOpen : true\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="community-home\.goto\.toggle"[\s\S]*?Community actions[\s\S]*?id="community-home-actions-panel"/,

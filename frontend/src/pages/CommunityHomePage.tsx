@@ -1962,6 +1962,7 @@ export default function CommunityHomePage() {
   const [noticePollRollCallByNotice, setNoticePollRollCallByNotice] = useState<Record<string, CommunityNoticePollRollCall>>({});
   const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
   const [noticeDetailOpenId, setNoticeDetailOpenId] = useState("");
+  const [noticePhoneSectionOpenId, setNoticePhoneSectionOpenId] = useState("");
   const [selectedCommunityNoticeIndex, setSelectedCommunityNoticeIndex] = useState(0);
   const [noticeRollCallBusy, setNoticeRollCallBusy] = useState("");
   const [noticeRollCallByNotice, setNoticeRollCallByNotice] = useState<Record<string, CommunityNoticeRollCall>>({});
@@ -3467,44 +3468,35 @@ export default function CommunityHomePage() {
     if (activeCommunityNotices.length === 0) return null;
 
     if (isCompact) {
+      const phoneTone: CommunityBulletinNoticeUrgencyTone = communityBulletinPulse.counts.red > 0
+        ? "red"
+        : communityBulletinPulse.counts.yellow > 0
+        ? "yellow"
+        : "green";
+      const phoneStatus = phoneTone === "red"
+        ? `${communityBulletinPulse.counts.red} need attention`
+        : phoneTone === "yellow"
+        ? `${communityBulletinPulse.counts.yellow} due soon`
+        : "All clear";
       return (
-        <div
-          data-debug-id="community-home.bulletin.phone-indicators"
-          aria-label={`Bulletin timing: ${communityBulletinPulse.counts.red} now, ${communityBulletinPulse.counts.yellow} within 72 hours, ${communityBulletinPulse.counts.green} clear`}
+        <span
+          data-debug-id="community-home.bulletin.phone-status"
+          data-bulletin-urgency-tone={phoneTone}
+          aria-label={`Bulletin status: ${phoneStatus}`}
           style={{
-            ...communityBulletinPulseGridStyle(true),
+            ...communityBulletinPulseChipStyle(phoneTone),
+            display: "inline-flex",
+            justifySelf: "start",
+            minHeight: 30,
+            padding: "5px 10px",
+            borderRadius: 999,
             marginBottom: 7,
+            fontSize: 11.5,
+            fontWeight: 900,
           }}
         >
-          {(["red", "yellow", "green"] as CommunityBulletinNoticeUrgencyTone[]).map((tone) => (
-            <span
-              key={tone}
-              data-bulletin-urgency-tone={tone}
-              style={{
-                ...communityBulletinPulseChipStyle(tone),
-                display: "flex",
-                minHeight: 34,
-                gap: 5,
-                padding: "4px 6px",
-                borderRadius: 12,
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 950, lineHeight: 1 }}>
-                {communityBulletinPulse.counts[tone]}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  textTransform: "uppercase",
-                }}
-              >
-                {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
-              </span>
-            </span>
-          ))}
-        </div>
+          {phoneStatus}
+        </span>
       );
     }
 
@@ -3595,6 +3587,7 @@ export default function CommunityHomePage() {
                   setSelectedCommunityNoticeIndex(nextPulseNoticeIndex);
                   setNoticeReactionPanelOpenId("");
                   setNoticeDetailOpenId("");
+                  setNoticePhoneSectionOpenId("");
                   return;
                 }
                 if (nextPulseSignal?.actionTo) {
@@ -3692,6 +3685,7 @@ export default function CommunityHomePage() {
                   setSelectedCommunityNoticeIndex(index);
                   setNoticeReactionPanelOpenId("");
                   setNoticeDetailOpenId("");
+                  setNoticePhoneSectionOpenId("");
                 }}
                 style={{
                   ...communityActionStyle(selected ? "primary" : "soft"),
@@ -3747,6 +3741,205 @@ export default function CommunityHomePage() {
       .join("\n\n");
     const canOpenRollCall = canManageCommunityNoticeSettings && noticeClanId(noticeItem, selectedClan) === selectedClanId && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
     const canToggleFullNotice = Boolean(fullBody) || safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
+    const hasAcknowledgementAction = !isMeetingNotice(noticeItem) && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
+    const hasAvailabilityAction = noticeSupportsAvailability(noticeItem) && Boolean(firstTruthy(noticeItem?.meeting_id, eventId));
+    const hasPollAction = Boolean(
+      noticeItem?.poll_enabled
+      && firstTruthy(noticeItem?.poll_question)
+      && Array.isArray(noticeItem?.poll_options)
+      && noticeItem.poll_options.length >= 2
+      && eventId
+    );
+    const hasResponseActions = hasAcknowledgementAction || hasAvailabilityAction || hasPollAction;
+    const phoneSectionKey = (section: string) => `${noticeKey}:${section}`;
+    const renderPhoneNoticeSection = (
+      section: string,
+      title: string,
+      summary: string,
+      content: React.ReactNode
+    ) => {
+      const sectionKey = phoneSectionKey(section);
+      const sectionOpen = noticePhoneSectionOpenId === sectionKey;
+      return (
+        <div
+          key={section}
+          data-debug-id={`community-home.bulletin.phone-section.${section}`}
+          style={{
+            display: "grid",
+            overflow: "hidden",
+            borderRadius: 14,
+            background: "#FFFFFF",
+            border: "1px solid rgba(123,161,204,0.16)",
+          }}
+        >
+          <StableButton
+            type="button"
+            debugId={`community-home.bulletin.phone-section-toggle.${section}`}
+            aria-expanded={sectionOpen}
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              setNoticePhoneSectionOpenId((current) => (current === sectionKey ? "" : sectionKey));
+            }}
+            style={{
+              width: "100%",
+              minHeight: 54,
+              padding: "9px 11px",
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              gap: 10,
+              alignItems: "center",
+              textAlign: "left",
+              color: "#07172C",
+              background: "#FFFFFF",
+              border: 0,
+              borderRadius: 0,
+              boxShadow: "none",
+              textTransform: "none",
+            }}
+          >
+            <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 950, lineHeight: 1.2 }}>{title}</span>
+              <span style={{ ...brandClampLines(1), color: "#617085", fontSize: 11.5, fontWeight: 760 }}>
+                {summary}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              style={{
+                display: "grid",
+                placeItems: "center",
+                width: 28,
+                height: 28,
+                borderRadius: 999,
+                color: "#0B2D4A",
+                background: "#EEF5FD",
+                fontSize: 18,
+                fontWeight: 900,
+              }}
+            >
+              {sectionOpen ? "−" : "+"}
+            </span>
+          </StableButton>
+          {sectionOpen ? (
+            <div
+              data-debug-id={`community-home.bulletin.phone-section-panel.${section}`}
+              style={{
+                display: "grid",
+                gap: 8,
+                padding: "0 10px 10px",
+                borderTop: "1px solid rgba(123,161,204,0.12)",
+              }}
+            >
+              {content}
+            </div>
+          ) : null}
+        </div>
+      );
+    };
+    const contactAnnouncementAction = noticeItem?.sender_whatsapp_number ? (
+      <StableButton
+        type="button"
+        aria-label={`Contact ${senderLabel} about this announcement`}
+        debugId={`community-home.bulletin.primary-sender-whatsapp.${noticeItem?.notice_id || noticeItem?.event_id || "active"}`}
+        onClick={(event) => openNoticeSenderWhatsApp(event, noticeItem)}
+        style={{
+          ...communityActionStyle("soft"),
+          minHeight: isCompact ? 46 : 48,
+          minWidth: 0,
+          width: isCompact ? "100%" : undefined,
+          marginTop: isCompact ? 8 : 0,
+          padding: "10px 12px",
+          borderRadius: isCompact ? 13 : 15,
+          fontSize: 13,
+          textTransform: "none",
+          color: "#087443",
+          background: "#F0FDF4",
+          border: "1px solid rgba(22,163,74,0.18)",
+          boxShadow: "none",
+        }}
+      >
+        Contact announcer
+      </StableButton>
+    ) : null;
+    const shareAnnouncementAction = publicNoticeUrl ? (
+      <SocialTagShareButton
+        target={{
+          title: `${sourceLine} announcement`,
+          message: publicNoticeShareMessage,
+          socialMessage: rawBody,
+          socialUrl: publicNoticeUrl,
+          url: publicNoticeUrl,
+        }}
+        buttonLabel="Share announcement"
+        buttonKind="primary"
+        debugId={`community-home.bulletin.share.${noticeKey}`}
+        stableHeight={isCompact ? 46 : 48}
+        fullWidth
+        style={{
+          marginTop: isCompact ? 8 : 0,
+          borderRadius: 13,
+          fontSize: 13,
+          textTransform: "none",
+        }}
+        onResult={(tone, text) => showNotice(tone, text)}
+      />
+    ) : null;
+    const publicQrAction = publicNoticePath ? (
+      <StableButton
+        type="button"
+        debugId={`community-home.bulletin.public-qr.${noticeKey}`}
+        onClick={(event) => openNoticePublicQr(event, noticeItem)}
+        style={{
+          ...communityActionStyle("soft"),
+          minHeight: 42,
+          width: "100%",
+          borderRadius: 13,
+          fontSize: 13,
+          boxShadow: "none",
+        }}
+      >
+        Open QR link
+      </StableButton>
+    ) : null;
+    const attachmentAction = attachmentUrl ? (
+      <StableButton
+        type="button"
+        debugId={`community-home.bulletin.attachment.${noticeKey}`}
+        onClick={(event) => openNoticeAttachment(event, noticeItem)}
+        style={{
+          ...communityActionStyle("soft"),
+          minHeight: 42,
+          width: "100%",
+          marginTop: isCompact ? 8 : 0,
+          borderRadius: 13,
+          fontSize: 13,
+          boxShadow: "none",
+        }}
+      >
+        {attachmentLabel}
+      </StableButton>
+    ) : null;
+    const rollCallAction = canOpenRollCall ? (
+      <StableButton
+        type="button"
+        debugId={`community-home.bulletin.roll-call.${noticeKey}`}
+        onClick={(event) => loadNoticeAcknowledgementRollCall(event, noticeItem)}
+        busy={noticeRollCallBusy === noticeKey}
+        busyLabel="Loading"
+        aria-disabled={noticeRollCallBusy ? true : undefined}
+        style={{
+          ...communityActionStyle("soft", Boolean(noticeRollCallBusy)),
+          minHeight: 42,
+          width: "100%",
+          marginTop: isCompact ? 8 : 0,
+          borderRadius: 13,
+          fontSize: 13,
+          boxShadow: "none",
+        }}
+      >
+        Roll call
+      </StableButton>
+    ) : null;
 
     return (
       <div style={announcementComposerPreviewStyle(isCompact)}>
@@ -3879,6 +4072,7 @@ export default function CommunityHomePage() {
               const nextOpen = !phoneNoticeOpen;
               setNoticeDetailOpenId(nextOpen ? noticeKey : "");
               setNoticeReactionPanelOpenId(nextOpen ? noticeKey : "");
+              setNoticePhoneSectionOpenId("");
               return;
             }
             setNoticeReactionPanelOpenId((current) => (current === noticeKey ? "" : noticeKey));
@@ -3910,6 +4104,98 @@ export default function CommunityHomePage() {
               border: "1px solid rgba(123,161,204,0.14)",
             }}
           >
+            {isCompact ? (
+              <>
+                {hasResponseActions
+                  ? renderPhoneNoticeSection(
+                      "respond",
+                      "Respond",
+                      hasPollAction
+                        ? "Acknowledge or answer this announcement"
+                        : hasAvailabilityAction
+                        ? "Share your availability"
+                        : "Acknowledge this announcement",
+                      <>
+                        {renderNoticeAcknowledgementShortcut(noticeItem)}
+                        {renderMeetingInterestShortcut(noticeItem)}
+                        {renderNoticeChoicePoll(noticeItem)}
+                      </>
+                    )
+                  : null}
+                {noticeItem?.sender_whatsapp_number
+                  ? renderPhoneNoticeSection(
+                      "contact",
+                      "Contact",
+                      senderLabel,
+                      contactAnnouncementAction
+                    )
+                  : null}
+                {publicNoticeUrl || publicNoticePath
+                  ? renderPhoneNoticeSection(
+                      "share",
+                      "Share or open QR",
+                      "Send this announcement to someone",
+                      <>
+                        {shareAnnouncementAction}
+                        {publicQrAction}
+                      </>
+                    )
+                  : null}
+                {attachmentUrl
+                  ? renderPhoneNoticeSection(
+                      "attachment",
+                      "Attachment",
+                      attachmentLabel,
+                      attachmentAction
+                    )
+                  : null}
+                {renderPhoneNoticeSection(
+                  "details",
+                  "Announcement details",
+                  "Timing, type, and response totals",
+                  <>
+                    <div
+                      data-debug-id="community-home.bulletin.phone-timing-details"
+                      style={{ ...communityBulletinPulseGridStyle(true), marginTop: 8 }}
+                    >
+                      {(["red", "yellow", "green"] as CommunityBulletinNoticeUrgencyTone[]).map((tone) => (
+                        <span key={tone} data-bulletin-urgency-tone={tone} style={communityBulletinPulseChipStyle(tone)}>
+                          <span style={{ fontSize: 14, fontWeight: 950, lineHeight: 1 }}>
+                            {communityBulletinPulse.counts[tone]}
+                          </span>
+                          <span style={{ fontSize: 10, fontWeight: 900, lineHeight: 1, textTransform: "uppercase" }}>
+                            {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      <span style={badge(false)}>{kindLabel}</span>
+                      <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
+                      {expiry ? <span style={badge(false)}>{expiry}</span> : null}
+                      {noticeItem?.public_qr_enabled ? <span style={badge(false)}>QR ready</span> : null}
+                      {attachmentUrl ? <span style={badge(false)}>Attachment</span> : null}
+                      {planningLine ? <span style={badge(true)}>{planningLine}</span> : null}
+                      {interestParts.map(([label, count]) => (
+                        <span key={label} style={badge(false)}>{label}: {count}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {canOpenRollCall
+                  ? renderPhoneNoticeSection(
+                      "admin",
+                      "Admin records",
+                      "Open the private acknowledgement roll call",
+                      <>
+                        {rollCallAction}
+                        {renderNoticeRollCallPanel(noticeItem)}
+                      </>
+                    )
+                  : null}
+              </>
+            ) : (
+              <>
             <div
               style={{
                 display: "flex",
@@ -3940,109 +4226,17 @@ export default function CommunityHomePage() {
               }}
             >
               {renderNoticeAcknowledgementShortcut(noticeItem)}
-              {noticeItem?.sender_whatsapp_number ? (
-                <StableButton
-                  type="button"
-                  aria-label={`Contact ${senderLabel} about this announcement`}
-                  debugId={`community-home.bulletin.primary-sender-whatsapp.${noticeItem?.notice_id || noticeItem?.event_id || "active"}`}
-                  onClick={(event) => openNoticeSenderWhatsApp(event, noticeItem)}
-                  style={{
-                    ...communityActionStyle("soft"),
-                    minHeight: 48,
-                    minWidth: 0,
-                    padding: "10px 12px",
-                    borderRadius: 15,
-                    fontSize: 13,
-                    textTransform: "none",
-                    color: "#087443",
-                    background: "#F0FDF4",
-                    border: "1px solid rgba(22,163,74,0.18)",
-                    boxShadow: "none",
-                  }}
-                >
-                  Contact announcer
-                </StableButton>
-              ) : null}
+              {contactAnnouncementAction}
             </div>
             {renderMeetingInterestShortcut(noticeItem)}
             {renderNoticeChoicePoll(noticeItem)}
-            {publicNoticeUrl ? (
-              <SocialTagShareButton
-                target={{
-                  title: `${sourceLine} announcement`,
-                  message: publicNoticeShareMessage,
-                  socialMessage: rawBody,
-                  socialUrl: publicNoticeUrl,
-                  url: publicNoticeUrl,
-                }}
-                buttonLabel="Share announcement"
-                buttonKind="primary"
-                debugId={`community-home.bulletin.share.${noticeKey}`}
-                stableHeight={48}
-                fullWidth
-                style={{
-                  borderRadius: 13,
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-                onResult={(tone, text) => showNotice(tone, text)}
-              />
-            ) : null}
-            {publicNoticePath ? (
-              <StableButton
-                type="button"
-                debugId={`community-home.bulletin.public-qr.${noticeKey}`}
-                onClick={(event) => openNoticePublicQr(event, noticeItem)}
-                style={{
-                  ...communityActionStyle("soft"),
-                  minHeight: 42,
-                  width: "100%",
-                  borderRadius: 13,
-                  fontSize: 13,
-                  boxShadow: "none",
-                }}
-              >
-                Open QR link
-              </StableButton>
-            ) : null}
-            {attachmentUrl ? (
-              <StableButton
-                type="button"
-                debugId={`community-home.bulletin.attachment.${noticeKey}`}
-                onClick={(event) => openNoticeAttachment(event, noticeItem)}
-                style={{
-                  ...communityActionStyle("soft"),
-                  minHeight: 42,
-                  width: "100%",
-                  borderRadius: 13,
-                  fontSize: 13,
-                  boxShadow: "none",
-                }}
-              >
-                {attachmentLabel}
-              </StableButton>
-            ) : null}
-            {canOpenRollCall ? (
-              <StableButton
-                type="button"
-                debugId={`community-home.bulletin.roll-call.${noticeKey}`}
-                onClick={(event) => loadNoticeAcknowledgementRollCall(event, noticeItem)}
-                busy={noticeRollCallBusy === noticeKey}
-                busyLabel="Loading"
-                aria-disabled={noticeRollCallBusy ? true : undefined}
-                style={{
-                  ...communityActionStyle("soft", Boolean(noticeRollCallBusy)),
-                  minHeight: 42,
-                  width: "100%",
-                  borderRadius: 13,
-                  fontSize: 13,
-                  boxShadow: "none",
-                }}
-              >
-                Roll call
-              </StableButton>
-            ) : null}
+            {shareAnnouncementAction}
+            {publicQrAction}
+            {attachmentAction}
+            {rollCallAction}
             {renderNoticeRollCallPanel(noticeItem)}
+              </>
+            )}
           </div>
         ) : null}
 

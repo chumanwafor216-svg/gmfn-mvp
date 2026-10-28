@@ -99,18 +99,37 @@ export function TrustDocumentDisclosureSection({
   summary,
   defaultOpen = false,
   debugId,
+  groupName,
   children,
 }: {
   title: string;
   summary?: string;
   defaultOpen?: boolean;
   debugId?: string;
+  groupName?: string;
   children: React.ReactNode;
 }) {
   return (
     <details
       data-gsn-trust-document-section-disclosure="true"
+      data-gsn-trust-document-section-group={groupName}
       open={defaultOpen}
+      onToggle={(event) => {
+        if (!groupName || !event.currentTarget.open) return;
+        const current = event.currentTarget;
+        current.ownerDocument
+          .querySelectorAll<HTMLDetailsElement>(
+            "details[data-gsn-trust-document-section-group]"
+          )
+          .forEach((other) => {
+            if (
+              other !== current &&
+              other.dataset.gsnTrustDocumentSectionGroup === groupName
+            ) {
+              other.open = false;
+            }
+          });
+      }}
       style={{
         borderRadius: 18,
         border: "1px solid rgba(8,35,58,0.12)",

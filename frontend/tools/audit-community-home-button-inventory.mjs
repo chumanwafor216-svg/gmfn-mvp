@@ -10,11 +10,11 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 36;
+const expectedStableButtonTemplateCount = 37;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 3;
 const expectedMobileShellBreakdown = { top: 2, drawer: 25, pageTools: 8, bottom: 5 };
-const expectedExpandedRouteLocalActionTemplates = 36;
+const expectedExpandedRouteLocalActionTemplates = 37;
 const expectedMobileShellActionCount = Object.values(expectedMobileShellBreakdown).reduce((sum, count) => sum + count, 0);
 const expectedWholeMobileRouteActionTemplates = expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 
@@ -98,7 +98,9 @@ assertContains(/id="community-home-bulletin"[\s\S]*?renderCommunityBulletinPulse
 assertContains(/recordCommunityNoticePollResponse[\s\S]*?data-debug-id="community-home\.bulletin\.choice-poll"[\s\S]*?community-home\.bulletin\.poll-option/s, "Community Home expanded Bulletin must keep the approved custom-choice poll inside the existing notice engine.");
 assertContains(/toggleNoticePollChoice[\s\S]*?submitNoticePollChoices[\s\S]*?community-home\.bulletin\.poll-submit[\s\S]*?OK — (?:update|send) response/s, "Community Home poll choices must remain tap-only until the member presses one explicit OK action.");
 assertContains(/listCommunityNoticePollRollCall[\s\S]*?community-home\.bulletin\.poll-roll-call[\s\S]*?Admin-only poll roll call/s, "Community Home must keep poll identities behind an authorised admin-only roll-call action.");
-assertContains(/function renderCommunityBulletinPulse\(\)[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-indicators"[\s\S]*?\(\["red", "yellow", "green"\] as CommunityBulletinNoticeUrgencyTone\[\]\)[\s\S]*?data-bulletin-urgency-tone=\{tone\}[\s\S]*?"Now"[\s\S]*?"72h"[\s\S]*?"Clear"/s, "Community Home phone Bulletin must retain the traffic-light timing summary without restoring the full Pulse dashboard.");
+assertContains(/function renderCommunityBulletinPulse\(\)[\s\S]*?if \(isCompact\) \{[\s\S]*?data-debug-id="community-home\.bulletin\.phone-status"[\s\S]*?phoneTone[\s\S]*?phoneStatus/s, "Community Home phone Bulletin must keep one meaningful timing status on the first surface without restoring the full Pulse dashboard.");
+assertContains(/data-debug-id="community-home\.bulletin\.phone-timing-details"[\s\S]*?\(\["red", "yellow", "green"\] as CommunityBulletinNoticeUrgencyTone\[\]\)[\s\S]*?"Now"[\s\S]*?"72h"[\s\S]*?"Clear"/s, "Community Home phone Bulletin must preserve the complete timing counts behind Announcement details.");
+assertContains(/noticePhoneSectionOpenId[\s\S]*?renderPhoneNoticeSection\([\s\S]*?"respond"[\s\S]*?"share"[\s\S]*?"details"/s, "Community Home phone Bulletin must retain every action behind a one-open-at-a-time chooser.");
 assertContains(/const communityAttentionItems = useMemo\([\s\S]*?canManageCommunityNoticeSettings && pendingCommunityNoticeReviewCount > 0[\s\S]*?id: "notice-admin-review"/s, "Community Home attention strip must stay reserved for the distinct admin review queue, without duplicating visible Bulletin responses.");
 assertContains(/debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.trust"/s, "Community Home Go to group must stay compact and route to owning surfaces.");
 assertContains(/debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?sortedClans\.map/s, "Community Home switching must be a compact disclosure over selectable user communities.");

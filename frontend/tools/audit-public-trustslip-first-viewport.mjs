@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  disclosure: "src/components/TrustDocumentLanguage.tsx",
+  recipientEnvelope: "src/pages/trustSlipVerify/TrustSlipRecipientEnvelope.tsx",
   routePage: "src/pages/TrustSlipVerifyPage.tsx",
   app: "src/App.tsx",
   api: "src/lib/api.ts",
@@ -119,9 +121,33 @@ assertContains(
 );
 
 assertContains(
+  "recipientEnvelope",
+  /data-gsn-trustslip-recipient-envelope="sealed"[\s\S]*?A TrustSlip has arrived[\s\S]*?shared a community evidence certificate with you\.[\s\S]*?data-gsn-trustslip-envelope-object="closed"[\s\S]*?Recipient copy[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?Open TrustSlip[\s\S]*?Opens the certificate report\./,
+  "The recipient surface must appear as a sealed TrustSlip envelope with one clear Open action before the certificate report."
+);
+
+assertContains(
+  "recipientEnvelope",
+  /<PrimaryButton[\s\S]*?fullWidth[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?onClick=\{onOpen\}[\s\S]*?>[\s\S]*?Open TrustSlip[\s\S]*?<\/PrimaryButton>/,
+  "The sealed recipient envelope must expose one stable primary action."
+);
+
+assertContains(
+  "routePage",
+  /const \[recipientEnvelopeOpened, setRecipientEnvelopeOpened\] = useState\(false\)[\s\S]*?if \(!isAppRoute\) setRecipientEnvelopeOpened\(false\)[\s\S]*?const showRecipientEnvelope =[\s\S]*?!isAppRoute[\s\S]*?!isCardRoute[\s\S]*?!noPublicCodeSupplied[\s\S]*?!publicVerifyEndpointErrorCopy[\s\S]*?!recipientEnvelopeOpened[\s\S]*?showRecipientEnvelope \? \([\s\S]*?<TrustSlipRecipientEnvelope[\s\S]*?onOpen=\{\(\) => setRecipientEnvelopeOpened\(true\)\}[\s\S]*?: \([\s\S]*?<React\.Suspense/,
+  "Public receiver links must show the envelope before the certificate, while authenticated and card-only routes bypass that gate."
+);
+
+assertContains(
+  "routePage",
+  /noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary/,
+  "Supporting boundary content must remain hidden while the recipient envelope is still sealed."
+);
+
+assertContains(
   "publicPaper",
-  /const supportPurpose = \/guarantor\|guarantee\|support\/i\.test\(decisionPackPurpose\)[\s\S]*?const tradePurpose = \/trade\|supplier\|skilled\|market\/i\.test\(decisionPackPurpose\)[\s\S]*?const decisionFirstAnswer = !validNow[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const purposeEvidenceExists = visibleEvidenceAreaCount > 0[\s\S]*?const decisionDisplayAnswer = tradePurpose \? tradeEvidenceReading\.headline : purposeDecisionReading\.headline \|\| decisionFirstAnswer[\s\S]*?const decisionReasonLine = tradePurpose \? tradeEvidenceReading\.summary : purposeDecisionReading\.conclusion[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Next check", recommendedActionFinding\][\s\S]*?const quickDecisionFacts = \[[\s\S]*?label: "Next check"/,
-  "Public TrustSlip paper must compute one bounded answer, purpose-evidence existence, immediate reason text, quick facts, and next-check guidance before rendering."
+  /const supportPurpose = \/guarantor\|guarantee\|support\/i\.test\(decisionPackPurpose\)[\s\S]*?const tradePurpose = \/trade\|supplier\|skilled\|market\/i\.test\(decisionPackPurpose\)[\s\S]*?const decisionFirstAnswer = !validNow[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const purposeEvidenceExists = visibleEvidenceAreaCount > 0[\s\S]*?const decisionDisplayAnswer = tradePurpose \? tradeEvidenceReading\.headline : purposeDecisionReading\.headline \|\| decisionFirstAnswer[\s\S]*?const decisionReasonLine = tradePurpose \? tradeEvidenceReading\.summary : purposeDecisionReading\.conclusion[\s\S]*?const certificateDecisionAnswer = encouragingCertificateHeadline[\s\S]*?const certificateSupportLine = validNow[\s\S]*?const certificateScopeLine = `Community evidence recorded for \$\{decisionPackPurpose\} in \$\{communityLabel\}\.`[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Next check", recommendedActionFinding\][\s\S]*?const quickDecisionFacts = \[[\s\S]*?label: "Next check"/,
+  "Public TrustSlip paper must compute a bounded answer, an encouraging certificate reading, a neutral scope line, and detailed next-check guidance before rendering."
 );
 
 
@@ -167,7 +193,7 @@ assertContains(
 );
 assertContains(
   "routePage",
-  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The public lite TrustSlip route must open as a focused card/paper without the extra boundary support section."
 );
 
@@ -184,7 +210,7 @@ assertContains(
 
 assertContains(
   "routePage",
-  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The TrustSlip verify page must render /card as a focused card-only public view without the extra boundary support section."
 );
 
@@ -231,8 +257,8 @@ assertNotContains(
 
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?What this record says[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this answer[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Reason 1" \|\| label === "Reason 2"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?<DecisionFactorTable rows=\{publicDecisionEvidenceSnapshotDisplayRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Quick check[\s\S]*?quickDecisionFacts\.map[\s\S]*?title="Evidence and record details"[\s\S]*?debugId="trust-document\.section\.full-evidence-and-record-details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?What to do next[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Limits of this check[\s\S]*?GSN checked \{evidenceScopeIsWider \? "the main community and other recorded community evidence" : "the main community evidence"\}/,
-  "Public TrustSlip phone viewport must render the answer, reason, recommendation findings, desktop quick decision, collapsed supporting details, meaning/action strip, and compact boundary."
+  /data-gsn-trustslip-certificate="public-evidence-record"[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?What this record says[\s\S]*?\{compact \? certificateDecisionAnswer : decisionDisplayAnswer\}[\s\S]*?\{compact \? certificateSupportLine : decisionReasonLine\}[\s\S]*?data-gsn-trustslip-certificate-facts="true"[\s\S]*?\["Holder", holderName\][\s\S]*?\["Community", communityLabel\][\s\S]*?\["Record", resolvedCode \|\| "Current TrustSlip"\][\s\S]*?\["Status", publicValidityLabel\][\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?title="Explore this TrustSlip"[\s\S]*?debugId="trust-document\.section\.full-evidence-and-record-details"[\s\S]*?data-gsn-public-mobile-full-evidence="section-chooser"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?\{compact \? "Scope of this record" : "Limits of this check"\}[\s\S]*?\{certificateScopeLine\}/,
+  "Public TrustSlip phone viewport must render an encouraging certificate answer, four identity facts, a closed section chooser, one next action, and only a neutral scope line."
 );
 assertContains(
   "publicPaper",
@@ -242,8 +268,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?\{!compact \? \([\s\S]*?<TrustSlipEvidencePatternStack[\s\S]*?title="Evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?<TrustSlipEvidencePatternStack/,
-  "Public TrustSlip phone view must hide the duplicate evidence snapshot and move the behaviour pattern into Full evidence."
+  /data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?\{!compact \? \([\s\S]*?<TrustSlipEvidencePatternStack[\s\S]*?title="Explore this TrustSlip"[\s\S]*?data-gsn-public-mobile-full-evidence="section-chooser"[\s\S]*?title="Recorded pattern"[\s\S]*?<TrustSlipEvidencePatternStack/,
+  "Public TrustSlip phone view must hide duplicate evidence and put the recorded pattern behind its own chooser item."
 );
 
 assertContains(
@@ -280,8 +306,20 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /title="Evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Purpose and evidence"[\s\S]*?rows=\{relevantEvidenceRows\}[\s\S]*?title="What it means"[\s\S]*?rows=\{suggestionRows\}[\s\S]*?title="Source and date"[\s\S]*?rows=\{sourceFamilyRows\}[\s\S]*?title="What to check next"[\s\S]*?rows=\{nextCheckRows\}[\s\S]*?title="What this cannot prove"/,
-  "Mobile Full Evidence drawer must lead with purpose-specific evidence, interpretation, recency, next check, and compact limitations."
+  /title="Explore this TrustSlip"[\s\S]*?summary="Choose one section at a time\."[\s\S]*?data-gsn-public-mobile-full-evidence="section-chooser"[\s\S]*?title="Why this result"[\s\S]*?debugId="trust-document\.section\.certificate-why"[\s\S]*?title="Evidence summary"[\s\S]*?debugId="trust-document\.section\.certificate-evidence"[\s\S]*?title="Source and date"[\s\S]*?debugId="trust-document\.section\.certificate-source"[\s\S]*?title="Recorded pattern"[\s\S]*?debugId="trust-document\.section\.certificate-pattern"[\s\S]*?title="Scope & limits"[\s\S]*?debugId="trust-document\.section\.certificate-scope"/,
+  "The mobile certificate must reveal a chooser first and keep why, evidence, source, pattern, and limits in separate disclosures."
+);
+
+assertContains(
+  "publicPaper",
+  /debugId="trust-document\.section\.certificate-why"[\s\S]*?groupName="trustslip-certificate-detail-choice"[\s\S]*?debugId="trust-document\.section\.certificate-evidence"[\s\S]*?groupName="trustslip-certificate-detail-choice"[\s\S]*?debugId="trust-document\.section\.certificate-source"[\s\S]*?groupName="trustslip-certificate-detail-choice"[\s\S]*?debugId="trust-document\.section\.certificate-pattern"[\s\S]*?groupName="trustslip-certificate-detail-choice"[\s\S]*?debugId="trust-document\.section\.certificate-scope"[\s\S]*?groupName="trustslip-certificate-detail-choice"/,
+  "Each certificate detail must belong to the same one-open-at-a-time disclosure group."
+);
+
+assertContains(
+  "disclosure",
+  /groupName\?: string[\s\S]*?data-gsn-trust-document-section-group=\{groupName\}[\s\S]*?onToggle=\{\(event\) => \{[\s\S]*?!groupName \|\| !event\.currentTarget\.open[\s\S]*?other\.dataset\.gsnTrustDocumentSectionGroup === groupName[\s\S]*?other\.open = false/,
+  "Grouped Trust document disclosures must close their siblings when one section opens."
 );
 
 assertContains(
