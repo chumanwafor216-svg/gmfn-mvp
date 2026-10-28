@@ -5,6 +5,16 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Essential-only Identity Integrity surface - 2026-10-28
+
+- The owner directed that `/app/identity` show only what users need for the next decision, rather than displaying the full identity package at once.
+- First arrival now contains one compact identity header (readiness, name, photo, and GSN ID) followed by exactly one recommended evidence task: the first incomplete task. The recommendation remains actionable; completed identity information was not deleted.
+- `More identity tools` is closed by default and, when opened, reveals only three separately closed rows: identity facts, copy identity information, and alternate evidence steps. One tap never exposes every tool.
+- `More identity details` is also closed by default and contains the explanatory, continuity, recovery, history, next-step, and guide sections as individually opened rows. Cautionary and supporting copy no longer competes with the immediate task.
+- The duplicate page-local navigation was removed; the authenticated application shell now owns the title and return path. The Dashboard's dedicated GSN card-only route remains unchanged.
+- Verification passed: Identity Integrity front-package audit, Dashboard action audit, Dashboard passport/hitbox phone-browser audit, and the 297-module TypeScript/Vite production build.
+- Deployment evidence: app commit `2b9d5cea0ee5f68b85ba5487b5c758e402bd4388`; GitHub Actions run `40790629379`; Render frontend deploy `dep-dbh8mue7bikc73dtcrb0`, verified live on the exact commit. The public frontend marker passed and backend deployment was correctly skipped.
+
 ## GSN card removed from normal Identity Integrity - 2026-10-28
 
 - Owner phone evidence showed the normal Identity Integrity page still exposing the `Identity Card / Identity Anchor` switch and therefore retaining a second home for the GSN card. The owner directed that the GSN Identity Card be removed from this page.
