@@ -5,6 +5,14 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## GSN ID-card title action - 2026-10-28
+
+- Owner clarification established that the pill labelled `GSN Identity Card` on the card itself must serve as the single `use this card` control. The separate full-width `Use this ID card` button below the card was duplicate surface clutter and has been removed.
+- The title pill is now an accessible shared `StableButton`. It keeps the compact in-card appearance, begins with `aria-expanded=false`, and toggles only the existing card-action chooser. The chooser still contains Share/Finish, Refresh, Copy card, Copy verify link, and the concise identity boundary; none is mounted before the title is tapped.
+- The phone-browser contract now proves that the one action toggle is physically inside the screenshot-ready ID card and that no visible `Use this ID card` duplicate remains. Identity Anchor tasks and the page's secondary sections remain absent from Dashboard card-only mode.
+- Verification passed: Identity Integrity front-package audit, Dashboard action audit, 297-module TypeScript/Vite production build, and the phone-browser Dashboard passport/hitbox audit.
+- Deployment evidence: commit `00fd78d2162de5dd4f1386a00118eca252a03ec6`; frontend-only GitHub Actions run `40788068484`; Render frontend deploy `dep-dbh8c5utlv9c73es49ug`, verified live on the exact commit. The public URL build-marker check passed and backend deployment was correctly skipped.
+
 ## GSN Shop Reel direct phone-test entry - 2026-10-27
 
 - Owner phone evidence at 20:40 confirmed the corrected current bundle and paired Public Shop shelf, but also proved the Reel was not genuinely test-ready: its empty card only instructed the owner to add a picture elsewhere and exposed no action of its own.
