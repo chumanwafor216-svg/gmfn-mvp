@@ -1201,20 +1201,19 @@ Must show:
 - one active evidence task with a clear action or explicit route-pending response
 - deeper readings, recovery form, reasons, timeline, and trust-document family
   material below the front package or behind collapses
-- the GSN Identity Card itself remains visible, while share, refresh, copy-card,
-  copy-verification, and the short legal boundary remain behind its closed
-  `GSN Identity Card` title control; do not add a duplicate action below the card
+- the normal Identity Integrity page shows the Identity Anchor only; it must not
+  expose an Identity Card selector or render the GSN Identity Card
 
 Rules:
 - Use the mobile task protocol: short state first, next action first, details
   later.
-- Tapping the `GSN Identity Card` title control reveals only the compact action
-  chooser; tapping it again closes that chooser. It
-  must not open Identity Anchor tasks or any secondary evidence section.
+- Keep the GSN Identity Card outside the normal Identity Integrity surface.
 - The Dashboard GSN ID Card entry uses the authenticated `display=card-only`
   presentation. That presentation mounts the card and its covered actions only;
-  the page guide, Card/Anchor switch, Anchor package, and all secondary sections
+  the page guide, Anchor package, and all secondary sections
   must be absent rather than merely collapsed.
+- In card-only mode, tapping the `GSN Identity Card` title reveals only the
+  compact action chooser; tapping it again closes that chooser.
 - Use SVG pictograms from the app icon system for core identity tasks.
 - Do not use a large photo hero or long paragraph before the user sees current
   status and next action.

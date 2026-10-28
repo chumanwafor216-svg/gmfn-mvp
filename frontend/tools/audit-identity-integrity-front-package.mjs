@@ -90,8 +90,8 @@ assertContains(
 );
 
 assertContains(
-  /<PageTopNav[\s\S]*?subtitle="Stable identity, current status, and the next clean evidence step\."[\s\S]*?<section[\s\S]*?data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?<section[\s\S]*?data-identity-package-view-toggle="true"/,
-  "Identity Integrity must keep the first explanation as a collapsed evidence section before the identity package, not an always-open guide."
+  /<PageTopNav[\s\S]*?subtitle="Stable identity, current status, and the next clean evidence step\."[\s\S]*?<section[\s\S]*?data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?<section[\s\S]*?data-identity-integrity-front-package="true"/,
+  "Identity Integrity must keep the first explanation collapsed before the always-present Identity Anchor."
 );
 assertContains(
   /data-identity-integrity-secondary-section="guides"[\s\S]*?Evidence Guides[\s\S]*?debugId="identity-integrity\.toggle-guides"[\s\S]*?!collapsed\.guides[\s\S]*?data-identity-integrity-guide-stack="true"/,
@@ -261,14 +261,14 @@ assertContains(
   "Identity Integrity must keep the GSN Identity Card as a screenshot-ready card with the holder face visible."
 );
 
-assertContains(
-  /data-identity-package-view-toggle="true"[\s\S]*?Identity Card[\s\S]*?Identity Anchor[\s\S]*?identity-integrity\.package-view\.\$\{item\.key\}/,
-  "Identity Integrity must show a two-choice switch for Identity Card and Identity Anchor."
+assertNotContains(
+  /IdentityPackageView|identityPackageView|data-identity-package-view-toggle|identity-integrity\.package-view/,
+  "Normal Identity Integrity must not expose the removed Identity Card/Anchor switch."
 );
 
 assertContains(
-  /identityPackageView === "anchor"[\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\) : null\}[\s\S]*?identityPackageView === "card"[\s\S]*?data-gsn-identity-card="true"/,
-  "Identity Integrity must switch between Identity Anchor and GSN Identity Card instead of showing both at once."
+  /!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"/,
+  "Normal Identity Integrity must render the Anchor while the dedicated card-only presentation renders the GSN Identity Card."
 );
 
 assertContains(
@@ -306,7 +306,7 @@ assertContains(
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?setIdentityPackageView\("anchor"\)[\s\S]*?showNotice\(\s*"error",\s*trustSlipPendingDetail\s*\)[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?showNotice\(\s*"error",\s*trustSlipPendingDetail\s*\)[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
   "GSN Identity Card must share the visible card as a PNG when the phone browser supports file sharing, while keeping the phone/TrustSlip gate."
 );
 
@@ -320,8 +320,8 @@ assertNotContains(
   "GSN Identity Card must not render a duplicate action button below the card."
 );
 assertContains(
-  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?<PageTopNav[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-package-view-toggle="true"[\s\S]*?!cardOnlyMode && identityPackageView === "anchor"[\s\S]*?cardOnlyMode \|\| identityPackageView === "card"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-secondary-section="readings"/,
-  "Identity Integrity card-only mode must mount the GSN card without page navigation, package tabs, Anchor tasks, or secondary sections."
+  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?<PageTopNav[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-secondary-section="readings"/,
+  "Identity Integrity must keep its Anchor on the normal route and isolate the GSN card to card-only mode without page navigation or secondary sections."
 );
 assertNotContains(
   /height: isCompact \? 240 : 270|<ExplainToggle[\s\S]*?What this screen does|Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it/g,

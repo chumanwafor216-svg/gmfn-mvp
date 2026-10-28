@@ -283,6 +283,23 @@ try {
     }
   }
 
+  await page.goto(`${baseUrl}/app/identity`, {
+    waitUntil: "networkidle",
+    timeout: 20000,
+  });
+  await page
+    .locator('[data-identity-integrity-front-package="true"]')
+    .waitFor({ state: "visible", timeout: 10000 });
+
+  for (const selector of [
+    '[data-identity-package-view-toggle="true"]',
+    '[data-gsn-identity-card="true"]',
+  ]) {
+    if ((await page.locator(selector).count()) !== 0) {
+      throw new Error(`Normal Identity Integrity must not mount ${selector}.`);
+    }
+  }
+
   await page.goto(beforeUrl, { waitUntil: "networkidle", timeout: 20000 });
 
   const pictureFrameTriggers = page.locator(

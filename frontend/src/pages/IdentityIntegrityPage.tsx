@@ -165,7 +165,6 @@ type CollapseState = {
 };
 
 type IdentityTaskKey = "phone" | "community" | "bank" | "official_id" | "recovery";
-type IdentityPackageView = "card" | "anchor";
 
 const IDENTITY_TASK_KEYS: IdentityTaskKey[] = [
   "phone",
@@ -1862,10 +1861,6 @@ export default function IdentityIntegrityPage() {
   } | null>(null);
   const [activeIdentityTask, setActiveIdentityTask] =
     useState<IdentityTaskKey>("phone");
-  const [identityPackageView, setIdentityPackageView] =
-    useState<IdentityPackageView>(() =>
-      completionMode || requestedIdentityTask ? "anchor" : "card"
-    );
   const [identityCardActionsOpen, setIdentityCardActionsOpen] = useState(false);
   const [identityCardGeneratedAt, setIdentityCardGeneratedAt] = useState(() =>
     new Date().toISOString()
@@ -1986,10 +1981,6 @@ export default function IdentityIntegrityPage() {
   useEffect(() => {
     if (requestedIdentityTask) setActiveIdentityTask(requestedIdentityTask);
   }, [requestedIdentityTask]);
-  useEffect(() => {
-    if (requestedIdentityTask || completionMode) setIdentityPackageView("anchor");
-  }, [completionMode, requestedIdentityTask]);
-
   useEffect(() => {
     setPhoneInput((prev) => prev || safeStr(me?.phone_e164 || me?.phone || ""));
     setOfficialIdCountry((prev) => prev || safeStr(me?.country || me?.country_code || ""));
@@ -2976,13 +2967,11 @@ export default function IdentityIntegrityPage() {
       return;
     }
 
-    setIdentityPackageView("anchor");
     showNotice("error", trustSlipPendingDetail);
     navigateWithOrigin(navigate, routes.trustSlip, location);
   }
   async function shareGsnIdentityCard() {
     if (!identityCardValid) {
-      setIdentityPackageView("anchor");
       showNotice(
         "error",
         trustSlipPendingDetail
@@ -3431,56 +3420,6 @@ export default function IdentityIntegrityPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       {!cardOnlyMode ? (
-      <section
-        data-identity-package-view-toggle="true"
-        style={{
-          ...pageCard("#FFFFFF"),
-          padding: isCompact ? 8 : 12,
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-          gap: 8,
-          border: "1px solid rgba(37,78,119,0.12)",
-        }}
-      >
-        {[
-          { key: "card" as IdentityPackageView, label: "Identity Card", icon: "id" as GsnIconName },
-          { key: "anchor" as IdentityPackageView, label: "Identity Anchor", icon: "shield" as GsnIconName },
-        ].map((item) => {
-          const selected = identityPackageView === item.key;
-          const ViewButton = selected ? PrimaryButton : SecondaryButton;
-          return (
-            <ViewButton
-              key={item.key}
-              type="button"
-              onClick={() => {
-                setIdentityPackageView(item.key);
-                setIdentityCardActionsOpen(false);
-              }}
-              stableHeight={isCompact ? 52 : 50}
-              fullWidth
-              debugId={`identity-integrity.package-view.${item.key}`}
-              style={{
-                borderRadius: 16,
-                justifyContent: "center",
-                gap: 8,
-                background: selected
-                  ? "linear-gradient(180deg, #07172C 0%, #0B2D4A 100%)"
-                  : "#FFFFFF",
-                color: selected ? "#FFFFFF" : "#07172C",
-                border: selected
-                  ? "1px solid rgba(214,170,69,0.34)"
-                  : "1px solid rgba(37,78,119,0.14)",
-              }}
-            >
-              <GsnLegacyIcon name={item.icon} size={24} />
-              {item.label}
-            </ViewButton>
-          );
-        })}
-      </section>
-      ) : null}
-
-      {!cardOnlyMode && identityPackageView === "anchor" ? (
       <section
         data-identity-integrity-front-package="true"
         style={{
@@ -4366,7 +4305,7 @@ export default function IdentityIntegrityPage() {
       </section>
       ) : null}
 
-      {cardOnlyMode || identityPackageView === "card" ? (
+      {cardOnlyMode ? (
       <section
         data-gsn-identity-card="true"
         style={{
