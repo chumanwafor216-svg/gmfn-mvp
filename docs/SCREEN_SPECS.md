@@ -1819,12 +1819,20 @@ Rules:
   description, picture, WhatsApp, and Telegram come from the individual shop
   record. Marketplace/community name may appear only as the shared community
   context, not as a replacement for the shop name.
-- The Public Shop signboard media tile uses the owner-saved shop picture first.
-  If none is usable, use the first eligible active public product picture in
-  public-space order. If neither is usable, show the neutral branded GSN
-  storefront fallback. Broken images must advance through that same order.
+- The Public Shop signboard uses a full-width, photo-led business hero rather
+  than reducing genuine media to a thumbnail tile. Use the first eligible
+  active public product picture in public-space order, then the owner-saved
+  shop picture, then the neutral branded GSN storefront fallback. Broken
+  images must advance through that same order.
+- Keep shop name, category, a bounded short description and truthful
+  GSN-member/community context readable through the approved navy-and-gold
+  overlay. An existing-owner Edit Shop route may appear only for the signed-in
+  owner. Keep GSN ID, community, Share, Verify, WhatsApp, follow/analytics and
+  the product shelf intact below the hero.
   Never source the hero from Vault, Spotlight, Shop Update/Diary, a private
-  product, a guessed category scene, or an unsaved profile portrait.
+  product, a guessed category scene, or an unsaved profile portrait. Do not
+  invent trust status, business activity or location to make the hero look
+  richer.
 - Public Shop may expose an on-demand Verify Shop panel with the shop owner ID,
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip

@@ -45,22 +45,25 @@ const candidates = [
   },
 ];
 
+const selectedBusinessHero = selectShopHeroSource({
+  shopName: "Ada Shop",
+  shopImageUrl: "/uploads/shop.jpg",
+  products: candidates,
+});
+assert(selectedBusinessHero.kind === "product", "the first eligible public product must lead the business hero");
+assert(selectedBusinessHero.productId === 11, "the lowest public-space product must be selected deterministically");
+
 const selectedShop = selectShopHeroSource({
   shopName: "Ada Shop",
   shopImageUrl: "/uploads/shop.jpg",
   products: candidates,
+  brokenImageUrls: {
+    "/uploads/product-1.jpg": true,
+    "/uploads/product-2.jpg": true,
+  },
 });
-assert(selectedShop.kind === "shop", "the owner-selected shop photo must win");
-assert(selectedShop.imageUrl === "/uploads/shop.jpg", "the saved shop URL must be preserved");
-
-const selectedProduct = selectShopHeroSource({
-  shopName: "Ada Shop",
-  shopImageUrl: "/uploads/shop.jpg",
-  products: candidates,
-  brokenImageUrls: { "/uploads/shop.jpg": true },
-});
-assert(selectedProduct.kind === "product", "a broken shop photo must fall through to a product");
-assert(selectedProduct.productId === 11, "the lowest public-space product must be selected deterministically");
+assert(selectedShop.kind === "shop", "unusable product media must fall through to the owner-saved shop photo");
+assert(selectedShop.imageUrl === "/uploads/shop.jpg", "the saved shop URL must remain the second choice");
 
 const safeProduct = selectShopHeroSource({
   products: [
@@ -78,10 +81,12 @@ assert(
 
 const fallback = selectShopHeroSource({
   shopName: "Ada Shop",
+  shopImageUrl: "/uploads/shop.jpg",
   products: candidates,
   brokenImageUrls: {
     "/uploads/product-1.jpg": true,
     "/uploads/product-2.jpg": true,
+    "/uploads/shop.jpg": true,
   },
 });
 assert(fallback.kind === "fallback", "all unusable media must reach the neutral fallback");

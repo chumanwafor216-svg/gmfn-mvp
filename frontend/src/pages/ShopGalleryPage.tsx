@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
-import UniversalShopHero from "../components/shop/UniversalShopHero";
+import PublicShopPhotoHero from "../components/shop/PublicShopPhotoHero";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame, {
@@ -4402,6 +4402,10 @@ export default function ShopGalleryPage() {
     `${APP_ROUTES.SHOP_ME}#${OWNER_SHOP_HASHES.summary}`,
     ownerSurfaceCommunityId
   );
+  const ownerShopEditPath = routeWithCommunity(
+    `${APP_ROUTES.SHOP_ME}#${OWNER_SHOP_HASHES.billboard}`,
+    ownerSurfaceCommunityId
+  );
   const ownerShopDiaryPath = routeWithCommunity(
     `${APP_ROUTES.SHOP_ME}#shop-assets-diary`,
     ownerSurfaceCommunityId
@@ -5208,7 +5212,7 @@ export default function ShopGalleryPage() {
             position: "relative",
             overflow: "hidden",
             borderRadius: isCompact ? 18 : 30,
-            padding: isCompact ? "10px" : "24px 26px 22px",
+            padding: isCompact ? 8 : 14,
             border: "1px solid rgba(214,170,69,0.46)",
             background:
               "radial-gradient(circle at 20% 8%, rgba(246,196,83,0.18) 0%, transparent 28%), radial-gradient(circle at 92% 2%, rgba(47,128,237,0.10) 0%, transparent 32%), linear-gradient(145deg, #FFFFFF 0%, #FFFCF4 54%, #F6FBFF 100%)",
@@ -5238,76 +5242,61 @@ export default function ShopGalleryPage() {
           >
             <GSNBrandMark width={isCompact ? 58 : 150} height={isCompact ? 76 : 196} />
           </div>
+          <PublicShopPhotoHero
+            source={shopHeroSource}
+            compact={isCompact}
+            shopName={shopNameText}
+            category={shopCategoryText}
+            description={showShopHeroDescription ? shopDescriptionText : undefined}
+            gmfnId={shopGmfnText}
+            communityName={shopCommunityText}
+            ownerAction={
+              signedInOwnsShop ? (
+                <StableCtaLink
+                  to={ownerShopEditPath}
+                  stableHeight={isCompact ? 36 : 42}
+                  debugId="shop-gallery.owner.edit-shop"
+                  style={{
+                    minHeight: isCompact ? 36 : 42,
+                    padding: isCompact ? "7px 11px" : "9px 14px",
+                    borderRadius: 999,
+                    color: "#FFFFFF",
+                    background: "rgba(3,20,36,0.72)",
+                    border: "1px solid rgba(246,215,122,0.54)",
+                    boxShadow: "0 10px 22px rgba(0,0,0,0.24)",
+                    fontSize: isCompact ? 10.5 : 13,
+                    fontWeight: 900,
+                    gap: isCompact ? 6 : 8,
+                  }}
+                >
+                  {inlineShopIcon("pen", "#F6D77A", isCompact ? 13 : 16)}
+                  <span>Edit shop</span>
+                </StableCtaLink>
+              ) : null
+            }
+            onImageError={(imageUrl) => {
+              setBrokenShopHeroMediaUrls((current) => ({
+                ...current,
+                [imageUrl]: true,
+              }));
+            }}
+          />
           <div
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact ? "96px minmax(0, 1fr)" : "220px minmax(0, 1fr)",
+              gridTemplateColumns: "minmax(0, 1fr)",
               alignItems: "center",
               justifyItems: "stretch",
-              columnGap: isCompact ? 10 : 22,
-              rowGap: isCompact ? 8 : 0,
+              gap: isCompact ? 7 : 10,
               minHeight: isCompact ? 0 : undefined,
+              marginTop: isCompact ? 7 : 10,
             }}
           >
             <div
-              data-public-shop-signboard-icon="true"
-              style={{
-                position: "relative",
-                zIndex: 2,
-                width: isCompact ? 92 : 206,
-                height: isCompact ? 92 : 206,
-                borderRadius: isCompact ? 24 : 32,
-                display: "grid",
-                placeItems: "center",
-                justifySelf: "center",
-                alignSelf: isCompact ? "start" : "center",
-                gridRow: isCompact ? "1 / span 3" : undefined,
-                background:
-                  "radial-gradient(circle at 36% 30%, rgba(255,255,255,0.95) 0%, rgba(246,196,83,0.18) 46%, rgba(4,24,43,0.92) 100%)",
-                border: "1px solid rgba(214,170,69,0.58)",
-                boxShadow:
-                  "0 18px 34px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.68)",
-                overflow: "hidden",
-              }}
-            >
-              <UniversalShopHero
-                source={shopHeroSource}
-                compact={isCompact}
-                onImageError={(imageUrl) => {
-                  setBrokenShopHeroMediaUrls((current) => ({
-                    ...current,
-                    [imageUrl]: true,
-                  }));
-                }}
-              />
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  right: isCompact ? -2 : 8,
-                  bottom: isCompact ? 0 : 10,
-                  width: isCompact ? 22 : 42,
-                  height: isCompact ? 22 : 42,
-                  borderRadius: "50%",
-                  display: "none",
-                  placeItems: "center",
-                  background:
-                    "linear-gradient(180deg, #5BBE78 0%, #2E9B62 100%)",
-                  border: "2px solid #FFFDF6",
-                  color: "#FFFFFF",
-                  boxShadow: "0 8px 18px rgba(46,155,98,0.28)",
-                  fontSize: isCompact ? 14 : 24,
-                  fontWeight: 950,
-                }}
-              >
-                {"\u2713"}
-              </span>
-            </div>
-            <div
               data-public-shop-signboard-content="true"
               style={{
-                display: isCompact ? "contents" : "grid",
+                display: "grid",
                 gap: isCompact ? 5 : 10,
                 minWidth: 0,
                 width: "100%",
@@ -5339,7 +5328,7 @@ export default function ShopGalleryPage() {
                   minHeight: isCompact ? 0 : undefined,
                   overflow: isCompact ? "visible" : "hidden",
                   textOverflow: isCompact ? "clip" : "ellipsis",
-                  display: "-webkit-box",
+                  display: "none",
                   WebkitLineClamp: isCompact ? 3 : 2,
                   WebkitBoxOrient: "vertical" as any,
                   overflowWrap: "anywhere",
@@ -5351,8 +5340,8 @@ export default function ShopGalleryPage() {
               </h1>
               <div
                 style={{
-                  display: "flex",
-                  gridColumn: isCompact ? "2" : undefined,
+                  display: "none",
+                  gridColumn: "1",
                   flexWrap: "wrap",
                   alignItems: "center",
                   gap: isCompact ? 5 : 7,
@@ -5415,10 +5404,11 @@ export default function ShopGalleryPage() {
                       ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
-                  gridColumn: isCompact ? "2" : undefined,
+                  gridColumn: "1 / -1",
                   gap: isCompact ? 6 : 10,
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
+                  order: 2,
                 }}
                 open={!isCompact || shopOptionsOpen}
                 onToggle={(event) => {
@@ -5646,11 +5636,10 @@ export default function ShopGalleryPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "minmax(0, 1fr)"
-                    : "1fr",
-                  gridColumn: isCompact ? "1 / -1" : undefined,
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridColumn: "1 / -1",
                   gap: 0,
+                  order: 1,
                   borderRadius: isCompact ? 14 : 18,
                   border: "1px solid rgba(214,170,69,0.24)",
                   background:
@@ -5676,11 +5665,11 @@ export default function ShopGalleryPage() {
                       alignItems: "center",
                       minWidth: 0,
                       padding: isCompact ? "8px 10px" : "10px 12px",
-                      borderTop:
+                      borderTop: "none",
+                      borderLeft:
                         rowIndex > 0
                           ? "1px solid rgba(214,170,69,0.16)"
                           : "none",
-                      borderLeft: "none",
                     }}
                   >
                     <span
@@ -5750,7 +5739,7 @@ export default function ShopGalleryPage() {
                     lineHeight: 1.22,
                     textAlign: isCompact ? "center" : "left",
                     maxWidth: 720,
-                    display: "-webkit-box",
+                    display: "none",
                     WebkitLineClamp: isCompact ? 2 : 2,
                     WebkitBoxOrient: "vertical" as any,
                     overflow: "hidden",

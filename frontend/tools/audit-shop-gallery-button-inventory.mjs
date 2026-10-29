@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 7,
   SecondaryButton: 11,
-  StableCtaLink: 6,
-  total: 24,
+  StableCtaLink: 7,
+  total: 25,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -277,13 +277,13 @@ assertContains(
 );
 
 assertContains(
-  /import UniversalShopHero from "\.\.\/components\/shop\/UniversalShopHero";[\s\S]*?import \{ selectShopHeroSource \} from "\.\.\/lib\/shopHeroSelection";/,
+  /import PublicShopPhotoHero from "\.\.\/components\/shop\/PublicShopPhotoHero";[\s\S]*?import \{ selectShopHeroSource \} from "\.\.\/lib\/shopHeroSelection";/,
   "Public Shop must use the audited Universal Shop Hero selector and reusable media component."
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : 32[\s\S]*?gridRow: isCompact \? "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"[\s\S]*?<UniversalShopHero[\s\S]*?source=\{shopHeroSource\}[\s\S]*?onImageError=/,
-  "Public Shop hero must reserve its existing mobile rail, stay clipped inside its tile, and recover from broken media."
+  /<PublicShopPhotoHero[\s\S]*?source=\{shopHeroSource\}[\s\S]*?shopName=\{shopNameText\}[\s\S]*?category=\{shopCategoryText\}[\s\S]*?gmfnId=\{shopGmfnText\}[\s\S]*?communityName=\{shopCommunityText\}[\s\S]*?debugId="shop-gallery\.owner\.edit-shop"[\s\S]*?onImageError=/,
+  "Public Shop must use the full-width business-photo hero while preserving identity, community, owner edit, and broken-media recovery."
 );
 
 assertContains(
@@ -301,17 +301,12 @@ if (shopGallerySource.includes("src?.profile_image_url")) {
 }
 
 assertContains(
-  /data-public-shop-signboard-content="true"[\s\S]*?display: isCompact \? "contents" : "grid"[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
-  "Public Shop compact signboard facts must break out to a full-width row instead of staying cramped beside the hero icon."
+  /data-public-shop-signboard-content="true"[\s\S]*?display: "grid"[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: "1 \/ -1"/,
+  "Public Shop identity facts must remain a compact two-column row below the photographic hero."
 );
 
 assertContains(
-  /textShadow:\s*isCompact[\s\S]*?borderLeft: isCompact \? "3px solid rgba\(214,170,69,0\.72\)" : "none"[\s\S]*?background: isCompact[\s\S]*?linear-gradient\(90deg, rgba\(255,248,224,0\.82\)/,
-  "Public Shop compact shop name must use a subtle Nigerian shop-sign treatment without increasing the whole signboard."
-);
-
-assertContains(
-  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: isCompact \? "2" : undefined[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 44 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
+  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: "1 \/ -1"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 44 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
   "Public Shop owner compact signboard must keep follower count and Analytics as equal-width phone pills."
 );
 assertContains(

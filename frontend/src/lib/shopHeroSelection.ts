@@ -64,14 +64,6 @@ export function selectShopHeroSource({
   const resolvedShopName = clean(shopName) || "this shop";
   const selectedShopImage = clean(shopImageUrl);
 
-  if (selectedShopImage && !brokenImageUrls[selectedShopImage]) {
-    return {
-      kind: "shop",
-      imageUrl: selectedShopImage,
-      altText: `${resolvedShopName} shop photo`,
-    };
-  }
-
   const selectedProduct = products
     .filter((product) => {
       const imageUrl = clean(product.imageUrl);
@@ -94,6 +86,14 @@ export function selectShopHeroSource({
       imageUrl: clean(selectedProduct.imageUrl),
       altText: `${clean(selectedProduct.name) || "Featured product"} at ${resolvedShopName}`,
       productId: positiveNumber(selectedProduct.id) || undefined,
+    };
+  }
+
+  if (selectedShopImage && !brokenImageUrls[selectedShopImage]) {
+    return {
+      kind: "shop",
+      imageUrl: selectedShopImage,
+      altText: `${resolvedShopName} shop photo`,
     };
   }
 

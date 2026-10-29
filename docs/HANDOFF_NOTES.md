@@ -5,6 +5,22 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Full-width business-led Public Shop hero - 2026-10-29
+
+- Owner evidence showed Universal Shop Hero v1.1 selecting media correctly but
+  rendering it as a small thumbnail inside the old information card. The
+  approved references require a true full-width photographic shop identity
+  hero.
+- Public Shop now leads with the first eligible public product photograph,
+  then the owner-saved shop picture, then the neutral GSN fallback. Broken,
+  private, inactive, Vault, Spotlight and Shop Update/Diary media remain
+  excluded or fall through through the same bounded selector.
+- The photographic hero carries the existing shop name, category, short
+  description, truthful GSN-member/community context and an owner-only Edit
+  Shop route. Existing GSN ID, community, follow/analytics, Share, Verify,
+  WhatsApp, products, Spotlight, Diary, payment and permission contracts remain
+  unchanged.
+
 ## Compact phone source-return row - 2026-10-29
 
 - Owner phone evidence showed the shared source-return navigator consuming a

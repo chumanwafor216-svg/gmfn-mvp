@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   selector: "src/lib/shopHeroSelection.ts",
   component: "src/components/shop/UniversalShopHero.tsx",
+  publicHero: "src/components/shop/PublicShopPhotoHero.tsx",
   gallery: "src/pages/ShopGalleryPage.tsx",
   assets: "src/pages/ShopAssetsPage.tsx",
 };
@@ -29,14 +30,14 @@ function forbidText(fileKey, text, message) {
   findings.push({ file: files[fileKey], message });
 }
 
-const shopIndex = source.selector.indexOf("if (selectedShopImage");
 const productIndex = source.selector.indexOf("const selectedProduct");
+const shopIndex = source.selector.indexOf("if (selectedShopImage");
 const fallbackIndex = source.selector.lastIndexOf('kind: "fallback"');
-if (!(shopIndex >= 0 && productIndex > shopIndex && fallbackIndex > productIndex)) {
+if (!(productIndex >= 0 && shopIndex > productIndex && fallbackIndex > shopIndex)) {
   findings.push({
     file: files.selector,
     message:
-      "Hero source order must remain owner-selected shop photo, eligible public product photo, then neutral fallback.",
+      "Business-led hero source order must remain eligible public product photo, owner-selected shop photo, then neutral fallback.",
   });
 }
 
@@ -51,10 +52,14 @@ for (const forbidden of ["Spotlight", "spotlight", "ShopDiary", "shopDiary", "Tr
 requireText("component", 'data-universal-shop-hero="true"', "The shared hero component contract is missing.");
 requireText("component", "onError={() => onImageError?.(source.imageUrl)}", "Hero image failures must trigger fallback selection.");
 requireText("component", 'name="shop-storefront"', "Neutral GSN storefront fallback is missing.");
+requireText("publicHero", 'data-public-shop-photo-hero="true"', "The full-width Public Shop photo hero contract is missing.");
+requireText("publicHero", "<UniversalShopHero", "The photo-led Public Shop hero must reuse the audited media component.");
+requireText("publicHero", 'minHeight: compact ? 302 : 420', "The Public Shop hero must reserve a real photographic banner instead of a thumbnail tile.");
+requireText("publicHero", "linear-gradient(90deg", "The shop identity must remain readable over genuine business photography.");
 
 requireText("gallery", "selectShopHeroSource({", "Public Shop must use the deterministic selector.");
 requireText("gallery", "image_url_available === false", "Public Shop must respect backend media availability.");
-requireText("gallery", "<UniversalShopHero", "Public Shop must render the shared hero component.");
+requireText("gallery", "<PublicShopPhotoHero", "Public Shop must render the full-width photo-led hero component.");
 forbidText("gallery", "src?.profile_image_url", "Public Shop must not silently inherit profile portraits.");
 
 requireText("assets", "Use my GSN portrait (optional)", "Shop Picture must expose portrait reuse only as an optional disclosure.");
@@ -77,5 +82,6 @@ if (findings.length) {
 }
 
 console.log("Universal Shop Hero audit passed.");
-console.log("Source order: shop photo -> public product photo -> neutral GSN fallback.");
+console.log("Source order: public product photo -> shop photo -> neutral GSN fallback.");
+console.log("Presentation: full-width photo-led Public Shop identity hero.");
 console.log("Profile portrait: explicit consent -> ordinary preview -> existing marketplace media engine.");

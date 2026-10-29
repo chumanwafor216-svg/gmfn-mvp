@@ -388,6 +388,23 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
     state: 'visible',
     timeout: 20_000,
   });
+  const photoHero = page.locator('[data-public-shop-photo-hero="true"][data-shop-hero-source="product"]');
+  await photoHero.waitFor({ state: 'visible', timeout: 20_000 });
+  const photoHeroBox = await photoHero.boundingBox();
+  if (!photoHeroBox || photoHeroBox.width < 300 || photoHeroBox.height < 280) {
+    throw new Error(
+      `Public Shop business photo stayed a thumbnail instead of a full hero (${photoHeroBox?.width}x${photoHeroBox?.height}).`
+    );
+  }
+  const editShopLink = photoHero.getByRole('link', { name: /Edit shop/i });
+  await editShopLink.waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  const editShopHref = String(await editShopLink.getAttribute('href'));
+  if (!editShopHref.includes('/app/shop-control') || !editShopHref.includes('#shop-control-details')) {
+    throw new Error(`Public Shop owner edit changed route: ${editShopHref}`);
+  }
   const moreDetails = page.locator('[data-public-shop-more="secondary"]');
   const summary = moreDetails.locator('summary');
   await summary.waitFor({ state: 'visible', timeout: 20_000 });
@@ -1484,7 +1501,7 @@ try {
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
       'ordinary phone Shop items leads with Add item, keeps secondary shop tasks closed, and preserves the separate Diary handoff',
       'focused phone Shop picture fixes the broken handoff, exposes Save picture, and keeps the optional pasted-link field closed',
-      'Public Shop hero uses eligible product media without silently inheriting the mocked profile portrait',
+      'Public Shop uses eligible product media as a full-width business hero, preserves owner edit, and does not silently inherit the mocked profile portrait',
       'focused Shop Picture keeps portrait consent closed, then prepares the explicit owner choice through the ordinary file-preview path',
       'focused phone Shop update leads with one message question, keeps optional details and recent history closed, and exposes Publish update without product tools',
       'ordinary phone product Save reopens the numbered block, preserves its success notice, and returns focus to the result',
