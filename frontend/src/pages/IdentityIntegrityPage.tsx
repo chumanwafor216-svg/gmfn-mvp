@@ -65,6 +65,10 @@ const LazyQRCodeSVG = React.lazy(async () => {
   return { default: module.QRCodeSVG };
 });
 
+const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
+const GSN_PUBLIC_WEBSITE_DISPLAY = "globalsupportnetwork.org";
+const GSN_SOCIAL_HANDLE = "@globalsupportnetwork";
+
 const GSN_GLOBE_QR_MARK = `data:image/svg+xml,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
     <defs>
@@ -237,6 +241,9 @@ type GsnIdentityCardShareImageParams = {
   cardStatus: string;
   memberships: string;
   verifyDisplay: string;
+  websiteDisplay: string;
+  socialHandle: string;
+  memberHandle: string;
   qrDataUrl: string;
   valid: boolean;
 };
@@ -636,7 +643,7 @@ async function buildGsnIdentityCardShareImage(
   if (typeof document === "undefined") return null;
 
   const width = 1600;
-  const height = 980;
+  const height = 1320;
   const navy = "#041827";
   const navy2 = "#07304C";
   const gold = "#F2C766";
@@ -893,6 +900,54 @@ async function buildGsnIdentityCardShareImage(
     25,
     5
   );
+
+  const contactBandTop = 964;
+  const contactBand = ctx.createLinearGradient(0, contactBandTop, width, height);
+  contactBand.addColorStop(0, "#031522");
+  contactBand.addColorStop(0.52, "#07304C");
+  contactBand.addColorStop(1, "#041827");
+  ctx.fillStyle = contactBand;
+  ctx.fillRect(16, contactBandTop, width - 32, height - contactBandTop - 16);
+  ctx.strokeStyle = "rgba(242,199,102,0.72)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(16, contactBandTop);
+  ctx.lineTo(width - 16, contactBandTop);
+  ctx.stroke();
+
+  const contactColumns = [
+    { label: "GSN WEBSITE", value: params.websiteDisplay, x: 84, maxWidth: 430 },
+    { label: "GSN SOCIAL", value: params.socialHandle, x: 585, maxWidth: 430 },
+    { label: "MY GSN HANDLE", value: params.memberHandle, x: 1084, maxWidth: 430 },
+  ];
+  contactColumns.forEach((item, index) => {
+    if (index > 0) {
+      ctx.strokeStyle = "rgba(242,199,102,0.28)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(item.x - 44, 1018);
+      ctx.lineTo(item.x - 44, 1248);
+      ctx.stroke();
+    }
+    ctx.fillStyle = gold;
+    ctx.font = "900 22px Arial, Helvetica, sans-serif";
+    ctx.fillText(item.label, item.x, 1060);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 28px Arial, Helvetica, sans-serif";
+    drawIdentityCardCanvasText(
+      ctx,
+      item.value,
+      item.x,
+      1125,
+      item.maxWidth,
+      36,
+      2
+    );
+  });
+
+  ctx.fillStyle = "rgba(255,255,255,0.60)";
+  ctx.font = "800 18px Arial, Helvetica, sans-serif";
+  ctx.fillText("The QR opens this card's live public membership record.", 84, 1262);
 
   ctx.restore();
   ctx.strokeStyle = gold;
@@ -2221,6 +2276,9 @@ export default function IdentityIntegrityPage() {
     return firstTruthy(me?.gmfn_id, trustSlip?.gmfn_id);
   }, [me, trustSlip]);
   const gmfnId = gmfnIdValue || "Not issued yet";
+  const gsnMemberHandle = gmfnIdValue
+    ? `@${gmfnIdValue.toUpperCase()}`
+    : "Not issued yet";
 
   const trustSlipCode = safeStr(
     trustSlip?.code ||
@@ -2648,6 +2706,9 @@ export default function IdentityIntegrityPage() {
     trustSlipCode ? `TrustSlip: ${trustSlipCode}` : "",
     identityCardLiveUrl ? `Live ID card: ${identityCardLiveUrl}` : "",
     trustSlipVerifyUrl ? `Verify record: ${trustSlipVerifyUrl}` : "",
+    `GSN website: ${GSN_PUBLIC_WEBSITE_URL}`,
+    `GSN social: ${GSN_SOCIAL_HANDLE}`,
+    `My GSN handle: ${gsnMemberHandle}`,
     "Evidence only. Not government ID, credit approval, payment guarantee, or future behaviour proof.",
   ].filter(Boolean).join("\n");
 
@@ -3079,6 +3140,9 @@ export default function IdentityIntegrityPage() {
       cardStatus: identityCardStatusText,
       memberships: identityCardMembershipLabel,
       verifyDisplay: identityCardLiveDisplay,
+      websiteDisplay: GSN_PUBLIC_WEBSITE_DISPLAY,
+      socialHandle: GSN_SOCIAL_HANDLE,
+      memberHandle: gsnMemberHandle,
       qrDataUrl,
       valid: identityCardValid,
     });
@@ -3438,7 +3502,6 @@ export default function IdentityIntegrityPage() {
         data-gsn-identity-card-generated-at={identityCardGeneratedLabel}
         style={{
           width: "100%",
-          aspectRatio: "1.62 / 1",
           minHeight: 0,
           borderRadius: isCompact ? 18 : 28,
           overflow: "hidden",
@@ -3446,11 +3509,21 @@ export default function IdentityIntegrityPage() {
           background: "#061827",
           boxShadow:
             "0 18px 42px rgba(1,9,22,0.24), inset 0 1px 0 rgba(255,255,255,0.12)",
-          position: "relative",
-          isolation: "isolate",
-          containerType: "inline-size",
         }}
       >
+        <div
+          data-gsn-identity-card-core="true"
+          style={{
+            width: "100%",
+            aspectRatio: "1.62 / 1",
+            minHeight: 0,
+            overflow: "hidden",
+            background: "#061827",
+            position: "relative",
+            isolation: "isolate",
+            containerType: "inline-size",
+          }}
+        >
         <div
           data-gsn-identity-card-watermark-field="true"
           aria-hidden="true"
@@ -3803,11 +3876,20 @@ export default function IdentityIntegrityPage() {
           }}
         >
           {identityCardLiveUrl ? (
-            <div
+            <StableCtaLink
+              to={identityCardLiveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               data-gsn-identity-card-qr="true"
+              data-gsn-identity-card-qr-link="true"
+              data-gsn-identity-card-qr-value={identityCardLiveUrl}
+              aria-label="Open live GSN membership record"
+              debugId="identity-integrity.gsn-card.qr-open"
               style={{
                 width: isCompact ? 65 : 126,
                 height: isCompact ? 65 : 126,
+                minWidth: 0,
+                minHeight: 0,
                 borderRadius: isCompact ? 7 : 14,
                 background: "#FFFFFF",
                 display: "grid",
@@ -3816,6 +3898,7 @@ export default function IdentityIntegrityPage() {
                 boxSizing: "border-box",
                 border: `${isCompact ? 1.5 : 3}px solid rgba(242,199,102,0.92)`,
                 boxShadow: "0 8px 18px rgba(1,9,22,0.34)",
+                textDecoration: "none",
               }}
             >
               <React.Suspense fallback={<GsnLegacyIcon name="qr" size={isCompact ? 48 : 96} />}>
@@ -3834,7 +3917,7 @@ export default function IdentityIntegrityPage() {
                   }}
                 />
               </React.Suspense>
-            </div>
+            </StableCtaLink>
           ) : (
             <div
               style={{
@@ -3987,6 +4070,76 @@ export default function IdentityIntegrityPage() {
               credit approval, payment guarantee, or proof of future behaviour.
             </span>
           </div>
+        </div>
+        </div>
+
+        <div
+          data-gsn-identity-card-contact-band="true"
+          style={{
+            height: isCompact ? 86 : 138,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            alignItems: "stretch",
+            background:
+              "linear-gradient(110deg, #031522 0%, #07304C 52%, #041827 100%)",
+            borderTop: `${isCompact ? 1 : 2}px solid rgba(242,199,102,0.72)`,
+            color: "#FFFFFF",
+          }}
+        >
+          {[
+            {
+              label: "GSN WEBSITE",
+              value: GSN_PUBLIC_WEBSITE_DISPLAY,
+            },
+            {
+              label: "GSN SOCIAL",
+              value: GSN_SOCIAL_HANDLE,
+            },
+            {
+              label: "MY GSN HANDLE",
+              value: gsnMemberHandle,
+            },
+          ].map((item, index) => (
+            <div
+              key={item.label}
+              data-gsn-identity-card-contact={item.label.toLowerCase().replace(/\s+/g, "-")}
+              style={{
+                minWidth: 0,
+                padding: isCompact ? "13px 8px 11px" : "22px 18px 18px",
+                borderLeft:
+                  index > 0
+                    ? `${isCompact ? 1 : 2}px solid rgba(242,199,102,0.24)`
+                    : "none",
+                display: "grid",
+                alignContent: "center",
+                gap: isCompact ? 6 : 10,
+              }}
+            >
+              <span
+                style={{
+                  color: "#F2C766",
+                  fontSize: isCompact ? 6.2 : 10.5,
+                  fontWeight: 950,
+                  letterSpacing: isCompact ? 0.7 : 1.4,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.label}
+              </span>
+              <span
+                style={{
+                  minWidth: 0,
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 7.2 : 12.5,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {item.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 

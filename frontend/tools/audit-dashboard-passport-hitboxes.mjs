@@ -368,11 +368,21 @@ try {
   if (!landscapeBox || !viewport) {
     throw new Error("GSN landscape card geometry could not be measured.");
   }
-  const landscapeRatio = landscapeBox.width / landscapeBox.height;
+  const landscapeCore = landscapeCard.locator(
+    '[data-gsn-identity-card-core="true"]'
+  );
+  const landscapeCoreBox = await landscapeCore.boundingBox();
+  if (!landscapeCoreBox) {
+    throw new Error("GSN Identity Card landscape membership face could not be measured.");
+  }
+  const landscapeRatio = landscapeCoreBox.width / landscapeCoreBox.height;
   if (landscapeRatio < 1.56 || landscapeRatio > 1.68) {
     throw new Error(
-      `GSN ID Card must remain landscape; measured ratio ${landscapeRatio.toFixed(2)}.`
+      `GSN ID Card core must remain landscape; measured ratio ${landscapeRatio.toFixed(2)}.`
     );
+  }
+  if (landscapeBox.height < landscapeCoreBox.height + 70) {
+    throw new Error("GSN ID Card must extend below its core face for the contact band.");
   }
   if (landscapeBox.x < 0 || landscapeBox.x + landscapeBox.width > viewport.width + 1) {
     throw new Error("GSN landscape card overflows the phone viewport.");
@@ -397,6 +407,48 @@ try {
   );
   if ((await legalBoundary.count()) !== 1 || !(await legalBoundary.isVisible())) {
     throw new Error("GSN ID Card must keep one concise legal boundary on its face.");
+  }
+
+  const contactBand = landscapeCard.locator(
+    '[data-gsn-identity-card-contact-band="true"]'
+  );
+  if ((await contactBand.count()) !== 1 || !(await contactBand.isVisible())) {
+    throw new Error("GSN ID Card must expose one bounded contact band.");
+  }
+  const contactText = (await contactBand.textContent())?.replace(/\s+/g, " ").trim() || "";
+  for (const requiredText of [
+    "GSN WEBSITE",
+    "globalsupportnetwork.org",
+    "GSN SOCIAL",
+    "@globalsupportnetwork",
+    "MY GSN HANDLE",
+    "@GMFN-U-HITBOX",
+  ]) {
+    if (!contactText.includes(requiredText)) {
+      throw new Error(`GSN ID Card contact band is missing ${requiredText}.`);
+    }
+  }
+
+  const qrLink = landscapeCard.locator(
+    '[data-gsn-identity-card-qr-link="true"]'
+  );
+  if ((await qrLink.count()) !== 1 || !(await qrLink.isVisible())) {
+    throw new Error("GSN ID Card QR must be one visible tappable link.");
+  }
+  const qrHref = await qrLink.getAttribute("href");
+  const qrValue = await qrLink.getAttribute("data-gsn-identity-card-qr-value");
+  const qrGraphic = qrLink.locator("svg").first();
+  await qrGraphic.waitFor({ state: "visible", timeout: 5000 });
+  const qrGraphicCount = await qrLink.locator("svg").count();
+  if (
+    !qrHref ||
+    qrHref !== qrValue ||
+    !qrHref.includes("/t/TS-HITBOX/card") ||
+    qrGraphicCount < 1
+  ) {
+    throw new Error(
+      `GSN QR link and encoded live-card target must agree; href=${qrHref}, value=${qrValue}, graphics=${qrGraphicCount}.`
+    );
   }
   if (process.env.GSN_ID_CARD_SCREENSHOT) {
     await landscapeCard.screenshot({ path: process.env.GSN_ID_CARD_SCREENSHOT });

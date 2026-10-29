@@ -306,8 +306,13 @@ assertContains(
   "The landscape membership card must show one bounded, evidence-derived membership status."
 );
 assertContains(
-  /import gsnConnectedGlobeMark from "\.\.\/assets\/identity\/gsn-connected-globe-mark\.jpg";[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?data-gsn-identity-card-connected-globe="true"[\s\S]*?src=\{gsnConnectedGlobeMark\}/,
+  /import gsnConnectedGlobeMark from "\.\.\/assets\/identity\/gsn-connected-globe-mark\.jpg";[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?data-gsn-identity-card-core="true"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?data-gsn-identity-card-connected-globe="true"[\s\S]*?src=\{gsnConnectedGlobeMark\}/,
   "The card must retain the approved landscape ratio and quiet map field while using the connected-world photo mark."
+);
+
+assertContains(
+  /const GSN_PUBLIC_WEBSITE_URL = "https:\/\/globalsupportnetwork\.org";[\s\S]*?const GSN_PUBLIC_WEBSITE_DISPLAY = "globalsupportnetwork\.org";[\s\S]*?const GSN_SOCIAL_HANDLE = "@globalsupportnetwork";[\s\S]*?const gsnMemberHandle = gmfnIdValue[\s\S]*?`@\$\{gmfnIdValue\.toUpperCase\(\)\}`[\s\S]*?data-gsn-identity-card-contact-band="true"[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE/,
+  "The extended card must show the canonical GSN website, official social handle, and holder-specific GSN handle in one bounded contact band."
 );
 
 assertContains(
@@ -333,6 +338,16 @@ assertContains(
 assertContains(
   /data-gsn-identity-card-title-control="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?GSN ID Card[\s\S]*?Tap to use[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?imageSettings=\{\{[\s\S]*?src: GSN_GLOBE_QR_MARK[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"/,
   "The live card title must be the one obvious actions gateway while the QR and all share/copy controls retain their existing behavior."
+);
+
+assertContains(
+  /<StableCtaLink[\s\S]*?to=\{identityCardLiveUrl\}[\s\S]*?data-gsn-identity-card-qr-link="true"[\s\S]*?data-gsn-identity-card-qr-value=\{identityCardLiveUrl\}[\s\S]*?debugId="identity-integrity\.gsn-card\.qr-open"[\s\S]*?<LazyQRCodeSVG[\s\S]*?value=\{identityCardLiveUrl\}/,
+  "The visible QR tile must be tappable and must open the exact same live public card URL encoded by the QR."
+);
+
+assertContains(
+  /type GsnIdentityCardShareImageParams = \{[\s\S]*?websiteDisplay: string;[\s\S]*?socialHandle: string;[\s\S]*?memberHandle: string;[\s\S]*?const height = 1320;[\s\S]*?const contactBandTop = 964;[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE/,
+  "The shared PNG must preserve the extended contact band instead of exporting the old shorter card."
 );
 
 assertContains(
