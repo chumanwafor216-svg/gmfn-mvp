@@ -4341,13 +4341,6 @@ export default function IdentityIntegrityPage() {
           >
             Trust Passport
           </StableCtaLink>
-          <StableCtaLink
-            to={routes.trustSlip}
-            stableHeight={isCompact ? 52 : 48}
-            debugId="identity-integrity.front-trust-slip"
-          >
-            TrustSlip
-          </StableCtaLink>
         </div>
       </section>
       ) : null}

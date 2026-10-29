@@ -1215,6 +1215,9 @@ Rules:
   Meaning, or any secondary section on first arrival.
 - Opening `More identity details` may reveal compact section rows only. Each
   section remains independently closed until selected.
+- When the recommended task already provides `Open TrustSlip`, do not repeat
+  TrustSlip as a permanent shortcut below it. Keep Trust Passport available as
+  the distinct fuller evidence destination.
 - Keep the GSN Identity Card outside the normal Identity Integrity surface.
 - The Dashboard GSN ID Card entry uses the authenticated `display=card-only`
   presentation. That presentation mounts the card and its covered actions only;

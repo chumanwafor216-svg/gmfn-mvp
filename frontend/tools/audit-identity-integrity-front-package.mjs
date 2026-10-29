@@ -176,6 +176,11 @@ assertContains(
   "Identity Integrity front package must show one active task action with an explicit response."
 );
 
+assertNotContains(
+  /debugId="identity-integrity\.front-trust-slip"/g,
+  "Identity Integrity must not repeat TrustSlip as a permanent shortcut below a task that already owns the primary Open TrustSlip action."
+);
+
 assertContains(
   /debugId="identity-integrity\.toggle-continuity"[\s\S]*?debugId="identity-integrity\.toggle-recovery"[\s\S]*?activeIdentityTask === "recovery"[\s\S]*?recovery\.shouldVerify/,
   "Identity Integrity continuity and recovery panels must stay collapsible, while recovery opens for the active or required recovery task."
