@@ -25,10 +25,19 @@ This file is the compact current-state handoff required by `README.md` and
   not a pixel clone. No source globe/map artwork existed in the repository, so
   those marks are original SVG/CSS recreations; the legal boundary and live-data
   behavior are deliberately retained.
-- Verification completed so far: Identity Integrity contract audit, phone
-  Dashboard/card-only browser audit, rendered 390px card inspection, and the
-  TypeScript/Vite production build. Final freeze/deployment evidence follows
-  after promotion.
+- Verification passed: Identity Integrity contract audit, Dashboard action
+  audit, phone Dashboard/card-only browser audit, Trust infrastructure mobile
+  visual audit, rendered 390px card inspection, and the TypeScript/Vite
+  production build.
+- The complete protected-button freeze still fails only on the pre-existing
+  Dashboard inventory baseline (42 StableButtons versus 41; 52 effective roots
+  versus 51) and reports the existing duplicate React key `0` warnings. Its
+  card route/hitbox and Trust visual checks passed; this change does not alter
+  Dashboard controls to hide that unrelated debt.
+- Deployment evidence: application commit `68f25ee36f1a55bcadd929d2ae004de72852e0af`;
+  GitHub Actions run `40799095285`; Render frontend deploy
+  `dep-dbh9rhg473hc739bsqcg`, verified live on the exact commit. The public
+  frontend marker passed and backend deployment was correctly skipped.
 
 ## Duplicate TrustSlip shortcut removed - 2026-10-29
 
