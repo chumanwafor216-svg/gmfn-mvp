@@ -62,6 +62,7 @@ import {
   rememberShopProductMedia,
 } from "../lib/shopProductMediaCache";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
+import { resolveProfileImageUrl } from "../lib/profileImage";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -1096,6 +1097,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [shopPreviewUrl, setShopPreviewUrl] = useState("");
   const [savingShop, setSavingShop] = useState(false);
   const [uploadingShopImage, setUploadingShopImage] = useState(false);
+  const [preparingProfilePortrait, setPreparingProfilePortrait] = useState(false);
 
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [productName, setProductName] = useState("");
@@ -1866,6 +1868,58 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setShopPreviewUrl(next);
     } else {
       setShopPreviewUrl(firstTruthy(shopImageUrlInput));
+    }
+  }
+
+  async function selectProfilePortraitForPublicShop() {
+    const profileImageUrl = resolveProfileImageUrl(safeStr(me?.profile_image_url));
+    if (!profileImageUrl) {
+      showNotice("error", "Add a GSN profile portrait first, then return to Shop picture.");
+      return;
+    }
+
+    setPreparingProfilePortrait(true);
+    try {
+      const response = await fetch(profileImageUrl);
+      if (!response.ok) {
+        throw new Error("Your GSN portrait could not be opened.");
+      }
+
+      const blob = await response.blob();
+      if (!blob.type.toLowerCase().startsWith("image/")) {
+        throw new Error("Your GSN portrait is not an eligible image file.");
+      }
+
+      const extensionByType: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+      };
+      const extension = extensionByType[blob.type.toLowerCase()] || "jpg";
+      const profilePortraitFile = new File(
+        [blob],
+        "gsn-profile-portrait." + extension,
+        { type: blob.type || "image/jpeg" }
+      );
+
+      if (!mountedRef.current) return;
+      setShopImageUrlInput("");
+      setShopPreviewFromFile(profilePortraitFile);
+      showNotice(
+        "info",
+        "Portrait selected for public shop use. Check the preview, then tap Save picture."
+      );
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "Your portrait could not be prepared. Download it and choose it as a shop picture instead."
+      );
+    } finally {
+      if (mountedRef.current) {
+        setPreparingProfilePortrait(false);
+      }
     }
   }
 
@@ -2984,26 +3038,90 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 />
 
                 {pictureTaskFocused ? (
-                  <details data-shop-picture-link-option="true" style={{ ...innerCard("#FFFFFF"), padding: 12 }}>
-                    <StableDisclosureSummary
-                      debugId="shop-assets.picture.link-option"
-                      stableHeight={44}
-                      style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}
-                    >
-                      Use a picture link instead (optional)
-                    </StableDisclosureSummary>
-                    <input
-                      value={shopImageUrlInput}
-                      onChange={(e) => {
-                        setShopImageUrlInput(e.target.value);
-                        if (!shopSelectedFile) {
-                          setShopPreviewUrl(e.target.value);
-                        }
-                      }}
-                      placeholder="Paste public shop image URL"
-                      style={{ ...inputStyle(), marginTop: 10 }}
-                    />
-                  </details>
+                  <>
+                    {safeStr(me?.profile_image_url) ? (
+                      <details
+                        data-shop-profile-portrait-option="true"
+                        style={{ ...innerCard("#FFFFFF"), padding: 12 }}
+                      >
+                        <StableDisclosureSummary
+                          debugId="shop-assets.picture.profile-portrait-option"
+                          stableHeight={44}
+                          style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}
+                        >
+                          Use my GSN portrait (optional)
+                        </StableDisclosureSummary>
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "grid",
+                            gridTemplateColumns: "54px minmax(0, 1fr)",
+                            gap: 12,
+                            alignItems: "center",
+                          }}
+                        >
+                          <img
+                            src={resolveProfileImageUrl(safeStr(me?.profile_image_url))}
+                            alt="Your current GSN profile portrait"
+                            width={54}
+                            height={54}
+                            loading="lazy"
+                            decoding="async"
+                            style={{
+                              width: 54,
+                              height: 54,
+                              display: "block",
+                              objectFit: "cover",
+                              borderRadius: 16,
+                              border: "1px solid rgba(212,175,55,0.26)",
+                            }}
+                          />
+                          <div style={helperText()}>
+                            This creates a separate public shop copy. Your shop picture will not
+                            change automatically when your profile portrait changes.
+                          </div>
+                        </div>
+                        <SecondaryButton
+                          onClick={() => void selectProfilePortraitForPublicShop()}
+                          disabled={
+                            preparingProfilePortrait ||
+                            savingShop ||
+                            uploadingShopImage ||
+                            marketplaceShopsFeatureOff
+                          }
+                          busy={preparingProfilePortrait}
+                          busyLabel="Preparing portrait..."
+                          fullWidth
+                          stableHeight={48}
+                          debugId="shop-assets.picture.use-profile-portrait"
+                          style={{ marginTop: 12 }}
+                        >
+                          Use this portrait publicly
+                        </SecondaryButton>
+                      </details>
+                    ) : null}
+
+                    <details data-shop-picture-link-option="true" style={{ ...innerCard("#FFFFFF"), padding: 12 }}>
+                      <StableDisclosureSummary
+                        debugId="shop-assets.picture.link-option"
+                        stableHeight={44}
+                        style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}
+                      >
+                        Use a picture link instead (optional)
+                      </StableDisclosureSummary>
+                      <input
+                        value={shopImageUrlInput}
+                        onChange={(e) => {
+                          setShopImageUrlInput(e.target.value);
+                          if (!shopSelectedFile) {
+                            setShopPreviewUrl(e.target.value);
+                          }
+                        }}
+                        placeholder="Paste public shop image URL"
+                        style={{ ...inputStyle(), marginTop: 10 }}
+                      />
+                    </details>
+                  </>
                 ) : (
                   <input
                     value={shopImageUrlInput}
@@ -3084,6 +3202,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   <SecondaryButton
                     onClick={() => {
                       setShopSelectedFile(null);
+                      setPreparingProfilePortrait(false);
                       if (shopPreviewUrl.startsWith("blob:")) {
                         URL.revokeObjectURL(shopPreviewUrl);
                       }

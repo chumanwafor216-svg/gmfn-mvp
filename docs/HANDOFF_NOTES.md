@@ -5,6 +5,42 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Universal Shop Hero v1.1 - 2026-10-29
+
+- Founder approval established a narrow Public Shop and focused Shop Picture
+  presentation exception without database, API, route, permission, payment,
+  TrustSlip, Spotlight, Shop Update/Diary, or product-capacity changes.
+- The Public Shop signboard now uses one deterministic media order: the
+  owner-saved public shop picture, then the first eligible active public product
+  picture in public-space order, then the neutral GSN storefront fallback.
+  Broken media advances through the same bounded order. Vault, private-product,
+  Spotlight and Shop Update/Diary media are excluded.
+- Silent profile-photo inheritance was removed from Public Shop normalization.
+  Focused Shop Picture instead offers a closed, owner-only optional portrait
+  disclosure. The owner must choose `Use this portrait publicly`, review the
+  preview and still tap `Save picture`; the portrait is converted to an
+  independent file and passes through the existing authenticated marketplace
+  image engine. Later profile changes do not alter that public shop copy.
+- Existing Public Shop identity, Share, Verify, WhatsApp, follow, owner
+  shortcuts, product shelf, Spotlight and Shop Update/Diary actions remain in
+  place. The existing Shop Picture file/link/save/reset/remove paths remain in
+  place.
+- Verification passed: deterministic selector runtime tests; Universal Shop
+  Hero, Public Shop button, Shop Assets slot, and both Shop Diary audits; the
+  complete protected-button/frozen-surface suite; the TypeScript/Vite production
+  build; three focused Public Shop backend tests; and the 390x844 Public
+  Shop/Shop Picture smoke. The phone smoke proves the public hero uses eligible
+  product media without silently inheriting a profile portrait, keeps portrait
+  consent closed by default, and prepares an explicit owner choice through the
+  ordinary file-preview path without a business write.
+- Separate existing smoke debt remains: the two older slot-replacement smokes
+  fail to find their expected newest space-6 product in current fixtures. This
+  implementation does not touch product replacement, public-space ordering, or
+  those selectors; the newer comprehensive Shop/Public Shop phone smoke passes
+  the live space, exact-item and replacement-adjacent contracts. The protected
+  visual suite still reports the repository's existing duplicate React key
+  `0` warnings three times.
+
 ## Landscape GSN membership card - 2026-10-29
 
 - The owner approved a close implementation of the supplied landscape GSN

@@ -1727,6 +1727,13 @@ Owner-approved 2026-10-26 first-view correction, amended 2026-10-27:
   (optional)`; retain reset and remove-picture actions and return to Shop
   items. Do not expose the wider shop-details form, Shop items, Shop Update,
   Vault or the standalone workbench beside this focused task.
+- When the signed-in owner already has a GSN profile portrait, Shop picture may
+  offer one closed `Use my GSN portrait (optional)` disclosure. It must explain
+  that the choice creates a separate public-shop copy that will not track later
+  profile changes. Only `Use this portrait publicly` may place it in the
+  preview, and the existing `Save picture` action must still send it through
+  the existing authenticated marketplace image engine. Never inherit or sync a
+  profile portrait silently. Owners retain the existing reset and remove paths.
 - The focused picture hash corrects the prior broken handoff to Shop Details,
   which has no picture control. Preserve the existing shop-image
   save/remove payload, stored shop information, upload preparation, policy
@@ -1808,6 +1815,12 @@ Rules:
   description, picture, WhatsApp, and Telegram come from the individual shop
   record. Marketplace/community name may appear only as the shared community
   context, not as a replacement for the shop name.
+- The Public Shop signboard media tile uses the owner-saved shop picture first.
+  If none is usable, use the first eligible active public product picture in
+  public-space order. If neither is usable, show the neutral branded GSN
+  storefront fallback. Broken images must advance through that same order.
+  Never source the hero from Vault, Spotlight, Shop Update/Diary, a private
+  product, a guessed category scene, or an unsaved profile portrait.
 - Public Shop may expose an on-demand Verify Shop panel with the shop owner ID,
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip

@@ -139,6 +139,7 @@ function member(identity) {
     gmfn_id: identity,
     role: 'member',
     status: 'active',
+    profile_image_url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
   };
 }
 
@@ -383,6 +384,10 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   const scenario = { identity: ownerId, ownerSpotlightState: ownerState, demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
   const { context, page } = await newPhonePage(browser, scenario);
   await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.locator('[data-universal-shop-hero="true"][data-shop-hero-source="product"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
   const moreDetails = page.locator('[data-public-shop-more="secondary"]');
   const summary = moreDetails.locator('summary');
   await summary.waitFor({ state: 'visible', timeout: 20_000 });
@@ -982,6 +987,25 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
   if (await pictureLinkOption.locator('..').evaluate((node) => node.open)) {
     throw new Error('Focused phone Shop picture exposed the optional pasted-link field before the owner requested it.');
   }
+  const portraitOption = shopPictureTask.getByText('Use my GSN portrait (optional)', { exact: true });
+  await portraitOption.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await portraitOption.locator('..').evaluate((node) => node.open)) {
+    throw new Error('Focused phone Shop picture exposed profile-portrait consent before the owner requested it.');
+  }
+  if (await shopPictureTask.getByRole('button', { name: 'Use this portrait publicly', exact: true }).count()) {
+    throw new Error('Focused phone Shop picture exposed the public portrait action before consent details were opened.');
+  }
+  await portraitOption.click();
+  const usePortrait = shopPictureTask.getByRole('button', {
+    name: 'Use this portrait publicly',
+    exact: true,
+  });
+  await usePortrait.waitFor({ state: 'visible', timeout: 20_000 });
+  await usePortrait.click();
+  await page.getByText(
+    'Portrait selected for public shop use. Check the preview, then tap Save picture.',
+    { exact: true }
+  ).waitFor({ state: 'visible', timeout: 20_000 });
   const pictureGeometry = await page.evaluate(() => ({
     innerWidth: window.innerWidth,
     scrollWidth: document.documentElement.scrollWidth,
@@ -1450,6 +1474,8 @@ try {
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
       'ordinary phone Shop items leads with Add item, keeps secondary shop tasks closed, and preserves the separate Diary handoff',
       'focused phone Shop picture fixes the broken handoff, exposes Save picture, and keeps the optional pasted-link field closed',
+      'Public Shop hero uses eligible product media without silently inheriting the mocked profile portrait',
+      'focused Shop Picture keeps portrait consent closed, then prepares the explicit owner choice through the ordinary file-preview path',
       'focused phone Shop update leads with one message question, keeps optional details and recent history closed, and exposes Publish update without product tools',
       'ordinary phone product Save reopens the numbered block, preserves its success notice, and returns focus to the result',
       'ordinary successful product Save exposes one exact-item View product in public shop action',

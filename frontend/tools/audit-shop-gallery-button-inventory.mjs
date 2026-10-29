@@ -277,14 +277,28 @@ assertContains(
 );
 
 assertContains(
-  /function ReferenceShopSignboardVisual[\s\S]*?width: compact \? 92 : 204[\s\S]*?height: compact \? 92 : 194[\s\S]*?borderRadius: compact \? 24 : 32/,
-  "Public Shop compact signboard illustration must stay large enough to avoid dead space inside the hero tile."
+  /import UniversalShopHero from "\.\.\/components\/shop\/UniversalShopHero";[\s\S]*?import \{ selectShopHeroSource \} from "\.\.\/lib\/shopHeroSelection";/,
+  "Public Shop must use the audited Universal Shop Hero selector and reusable media component."
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : "50%"[\s\S]*?gridRow: isCompact \? "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"/,
-  "Public Shop signboard mobile icon must reserve its own rail and stay clipped inside its tile."
+  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : 32[\s\S]*?gridRow: isCompact \? "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"[\s\S]*?<UniversalShopHero[\s\S]*?source=\{shopHeroSource\}[\s\S]*?onImageError=/,
+  "Public Shop hero must reserve its existing mobile rail, stay clipped inside its tile, and recover from broken media."
 );
+
+assertContains(
+  /selectShopHeroSource\(\{[\s\S]*?shopImageUrl: effectiveShop\?\.imageUrl,[\s\S]*?products,[\s\S]*?brokenImageUrls: brokenShopHeroMediaUrls/,
+  "Public Shop hero selection must use only the saved shop image, eligible public products, and the broken-media fallback list."
+);
+
+if (shopGallerySource.includes("src?.profile_image_url")) {
+  findings.push({
+    file: shopGalleryFile,
+    line: lineAt(shopGallerySource, shopGallerySource.indexOf("src?.profile_image_url")),
+    message: "Public Shop must not silently inherit the owner's profile portrait.",
+    text: "Profile portrait reuse requires an explicit owner action in Shop Picture.",
+  });
+}
 
 assertContains(
   /data-public-shop-signboard-content="true"[\s\S]*?display: isCompact \? "contents" : "grid"[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,

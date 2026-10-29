@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
+import UniversalShopHero from "../components/shop/UniversalShopHero";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame, {
@@ -50,6 +51,7 @@ import {
   normalizeWhatsAppRecipient,
 } from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
+import { selectShopHeroSource } from "../lib/shopHeroSelection";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
@@ -130,6 +132,8 @@ type ShopProduct = {
   priceText: string;
   currency: string;
   imageUrl: string;
+  imageAvailable: boolean;
+  isActive: boolean;
   videoUrl: string;
   visibilityMode: string;
   createdAt: string;
@@ -951,77 +955,6 @@ function _ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }) {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        width: compact ? 92 : 204,
-        height: compact ? 92 : 194,
-        borderRadius: compact ? 24 : 32,
-        position: "relative",
-        display: "grid",
-        placeItems: "center",
-        overflow: "hidden",
-        border: "1px solid rgba(255,226,151,0.66)",
-        background:
-          "radial-gradient(circle at 34% 30%, rgba(255,224,138,0.25) 0%, transparent 38%), linear-gradient(145deg, rgba(4,16,29,0.72), rgba(9,42,74,0.96))",
-        boxShadow:
-          "0 24px 46px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 0 42px rgba(246,196,83,0.08)",
-      }}
-    >
-      <span
-        style={{
-          position: "absolute",
-          inset: compact ? 8 : 16,
-          borderRadius: compact ? 20 : 28,
-          border: "1px solid rgba(246,215,122,0.26)",
-          background:
-            "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.13) 0%, transparent 38%)",
-          boxShadow: "inset 0 0 42px rgba(246,196,83,0.08)",
-        }}
-      />
-      <GsnRealisticIcon
-        name="shopping-cart"
-        size={compact ? 78 : 148}
-        decorative
-        loading="eager"
-        style={{
-          position: "relative",
-          zIndex: 2,
-          filter: "drop-shadow(0 18px 26px rgba(0,0,0,0.34))",
-          transform: "rotate(-3deg)",
-        }}
-        imageStyle={{ width: "106%", height: "106%" }}
-      />
-      <span
-        style={{
-          position: "absolute",
-          left: compact ? 10 : 22,
-          top: compact ? 10 : 22,
-          width: compact ? 20 : 34,
-          height: compact ? 20 : 34,
-          borderRadius: "50%",
-          background: "linear-gradient(180deg, #FFECA8 0%, #D6AA45 100%)",
-          boxShadow: "0 10px 20px rgba(214,170,69,0.24)",
-        }}
-      />
-      <span
-        style={{
-          position: "absolute",
-          right: compact ? 12 : 26,
-          bottom: compact ? 12 : 26,
-          width: compact ? 11 : 18,
-          height: compact ? 11 : 18,
-          borderRadius: "50%",
-          background: "#F6D77A",
-          opacity: 0.9,
-        }}
-      />
-    </div>
-  );
-}
-
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -1154,7 +1087,6 @@ function normalizeShop(
 
   const imageUrl = resolveImageSrc(
     src?.image_url ||
-      src?.profile_image_url ||
       src?.shop_image_url ||
       src?.cover_image_url ||
       src?.banner_url ||
@@ -1594,6 +1526,8 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
       src?.cover_image_url ||
       (!productHasImageTruth ? cachedMedia?.image_url : "")
   );
+  const imageAvailable =
+    src?.image_url_available === false ? false : Boolean(imageUrl);
   const videoUrl = resolveImageSrc(
     src?.video_url || (!productHasVideoTruth ? cachedMedia?.video_url : "")
   );
@@ -1610,6 +1544,8 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     ),
     currency: firstMeaningful(src?.currency, src?.currency_code, "NGN") || "NGN",
     imageUrl,
+    imageAvailable,
+    isActive: src?.is_active !== false,
     videoUrl,
     visibilityMode:
       firstMeaningful(src?.visibility_mode, "community_visible") ||
@@ -2086,6 +2022,9 @@ export default function ShopGalleryPage() {
   const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
+    Record<string, boolean>
+  >({});
+  const [brokenShopHeroMediaUrls, setBrokenShopHeroMediaUrls] = useState<
     Record<string, boolean>
   >({});
   const [showAllProducts, setShowAllProducts] = useState(false);
@@ -3734,6 +3673,21 @@ export default function ShopGalleryPage() {
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
   }, [effectiveShop]);
+  const shopHeroSource = useMemo(
+    () =>
+      selectShopHeroSource({
+        shopName: effectiveShop?.shopName,
+        shopImageUrl: effectiveShop?.imageUrl,
+        products,
+        brokenImageUrls: brokenShopHeroMediaUrls,
+      }),
+    [
+      brokenShopHeroMediaUrls,
+      effectiveShop?.imageUrl,
+      effectiveShop?.shopName,
+      products,
+    ]
+  );
 
   const miniSpotlight = useMemo(() => {
     if (communitySpotlights.length === 0) return null;
@@ -5303,7 +5257,7 @@ export default function ShopGalleryPage() {
                 zIndex: 2,
                 width: isCompact ? 92 : 206,
                 height: isCompact ? 92 : 206,
-                borderRadius: isCompact ? 24 : "50%",
+                borderRadius: isCompact ? 24 : 32,
                 display: "grid",
                 placeItems: "center",
                 justifySelf: "center",
@@ -5317,7 +5271,16 @@ export default function ShopGalleryPage() {
                 overflow: "hidden",
               }}
             >
-              <ReferenceShopSignboardVisual compact={isCompact} />
+              <UniversalShopHero
+                source={shopHeroSource}
+                compact={isCompact}
+                onImageError={(imageUrl) => {
+                  setBrokenShopHeroMediaUrls((current) => ({
+                    ...current,
+                    [imageUrl]: true,
+                  }));
+                }}
+              />
               <span
                 aria-hidden="true"
                 style={{
