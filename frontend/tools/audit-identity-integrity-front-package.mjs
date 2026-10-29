@@ -326,8 +326,8 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?imageSettings=\{\{[\s\S]*?src: GSN_GLOBE_QR_MARK[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?View Membership Record[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"/,
-  "The live QR and all share/copy controls must remain behind one closed membership-record button."
+  /data-gsn-identity-card-title-control="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?GSN ID Card[\s\S]*?Tap to use[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?imageSettings=\{\{[\s\S]*?src: GSN_GLOBE_QR_MARK[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"/,
+  "The live card title must be the one obvious actions gateway while the QR and all share/copy controls retain their existing behavior."
 );
 
 assertContains(
@@ -341,7 +341,7 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?Network member[\s\S]*?\{displayName\}[\s\S]*?GSN ID[\s\S]*?\{gmfnId\}[\s\S]*?View Membership Record[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Not government identification,[\s\S]*?credit approval,[\s\S]*?payment guarantee/i,
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?GSN ID Card[\s\S]*?Network member[\s\S]*?\{displayName\}[\s\S]*?GSN ID[\s\S]*?\{gmfnId\}[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Not government identification,[\s\S]*?credit approval,[\s\S]*?payment guarantee/i,
   "The landscape card must keep only the receiver's core decision facts and its concise legal boundary on the face."
 );
 

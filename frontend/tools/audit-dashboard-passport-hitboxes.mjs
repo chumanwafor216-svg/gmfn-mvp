@@ -170,6 +170,26 @@ try {
     localStorage.setItem("gmfn_current_id", "GMFN-U-HITBOX");
     localStorage.setItem("gmfn_selected_clan_id", "8");
     localStorage.setItem("selected_clan_id", "8");
+    window.__gsnIdentityAuditClipboard = [];
+    window.__gsnIdentityAuditSharePayload = null;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value) => {
+          window.__gsnIdentityAuditClipboard.push(String(value || ""));
+        },
+      },
+    });
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value: () => false,
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (payload) => {
+        window.__gsnIdentityAuditSharePayload = payload || null;
+      },
+    });
   });
 
   await page.goto(`${baseUrl}/app/dashboard`, { waitUntil: "networkidle", timeout: 20000 });
@@ -349,10 +369,22 @@ try {
   if (
     (await cardActionsToggle.count()) !== 1 ||
     (await cardActionsToggle.getAttribute("aria-expanded")) !== "false" ||
-    !cardActionsToggleText?.includes("View Membership Record")
+    !cardActionsToggleText?.includes("GSN ID Card") ||
+    !cardActionsToggleText?.includes("Tap to use")
   ) {
     throw new Error(
-      "GSN ID Card must expose one closed View Membership Record control."
+      "GSN ID Card must expose one closed, clearly labelled title control."
+    );
+  }
+
+  const cardActionsToggleBox = await cardActionsToggle.boundingBox();
+  if (
+    !cardActionsToggleBox ||
+    cardActionsToggleBox.width < 95 ||
+    cardActionsToggleBox.height < 36
+  ) {
+    throw new Error(
+      `GSN ID Card title control is not phone-usable: ${JSON.stringify(cardActionsToggleBox)}.`
     );
   }
 
@@ -360,7 +392,7 @@ try {
     Boolean(element.closest('[data-gsn-identity-card-screenshot="true"]'))
   );
   if (!cardTitleOwnsActions) {
-    throw new Error("View Membership Record must stay inside the card face.");
+    throw new Error("The GSN ID Card title control must stay inside the card face.");
   }
 
   if ((await page.getByText("Use this ID card", { exact: true }).count()) !== 0) {
@@ -377,6 +409,44 @@ try {
     if ((await actionControl.count()) !== 1 || !(await actionControl.isVisible())) {
       throw new Error(`GSN ID Card action chooser did not expose ${action}.`);
     }
+  }
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.copy"]')
+    .tap();
+  await page.waitForFunction(() =>
+    window.__gsnIdentityAuditClipboard.some((value) =>
+      value.includes("GSN Identity Card") && value.includes("GMFN-U-HITBOX")
+    )
+  );
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.copy-verify-link"]')
+    .tap();
+  await page.waitForFunction(() =>
+    window.__gsnIdentityAuditClipboard.some((value) =>
+      value.includes("/t/TS-HITBOX/lite")
+    )
+  );
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.share"]')
+    .tap();
+  await page.waitForFunction(() =>
+    window.__gsnIdentityAuditSharePayload?.title === "GSN Identity Card" &&
+    String(window.__gsnIdentityAuditSharePayload?.text || "").includes("GMFN-U-HITBOX")
+  );
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.refresh"]')
+    .tap();
+  await page.getByText(
+    "Identity Card refreshed. Community count and TrustSlip status are current.",
+    { exact: true }
+  ).waitFor({ state: "visible", timeout: 5000 });
+
+  if ((await cardActionsToggle.getAttribute("aria-expanded")) !== "true") {
+    throw new Error("GSN ID Card actions unexpectedly closed while an action ran.");
   }
 
   await page.goto(`${baseUrl}/app/identity`, {

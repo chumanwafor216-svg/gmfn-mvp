@@ -3567,32 +3567,81 @@ export default function IdentityIntegrityPage() {
           </div>
         </div>
 
-        <div
-          aria-hidden="true"
+        <StableButton
+          type="button"
+          onClick={() => setIdentityCardActionsOpen((open) => !open)}
+          aria-expanded={identityCardActionsOpen}
+          aria-label={identityCardActionsOpen ? "Close GSN ID Card actions" : "Use this GSN ID Card"}
+          data-gsn-identity-card-title-control="true"
+          debugId="identity-integrity.gsn-card.actions-toggle"
+          stableHeight={isCompact ? 40 : 58}
           style={{
             position: "absolute",
-            zIndex: 2,
-            top: "6%",
-            right: "4.4%",
-            width: "18%",
-            paddingLeft: isCompact ? 7 : 13,
-            borderLeft: "1px solid rgba(214,170,69,0.52)",
-            color: "rgba(255,255,255,0.72)",
-            fontSize: isCompact ? 4.6 : 7.8,
-            fontWeight: 850,
-            letterSpacing: isCompact ? 1 : 1.8,
-            lineHeight: 1.45,
-            textTransform: "uppercase",
+            zIndex: 5,
+            top: "5%",
+            right: "3.8%",
+            width: "32%",
+            minWidth: 0,
+            borderRadius: 999,
+            border: `${isCompact ? 1.5 : 2}px solid rgba(242,199,102,0.92)`,
+            background: identityCardActionsOpen
+              ? "linear-gradient(180deg, #F7D97F 0%, #D6A239 100%)"
+              : "linear-gradient(180deg, rgba(18,49,77,0.98) 0%, rgba(4,23,37,0.98) 100%)",
+            color: identityCardActionsOpen ? "#07172C" : "#FFFFFF",
+            boxShadow: identityCardActionsOpen
+              ? "0 6px 16px rgba(1,9,22,0.30), 0 0 0 2px rgba(242,199,102,0.16)"
+              : "0 6px 16px rgba(1,9,22,0.34), inset 0 1px 0 rgba(255,255,255,0.12)",
+            padding: isCompact ? "4px 7px" : "7px 13px",
+            gap: isCompact ? 4 : 8,
+            cursor: "pointer",
           }}
         >
-          Stronger people
-          <br />
-          Stronger communities
-          <br />
-          A more inclusive
-          <br />
-          global economy
-        </div>
+          <GsnLegacyIcon name="id" size={isCompact ? 17 : 25} />
+          <span
+            style={{
+              minWidth: 0,
+              display: "grid",
+              justifyItems: "start",
+              lineHeight: 1.02,
+            }}
+          >
+            <strong
+              style={{
+                fontSize: isCompact ? 9.2 : 14,
+                fontWeight: 1000,
+                letterSpacing: isCompact ? -0.1 : 0,
+                whiteSpace: "nowrap",
+              }}
+            >
+              GSN ID Card
+            </strong>
+            <small
+              style={{
+                marginTop: isCompact ? 2 : 4,
+                color: identityCardActionsOpen
+                  ? "rgba(7,23,44,0.78)"
+                  : "rgba(255,255,255,0.74)",
+                fontSize: isCompact ? 6.5 : 9.5,
+                fontWeight: 900,
+                letterSpacing: isCompact ? 0.15 : 0.4,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {identityCardActionsOpen ? "Actions open" : "Tap to use"}
+            </small>
+          </span>
+          <span
+            aria-hidden="true"
+            style={{
+              marginLeft: "auto",
+              fontSize: isCompact ? 11 : 17,
+              lineHeight: 1,
+              transform: identityCardActionsOpen ? "rotate(180deg)" : "none",
+            }}
+          >
+            ⌄
+          </span>
+        </StableButton>
 
         <div
           data-gsn-identity-card-face="true"
@@ -3823,31 +3872,21 @@ export default function IdentityIntegrityPage() {
               <GsnLegacyIcon name="qr" size={isCompact ? 48 : 96} />
             </div>
           )}
-          <StableButton
-            type="button"
-            onClick={() => setIdentityCardActionsOpen((open) => !open)}
-            aria-expanded={identityCardActionsOpen}
-            aria-label={identityCardActionsOpen ? "Close GSN ID Card actions" : "Use this GSN ID Card"}
-            debugId="identity-integrity.gsn-card.actions-toggle"
-            stableHeight={isCompact ? 22 : 34}
+          <div
+            data-gsn-identity-card-live-label="true"
             style={{
               marginTop: isCompact ? 5 : 9,
               width: "100%",
-              minWidth: 0,
-              borderRadius: 999,
-              border: "1px solid rgba(214,170,69,0.76)",
-              background: "rgba(4,23,37,0.82)",
-              color: "#FFFFFF",
-              fontSize: isCompact ? 5.8 : 9.5,
+              color: "rgba(255,255,255,0.86)",
+              fontSize: isCompact ? 5.4 : 8.8,
               fontWeight: 900,
-              padding: isCompact ? "2px 5px" : "4px 8px",
+              lineHeight: 1.2,
+              textAlign: "center",
               whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
             }}
           >
-            View Membership Record
-            <span aria-hidden="true">↗</span>
-          </StableButton>
+            Scan to verify
+          </div>
           <div
             style={{
               marginTop: isCompact ? 4 : 7,
@@ -3997,7 +4036,7 @@ export default function IdentityIntegrityPage() {
               fullWidth
               debugId="identity-integrity.gsn-card.share"
             >
-              {identityCardValid ? "Share" : "Finish card"}
+              {identityCardValid ? "Share card" : "Finish card"}
             </PrimaryButton>
             <SecondaryButton
               onClick={() => void refreshGsnIdentityCard()}
@@ -4006,7 +4045,7 @@ export default function IdentityIntegrityPage() {
               disabled={identityCardRefreshing}
               debugId="identity-integrity.gsn-card.refresh"
             >
-              {identityCardRefreshing ? "Refreshing" : "Refresh"}
+              {identityCardRefreshing ? "Refreshing" : "Refresh card"}
             </SecondaryButton>
             <SecondaryButton
               onClick={() => void copyGsnIdentityCard()}
@@ -4022,7 +4061,7 @@ export default function IdentityIntegrityPage() {
               fullWidth
               debugId="identity-integrity.gsn-card.copy-verify-link"
             >
-              Copy verify link
+              Copy verification link
             </SecondaryButton>
           </div>
         ) : null}
