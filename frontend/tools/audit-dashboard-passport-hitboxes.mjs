@@ -212,16 +212,49 @@ try {
     const backgroundImage = await photoCard.evaluate(
       (node) => getComputedStyle(node).backgroundImage
     );
-    if (!backgroundImage || backgroundImage === "none") {
-      throw new Error("Dashboard photo cards must render their live image backgrounds.");
-    }
     if (
       (await photoCard.getAttribute("data-dashboard-photo-clarity")) !==
-        "clear-right" ||
-      !backgroundImage.includes("rgba(255, 255, 255, 0)")
+        "full-picture" ||
+      (await photoCard.getAttribute("data-dashboard-photo-label-position")) !==
+        "top-strip" ||
+      backgroundImage !== "none"
     ) {
       throw new Error(
-        "Dashboard photo cards must keep the text scrim clear over the photographed subject."
+        "Phone photo cards must use an unobstructed picture with one compact top label."
+      );
+    }
+
+    const liveImage = photoCard.locator("[data-dashboard-photo-image]");
+    if ((await liveImage.count()) !== 1) {
+      throw new Error("Each Dashboard photo card must mount one real image element.");
+    }
+    await liveImage.waitFor({ state: "visible", timeout: 5000 });
+    const imageReady = await liveImage.evaluate(
+      (node) =>
+        node instanceof HTMLImageElement &&
+        node.complete &&
+        node.naturalWidth > 0 &&
+        node.naturalHeight > 0 &&
+        getComputedStyle(node).objectFit === "cover"
+    );
+    if (!imageReady) {
+      throw new Error("Dashboard live pictures must load at real dimensions and cover their cards.");
+    }
+
+    const label = photoCard.locator("[data-dashboard-photo-label]");
+    const cardBox = await photoCard.boundingBox();
+    const labelBox = await label.boundingBox();
+    if (
+      !cardBox ||
+      !labelBox ||
+      labelBox.y > cardBox.y + 12 ||
+      labelBox.height > 36 ||
+      cardBox.height - (labelBox.y + labelBox.height - cardBox.y) < 60
+    ) {
+      throw new Error(
+        `Dashboard photo label must stay narrow at the top and leave the picture open below: card=${JSON.stringify(
+          cardBox
+        )}, label=${JSON.stringify(labelBox)}.`
       );
     }
   }
@@ -303,7 +336,7 @@ try {
   }
 
   await identityTrustToggle.tap();
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(420);
 
   const viewport = page.viewportSize();
   if (!viewport) {
@@ -327,7 +360,7 @@ try {
     }
 
     await signal.tap();
-    await page.waitForTimeout(220);
+    await page.waitForTimeout(420);
     const routedUrl = new URL(page.url());
     if (`${routedUrl.pathname}${routedUrl.search}` !== expected) {
       throw new Error(
@@ -339,7 +372,7 @@ try {
     await page
       .locator('[data-cta-id="dashboard.passport.identity-and-trust"]')
       .tap();
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(420);
   }
 
   const idCardEntry = page.locator(

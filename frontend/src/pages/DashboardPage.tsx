@@ -7038,6 +7038,73 @@ export default function DashboardPage() {
     wordBreak: "normal",
     hyphens: "none",
   };
+  const dashboardPhotoLabelStyle: React.CSSProperties = isPhone
+    ? {
+        position: "absolute",
+        top: 7,
+        left: 7,
+        zIndex: 2,
+        minWidth: 0,
+        maxWidth: "calc(100% - 40px)",
+        width: "fit-content",
+        minHeight: 28,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "4px 7px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.76)",
+        background: "rgba(255,255,255,0.90)",
+        boxShadow: "0 5px 14px rgba(4,24,39,0.14)",
+        backdropFilter: "blur(4px)",
+        overflow: "hidden",
+      }
+    : { minWidth: 0 };
+  const dashboardPhotoTitleStyle: React.CSSProperties = isPhone
+    ? {
+        ...dashboardAccordionTitleStyle,
+        display: "block",
+        flex: "0 1 auto",
+        fontSize: 11.5,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
+      }
+    : dashboardAccordionTitleStyle;
+  const dashboardPhotoSummaryStyle: React.CSSProperties = isPhone
+    ? {
+        ...dashboardAccordionSummaryStyle,
+        display: "block",
+        flex: "0 1 auto",
+        marginTop: 0,
+        color: "#42546A",
+        fontSize: 9.8,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
+      }
+    : dashboardAccordionSummaryStyle;
+  const dashboardPhotoChevronStyle = (
+    expanded: boolean
+  ): React.CSSProperties =>
+    isPhone
+      ? {
+          ...dashboardAccordionChevronStyle(expanded),
+          position: "absolute",
+          top: 7,
+          right: 7,
+          zIndex: 2,
+          width: 30,
+          height: 30,
+          minWidth: 30,
+          minHeight: 30,
+          color: "#08233A",
+          border: "1px solid rgba(255,255,255,0.78)",
+          background: "rgba(255,255,255,0.90)",
+          boxShadow: "0 5px 14px rgba(4,24,39,0.14)",
+          backdropFilter: "blur(4px)",
+        }
+      : dashboardAccordionChevronStyle(expanded);
   const dashboardAccordionChevronStyle = (
     expanded: boolean
   ): React.CSSProperties => ({
@@ -9621,7 +9688,8 @@ export default function DashboardPage() {
         <StableButton
           debugId="dashboard.demand.toggle"
           data-dashboard-photo-card="demandbox"
-          data-dashboard-photo-clarity="clear-right"
+          data-dashboard-photo-clarity={isPhone ? "full-picture" : "clear-right"}
+          data-dashboard-photo-label-position={isPhone ? "top-strip" : "standard"}
           type="button"
           aria-expanded={false}
           onClick={(event) => openDashboardRoute(event, demandPrimaryActionTo)}
@@ -9633,24 +9701,46 @@ export default function DashboardPage() {
             ),
             ...(isPhone
               ? {
-                  height: 104,
-                  minHeight: 104,
-                  maxHeight: 104,
+                  height: 118,
+                  minHeight: 118,
+                  maxHeight: 118,
                   gridTemplateColumns: "minmax(0, 1fr) auto",
                   gap: 6,
-                  alignItems: "center",
-                  padding: "11px 10px",
+                  alignItems: "start",
+                  padding: 7,
                   borderRadius: 16,
                 }
               : {}),
+            position: "relative",
+            isolation: "isolate",
             backgroundColor: "#FFFFFF",
-            backgroundImage: `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardDemandMarket})`,
+            backgroundImage: isPhone
+              ? "none"
+              : `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardDemandMarket})`,
             backgroundPosition: "center, center",
             backgroundRepeat: "no-repeat, no-repeat",
             backgroundSize: "cover, cover",
             overflow: "hidden",
           }}
         >
+          {isPhone ? (
+            <img
+              data-dashboard-photo-image="demandbox"
+              src={dashboardDemandMarket}
+              alt=""
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 0,
+                width: "100%",
+                height: "100%",
+                display: "block",
+                objectFit: "cover",
+                objectPosition: "center",
+              }}
+            />
+          ) : null}
           <span
             aria-hidden="true"
             style={{
@@ -9669,15 +9759,18 @@ export default function DashboardPage() {
             />
           </span>
 
-          <span style={{ minWidth: 0 }}>
-            <span style={dashboardAccordionTitleStyle}>
+          <span
+            data-dashboard-photo-label="demandbox"
+            style={dashboardPhotoLabelStyle}
+          >
+            <span style={dashboardPhotoTitleStyle}>
               {isPhone ? "DemandBox" : "Your DemandBox"}
             </span>
-            <span style={dashboardAccordionSummaryStyle}>
+            <span style={dashboardPhotoSummaryStyle}>
               {isPhone
                 ? demandItems.length > 0
-                  ? `${demandItems.length} open request${demandItems.length === 1 ? "" : "s"}.`
-                  : "No open demand."
+                  ? `${demandItems.length} open`
+                  : "None open"
                 : demandItems.length > 0
                 ? myOpenDemandItems.length > 0 && responderDemandItems.length === 0
                   ? `${myOpenDemandItems.length} open demand${
@@ -9709,7 +9802,7 @@ export default function DashboardPage() {
 
           <span
             aria-hidden="true"
-            style={dashboardAccordionChevronStyle(false)}
+            style={dashboardPhotoChevronStyle(false)}
           >
             <DashboardChevronIcon expanded={false} />
           </span>
@@ -11193,7 +11286,8 @@ export default function DashboardPage() {
             <StableButton
               debugId="dashboard.focus.toggle"
               data-dashboard-photo-card="focus"
-              data-dashboard-photo-clarity="clear-right"
+              data-dashboard-photo-clarity={isPhone ? "full-picture" : "clear-right"}
+              data-dashboard-photo-label-position={isPhone ? "top-strip" : "standard"}
               type="button"
               aria-expanded={uiState.trustExpanded}
               onClick={(event) =>
@@ -11209,24 +11303,46 @@ export default function DashboardPage() {
                 ),
                 ...(isPhone
                   ? {
-                      height: 104,
-                      minHeight: 104,
-                      maxHeight: 104,
+                      height: 118,
+                      minHeight: 118,
+                      maxHeight: 118,
                       gridTemplateColumns: "minmax(0, 1fr) auto",
                       gap: 6,
-                      alignItems: "center",
-                      padding: "11px 10px",
+                      alignItems: "start",
+                      padding: 7,
                       borderRadius: 16,
                     }
                   : {}),
+                position: "relative",
+                isolation: "isolate",
                 backgroundColor: "#FFFFFF",
-                backgroundImage: `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardFocusGrowth})`,
+                backgroundImage: isPhone
+                  ? "none"
+                  : `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardFocusGrowth})`,
                 backgroundPosition: "center, center",
                 backgroundRepeat: "no-repeat, no-repeat",
                 backgroundSize: "cover, cover",
                 overflow: "hidden",
               }}
             >
+              {isPhone ? (
+                <img
+                  data-dashboard-photo-image="focus"
+                  src={dashboardFocusGrowth}
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 0,
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    objectFit: "cover",
+                    objectPosition: "center",
+                  }}
+                />
+              ) : null}
               <span
                 aria-hidden="true"
                 style={{
@@ -11241,15 +11357,18 @@ export default function DashboardPage() {
                 />
               </span>
 
-              <span style={{ minWidth: 0 }}>
-                <span style={dashboardAccordionTitleStyle}>
-                  {isPhone ? "Your Focus" : "Your Focus Commitments"}
+              <span
+                data-dashboard-photo-label="focus"
+                style={dashboardPhotoLabelStyle}
+              >
+                <span style={dashboardPhotoTitleStyle}>
+                  {isPhone ? "Focus" : "Your Focus Commitments"}
                 </span>
-                <span style={dashboardAccordionSummaryStyle}>
+                <span style={dashboardPhotoSummaryStyle}>
                   {isPhone
                     ? activeFocusCount > 0 || activeRoscaObligationCount > 0
-                      ? `${activeFocusCount + activeRoscaObligationCount} active.`
-                      : "No active commitment."
+                      ? `${activeFocusCount + activeRoscaObligationCount} active`
+                      : "No active"
                     : activeFocusCount > 0 || activeRoscaObligationCount > 0
                     ? `${activeFocusCount} personal, ${activeRoscaObligationCount} ROSCA linked.`
                     : "No active commitment yet."}
@@ -11287,7 +11406,7 @@ export default function DashboardPage() {
 
               <span
                 aria-hidden="true"
-                style={dashboardAccordionChevronStyle(uiState.trustExpanded)}
+                style={dashboardPhotoChevronStyle(uiState.trustExpanded)}
               >
                 <DashboardChevronIcon expanded={uiState.trustExpanded} />
               </span>
