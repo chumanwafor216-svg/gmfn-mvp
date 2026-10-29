@@ -6890,7 +6890,7 @@ export default function ShopGalleryPage() {
               borderRadius: isCompact ? 20 : 26,
               padding: isCompact ? 10 : 22,
               height: isCompact ? "auto" : undefined,
-              minHeight: isCompact ? 456 : undefined,
+              minHeight: isCompact ? 0 : undefined,
               border: isCompact ? "1px solid rgba(13,95,168,0.28)" : "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
@@ -6912,7 +6912,7 @@ export default function ShopGalleryPage() {
                 gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
                 height: isCompact ? "auto" : undefined,
-                minHeight: isCompact ? 436 : undefined,
+                minHeight: isCompact ? 0 : undefined,
                 padding: 0,
               }}
             >
@@ -6937,7 +6937,7 @@ export default function ShopGalleryPage() {
                     maxWidth: "100%",
                     display: isCompact ? "grid" : "inline-flex",
                     gridTemplateColumns: isCompact
-                      ? "minmax(0, 1fr) 48px"
+                      ? "minmax(0, 1fr) 48px minmax(0, 1fr)"
                       : undefined,
                     alignItems: "center",
                     justifyContent: isCompact ? "space-between" : "flex-start",
@@ -6956,7 +6956,7 @@ export default function ShopGalleryPage() {
                 >
                   <span
                     style={{
-                      display: "inline-flex",
+                      display: isCompact ? "none" : "inline-flex",
                       alignItems: "center",
                       gap: 4,
                       minHeight: isCompact ? 28 : "auto",
@@ -6985,6 +6985,14 @@ export default function ShopGalleryPage() {
                       debugId='shop-gallery.spotlight.owner-shortcut'
                       shortcut='spotlight'
                       data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
+                      style={
+                        isCompact
+                          ? {
+                              gridColumn: '2',
+                              justifySelf: 'center',
+                            }
+                          : undefined
+                      }
                     />
                   ) : null}
                   {spotlightContactAvailable ? (
@@ -6996,7 +7004,7 @@ export default function ShopGalleryPage() {
                       debugId="shop-gallery.spotlight.contact-advertiser"
                       style={{
                         ...primaryBtn(false),
-                        gridColumn: isCompact ? "1 / -1" : undefined,
+                        gridColumn: isCompact ? "3" : undefined,
                         justifySelf: isCompact ? "end" : undefined,
                         borderRadius: 999,
                         minHeight: isCompact ? 34 : 52,
