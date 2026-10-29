@@ -55,6 +55,8 @@ const me = {
   display_name: "Nwafor Chuma",
   gmfn_id: "GMFN-U-63655DE6",
   role: "member",
+  phone_recorded: true,
+  phone_verified: true,
 };
 
 const clans = [
@@ -505,6 +507,11 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
     const communityCount = document.querySelector('[data-my-gsn-community-count="true"]');
     const selectedCommunityCard = document.querySelector('[data-my-gsn-selected-community-card="true"]');
     const settingsEditor = document.querySelector('[data-my-gsn-settings-editor="true"]');
+    const profileStatusHero = document.querySelector('[data-my-gsn-profile-status-hero="true"]');
+    const profileStatus = document.querySelector('[data-my-gsn-profile-status]');
+    const profilePhoto = document.querySelector('[data-my-gsn-profile-photo]');
+    const profilePrimaryAction = document.querySelector('[data-cta-id="my-gmfn.profile.primary-action"]');
+    const coveredPipelineCredits = document.querySelector('[data-my-gsn-pipeline-credits="covered"]');
     const selectedCommunityCardStyle = selectedCommunityCard instanceof HTMLElement ? getComputedStyle(selectedCommunityCard) : null;
     const identityFacts = Array.from(document.querySelectorAll('[data-my-gsn-identity-fact]'));
     const identityHeading = document.querySelector('[data-my-gsn-identity-heading]');
@@ -541,6 +548,15 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       hasTrustEvidence: Boolean(document.querySelector('[data-my-gsn-trust-evidence="true"]')),
       hasSettingsAccount: Boolean(document.querySelector('[data-my-gsn-settings-account="true"]')),
       hasSettingsEditor: Boolean(settingsEditor),
+      hasProfileStatusHero: Boolean(profileStatusHero),
+      profileStatusText: profileStatus?.textContent?.trim() ?? null,
+      profileStatusTone: profileStatus?.getAttribute("data-my-gsn-profile-status") ?? null,
+      profilePhotoMode: profilePhoto?.getAttribute("data-my-gsn-profile-photo") ?? null,
+      profilePrimaryActionText: profilePrimaryAction?.textContent?.trim() ?? null,
+      profilePrimaryActionBottom: profilePrimaryAction instanceof HTMLElement ? Math.round(profilePrimaryAction.getBoundingClientRect().bottom) : null,
+      coveredPipelineCreditsPresent: Boolean(coveredPipelineCredits),
+      coveredPipelineCreditsVisible: isVisible(coveredPipelineCredits),
+      moreLabel: more?.querySelector("summary")?.textContent?.replace(/[+-]/g, "")?.trim() ?? null,
       identityHasGsnId: Boolean(identity?.textContent?.includes("GSN ID")),
       identityHasPhone: Boolean(identity?.textContent?.includes("Phone")),
       identityHasHandle: Boolean(identity?.textContent?.includes("Handle")),
@@ -574,12 +590,14 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
     const handleUtility = document.querySelector('[data-my-gsn-handle-utility="secondary"]');
     const copyHandle = document.querySelector('[data-cta-id="my-gmfn.identity.copy-handle"]');
     const settingsLink = document.querySelector('[data-cta-id="my-gmfn.settings.open"]');
+    const coveredPipelineCredits = document.querySelector('[data-my-gsn-pipeline-credits="covered"]');
     return {
       moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
       handleUtilityVisible: isVisible(handleUtility),
       handleTextPresent: Boolean(handleUtility?.textContent?.includes("GSN handle")),
       copyHandleVisible: isVisible(copyHandle),
       settingsLinkVisible: isVisible(settingsLink),
+      coveredPipelineCreditsVisible: isVisible(coveredPipelineCredits),
       noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
     };
   });
@@ -773,25 +791,29 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.hasTrustEvidence &&
       result.hasSettingsAccount &&
       !result.hasSettingsEditor &&
+      result.hasProfileStatusHero &&
+      result.profileStatusText === "Profile active" &&
+      result.profileStatusTone === "ready" &&
+      ["image", "initials"].includes(result.profilePhotoMode) &&
+      result.profilePrimaryActionText === "Open community" &&
+      result.profilePrimaryActionBottom !== null &&
+      result.profilePrimaryActionBottom <= 844 &&
+      result.coveredPipelineCreditsPresent &&
+      !result.coveredPipelineCreditsVisible &&
+      result.moreLabel === "More profile details" &&
       result.identityHasGsnId &&
       result.identityHasPhone &&
       !result.identityHasHandle &&
       result.handleUtilityPresent &&
       !result.handleUtilityVisible &&
-      result.identityFactCount === 2 &&
-      result.identityFactMaxHeight <= 90 &&
-      result.identityHeadingMode === "text-only" &&
-      result.identitySectionHeight !== null && result.identitySectionHeight <= 180 &&
-      result.identitySectionImageCount === 0 &&
-
-      result.identityValueMaxHeight <= 36 &&
+      result.identityFactCount === 0 &&
+      result.identityHeadingMode === null &&
+      result.identitySectionHeight !== null && result.identitySectionHeight <= 220 &&
       result.identityFactImageCount === 0 &&
       !result.copyHandleVisible &&
       result.moreOpen === false &&
       result.moreBottom !== null &&
       result.moreBottom <= 844 &&
-      result.openCommunityBottom !== null &&
-      result.openCommunityBottom <= 844 &&
       result.documentHeight <= 844 &&
       result.noHorizontalOverflow &&
       result.expanded.moreOpen === true &&
@@ -799,6 +821,7 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.expanded.handleTextPresent &&
       result.expanded.copyHandleVisible &&
       result.expanded.settingsLinkVisible &&
+      result.expanded.coveredPipelineCreditsVisible &&
       result.expanded.noHorizontalOverflow &&
       result.settingsRoute.pathname === "/app/my-gmfn-and-i" &&
       new URLSearchParams(result.settingsRoute.search).get("tab") === "settings" &&

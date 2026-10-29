@@ -44,7 +44,7 @@ Bottom navigation is allowed here.
 3. OwnerShopControlPage
 4. MarketplacePage
 5. ShopPage
-6. MyGMFNAndIPage (CLOSED/FROZEN canonical My GSN / Profile, novice-first phone surface reviewed 2026-10-15; `/app/profile` redirects here; `ProfilePage.tsx` is deprecated/unmounted source retained for later deletion audit)
+6. MyGMFNAndIPage (CLOSED/FROZEN canonical My GSN / Profile, status-first phone surface reviewed 2026-10-29; `/app/profile` redirects here; `ProfilePage.tsx` is deprecated/unmounted source retained for later deletion audit)
 7. TrustPassportPage
 8. TrustEventsPage
 9. NotificationsPage

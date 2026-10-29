@@ -185,22 +185,36 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  memberHomeBranch,
-  /(?=[\s\S]*APP_ROUTES\.NOTIFICATIONS)(?=[\s\S]*my-gmfn\.attention\.demand-box)(?=[\s\S]*data-my-gsn-community-row="true")(?=[\s\S]*my-gmfn\.shop\.manage)(?=[\s\S]*my-gmfn\.evidence\.trust-passport)(?=[\s\S]*APP_ROUTES\.TRUST_SLIP)(?=[\s\S]*my-gmfn\.settings\.open)/,
+  myGsn,
+  /(?=[\s\S]*APP_ROUTES\.NOTIFICATIONS)(?=[\s\S]*my-gmfn\.attention\.demand-box)(?=[\s\S]*data-my-gsn-community-row="true")(?=[\s\S]*my-gmfn\.profile\.primary-action)(?=[\s\S]*my-gmfn\.shop\.manage)(?=[\s\S]*my-gmfn\.evidence\.trust-passport)(?=[\s\S]*APP_ROUTES\.TRUST_SLIP)(?=[\s\S]*my-gmfn\.settings\.open)/,
   "Default My GSN compact sections must keep Notifications, DemandBox, Community Home, Shop Control, Trust Passport, TrustSlip, and Settings reachable."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /!isCompact \|\| !hasGsnId[\s\S]*?!isCompact[\s\S]*?Open your community list when you need it[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Open Notifications to see and act on every item[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
-  "Phone My GSN must hide repeated helper explanations and use short section labels while preserving the desktop guidance."
+  /data-my-gsn-profile-status-hero="true"[\s\S]*?data-my-gsn-profile-status=\{profileStatus\.tone\}[\s\S]*?data-my-gsn-profile-id="true"[\s\S]*?debugId="my-gmfn\.profile\.primary-action"[\s\S]*?Open your community list when you need it[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Open Notifications to see and act on every item[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
+  "Phone My GSN must lead with one status hero and one primary action, hide repeated helper explanations, and preserve the desktop guidance."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   myGsn,
-  /See your identity, communities, shop, trust, and account in one place[\s\S]*?Create or join a community to see it here[\s\S]*?Use Shop Control to change products[\s\S]*?Use Trust Passport for your private record[\s\S]*?Account settings and GSN links[\s\S]*?Open the related page if you need the full details/,
+  /const profileStatus = !hasGsnId[\s\S]*?GSN ID preparing[\s\S]*?!accountPhoneVerified[\s\S]*?Confirm your phone[\s\S]*?Add your phone[\s\S]*?!selectedCommunityForShop[\s\S]*?Choose a community[\s\S]*?Profile active[\s\S]*?const profilePrimaryAction = !hasGsnId \|\| !accountPhoneVerified[\s\S]*?APP_ROUTES\.CCI[\s\S]*?routes\.community[\s\S]*?communityRouteFor\(selectedCommunityForShop\.id\)/,
+  "Profile status and its one primary action must stay bounded to existing GSN ID, phone, and selected-community evidence without inventing a trust or verification claim."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /\{!isCompact \? \([\s\S]*?<MyPipelineCreditsSection[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?More profile details[\s\S]*?data-my-gsn-pipeline-credits="covered"[\s\S]*?<MyPipelineCreditsSection/,
+  "Phone Pipeline Credits must wait behind More profile details while desktop retains its main-grid disclosure."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /(?=[\s\S]*See your identity, communities, shop, trust, and account in one place)(?=[\s\S]*Create or join a community to see it here)(?=[\s\S]*Use Shop Control to change products)(?=[\s\S]*Use Trust Passport for your private record)(?=[\s\S]*Account settings and GSN links)(?=[\s\S]*Open the related page if you need the full details)/,
   "My GSN desktop guidance must use direct member language instead of internal ownership, handoff, footprint, or source-page wording."
 );
 
@@ -275,8 +289,8 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   myGsn,
-  /const memberHomeHasMultipleCommunities = Math\.max\(memberCommunityRows\.length, memberCommunityCount\) > 1[\s\S]*?\{!isCompact \|\| memberHomeHasMultipleCommunities \? \([\s\S]*?debugId="my-gmfn\.communities\.toggle"[\s\S]*?Switch community[\s\S]*?\{communitiesOpen && \(!isCompact \|\| memberHomeHasMultipleCommunities\) \? \(/,
-  "Phone My GSN must omit the redundant portfolio control for one community while preserving multi-community switching and desktop access."
+  /const memberHomeHasMultipleCommunities = Math\.max\(memberCommunityRows\.length, memberCommunityCount\) > 1[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="my-gmfn\.communities\.toggle"[\s\S]*?Show communities[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?isCompact && memberHomeHasMultipleCommunities[\s\S]*?data-my-gsn-more-communities="covered"[\s\S]*?Switch community[\s\S]*?communitiesOpen \? \(/,
+  "Phone My GSN must keep multi-community switching under More profile details, omit it for one community, and preserve desktop access."
 );
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
@@ -294,29 +308,29 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  myGsn,
-  /const memberHomeIdentityFacts:[\s\S]*?isCompact\s*\?[\s\S]*?\["id", "GSN ID"[\s\S]*?\["phone", "Phone"[\s\S]*?:[\s\S]*?\["id", "GSN ID"[\s\S]*?\["copy", "Handle"[\s\S]*?\["phone", "Phone"/,
-  "Phone My GSN identity must expose only GSN ID and Phone while desktop keeps Handle visible."
+  memberHomeBranch,
+  /data-my-gsn-profile-status-hero="true"[\s\S]*?GSN ID: \{gmfnId\}[\s\S]*?\{profileStatus\.detail\}[\s\S]*?debugId="my-gmfn\.profile\.primary-action"/,
+  "Phone My GSN must combine GSN ID and bounded setup status into one compact hero with one primary action."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /data-my-gsn-identity-fact=\{label\}[\s\S]*?minHeight: isCompact \? 60 : 90[\s\S]*?\{!isCompact \? memberHomeIconBadge\(icon, true, label === "GSN ID"\) : null\}/,
-  "Phone My GSN identity facts must use text-first compact cards while desktop retains the richer fact icons."
+  /\{isCompact \? \([\s\S]*?data-my-gsn-profile-photo=\{profileImageUrl \? "image" : "initials"\}[\s\S]*?: \([\s\S]*?data-my-gsn-identity-heading="full"[\s\S]*?memberHomeIdentityFacts\.map[\s\S]*?data-my-gsn-identity-fact=\{label\}[\s\S]*?memberHomeIconBadge\(icon, true, label === "GSN ID"\)/,
+  "Phone My GSN must use one photo-or-initials status hero while desktop retains the richer identity fact grid."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /\{isCompact \? \([\s\S]*?data-my-gsn-identity-heading="text-only"[\s\S]*?My identity[\s\S]*?: \([\s\S]*?data-my-gsn-identity-heading="full"[\s\S]*?memberHomeSectionKicker\("id", "My identity", false, true\)[\s\S]*?marginTop: isCompact \? 6 : 8/,
-  "Default phone My GSN identity heading must be text-first while desktop retains the richer identity badge."
+  /\{isCompact \? \([\s\S]*?data-my-gsn-profile-status-hero="true"[\s\S]*?: \([\s\S]*?data-my-gsn-identity-heading="full"[\s\S]*?memberHomeSectionKicker\("id", "My identity", false, true\)/,
+  "Default phone My GSN must start with the status hero while desktop retains the richer identity heading."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?memberHomeIdentityFacts\.map[\s\S]*?!isCompact \? <div[\s\S]*?renderCopyHandleAction\(\)[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?data-my-gsn-handle-utility="secondary"[\s\S]*?renderCopyHandleAction\(true\)/,
+  /memberHomeIdentityFacts\.map[\s\S]*?renderCopyHandleAction\(\)[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?More profile details[\s\S]*?data-my-gsn-handle-utility="secondary"[\s\S]*?renderCopyHandleAction\(true\)/,
   "Phone My GSN must move the handle and its copy action into More > Account without removing the desktop utility."
 );
 
