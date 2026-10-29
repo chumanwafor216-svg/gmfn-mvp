@@ -4770,3 +4770,48 @@ under `docs/` or `docs/archive/`, then link that file here.
 - GitHub Actions run `40786484624` completed successfully. Exact Render
   frontend deploy `dep-dbh85sa9bars73autpm0` reached `live`, and the public
   frontend build marker was verified. `Backend deploy needed: false`.
+
+## Profile status-first phone surface - 2026-10-29
+
+- The canonical authenticated Profile remains `MyGMFNAndIPage`;
+  `/app/profile` still redirects to `/app/my-gmfn-and-i`, and the deprecated
+  unmounted `ProfilePage.tsx` was not revived.
+- The default phone surface now starts with one compact member hero: saved
+  photo or initials, display name, GSN ID, one bounded status and one primary
+  action. The allowed statuses are `GSN ID preparing`, `Add your phone`,
+  `Confirm your phone`, `Choose a community` and `Profile active`.
+- These statuses are a presentation aggregate derived from existing GSN ID,
+  canonical phone evidence and selected-community evidence. They are not a new
+  backend status and do not claim universal identity verification, trust,
+  approval or character.
+- The primary action is evidence-aware: it opens Identity Integrity for GSN ID
+  or phone setup, community selection when no community is available, or the
+  selected Community Home for an active profile. The selected community stays
+  visible without a duplicate second action.
+- Alternate communities, Pipeline Credits, Shop/Trust, Settings, Help,
+  official links and quiet activity now wait behind one closed
+  `More profile details` row on phones. Opening that row does not
+  automatically open its nested disclosures. Desktop keeps its richer identity
+  grid and existing placement.
+- No API, permission, account-write, membership, Pipeline Credit purchase or
+  route contract changed. The approved status-first frozen-surface exception
+  is recorded in the freeze policy, screen spec and screen registry.
+- Verification passed: production frontend build (297 modules), surface
+  ownership, capability mirror, member/entry action, Pipeline Credit and
+  390x844 app-tab first-paint audits. The phone audit proves a 193px hero, one
+  visible primary action, the complete closed surface within the first 844px,
+  no horizontal overflow and covered details revealed only after `More`.
+- The repository-wide protected-button suite passed every Profile/Trust/mobile
+  visual check but remains red on unrelated Dashboard inventory drift already
+  present outside this change: 42 versus 41 frozen `StableButton` instances
+  and 52 versus 51 effective Dashboard action roots. Dashboard was not changed.
+- Human visual review is not claimed in this session; browser geometry, DOM,
+  ARIA, routing and disclosure behavior were verified. Physical-phone visual
+  acceptance remains the product owner's check.
+- Application commit `2b740b1a44cbeeff047b8e3abb27a091650391c5`
+  was pushed to `codex/spotlight-rotation-continuity` and promoted unchanged
+  to `main`.
+- GitHub Actions `Trigger Render Deploy` run `40796076306` completed
+  successfully. Exact Render frontend deploy
+  `dep-dbh9e68m7kps73e8r49g` reached `live`, and the public frontend build
+  marker was verified. `Backend deploy needed: false`.
