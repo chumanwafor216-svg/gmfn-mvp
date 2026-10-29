@@ -15,6 +15,7 @@ import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { publicShopPath } from "../lib/publicLinks";
 import { preloadCoreAppRoutes, preloadRouteForPath } from "../lib/routePreload";
 import { gmfnBrand } from "../styles/gmfnBrand";
+import { isCompactAppViewport } from "../lib/responsiveLayout";
 
 type NavLinkItem = {
   label: string;
@@ -1761,7 +1762,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return window.innerWidth <= 768;
+    return isCompactAppViewport();
   });
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -1862,13 +1863,21 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     if (typeof window === "undefined") return;
 
     function handleResize() {
-      setIsMobile(window.innerWidth <= 768);
+      setIsMobile(isCompactAppViewport());
     }
 
     handleResize();
     window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    window.addEventListener("pageshow", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("pageshow", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   const myShopGalleryTo = useMemo(() => {
@@ -2263,7 +2272,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   }
 
   return (
-    <div style={isMobile ? mobileShell() : desktopShell()}>
+    <div
+      data-gmfn-shell-mode={isMobile ? "compact" : "desktop"}
+      style={isMobile ? mobileShell() : desktopShell()}
+    >
       {!isMobile ? (
         <aside style={sidebar()}>
           <StableCtaLink

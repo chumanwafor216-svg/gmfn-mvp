@@ -307,6 +307,17 @@ Rules:
 - Inside expanded phone Companion Mode, keep `Reminder level` immediately visible and place the six secondary settings behind two value-bearing rows: `Sound & notifications` and `Timing & limits`. Opening one row must close the other. The rows must summarize the current saved choices before a tap, every original control must remain reachable, status feedback must stay visible, and desktop must retain the fully expanded presentation.
 - When a phone member has multiple communities, keep the full portfolio reachable from one compact `Switch community (N)` row inside `More profile details`; opening it must not replace the profile primary action. When the member has exactly one community, place its name, role, and stable ID directly in the `My communities` section and omit the switch/list control. Keep the section-level community icon for wayfinding. Desktop retains the fuller count, selected-card label, icon treatment, and visible portfolio control.
 ## Mobile Task Page Rule
+
+## Foldable Continuity Rule
+
+- Authenticated GSN screens must keep the compact phone shell through `980px`,
+  including the medium-width main display of a foldable Android phone.
+- Opening or closing a foldable must update the shell in place without restoring
+  the older desktop sidebar arrangement or losing the current route.
+- True desktop layout begins above `980px`; page-level compact layouts and the
+  shared authenticated shell must not disagree inside the `769px` to `980px`
+  range.
+
 ## CommitmentsPage
 
 Purpose:

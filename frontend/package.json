@@ -130,6 +130,7 @@
     "audit:my-pipeline-credits": "node tools/audit-my-pipeline-credits.mjs",
     "audit:join-approval-contrast": "node tools/audit-join-approval-contrast.mjs",
     "audit:mobile-visual-sweep": "node tools/audit-mobile-visual-sweep.mjs",
+    "audit:foldable-app-shell": "node tools/audit-foldable-app-shell-continuity.mjs",
     "audit:mobile-visual-route-coverage": "node tools/audit-mobile-visual-route-coverage.mjs",
     "audit:phone-surface-simplicity": "node tools/audit-phone-surface-simplicity.mjs",
     "audit:entry-flow-polish": "node tools/audit-entry-flow-polish.mjs",
