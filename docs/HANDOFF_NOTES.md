@@ -5,6 +5,14 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Duplicate TrustSlip shortcut removed - 2026-10-29
+
+- Owner phone evidence proved that Identity Integrity exposed two TrustSlip entry points at once: the recommended task's primary `Open TrustSlip` action and a permanent `TrustSlip` shortcut directly underneath.
+- The permanent shortcut was removed. The task-owned `Open TrustSlip` action remains the single TrustSlip entry point, while `Trust Passport` remains because it is a distinct fuller evidence destination.
+- The Identity Integrity audit now rejects restoration of the duplicate shortcut. Identity audit, Dashboard action audit, Dashboard passport/hitbox phone-browser audit, and the 297-module production build passed.
+- The wider protected-button suite remains red only on its pre-existing Dashboard inventory baseline (42 StableButtons versus 41, 52 effective roots versus 51) and duplicate React key `0` warnings; it reported no Identity regression.
+- Deployment evidence: commit `5acf40aa79fef36bf169cd9cc8bae482f65b0af6`; GitHub Actions run `40793638207`; Render frontend deploy `dep-dbh93ku7bikc73duj4b0`, verified live on the exact commit. Backend deployment was correctly skipped.
+
 ## Essential-only TrustSlip receiver surface - 2026-10-29
 
 - The owner directed that TrustSlip Verify remove everything a receiver does not need for the immediate decision while preserving evidence reachability and truth boundaries.
