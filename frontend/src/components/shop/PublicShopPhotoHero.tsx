@@ -12,6 +12,7 @@ type PublicShopPhotoHeroProps = {
   description?: string;
   gmfnId?: string;
   communityName?: string;
+  showIdentityMeta?: boolean;
   ownerAction?: React.ReactNode;
   onImageError?: (imageUrl: string) => void;
 };
@@ -24,6 +25,7 @@ export default function PublicShopPhotoHero({
   description,
   gmfnId,
   communityName,
+  showIdentityMeta = false,
   ownerAction,
   onImageError,
 }: PublicShopPhotoHeroProps) {
@@ -226,13 +228,13 @@ export default function PublicShopPhotoHero({
               paddingTop: compact ? 2 : 4,
             }}
           >
-            {gmfnId ? (
+            {showIdentityMeta && gmfnId ? (
               <span style={metaPillStyle(compact)}>
                 <GsnRealisticIcon name="identity-card" size={compact ? 18 : 22} decorative />
                 <span>GSN member</span>
               </span>
             ) : null}
-            {communityName ? (
+            {showIdentityMeta && communityName ? (
               <span style={metaPillStyle(compact)}>
                 <GsnRealisticIcon name="community-building" size={compact ? 18 : 22} decorative />
                 <span>{communityName}</span>
