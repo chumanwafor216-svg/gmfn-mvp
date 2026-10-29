@@ -1682,15 +1682,17 @@ function sourceReturnStrip(isMobile: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) auto",
-    gap: isMobile ? 8 : 12,
+    gap: isMobile ? 0 : 12,
     alignItems: "center",
-    marginBottom: isMobile ? 12 : 16,
-    padding: isMobile ? "10px 11px" : "12px 14px",
+    marginBottom: isMobile ? 10 : 16,
+    padding: isMobile ? 6 : "12px 14px",
     borderRadius: isMobile ? 14 : 16,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
     border: "1px solid rgba(29,95,212,0.12)",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.07)",
+    boxShadow: isMobile
+      ? "0 7px 16px rgba(15,23,42,0.06)"
+      : "0 10px 22px rgba(15,23,42,0.07)",
     overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
@@ -1730,9 +1732,9 @@ function sourceReturnTitle(): React.CSSProperties {
 function sourceReturnButton(isMobile: boolean): React.CSSProperties {
   return {
     width: isMobile ? "100%" : undefined,
-    minHeight: 40,
-    height: 40,
-    maxHeight: 40,
+    minHeight: isMobile ? 44 : 40,
+    height: isMobile ? 44 : 40,
+    maxHeight: isMobile ? 44 : 40,
     borderRadius: 12,
     padding: "9px 12px",
     whiteSpace: "nowrap",
@@ -2787,22 +2789,26 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
         {originPath && originMeta ? (
           <section
             aria-label="Return to previous page"
+            data-source-return-mode={isMobile ? "compact" : "full"}
             style={sourceReturnStrip(isMobile)}
           >
-            <div style={sourceReturnCopy()}>
-              <div style={sourceReturnEyebrow()}>Return path</div>
-              <div style={sourceReturnTitle()}>
-                Back to {originMeta.page}
+            {!isMobile ? (
+              <div style={sourceReturnCopy()}>
+                <div style={sourceReturnEyebrow()}>Return path</div>
+                <div style={sourceReturnTitle()}>
+                  Back to {originMeta.page}
+                </div>
               </div>
-            </div>
+            ) : null}
             <StableCtaLink
               to={originPath}
               preserveOrigin={false}
               kind="secondary"
+              stableHeight={isMobile ? 44 : 40}
               debugId="app-layout.source-return"
               style={sourceReturnButton(isMobile)}
             >
-              Back
+              {isMobile ? `Back to ${originMeta.page}` : "Back"}
             </StableCtaLink>
           </section>
         ) : null}

@@ -5,6 +5,18 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Compact phone source-return row - 2026-10-29
+
+- Owner phone evidence showed the shared source-return navigator consuming a
+  large first-view block by repeating `Return path`, `Back to Marketplace`, and
+  `Back` for one navigation action.
+- On authenticated phone surfaces with a valid origin, the shared app shell now
+  renders one 44px `Back to {source}` row. Desktop retains the fuller source
+  label and separate Back action.
+- The stored origin path, route metadata, `preserveOrigin={false}` behavior,
+  Dashboard identity/Pulse/content, header, Tools, drawer and bottom navigation
+  are unchanged. The Dashboard Market Wisdom model was not edited.
+
 ## Universal Shop Hero v1.1 - 2026-10-29
 
 - Founder approval established a narrow Public Shop and focused Shop Picture

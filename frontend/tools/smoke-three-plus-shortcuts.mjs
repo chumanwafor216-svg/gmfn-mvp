@@ -1237,6 +1237,16 @@ async function testDemandShortcut(browser, baseUrl, { demandPolicyOff = false, m
   if (!formBox || formBox.top > 220) throw new Error(`DemandBox form was not revealed near the viewport (top=${formBox?.top}).`);
   const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
   if (!origin.includes('/app/marketplace')) throw new Error('DemandBox shortcut lost its Marketplace return path.');
+  const sourceReturn = page.locator('[data-source-return-mode="compact"]');
+  await sourceReturn.waitFor({ state: 'visible', timeout: 20_000 });
+  const sourceReturnText = String(await sourceReturn.textContent()).replace(/\s+/g, ' ').trim();
+  if (sourceReturnText !== 'Back to Marketplace') {
+    throw new Error(`Phone source-return row repeated or changed its destination label: ${sourceReturnText}`);
+  }
+  const sourceReturnBox = await sourceReturn.boundingBox();
+  if (!sourceReturnBox || sourceReturnBox.height > 62) {
+    throw new Error(`Phone source-return row is too tall (height=${sourceReturnBox?.height}).`);
+  }
   const writes = businessWrites(scenario.mutations);
   if (writes.length !== 0) throw new Error(`DemandBox shortcut navigation issued business write request(s): ${writes.join(', ')}.`);
   await context.close();
@@ -1484,6 +1494,7 @@ try {
       'Private offers phone guidance selects only activation, offer entry, or private-link management from empty, paid-empty, and offer-ready state',
       'Paid promotion phone guidance selects only plan, bank transfer, publishing, or live state from authoritative payment and Spotlight status',
       'DemandBox create handoff preserves community and origin',
+      'phone source-return is one compact Back to Marketplace row rather than a stacked card',
       'DemandBox policy OFF hides create shortcut',
       'non-member route context does not expose create shortcut',
       'all approved entry shortcut touch targets are at least 48 by 48',

@@ -327,6 +327,10 @@ Rules:
   large card;
 - required back, next, and utility routes may remain in one compact horizontal
   row, while redundant Dashboard/Home links should rely on the shared shell;
+- when the shared shell has a valid source origin, phone shows one compact
+  44px `Back to {source}` row. Do not stack a `Return path` heading, repeated
+  destination label, and separate Back button on the phone surface. Desktop
+  may retain the fuller source context plus Back action;
 - short facts should use chips or two-column mini cards;
 - raw URLs, logs, policy text, repeated explanation, and admin-only controls
   should be collapsed by default;

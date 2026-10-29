@@ -94,6 +94,13 @@ assertContains(
   "AppLayout must render a visible return strip that goes back without rewriting origin."
 );
 
+assertContains(
+  appLayoutSource,
+  files.appLayout,
+  /data-source-return-mode=\{isMobile \? "compact" : "full"\}[\s\S]*?\{!isMobile \? \([\s\S]*?Return path[\s\S]*?stableHeight=\{isMobile \? 44 : 40\}[\s\S]*?\{isMobile \? `Back to \$\{originMeta\.page\}` : "Back"\}/,
+  "The phone source-return navigator must stay one compact 44px destination-aware row while desktop retains the fuller context."
+);
+
 if (findings.length > 0) {
   console.error("Inner navigation origin audit failed:");
   for (const finding of findings) {
