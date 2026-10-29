@@ -208,11 +208,21 @@ try {
   }
 
   for (let index = 0; index < 2; index += 1) {
-    const backgroundImage = await photoCards
-      .nth(index)
-      .evaluate((node) => getComputedStyle(node).backgroundImage);
+    const photoCard = photoCards.nth(index);
+    const backgroundImage = await photoCard.evaluate(
+      (node) => getComputedStyle(node).backgroundImage
+    );
     if (!backgroundImage || backgroundImage === "none") {
       throw new Error("Dashboard photo cards must render their live image backgrounds.");
+    }
+    if (
+      (await photoCard.getAttribute("data-dashboard-photo-clarity")) !==
+        "clear-right" ||
+      !backgroundImage.includes("rgba(255, 255, 255, 0)")
+    ) {
+      throw new Error(
+        "Dashboard photo cards must keep the text scrim clear over the photographed subject."
+      );
     }
   }
 

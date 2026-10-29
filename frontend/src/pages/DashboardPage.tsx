@@ -353,6 +353,8 @@ const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-events.v1";
 const DASHBOARD_AVATAR_MAX_BYTES = 360 * 1024;
 const DASHBOARD_AVATAR_MAX_DIMENSION = 1280;
+const DASHBOARD_PHOTO_TEXT_SCRIM =
+  "linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.94) 28%, rgba(255,255,255,0.44) 42%, rgba(255,255,255,0.06) 55%, rgba(255,255,255,0) 68%)";
 const MARKET_WISDOM_ROTATION_MS = 45000;
 
 const PUBLIC_ROUTE_PREFIXES = [
@@ -9619,6 +9621,7 @@ export default function DashboardPage() {
         <StableButton
           debugId="dashboard.demand.toggle"
           data-dashboard-photo-card="demandbox"
+          data-dashboard-photo-clarity="clear-right"
           type="button"
           aria-expanded={false}
           onClick={(event) => openDashboardRoute(event, demandPrimaryActionTo)}
@@ -9641,7 +9644,7 @@ export default function DashboardPage() {
                 }
               : {}),
             backgroundColor: "#FFFFFF",
-            backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 35%, rgba(255,255,255,0.68) 58%, rgba(255,255,255,0.08) 100%), url(${dashboardDemandMarket})`,
+            backgroundImage: `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardDemandMarket})`,
             backgroundPosition: "center, center",
             backgroundRepeat: "no-repeat, no-repeat",
             backgroundSize: "cover, cover",
@@ -11190,6 +11193,7 @@ export default function DashboardPage() {
             <StableButton
               debugId="dashboard.focus.toggle"
               data-dashboard-photo-card="focus"
+              data-dashboard-photo-clarity="clear-right"
               type="button"
               aria-expanded={uiState.trustExpanded}
               onClick={(event) =>
@@ -11216,7 +11220,7 @@ export default function DashboardPage() {
                     }
                   : {}),
                 backgroundColor: "#FFFFFF",
-                backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 35%, rgba(255,255,255,0.68) 58%, rgba(255,255,255,0.08) 100%), url(${dashboardFocusGrowth})`,
+                backgroundImage: `${DASHBOARD_PHOTO_TEXT_SCRIM}, url(${dashboardFocusGrowth})`,
                 backgroundPosition: "center, center",
                 backgroundRepeat: "no-repeat, no-repeat",
                 backgroundSize: "cover, cover",
