@@ -367,6 +367,20 @@ try {
   if (landscapeBox.x < 0 || landscapeBox.x + landscapeBox.width > viewport.width + 1) {
     throw new Error("GSN landscape card overflows the phone viewport.");
   }
+  if (landscapeBox.x > 10 || landscapeBox.width < viewport.width - 18) {
+    throw new Error(
+      `GSN landscape card must extend close to both phone edges; measured x=${landscapeBox.x.toFixed(
+        1
+      )}, width=${landscapeBox.width.toFixed(1)}.`
+    );
+  }
+
+  const connectedGlobe = landscapeCard.locator(
+    '[data-gsn-identity-card-connected-globe="true"]'
+  );
+  if ((await connectedGlobe.count()) !== 1 || !(await connectedGlobe.isVisible())) {
+    throw new Error("GSN ID Card must show one connected-world photo mark.");
+  }
 
   const legalBoundary = landscapeCard.locator(
     '[data-gsn-identity-card-boundary="true"]'

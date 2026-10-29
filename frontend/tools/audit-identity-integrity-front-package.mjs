@@ -306,8 +306,13 @@ assertContains(
   "The landscape membership card must show one bounded, evidence-derived membership status."
 );
 assertContains(
-  /function GsnNetworkGlobeMark[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?<GsnNetworkGlobeMark compact=\{isCompact\} \/>/,
-  "The card must retain the approved landscape ratio, GSN globe wordmark, and quiet world-map field."
+  /import gsnConnectedGlobeMark from "\.\.\/assets\/identity\/gsn-connected-globe-mark\.jpg";[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?data-gsn-identity-card-connected-globe="true"[\s\S]*?src=\{gsnConnectedGlobeMark\}/,
+  "The card must retain the approved landscape ratio and quiet map field while using the connected-world photo mark."
+);
+
+assertContains(
+  /const connectedGlobe = await loadIdentityCardImage\(gsnConnectedGlobeMark\);[\s\S]*?ctx\.drawImage\([\s\S]*?connectedGlobe/,
+  "The shared GSN Identity Card image must use the same connected-world photo mark as the live card."
 );
 
 assertNotContains(

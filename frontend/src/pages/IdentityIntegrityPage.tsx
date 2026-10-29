@@ -58,6 +58,7 @@ import {
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import gsnConnectedGlobeMark from "../assets/identity/gsn-connected-globe-mark.jpg";
 
 const LazyQRCodeSVG = React.lazy(async () => {
   const module = await import("qrcode.react");
@@ -527,54 +528,6 @@ function identityCardCanvasBlob(canvas: HTMLCanvasElement): Promise<Blob | null>
   });
 }
 
-function GsnNetworkGlobeMark({ compact = false }: { compact?: boolean }) {
-  const id = React.useId().replace(/:/g, "");
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 120 120"
-      style={{
-        display: "block",
-        width: compact ? 42 : 72,
-        height: compact ? 42 : 72,
-        flex: "0 0 auto",
-        filter: "drop-shadow(0 4px 6px rgba(1,9,22,0.28))",
-      }}
-    >
-      <defs>
-        <radialGradient id={`${id}-globe`} cx="34%" cy="24%" r="78%">
-          <stop offset="0%" stopColor="#FFF5CF" />
-          <stop offset="38%" stopColor="#F2C766" />
-          <stop offset="72%" stopColor="#D6A239" />
-          <stop offset="100%" stopColor="#87570F" />
-        </radialGradient>
-        <linearGradient id={`${id}-ring`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFF4C5" />
-          <stop offset="52%" stopColor="#E6B348" />
-          <stop offset="100%" stopColor="#9A6418" />
-        </linearGradient>
-      </defs>
-      <circle cx="60" cy="60" r="50" fill={`url(#${id}-globe)`} />
-      <g fill="none" stroke="#08233A" strokeLinecap="round">
-        <path d="M14 50c24 11 59 9 92-7" strokeWidth="7" />
-        <path d="M14 68c24 11 59 9 92-7" strokeWidth="7" />
-        <path d="M28 22c21 20 28 51 18 81" strokeWidth="7" />
-        <path d="M69 12c17 27 18 63 3 96" strokeWidth="7" />
-      </g>
-      <ellipse
-        cx="60"
-        cy="60"
-        rx="55"
-        ry="22"
-        fill="none"
-        stroke={`url(#${id}-ring)`}
-        strokeWidth="5"
-        transform="rotate(-18 60 60)"
-      />
-    </svg>
-  );
-}
-
 function GsnDottedWorldMap() {
   const id = React.useId().replace(/:/g, "");
   return (
@@ -726,29 +679,34 @@ async function buildGsnIdentityCardShareImage(
   const globeX = 138;
   const globeY = 135;
   const globeRadius = 84;
-  const globeFill = ctx.createRadialGradient(globeX - 28, globeY - 34, 8, globeX, globeY, globeRadius);
-  globeFill.addColorStop(0, "#FFF6D7");
-  globeFill.addColorStop(0.42, gold);
-  globeFill.addColorStop(0.74, "#D6A13A");
-  globeFill.addColorStop(1, "#86560F");
-  ctx.fillStyle = globeFill;
+  const connectedGlobe = await loadIdentityCardImage(gsnConnectedGlobeMark);
+  ctx.save();
   ctx.beginPath();
   ctx.arc(globeX, globeY, globeRadius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#08233A";
-  ctx.lineWidth = 11;
-  for (const offset of [-18, 14]) {
-    ctx.beginPath();
-    ctx.ellipse(globeX, globeY + offset, 76, 27, -0.2, 0, Math.PI * 2);
-    ctx.stroke();
+  ctx.clip();
+  ctx.fillStyle = "#031522";
+  ctx.fillRect(globeX - globeRadius, globeY - globeRadius, globeRadius * 2, globeRadius * 2);
+  if (connectedGlobe) {
+    const globeDiameter = globeRadius * 2;
+    const globeScale = Math.max(
+      globeDiameter / connectedGlobe.width,
+      globeDiameter / connectedGlobe.height
+    );
+    const globeDrawWidth = connectedGlobe.width * globeScale;
+    const globeDrawHeight = connectedGlobe.height * globeScale;
+    ctx.drawImage(
+      connectedGlobe,
+      globeX - globeDrawWidth * 0.57,
+      globeY - globeDrawHeight / 2,
+      globeDrawWidth,
+      globeDrawHeight
+    );
   }
-  ctx.beginPath();
-  ctx.ellipse(globeX - 8, globeY, 32, 78, -0.28, 0, Math.PI * 2);
-  ctx.stroke();
+  ctx.restore();
   ctx.strokeStyle = gold;
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.ellipse(globeX, globeY, 93, 35, -0.32, 0, Math.PI * 2);
+  ctx.arc(globeX, globeY, globeRadius, 0, Math.PI * 2);
   ctx.stroke();
 
   const logoGold = ctx.createLinearGradient(230, 74, 610, 190);
@@ -3467,7 +3425,10 @@ export default function IdentityIntegrityPage() {
     <section
       data-gsn-identity-card="true"
       style={{
-        padding: isCompact ? 6 : 12,
+        width: isCompact ? "calc(100% + 16px)" : "100%",
+        marginLeft: isCompact ? -8 : 0,
+        padding: isCompact ? 0 : 12,
+        boxSizing: "border-box",
         background: "transparent",
       }}
     >
@@ -3527,7 +3488,23 @@ export default function IdentityIntegrityPage() {
             gap: isCompact ? 4 : 8,
           }}
         >
-          <GsnNetworkGlobeMark compact={isCompact} />
+          <img
+            data-gsn-identity-card-connected-globe="true"
+            src={gsnConnectedGlobeMark}
+            alt=""
+            aria-hidden="true"
+            style={{
+              display: "block",
+              width: isCompact ? 42 : 72,
+              height: isCompact ? 42 : 72,
+              flex: "0 0 auto",
+              objectFit: "cover",
+              objectPosition: "57% 50%",
+              borderRadius: "50%",
+              border: `${isCompact ? 1 : 2}px solid rgba(242,199,102,0.88)`,
+              boxShadow: "0 4px 10px rgba(1,9,22,0.38)",
+            }}
+          />
           <div style={{ minWidth: 0, color: "#F5D480" }}>
             <div
               style={{
