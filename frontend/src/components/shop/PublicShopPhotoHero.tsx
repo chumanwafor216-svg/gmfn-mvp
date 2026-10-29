@@ -34,7 +34,7 @@ export default function PublicShopPhotoHero({
       aria-label={`${shopName} shop identity`}
       style={{
         position: "relative",
-        minHeight: compact ? 302 : 420,
+        minHeight: compact ? 248 : 420,
         overflow: "hidden",
         borderRadius: compact ? 16 : 26,
         color: "#FFFFFF",
@@ -47,6 +47,7 @@ export default function PublicShopPhotoHero({
       <div style={{ position: "absolute", inset: 0 }}>
         <UniversalShopHero
           source={source}
+          compact={compact}
           onImageError={onImageError}
         />
       </div>
@@ -81,10 +82,10 @@ export default function PublicShopPhotoHero({
         style={{
           position: "relative",
           zIndex: 2,
-          minHeight: compact ? 302 : 420,
+          minHeight: compact ? 248 : 420,
           display: "grid",
           alignContent: "space-between",
-          gap: compact ? 18 : 28,
+          gap: compact ? 14 : 28,
           padding: compact ? "15px 16px 16px 24px" : "24px 28px 26px 40px",
         }}
       >
@@ -151,8 +152,8 @@ export default function PublicShopPhotoHero({
               maxWidth: compact ? 285 : 620,
               color: "#FFFFFF",
               fontFamily: "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-              fontSize: compact ? 35 : 58,
-              lineHeight: compact ? 0.98 : 0.94,
+              fontSize: compact ? 31 : 58,
+              lineHeight: compact ? 1 : 0.94,
               fontWeight: 950,
               letterSpacing: compact ? -1.4 : -2.1,
               textShadow: "0 12px 26px rgba(0,0,0,0.42)",
@@ -169,14 +170,14 @@ export default function PublicShopPhotoHero({
               display: "inline-flex",
               alignItems: "center",
               gap: compact ? 7 : 9,
-              minHeight: compact ? 34 : 42,
+              minHeight: compact ? 32 : 42,
               padding: compact ? "7px 11px" : "9px 15px",
               borderRadius: compact ? 12 : 15,
               color: "#07172C",
               background: "linear-gradient(180deg, #FFE48B 0%, #F5BE45 100%)",
               border: "1px solid rgba(255,240,190,0.76)",
               boxShadow: "0 10px 24px rgba(0,0,0,0.24)",
-              fontSize: compact ? 12.5 : 16,
+              fontSize: compact ? 12 : 16,
               fontWeight: 950,
             }}
           >

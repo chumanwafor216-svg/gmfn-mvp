@@ -4605,6 +4605,7 @@ export default function ShopGalleryPage() {
           "Products and services shown by this shop. Private Vault items open only with a link from the owner."
   );
   const showShopHeroDescription =
+    !isCompact &&
     Boolean(shopDescriptionText) &&
     shopDescriptionText.toLowerCase() !== shopCategoryText.toLowerCase();
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
@@ -4617,7 +4618,7 @@ export default function ShopGalleryPage() {
     : publicBlockCount === 1
       ? "1 shop item"
       : `${publicBlockCount} shop items`;
-  const shopDiaryCounterText = autoRefreshingShop
+  const shopDiaryCounterText = loading ? 'Loading' : autoRefreshingShop
     ? "Refreshing"
     : shopLoadFailed
     ? "Needs refresh"
