@@ -9567,6 +9567,8 @@ export default function DashboardPage() {
                   padding: "0 12px",
                 }
               : {}),
+            gridTemplateColumns: "minmax(0, 1fr) auto",
+            gap: isPhone ? 10 : 13,
             position: "relative",
             overflow: "hidden",
             backgroundColor: "#061A2E",
@@ -9580,24 +9582,25 @@ export default function DashboardPage() {
           }}
         >
           <span
-            aria-hidden="true"
-            style={dashboardAccordionIconStyle(
-              "linear-gradient(180deg, rgba(242,199,102,0.30) 0%, rgba(255,248,230,0.12) 100%)",
-              "1px solid rgba(242,207,119,0.46)",
-              "#F6D77A"
-            )}
+            data-dashboard-trustslip-verification-copy="true"
+            style={{
+              minWidth: 0,
+              position: "relative",
+              zIndex: 2,
+              alignSelf: "center",
+              justifySelf: "stretch",
+              display: "grid",
+              gap: isPhone ? 4 : 5,
+              paddingLeft: isPhone ? 4 : 0,
+              paddingRight: isPhone ? 4 : 8,
+              textAlign: "left",
+            }}
           >
-            <DashboardSignalIcon
-              name={dashboardSectionSignal("Tools and verification")}
-              size={isPhone ? 19 : 21}
-              strokeWidth={2.3}
-            />
-          </span>
-          <span style={{ minWidth: 0 }}>
             <span
               style={{
                 ...dashboardAccordionTitleStyle,
                 color: "#FFFFFF",
+                fontSize: isPhone ? 17 : 21,
                 textShadow: "0 2px 10px rgba(0,0,0,0.34)",
               }}
             >
@@ -9607,6 +9610,7 @@ export default function DashboardPage() {
               style={{
                 ...dashboardAccordionSummaryStyle,
                 color: "rgba(255,255,255,0.82)",
+                marginTop: 0,
                 textShadow: "0 2px 10px rgba(0,0,0,0.32)",
               }}
             >
@@ -9622,6 +9626,8 @@ export default function DashboardPage() {
               color: "#F6D77A",
               background: "rgba(3,16,31,0.58)",
               border: "1px solid rgba(242,207,119,0.34)",
+              position: "relative",
+              zIndex: 2,
             }}
           >
             <DashboardChevronIcon expanded={uiState.appsExpanded} />

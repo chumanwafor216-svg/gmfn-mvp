@@ -269,6 +269,44 @@ try {
     throw new Error("Dashboard must expose one TrustSlip and verification banner.");
   }
 
+  const trustSlipVerificationCopy = trustSlipVerificationBanner.locator(
+    '[data-dashboard-trustslip-verification-copy="true"]'
+  );
+  if (
+    (await trustSlipVerificationCopy.count()) !== 1 ||
+    !(await trustSlipVerificationCopy.isVisible())
+  ) {
+    throw new Error(
+      "TrustSlip and verification banner must expose one left-aligned copy block."
+    );
+  }
+
+  const bannerSvgCount = await trustSlipVerificationBanner.locator("svg").count();
+  if (bannerSvgCount !== 1) {
+    throw new Error(
+      `TrustSlip and verification banner must contain only its chevron icon; found ${bannerSvgCount} SVG elements.`
+    );
+  }
+
+  const trustSlipBannerBox = await trustSlipVerificationBanner.boundingBox();
+  const trustSlipCopyBox = await trustSlipVerificationCopy.boundingBox();
+  if (
+    !trustSlipBannerBox ||
+    !trustSlipCopyBox ||
+    trustSlipCopyBox.x > trustSlipBannerBox.x + 24 ||
+    trustSlipCopyBox.width < trustSlipBannerBox.width - 88 ||
+    Math.abs(
+      trustSlipCopyBox.y + trustSlipCopyBox.height / 2 -
+        (trustSlipBannerBox.y + trustSlipBannerBox.height / 2)
+    ) > 8
+  ) {
+    throw new Error(
+      `TrustSlip and verification copy must reclaim the removed icon space and remain vertically centred: banner=${JSON.stringify(
+        trustSlipBannerBox
+      )}, copy=${JSON.stringify(trustSlipCopyBox)}.`
+    );
+  }
+
   await trustSlipVerificationBanner.tap();
   await page.waitForTimeout(120);
   if ((await trustSlipVerificationBanner.getAttribute("aria-expanded")) !== "true") {
