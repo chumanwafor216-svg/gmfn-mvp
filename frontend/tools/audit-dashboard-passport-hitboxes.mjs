@@ -479,6 +479,23 @@ try {
   if ((await legalBoundary.count()) !== 1 || !(await legalBoundary.isVisible())) {
     throw new Error("GSN ID Card must keep one concise legal boundary on its face.");
   }
+  const memberDetailsBox = await landscapeCard
+    .locator('[data-gsn-identity-card-member-details="true"]')
+    .boundingBox();
+  const identityCardFooterBox = await landscapeCard
+    .locator('[data-gsn-identity-card-footer="true"]')
+    .boundingBox();
+  if (!memberDetailsBox || !identityCardFooterBox) {
+    throw new Error("GSN ID Card member/footer spacing could not be measured.");
+  }
+  const memberFooterGap = identityCardFooterBox.y - (memberDetailsBox.y + memberDetailsBox.height);
+  if (memberFooterGap < 4) {
+    throw new Error(
+      "GSN ID Card white footer must leave visible space below the membership details; measured gap " +
+        memberFooterGap.toFixed(1) +
+        "px."
+    );
+  }
 
   const contactBand = landscapeCard.locator(
     '[data-gsn-identity-card-contact-band="true"]'

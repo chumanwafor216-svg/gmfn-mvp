@@ -5,6 +5,28 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## GSN ID card white-band spacing correction - 2026-10-29
+
+- Owner phone evidence showed the card's white institutional footer beginning
+  too high and visually sandwiching the member photo, green Active Network
+  Membership badge and its signal line.
+- The confirmed cause was compact card geometry: the footer started at 78% of
+  the core while the member details extended to roughly 80%. The phone footer
+  now starts at 83%; desktop keeps its existing 78% boundary.
+- The navy map field follows the corrected phone boundary, leaving visible navy
+  breathing room beneath the complete membership block. The green border,
+  status text, signal line and photo are no longer covered.
+- A source audit now cages the 17% compact-footer contract, and the Dashboard
+  phone browser audit measures a minimum four-pixel gap between member details
+  and the white footer.
+- Verification passed: Identity Integrity front-package audit, 308-module
+  TypeScript/Vite production build, Dashboard card-only phone browser audit,
+  Trust infrastructure mobile visual audit, complete protected-button freeze,
+  and direct inspection of the captured card and membership/footer crop.
+- This is a route-local presentation correction only. It changes no Dashboard
+  Market Wisdom behavior, route, data, QR, sharing, identity, TrustSlip,
+  permission, backend or desktop card contract.
+
 ## Full-width business-led Public Shop hero - 2026-10-29
 
 - Owner evidence showed Universal Shop Hero v1.1 selecting media correctly but

@@ -364,6 +364,10 @@ assertContains(
   /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?GSN ID Card[\s\S]*?Network member[\s\S]*?\{displayName\}[\s\S]*?GSN ID[\s\S]*?\{gmfnId\}[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Not government identification,[\s\S]*?credit approval,[\s\S]*?payment guarantee/i,
   "The landscape card must keep only the receiver's core decision facts and its concise legal boundary on the face."
 );
+assertContains(
+  /data-gsn-identity-card-watermark-field="true"[\s\S]*?inset: isCompact \? "0 0 17% 0" : "0 0 22% 0"[\s\S]*?data-gsn-identity-card-member-details="true"[\s\S]*?data-gsn-identity-card-footer="true"[\s\S]*?height: isCompact \? "17%" : "22%"/,
+  "The phone GSN Identity Card must keep the white footer below the member details instead of sandwiching the membership status."
+);
 
 assertNotContains(
   /Use this ID card|Close card actions/,

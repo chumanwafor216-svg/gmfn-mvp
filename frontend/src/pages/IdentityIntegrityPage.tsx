@@ -3529,7 +3529,7 @@ export default function IdentityIntegrityPage() {
           aria-hidden="true"
           style={{
             position: "absolute",
-            inset: "0 0 22% 0",
+            inset: isCompact ? "0 0 17% 0" : "0 0 22% 0",
             zIndex: 0,
             overflow: "hidden",
             background:
@@ -3732,6 +3732,7 @@ export default function IdentityIntegrityPage() {
         </div>
 
         <div
+          data-gsn-identity-card-member-details="true"
           style={{
             position: "absolute",
             zIndex: 2,
@@ -3966,13 +3967,14 @@ export default function IdentityIntegrityPage() {
         </div>
 
         <div
+          data-gsn-identity-card-footer="true"
           style={{
             position: "absolute",
             zIndex: 2,
             left: 0,
             right: 0,
             bottom: 0,
-            height: "22%",
+            height: isCompact ? "17%" : "22%",
             background:
               "linear-gradient(135deg, #FFFFFF 0%, #F8F6EF 64%, #EEF2F6 100%)",
             borderTop: "1px solid rgba(214,170,69,0.38)",

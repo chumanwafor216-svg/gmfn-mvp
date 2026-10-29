@@ -1240,6 +1240,9 @@ Rules:
   deep navy upper field, gold GSN globe/wordmark, quiet world-map texture,
   member photo, member name, GSN ID, one evidence-derived membership status,
   live QR and public card URL, plus one compact footer boundary.
+- On phone, the white institutional footer must begin below the complete
+  membership status and its signal line, with visible navy breathing room. It
+  must not cover the green status border, text, or member photo.
 - The card face must not restore the former serial/generated panel or the six
   Phone, Bank / Wallet, ID document, Photo, Communities, and Memberships tiles.
   Those details do not help a receiver make the first decision.
