@@ -1,4 +1,4 @@
-/* global console, localStorage, URL */
+/* global console, localStorage, process, URL */
 
 import { chromium } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -194,6 +194,49 @@ try {
 
   await page.goto(`${baseUrl}/app/dashboard`, { waitUntil: "networkidle", timeout: 20000 });
   const beforeUrl = page.url();
+
+  if (process.env.DASHBOARD_PHOTO_SCREENSHOT) {
+    await page.screenshot({
+      path: process.env.DASHBOARD_PHOTO_SCREENSHOT,
+      fullPage: true,
+    });
+  }
+
+  const photoCards = page.locator("[data-dashboard-photo-card]");
+  if ((await photoCards.count()) !== 2) {
+    throw new Error("Dashboard must expose the DemandBox and Focus photo cards.");
+  }
+
+  for (let index = 0; index < 2; index += 1) {
+    const backgroundImage = await photoCards
+      .nth(index)
+      .evaluate((node) => getComputedStyle(node).backgroundImage);
+    if (!backgroundImage || backgroundImage === "none") {
+      throw new Error("Dashboard photo cards must render their live image backgrounds.");
+    }
+  }
+
+  const trustSlipVerificationBanner = page.locator(
+    '[data-dashboard-trustslip-verification-banner="true"]'
+  );
+  if (
+    (await trustSlipVerificationBanner.count()) !== 1 ||
+    !(await trustSlipVerificationBanner.isVisible())
+  ) {
+    throw new Error("Dashboard must expose one TrustSlip and verification banner.");
+  }
+
+  await trustSlipVerificationBanner.tap();
+  await page.waitForTimeout(120);
+  if ((await trustSlipVerificationBanner.getAttribute("aria-expanded")) !== "true") {
+    throw new Error("TrustSlip and verification banner did not open its existing tools.");
+  }
+  await page.waitForTimeout(260);
+  await trustSlipVerificationBanner.tap();
+  await page.waitForTimeout(120);
+  if ((await trustSlipVerificationBanner.getAttribute("aria-expanded")) !== "false") {
+    throw new Error("TrustSlip and verification banner did not close its existing tools.");
+  }
 
   const compactHero = page.locator(
     '[data-dashboard-compact-identity="true"]'
@@ -557,7 +600,7 @@ try {
   }
 
   console.log(
-    "Dashboard phone frame audit passed: compact identity actions stay covered until opened, preserve their original routes, GSN ID Card opens the covered card-action surface, and Edit photo preserves its stable tools rail."
+    "Dashboard phone frame audit passed: photo cards render, the TrustSlip banner toggles the existing tools, compact identity actions stay covered until opened, preserve their original routes, GSN ID Card opens the covered card-action surface, and Edit photo preserves its stable tools rail."
   );
 } finally {
   await context.close();

@@ -4,6 +4,9 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
 import DashboardCompactIdentityHero from "../components/dashboard/DashboardCompactIdentityHero";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
+import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
+import dashboardFocusGrowth from "../assets/dashboard/dashboard-focus-growth.jpg";
+import dashboardTrustSlipVerification from "../assets/dashboard/dashboard-trustslip-verification.jpg";
 import { useLocation, useNavigate } from "react-router-dom";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -9474,6 +9477,7 @@ export default function DashboardPage() {
       >
         <StableButton
           debugId="dashboard.apps.toggle"
+          data-dashboard-trustslip-verification-banner="true"
           type="button"
           aria-expanded={uiState.appsExpanded}
           onClick={(event) =>
@@ -9487,21 +9491,31 @@ export default function DashboardPage() {
             ),
             ...(isPhone
               ? {
-                  height: 66,
-                  minHeight: 66,
-                  maxHeight: 66,
+                  height: 92,
+                  minHeight: 92,
+                  maxHeight: 92,
                   borderRadius: 16,
-                  padding: "0 10px",
+                  padding: "0 12px",
                 }
               : {}),
+            position: "relative",
+            overflow: "hidden",
+            backgroundColor: "#061A2E",
+            backgroundImage: `linear-gradient(90deg, rgba(3,16,31,0.98) 0%, rgba(3,16,31,0.90) 42%, rgba(3,16,31,0.30) 74%, rgba(3,16,31,0.08) 100%), url(${dashboardTrustSlipVerification})`,
+            backgroundPosition: "center, center",
+            backgroundRepeat: "no-repeat, no-repeat",
+            backgroundSize: "cover, cover",
+            border: "1px solid rgba(242,207,119,0.42)",
+            boxShadow:
+              "0 16px 30px rgba(3,16,31,0.16), inset 0 1px 0 rgba(255,255,255,0.14)",
           }}
         >
           <span
             aria-hidden="true"
             style={dashboardAccordionIconStyle(
-              "linear-gradient(180deg, rgba(242,199,102,0.30) 0%, rgba(255,248,230,0.92) 100%)",
-              "1px solid rgba(214,170,69,0.34)",
-              DASHBOARD_BRAND.goldText
+              "linear-gradient(180deg, rgba(242,199,102,0.30) 0%, rgba(255,248,230,0.12) 100%)",
+              "1px solid rgba(242,207,119,0.46)",
+              "#F6D77A"
             )}
           >
             <DashboardSignalIcon
@@ -9511,18 +9525,35 @@ export default function DashboardPage() {
             />
           </span>
           <span style={{ minWidth: 0 }}>
-            <span style={dashboardAccordionTitleStyle}>
-              Tools and verification
+            <span
+              style={{
+                ...dashboardAccordionTitleStyle,
+                color: "#FFFFFF",
+                textShadow: "0 2px 10px rgba(0,0,0,0.34)",
+              }}
+            >
+              TrustSlip &amp; verification
             </span>
-            <span style={dashboardAccordionSummaryStyle}>
+            <span
+              style={{
+                ...dashboardAccordionSummaryStyle,
+                color: "rgba(255,255,255,0.82)",
+                textShadow: "0 2px 10px rgba(0,0,0,0.32)",
+              }}
+            >
               {isPhone
-                ? "Trust, identity, work and community tools."
-                : "Choose a tool, then open the work, trust, or evidence lane."}
+                ? "Trust evidence and verification tools."
+                : "Open TrustSlip, identity, work, and community tools."}
             </span>
           </span>
           <span
             aria-hidden="true"
-            style={dashboardAccordionChevronStyle(uiState.appsExpanded)}
+            style={{
+              ...dashboardAccordionChevronStyle(uiState.appsExpanded),
+              color: "#F6D77A",
+              background: "rgba(3,16,31,0.58)",
+              border: "1px solid rgba(242,207,119,0.34)",
+            }}
           >
             <DashboardChevronIcon expanded={uiState.appsExpanded} />
           </span>
@@ -9587,6 +9618,7 @@ export default function DashboardPage() {
         />
         <StableButton
           debugId="dashboard.demand.toggle"
+          data-dashboard-photo-card="demandbox"
           type="button"
           aria-expanded={false}
           onClick={(event) => openDashboardRoute(event, demandPrimaryActionTo)}
@@ -9608,6 +9640,12 @@ export default function DashboardPage() {
                   borderRadius: 16,
                 }
               : {}),
+            backgroundColor: "#FFFFFF",
+            backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 35%, rgba(255,255,255,0.68) 58%, rgba(255,255,255,0.08) 100%), url(${dashboardDemandMarket})`,
+            backgroundPosition: "center, center",
+            backgroundRepeat: "no-repeat, no-repeat",
+            backgroundSize: "cover, cover",
+            overflow: "hidden",
           }}
         >
           <span
@@ -11151,6 +11189,7 @@ export default function DashboardPage() {
 
             <StableButton
               debugId="dashboard.focus.toggle"
+              data-dashboard-photo-card="focus"
               type="button"
               aria-expanded={uiState.trustExpanded}
               onClick={(event) =>
@@ -11176,6 +11215,12 @@ export default function DashboardPage() {
                       borderRadius: 16,
                     }
                   : {}),
+                backgroundColor: "#FFFFFF",
+                backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 35%, rgba(255,255,255,0.68) 58%, rgba(255,255,255,0.08) 100%), url(${dashboardFocusGrowth})`,
+                backgroundPosition: "center, center",
+                backgroundRepeat: "no-repeat, no-repeat",
+                backgroundSize: "cover, cover",
+                overflow: "hidden",
               }}
             >
               <span

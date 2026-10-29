@@ -4,6 +4,7 @@ import { GsnLegacyIcon } from "../GsnLegacyIcon";
 import PictureFrameToolsControl from "../PictureFrameToolsControl";
 import { StableButton, StableDisclosureSummary } from "../StableButton";
 import { colors, radius } from "../../design/tokens";
+import dashboardNetworkGlobe from "../../assets/dashboard/dashboard-network-globe.jpg";
 
 export type DashboardCompactIdentityReading = {
   label: string;
@@ -78,7 +79,11 @@ export default function DashboardCompactIdentityHero({
         minWidth: 0,
         borderRadius: radius.lg,
         border: "1px solid rgba(214,170,69,0.28)",
-        background: `radial-gradient(circle at 88% 8%, rgba(31,115,224,0.30) 0%, rgba(31,115,224,0) 34%), linear-gradient(135deg, ${colors.navy900} 0%, ${colors.navy800} 62%, ${colors.navy700} 100%)`,
+        backgroundColor: colors.navy900,
+        backgroundImage: `linear-gradient(90deg, rgba(3,16,31,0.98) 0%, rgba(3,16,31,0.92) 38%, rgba(3,16,31,0.42) 72%, rgba(3,16,31,0.16) 100%), url(${dashboardNetworkGlobe})`,
+        backgroundPosition: "center, center",
+        backgroundRepeat: "no-repeat, no-repeat",
+        backgroundSize: "cover, cover",
         color: colors.white,
         boxShadow:
           "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",

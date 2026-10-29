@@ -130,9 +130,9 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{\{[\s\S]*?\.\.\.dashboardAccordionButtonStyle\([\s\S]*?height: 66,[\s\S]*?minHeight: 66,[\s\S]*?maxHeight: 66/,
+      /debugId="dashboard\.apps\.toggle"[\s\S]*?data-dashboard-trustslip-verification-banner="true"[\s\S]*?style=\{\{[\s\S]*?\.\.\.dashboardAccordionButtonStyle\([\s\S]*?height: 92,[\s\S]*?minHeight: 92,[\s\S]*?maxHeight: 92/,
     message:
-      "Dashboard app launcher toggle must remain a traceable fixed-height stable accordion action.",
+      "Dashboard TrustSlip and verification banner must remain a traceable fixed-height stable accordion action.",
   },
   {
     pattern:
