@@ -5,6 +5,16 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Essential-only TrustSlip receiver surface - 2026-10-29
+
+- The owner directed that TrustSlip Verify remove everything a receiver does not need for the immediate decision while preserving evidence reachability and truth boundaries.
+- The sealed delivery now shows only that a TrustSlip arrived, who it is from, the community, and one `Open TrustSlip` action. The redundant delivery eyebrow, explanatory certificate sentence, `Recipient copy` label and button-help line were removed.
+- The opened phone certificate now shows only Public TrustSlip identity, current validity, result, person, community, one primary real-world action, and one quiet `More about this result` path. The repeated recommendation card and its duplicate wording were removed.
+- Supporting evidence remains public-safe and reachable as the existing four-step reader: Why, Evidence, Source/date and Scope. Only one step mounts at a time; the evidence/source rows were shortened, and private Trust Passport material remains excluded.
+- Verification passed: Public TrustSlip first-viewport audit, public/private verification-boundary audit, 297-module production build, and the complete public TrustSlip phone-state smoke across current, minimal, expired, revoked, frozen, low-data, no-relay, endpoint-error, redacted-evidence and no-evidence states. The 390x844 envelope and certificate captures were visually inspected.
+- Wider baseline truth: the protected freeze suite passes the Trust infrastructure checks but remains red on a pre-existing Dashboard inventory mismatch (42 StableButtons versus the caged 41); the broad Trust action audit remains red on existing patterns in `TrustSlipVerifyPage.tsx` and `CommunityConfirmationInboxPage.tsx`. This cleanup changed none of those files or contracts.
+- Deployment evidence: application commit `a486a5106996b032494d4fce961d55f6ba74021a`; GitHub Actions run `40792542963`; Render frontend deploy `dep-dbh8v108v5cc73fpl210`, verified live on the exact commit. Live CDN inspection found `More about this result` and confirmed `Recommended next` and `Opens a quick decision card.` are absent. Backend deployment was correctly skipped.
+
 ## Essential-only Identity Integrity surface - 2026-10-28
 
 - The owner directed that `/app/identity` show only what users need for the next decision, rather than displaying the full identity package at once.
