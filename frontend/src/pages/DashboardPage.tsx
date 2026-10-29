@@ -11086,7 +11086,6 @@ export default function DashboardPage() {
               </StableButton>
             </div>
           ) : null}
-        </div>
         {marketWisdomCommerceActionLabel &&
         marketWisdomCommerceActionRoute ? (
           <DashboardCommerceAnalyticsCard
@@ -11098,6 +11097,8 @@ export default function DashboardPage() {
             onPointerDown={consumeDashboardPointerEvent}
           />
         ) : null}
+
+        </div>
       </section>
 
       <section

@@ -83,12 +83,8 @@ export default function DashboardCommerceAnalyticsCard({
       data-dashboard-shop-analytics="real-commerce-signal"
       style={{
         marginTop: 12,
-        borderRadius: isPhone ? 18 : 20,
-        border: "1px solid rgba(15,59,116,0.13)",
-        background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.92), 0 16px 30px rgba(2,12,27,0.08)",
-        padding: isPhone ? 12 : 14,
+        paddingTop: 10,
+        borderTop: "1px solid rgba(15,59,116,0.12)",
       }}
     >
       <div
@@ -103,40 +99,40 @@ export default function DashboardCommerceAnalyticsCard({
           <div
             aria-hidden="true"
             style={{
-              width: 42,
-              height: 42,
-              flex: "0 0 42px",
-              borderRadius: 14,
+              width: 30,
+              height: 30,
+              flex: "0 0 30px",
+              borderRadius: 10,
               display: "grid",
               placeItems: "center",
               border: "1px solid rgba(184,137,45,0.18)",
               background: "linear-gradient(180deg, #FFF9E8 0%, #FCEBB6 100%)",
-              boxShadow: "0 8px 16px rgba(184,137,45,0.12)",
+              boxShadow: "0 5px 10px rgba(184,137,45,0.10)",
             }}
           >
-            <GsnLegacyIcon name="chart" size={27} />
+            <GsnLegacyIcon name="chart" size={18} />
           </div>
           <div style={{ minWidth: 0 }}>
             <div
               style={{
                 color: "#0B1F33",
-                fontSize: isPhone ? 17 : 18,
+                fontSize: isPhone ? 13 : 14,
                 fontWeight: 950,
                 lineHeight: 1.1,
               }}
             >
-              Shop Analytics
+              Market Wisdom shop signal
             </div>
             <div
               style={{
                 marginTop: 3,
                 color: "#526B84",
-                fontSize: isPhone ? 11.5 : 12,
+                fontSize: isPhone ? 10 : 10.5,
                 fontWeight: 700,
                 lineHeight: 1.3,
               }}
             >
-              See what is working in your shop.
+              Recorded attention from the last 7 days.
             </div>
           </div>
         </div>
@@ -148,8 +144,8 @@ export default function DashboardCommerceAnalyticsCard({
             border: "1px solid rgba(15,59,116,0.12)",
             background: "#FFFFFF",
             color: "#173654",
-            padding: "7px 10px",
-            fontSize: 11,
+            padding: "5px 8px",
+            fontSize: 10,
             fontWeight: 900,
             whiteSpace: "nowrap",
           }}
@@ -160,7 +156,7 @@ export default function DashboardCommerceAnalyticsCard({
 
       <div
         style={{
-          marginTop: 12,
+          marginTop: 8,
           display: "grid",
           gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: isPhone ? 6 : 8,
@@ -171,11 +167,11 @@ export default function DashboardCommerceAnalyticsCard({
             key={metric.key}
             style={{
               minWidth: 0,
-              minHeight: isPhone ? 92 : 98,
-              borderRadius: isPhone ? 13 : 15,
+              minHeight: isPhone ? 54 : 58,
+              borderRadius: isPhone ? 10 : 12,
               border: "1px solid rgba(15,59,116,0.10)",
               background: metric.wash,
-              padding: isPhone ? "9px 7px" : "10px 9px",
+              padding: isPhone ? "6px 5px" : "7px 7px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -185,10 +181,10 @@ export default function DashboardCommerceAnalyticsCard({
             <div
               style={{
                 color: "#526B84",
-                fontSize: isPhone ? 9.5 : 10.5,
+                fontSize: isPhone ? 8.5 : 9.5,
                 fontWeight: 850,
                 lineHeight: 1.15,
-                minHeight: 23,
+                minHeight: 12,
               }}
             >
               {metric.label}
@@ -196,7 +192,7 @@ export default function DashboardCommerceAnalyticsCard({
             <div
               style={{
                 color: "#0B1F33",
-                fontSize: isPhone ? 20 : 23,
+                fontSize: isPhone ? 16 : 18,
                 fontWeight: 950,
                 lineHeight: 1,
                 fontVariantNumeric: "tabular-nums",
@@ -207,7 +203,7 @@ export default function DashboardCommerceAnalyticsCard({
             <div
               aria-hidden="true"
               style={{
-                height: 5,
+                height: 3,
                 borderRadius: 999,
                 background: "rgba(15,59,116,0.08)",
                 overflow: "hidden",
@@ -228,9 +224,9 @@ export default function DashboardCommerceAnalyticsCard({
 
       <div
         style={{
-          marginTop: 9,
+          marginTop: 7,
           color: "#60748A",
-          fontSize: 10.5,
+          fontSize: 9.5,
           fontWeight: 750,
           lineHeight: 1.3,
         }}
@@ -241,24 +237,27 @@ export default function DashboardCommerceAnalyticsCard({
       <StableButton
         debugId="dashboard.market-wisdom.open-commerce-action"
         type="button"
-        fullWidth
-        stableHeight={52}
+        stableHeight={38}
         onClick={(event) => onOpenRoute(event, actionRoute)}
         onPointerDown={onPointerDown}
         style={{
-          marginTop: 10,
-          borderRadius: 16,
-          background: "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
-          color: "#FFFFFF",
-          border: "1px solid rgba(243,208,106,0.70)",
-          boxShadow: "0 12px 22px rgba(2,12,27,0.16)",
-          fontSize: 14,
+          marginTop: 7,
+          marginLeft: "auto",
+          display: "flex",
+          width: "fit-content",
+          minWidth: isPhone ? 136 : 148,
+          borderRadius: 12,
+          background: "rgba(255,255,255,0.88)",
+          color: "#173654",
+          border: "1px solid rgba(15,59,116,0.16)",
+          boxShadow: "0 5px 12px rgba(15,23,42,0.06)",
+          fontSize: 11.5,
           fontWeight: 950,
         }}
       >
-        <GsnLegacyIcon name="chart" size={23} />
+        <GsnLegacyIcon name="chart" size={16} />
         {visibleActionLabel}
-        <span aria-hidden="true" style={{ marginLeft: "auto", fontSize: 22 }}>
+        <span aria-hidden="true" style={{ marginLeft: 4, fontSize: 17 }}>
           {"\u2192"}
         </span>
       </StableButton>
