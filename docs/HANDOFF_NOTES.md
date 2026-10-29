@@ -5,6 +5,28 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Private Vault everyday-item visual correction - 2026-10-29
+
+- Owner clarification defines Vault as a private, consent-led way to offer lawful
+  ordinary personal goods, including items the owner may still be using. It is
+  not a bank safe, diamond locker, luxury catalogue or secret-document store.
+- `/app/vault-control` and the Public Shop Vault card now share one lightweight
+  three-photo strip showing produce, clothes and home goods. The literal safe
+  door/emblem and Vault-specific safe icons were removed from those surfaces.
+- Plain copy now says that everyday items may be offered/shared privately while
+  preserving `Owner invitation only.`, `Request access`, `Copy request`, exact
+  private links and the authoritative state-derived next task.
+- This presentation correction adds no chat, video-call, payment, inspection or
+  guarantee behavior. GBP 5 pricing, two-space maximum, proof flow, media gate,
+  permanent deletion, link lifecycle, permissions, API calls and backend
+  contracts are unchanged.
+- Added `audit:private-vault-visual-language`; the 130452-byte WebP asset, Vault
+  inventory, 310-module production build, complete protected-button freeze and
+  isolated 390x844 three-state Vault smoke pass. The standalone Public Shop
+  inventory still has a pre-existing Spotlight regex mismatch: it expects a
+  456px compact minimum while committed `HEAD` already uses `0`; this change
+  does not touch that Spotlight lane.
+
 ## GSN ID card white-band spacing correction - 2026-10-29
 
 - Owner phone evidence showed the card's white institutional footer beginning

@@ -5,6 +5,7 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PublicShopPhotoHero from "../components/shop/PublicShopPhotoHero";
+import PrivateVaultEverydayItems from "../components/PrivateVaultEverydayItems";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame, {
@@ -749,134 +750,6 @@ function isInteractiveCardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return Boolean(
     target.closest("button,a,input,select,textarea,[role='button'],[data-media-control='true']")
-  );
-}
-
-function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
-  const uid = compact ? "compact" : "full";
-
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        width: "100%",
-        minHeight: compact ? 92 : 132,
-        aspectRatio: "1.48 / 1",
-        borderRadius: compact ? 18 : 24,
-        border: "1px solid rgba(255,218,132,0.74)",
-        background:
-          "radial-gradient(circle at 22% 18%, rgba(255,237,178,0.34) 0%, transparent 34%), linear-gradient(145deg, #041424 0%, #082A4C 56%, #03111F 100%)",
-        boxShadow:
-          "0 18px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 0 44px rgba(246,196,83,0.10)",
-        display: "grid",
-        placeItems: "center",
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 320 216"
-        focusable="false"
-        role="presentation"
-        style={{ display: "block" }}
-      >
-        <defs>
-          <linearGradient id={`vaultBody-${uid}`} x1="38" y1="32" x2="272" y2="188" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#1B4E78" />
-            <stop offset="0.38" stopColor="#071E35" />
-            <stop offset="1" stopColor="#020A13" />
-          </linearGradient>
-          <linearGradient id={`vaultGold-${uid}`} x1="72" y1="24" x2="250" y2="194" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#FFF0B6" />
-            <stop offset="0.33" stopColor="#E4B85D" />
-            <stop offset="0.68" stopColor="#9C6A1E" />
-            <stop offset="1" stopColor="#F0CA74" />
-          </linearGradient>
-          <radialGradient id={`vaultGlow-${uid}`} cx="52%" cy="44%" r="62%">
-            <stop offset="0" stopColor="#FFE6A3" stopOpacity="0.34" />
-            <stop offset="0.42" stopColor="#2F80ED" stopOpacity="0.10" />
-            <stop offset="1" stopColor="#000000" stopOpacity="0" />
-          </radialGradient>
-          <filter id={`vaultShadow-${uid}`} x="-20%" y="-20%" width="140%" height="150%">
-            <feDropShadow dx="0" dy="16" stdDeviation="12" floodColor="#000814" floodOpacity="0.45" />
-          </filter>
-        </defs>
-        <rect x="0" y="0" width="320" height="216" rx="30" fill={`url(#vaultGlow-${uid})`} />
-        <ellipse cx="166" cy="187" rx="118" ry="18" fill="#000814" opacity="0.36" />
-        <g filter={`url(#vaultShadow-${uid})`}>
-          <path
-            d="M64 54C64 40 76 28 90 28h128c15 0 28 12 28 28v122H82c-10 0-18-8-18-18V54Z"
-            fill={`url(#vaultBody-${uid})`}
-          />
-          <path
-            d="M84 28h132c15 0 28 12 28 28v122H84c-15 0-28-12-28-28V56c0-16 12-28 28-28Z"
-            fill="none"
-            stroke={`url(#vaultGold-${uid})`}
-            strokeWidth="7"
-          />
-          <rect
-            x="100"
-            y="52"
-            width="154"
-            height="126"
-            rx="20"
-            fill="#071B30"
-            stroke={`url(#vaultGold-${uid})`}
-            strokeWidth="7"
-          />
-          <rect
-            x="116"
-            y="68"
-            width="122"
-            height="94"
-            rx="14"
-            fill="none"
-            stroke="#7F682F"
-            strokeWidth="2"
-            opacity="0.75"
-          />
-          <rect x="50" y="64" width="34" height="24" rx="8" fill="#142D49" stroke="#F0CA74" strokeWidth="3" />
-          <rect x="50" y="126" width="34" height="24" rx="8" fill="#142D49" stroke="#F0CA74" strokeWidth="3" />
-          <rect x="80" y="67" width="22" height="18" rx="5" fill="#E8BD62" opacity="0.92" />
-          <rect x="80" y="129" width="22" height="18" rx="5" fill="#E8BD62" opacity="0.92" />
-          <circle cx="177" cy="115" r="36" fill="#071522" stroke={`url(#vaultGold-${uid})`} strokeWidth="8" />
-          <circle cx="177" cy="115" r="10" fill="#F5D680" stroke="#805411" strokeWidth="2" />
-          {Array.from({ length: 6 }).map((_, index) => {
-            const angle = index * 60;
-            return (
-              <line
-                key={angle}
-                x1="177"
-                y1="115"
-                x2="177"
-                y2="82"
-                stroke="#E8BD62"
-                strokeWidth="5"
-                strokeLinecap="round"
-                transform={`rotate(${angle} 177 115)`}
-              />
-            );
-          })}
-          {[126, 228].map((x) =>
-            [74, 150].map((y) => (
-              <circle
-                key={`${x}-${y}`}
-                cx={x}
-                cy={y}
-                r="6"
-                fill="#F0CA74"
-                stroke="#865A19"
-                strokeWidth="2"
-              />
-            ))
-          )}
-          <rect x="96" y="178" width="28" height="12" rx="4" fill="#A8782D" opacity="0.85" />
-          <rect x="210" y="178" width="28" height="12" rx="4" fill="#A8782D" opacity="0.85" />
-        </g>
-      </svg>
-    </div>
   );
 }
 
@@ -5899,7 +5772,7 @@ export default function ShopGalleryPage() {
               detail: shopCommunityIdText ? "ID check" : "Record pending",
             },
             { icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText },
-            { icon: "vault" as ShopIconName, title: "Private Vault", detail: "Owner-issued link" },
+            { icon: "tag" as ShopIconName, title: "Private Vault", detail: "Private item link" },
             { icon: "id" as ShopIconName, title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
             const statusItemStyle: React.CSSProperties = {
@@ -7345,25 +7218,16 @@ export default function ShopGalleryPage() {
                 "0 18px 38px rgba(2,12,27,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "92px minmax(0, 1fr)"
-                : "170px minmax(0, 1fr)",
+                ? "minmax(0, 1fr)"
+                : "minmax(260px, 0.9fr) minmax(0, 1.1fr)",
               alignItems: "center",
               gap: isCompact ? 10 : 16,
             }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                minHeight: isCompact ? 76 : 112,
-                display: "grid",
-                placeItems: "stretch",
-              }}
-            >
-              <PublicVaultEmblem compact={isCompact} />
-            </div>
+            <PrivateVaultEverydayItems compact={isCompact} />
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
-                {labelWithShopIcon("vault", "Private Vault", "#F6D77A")}
+                Private Vault
               </div>
               <div
                 style={{
@@ -7374,6 +7238,9 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.15,
                 }}
               >
+                Everyday items shared privately.
+              </div>
+              <div style={{ marginTop: 5, color: "#D7E5F2", fontSize: isCompact ? 11 : 13, lineHeight: 1.35, fontWeight: 760 }}>
                 Owner invitation only.
               </div>
               <div

@@ -91,6 +91,7 @@
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",
     "audit:shop-control-button-inventory": "node tools/audit-shop-control-button-inventory.mjs",
     "audit:vault-control-button-inventory": "node tools/audit-vault-control-button-inventory.mjs",
+    "audit:private-vault-visual-language": "node tools/audit-private-vault-visual-language.mjs",
     "audit:shop-gallery-button-inventory": "node tools/audit-shop-gallery-button-inventory.mjs",
     "audit:universal-shop-hero": "node tools/audit-universal-shop-hero.mjs",
     "test:shop-hero-selection": "node tools/test-shop-hero-selection.mjs",

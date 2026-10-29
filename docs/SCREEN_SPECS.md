@@ -1670,6 +1670,7 @@ Shop Diary contract:
 - Reel standard-frame and flexible-media correction: keep the visible Reel card short and show paired `Choose picture` and `Choose video` controls. Both controls reuse the existing Spotlight preparation handlers. If both media types are ready, the owner chooses which one becomes the Reel without changing the other draft. A picture uses optional confirmed owner sound and does not show mix/replace. A video keeps its existing audio by default and may optionally use the shared confirmed `Add over video` or `Replace video sound` controls. `Create Reel from picture` and `Create Reel from video` produce the existing bounded five/ten-second Natural Finish without publishing Spotlight. Both outputs use one standard navy-and-gold GSN outer frame; the complete still picture is also visibly enclosed in a navy-and-gold media frame rather than floating with open sides. The ready state says only that the framed Reel and shop link are ready, while the existing share caption retains the bounded Spotlight, Demand Box and separately checked TrustSlip language. The attributed shop link and explicit owner review/share/download requirements do not change.
 - A live owner-inspection Spotlight card on Public Shop shows the live label and content title without repeating start/expiry timestamps or the owner-exposure disclaimer. Shop Control remains the truthful timing and lifecycle-management surface; serving and exposure rules do not change.
 - Keep the Public Shop Vault card concise: `Private Vault`, `Owner invitation only.`, `Request access`, and `Copy request`. The request and copy handlers remain distinct and unchanged.
+- Owner-approved Vault visual language represents lawful ordinary personal goods that may still be in use, not a bank safe, locker, diamonds, luxury inventory or secret documents. Public Shop and Vault Control use one three-photo everyday-item strip (produce, clothes and home goods), supported by plain language such as `Everyday items shared privately.`; do not restore a safe-door emblem or safe icon as the primary Vault representation.
 
 Must show:
 - GSN ID status
@@ -1781,6 +1782,7 @@ Owner-approved 2026-10-26 first-view correction, amended 2026-10-27:
   permanent deletion, exact private-link scope, copy/share/open/extend/revoke,
   identity and Community Domain gates, action/field inventory, API calls and
   backend contracts.
+- Vault copy must explain that an owner can privately offer an everyday item while still using it. The visual correction does not add or imply an in-app messaging service, video-call service, payment guarantee or inspection guarantee; interested people still use the existing owner-controlled request, exact link and contact paths.
 - Paid promotion (`/app/shop-control/subscription-spotlight`) must use
   `Paid promotion` as the phone task name and derive one `What to do next`
   reading from authoritative live-promotion, ready-credit, open-payment or

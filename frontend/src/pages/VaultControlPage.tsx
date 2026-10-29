@@ -10,6 +10,7 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import VideoSoundEditor from "../components/VideoSoundEditor";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import PrivateVaultEverydayItems from "../components/PrivateVaultEverydayItems";
 import {
   createVaultShopAccessLink,
   extendVaultShopAccessLink,
@@ -725,89 +726,6 @@ function stepTitle(): React.CSSProperties {
     letterSpacing: 0.35,
     textTransform: "uppercase",
   };
-}
-
-function VaultDoorVisual() {
-  const boltStyle: React.CSSProperties = {
-    position: "absolute",
-    width: 18,
-    height: 30,
-    borderRadius: 5,
-    background: "linear-gradient(180deg, rgba(22,43,66,0.88), rgba(6,18,33,0.94))",
-    border: "1px solid rgba(255,255,255,0.10)",
-    boxShadow: "inset 0 2px 7px rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.24)",
-  };
-
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        width: "min(220px, 78%)",
-        aspectRatio: "1 / 1",
-        borderRadius: 26,
-        position: "relative",
-        background:
-          "radial-gradient(circle at 32% 24%, rgba(255,255,255,0.22), transparent 24%), linear-gradient(145deg, #385B84 0%, #182F4F 45%, #0A1B31 100%)",
-        border: "1px solid rgba(255,255,255,0.18)",
-        boxShadow: "inset 0 1px 18px rgba(255,255,255,0.12), inset 0 -18px 32px rgba(0,0,0,0.26), 0 20px 46px rgba(0,0,0,0.34)",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: "18%",
-          borderRadius: 18,
-          background: "linear-gradient(145deg, rgba(96,126,162,0.72), rgba(11,27,48,0.94))",
-          border: "2px solid rgba(255,255,255,0.10)",
-          boxShadow: "inset 0 0 0 10px rgba(1,13,27,0.24), inset 0 18px 26px rgba(255,255,255,0.08)",
-        }}
-      />
-      <div style={{ ...boltStyle, left: "16%", top: "34%" }} />
-      <div style={{ ...boltStyle, right: "16%", top: "34%" }} />
-      <div style={{ ...boltStyle, left: "16%", bottom: "34%" }} />
-      <div style={{ ...boltStyle, right: "16%", bottom: "34%" }} />
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "31%",
-          aspectRatio: "1 / 1",
-          borderRadius: 999,
-          background: "radial-gradient(circle, #5D7695 0%, #2D4C6E 44%, #10243C 72%, #071728 100%)",
-          border: "2px solid rgba(255,255,255,0.15)",
-          boxShadow: "inset 0 8px 14px rgba(255,255,255,0.14), inset 0 -12px 18px rgba(0,0,0,0.34), 0 10px 24px rgba(0,0,0,0.30)",
-        }}
-      >
-        {[0, 45, 90, 135].map((angle) => (
-          <span
-            key={angle}
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: "42%",
-              height: 7,
-              borderRadius: 999,
-              background: "rgba(213,227,242,0.42)",
-              transform: `translate(-50%, -50%) rotate(${angle}deg)`,
-              transformOrigin: "center",
-            }}
-          />
-        ))}
-        <span
-          style={{
-            position: "absolute",
-            inset: "36%",
-            borderRadius: 999,
-            background: "#081A2F",
-            border: "1px solid rgba(255,255,255,0.20)",
-          }}
-        />
-      </div>
-    </div>
-  );
 }
 
 function inputStyle(): React.CSSProperties {
@@ -2005,14 +1923,19 @@ export default function VaultControlPage() {
             {isCompact ? (
               <>
                 <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 13 }}>
-                  {labelWithIcon("vault", "Private offers")}
+                  Private offers
                 </div>
                 <h1 style={{ margin: "10px 0 0", color: "#FFFFFF", fontSize: 28, lineHeight: 1.08, fontWeight: 950, textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
                   {shopName}
                 </h1>
                 <div style={{ marginTop: 8, color: "#E8F1FA", fontSize: 14, lineHeight: 1.45, fontWeight: 760 }}>
-                  Share one offer through a private link that you control.
+                  Offer everyday items privately while you are still using them.
                 </div>
+                <PrivateVaultEverydayItems
+                  compact
+                  eager
+                  style={{ marginTop: 12 }}
+                />
                 <div
                   data-vault-next-step="true"
                   style={{
@@ -2040,18 +1963,18 @@ export default function VaultControlPage() {
             ) : (
               <>
                 <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>
-                  {labelWithIcon("vault", "Vault Control")}
+                  Vault Control
                 </div>
                 <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
                   {shopName}
                 </h1>
                 <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: 18, lineHeight: 1.55, maxWidth: 600, fontWeight: 760 }}>
-                  Same shop signboard. Private blocks become available after payment confirmation. Access only through a link you create.
+                  Share everyday items privately while you are still using them. Interested people only see an offer through a link you create.
                 </div>
                 <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <span style={vaultHeroBadge(true)}>{labelWithIcon("vault", "Vault")}</span>
+                  <span style={vaultHeroBadge(true)}>Everyday items</span>
                   <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} active Vault slots</span>
-                  <span style={vaultHeroBadge(false)}>One block at a time</span>
+                  <span style={vaultHeroBadge(false)}>One private offer at a time</span>
                 </div>
               </>
             )}
@@ -2083,11 +2006,11 @@ export default function VaultControlPage() {
                     "linear-gradient(120deg, rgba(5,17,31,0.72), rgba(9,27,46,0.34) 45%, rgba(5,17,31,0.80))",
                 }}
               />
-              <VaultDoorVisual />
+              <PrivateVaultEverydayItems eager style={{ position: "relative", zIndex: 1, width: "100%" }} />
               <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
               <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
                 <div style={{ color: "#F3D06A", fontSize: 11, fontWeight: 950, letterSpacing: 1.2, textTransform: "uppercase" }}>
-                  Shop signboard protected
+                  Everyday items, privately offered
                 </div>
                 <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24, textShadow: "0 2px 14px rgba(0,0,0,0.42)" }}>Private Vault</div>
               </div>
