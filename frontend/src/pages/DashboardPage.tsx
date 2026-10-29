@@ -3,6 +3,7 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
 import DashboardCompactIdentityHero from "../components/dashboard/DashboardCompactIdentityHero";
+import DashboardCommerceAnalyticsCard from "../components/dashboard/DashboardCommerceAnalyticsCard";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
 import dashboardFocusGrowth from "../assets/dashboard/dashboard-focus-growth.jpg";
@@ -11015,60 +11016,6 @@ export default function DashboardPage() {
             </div>
           ) : null}
 
-          {marketWisdomCommerceActionLabel &&
-          marketWisdomCommerceActionRoute ? (
-            <div
-              style={{
-                marginTop: 10,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 12px",
-                borderRadius: 14,
-                background: "rgba(255,255,255,0.68)",
-                border: "1px solid rgba(15,118,110,0.14)",
-              }}
-            >
-              <div
-                style={{
-                  flex: "1 1 210px",
-                  color: DASHBOARD_BRAND.helper,
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                }}
-              >
-                {marketWisdomCommerceWhy ||
-                  "Open the owning shop screen for the first useful step."}
-              </div>
-
-              <StableButton
-                debugId="dashboard.market-wisdom.open-commerce-action"
-                type="button"
-                onClick={(event) =>
-                  openDashboardRoute(
-                    event,
-                    marketWisdomCommerceActionRoute
-                  )
-                }
-                onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardStableActionFrame({
-                  ...secondaryBtn(false),
-                  minHeight: 40,
-                  padding: "8px 12px",
-                  fontSize: 12.5,
-                  background: "rgba(255,255,255,0.94)",
-                  color: "#0F4F4A",
-                  border: "1px solid rgba(15,118,110,0.18)",
-                  boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
-                })}
-              >
-                {marketWisdomCommerceActionLabel}
-              </StableButton>
-            </div>
-          ) : null}
-
           {activeWisdomCapability === "22" ? (
             <div
               style={{
@@ -11140,6 +11087,17 @@ export default function DashboardPage() {
             </div>
           ) : null}
         </div>
+        {marketWisdomCommerceActionLabel &&
+        marketWisdomCommerceActionRoute ? (
+          <DashboardCommerceAnalyticsCard
+            evidenceCounts={marketWisdomCommerceSignal?.evidence_counts}
+            actionLabel={marketWisdomCommerceActionLabel}
+            actionRoute={marketWisdomCommerceActionRoute}
+            isPhone={isPhone}
+            onOpenRoute={openDashboardRoute}
+            onPointerDown={consumeDashboardPointerEvent}
+          />
+        ) : null}
       </section>
 
       <section

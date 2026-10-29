@@ -4913,3 +4913,29 @@ under `docs/` or `docs/archive/`, then link that file here.
   successfully. Exact Render frontend deploy
   `dep-dbh9e68m7kps73e8r49g` reached `live`, and the public frontend build
   marker was verified. `Backend deploy needed: false`.
+
+## Dashboard Market Wisdom Shop Analytics - 2026-10-29
+
+- The owner explicitly approved replacing the former small Market Wisdom
+  commerce handoff row with one compact `Shop Analytics` card beneath the
+  unchanged four-reading Market Wisdom presentation.
+- The card reuses the existing owner-scoped `commerce_signal` returned by
+  `GET /market-wisdom/recommendation`; it adds no fetch, API, database table or
+  analytics engine.
+- The only displayed seven-day counts are real `shop_visits_7d`,
+  `product_opens_7d`, `spotlight_shop_clicks_7d` and `contact_taps_7d` evidence.
+  Unsupported percentage changes, trend history, sales, enquiries and top-item
+  claims from the reference image were intentionally not fabricated.
+- The existing server-selected action label and validated owning route remain
+  authoritative. Setup, Spotlight, DemandBox and detailed Shop Control analytics
+  handoffs retain their prior behavior and stable Dashboard action ID.
+- Verification passed: production build, focused ESLint, Market Wisdom contract
+  audit, Dashboard action audit, Dashboard button inventory, Dashboard phone
+  button audit and the complete protected-button/frozen-surface suite. The
+  accepted Dashboard inventory remains 44 StableButtons, 3 disclosure controls,
+  3 picture controls and 59 effective action roots.
+- The protected suite still emitted a pre-existing duplicate React-key warning
+  during its wider browser route sweep; every protected audit passed. No claim is
+  made that this unrelated warning was repaired by the analytics change.
+- Status: verified locally only. It has not been pushed or deployed because the
+  owner did not request publication for this change.

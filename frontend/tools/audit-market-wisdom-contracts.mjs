@@ -149,8 +149,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /setMarketWisdomCommerceSignal\([\s\S]*?\(res as any\)\?\.commerce_signal[\s\S]*?const marketWisdomCommerceActionRoute[\s\S]*?startsWith\("\/app\/"\)[\s\S]*?marketWisdomCommerceHeadline[\s\S]*?debugId="dashboard\.market-wisdom\.open-commerce-action"[\s\S]*?marketWisdomCommerceActionLabel/,
-  "The approved commerce handoff must consume only the server signal, reuse the Now reading, validate the app route, and expose one contextual action."
+  /setMarketWisdomCommerceSignal\([\s\S]*?\(res as any\)\?\.commerce_signal[\s\S]*?const marketWisdomCommerceActionRoute[\s\S]*?startsWith\("\/app\/"\)[\s\S]*?marketWisdomCommerceHeadline[\s\S]*?<DashboardCommerceAnalyticsCard[\s\S]*?evidenceCounts=\{marketWisdomCommerceSignal\?\.evidence_counts\}[\s\S]*?actionLabel=\{marketWisdomCommerceActionLabel\}[\s\S]*?actionRoute=\{marketWisdomCommerceActionRoute\}/,
+  "The approved commerce handoff must consume only the server signal, reuse the Now reading, validate the app route, and pass the real evidence into one contextual analytics card."
+);
+
+assertContains(
+  "frontend/src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
+  /shop_visits_7d[\s\S]*?product_opens_7d[\s\S]*?spotlight_shop_clicks_7d[\s\S]*?contact_taps_7d[\s\S]*?data-dashboard-shop-analytics="real-commerce-signal"[\s\S]*?Recorded attention, not sales\.[\s\S]*?debugId="dashboard\.market-wisdom\.open-commerce-action"[\s\S]*?onOpenRoute\(event, actionRoute\)/,
+  "Dashboard Shop Analytics must render only the existing owner commerce evidence, preserve its boundary, and keep the server-selected action route."
 );
 
 assertNotContains(
@@ -159,6 +165,11 @@ assertNotContains(
   "Frozen Market Wisdom must not gain route actions beyond the approved Focus Commitments and commerce handoffs without an intentional audit update."
 );
 
+assertNotContains(
+  "frontend/src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
+  /debugId="dashboard\.market-wisdom\.(?!(?:open-commerce-action))[^"]+"/g,
+  "The compact Shop Analytics card must keep exactly the approved commerce handoff action."
+);
 assertNotContains(
   "frontend/src/lib/marketWisdom.ts",
   /proof|guarantee|credit approval|release instruction|automatic approval/i,

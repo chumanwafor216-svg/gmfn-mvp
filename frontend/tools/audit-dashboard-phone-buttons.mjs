@@ -10,6 +10,7 @@ const dashboardCompactIdentityFile =
   "src/components/dashboard/DashboardCompactIdentityHero.tsx";
 const dashboardSectionFiles = [
   dashboardCompactIdentityFile,
+  "src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
   "src/components/dashboard/DashboardToolsSection.tsx",
   "src/components/dashboard/DashboardInboxSection.tsx",
 ];

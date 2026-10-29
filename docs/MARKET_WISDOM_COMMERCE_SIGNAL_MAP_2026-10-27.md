@@ -175,6 +175,20 @@ The first implementation should use only these real inputs:
 - `docs/SCREEN_SPECS.md` and `docs/HANDOFF_NOTES.md`
 
 ## Implemented result
+### 2026-10-29 owner-approved compact analytics exception
+
+- Dashboard may present the existing seven-day commerce evidence counts in one
+  compact Shop Analytics card directly below the unchanged four-reading Market
+  Wisdom card.
+- The card may show only `shop_visits_7d`, `product_opens_7d`,
+  `spotlight_shop_clicks_7d`, and `contact_taps_7d` from the existing
+  owner-scoped `commerce_signal`; it must not manufacture percentage changes,
+  winners, sales, enquiries, buyers, or trend history.
+- The existing server-selected label and owning route remain authoritative, so
+  setup, Spotlight, DemandBox, and Shop Analytics handoffs keep their current
+  behavior.
+- This exception does not add a Dashboard fetch, a fifth rotating reading, or a
+  second analytics engine.
 
 - The owner approved the single compact contextual action.
 - `GET /market-wisdom/recommendation` now returns one optional

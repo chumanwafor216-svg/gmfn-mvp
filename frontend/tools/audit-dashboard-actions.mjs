@@ -13,6 +13,7 @@ function read(relativePath) {
 const findings = [];
 const dashboardFile = "src/pages/DashboardPage.tsx";
 const dashboardSectionFiles = [
+  "src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
   "src/components/dashboard/DashboardToolsSection.tsx",
   "src/components/dashboard/DashboardInboxSection.tsx",
 ];

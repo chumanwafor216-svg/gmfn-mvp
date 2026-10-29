@@ -8,10 +8,13 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
 const dashboardCompactIdentityFile =
   "src/components/dashboard/DashboardCompactIdentityHero.tsx";
+const dashboardCommerceAnalyticsFile =
+  "src/components/dashboard/DashboardCommerceAnalyticsCard.tsx";
 const dashboardToolsSectionFile = "src/components/dashboard/DashboardToolsSection.tsx";
 const dashboardInboxSectionFile = "src/components/dashboard/DashboardInboxSection.tsx";
 const dashboardSectionFiles = [
   dashboardCompactIdentityFile,
+  dashboardCommerceAnalyticsFile,
   dashboardToolsSectionFile,
   dashboardInboxSectionFile,
 ];
@@ -33,6 +36,11 @@ const dashboardActionSources = [
         ? lineAt(
             dashboardSource,
             dashboardSource.indexOf("<DashboardCompactIdentityHero")
+          )
+        : file === dashboardCommerceAnalyticsFile
+        ? lineAt(
+            dashboardSource,
+            dashboardSource.indexOf("<DashboardCommerceAnalyticsCard")
           )
         : file === dashboardToolsSectionFile
         ? lineAt(dashboardSource, dashboardSource.indexOf("<DashboardToolsSection"))

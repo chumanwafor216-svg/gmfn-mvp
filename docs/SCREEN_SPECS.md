@@ -221,6 +221,15 @@ Rules:
   demand. The handoff must use the server-provided label and an existing
   `/app/` owning route. It must not add a fifth rotating signal or expose an
   action when commerce data is unavailable.
+- Owner-approved exception (2026-10-29): replace that small commerce handoff
+  row with one compact `Shop Analytics` card beneath the unchanged four-part
+  reading. It may show only the existing owner-scoped seven-day `shop visits`,
+  `product opens`, `Spotlight shop clicks`, and `contact taps` counts supplied
+  by `commerce_signal.evidence_counts`. Keep the server-selected action label
+  and owning route so setup, Spotlight, DemandBox and Shop Activity behavior is
+  not lost. Do not add a Dashboard analytics fetch, percentage-change claims,
+  top-item claims, sales/enquiry labels, a fifth rotating reading, or a second
+  analytics engine.
 - Passport picture frame tools must sit under one visible compact `Edit photo`
   trigger that shows the current picture or member initials.
 - The compact photo trigger must tap open and tap closed, then reveal Upload,
