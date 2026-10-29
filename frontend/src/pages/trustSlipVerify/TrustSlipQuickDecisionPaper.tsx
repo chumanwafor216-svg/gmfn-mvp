@@ -30,11 +30,11 @@ export default function TrustSlipQuickDecisionPaper(props: Props) {
   const [step, setStep] = useState<number | null>(null);
   const steps = [
     { title: "Why this result", summary: props.supportLine, rows: props.reasonRows.slice(0, 2) },
-    { title: "Evidence checked", summary: "The strongest useful signals for this decision.", rows: props.evidenceRows.slice(0, 3) },
+    { title: "Evidence checked", summary: "The strongest useful signals for this decision.", rows: props.evidenceRows.slice(0, 2) },
     {
       title: "Source and date",
       summary: "Where this reading came from and whether it is current.",
-      rows: [...props.sourceRows.slice(0, 3), ["Record", props.resolvedCode || "Current TrustSlip"]] as Array<[string, string]>,
+      rows: [...props.sourceRows.slice(0, 2), ["Record", props.resolvedCode || "Current TrustSlip"]] as Array<[string, string]>,
     },
     {
       title: "Scope",
@@ -77,7 +77,7 @@ export default function TrustSlipQuickDecisionPaper(props: Props) {
           </span>
           <span style={{ minWidth: 0 }}>
             <span style={{ display: "block", color: "#F6D77A", fontSize: 10, fontWeight: 1000, textTransform: "uppercase" }}>Public TrustSlip</span>
-            <span style={{ display: "block", marginTop: 2, fontSize: 14, fontWeight: 1000 }}>{activeStep ? "Evidence review" : "Quick decision"}</span>
+            {activeStep ? <span style={{ display: "block", marginTop: 2, fontSize: 14, fontWeight: 1000 }}>Evidence details</span> : null}
           </span>
         </div>
         <span style={{ borderRadius: 10, padding: "6px 9px", background: props.validNow ? "#EEF9F1" : "#FFF7E6", color: props.validNow ? "#166534" : "#92400E", fontSize: 10.5, fontWeight: 1000, textAlign: "center" }}>
@@ -124,13 +124,21 @@ export default function TrustSlipQuickDecisionPaper(props: Props) {
             <div><div style={{ ...labelStyle, color: "#7A4A00" }}>Person</div><div style={{ marginTop: 2, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>{props.holderName}</div></div>
             <div style={{ borderTop: "1px solid rgba(214,170,69,0.18)", paddingTop: 8 }}><div style={{ ...labelStyle, color: "#7A4A00" }}>Community</div><div style={{ marginTop: 2, color: "#07172C", fontSize: 14, fontWeight: 950 }}>{props.communityLabel}</div></div>
           </div>
-          <div style={{ borderRadius: 14, background: "#F1F7FD", padding: "10px 11px" }}>
-            <div style={{ ...labelStyle, color: "#0B63D1" }}>Recommended next</div>
-            <div style={{ marginTop: 3, color: "#07172C", fontSize: 14, lineHeight: 1.3, fontWeight: 950 }}>{props.validNow ? "Ask the community before an important decision." : "Ask the holder for a fresh TrustSlip."}</div>
-          </div>
           <div data-gsn-public-phone-primary-action="one-next-step" style={{ display: "grid", gap: 8 }}>
             {primaryAction}
-            {hasSeparatePrimaryAction ? <SubtleButton type="button" debugId="trust-slip-verify.public.quick-decision.review-evidence" stableHeight={44} fullWidth onClick={() => setStep(0)} style={{ borderRadius: 13 }}>Review evidence</SubtleButton> : null}
+            {hasSeparatePrimaryAction ? (
+              <SubtleButton
+                type="button"
+                debugId="trust-slip-verify.public.quick-decision.review-evidence"
+                stableHeight={40}
+                fullWidth
+                onClick={() => setStep(0)}
+                data-gsn-public-secondary-action="evidence-on-request"
+                style={{ borderRadius: 12, fontSize: 12.5 }}
+              >
+                More about this result
+              </SubtleButton>
+            ) : null}
           </div>
         </div>
       )}

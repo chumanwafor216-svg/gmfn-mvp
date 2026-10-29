@@ -33,7 +33,6 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Recommended next"],
   },
   minimal: {
     code: "TS-MINIMAL-BOUNDARY",
@@ -87,7 +86,6 @@ const scenarios = {
     noSnapshotOrEvents: true,
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Recommended next"],
   },
   noCommunityRelay: {
     code: "TS-NO-RELAY-BOUNDARY",
@@ -100,7 +98,6 @@ const scenarios = {
     relayAvailable: false,
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Recommended next"],
   },
   revoked: {
     code: "TS-REVOKED-BOUNDARY",
@@ -425,8 +422,11 @@ async function openRecipientEnvelope(page) {
   const envelope = page.locator('[data-gsn-trustslip-recipient-envelope="sealed"]');
   await expect(envelope).toBeVisible({ timeout: 30000 });
   await expect(envelope.getByRole("heading", { name: "A TrustSlip has arrived", exact: true })).toBeVisible();
+  await expect(envelope.getByText(/^From /)).toBeVisible();
   await expect(envelope.locator('[data-gsn-trustslip-envelope-object="closed"]')).toBeVisible();
-  await expect(envelope.getByText("Opens a quick decision card.", { exact: true })).toBeVisible();
+  await expect(envelope.getByText("Recipient copy", { exact: true })).toHaveCount(0);
+  await expect(envelope.getByText("GSN TrustSlip delivery", { exact: true })).toHaveCount(0);
+  await expect(envelope.getByText("Opens a quick decision card.", { exact: true })).toHaveCount(0);
   await expect(envelope.locator("button")).toHaveCount(1);
   await expect(page.locator('[data-gsn-trustslip-certificate="quick-decision"]')).toHaveCount(0);
   await expect(page.getByText("Scope & limits", { exact: true })).toHaveCount(0);
@@ -444,7 +444,9 @@ async function assertPublicPaperBasics(page) {
     timeout: 30000,
   });
   await expect(page.locator('[data-gsn-trustslip-certificate-facts="person-community-only"]')).toBeVisible();
-  await expect(page.getByText("Recommended next", { exact: true })).toBeVisible();
+  await expect(page.getByText("Recommended next", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Ask the community before an important decision.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Ask the holder for a fresh TrustSlip.", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Check this TrustSlip", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Official record details", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Verification paper details", { exact: true })).toHaveCount(0);

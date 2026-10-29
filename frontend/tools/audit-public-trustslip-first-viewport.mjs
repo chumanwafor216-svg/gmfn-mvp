@@ -123,8 +123,14 @@ assertContains(
 
 assertContains(
   "recipientEnvelope",
-  /data-gsn-trustslip-recipient-envelope="sealed"[\s\S]*?A TrustSlip has arrived[\s\S]*?shared a community evidence certificate with you\.[\s\S]*?data-gsn-trustslip-envelope-object="closed"[\s\S]*?Recipient copy[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?Open TrustSlip[\s\S]*?Opens a quick decision card\./,
+  /data-gsn-trustslip-recipient-envelope="sealed"[\s\S]*?A TrustSlip has arrived[\s\S]*?From \{holderName\}[\s\S]*?data-gsn-trustslip-envelope-object="closed"[\s\S]*?Community[\s\S]*?debugId="trust-slip-verify\.public\.open-envelope"[\s\S]*?Open TrustSlip/,
   "The recipient surface must appear as a sealed TrustSlip envelope with one clear Open action before the quick decision card."
+);
+
+assertNotContains(
+  "recipientEnvelope",
+  /GSN TrustSlip delivery|Opens a quick decision card\./,
+  "The sealed envelope must not repeat delivery labels or explain the obvious Open action."
 );
 
 assertContains(
@@ -325,14 +331,26 @@ assertContains(
 
 assertContains(
   "quickDecision",
-  /data-gsn-public-decision-first="one-answer-one-action"[\s\S]*?Known in this community[\s\S]*?data-gsn-trustslip-certificate-facts="person-community-only"[\s\S]*?Person[\s\S]*?Community[\s\S]*?Recommended next[\s\S]*?data-gsn-public-phone-primary-action="one-next-step"/,
-  "The opened phone certificate must show one result, person, community, recommendation, and one primary next action."
+  /data-gsn-public-decision-first="one-answer-one-action"[\s\S]*?Known in this community[\s\S]*?data-gsn-trustslip-certificate-facts="person-community-only"[\s\S]*?Person[\s\S]*?Community[\s\S]*?data-gsn-public-phone-primary-action="one-next-step"/,
+  "The opened phone certificate must show one result, person, community, and one primary next action."
 );
 
 assertContains(
   "quickDecision",
   /debugId="trust-slip-verify\.public\.quick-decision\.ask-community"[\s\S]*?debugId="trust-slip-verify\.public\.quick-decision\.check-membership"[\s\S]*?debugId="trust-slip-verify\.public\.quick-decision\.review-evidence"[\s\S]*?debugId="trust-slip-verify\.public\.evidence-step\.previous"[\s\S]*?debugId="trust-slip-verify\.public\.evidence-step\.next"/,
-  "The quick decision must select one useful action and let evidence move backward or forward without opening the full report."
+  "The quick decision must select one useful action and move backward or forward without opening the full report."
+);
+
+assertContains(
+  "quickDecision",
+  /data-gsn-public-secondary-action="evidence-on-request"[\s\S]*?More about this result/,
+  "Supporting evidence access must remain a quiet on-request action."
+);
+
+assertNotContains(
+  "quickDecision",
+  /Recommended next|Ask the community before an important decision\.|Ask the holder for a fresh TrustSlip\./,
+  "The certificate face must not repeat its primary action in a recommendation card."
 );
 
 assertContains(

@@ -26,25 +26,13 @@ export default function TrustSlipRecipientEnvelope({
         background:
           "radial-gradient(circle at 50% 0%, rgba(28,74,110,0.72), transparent 46%), linear-gradient(155deg, #07172C 0%, #082A45 100%)",
         boxShadow: "0 28px 64px rgba(7,23,44,0.22)",
-        padding: compact ? "24px 16px 18px" : "36px 44px 30px",
+        padding: compact ? "20px 16px 16px" : "32px 44px 26px",
         display: "grid",
         justifyItems: "center",
-        gap: compact ? 14 : 18,
+        gap: compact ? 12 : 16,
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          color: "#F6D77A",
-          fontSize: compact ? 11 : 12,
-          fontWeight: 1000,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-        }}
-      >
-        GSN TrustSlip delivery
-      </div>
-
       <div style={{ textAlign: "center", maxWidth: 620 }}>
         <h1
           style={{
@@ -66,7 +54,7 @@ export default function TrustSlipRecipientEnvelope({
             fontWeight: 800,
           }}
         >
-          {holderName} shared a community evidence certificate with you.
+          From {holderName}
         </p>
       </div>
 
@@ -117,7 +105,7 @@ export default function TrustSlipRecipientEnvelope({
           }}
         >
           <span style={{ fontSize: compact ? 9 : 10, fontWeight: 1000, color: "#7A4A00", textTransform: "uppercase" }}>
-            Recipient copy
+            Community
           </span>
           <span style={{ fontSize: compact ? 13 : 15, fontWeight: 1000, overflowWrap: "anywhere" }}>
             {communityLabel}
@@ -161,9 +149,6 @@ export default function TrustSlipRecipientEnvelope({
         >
           Open TrustSlip
         </PrimaryButton>
-        <div style={{ color: "#BFD0E0", textAlign: "center", fontSize: 11.5, fontWeight: 800 }}>
-          Opens a quick decision card.
-        </div>
       </div>
     </section>
   );
