@@ -6,9 +6,15 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardCompactIdentityFile =
+  "src/components/dashboard/DashboardCompactIdentityHero.tsx";
 const dashboardToolsSectionFile = "src/components/dashboard/DashboardToolsSection.tsx";
 const dashboardInboxSectionFile = "src/components/dashboard/DashboardInboxSection.tsx";
-const dashboardSectionFiles = [dashboardToolsSectionFile, dashboardInboxSectionFile];
+const dashboardSectionFiles = [
+  dashboardCompactIdentityFile,
+  dashboardToolsSectionFile,
+  dashboardInboxSectionFile,
+];
 const frameToolsFile = "src/components/PictureFrameToolsControl.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const requireAuthFile = "src/components/RequireAuth.tsx";
@@ -23,7 +29,12 @@ const dashboardActionSources = [
     file,
     source,
     orderLineOffset:
-      file === dashboardToolsSectionFile
+      file === dashboardCompactIdentityFile
+        ? lineAt(
+            dashboardSource,
+            dashboardSource.indexOf("<DashboardCompactIdentityHero")
+          )
+        : file === dashboardToolsSectionFile
         ? lineAt(dashboardSource, dashboardSource.indexOf("<DashboardToolsSection"))
         : file === dashboardInboxSectionFile
         ? lineAt(dashboardSource, dashboardSource.indexOf("<DashboardInboxSection"))
@@ -161,7 +172,7 @@ const counts = {
     (action) => action.tag === "StableDisclosureSummary"
   ).length,
   PictureFrameToolsControl:
-    dashboardSource.match(/<PictureFrameToolsControl\b/g)?.length || 0,
+    dashboardCompositeSource.match(/<PictureFrameToolsControl\b/g)?.length || 0,
 };
 const frameToolRailActions = 3;
 counts.EffectiveDashboardActionRoots =
@@ -179,10 +190,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 41,
-  StableDisclosureSummary: 2,
-  PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 51,
+  StableButton: 44,
+  StableDisclosureSummary: 3,
+  PictureFrameToolsControl: 3,
+  EffectiveDashboardActionRoots: 59,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -303,8 +314,8 @@ assertContains(
 );
 
 assertContains(
-  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16[\s\S]*?order: dashboardToolsOrder,/,
-  "Dashboard status/orientation and tools must follow the conditional Attention hierarchy without expanding duplicate homes."
+  /<DashboardCompactIdentityHero[\s\S]*?order=\{dashboardIdentityOrder\}[\s\S]*?onOpenReading=\{openDashboardRoute\}[\s\S]*?onPointerDown=\{consumeDashboardPointerEvent\}[\s\S]*?gridColumn: isPhone \? "1 \/ -1" : undefined,[\s\S]*?order: isPhone \? 100 : dashboardToolsOrder,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
+  "Dashboard phone hierarchy must keep compact identity actions first and cover Tools below the decision summaries."
 );
 assertContains(
   /const dashboardPulseSecondaryTo =[\s\S]*?DASHBOARD_TARGETS\.WHAT_MATTERS_NOW[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?openDashboardRoute\(event, dashboardPulseSecondaryTo\)/,
@@ -427,6 +438,27 @@ if (
     message:
       "Dashboard must keep both front passport and inner picture-frame controls with Upload, Change, and Remove.",
     text: "Expected both PictureFrameToolsControl action sets.",
+  });
+}
+
+assertContains(
+  /<DashboardCompactIdentityHero[\s\S]*?photoToolsOpen=\{passportPictureToolsOpen\}[\s\S]*?onTogglePhotoTools=[\s\S]*?setPictureToolsOpen\(false\);[\s\S]*?setPassportPictureToolsOpen\(\(open\) => !open\);/,
+  "Dashboard compact identity hero must preserve the phone photo-tools state and mutually close the inner picture rail."
+);
+
+if (
+  !/<PictureFrameToolsControl[\s\S]*?label="Edit photo"[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"/.test(
+    dashboardSectionSources.find(
+      ({ file }) => file === dashboardCompactIdentityFile
+    )?.source || ""
+  )
+) {
+  findings.push({
+    file: dashboardCompactIdentityFile,
+    line: 1,
+    message:
+      "Dashboard compact identity hero must keep Upload, Change, and Remove photo actions.",
+    text: "Expected compact PictureFrameToolsControl action set.",
   });
 }
 

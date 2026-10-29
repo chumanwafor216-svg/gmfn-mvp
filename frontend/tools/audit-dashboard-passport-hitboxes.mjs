@@ -173,41 +173,100 @@ try {
   });
 
   await page.goto(`${baseUrl}/app/dashboard`, { waitUntil: "networkidle", timeout: 20000 });
-  const tiles = page.locator('[data-dashboard-passport-feature-status="true"]');
-  const tileCount = await tiles.count();
-
-  if (tileCount !== 3) {
-    throw new Error(`Expected 3 passive passport status tiles, found ${tileCount}.`);
-  }
-
   const beforeUrl = page.url();
-  const findings = [];
 
-  for (let index = 0; index < tileCount; index += 1) {
-    const tile = tiles.nth(index);
-    await tile.scrollIntoViewIfNeeded();
-    const label = await tile.getAttribute("aria-label");
-    const semantics = await tile.evaluate((element) => ({
-      tag: element.tagName.toLowerCase(),
-      role: element.getAttribute("role"),
-      hasClickableAncestor: Boolean(element.parentElement?.closest("button,a,[role='button'],[data-gmfn-action-root='true'],[data-cta-id]")),
-    }));
+  const compactHero = page.locator(
+    '[data-dashboard-compact-identity="true"]'
+  );
+  if ((await compactHero.count()) !== 1 || !(await compactHero.isVisible())) {
+    throw new Error("Dashboard phone view must expose one compact identity hero.");
+  }
 
-    if (semantics.tag !== "div" || semantics.role === "button") {
-      findings.push(`${label || `tile ${index + 1}`} has action semantics: ${JSON.stringify(semantics)}`);
-    }
+  if (
+    (await page.locator('[data-dashboard-passport-feature-status="true"]').count()) !==
+    0
+  ) {
+    throw new Error(
+      "Dashboard phone view must not mount the old three-tile passport feature grid."
+    );
+  }
 
-    await tile.tap({ force: true, timeout: 5000 });
-    await page.waitForTimeout(220);
+  const identityTrustToggle = page.locator(
+    '[data-cta-id="dashboard.passport.identity-and-trust"]'
+  );
+  if ((await identityTrustToggle.count()) !== 1) {
+    throw new Error("Dashboard must expose one covered Identity & trust control.");
+  }
 
-    if (page.url() !== beforeUrl) {
-      findings.push(`${label || `tile ${index + 1}`} changed route from ${beforeUrl} to ${page.url()}.`);
-      await page.goto(beforeUrl, { waitUntil: "networkidle", timeout: 20000 });
+  const identityTrustDetails = identityTrustToggle.locator("xpath=..");
+  if ((await identityTrustDetails.getAttribute("open")) !== null) {
+    throw new Error("Identity & trust details must stay closed on first arrival.");
+  }
+
+  const signalTargets = [
+    {
+      id: "trust",
+      expected: "/app/trust",
+    },
+    {
+      id: "wider",
+      expected: "/app/identity",
+    },
+    {
+      id: "trustslip",
+      expected: "/app/trust-slip/verify?code=TS-HITBOX",
+    },
+  ];
+
+  for (const { id } of signalTargets) {
+    const signal = page.locator(
+      `[data-cta-id="dashboard.passport-signal.${id}"]`
+    );
+    if ((await signal.count()) !== 1 || (await signal.isVisible())) {
+      throw new Error(
+        `Dashboard identity signal ${id} must be mounted but covered on first arrival.`
+      );
     }
   }
 
-  if (findings.length > 0) {
-    throw new Error(`Dashboard passive passport hitbox audit failed:\n- ${findings.join("\n- ")}`);
+  await identityTrustToggle.tap();
+  await page.waitForTimeout(120);
+
+  const viewport = page.viewportSize();
+  if (!viewport) {
+    throw new Error("Dashboard phone viewport could not be measured.");
+  }
+
+  for (const { id, expected } of signalTargets) {
+    const signal = page.locator(
+      `[data-cta-id="dashboard.passport-signal.${id}"]`
+    );
+    const signalBox = await signal.boundingBox();
+    if (
+      !(await signal.isVisible()) ||
+      !signalBox ||
+      signalBox.x < 0 ||
+      signalBox.x + signalBox.width > viewport.width + 1
+    ) {
+      throw new Error(
+        `Dashboard identity signal ${id} is not a visible in-viewport action.`
+      );
+    }
+
+    await signal.tap();
+    await page.waitForTimeout(220);
+    const routedUrl = new URL(page.url());
+    if (`${routedUrl.pathname}${routedUrl.search}` !== expected) {
+      throw new Error(
+        `Dashboard identity signal ${id} routed to ${routedUrl.pathname}${routedUrl.search}; expected ${expected}.`
+      );
+    }
+
+    await page.goto(beforeUrl, { waitUntil: "networkidle", timeout: 20000 });
+    await page
+      .locator('[data-cta-id="dashboard.passport.identity-and-trust"]')
+      .tap();
+    await page.waitForTimeout(80);
   }
 
   const idCardEntry = page.locator(
@@ -233,7 +292,6 @@ try {
     throw new Error("GSN ID Card must use the approved landscape membership face.");
   }
   const landscapeBox = await landscapeCard.boundingBox();
-  const viewport = page.viewportSize();
   if (!landscapeBox || !viewport) {
     throw new Error("GSN landscape card geometry could not be measured.");
   }
@@ -398,10 +456,10 @@ try {
 
   if (
     !compactTriggerBox ||
-    compactTriggerBox.width > 120 ||
-    compactTriggerBox.height < 40 ||
-    !compactTriggerText.endsWith("Edit photo") ||
-    compactTriggerLabel !== "Open passport picture frame tools"
+    compactTriggerBox.width > 64 ||
+    compactTriggerBox.height !== 30 ||
+    compactTriggerText !== "Edit" ||
+    compactTriggerLabel !== "Open profile photo tools"
   ) {
     throw new Error(
       `Compact picture-frame trigger contract failed: ${JSON.stringify({
@@ -429,7 +487,7 @@ try {
   }
 
   console.log(
-    "Dashboard phone frame audit passed: passive status tiles stay passive, GSN ID Card opens the covered card-action surface, and Edit photo preserves its stable tools rail."
+    "Dashboard phone frame audit passed: compact identity actions stay covered until opened, preserve their original routes, GSN ID Card opens the covered card-action surface, and Edit photo preserves its stable tools rail."
   );
 } finally {
   await context.close();

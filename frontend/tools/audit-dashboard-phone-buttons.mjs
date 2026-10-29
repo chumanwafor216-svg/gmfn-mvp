@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardCompactIdentityFile =
+  "src/components/dashboard/DashboardCompactIdentityHero.tsx";
 const dashboardSectionFiles = [
+  dashboardCompactIdentityFile,
   "src/components/dashboard/DashboardToolsSection.tsx",
   "src/components/dashboard/DashboardInboxSection.tsx",
 ];
@@ -61,7 +64,11 @@ for (const { file, source } of dashboardActionSources) {
     }
 
     if (tag === "StableDisclosureSummary") {
-      if (!/onPointerDown=\{stopDashboardPointerEvent\}/.test(block)) {
+      if (
+        !/onPointerDown=\{(?:stopDashboardPointerEvent|onDisclosurePointerDown)\}/.test(
+          block
+        )
+      ) {
         findings.push({
           file,
           line,
@@ -123,15 +130,15 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{dashboardAccordionButtonStyle\(/,
+      /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{\{[\s\S]*?\.\.\.dashboardAccordionButtonStyle\([\s\S]*?height: 66,[\s\S]*?minHeight: 66,[\s\S]*?maxHeight: 66/,
     message:
-      "Dashboard app launcher toggle must remain a traceable stable accordion action.",
+      "Dashboard app launcher toggle must remain a traceable fixed-height stable accordion action.",
   },
   {
     pattern:
-      /const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20;[\s\S]*?order: dashboardToolsOrder,[\s\S]*?marginTop: dashboardHasActionableAttention && isPhone[\s\S]*?\? 8[\s\S]*?: isPhone[\s\S]*?\? 18[\s\S]*?: undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
+      /<DashboardCompactIdentityHero[\s\S]*?order=\{dashboardIdentityOrder\}[\s\S]*?onOpenReading=\{openDashboardRoute\}[\s\S]*?onPointerDown=\{consumeDashboardPointerEvent\}[\s\S]*?onDisclosurePointerDown=\{stopDashboardPointerEvent\}[\s\S]*?gridColumn: isPhone \? "1 \/ -1" : undefined,[\s\S]*?order: isPhone \? 100 : dashboardToolsOrder,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
     message:
-      "Dashboard app launcher section must follow the conditional first-view hierarchy while staying below the phone rail and clear of bottom navigation.",
+      "Dashboard compact identity actions must keep their pointer guards while the covered Tools section stays below the phone decision summaries.",
   },
 ];
 

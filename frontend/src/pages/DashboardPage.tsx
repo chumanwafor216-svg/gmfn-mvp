@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
+import DashboardCompactIdentityHero from "../components/dashboard/DashboardCompactIdentityHero";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import { useLocation, useNavigate } from "react-router-dom";
 import { navigateWithOrigin } from "../lib/nav";
@@ -3382,11 +3383,17 @@ export default function DashboardPage() {
     return window.innerWidth <= 560;
   });
 
-  const [uiState, setUiState] = useState<DashboardUIState>(() =>
-    normalizeDashboardUIState(
+  const [uiState, setUiState] = useState<DashboardUIState>(() => {
+    const stored = normalizeDashboardUIState(
       readLocalJSON(DASHBOARD_UI_STORAGE_KEY, defaultDashboardUIState())
-    )
-  );
+    );
+
+    if (typeof window !== "undefined" && window.innerWidth <= 560) {
+      return defaultDashboardUIState();
+    }
+
+    return stored;
+  });
   const [toolsLane, setToolsLane] =
     useState<DashboardToolsLaneKey>("evidence");
 
@@ -4098,6 +4105,12 @@ export default function DashboardPage() {
 
   const gmfnId = safeStr(me?.gmfn_id || getStoredGmfnId());
   const visibleGsnId = gmfnId ? gmfnId.replace(/^GMF[MN]/i, "GSN") : "Not issued yet";
+  const dashboardMembershipLabel =
+    safeStr(currentClan?.membership_status).toLowerCase() === "active"
+      ? "Active member"
+      : selectedClanId
+      ? "Community selected"
+      : "Choose community";
   const globalIdParts = /^([A-Za-z]+-[A-Za-z]+-)(.+)$/.exec(visibleGsnId);
   const passportGlobalIdDisplay = useMemo(() => {
     if (!gmfnId) return visibleGsnId;
@@ -7483,9 +7496,63 @@ export default function DashboardPage() {
           maxWidth: 1180,
           margin: "0 auto",
           display: "grid",
+          gridTemplateColumns: isPhone ? "repeat(2, minmax(0, 1fr))" : "1fr",
           gap: isPhone ? 8 : 18,
         }}
       >
+        {isPhone ? (
+          <DashboardCompactIdentityHero
+              order={dashboardIdentityOrder}
+              name={greetingName}
+              avatarSrc={avatarSrc}
+              initials={profileInitials}
+              gsnId={visibleGsnId}
+              membershipLabel={dashboardMembershipLabel}
+              readings={[
+                {
+                  label: "Trust",
+                  value: readableTrustStatus(openTrust.classText),
+                  to: DASHBOARD_TARGETS.TRUST,
+                },
+                {
+                  label: "Wider",
+                  value: cciDisplayText(cci),
+                  detail: "Cross-community signal",
+                  to: DASHBOARD_TARGETS.CCI,
+                },
+                {
+                  label: "TrustSlip",
+                  value: trustSlipCode || trustSlipPendingValue,
+                  detail: trustSlipCode ? "" : trustSlipPendingDetail,
+                  to: trustSlipCode
+                    ? `${DASHBOARD_TARGETS.TRUST_SLIP_VERIFY}?code=${encodeURIComponent(trustSlipCode)}`
+                    : DASHBOARD_TARGETS.TRUST_SLIP_VERIFY,
+                },
+              ]}
+              photoToolsOpen={passportPictureToolsOpen}
+              avatarInputId={avatarInputId}
+              fileInputRef={fileInputRef}
+              onAvatarImageError={handleAvatarImageError}
+              onAvatarSelected={onAvatarSelected}
+              onTogglePhotoTools={(event) =>
+                runDashboardUiMutation(event, () => {
+                  setPictureToolsOpen(false);
+                  setPassportPictureToolsOpen((open) => !open);
+                })
+              }
+              onRemoveAvatar={removeAvatar}
+              onMissingAvatar={explainMissingAvatarForRemoval}
+              onOpenCard={(event) =>
+                openDashboardRoute(
+                  event,
+                  `${DASHBOARD_TARGETS.CCI}?view=card&display=card-only`
+                )
+              }
+              onOpenReading={openDashboardRoute}
+              onPointerDown={consumeDashboardPointerEvent}
+              onDisclosurePointerDown={stopDashboardPointerEvent}
+          />
+        ) : (
         <section
           data-dashboard-passport-reference="gsn-trust-card"
           style={{
@@ -8600,6 +8667,7 @@ export default function DashboardPage() {
             </span>
           </StableButton>
         </section>
+        )}
 
       <section
         style={{
@@ -9394,15 +9462,12 @@ export default function DashboardPage() {
           ...pageCard(
             "linear-gradient(180deg, #FFFDF6 0%, #F8FBFF 48%, #EEF6FF 100%)"
           ),
-          order: dashboardToolsOrder,
-          marginTop: dashboardHasActionableAttention && isPhone
-            ? 8
-            : isPhone
-            ? 18
-            : undefined,
+          gridColumn: isPhone ? "1 / -1" : undefined,
+          order: isPhone ? 100 : dashboardToolsOrder,
+          marginTop: isPhone ? 0 : undefined,
           border: "1px solid rgba(214,170,69,0.24)",
           borderRadius: isPhone ? 20 : 24,
-          padding: isPhone ? 14 : 18,
+          padding: isPhone ? 9 : 18,
           boxShadow:
             "0 16px 34px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
         }}
@@ -9415,10 +9480,21 @@ export default function DashboardPage() {
             runDashboardUiMutation(event, () => toggleUiStateFlag("appsExpanded"))
           }
           onPointerDown={consumeDashboardPointerEvent}
-          style={dashboardAccordionButtonStyle(
-            "1px solid rgba(214,170,69,0.26)",
-            "linear-gradient(180deg, #FFFFFF 0%, #FFF8E6 46%, #F4F9FF 100%)"
-          )}
+          style={{
+            ...dashboardAccordionButtonStyle(
+              "1px solid rgba(214,170,69,0.26)",
+              "linear-gradient(180deg, #FFFFFF 0%, #FFF8E6 46%, #F4F9FF 100%)"
+            ),
+            ...(isPhone
+              ? {
+                  height: 66,
+                  minHeight: 66,
+                  maxHeight: 66,
+                  borderRadius: 16,
+                  padding: "0 10px",
+                }
+              : {}),
+          }}
         >
           <span
             aria-hidden="true"
@@ -9439,7 +9515,9 @@ export default function DashboardPage() {
               Tools and verification
             </span>
             <span style={dashboardAccordionSummaryStyle}>
-              Choose a tool, then open the work, trust, or evidence lane.
+              {isPhone
+                ? "Trust, identity, work and community tools."
+                : "Choose a tool, then open the work, trust, or evidence lane."}
             </span>
           </span>
           <span
@@ -9490,12 +9568,16 @@ export default function DashboardPage() {
           ...pageCard(demandSurfaceChrome.shellBg),
           order: 50,
           border: demandSurfaceChrome.shellBorder,
-          padding: isPhone ? 13 : 20,
-          borderRadius: isPhone ? 22 : 26,
+          padding: isPhone ? 8 : 20,
+          borderRadius: isPhone ? 20 : 26,
+          boxShadow: isPhone
+            ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
+            : undefined,
         }}
       >
         <div
           style={{
+            display: isPhone ? "none" : "block",
             height: 3,
             margin: isPhone ? "-2px 0 10px" : "-3px 0 14px",
             borderRadius: 999,
@@ -9509,18 +9591,35 @@ export default function DashboardPage() {
           aria-expanded={false}
           onClick={(event) => openDashboardRoute(event, demandPrimaryActionTo)}
           onPointerDown={consumeDashboardPointerEvent}
-          style={dashboardAccordionButtonStyle(
-            demandSurfaceChrome.chipBorder,
-            demandSurfaceChrome.chipBg
-          )}
+          style={{
+            ...dashboardAccordionButtonStyle(
+              demandSurfaceChrome.chipBorder,
+              demandSurfaceChrome.chipBg
+            ),
+            ...(isPhone
+              ? {
+                  height: 104,
+                  minHeight: 104,
+                  maxHeight: 104,
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  gap: 6,
+                  alignItems: "center",
+                  padding: "11px 10px",
+                  borderRadius: 16,
+                }
+              : {}),
+          }}
         >
           <span
             aria-hidden="true"
-            style={dashboardAccordionIconStyle(
-              demandSurfaceChrome.statusBg,
-              demandSurfaceChrome.chipSelectedBorder,
-              demandSurfaceChrome.statusText
-            )}
+            style={{
+              ...dashboardAccordionIconStyle(
+                demandSurfaceChrome.statusBg,
+                demandSurfaceChrome.chipSelectedBorder,
+                demandSurfaceChrome.statusText
+              ),
+              display: isPhone ? "none" : "inline-flex",
+            }}
           >
             <DashboardSignalIcon
               name={dashboardSectionSignal("Your DemandBox")}
@@ -9531,10 +9630,14 @@ export default function DashboardPage() {
 
           <span style={{ minWidth: 0 }}>
             <span style={dashboardAccordionTitleStyle}>
-              Your DemandBox
+              {isPhone ? "DemandBox" : "Your DemandBox"}
             </span>
             <span style={dashboardAccordionSummaryStyle}>
-              {demandItems.length > 0
+              {isPhone
+                ? demandItems.length > 0
+                  ? `${demandItems.length} open request${demandItems.length === 1 ? "" : "s"}.`
+                  : "No open demand."
+                : demandItems.length > 0
                 ? myOpenDemandItems.length > 0 && responderDemandItems.length === 0
                   ? `${myOpenDemandItems.length} open demand${
                       myOpenDemandItems.length === 1 ? "" : "s"
@@ -10227,6 +10330,7 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
+          gridColumn: isPhone ? "1 / -1" : undefined,
           order: dashboardAttentionOrder,
           border: dashboardHasActionableAttention
             ? "1px solid rgba(184,137,45,0.38)"
@@ -10248,6 +10352,7 @@ export default function DashboardPage() {
       >
         <div
           style={{
+            display: isPhone ? "none" : "block",
             height: 3,
             margin: isPhone ? "-2px 0 10px" : "-3px 0 14px",
             borderRadius: 999,
@@ -10261,10 +10366,13 @@ export default function DashboardPage() {
           aria-expanded={false}
           onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)}
           onPointerDown={consumeDashboardPointerEvent}
-          style={dashboardAccordionButtonStyle(
-            notificationSurfaceChrome.chipBorder,
-            notificationSurfaceChrome.chipBg
-          )}
+          style={{
+            ...dashboardAccordionButtonStyle(
+              notificationSurfaceChrome.chipBorder,
+              notificationSurfaceChrome.chipBg
+            ),
+            display: isPhone ? "none" : "grid",
+          }}
         >
           <span
             aria-hidden="true"
@@ -10324,13 +10432,14 @@ export default function DashboardPage() {
         <div
           data-debug-id="dashboard.my-pulse"
           style={{
-            marginTop: isPhone ? 10 : 14,
+            marginTop: isPhone ? 0 : 14,
             ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"),
-            border: "1px solid rgba(15,59,116,0.12)",
-            padding: isPhone ? 11 : 14,
+            border: isPhone ? "none" : "1px solid rgba(15,59,116,0.12)",
+            padding: isPhone ? 0 : 14,
             borderRadius: isPhone ? 18 : 22,
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 22px rgba(10,24,49,0.05)",
+            boxShadow: isPhone
+              ? "none"
+              : "inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 22px rgba(10,24,49,0.05)",
           }}
         >
           <div
@@ -10604,6 +10713,7 @@ export default function DashboardPage() {
           ...pageCard(
             "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
           ),
+          gridColumn: isPhone ? "1 / -1" : undefined,
           order: 80,
         }}
       >
@@ -10896,6 +11006,7 @@ export default function DashboardPage() {
         id="most-used-apps"
         style={{
           ...pageCard(DASHBOARD_BRAND.raisedPanel),
+          gridColumn: isPhone ? "1 / -1" : undefined,
           order: 70,
           display: "none",
         }}
@@ -10998,12 +11109,18 @@ export default function DashboardPage() {
 
       <section
         style={{
-          order: 90,
-          marginTop: isPhone ? 10 : 14,
+          gridColumn:
+            isPhone && uiState.trustExpanded ? "1 / -1" : undefined,
+          order: isPhone ? 60 : 90,
+          marginTop: isPhone ? 0 : 14,
           ...pageCard(DASHBOARD_BRAND.raisedPanel),
-          padding: isPhone ? 12 : 20,
+          padding: isPhone ? 8 : 20,
           display: "grid",
-          gap: isPhone ? 10 : 14,
+          gap: isPhone ? 0 : 14,
+          borderRadius: isPhone ? 20 : 26,
+          boxShadow: isPhone
+            ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
+            : undefined,
         }}
       >
           <div
@@ -11011,14 +11128,17 @@ export default function DashboardPage() {
             style={{
               position: "relative",
               ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"),
-              padding: isPhone ? 14 : 16,
-              border: "1px solid rgba(11,99,209,0.14)",
-              boxShadow: "0 16px 34px rgba(11,99,209,0.06)",
-              overflow: "hidden",
+              padding: isPhone ? 0 : 16,
+              border: isPhone ? "none" : "1px solid rgba(11,99,209,0.14)",
+              boxShadow: isPhone
+                ? "none"
+                : "0 16px 34px rgba(11,99,209,0.06)",
+              overflow: uiState.trustExpanded ? "visible" : "hidden",
             }}
           >
             <div
               style={{
+                display: isPhone ? "none" : "block",
                 position: "absolute",
                 top: 0,
                 left: 0,
@@ -11039,14 +11159,31 @@ export default function DashboardPage() {
                 )
               }
               onPointerDown={consumeDashboardPointerEvent}
-              style={dashboardAccordionButtonStyle(
-                "1px solid rgba(11,99,209,0.14)",
-                "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
-              )}
+              style={{
+                ...dashboardAccordionButtonStyle(
+                  "1px solid rgba(11,99,209,0.14)",
+                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+                ),
+                ...(isPhone
+                  ? {
+                      height: 104,
+                      minHeight: 104,
+                      maxHeight: 104,
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 6,
+                      alignItems: "center",
+                      padding: "11px 10px",
+                      borderRadius: 16,
+                    }
+                  : {}),
+              }}
             >
               <span
                 aria-hidden="true"
-                style={dashboardAccordionIconStyle()}
+                style={{
+                  ...dashboardAccordionIconStyle(),
+                  display: isPhone ? "none" : "inline-flex",
+                }}
               >
                 <DashboardSignalIcon
                   name={dashboardSectionSignal("Your Focus Commitments")}
@@ -11057,10 +11194,14 @@ export default function DashboardPage() {
 
               <span style={{ minWidth: 0 }}>
                 <span style={dashboardAccordionTitleStyle}>
-                  Your Focus Commitments
+                  {isPhone ? "Your Focus" : "Your Focus Commitments"}
                 </span>
                 <span style={dashboardAccordionSummaryStyle}>
-                  {activeFocusCount > 0 || activeRoscaObligationCount > 0
+                  {isPhone
+                    ? activeFocusCount > 0 || activeRoscaObligationCount > 0
+                      ? `${activeFocusCount + activeRoscaObligationCount} active.`
+                      : "No active commitment."
+                    : activeFocusCount > 0 || activeRoscaObligationCount > 0
                     ? `${activeFocusCount} personal, ${activeRoscaObligationCount} ROSCA linked.`
                     : "No active commitment yet."}
                 </span>
