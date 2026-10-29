@@ -1223,8 +1223,23 @@ Rules:
   presentation. That presentation mounts the card and its covered actions only;
   the page guide, Anchor package, and all secondary sections
   must be absent rather than merely collapsed.
-- In card-only mode, tapping the `GSN Identity Card` title reveals only the
-  compact action chooser; tapping it again closes that chooser.
+- The card-only presentation uses one responsive landscape membership card:
+  deep navy upper field, gold GSN globe/wordmark, quiet world-map texture,
+  member photo, member name, GSN ID, one evidence-derived membership status,
+  live QR and public card URL, plus one compact footer boundary.
+- The card face must not restore the former serial/generated panel or the six
+  Phone, Bank / Wallet, ID document, Photo, Communities, and Memberships tiles.
+  Those details do not help a receiver make the first decision.
+- `View Membership Record` is the card's only action control. It starts closed
+  and reveals the existing Share, Refresh, Copy card, and Copy verify link
+  chooser only after tap; one tap must not expose any other Identity Integrity
+  sections.
+- The downloadable/shareable PNG follows the same landscape structure and uses
+  the current member data and live QR. Do not substitute a fixed screenshot or
+  a decorative QR.
+- Keep the short private-network/not-government-ID boundary on the card face.
+  Do not add caution-led paragraphs or claim universal identity, trust, credit,
+  payment, character, or future-behaviour verification.
 - Use SVG pictograms from the app icon system for core identity tasks.
 - Do not use a large photo hero or long paragraph before the user sees current
   status and next action.

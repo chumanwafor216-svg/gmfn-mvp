@@ -292,7 +292,7 @@ assertNotContains(
 );
 
 assertContains(
-  /!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"/,
+  /const landscapeIdentityCard = \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? landscapeIdentityCard : null\}/,
   "Normal Identity Integrity must render the Anchor while the dedicated card-only presentation renders the GSN Identity Card."
 );
 
@@ -302,17 +302,17 @@ assertContains(
 );
 
 assertContains(
-  /identityCardGeneratedAt[\s\S]*?identityCardGeneratedLabel[\s\S]*?identityCardSerial[\s\S]*?identityCardSecurityRows[\s\S]*?Serial[\s\S]*?Generated[\s\S]*?Status[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?Live verified[\s\S]*?Limited card/,
-  "GSN Identity Card must show official security features: serial, generated timestamp, and live/limited status."
+  /membershipCardStatus[\s\S]*?identityCardValid[\s\S]*?Active Network Membership[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?\{membershipCardStatus\}/,
+  "The landscape membership card must show one bounded, evidence-derived membership status."
 );
 assertContains(
-  /data-gsn-identity-card-screenshot="true"[\s\S]*?position: "relative"[\s\S]*?isolation: "isolate"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?zIndex: 0[\s\S]*?data-gsn-identity-card-watermark-horizontal="true"[\s\S]*?GSN[\s\S]*?data-gsn-identity-card-watermark-vertical="true"[\s\S]*?writingMode: "vertical-rl"[\s\S]*?data-gsn-identity-card-microtext="true"[\s\S]*?GSN VERIFY[\s\S]*?position: "relative"[\s\S]*?zIndex: 1/,
-  "GSN Identity Card must keep layered institutional watermarking: horizontal GSN, vertical GSN, microtext, and protected content stacking."
+  /function GsnNetworkGlobeMark[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?<GsnNetworkGlobeMark compact=\{isCompact\} \/>/,
+  "The card must retain the approved landscape ratio, GSN globe wordmark, and quiet world-map field."
 );
 
-assertContains(
-  /identityCardEvidenceRows[\s\S]*?label: "Phone"[\s\S]*?label: "Bank \/ wallet"[\s\S]*?label: "ID document"[\s\S]*?label: "Photo"[\s\S]*?label: "Communities"[\s\S]*?identityCardCommunityFootprintLabel[\s\S]*?label: "Memberships"[\s\S]*?identityCardMembershipLabel[\s\S]*?data-gsn-identity-card-footprint="true"[\s\S]*?identityCardEvidenceRows\.map/,
-  "GSN Identity Card must show an intelligent evidence stack: phone, bank/wallet, ID, photo, community footprint, and membership status."
+assertNotContains(
+  /identityCardEvidenceRows|identityCardSecurityRows|data-gsn-identity-card-footprint/g,
+  "The receiver-facing landscape card must not restore the old serial panel or six-tile evidence dump."
 );
 
 assertContains(
@@ -321,8 +321,13 @@ assertContains(
 );
 
 assertContains(
-  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl/,
   "GSN Identity Card must keep separate live-card and verification targets: QR/live card to /card, copy verify link to /lite."
+);
+
+assertContains(
+  /data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?imageSettings=\{\{[\s\S]*?src: GSN_GLOBE_QR_MARK[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?View Membership Record[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"/,
+  "The live QR and all share/copy controls must remain behind one closed membership-record button."
 );
 
 assertContains(
@@ -336,8 +341,8 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-screenshot="true"[\s\S]*?aria-expanded=\{identityCardActionsOpen\}[\s\S]*?debugId="identity-integrity\.gsn-card\.actions-toggle"[\s\S]*?GSN Identity Card[\s\S]*?data-gsn-identity-card-actions="covered"[\s\S]*?identityCardActionsOpen \? \([\s\S]*?data-gsn-identity-card-actions-menu="true"[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?not a government ID or guarantee/i,
-  "GSN Identity Card title and concise no-overclaim boundary must stay behind one closed card-title control."
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?Network member[\s\S]*?\{displayName\}[\s\S]*?GSN ID[\s\S]*?\{gmfnId\}[\s\S]*?View Membership Record[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Not government identification,[\s\S]*?credit approval,[\s\S]*?payment guarantee/i,
+  "The landscape card must keep only the receiver's core decision facts and its concise legal boundary on the face."
 );
 
 assertNotContains(
@@ -345,7 +350,7 @@ assertNotContains(
   "GSN Identity Card must not render a duplicate action button below the card."
 );
 assertContains(
-  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?cardOnlyMode \? \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?!cardOnlyMode \? \([\s\S]*?data-identity-integrity-details="covered"/,
+  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? landscapeIdentityCard : null\}[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-details="covered"/,
   "Identity Integrity must keep its Anchor on the normal route and isolate the GSN card to card-only mode without normal-page details."
 );
 assertNotContains(

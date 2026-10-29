@@ -5,6 +5,31 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Landscape GSN membership card - 2026-10-29
+
+- The owner approved a close implementation of the supplied landscape GSN
+  membership-card reference for the authenticated Dashboard GSN ID entry.
+- `/app/identity?view=card&display=card-only` now renders one responsive
+  navy-and-gold landscape credential with a GSN globe/wordmark, quiet world-map
+  field, member photo, name, GSN ID, one evidence-derived membership status,
+  real live-record QR/URL, and one compact institutional footer boundary.
+- The previous serial/generated strip and six Phone, Bank / Wallet, ID document,
+  Photo, Communities, and Memberships tiles are removed from the receiver-facing
+  card. The normal `/app/identity` Identity Anchor remains unchanged.
+- `View Membership Record` is the only face action. Share, Refresh, Copy card,
+  and Copy verify link remain unmounted until it is tapped; one tap does not
+  expose the wider Identity Integrity page. The shared PNG is generated as a
+  landscape card from current member data and the live QR, not from a fixed
+  screenshot.
+- Truth boundary: the visual composition is close to the supplied reference but
+  not a pixel clone. No source globe/map artwork existed in the repository, so
+  those marks are original SVG/CSS recreations; the legal boundary and live-data
+  behavior are deliberately retained.
+- Verification completed so far: Identity Integrity contract audit, phone
+  Dashboard/card-only browser audit, rendered 390px card inspection, and the
+  TypeScript/Vite production build. Final freeze/deployment evidence follows
+  after promotion.
+
 ## Duplicate TrustSlip shortcut removed - 2026-10-29
 
 - Owner phone evidence proved that Identity Integrity exposed two TrustSlip entry points at once: the recommended task's primary `Open TrustSlip` action and a permanent `TrustSlip` shortcut directly underneath.

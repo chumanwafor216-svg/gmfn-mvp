@@ -226,6 +226,37 @@ try {
   const identityCard = page.locator('[data-gsn-identity-card="true"]');
   await identityCard.waitFor({ state: "visible", timeout: 10000 });
 
+  const landscapeCard = page.locator(
+    '[data-gsn-identity-card-screenshot="true"][data-gsn-identity-card-reference="landscape-membership"]'
+  );
+  if ((await landscapeCard.count()) !== 1) {
+    throw new Error("GSN ID Card must use the approved landscape membership face.");
+  }
+  const landscapeBox = await landscapeCard.boundingBox();
+  const viewport = page.viewportSize();
+  if (!landscapeBox || !viewport) {
+    throw new Error("GSN landscape card geometry could not be measured.");
+  }
+  const landscapeRatio = landscapeBox.width / landscapeBox.height;
+  if (landscapeRatio < 1.56 || landscapeRatio > 1.68) {
+    throw new Error(
+      `GSN ID Card must remain landscape; measured ratio ${landscapeRatio.toFixed(2)}.`
+    );
+  }
+  if (landscapeBox.x < 0 || landscapeBox.x + landscapeBox.width > viewport.width + 1) {
+    throw new Error("GSN landscape card overflows the phone viewport.");
+  }
+
+  const legalBoundary = landscapeCard.locator(
+    '[data-gsn-identity-card-boundary="true"]'
+  );
+  if ((await legalBoundary.count()) !== 1 || !(await legalBoundary.isVisible())) {
+    throw new Error("GSN ID Card must keep one concise legal boundary on its face.");
+  }
+  if (process.env.GSN_ID_CARD_SCREENSHOT) {
+    await landscapeCard.screenshot({ path: process.env.GSN_ID_CARD_SCREENSHOT });
+  }
+
   const cardOnlyRoot = page.locator(
     '[data-identity-integrity-display="card-only"]'
   );
@@ -253,18 +284,25 @@ try {
   const cardActionsToggle = page.locator(
     '[data-cta-id="identity-integrity.gsn-card.actions-toggle"]'
   );
+  const cardActionsToggleText =
+    (await cardActionsToggle.count()) === 1
+      ? (await cardActionsToggle.textContent())?.replace(/\s+/g, " ").trim()
+      : "";
   if (
     (await cardActionsToggle.count()) !== 1 ||
-    (await cardActionsToggle.getAttribute("aria-expanded")) !== "false"
+    (await cardActionsToggle.getAttribute("aria-expanded")) !== "false" ||
+    !cardActionsToggleText?.includes("View Membership Record")
   ) {
-    throw new Error("GSN ID Card must expose one closed card-action control.");
+    throw new Error(
+      "GSN ID Card must expose one closed View Membership Record control."
+    );
   }
 
   const cardTitleOwnsActions = await cardActionsToggle.evaluate((element) =>
     Boolean(element.closest('[data-gsn-identity-card-screenshot="true"]'))
   );
   if (!cardTitleOwnsActions) {
-    throw new Error("The GSN Identity Card title must be the card-action control.");
+    throw new Error("View Membership Record must stay inside the card face.");
   }
 
   if ((await page.getByText("Use this ID card", { exact: true }).count()) !== 0) {

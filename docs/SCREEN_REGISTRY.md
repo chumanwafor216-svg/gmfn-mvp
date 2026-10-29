@@ -50,7 +50,9 @@ Bottom navigation is allowed here.
 9. NotificationsPage
 10. CommunityConfirmationInboxPage
 11. CommunityConfirmationPolicyPage
-12. IdentityIntegrityPage
+12. IdentityIntegrityPage (normal status-first Identity Anchor plus authenticated
+    `/app/identity?view=card&display=card-only` responsive landscape GSN membership
+    card; card-only presentation reviewed 2026-10-29)
 13. CommunityDomainDashboardPage
 14. TrustTimelinePage
 15. AdminCommunityOwnershipPage (`/app/command-center/community-ownership`; platform-admin-only guided ownership, steward setup, pilot cleanup, and lifecycle review; compact one-lane first surface reviewed 2026-10-26)
