@@ -12,6 +12,10 @@ const responsiveSource = fs.readFileSync(
   path.join(frontendRoot, "src", "lib", "responsiveLayout.ts"),
   "utf8"
 );
+const communityHomeSource = fs.readFileSync(
+  path.join(frontendRoot, "src", "pages", "CommunityHomePage.tsx"),
+  "utf8"
+);
 
 const failures = [];
 
@@ -23,6 +27,16 @@ requirePattern(
   "The compact app shell must cover medium-width foldable viewports through 980px.",
   responsiveSource,
   /APP_SHELL_COMPACT_MAX_WIDTH\s*=\s*980/
+);
+requirePattern(
+  "Touch-first foldables must retain the compact presentation through unfolded tablet width.",
+  responsiveSource,
+  /TOUCH_APP_SHELL_COMPACT_MAX_WIDTH\s*=\s*1366[\s\S]*?isTouchFirstAppDevice\(\)/
+);
+requirePattern(
+  "Foldable detection must require touch and a coarse or non-hovering primary input.",
+  responsiveSource,
+  /hasTouch\s*&&\s*\(hasCoarsePointer\s*\|\|\s*hasNoHover\)/
 );
 requirePattern(
   "The app shell must derive its initial mode from the shared viewport helper.",
@@ -38,6 +52,16 @@ requirePattern(
   "The rendered shell mode must remain observable for foldable regression checks.",
   layoutSource,
   /data-gmfn-shell-mode=\{isMobile \? "compact" : "desktop"\}/
+);
+requirePattern(
+  "Community Home must use the shared foldable viewport decision instead of a private width cutoff.",
+  communityHomeSource,
+  /import \{ isCompactAppViewport \} from "\.\.\/lib\/responsiveLayout"[\s\S]*?return isCompactAppViewport\(\)/
+);
+requirePattern(
+  "Community Home must resynchronise across fold, orientation, page restore, and visual viewport changes.",
+  communityHomeSource,
+  /addEventListener\("orientationchange", handleResize\)[\s\S]*?addEventListener\("pageshow", handleResize\)[\s\S]*?visualViewport\?\.addEventListener\("resize", handleResize\)/
 );
 
 if (failures.length) {

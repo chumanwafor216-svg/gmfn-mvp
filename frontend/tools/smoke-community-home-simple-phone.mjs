@@ -289,6 +289,7 @@ async function run() {
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 2,
       isMobile: true,
+      hasTouch: true,
     });
     page.on("pageerror", (error) => console.error("Community Home phone page error:", error));
     page.on("console", (message) => {
@@ -506,10 +507,38 @@ async function run() {
       return;
     }
 
+    await page.setViewportSize({ width: 1104, height: 884 });
+    await page.waitForTimeout(100);
+    const unfoldedState = await page.evaluate(() => ({
+      shellMode: document.querySelector("[data-gmfn-shell-mode]")?.getAttribute("data-gmfn-shell-mode"),
+      quickActionsVisible: Boolean(
+        document.querySelector('[data-debug-id="community-home.quick-actions"]')?.getClientRects().length
+      ),
+      desktopPageNavVisible: Array.from(
+        document.querySelectorAll('[data-cta-id^="page-top-nav."]')
+      ).some((node) => node.getClientRects().length > 0),
+    }));
+    const overflow1104 = await collectOverflow(page);
+    await page.screenshot({ path: join(screenshotDir, "community-home-unfolded-1104x884.png"), fullPage: false });
+    if (
+      unfoldedState.shellMode !== "compact" ||
+      !unfoldedState.quickActionsVisible ||
+      unfoldedState.desktopPageNavVisible ||
+      overflow1104.length > 0
+    ) {
+      console.error("Community Home changed back to its desktop presentation when unfolded:", {
+        unfoldedState,
+        overflow1104,
+      });
+      process.exitCode = 1;
+      return;
+    }
+
     const multiCommunityPage = await browser.newPage({
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 2,
       isMobile: true,
+      hasTouch: true,
     });
     await installApiMocks(multiCommunityPage, { includeSecondClan: true });
     await multiCommunityPage.addInitScript(() => {
@@ -532,6 +561,7 @@ async function run() {
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 2,
       isMobile: true,
+      hasTouch: true,
     });
     const composerState = await installApiMocks(composerPage, { canManage: true });
     await composerPage.addInitScript(() => {
@@ -624,6 +654,7 @@ async function run() {
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 2,
       isMobile: true,
+      hasTouch: true,
     });
     const publicPollState = await installApiMocks(publicPollPage);
     await publicPollPage.goto(`http://127.0.0.1:${port}/community-notices/public-poll-code`, {

@@ -5009,3 +5009,11 @@ under `docs/` or `docs/archive/`, then link that file here.
   warning; all protected checks passed.
 - This is a frontend-only change. The product owner requested publication after
   verification.
+
+## Foldable Community Home continuity - 2026-10-30
+
+- Confirmed the apparent "old app when unfolded" behavior was a responsive-layout split, not two deployed frontend versions: the authenticated shell and Community Home were making separate width decisions, and Community Home restored its older desktop markup above `980px`.
+- `frontend/src/lib/responsiveLayout.ts` now keeps the compact authenticated presentation on touch-first, coarse/non-hovering devices through a `1366px` visual viewport while pointer-led desktop devices still switch above `980px`.
+- `/app/community/:clanId` now uses that shared decision and resynchronises on window resize, orientation change, page restore, and visual-viewport resize, so opening or closing a foldable does not restore the older Community Home arrangement.
+- Verification passed: foldable shell contract audit, all focused Community Home/invite audits, rendered Community Home smoke at `320`, `360`, `390`, `884`, and touch-first `1104px` widths, the complete protected-button/frozen-surface suite, and the 311-module production frontend build. The wider suite still emits the pre-existing duplicate React-key warning; every protected check passed.
+- This is a frontend-only change. Publication was requested after verification.

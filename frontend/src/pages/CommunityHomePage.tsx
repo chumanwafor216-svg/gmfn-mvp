@@ -18,6 +18,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import { shareablePublicFrontendUrl } from "../lib/publicLinks";
 import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { isCompactAppViewport } from "../lib/responsiveLayout";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { copyToClipboard } from "../lib/share";
@@ -2027,7 +2028,7 @@ export default function CommunityHomePage() {
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return window.innerWidth <= 980;
+    return isCompactAppViewport();
   });
 
   const [me, setMe] = useState<any>(null);
@@ -2179,13 +2180,21 @@ export default function CommunityHomePage() {
     if (typeof window === "undefined") return;
 
     function handleResize() {
-      setIsCompact(window.innerWidth <= 980);
+      setIsCompact(isCompactAppViewport());
     }
 
     handleResize();
     window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    window.addEventListener("pageshow", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("pageshow", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   useEffect(() => {

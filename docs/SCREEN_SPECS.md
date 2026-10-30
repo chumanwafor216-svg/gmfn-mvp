@@ -310,13 +310,17 @@ Rules:
 
 ## Foldable Continuity Rule
 
-- Authenticated GSN screens must keep the compact phone shell through `980px`,
-  including the medium-width main display of a foldable Android phone.
-- Opening or closing a foldable must update the shell in place without restoring
-  the older desktop sidebar arrangement or losing the current route.
-- True desktop layout begins above `980px`; page-level compact layouts and the
-  shared authenticated shell must not disagree inside the `769px` to `980px`
-  range.
+- Authenticated GSN screens must keep the compact phone shell through `980px`.
+  Touch-first foldable Android devices must keep that same presentation through
+  an unfolded visual viewport of `1366px`; width alone must not make a foldable
+  restore the older desktop arrangement.
+- Opening or closing a foldable must update the shell and page layout in place
+  without losing the current route. Listen to window, orientation, page-restore,
+  and visual-viewport changes because foldable browsers do not emit one event
+  consistently.
+- Pointer-led desktop devices may use the desktop layout above `980px`.
+  Page-level compact layouts and the shared authenticated shell must use the same
+  responsive decision wherever a page has separate phone and desktop markup.
 
 ## CommitmentsPage
 
