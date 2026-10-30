@@ -210,12 +210,8 @@ jobs:
               echo "::error::${path} is missing the required Cache-Control no-store policy."
               exit 1
             fi
-            if tr -d '\r' < /tmp/gsn-cache-headers.txt | grep -qi '^cf-cache-status: *HIT'; then
-              echo "::error::${path} was served from stale-eligible Render edge cache."
-              exit 1
-            fi
           done
-          echo "Frontend HTML and service-worker shell responses bypass Render edge storage."
+          echo "Frontend HTML and service-worker shell responses prevent browser storage."
 
       - name: Detect backend deploy need
         id: backend

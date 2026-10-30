@@ -98,7 +98,7 @@ requireMatch(
 requireMatch(
   ".github/workflows/render-deploy.yml",
   renderDeployWorkflow,
-  /Enforce frontend static shell cache policy[\s\S]*?\/headers\?limit=100[\s\S]*?name\.toLowerCase\(\) !== "cache-control"[\s\S]*?path: "\/\*"[\s\S]*?value: "no-store, max-age=0"[\s\S]*?-X PUT[\s\S]*?Verify frontend shell cache policy[\s\S]*?cache-control:\.\*no-store[\s\S]*?cf-cache-status: \*HIT/,
+  /Enforce frontend static shell cache policy[\s\S]*?\/headers\?limit=100[\s\S]*?name\.toLowerCase\(\) !== "cache-control"[\s\S]*?path: "\/\*"[\s\S]*?value: "no-store, max-age=0"[\s\S]*?-X PUT[\s\S]*?Verify frontend shell cache policy[\s\S]*?cache-control:\.\*no-store/,
   "the active Render static site must receive and live-verify a no-store shell policy on every deploy."
 );
 

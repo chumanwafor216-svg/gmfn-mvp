@@ -5043,4 +5043,7 @@ under `docs/` or `docs/archive/`, then link that file here.
   responses. The deployment workflow now preserves non-cache headers, replaces
   static-site Cache-Control rules with `/* = no-store, max-age=0` through the
   Render API, and fails deployment unless `/`, `/app/community`, and `/sw.js`
-  live responses show `no-store` and are not edge-cache hits.
+  live responses show browser-facing `no-store`; the separate build-marker
+  check proves the current commit. Render static sites can still report
+  `CF-Cache-Status: HIT` for Render's managed CDN delivery, which is distinct
+  from allowing the phone browser to retain an old shell.
