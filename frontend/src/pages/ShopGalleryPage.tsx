@@ -7224,44 +7224,61 @@ export default function ShopGalleryPage() {
               gap: isCompact ? 10 : 16,
             }}
           >
-            <PrivateVaultEverydayItems compact={isCompact} />
+            <PrivateVaultEverydayItems
+              compact={isCompact}
+              style={isCompact ? { height: 82, aspectRatio: "auto" } : undefined}
+            />
             <div style={{ minWidth: 0 }}>
-              <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
-                Private Vault
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 6,
+                  minWidth: 0,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ ...sectionLabel(), color: "#F6D77A" }}>
+                  Private Vault
+                </span>
+                <span aria-hidden="true" style={{ color: "rgba(246,215,122,0.68)", fontSize: 10 }}>
+                  |
+                </span>
+                <span style={{ color: "#D7E5F2", fontSize: isCompact ? 10.5 : 12, fontWeight: 760 }}>
+                  Owner invitation only.
+                </span>
               </div>
               <div
                 style={{
-                  marginTop: 8,
+                  marginTop: isCompact ? 4 : 8,
                   color: "#FFFFFF",
-                  fontSize: isCompact ? 16 : 23,
+                  fontSize: isCompact ? 14 : 23,
                   fontWeight: 950,
                   lineHeight: 1.15,
+                  whiteSpace: isCompact ? "nowrap" : undefined,
                 }}
               >
                 Everyday items shared privately.
               </div>
-              <div style={{ marginTop: 5, color: "#D7E5F2", fontSize: isCompact ? 11 : 13, lineHeight: 1.35, fontWeight: 760 }}>
-                Owner invitation only.
-              </div>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : "repeat(2, minmax(0, 1fr))",
                   gap: isCompact ? 6 : 8,
-                  marginTop: isCompact ? 9 : 16,
+                  marginTop: isCompact ? 7 : 16,
                 }}
               >
                 <PrimaryButton
                   onClick={askForVaultAccess}
                   minWidth={0}
-                  stableHeight={isCompact ? 52 : 48}
+                  stableHeight={isCompact ? 44 : 48}
                   debugId="shop-gallery.ask-vault-access"
                   style={{
                     ...primaryBtn(false),
-                    minHeight: isCompact ? 52 : 48,
-                    padding: isCompact ? "6px 9px" : "10px 14px",
-                    borderRadius: 999,
-                    fontSize: isCompact ? 9.6 : 14,
+                    minHeight: isCompact ? 44 : 48,
+                    padding: isCompact ? "7px 11px" : "10px 14px",
+                    borderRadius: isCompact ? 14 : 999,
+                    fontSize: isCompact ? 11.5 : 14,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -7272,14 +7289,14 @@ export default function ShopGalleryPage() {
                 <SecondaryButton
                   onClick={copyVaultRequestLink}
                   minWidth={0}
-                  stableHeight={isCompact ? 52 : 48}
+                  stableHeight={isCompact ? 44 : 48}
                   debugId="shop-gallery.copy-vault-request-link"
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: isCompact ? 52 : 48,
-                    padding: isCompact ? "6px 9px" : "9px 12px",
-                    borderRadius: 999,
-                    fontSize: isCompact ? 9.6 : 14,
+                    minHeight: isCompact ? 44 : 48,
+                    padding: isCompact ? "7px 10px" : "9px 12px",
+                    borderRadius: isCompact ? 14 : 999,
+                    fontSize: isCompact ? 11 : 14,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",

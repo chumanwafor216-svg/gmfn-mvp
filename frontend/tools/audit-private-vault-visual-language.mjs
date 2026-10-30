@@ -43,7 +43,7 @@ assertContains(
 );
 assertContains(
   "shopGallery",
-  /<PrivateVaultEverydayItems compact=\{isCompact\} \/>[\s\S]*?Private Vault[\s\S]*?Everyday items shared privately\.[\s\S]*?Owner invitation only\.[\s\S]*?Request access[\s\S]*?Copy request/,
+  /<PrivateVaultEverydayItems[\s\S]*?height: 82[\s\S]*?Private Vault[\s\S]*?Owner invitation only\.[\s\S]*?Everyday items shared privately\.[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?Request access[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?Copy request/,
   "Public Shop must keep the everyday-item strip, privacy meaning, and frozen request actions"
 );
 assertNotContains(
