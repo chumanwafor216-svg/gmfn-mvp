@@ -748,63 +748,6 @@ function communityHeroIdentityPanelStyle(): React.CSSProperties {
   };
 }
 
-function communityQuickActionGridStyle(): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 9,
-  };
-}
-
-function communityQuickActionStyle(tone: "blue" | "green" | "gold"): React.CSSProperties {
-  const palette =
-    tone === "green"
-      ? { background: "#ECFBF2", border: "rgba(31,160,92,0.16)", color: "#087443" }
-      : tone === "gold"
-      ? { background: "#FFF7E8", border: "rgba(214,157,43,0.18)", color: "#A56008" }
-      : { background: "#EEF6FF", border: "rgba(13,95,168,0.14)", color: "#0B63B6" };
-
-  return {
-    position: "relative",
-    zIndex: 20,
-    width: "100%",
-    minWidth: 0,
-    minHeight: 106,
-    display: "grid",
-    gridTemplateColumns: "44px minmax(0, 1fr)",
-    gap: 9,
-    alignItems: "center",
-    padding: "11px 10px",
-    borderRadius: 19,
-    border: `1px solid ${palette.border}`,
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
-    color: "#07172C",
-    textAlign: "left",
-    cursor: "pointer",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    overflow: "hidden",
-    boxShadow: "0 12px 24px rgba(10,24,49,0.07)",
-    transition: "none",
-    ["--community-quick-background" as any]: palette.background,
-    ["--community-quick-color" as any]: palette.color,
-  };
-}
-
-function communityQuickActionIconStyle(): React.CSSProperties {
-  return {
-    width: 44,
-    height: 44,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: 15,
-    background: "var(--community-quick-background)",
-    color: "var(--community-quick-color)",
-    overflow: "hidden",
-  };
-}
-
 function communityIdentityFactsStyle(): React.CSSProperties {
   return {
     display: "grid",
@@ -5385,60 +5328,6 @@ export default function CommunityHomePage() {
 
         {isCompact ? (
           <>
-            <section data-debug-id="community-home.quick-actions" style={communityQuickActionGridStyle()}>
-              <StableButton
-                type="button"
-                debugId="community-home.goto.marketplace"
-                onClick={(event) => void openSelectedMarketplace(event)}
-                style={communityQuickActionStyle("blue")}
-              >
-                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("shop", 29)}</span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Community Marketplace</span>
-                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Shops and services</span>
-                </span>
-              </StableButton>
-              <StableButton
-                type="button"
-                debugId="community-home.goto.members"
-                onClick={(event) => openCommunityRoute(event, routes.createCommunity)}
-                style={communityQuickActionStyle("green")}
-              >
-                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("community", 29)}</span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Members</span>
-                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Membership overview</span>
-                </span>
-              </StableButton>
-              <StableButton
-                type="button"
-                debugId="community-home.goto.support"
-                onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")}
-                style={communityQuickActionStyle("gold")}
-              >
-                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("wallet", 29)}</span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Support &amp; Opportunities</span>
-                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Needs and offers</span>
-                </span>
-              </StableButton>
-              <StableButton
-                type="button"
-                debugId="community-home.goto.events"
-                onClick={(event) => {
-                  consumeCommunityButtonEvent(event);
-                  revealCommunityTarget(["community-home-bulletin"]);
-                }}
-                style={communityQuickActionStyle("green")}
-              >
-                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("calendar", 29)}</span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Community Events</span>
-                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Meetings and notices</span>
-                </span>
-              </StableButton>
-            </section>
-
             <section style={communityDisclosureSectionStyle(true)} data-debug-id="community-home.go-to">
               <details
                 open={communityActionsOpen}

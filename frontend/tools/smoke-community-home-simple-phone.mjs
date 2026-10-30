@@ -332,9 +332,8 @@ async function run() {
         hasPosition: identityText.includes("Member"),
         hasMembership: identityText.includes("Active"),
         hasOpenNotice: text.includes("Open notice"),
-        hasQuickActions: ["Community Marketplace", "Members", "Support & Opportunities", "Community Events"].every((label) => text.includes(label)),
+        quickActionsAbsent: !document.querySelector('[data-debug-id="community-home.quick-actions"]'),
         hasMoreTools: text.includes("More community tools"),
-        quickActionCount: document.querySelectorAll('[data-debug-id="community-home.quick-actions"] [data-cta-id]').length,
         heroPhotoReady: Boolean(document.querySelector('[data-debug-id="community-home.identity-card"] div[aria-hidden="true"]')),
         inviteVisible: Boolean(document.querySelector('[data-cta-id="simple-community-invite.open"]')?.getClientRects().length),
         shareVisible: Boolean(document.querySelector('[data-cta-id="community-home.identity.share-community"]')?.getClientRects().length),
@@ -351,7 +350,6 @@ async function run() {
         attentionCount: document.querySelectorAll('[data-debug-id="community-home.attention"]').length,
       };
     });
-    const marketplaceVisibleBeforeOpen = await page.locator('[data-cta-id="community-home.goto.marketplace"]').isVisible();
     const overflow390 = await collectOverflow(page);
     await page.screenshot({ path: join(screenshotDir, "community-home-simple-390x844.png"), fullPage: false });
 
@@ -362,9 +360,8 @@ async function run() {
       !defaultState.hasPosition ||
       !defaultState.hasMembership ||
       !defaultState.hasOpenNotice ||
-      !defaultState.hasQuickActions ||
+      !defaultState.quickActionsAbsent ||
       !defaultState.hasMoreTools ||
-      defaultState.quickActionCount !== 4 ||
       !defaultState.heroPhotoReady ||
       !defaultState.inviteVisible ||
       !defaultState.shareVisible ||
@@ -380,12 +377,10 @@ async function run() {
       defaultState.phoneStatusHeight > 36 ||
       defaultState.urgencyTones.join(",") !== "green" ||
       defaultState.attentionCount !== 0 ||
-      !marketplaceVisibleBeforeOpen ||
       overflow390.length > 0
     ) {
       console.error("Community Home simple phone default state failed:", {
         defaultState,
-        marketplaceVisibleBeforeOpen,
         overflow390,
       });
       process.exitCode = 1;
@@ -511,8 +506,8 @@ async function run() {
     await page.waitForTimeout(100);
     const unfoldedState = await page.evaluate(() => ({
       shellMode: document.querySelector("[data-gmfn-shell-mode]")?.getAttribute("data-gmfn-shell-mode"),
-      quickActionsVisible: Boolean(
-        document.querySelector('[data-debug-id="community-home.quick-actions"]')?.getClientRects().length
+      compactToolsVisible: Boolean(
+        document.querySelector('[data-debug-id="community-home.go-to"]')?.getClientRects().length
       ),
       desktopPageNavVisible: Array.from(
         document.querySelectorAll('[data-cta-id^="page-top-nav."]')
@@ -522,7 +517,7 @@ async function run() {
     await page.screenshot({ path: join(screenshotDir, "community-home-unfolded-1104x884.png"), fullPage: false });
     if (
       unfoldedState.shellMode !== "compact" ||
-      !unfoldedState.quickActionsVisible ||
+      !unfoldedState.compactToolsVisible ||
       unfoldedState.desktopPageNavVisible ||
       overflow1104.length > 0
     ) {
@@ -550,7 +545,7 @@ async function run() {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
-    await androidFallbackPage.waitForSelector('[data-debug-id="community-home.quick-actions"]', {
+    await androidFallbackPage.waitForSelector('[data-debug-id="community-home.go-to"]', {
       timeout: 30000,
     });
     const androidFallbackState = await androidFallbackPage.evaluate(() => ({

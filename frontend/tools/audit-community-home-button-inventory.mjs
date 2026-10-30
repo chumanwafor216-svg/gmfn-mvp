@@ -10,11 +10,11 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 46;
+const expectedStableButtonTemplateCount = 42;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 3;
 const expectedMobileShellBreakdown = { top: 2, drawer: 25, pageTools: 8, bottom: 5 };
-const expectedExpandedRouteLocalActionTemplates = 46;
+const expectedExpandedRouteLocalActionTemplates = 42;
 const expectedMobileShellActionCount = Object.values(expectedMobileShellBreakdown).reduce((sum, count) => sum + count, 0);
 const expectedWholeMobileRouteActionTemplates = expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 

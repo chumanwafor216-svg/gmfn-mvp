@@ -703,9 +703,7 @@ Must show, in phone-first order:
 - Needs your attention must not repeat ordinary-member notice acknowledgement or response actions already visible in the immediately preceding Bulletin
   - distinct officer bulletin review work may remain when approval is genuinely waiting
 - compact destination handoff group
-  - on phone, expose a two-column quick-action grid for `Community Marketplace`, `Members`, `Support & Opportunities`, and `Community Events`
-  - `Members` opens the existing membership overview; it must not invent or expose a public member directory
-  - `Community Events` returns to the live Bulletin, where meetings and notices already belong
+  - on phone, do not expose the former two-column shortcut grid for `Community Marketplace`, `Members`, `Support & Opportunities`, and `Community Events`
   - keep `Manage shop`, `Finance`, and `Trust` behind one closed `More community tools` disclosure on phone
   - on wider screens, retain the established Marketplace, Manage shop, Finance, Support, and Trust handoff rows
 - compact community switcher

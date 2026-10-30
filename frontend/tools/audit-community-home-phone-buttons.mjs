@@ -139,8 +139,8 @@ assertContains(
   "Community Home phone Bulletin must keep Respond, Share/QR, and Details in one-open-at-a-time sections."
 );
 assertContains(
-  /data-debug-id="community-home\.quick-actions"[\s\S]*?debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.members"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.events"[\s\S]*?More community tools[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.trust"/,
-  "Community Home phone must expose the approved four quick destinations and keep lower-frequency shop, finance, and trust tools behind one disclosure."
+  /isCompact \? \([\s\S]*?data-debug-id="community-home\.go-to"[\s\S]*?More community tools[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.trust"/,
+  "Community Home phone must move directly from the Bulletin/attention surface to the compact More community tools disclosure."
 );
 assertContains(
   /function communityDisclosureSectionStyle\(isCompact: boolean\)[\s\S]*?if \(!isCompact\) return communityBlockCard\("quiet"\);[\s\S]*?style=\{communityDisclosureSectionStyle\(true\)\}[\s\S]*?communityCountFromSummary > 1 \|\| requestedCommunityError/,
@@ -150,9 +150,9 @@ assertContains(
   /minHeight: isCompact \? 54 : 64[\s\S]*?compact=\{isCompact\}/,
   "Community Home phone identity facts must stay compact while preserving the truthful billboard values."
 );
-assertContains(
-  /function communityQuickActionGridStyle\(\)[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?Community Marketplace[\s\S]*?Shops and services[\s\S]*?Members[\s\S]*?Membership overview[\s\S]*?Support &amp; Opportunities[\s\S]*?Needs and offers[\s\S]*?Community Events[\s\S]*?Meetings and notices/,
-  "Community Home phone quick actions must keep the approved two-column labels and short helper lines."
+assertNotContains(
+  /community-home\.quick-actions|communityQuickActionGridStyle|communityQuickActionStyle|communityQuickActionIconStyle|community-home\.goto\.members|community-home\.goto\.events/,
+  "Community Home phone must not restore the removed four-card shortcut grid."
 );
 assertContains(
   /debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
