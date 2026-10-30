@@ -193,8 +193,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace[.]front[.]shop-previews".+?repeat.+?minmax.+?row[.]imageUrl.+?Open shop/s,
-  "Marketplace phone Shops & Services preview must show two image-led shop cards with canonical Open shop handoffs."
+  /data-gmfn-debug-id="marketplace[.]front[.]shop-previews".+?gridTemplateColumns: "1fr".+?row[.]imageUrl.+?Open shop/s,
+  "Marketplace phone Shops & Services preview must show two stacked image-led shop cards with canonical Open shop handoffs."
 );
 assertContains(
   marketplaceFile,

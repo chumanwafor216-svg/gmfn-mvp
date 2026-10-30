@@ -996,9 +996,11 @@ Rules:
 - Owner-approved phone order as of 2026-10-30: photo-led Marketplace identity,
   direct Invite someone, Needs / Demand, two-card Shops & Services preview,
   three compact actions (Browse shops, Support members, Share a resource), then
-  the compact suggested next step. Desktop may retain the fuller workbench,
-  but foldable/open phone states must use the same compact contract as closed
-  phone states.
+  the compact suggested next step. On phone these items stack as full-width rows
+  rather than narrow side-by-side columns, so enlarged Android text cannot crush
+  words or clip controls. Desktop may retain the fuller workbench, but
+  foldable/open phone states must use the same compact contract as closed phone
+  states.
 - Marketplace first-surface wording must explain member tasks rather than the
   implementation. Use `open requests`, `may be able to help`, `possible
   matches`, `shops`, `your recorded money here`, and direct verbs such as

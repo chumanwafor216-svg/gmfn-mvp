@@ -9382,9 +9382,10 @@ export default function MarketplacePage() {
             style={marketplaceLiveMarketCardStyle("needs", isCompact)}
           >
             <div
+              data-gmfn-debug-id="marketplace.front.needs-header"
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
                 gap: 10,
                 alignItems: "center",
               }}
@@ -9435,8 +9436,8 @@ export default function MarketplacePage() {
                     stableHeight={42}
                     style={{
                       ...marketplaceInlineActionStyle("secondary", false, true),
-                      width: "auto",
-                      minWidth: 84,
+                      width: "100%",
+                      minWidth: 0,
                       padding: "8px 10px",
                       color: "#0B4EA2",
                       background: "#F3F8FF",
@@ -9677,9 +9678,10 @@ export default function MarketplacePage() {
             style={marketplaceLiveMarketCardStyle("shops", isCompact)}
           >
             <div
+              data-gmfn-debug-id="marketplace.front.shops-header"
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
                 gap: 10,
                 alignItems: "center",
               }}
@@ -9731,7 +9733,7 @@ export default function MarketplacePage() {
                 stableHeight={isCompact ? 42 : 46}
                 style={{
                   ...marketplaceActionStyle("secondary"),
-                  width: isCompact ? "auto" : 176,
+                  width: isCompact ? "100%" : 176,
                   padding: isCompact ? "8px 10px" : undefined,
                   fontSize: isCompact ? 11.5 : undefined,
                   color: isCompact ? "#0B6B3B" : undefined,
@@ -9771,7 +9773,7 @@ export default function MarketplacePage() {
               style={{
                 marginTop: 12,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+                gridTemplateColumns: "1fr",
                 gap: 8,
               }}
             >
@@ -10043,10 +10045,11 @@ export default function MarketplacePage() {
               </div>
             </div>
             <div
+              data-gmfn-debug-id="marketplace.progressive-actions"
               style={{
                 marginTop: 10,
                 display: "grid",
-                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gridTemplateColumns: "1fr",
                 gap: 8,
               }}
             >
@@ -10057,13 +10060,13 @@ export default function MarketplacePage() {
                 onClick={(event) =>
                   openMarketplaceSection(event, "members", "marketplace-members-shops")
                 }
-                stableHeight={100}
+                stableHeight={66}
                 style={{
                   ...marketplaceInlineActionStyle("secondary", false, true),
                   display: "grid",
                   gridTemplateColumns: "30px minmax(0, 1fr)",
                   gap: 7,
-                  alignItems: "start",
+                  alignItems: "center",
                   textAlign: "left",
                   padding: 9,
                   color: "#07172C",
@@ -10087,13 +10090,13 @@ export default function MarketplacePage() {
                 onClick={(event) =>
                   openMarketplaceSection(event, "support", "marketplace-loans-support")
                 }
-                stableHeight={100}
+                stableHeight={66}
                 style={{
                   ...marketplaceInlineActionStyle("secondary", false, true),
                   display: "grid",
                   gridTemplateColumns: "30px minmax(0, 1fr)",
                   gap: 7,
-                  alignItems: "start",
+                  alignItems: "center",
                   textAlign: "left",
                   padding: 9,
                   color: "#07172C",
@@ -10117,13 +10120,13 @@ export default function MarketplacePage() {
                 onClick={(event) =>
                   openMarketplaceSection(event, "tools", "marketplace-owned-links")
                 }
-                stableHeight={100}
+                stableHeight={66}
                 style={{
                   ...marketplaceInlineActionStyle("secondary", false, true),
                   display: "grid",
                   gridTemplateColumns: "30px minmax(0, 1fr)",
                   gap: 7,
-                  alignItems: "start",
+                  alignItems: "center",
                   textAlign: "left",
                   padding: 9,
                   color: "#07172C",
@@ -10249,7 +10252,7 @@ export default function MarketplacePage() {
               "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(247,251,255,0.98) 100%)",
             padding: isCompact ? 10 : 12,
             display: "grid",
-            gridTemplateColumns: isCompact ? "34px minmax(0, 1fr) minmax(104px, 128px)" : "42px minmax(0, 1fr) auto",
+            gridTemplateColumns: isCompact ? "34px minmax(0, 1fr)" : "42px minmax(0, 1fr) auto",
             gap: isCompact ? 10 : 12,
             alignItems: "center",
             boxShadow:
@@ -10273,7 +10276,7 @@ export default function MarketplacePage() {
             <MarketplaceGlyph name="spark" size={isCompact ? 18 : 22} />
           </span>
 
-          <div style={{ minWidth: 0 }}>
+          <div data-gmfn-debug-id="marketplace.front.suggested-copy" style={{ minWidth: 0 }}>
             <div style={{ ...sectionLabel(), color: "#8A5A08" }}>
               Suggested next step
             </div>
@@ -10341,7 +10344,7 @@ export default function MarketplacePage() {
             style={{
               ...marketplaceActionStyle("primary"),
               width: isCompact ? "100%" : 150,
-              gridColumn: undefined,
+              gridColumn: isCompact ? "1 / -1" : undefined,
               minWidth: 0,
               padding: isCompact ? "9px 8px" : undefined,
               fontSize: isCompact ? 11.5 : undefined,

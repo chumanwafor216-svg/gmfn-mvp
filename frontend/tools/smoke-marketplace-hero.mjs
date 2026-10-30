@@ -379,6 +379,27 @@ async function run() {
       const preview = document.querySelector(
         '[data-gmfn-debug-id="marketplace.front.shop-previews"]'
       );
+      const needsHeader = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.needs-header"]'
+      );
+      const shopsHeader = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.shops-header"]'
+      );
+      const progressiveActions = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.progressive-actions"]'
+      );
+      const suggestedCopy = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.suggested-copy"]'
+      );
+      const suggestedAction = document.querySelector(
+        '[data-cta-id="marketplace.row.wisdom-action"]'
+      );
+      const needsAction = document.querySelector(
+        '[data-cta-id="marketplace.job.add-need-shortcut"]'
+      );
+      const shopsAction = document.querySelector(
+        '[data-cta-id="marketplace.job.find-people-services"]'
+      );
       const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
@@ -400,6 +421,29 @@ async function run() {
         shopColumnCount: preview
           ? getComputedStyle(preview).gridTemplateColumns.split(" ").filter(Boolean).length
           : 0,
+        progressiveColumnCount: progressiveActions
+          ? getComputedStyle(progressiveActions).gridTemplateColumns.split(" ").filter(Boolean).length
+          : 0,
+        needsActionStacked: Boolean(
+          needsHeader &&
+            needsAction &&
+            needsHeader.firstElementChild &&
+            needsAction.getBoundingClientRect().top >=
+              needsHeader.firstElementChild.getBoundingClientRect().bottom
+        ),
+        shopsActionStacked: Boolean(
+          shopsHeader &&
+            shopsAction &&
+            shopsHeader.firstElementChild &&
+            shopsAction.getBoundingClientRect().top >=
+              shopsHeader.firstElementChild.getBoundingClientRect().bottom
+        ),
+        suggestedActionStacked: Boolean(
+          suggestedCopy &&
+            suggestedAction &&
+            suggestedAction.getBoundingClientRect().top >=
+              suggestedCopy.getBoundingClientRect().bottom
+        ),
         overflow,
       };
     });
@@ -409,7 +453,11 @@ async function run() {
       chikaResult.heroHeight <= 0 ||
       chikaResult.heroHeight > 230 ||
       chikaResult.shopPreviewCount !== 2 ||
-      chikaResult.shopColumnCount !== 2 ||
+      chikaResult.shopColumnCount !== 1 ||
+      chikaResult.progressiveColumnCount !== 1 ||
+      !chikaResult.needsActionStacked ||
+      !chikaResult.shopsActionStacked ||
+      !chikaResult.suggestedActionStacked ||
       chikaResult.overflow.length
     ) {
       console.error("Marketplace Chika-sized frame smoke failed:", chikaResult);
