@@ -533,6 +533,46 @@ async function run() {
       process.exitCode = 1;
       return;
     }
+    const androidFallbackPage = await browser.newPage({
+      viewport: { width: 1104, height: 884 },
+      deviceScaleFactor: 2,
+      isMobile: false,
+      hasTouch: false,
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 14; SM-F946B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    });
+    await installApiMocks(androidFallbackPage);
+    await androidFallbackPage.addInitScript(() => {
+      localStorage.setItem("access_token", "local-community-home-android-fallback-token");
+      localStorage.setItem("gmfn_selected_clan_id", "8");
+    });
+    await androidFallbackPage.goto("http://127.0.0.1:" + port + "/app/community/8", {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await androidFallbackPage.waitForSelector('[data-debug-id="community-home.quick-actions"]', {
+      timeout: 30000,
+    });
+    const androidFallbackState = await androidFallbackPage.evaluate(() => ({
+      shellMode: document
+        .querySelector("[data-gmfn-shell-mode]")
+        ?.getAttribute("data-gmfn-shell-mode"),
+      desktopPageNavVisible: Array.from(
+        document.querySelectorAll('[data-cta-id^="page-top-nav."]')
+      ).some((node) => node.getClientRects().length > 0),
+    }));
+    await androidFallbackPage.close();
+    if (
+      androidFallbackState.shellMode !== "compact" ||
+      androidFallbackState.desktopPageNavVisible
+    ) {
+      console.error(
+        "Community Home ignored the Android fallback when pointer APIs misreported:",
+        androidFallbackState
+      );
+      process.exitCode = 1;
+      return;
+    }
 
     const multiCommunityPage = await browser.newPage({
       viewport: { width: 390, height: 844 },

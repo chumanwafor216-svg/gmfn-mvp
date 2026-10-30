@@ -20,7 +20,7 @@ const SHELL_FRESHNESS_INTERVAL_MS = 5 * 60 * 1000;
 const SHELL_FRESHNESS_TIMEOUT_MS = 10000;
 const SHELL_RELOAD_SIGNATURE_KEY = "gsn.pwa.shellReloadSignature";
 const SHELL_DISMISSED_SIGNATURE_KEY = "gsn.pwa.shellDismissedSignature";
-const SHELL_ASSET_PATTERN = /\/assets\/[^"'<> ]+\.(?:js|css)/g;
+
 
 function notifyInstallListeners(): void {
   installListeners.forEach((listener) => listener());
@@ -104,8 +104,23 @@ function signatureFromAssets(assets: string[]): string {
 }
 
 function shellSignatureFromHtml(html: string): string {
-  const matches = html.match(SHELL_ASSET_PATTERN) || [];
-  return signatureFromAssets(matches);
+  if (typeof DOMParser === "undefined") return "";
+
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const assets: string[] = [];
+
+  parsed.querySelectorAll<HTMLScriptElement>("script[src]").forEach((node) => {
+    const src = String(node.getAttribute("src") || "");
+    if (src.startsWith("/assets/")) assets.push(src);
+  });
+  parsed
+    .querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]')
+    .forEach((node) => {
+      const href = String(node.getAttribute("href") || "");
+      if (href.startsWith("/assets/")) assets.push(href);
+    });
+
+  return signatureFromAssets(assets);
 }
 
 function currentDocumentShellSignature(): string {
@@ -220,7 +235,6 @@ function offerIosShellUpdate(latestSignature: string): void {
 
 async function checkForFreshInstalledShell(): Promise<void> {
   if (typeof window === "undefined") return;
-  if (!isGsnStandaloneDisplay()) return;
   if (document.visibilityState === "hidden") return;
   if (shellFreshnessChecking) return;
 

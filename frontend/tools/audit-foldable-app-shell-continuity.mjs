@@ -34,9 +34,9 @@ requirePattern(
   /TOUCH_APP_SHELL_COMPACT_MAX_WIDTH\s*=\s*1366[\s\S]*?isTouchFirstAppDevice\(\)/
 );
 requirePattern(
-  "Foldable detection must require touch and a coarse or non-hovering primary input.",
+  "Foldable detection must accept touch input or a mobile Android/iOS browser signal.",
   responsiveSource,
-  /hasTouch\s*&&\s*\(hasCoarsePointer\s*\|\|\s*hasNoHover\)/
+  /hasTouch\s*&&\s*\(hasCoarsePointer\s*\|\|\s*hasNoHover\)[\s\S]*?userAgentDataMobile[\s\S]*?mobileUserAgent/
 );
 requirePattern(
   "The app shell must derive its initial mode from the shared viewport helper.",

@@ -27,6 +27,7 @@ function forbidMatch(name, source, pattern, message) {
 const indexHtml = read("index.html");
 const serviceWorker = read("public/sw.js");
 const installSupport = read("src/lib/pwaInstall.ts");
+const server = read("server.mjs");
 
 requireMatch(
   "index.html",
@@ -61,14 +62,32 @@ forbidMatch(
 requireMatch(
   "public/sw.js",
   serviceWorker,
-  /gsn-pwa-shell-v20[\s\S]*?request\.mode === "navigate"[\s\S]*?response\.ok[\s\S]*?cache\.put\("\/cover", copy\)/,
-  "v20 must retain the latest successful navigation as the offline shell."
+  /gsn-pwa-shell-v21[\s\S]*?request\.mode === "navigate"[\s\S]*?response\.ok[\s\S]*?cache\.put\("\/cover", copy\)/,
+  "v21 must retain the latest successful navigation as the offline shell."
 );
 requireMatch(
   "src/lib/pwaInstall.ts",
   installSupport,
   /\.register\("\/sw\.js", \{ updateViaCache: "none" \}\)/,
   "service-worker update checks must bypass the browser HTTP cache."
+);
+requireMatch(
+  "src/lib/pwaInstall.ts",
+  installSupport,
+  /new DOMParser\(\)\.parseFromString\(html, "text\/html"\)[\s\S]*?querySelectorAll<HTMLScriptElement>\("script\[src\]"\)[\s\S]*?querySelectorAll<HTMLLinkElement>\('link\[rel="stylesheet"\]\[href\]'\)/,
+  "current and deployed shell signatures must use the same entry-script and stylesheet selectors."
+);
+forbidMatch(
+  "src/lib/pwaInstall.ts",
+  installSupport,
+  /if \(!isGsnStandaloneDisplay\(\)\) return;/,
+  "ordinary browser tabs must not be excluded from deployed-shell freshness checks."
+);
+requireMatch(
+  "server.mjs",
+  server,
+  /urlPathname === "\/index\.html"[\s\S]*?urlPathname === "\/sw\.js"[\s\S]*?"no-store, max-age=0"[\s\S]*?createReadStream\(indexPath\)[\s\S]*?"Cache-Control": "no-store, max-age=0"/,
+  "HTML fallbacks and service-worker metadata must bypass browser and CDN caches."
 );
 
 if (!process.exitCode) {

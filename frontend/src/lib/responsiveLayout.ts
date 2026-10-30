@@ -13,8 +13,19 @@ export function isTouchFirstAppDevice(): boolean {
   const hasTouch = Number(window.navigator?.maxTouchPoints || 0) > 0;
   const hasCoarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
   const hasNoHover = window.matchMedia?.("(hover: none)").matches ?? false;
+  const userAgentDataMobile = Boolean(
+    (window.navigator as Navigator & { userAgentData?: { mobile?: boolean } })
+      ?.userAgentData?.mobile
+  );
+  const mobileUserAgent = /android|iphone|ipad|ipod|mobile|fold/i.test(
+    String(window.navigator?.userAgent || "")
+  );
 
-  return hasTouch && (hasCoarsePointer || hasNoHover);
+  return (
+    (hasTouch && (hasCoarsePointer || hasNoHover)) ||
+    userAgentDataMobile ||
+    mobileUserAgent
+  );
 }
 
 export function isCompactAppViewport(): boolean {

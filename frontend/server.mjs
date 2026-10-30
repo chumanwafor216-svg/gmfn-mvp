@@ -383,13 +383,23 @@ async function serveStaticOrFallback(res, urlPathname) {
     const stat = await fs.stat(target);
     if (stat.isFile()) {
       const contentType = mimeTypes.get(path.extname(target).toLowerCase()) || "application/octet-stream";
+      const cacheControl = urlPathname.startsWith("/assets/")
+        ? "public, max-age=31536000, immutable"
+        : urlPathname === "/index.html" ||
+            urlPathname === "/sw.js" ||
+            urlPathname === "/manifest.json" ||
+            urlPathname === "/manifest.webmanifest"
+          ? "no-store, max-age=0"
+          : "public, max-age=300";
       createReadStream(target).pipe(writeHead(res, 200, contentType, {
-        "Cache-Control": urlPathname.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "public, max-age=300",
+        "Cache-Control": cacheControl,
       }));
       return;
     }
   }
-  createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+  createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8", {
+    "Cache-Control": "no-store, max-age=0",
+  }));
 }
 
 createServer(async (req, res) => {

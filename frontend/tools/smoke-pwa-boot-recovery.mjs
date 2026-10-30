@@ -26,6 +26,31 @@ try {
   await normalPage.locator("#root > *").first().waitFor();
   if (await normalPage.locator("#gsn-boot-recovery").count()) {
     throw new Error("Recovery card appeared during a healthy app boot.");
+  }  await normalPage.waitForTimeout(300);
+  const currentShellReload = await normalPage.evaluate(() =>
+    window.sessionStorage.getItem("gsn.pwa.shellReloadSignature")
+  );
+  if (currentShellReload) {
+    throw new Error("Current shell triggered a false freshness reload.");
+  }
+  await normalPage.route("**/?gsn_shell_check=*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: '<script type="module" src="/assets/fresh-shell-test.js"></script>',
+    })
+  );
+  const normalTabReload = normalPage.waitForEvent("framenavigated", {
+    predicate: (frame) => frame === normalPage.mainFrame(),
+    timeout: 10000,
+  });
+  await normalPage.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await normalTabReload;
+  const refreshedSignature = await normalPage.evaluate(() =>
+    window.sessionStorage.getItem("gsn.pwa.shellReloadSignature")
+  );
+  if (!refreshedSignature?.includes("fresh-shell-test.js")) {
+    throw new Error("Ordinary browser tab did not reload for a newer deployed shell.");
   }
   await normalPage.close();
 

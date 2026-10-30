@@ -5026,3 +5026,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Updated the screen spec, Marketplace blueprint amendment, front-package audit, button inventory (97 reviewed stable actions), and Marketplace hero smoke.
 - Verified: npm run smoke:marketplace-hero at 390x844 and Chika/foldable 457x915; npm run audit:marketplace-front-package; npm run audit:marketplace-actions; npm run audit:marketplace-button-lines; npm.cmd run audit:protected-button-freeze; npm run build.
 - Known unrelated warning: protected visual audits still report an existing duplicate React key 0; the full protected suite passes and this Marketplace change does not touch that source.
+
+## Device shell freshness and foldable parity - 2026-10-30
+
+- Confirmed that Render was already serving the newer Community Home and Marketplace code from commit 64415705; the reports were not evidence that the prior publication had failed.
+- Found two independent client-side causes: some unfolded Android modes can misreport touch/pointer capabilities and select desktop markup, while ordinary long-lived browser tabs were excluded from the existing deployed-shell freshness check and could keep old React code indefinitely.
+- frontend/src/lib/responsiveLayout.ts now treats Android/iOS/mobile user-agent signals as a fallback through the existing 1366px compact ceiling, while pointer-led desktop browsers retain the desktop presentation.
+- Shell freshness now covers ordinary browser tabs and installed shortcuts, compares the same entry-script/stylesheet assets without false reloads, advances the PWA cache to gsn-pwa-shell-v21, and serves HTML, manifests, and sw.js with no-store; hashed assets remain immutable.
+- Regression coverage now verifies an unfolded 1104px Android browser that falsely reports no touch, a current shell that stays in place, a stale ordinary tab that reloads, and production-server cache headers.
+- Verification passed: foldable and PWA audits, PWA recovery smoke, rendered Community Home smoke, Marketplace hero smoke at phone/foldable widths, Marketplace front-package audit, icon protocol audit, protected-button/frozen-surface suite, production cache-header probe, and the 312-module production build. The protected suite still emits the pre-existing duplicate React-key warning; every protected check passed.
+- This is a frontend-only fix for /app/community, /app/community/:clanId, /app/marketplace, and shared app-shell freshness. Publication was requested after verification.
