@@ -393,12 +393,14 @@ async function serveStaticOrFallback(res, urlPathname) {
           : "public, max-age=300";
       createReadStream(target).pipe(writeHead(res, 200, contentType, {
         "Cache-Control": cacheControl,
+        "CDN-Cache-Control": cacheControl,
       }));
       return;
     }
   }
   createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8", {
     "Cache-Control": "no-store, max-age=0",
+    "CDN-Cache-Control": "no-store",
   }));
 }
 

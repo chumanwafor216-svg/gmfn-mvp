@@ -86,8 +86,8 @@ forbidMatch(
 requireMatch(
   "server.mjs",
   server,
-  /urlPathname === "\/index\.html"[\s\S]*?urlPathname === "\/sw\.js"[\s\S]*?"no-store, max-age=0"[\s\S]*?createReadStream\(indexPath\)[\s\S]*?"Cache-Control": "no-store, max-age=0"/,
-  "HTML fallbacks and service-worker metadata must bypass browser and CDN caches."
+  /urlPathname === "\/index\.html"[\s\S]*?urlPathname === "\/sw\.js"[\s\S]*?"no-store, max-age=0"[\s\S]*?"CDN-Cache-Control": cacheControl[\s\S]*?createReadStream\(indexPath\)[\s\S]*?"Cache-Control": "no-store, max-age=0"[\s\S]*?"CDN-Cache-Control": "no-store"/,
+  "HTML fallbacks and service-worker metadata must explicitly bypass browser and Render CDN caches."
 );
 
 if (!process.exitCode) {
