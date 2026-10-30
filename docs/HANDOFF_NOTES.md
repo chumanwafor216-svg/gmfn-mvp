@@ -5036,3 +5036,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Regression coverage now verifies an unfolded 1104px Android browser that falsely reports no touch, a current shell that stays in place, a stale ordinary tab that reloads, and production-server cache headers.
 - Verification passed: foldable and PWA audits, PWA recovery smoke, rendered Community Home smoke, Marketplace hero smoke at phone/foldable widths, Marketplace front-package audit, icon protocol audit, protected-button/frozen-surface suite, production cache-header probe, and the 312-module production build. The protected suite still emits the pre-existing duplicate React-key warning; every protected check passed.
 - This is a frontend-only fix for /app/community, /app/community/:clanId, /app/marketplace, and shared app-shell freshness. Publication was requested after verification.
+- Post-deploy correction: an independent live probe proved that
+  `gmfn-frontend` is configured in Render as a `static_site`, so its CDN ignored
+  `frontend/server.mjs` and continued returning
+  `public, max-age=0, s-maxage=300` with repeated `CF-Cache-Status: HIT`
+  responses. The deployment workflow now preserves non-cache headers, replaces
+  static-site Cache-Control rules with `/* = no-store, max-age=0` through the
+  Render API, and fails deployment unless `/`, `/app/community`, and `/sw.js`
+  live responses show `no-store` and are not edge-cache hits.

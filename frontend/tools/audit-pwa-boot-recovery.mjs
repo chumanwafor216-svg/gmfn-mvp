@@ -5,9 +5,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = join(frontendRoot, "..");
 
 function read(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function readRepo(relativePath) {
+  return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
 function requireMatch(name, source, pattern, message) {
@@ -28,6 +33,7 @@ const indexHtml = read("index.html");
 const serviceWorker = read("public/sw.js");
 const installSupport = read("src/lib/pwaInstall.ts");
 const server = read("server.mjs");
+const renderDeployWorkflow = readRepo(".github/workflows/render-deploy.yml");
 
 requireMatch(
   "index.html",
@@ -87,7 +93,13 @@ requireMatch(
   "server.mjs",
   server,
   /urlPathname === "\/index\.html"[\s\S]*?urlPathname === "\/sw\.js"[\s\S]*?"no-store, max-age=0"[\s\S]*?"CDN-Cache-Control": cacheControl[\s\S]*?createReadStream\(indexPath\)[\s\S]*?"Cache-Control": "no-store, max-age=0"[\s\S]*?"CDN-Cache-Control": "no-store"/,
-  "HTML fallbacks and service-worker metadata must explicitly bypass browser and Render CDN caches."
+  "the Node-hosted HTML fallback and service-worker metadata must explicitly bypass browser and Render CDN caches."
+);
+requireMatch(
+  ".github/workflows/render-deploy.yml",
+  renderDeployWorkflow,
+  /Enforce frontend static shell cache policy[\s\S]*?\/headers\?limit=100[\s\S]*?name\.toLowerCase\(\) !== "cache-control"[\s\S]*?path: "\/\*"[\s\S]*?value: "no-store, max-age=0"[\s\S]*?-X PUT[\s\S]*?Verify frontend shell cache policy[\s\S]*?cache-control:\.\*no-store[\s\S]*?cf-cache-status: \*HIT/,
+  "the active Render static site must receive and live-verify a no-store shell policy on every deploy."
 );
 
 if (!process.exitCode) {
