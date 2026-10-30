@@ -74,9 +74,9 @@ async function installApiMocks(page, baseURL) {
     {
       id: 217,
       user_id: 217,
-      display_name: "Homeland Support Desk",
+      display_name: "Arinze Nnamani",
       gmfn_id: "GMFN-U-22222222",
-      role: "Supporter",
+      role: "Merchant",
     },
     ],
     13: [
@@ -98,6 +98,21 @@ async function installApiMocks(page, baseURL) {
       owner_user_id: 216,
       owner_gmfn_id: "GMFN-U-63655DE6",
       name: "Ardent Ebony Uplift LTD",
+      description: "Home appliances, electronics and more",
+      image_url:
+        "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=320&h=240&fit=crop",
+      visibility: "public",
+    },
+    {
+      id: 56,
+      shop_id: 56,
+      clan_id: 8,
+      owner_user_id: 217,
+      owner_gmfn_id: "GMFN-U-22222222",
+      name: "Arinze Nnamani",
+      description: "Shawarma affair and Chinese delicacy",
+      image_url:
+        "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=320&h=240&fit=crop",
       visibility: "public",
     },
     ],
@@ -228,6 +243,7 @@ async function run() {
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 2,
       isMobile: true,
+      hasTouch: true,
     });
 
     await installApiMocks(page, baseURL);
@@ -264,12 +280,19 @@ async function run() {
       const text = document.body.textContent || "";
       const required = [
         "Builders corporation Marketplace",
-        "Needs",
-        "Shops & services",
+        "Buy, sell, support and grow together in our community.",
+        "Needs / Demand",
+        "Post or view what the community needs.",
+        "Add need",
+        "Shops & Services",
+        "Discover and support shops in this community.",
         "See all shops",
         "Invite someone",
-        "Community board",
         "More things you can do",
+        "Browse shops",
+        "Support members",
+        "Share a resource",
+        "Suggested next step",
       ];
       const missing = required.filter((item) => !text.includes(item));
       const forbiddenPresent = [
@@ -326,6 +349,70 @@ async function run() {
       result.clippedHeroStats.length
     ) {
       console.error("Marketplace hero smoke failed:", result);
+      process.exit(1);
+    }
+
+    await page.setViewportSize({ width: 457, height: 915 });
+    await page.waitForTimeout(250);
+    await page.screenshot({
+      path: join(screenshotDir, "marketplace-chika-457x915.png"),
+      fullPage: false,
+    });
+
+    const chikaResult = await page.evaluate(() => {
+      const selectors = [
+        '[data-gmfn-debug-id="marketplace.identity"]',
+        '[data-cta-id="marketplace.front.invite-someone"]',
+        '[data-gmfn-debug-id="marketplace.front.needs"]',
+        '[data-gmfn-debug-id="marketplace.front.shops"]',
+        '[data-gmfn-debug-id="marketplace.progressive-tools"]',
+        '[data-gmfn-debug-id="marketplace.front.suggested-next-step"]',
+      ];
+      const positions = selectors.map((selector) => {
+        const element = document.querySelector(selector);
+        return element ? Math.round(element.getBoundingClientRect().top + window.scrollY) : -1;
+      });
+      const ordered = positions.every(
+        (position, index) => position >= 0 && (index === 0 || position > positions[index - 1])
+      );
+      const hero = document.querySelector('[data-gmfn-debug-id="marketplace.identity"]');
+      const preview = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.shop-previews"]'
+      );
+      const overflow = Array.from(document.querySelectorAll("main *"))
+        .filter((element) => {
+          if (element.closest('[aria-hidden="true"]')) return false;
+          const rect = element.getBoundingClientRect();
+          return rect.width > 0 && (rect.left < -2 || rect.right > window.innerWidth + 2);
+        })
+        .slice(0, 6)
+        .map((element) => ({
+          tag: element.tagName,
+          text: (element.textContent || "").trim().slice(0, 80),
+          right: Math.round(element.getBoundingClientRect().right),
+        }));
+
+      return {
+        ordered,
+        positions,
+        heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
+        shopPreviewCount: preview?.children.length || 0,
+        shopColumnCount: preview
+          ? getComputedStyle(preview).gridTemplateColumns.split(" ").filter(Boolean).length
+          : 0,
+        overflow,
+      };
+    });
+
+    if (
+      !chikaResult.ordered ||
+      chikaResult.heroHeight <= 0 ||
+      chikaResult.heroHeight > 230 ||
+      chikaResult.shopPreviewCount !== 2 ||
+      chikaResult.shopColumnCount !== 2 ||
+      chikaResult.overflow.length
+    ) {
+      console.error("Marketplace Chika-sized frame smoke failed:", chikaResult);
       process.exit(1);
     }
 
@@ -410,7 +497,7 @@ async function run() {
     }
 
     console.log(
-      "Marketplace hero smoke passed: selected marketplace/domain scope and mobile stat containment verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
+      "Marketplace hero smoke passed: selected marketplace/domain scope, 390x844 phone, and 457x915 Chika foldable frame verified."
     );
   } finally {
     if (browser) await browser.close();

@@ -5017,3 +5017,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - `/app/community/:clanId` now uses that shared decision and resynchronises on window resize, orientation change, page restore, and visual-viewport resize, so opening or closing a foldable does not restore the older Community Home arrangement.
 - Verification passed: foldable shell contract audit, all focused Community Home/invite audits, rendered Community Home smoke at `320`, `360`, `390`, `884`, and touch-first `1104px` widths, the complete protected-button/frozen-surface suite, and the 311-module production frontend build. The wider suite still emits the pre-existing duplicate React-key warning; every protected check passed.
 - This is a frontend-only change. Publication was requested after verification.
+
+## 2026-10-30 - Marketplace friendly photo-led phone frame
+- Product-owner target: the latest supplied /app/marketplace frame supersedes the older abstract card presentation on phone.
+- Implemented in frontend/src/pages/MarketplacePage.tsx: shared foldable-aware compact detection, photo-led selected-community identity, direct compact invite action, Needs / Demand with authorised + Add need, two-column image-led Shops & Services, three compact secondary actions, and a shorter suggested-next-step row.
+- Added project asset frontend/src/assets/marketplace/marketplace-community-appliances-hero.jpg, generated for everyday household-appliance community commerce with no vault/luxury framing.
+- Preserved route ownership: DemandBox owns need creation/lifecycle, Public Shop owns shop detail, existing support and link sections own their actions, and desktop retains the fuller workbench.
+- Updated the screen spec, Marketplace blueprint amendment, front-package audit, button inventory (97 reviewed stable actions), and Marketplace hero smoke.
+- Verified: npm run smoke:marketplace-hero at 390x844 and Chika/foldable 457x915; npm run audit:marketplace-front-package; npm run audit:marketplace-actions; npm run audit:marketplace-button-lines; npm.cmd run audit:protected-button-freeze; npm run build.
+- Known unrelated warning: protected visual audits still report an existing duplicate React key 0; the full protected suite passes and this Marketplace change does not touch that source.

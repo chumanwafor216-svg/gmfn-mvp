@@ -15,6 +15,22 @@ canonical system skeleton still wins unless both are intentionally revised
 together.
 
 
+## Owner-approved phone presentation amendment - 2026-10-30
+The product owner explicitly approved a friendlier photo-led phone frame for
+/app/marketplace. This amends presentation and phone ordering without moving
+workflow ownership:
+
+1. photo-led selected-community identity with Community ID and active status;
+2. direct Invite someone;
+3. Needs / Demand with authorised + Add need handoff to DemandBox;
+4. two-card Shops & Services preview with canonical Public Shop handoffs;
+5. Browse shops, Support members, and Share a resource;
+6. compact suggested next step.
+
+Foldable open/closed states must resolve through the shared compact app
+viewport contract so the old wide workbench does not return on the opened
+phone. DemandBox, Public Shop, Shop Control, support, links, and Marketplace
+Wisdom retain their existing route and permission ownership.
 ## Marketplace CLOSED/FROZEN contract - 2026-10-08
 The canonical `/app/marketplace` surface is frozen around this contract:
 

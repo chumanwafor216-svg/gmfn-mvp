@@ -179,6 +179,26 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
+  /import marketplaceCommunityHeroImage.+?data-gmfn-debug-id="marketplace[.]identity".+?backgroundImage:.+?marketplaceCommunityHeroImage.+?Buy, sell, support and grow together in our community[.]/s,
+  "Marketplace phone identity must use the approved photo-led community hero and friendly community-commerce message."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /isCompactAppViewport.+?orientationchange.+?pageshow.+?visualViewport.+?addEventListener.+?resize.+?marketplace[.]front[.]invite-someone.+?marketplace[.]front[.]needs.+?Needs [/] Demand.+?Add need.+?marketplace[.]front[.]shops.+?Shops & Services.+?marketplace[.]progressive[.]browse-shops.+?Browse shops.+?marketplace[.]progressive[.]support-members.+?Support members.+?marketplace[.]progressive[.]share-resource.+?Share a resource.+?marketplace[.]front[.]suggested-next-step/s,
+  "Marketplace phone front must stay foldable-aware and preserve the approved identity, invite, needs, shops, three secondary actions, and suggested-step order."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /data-gmfn-debug-id="marketplace[.]front[.]shop-previews".+?repeat.+?minmax.+?row[.]imageUrl.+?Open shop/s,
+  "Marketplace phone Shops & Services preview must show two image-led shop cards with canonical Open shop handoffs."
+);
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
   /listMarketplaceRequests\(\{[\s\S]*?clan_id: activeCommunityId[\s\S]*?status: "open"[\s\S]*?getDemandSupplyMatches\(requestId, \{ limit: 3 \}\)[\s\S]*?setMarketplaceMatchRows\(matchSets\.flat\(\)\.slice\(0, 12\)\)/,
   "Marketplace front must read existing DemandBox requests and matches without owning the DemandBox lifecycle."
 );

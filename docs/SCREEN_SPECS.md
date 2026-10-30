@@ -994,7 +994,13 @@ Rules:
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
 - Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More things you can do`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
-- On phone, the Marketplace identity uses the selected community name and status without a repeated instruction sentence. The first market cards use one short heading (`Needs`, `Shops & services`), one clear action, and compact counts; explanatory paragraphs and decorative category tags stay off the first surface.
+- On phone, the Marketplace identity uses a photo-led selected-community hero with the community name, Community ID, active status, and the short line Buy, sell, support and grow together in our community. The first market cards use the friendly headings Needs / Demand and Shops & Services, each with one clear action and one short explanatory line; technical tags and raw counts stay off the first surface.
+- Owner-approved phone order as of 2026-10-30: photo-led Marketplace identity,
+  direct Invite someone, Needs / Demand, two-card Shops & Services preview,
+  three compact actions (Browse shops, Support members, Share a resource), then
+  the compact suggested next step. Desktop may retain the fuller workbench,
+  but foldable/open phone states must use the same compact contract as closed
+  phone states.
 - Marketplace first-surface wording must explain member tasks rather than the
   implementation. Use `open requests`, `may be able to help`, `possible
   matches`, `shops`, `your recorded money here`, and direct verbs such as
@@ -1003,7 +1009,7 @@ Rules:
   position`, or `scoped` language to members. These wording changes do not
   alter DemandBox ownership, provider-match order, neutral discovery, finance
   calculations, permissions, or route handoffs.
-- The Needs heading may expose one compact 48px `Add request` plus only when the authenticated member's community list contains the selected community and community policy permits DemandBox. A route parameter alone is not authorization. It opens and focuses the existing DemandBox request form with the selected community and an explicit origin/back path. Opening the shortcut creates nothing and must not enable relay consent, cross-community reach, paid capacity, or any other governed option.
+- The Needs heading may expose one compact + Add need action only when the authenticated member's community list contains the selected community and community policy permits DemandBox. A route parameter alone is not authorization. It opens and focuses the existing DemandBox request form with the selected community and an explicit origin/back path. Opening the shortcut creates nothing and must not enable relay consent, cross-community reach, paid capacity, or any other governed option.
 - Promote in another community remains the existing paid Network Repost
   workflow, not a new advertising route. Shop Control must open it with an
   explicit trusted source; a naked hash still must not expose the
