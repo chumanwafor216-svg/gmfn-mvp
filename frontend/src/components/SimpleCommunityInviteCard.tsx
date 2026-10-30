@@ -21,6 +21,8 @@ type SimpleCommunityInviteCardProps = {
   compact?: boolean;
   embedded?: boolean;
   hero?: boolean;
+  heroPresentation?: "pill" | "identity";
+  heroSecondaryAction?: React.ReactNode;
   inviterName?: string;
   communityCode?: string;
 };
@@ -46,6 +48,8 @@ export default function SimpleCommunityInviteCard({
   compact = false,
   embedded = false,
   hero = false,
+  heroPresentation = "pill",
+  heroSecondaryAction,
   inviterName = "",
   communityCode = "",
 }: SimpleCommunityInviteCardProps) {
@@ -224,41 +228,66 @@ export default function SimpleCommunityInviteCard({
 
   if (hero) {
     const visibleInviterName = inviterName.trim() || preparedInviterName || "Your GSN name";
+    const identityPresentation = heroPresentation === "identity";
     return (
-      <details
+      <div
         data-debug-id="simple-community-invite"
         style={{
-          marginTop: compact ? 11 : 14,
+          marginTop: identityPresentation ? 10 : compact ? 11 : 14,
+          display: identityPresentation ? "grid" : "block",
+          gridTemplateColumns: identityPresentation
+            ? "minmax(0, 1.45fr) minmax(0, 0.8fr)"
+            : undefined,
+          gap: identityPresentation ? 8 : undefined,
+          alignItems: identityPresentation ? "start" : undefined,
         }}
       >
+        <details style={{ display: identityPresentation ? "contents" : "block" }}>
         <StableDisclosureSummary
           debugId="simple-community-invite.open"
-          stableHeight={40}
+          stableHeight={identityPresentation ? 46 : 40}
           style={{
-            width: "fit-content",
+            width: identityPresentation ? "100%" : "fit-content",
+            minWidth: 0,
+            gridColumn: identityPresentation ? "1" : undefined,
+            gridRow: identityPresentation ? "1" : undefined,
             display: "inline-flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: 7,
-            padding: "8px 13px",
-            borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.42)",
-            background: "linear-gradient(180deg, #F8D976 0%, #E8B83D 100%)",
-            color: "#07172C",
-            fontSize: 14,
+            padding: identityPresentation ? "10px 11px" : "8px 13px",
+            borderRadius: identityPresentation ? 14 : 999,
+            border: identityPresentation
+              ? "1px solid rgba(13,95,168,0.18)"
+              : "1px solid rgba(255,255,255,0.42)",
+            background: identityPresentation
+              ? "linear-gradient(180deg, #1267AC 0%, #0B4F86 100%)"
+              : "linear-gradient(180deg, #F8D976 0%, #E8B83D 100%)",
+            color: identityPresentation ? "#FFFFFF" : "#07172C",
+            fontSize: identityPresentation ? 13.5 : 14,
             fontWeight: 950,
             lineHeight: 1,
+            boxShadow: identityPresentation
+              ? "0 10px 20px rgba(11,79,134,0.18)"
+              : undefined,
           }}
         >
           <GsnLegacyIcon name="community" size={21} />
-          Invite
+          {identityPresentation ? "Invite members" : "Invite"}
         </StableDisclosureSummary>
 
         <div
           style={{
-            marginTop: 9,
+            gridColumn: identityPresentation ? "1 / -1" : undefined,
+            gridRow: identityPresentation ? "2" : undefined,
+            marginTop: identityPresentation ? 0 : 9,
             borderRadius: 16,
-            border: "1px solid rgba(231,202,124,0.32)",
-            background: "rgba(255,255,255,0.07)",
+            border: identityPresentation
+              ? "1px solid rgba(13,95,168,0.14)"
+              : "1px solid rgba(231,202,124,0.32)",
+            background: identityPresentation
+              ? "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)"
+              : "rgba(255,255,255,0.07)",
             padding: compact ? 9 : 11,
           }}
         >
@@ -275,7 +304,7 @@ export default function SimpleCommunityInviteCard({
                 minWidth: 0,
                 display: "grid",
                 gap: 5,
-                color: "#F8FBFF",
+                color: identityPresentation ? "#07172C" : "#F8FBFF",
                 fontSize: 12,
                 fontWeight: 900,
               }}
@@ -328,7 +357,9 @@ export default function SimpleCommunityInviteCard({
             style={{
               marginTop: 7,
               minHeight: 18,
-              color: feedback?.tone === "error" ? "#FFD2D2" : "#DCEBFA",
+              color: feedback?.tone === "error"
+                ? identityPresentation ? "#991B1B" : "#FFD2D2"
+                : identityPresentation ? "#48657D" : "#DCEBFA",
               fontSize: 12,
               fontWeight: 820,
               lineHeight: 1.35,
@@ -338,7 +369,13 @@ export default function SimpleCommunityInviteCard({
             {feedback?.text || `From: ${visibleInviterName}`}
           </div>
         </div>
-      </details>
+        </details>
+        {identityPresentation && heroSecondaryAction ? (
+          <div style={{ minWidth: 0, gridColumn: "2", gridRow: "1" }}>
+            {heroSecondaryAction}
+          </div>
+        ) : null}
+      </div>
     );
   }
 

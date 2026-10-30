@@ -20,6 +20,8 @@ import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
+import { copyToClipboard } from "../lib/share";
+import communityFallbackImage from "../assets/dashboard/dashboard-demand-market.jpg";
 import {
   getPoolMe,
   getMe,
@@ -103,6 +105,13 @@ type ClanItem = {
   official_whatsapp_label?: string | null;
   official_contact_ready?: boolean;
   notice_posting_policy?: string | null;
+  marketplace_image_url?: string | null;
+  cover_image_url?: string | null;
+  banner_url?: string | null;
+  community_image_url?: string | null;
+  profile_image_url?: string | null;
+  image_url?: string | null;
+  logo_url?: string | null;
   governance_profile?: any;
   community?: any;
   profile?: any;
@@ -691,14 +700,106 @@ function CommunityShellLayers({ isCompact }: { isCompact: boolean }) {
 }
 
 function communityHeroStyle(isCompact: boolean): React.CSSProperties {
+  if (isCompact) {
+    return {
+      borderRadius: 24,
+      border: "1px solid rgba(16,37,59,0.10)",
+      background: "#FFFFFF",
+      padding: 0,
+      boxShadow:
+        "0 18px 40px rgba(6,24,39,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
+      overflow: "hidden",
+    };
+  }
+
   return {
-    borderRadius: isCompact ? 22 : 30,
+    borderRadius: 30,
     border: "1px solid rgba(226,192,106,0.26)",
     background:
       "radial-gradient(circle at 14% -10%, rgba(242,199,102,0.20) 0%, rgba(242,199,102,0.00) 28%), radial-gradient(circle at 88% 4%, rgba(112,169,219,0.22) 0%, rgba(112,169,219,0.00) 36%), linear-gradient(180deg, #0B3D66 0%, #0E5B92 54%, #0B2D4A 100%)",
-    padding: isCompact ? 10 : 16,
+    padding: 16,
     boxShadow:
       "0 18px 34px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
+    overflow: "hidden",
+  };
+}
+
+function communityHeroPhotoStyle(imageUrl: string): React.CSSProperties {
+  return {
+    position: "relative",
+    minHeight: 174,
+    backgroundImage: `linear-gradient(180deg, rgba(3,17,29,0.06) 0%, rgba(3,17,29,0.40) 100%), url("${imageUrl}")`,
+    backgroundPosition: "center",
+    backgroundSize: "cover",
+  };
+}
+
+function communityHeroIdentityPanelStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 2,
+    margin: "-38px 10px 10px",
+    padding: "12px 12px 11px",
+    borderRadius: 22,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background: "rgba(255,255,255,0.98)",
+    boxShadow: "0 18px 34px rgba(6,24,39,0.14)",
+  };
+}
+
+function communityQuickActionGridStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 9,
+  };
+}
+
+function communityQuickActionStyle(tone: "blue" | "green" | "gold"): React.CSSProperties {
+  const palette =
+    tone === "green"
+      ? { background: "#ECFBF2", border: "rgba(31,160,92,0.16)", color: "#087443" }
+      : tone === "gold"
+      ? { background: "#FFF7E8", border: "rgba(214,157,43,0.18)", color: "#A56008" }
+      : { background: "#EEF6FF", border: "rgba(13,95,168,0.14)", color: "#0B63B6" };
+
+  return {
+    position: "relative",
+    zIndex: 20,
+    width: "100%",
+    minWidth: 0,
+    minHeight: 106,
+    display: "grid",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    gap: 9,
+    alignItems: "center",
+    padding: "11px 10px",
+    borderRadius: 19,
+    border: `1px solid ${palette.border}`,
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
+    color: "#07172C",
+    textAlign: "left",
+    cursor: "pointer",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    overflow: "hidden",
+    boxShadow: "0 12px 24px rgba(10,24,49,0.07)",
+    transition: "none",
+    ["--community-quick-background" as any]: palette.background,
+    ["--community-quick-color" as any]: palette.color,
+  };
+}
+
+function communityQuickActionIconStyle(): React.CSSProperties {
+  return {
+    width: 44,
+    height: 44,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: 15,
+    background: "var(--community-quick-background)",
+    color: "var(--community-quick-color)",
     overflow: "hidden",
   };
 }
@@ -1187,15 +1288,16 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function announcementBoardShellStyle(): React.CSSProperties {
+function announcementBoardShellStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 68%, #EEF6FF 100%)"),
     padding: 0,
-    borderRadius: "clamp(26px, 6vw, 32px)",
+    borderRadius: isCompact ? 21 : 32,
     overflow: "hidden",
     border: "1px solid rgba(123,161,204,0.18)",
-    boxShadow:
-      "0 18px 42px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+    boxShadow: isCompact
+      ? "0 14px 30px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.94)"
+      : "0 18px 42px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
   };
 }
 
@@ -1207,9 +1309,11 @@ function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
     alignItems: "center",
     minHeight: isCompact ? 52 : 82,
     padding: isCompact ? "8px 10px" : "16px 22px",
-    background:
-      "linear-gradient(135deg, #08233A 0%, #0B2D4A 56%, #061827 100%)",
-    color: "#FFFFFF",
+    background: isCompact
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+      : "linear-gradient(135deg, #08233A 0%, #0B2D4A 56%, #061827 100%)",
+    color: isCompact ? "#07172C" : "#FFFFFF",
+    borderBottom: isCompact ? "1px solid rgba(123,161,204,0.12)" : undefined,
   };
 }
 
@@ -2744,6 +2848,29 @@ export default function CommunityHomePage() {
     selectedClan ? "Active" : "Choose a community"
   );
   const selectedCommunityReference = getCommunityReference(selectedClan);
+  const selectedCommunityImageRaw = firstTruthy(
+    selectedClan?.marketplace_image_url,
+    selectedClan?.cover_image_url,
+    selectedClan?.banner_url,
+    selectedClan?.community_image_url,
+    selectedClan?.profile_image_url,
+    selectedClan?.image_url,
+    selectedClan?.logo_url,
+    selectedClan?.marketplace?.image_url,
+    selectedClan?.community?.image_url,
+    selectedClan?.profile?.image_url
+  );
+  const selectedCommunityImageUrl = selectedCommunityImageRaw
+    ? toBackendAssetUrl(selectedCommunityImageRaw)
+    : communityFallbackImage;
+  const selectedCommunityShareKey = selectedCommunityReference.startsWith("No ")
+    ? String(selectedClanId || "")
+    : selectedCommunityReference;
+  const selectedCommunityShareUrl = selectedCommunityShareKey
+    ? shareablePublicFrontendUrl(
+        `/verify/community/${encodeURIComponent(selectedCommunityShareKey)}`
+      )
+    : "";
   const selectedCommunityMemberCount = getCommunityMemberCount(selectedClan);
   const selectedCommunityMemberCountLabel =
     selectedCommunityMemberCount === null
@@ -4526,6 +4653,17 @@ export default function CommunityHomePage() {
     event?.stopPropagation();
   }
 
+  async function copySelectedCommunityReference(
+    event: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeCommunityButtonEvent(event);
+    const copied = await copyToClipboard(selectedCommunityReference);
+    showNotice(
+      copied ? "success" : "error",
+      copied ? "Community ID copied." : "Community ID could not be copied."
+    );
+  }
+
   function openCommunityRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     to: string
@@ -4886,7 +5024,99 @@ export default function CommunityHomePage() {
         ) : null}
 
         <section style={communityHeroStyle(isCompact)} data-debug-id="community-home.identity-card">
-          <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr)", gap: isCompact ? 12 : 18, alignItems: "center" }}>
+          {isCompact ? (
+            <>
+              <div style={communityHeroPhotoStyle(selectedCommunityImageUrl)} aria-hidden="true" />
+              <div style={communityHeroIdentityPanelStyle()}>
+                <div style={{ display: "grid", gridTemplateColumns: "58px minmax(0, 1fr)", gap: 11, alignItems: "center" }}>
+                  <div style={{ width: 58, height: 58, borderRadius: 17, overflow: "hidden", border: "2px solid #FFFFFF", background: "#EAF3FF", boxShadow: "0 10px 20px rgba(7,24,39,0.14)" }}>
+                    <img src={selectedCommunityImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 7 }}>
+                      <div style={{ ...brandClampLines(2), minWidth: 0, color: "#07172C", fontSize: 22, fontWeight: 950, lineHeight: 1.08 }}>
+                        {selectedClanName || "Choose a community"}
+                      </div>
+                      <span data-debug-id="community-home.identity.position" style={{ ...badge(true), flex: "0 0 auto", minHeight: 24, padding: "4px 7px", fontSize: 10.5 }}>
+                        {selectedCommunityRoleLabel}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 7, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", color: "#617085", fontSize: 12.5, fontWeight: 820 }}>
+                      <span data-debug-id="community-home.identity.members">{selectedCommunityMemberCountLabel}</span>
+                      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "#22B56D", boxShadow: "0 0 0 3px rgba(34,181,109,0.12)" }} />
+                      <span data-debug-id="community-home.identity.membership">{selectedCommunityStatusLabel} community</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  data-community-home-billboard-facts="true"
+                  style={{ marginTop: 11, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8, alignItems: "center", paddingTop: 10, borderTop: "1px solid rgba(16,37,59,0.08)" }}
+                >
+                  <div data-debug-id="community-home.identity.community-id" style={{ minWidth: 0 }}>
+                    <div style={{ color: "#617085", fontSize: 10.5, fontWeight: 850 }}>Community ID</div>
+                    <div style={{ ...brandClampLines(1), marginTop: 3, color: "#0B2D4A", fontSize: 12.5, fontWeight: 930 }}>{selectedCommunityReference}</div>
+                  </div>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.identity.copy-community-id"
+                    onClick={(event) => void copySelectedCommunityReference(event)}
+                    style={{ ...communityActionStyle("soft"), minHeight: 36, minWidth: 72, padding: "7px 9px", borderRadius: 12, fontSize: 11.5, boxShadow: "none" }}
+                  >
+                    <GsnLegacyIcon name="copy" size={18} />
+                    Copy
+                  </StableButton>
+                </div>
+
+                {selectedCommunityBalance ? (
+                  <div data-debug-id="community-home.identity.balance" style={{ marginTop: 9, display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", padding: "8px 10px", borderRadius: 13, background: "#FFF8E7", border: "1px solid rgba(214,170,69,0.20)" }}>
+                    <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 820 }}>Available now</span>
+                    <span style={{ color: "#8B5E07", fontSize: 13, fontWeight: 950 }}>{formatCommunityBalance(selectedCommunityBalance)}</span>
+                  </div>
+                ) : null}
+
+                {communityHomeNeedsDisplayName ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.identity.add-display-name"
+                    onClick={(event) => openCommunityRoute(event, routes.profileSettings)}
+                    style={{ ...identityNamePromptStyle(true), color: "#0B4F86", border: "1px solid rgba(13,95,168,0.18)", background: "#EEF6FF" }}
+                  >
+                    Add display name
+                  </StableButton>
+                ) : null}
+
+                <SimpleCommunityInviteCard
+                  communityId={selectedClanId}
+                  communityName={selectedClanName}
+                  communityCode={selectedCommunityReference}
+                  inviterName={hasHumanMemberName(me) ? resolveMemberName(me) : ""}
+                  compact
+                  hero
+                  heroPresentation="identity"
+                  heroSecondaryAction={
+                    <SocialTagShareButton
+                      target={{
+                        title: `${selectedClanName || "GSN community"} community record`,
+                        message: `View the GSN community record for ${selectedClanName || "this community"}.`,
+                        url: selectedCommunityShareUrl,
+                      }}
+                      disabled={!selectedCommunityShareUrl}
+                      buttonLabel="Share"
+                      triggerIcon={<GsnLegacyIcon name="globe" size={19} />}
+                      debugId="community-home.identity.share-community"
+                      stableHeight={46}
+                      fullWidth
+                      style={{ borderRadius: 14, fontSize: 13.5 }}
+                      onResult={(tone, text) => showNotice(tone, text)}
+                    />
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            <>
+          <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 18, alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: isCompact ? 52 : 72, height: isCompact ? 58 : 82, display: "grid", placeItems: "center", borderRadius: isCompact ? 18 : 24, background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(234,244,255,0.92) 100%)", border: "1px solid rgba(16,36,58,0.12)", boxShadow: "0 12px 24px rgba(7,24,39,0.10)" }}>
                 <GSNBrandMark width={isCompact ? 34 : 50} height={isCompact ? 40 : 60} />
@@ -4970,12 +5200,14 @@ export default function CommunityHomePage() {
             communityName={selectedClanName}
             communityCode={selectedCommunityReference}
             inviterName={hasHumanMemberName(me) ? resolveMemberName(me) : ""}
-            compact={isCompact}
+            compact={false}
             hero
           />
+            </>
+          )}
         </section>
 
-        <section id="community-home-bulletin" style={announcementBoardShellStyle()} data-debug-id="community-home.bulletin">
+        <section id="community-home-bulletin" style={announcementBoardShellStyle(isCompact)} data-debug-id="community-home.bulletin">
           <div style={announcementBoardHeaderStyle(isCompact)} aria-label="Community announcements">
             <div style={announcementBoardTitleRowStyle()}>
               <span
@@ -4984,13 +5216,16 @@ export default function CommunityHomePage() {
                   width: isCompact ? 38 : 46,
                   height: isCompact ? 38 : 46,
                   borderRadius: isCompact ? 13 : 16,
+                  background: isCompact ? "#EAF3FF" : undefined,
+                  border: isCompact ? "1px solid rgba(13,95,168,0.12)" : undefined,
+                  boxShadow: isCompact ? "none" : undefined,
                 }}
                 aria-hidden="true"
               >
                 <GsnLegacyIcon name="megaphone" size={isCompact ? 20 : 24} />
               </span>
-              <span style={{ color: "#FFFFFF", fontSize: isCompact ? 14 : 16, fontWeight: 950, lineHeight: 1.08, textTransform: "uppercase" }}>
-                {!isCompact ? <span>Community </span> : null}<span style={{ color: "#F2C766" }}>Bulletin</span>
+              <span style={{ color: isCompact ? "#07172C" : "#FFFFFF", fontSize: isCompact ? 17 : 16, fontWeight: 950, lineHeight: 1.08, textTransform: isCompact ? "none" : "uppercase" }}>
+                {!isCompact ? <span>Community </span> : null}<span style={{ color: isCompact ? "#07172C" : "#F2C766" }}>Bulletin</span>
               </span>
             </div>
             {!isCompact ? (
@@ -5139,60 +5374,132 @@ export default function CommunityHomePage() {
           </section>
         ) : null}
 
-        <section style={communityDisclosureSectionStyle(isCompact)} data-debug-id="community-home.go-to">
-          <details
-            open={isCompact ? communityActionsOpen : true}
-            onToggle={(event) => {
-              if (isCompact) setCommunityActionsOpen(event.currentTarget.open);
-            }}
-          >
-            {isCompact ? (
-              <StableDisclosureSummary
-                debugId="community-home.goto.toggle"
-                stableHeight={72}
-                aria-controls="community-home-actions-panel"
-                style={{ ...communityToolRowStyle(), listStyle: "none" }}
+        {isCompact ? (
+          <>
+            <section data-debug-id="community-home.quick-actions" style={communityQuickActionGridStyle()}>
+              <StableButton
+                type="button"
+                debugId="community-home.goto.marketplace"
+                onClick={(event) => void openSelectedMarketplace(event)}
+                style={communityQuickActionStyle("blue")}
               >
-                <span style={communityActionIcon(true)}>{communityIconGlyph("community", 32)}</span>
+                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("shop", 29)}</span>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>Community actions</span>
-                  <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 12, fontWeight: 720 }}>Marketplace, shop, money, support, and trust.</span>
+                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Community Marketplace</span>
+                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Shops and services</span>
                 </span>
-                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>{communityActionsOpen ? "^" : "v"}</span>
-              </StableDisclosureSummary>
-            ) : (
-              <div style={sectionLabel()}>Go to</div>
-            )}
-            <div id="community-home-actions-panel" style={{ marginTop: 10, display: "grid", gap: 9 }}>
-            <StableButton type="button" debugId="community-home.goto.marketplace" onClick={(event) => void openSelectedMarketplace(event)} style={communityToolRowStyle()}>
-              <span style={communityActionIcon(true)}>{communityIconGlyph("shop", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Marketplace</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See requests, shops, and services in this community.</span> : null}</span>
-              <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-            </StableButton>
-            <StableButton type="button" debugId="community-home.goto.shop-control" onClick={(event) => openCommunityShopControl(event)} style={communityToolRowStyle()}>
-              <span style={communityActionIcon(true)}>{communityIconGlyph("marketplace", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Manage shop</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Change your shop, public products, or Spotlight.</span> : null}</span>
-              <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-            </StableButton>
-            <StableButton type="button" debugId="community-home.goto.finance" onClick={(event) => openCommunityRoute(event, routes.finance)} style={communityToolRowStyle()}>
-              <span style={communityActionIcon(false)}>{communityIconGlyph("financeInstitution", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Finance</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See the money records available to you.</span> : null}</span>
-              <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-            </StableButton>
-            <StableButton type="button" debugId="community-home.goto.support" onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")} style={communityToolRowStyle()}>
-              <span style={communityActionIcon(false)}>{communityIconGlyph("wallet", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Support</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Ask for or manage support in this community.</span> : null}</span>
-              <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-            </StableButton>
-            <StableButton type="button" debugId="community-home.goto.trust" onClick={(event) => openCommunityRoute(event, routes.trust)} style={communityToolRowStyle()}>
-              <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
-              <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14.5 : 16, fontWeight: 950 }}>Trust</span>{!isCompact ? <span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See your trust information and recorded evidence.</span> : null}</span>
-              <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-            </StableButton>
-            </div>
-          </details>
-        </section>
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="community-home.goto.members"
+                onClick={(event) => openCommunityRoute(event, routes.createCommunity)}
+                style={communityQuickActionStyle("green")}
+              >
+                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("community", 29)}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Members</span>
+                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Membership overview</span>
+                </span>
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="community-home.goto.support"
+                onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")}
+                style={communityQuickActionStyle("gold")}
+              >
+                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("wallet", 29)}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Support &amp; Opportunities</span>
+                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Needs and offers</span>
+                </span>
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="community-home.goto.events"
+                onClick={(event) => {
+                  consumeCommunityButtonEvent(event);
+                  revealCommunityTarget(["community-home-bulletin"]);
+                }}
+                style={communityQuickActionStyle("green")}
+              >
+                <span style={communityQuickActionIconStyle()}>{communityIconGlyph("calendar", 29)}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ ...brandClampLines(2), color: "#07172C", fontSize: 14, fontWeight: 950, lineHeight: 1.12 }}>Community Events</span>
+                  <span style={{ ...brandClampLines(2), marginTop: 5, color: "#617085", fontSize: 11.5, fontWeight: 740, lineHeight: 1.25 }}>Meetings and notices</span>
+                </span>
+              </StableButton>
+            </section>
 
+            <section style={communityDisclosureSectionStyle(true)} data-debug-id="community-home.go-to">
+              <details
+                open={communityActionsOpen}
+                onToggle={(event) => setCommunityActionsOpen(event.currentTarget.open)}
+              >
+                <StableDisclosureSummary
+                  debugId="community-home.goto.toggle"
+                  stableHeight={64}
+                  aria-controls="community-home-actions-panel"
+                  style={{ ...communityToolRowStyle(), height: 64, minHeight: 64, maxHeight: 64, listStyle: "none" }}
+                >
+                  <span style={{ ...communityActionIcon(true), width: 42, height: 42, borderRadius: 15 }}>{communityIconGlyph("briefcase", 28)}</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>More community tools</span>
+                    <span style={{ ...brandClampLines(1), marginTop: 3, color: "#617085", fontSize: 11.5, fontWeight: 720 }}>Shop, finance, and trust</span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>{communityActionsOpen ? "^" : "v"}</span>
+                </StableDisclosureSummary>
+                <div id="community-home-actions-panel" style={{ marginTop: 9, display: "grid", gap: 8 }}>
+                  <StableButton type="button" debugId="community-home.goto.shop-control" onClick={(event) => openCommunityShopControl(event)} style={communityToolRowStyle()}>
+                    <span style={communityActionIcon(true)}>{communityIconGlyph("marketplace", 32)}</span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>Manage shop</span></span>
+                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+                  </StableButton>
+                  <StableButton type="button" debugId="community-home.goto.finance" onClick={(event) => openCommunityRoute(event, routes.finance)} style={communityToolRowStyle()}>
+                    <span style={communityActionIcon(false)}>{communityIconGlyph("financeInstitution", 32)}</span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>Finance</span></span>
+                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+                  </StableButton>
+                  <StableButton type="button" debugId="community-home.goto.trust" onClick={(event) => openCommunityRoute(event, routes.trust)} style={communityToolRowStyle()}>
+                    <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 14.5, fontWeight: 950 }}>Trust</span></span>
+                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+                  </StableButton>
+                </div>
+              </details>
+            </section>
+          </>
+        ) : (
+          <section style={communityDisclosureSectionStyle(false)} data-debug-id="community-home.go-to">
+            <div style={sectionLabel()}>Go to</div>
+            <div id="community-home-actions-panel" style={{ marginTop: 10, display: "grid", gap: 9 }}>
+              <StableButton type="button" debugId="community-home.goto.marketplace" onClick={(event) => void openSelectedMarketplace(event)} style={communityToolRowStyle()}>
+                <span style={communityActionIcon(true)}>{communityIconGlyph("shop", 32)}</span>
+                <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 16, fontWeight: 950 }}>Marketplace</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See requests, shops, and services in this community.</span></span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+              </StableButton>
+              <StableButton type="button" debugId="community-home.goto.shop-control" onClick={(event) => openCommunityShopControl(event)} style={communityToolRowStyle()}>
+                <span style={communityActionIcon(true)}>{communityIconGlyph("marketplace", 32)}</span>
+                <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 16, fontWeight: 950 }}>Manage shop</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Change your shop, public products, or Spotlight.</span></span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+              </StableButton>
+              <StableButton type="button" debugId="community-home.goto.finance" onClick={(event) => openCommunityRoute(event, routes.finance)} style={communityToolRowStyle()}>
+                <span style={communityActionIcon(false)}>{communityIconGlyph("financeInstitution", 32)}</span>
+                <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 16, fontWeight: 950 }}>Finance</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See the money records available to you.</span></span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+              </StableButton>
+              <StableButton type="button" debugId="community-home.goto.support" onClick={(event) => openSelectedCommunityRoute(event, routes.loans, "Choose a community first, then open Support.")} style={communityToolRowStyle()}>
+                <span style={communityActionIcon(false)}>{communityIconGlyph("wallet", 32)}</span>
+                <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 16, fontWeight: 950 }}>Support</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>Ask for or manage support in this community.</span></span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+              </StableButton>
+              <StableButton type="button" debugId="community-home.goto.trust" onClick={(event) => openCommunityRoute(event, routes.trust)} style={communityToolRowStyle()}>
+                <span style={communityActionIcon(false)}>{communityIconGlyph("shield", 32)}</span>
+                <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: 16, fontWeight: 950 }}>Trust</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: 13, fontWeight: 720 }}>See your trust information and recorded evidence.</span></span>
+                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
+              </StableButton>
+            </div>
+          </section>
+        )}
         {communityCountFromSummary > 1 || requestedCommunityError ? (
         <section id="community-home-community-list" style={communityDisclosureSectionStyle(isCompact)} data-debug-id="community-home.switch-community">
           <StableButton

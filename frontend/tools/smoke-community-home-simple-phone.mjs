@@ -326,12 +326,17 @@ async function run() {
       const urgencyTones = Array.from(document.querySelectorAll("[data-bulletin-urgency-tone]")).map((node) => node.getAttribute("data-bulletin-urgency-tone"));
       return {
         hasName: identityText.includes("Homeland isa"),
-        hasMemberCount: identityText.includes("7") && identityText.includes("Members"),
+        hasMemberCount: identityText.includes("7 members"),
         hasCommunityId: identityText.includes("GMFN-C-000008"),
         hasPosition: identityText.includes("Member"),
         hasMembership: identityText.includes("Active"),
         hasOpenNotice: text.includes("Open notice"),
-        hasCommunityActions: text.includes("Community actions"),
+        hasQuickActions: ["Community Marketplace", "Members", "Support & Opportunities", "Community Events"].every((label) => text.includes(label)),
+        hasMoreTools: text.includes("More community tools"),
+        quickActionCount: document.querySelectorAll('[data-debug-id="community-home.quick-actions"] [data-cta-id]').length,
+        heroPhotoReady: Boolean(document.querySelector('[data-debug-id="community-home.identity-card"] div[aria-hidden="true"]')),
+        inviteVisible: Boolean(document.querySelector('[data-cta-id="simple-community-invite.open"]')?.getClientRects().length),
+        shareVisible: Boolean(document.querySelector('[data-cta-id="community-home.identity.share-community"]')?.getClientRects().length),
         bulletinHeaderText,
         switcherCount: document.querySelectorAll('[data-debug-id="community-home.switch-community"]').length,
         actionSectionHasExtraCard: /background|border|box-shadow/.test(actionSectionStyle),
@@ -356,7 +361,12 @@ async function run() {
       !defaultState.hasPosition ||
       !defaultState.hasMembership ||
       !defaultState.hasOpenNotice ||
-      !defaultState.hasCommunityActions ||
+      !defaultState.hasQuickActions ||
+      !defaultState.hasMoreTools ||
+      defaultState.quickActionCount !== 4 ||
+      !defaultState.heroPhotoReady ||
+      !defaultState.inviteVisible ||
+      !defaultState.shareVisible ||
       defaultState.bulletinHeaderText !== "Bulletin" ||
       defaultState.switcherCount !== 0 ||
       defaultState.actionSectionHasExtraCard ||
@@ -369,7 +379,7 @@ async function run() {
       defaultState.phoneStatusHeight > 36 ||
       defaultState.urgencyTones.join(",") !== "green" ||
       defaultState.attentionCount !== 0 ||
-      marketplaceVisibleBeforeOpen ||
+      !marketplaceVisibleBeforeOpen ||
       overflow390.length > 0
     ) {
       console.error("Community Home simple phone default state failed:", {
@@ -462,7 +472,7 @@ async function run() {
     await page.waitForSelector('[data-debug-id="community-home.bulletin.reactions-panel"]', { state: "hidden", timeout: 30000 });
 
     await page.locator('[data-cta-id="community-home.goto.toggle"]').click();
-    for (const label of ["Marketplace", "Manage shop", "Finance", "Support", "Trust"]) {
+    for (const label of ["Manage shop", "Finance", "Trust"]) {
       await page.getByRole("button", { name: label, exact: true }).waitFor({ state: "visible", timeout: 30000 });
     }
 
@@ -472,6 +482,26 @@ async function run() {
     await page.screenshot({ path: join(screenshotDir, "community-home-actions-360x780.png"), fullPage: false });
     if (overflow360.length > 0) {
       console.error("Community Home simple phone expanded state overflowed:", overflow360);
+      process.exitCode = 1;
+      return;
+    }
+
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.waitForTimeout(100);
+    const overflow320 = await collectOverflow(page);
+    await page.screenshot({ path: join(screenshotDir, "community-home-actions-320x720.png"), fullPage: false });
+    if (overflow320.length > 0) {
+      console.error("Community Home compact phone state overflowed:", overflow320);
+      process.exitCode = 1;
+      return;
+    }
+
+    await page.setViewportSize({ width: 884, height: 820 });
+    await page.waitForTimeout(100);
+    const overflow884 = await collectOverflow(page);
+    await page.screenshot({ path: join(screenshotDir, "community-home-unfolded-884x820.png"), fullPage: false });
+    if (overflow884.length > 0) {
+      console.error("Community Home unfolded-phone state overflowed:", overflow884);
       process.exitCode = 1;
       return;
     }

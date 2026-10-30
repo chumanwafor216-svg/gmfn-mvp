@@ -4983,3 +4983,29 @@ under `docs/` or `docs/archive/`, then link that file here.
   made that this unrelated warning was repaired by the analytics change.
 - Status: verified locally only. It has not been pushed or deployed because the
   owner did not request publication for this change.
+
+## Community Home Phone Hierarchy Amendment - 2026-10-30
+
+- The product owner approved the supplied photo-led Community Home mockup as an
+  explicit amendment to the previously frozen phone layout.
+- `/app/community` and `/app/community/:clanId` now use the selected community
+  image when available, an approved market/community fallback otherwise, and an
+  overlapping white identity card with truthful member count, membership state,
+  role, Community ID Copy, Invite members, and Share actions.
+- The phone Bulletin now uses the compact white-card presentation while retaining
+  the complete notice, response, poll, QR/share, attachment, timing, and
+  authorised roll-call engine behind the existing disclosures.
+- Phone navigation now exposes Community Marketplace, Members, Support &
+  Opportunities, and Community Events in a two-column grid. Members opens the
+  existing membership overview rather than inventing a public directory;
+  Community Events returns to Bulletin. Manage shop, Finance, and Trust remain
+  under `More community tools`.
+- Desktop behavior, route contracts, community selection reconciliation, and
+  permission-gated Admin area behavior remain intact.
+- Verification passed: production frontend build, all focused Community
+  Home/invite audits, the rendered Community Home smoke at 320, 360, 390, and
+  unfolded 884 pixel widths, and the complete protected-button/frozen-surface
+  suite. The wider suite still emits the pre-existing duplicate React-key
+  warning; all protected checks passed.
+- This is a frontend-only change. The product owner requested publication after
+  verification.

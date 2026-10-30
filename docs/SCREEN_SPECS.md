@@ -658,7 +658,7 @@ After submission:
 Purpose:
 Member view inside one selected community.
 
-Status: CLOSED/FROZEN as of 2026-10-15 after the approved novice-first phone simplification.
+Status: CLOSED/FROZEN as of 2026-10-15, with the product-owner phone-layout amendment approved on 2026-10-30.
 
 Canonical rule:
 - Community Home answers `which community am I inside right now?`
@@ -670,7 +670,9 @@ Canonical rule:
 Must show, in phone-first order:
 - selected community identity hero
   - community name
-  - a compact two-column fact grid directly after the name
+  - on phone, a photo-led community cover with an overlapping white identity card; use the selected community image when available and the approved community-market fallback otherwise
+  - on phone, keep member count and membership status on one compact line, Community ID with Copy below it, role as a small badge, and Invite members plus Share as the main identity-card actions
+  - on wider screens, keep the compact two-column fact grid directly after the name
   - real active-member count from the membership record; missing count data must say `Count unavailable` and must never be converted into zero
   - stable community reference / global ID labelled `Community ID`
   - signed-in member role labelled `Your role` and active membership labelled `Membership`
@@ -697,12 +699,11 @@ Must show, in phone-first order:
 - Needs your attention must not repeat ordinary-member notice acknowledgement or response actions already visible in the immediately preceding Bulletin
   - distinct officer bulletin review work may remain when approval is genuinely waiting
 - compact destination handoff group
-  - Marketplace
-  - Manage shop -> Shop Control
-  - Finance
-  - Support
-  - Trust
-  - on phone, keep all five destinations behind one `Community actions` disclosure; after opening, show only the destination labels and keep explanatory destination sentences off the surface
+  - on phone, expose a two-column quick-action grid for `Community Marketplace`, `Members`, `Support & Opportunities`, and `Community Events`
+  - `Members` opens the existing membership overview; it must not invent or expose a public member directory
+  - `Community Events` returns to the live Bulletin, where meetings and notices already belong
+  - keep `Manage shop`, `Finance`, and `Trust` behind one closed `More community tools` disclosure on phone
+  - on wider screens, retain the established Marketplace, Manage shop, Finance, Support, and Trust handoff rows
 - compact community switcher
   - collapsed by default
   - hide the switcher when the member has only one accessible community; show it for multiple communities or inaccessible route recovery
@@ -726,7 +727,7 @@ Rules:
 - Every selected community must expose one compact hero invite action. The inviter is automatic; only the recipient name is entered before sending.
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - On phone, the authenticated app shell owns the page title/navigation; Community Home must not add another route-level Back/title strip or repeat the `Community Home` label inside the identity hero.
-- On phone, destination, switcher, and Admin disclosures use their action row as the card; do not wrap each row in another visible card.
+- On phone, the secondary-tools, switcher, and Admin disclosures use their action row as the card; do not wrap each row in another visible card.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount is the only approved conditional money fact in the hero.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 

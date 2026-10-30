@@ -139,11 +139,11 @@ assertContains(
   "Community Home phone Bulletin must keep Respond, Share/QR, and Details in one-open-at-a-time sections."
 );
 assertContains(
-  /<details[\s\S]*?open=\{isCompact \? communityActionsOpen : true\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="community-home\.goto\.toggle"[\s\S]*?Community actions[\s\S]*?id="community-home-actions-panel"/,
-  "Community Home phone destinations must remain behind one protected Community actions disclosure."
+  /data-debug-id="community-home\.quick-actions"[\s\S]*?debugId="community-home\.goto\.marketplace"[\s\S]*?debugId="community-home\.goto\.members"[\s\S]*?debugId="community-home\.goto\.support"[\s\S]*?debugId="community-home\.goto\.events"[\s\S]*?More community tools[\s\S]*?debugId="community-home\.goto\.shop-control"[\s\S]*?debugId="community-home\.goto\.finance"[\s\S]*?debugId="community-home\.goto\.trust"/,
+  "Community Home phone must expose the approved four quick destinations and keep lower-frequency shop, finance, and trust tools behind one disclosure."
 );
 assertContains(
-  /function communityDisclosureSectionStyle\(isCompact: boolean\)[\s\S]*?if \(!isCompact\) return communityBlockCard\("quiet"\);[\s\S]*?style=\{communityDisclosureSectionStyle\(isCompact\)\}[\s\S]*?communityCountFromSummary > 1 \|\| requestedCommunityError/,
+  /function communityDisclosureSectionStyle\(isCompact: boolean\)[\s\S]*?if \(!isCompact\) return communityBlockCard\("quiet"\);[\s\S]*?style=\{communityDisclosureSectionStyle\(true\)\}[\s\S]*?communityCountFromSummary > 1 \|\| requestedCommunityError/,
   "Community Home phone disclosures must avoid card-inside-card framing and hide the switcher when there is only one accessible community."
 );
 assertContains(
@@ -151,8 +151,8 @@ assertContains(
   "Community Home phone identity facts must stay compact while preserving the truthful billboard values."
 );
 assertContains(
-  /debugId="community-home\.goto\.marketplace"[\s\S]*?Marketplace<\/span>\{!isCompact \? <span[\s\S]*?debugId="community-home\.goto\.trust"[\s\S]*?Trust<\/span>\{!isCompact \? <span/,
-  "Community Home phone destination rows must show labels without repeated explanatory sentences."
+  /function communityQuickActionGridStyle\(\)[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?Community Marketplace[\s\S]*?Shops and services[\s\S]*?Members[\s\S]*?Membership overview[\s\S]*?Support &amp; Opportunities[\s\S]*?Needs and offers[\s\S]*?Community Events[\s\S]*?Meetings and notices/,
+  "Community Home phone quick actions must keep the approved two-column labels and short helper lines."
 );
 assertContains(
   /debugId="community-home\.switch\.toggle"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
