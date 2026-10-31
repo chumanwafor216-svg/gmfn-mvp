@@ -586,6 +586,11 @@ assertContains(
   /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(47,128,237,0\.18\) 0%, transparent 32%\), radial-gradient\(circle at 7% 4%, rgba\(255,255,255,0\.86\) 0%, transparent 34%\), linear-gradient\(145deg, #F8FBFF 0%, #EAF4FF 46%, #DCEBFA 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
   "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the blue brand frame."
 );
+assertContains(
+  /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?data-spotlight-information-disclosure="true"[\s\S]*?open=\{spotlightInformationOpen\}[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?aria-expanded=\{spotlightInformationOpen\}[\s\S]*?data-spotlight-information-details="true"[\s\S]*?data-spotlight-screen="true"/,
+  "Public Shop Spotlight must start with secondary information collapsed on phone, keep an accessible disclosure, and leave the media screen outside that disclosure."
+);
+
 
 assertContains(
   /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?Shop Update[\s\S]*?public-shop-diary-featured/,

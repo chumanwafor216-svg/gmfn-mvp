@@ -1888,6 +1888,12 @@ Rules:
   preparation, serving, queue selection, dwell, visibility qualification,
   impression accounting, self-exclusion, pacing, permissions, publishing,
   payment, Vault, Shop Update and Dashboard Market Wisdom remain unchanged.
+  Owner-approved collapsible refinement: the screen always remains visible. The
+  advertiser/contact controls and a one-line source/title summary remain visible
+  beneath it, while description, price, availability, category and operational
+  messages start collapsed on phone and open through one accessible disclosure.
+  Opening or closing that disclosure must not move, restart or resize the media
+  screen. Wider screens may start with the same factual details open.
 - Public Shop may expose an on-demand Verify Shop panel with the shop owner ID,
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip

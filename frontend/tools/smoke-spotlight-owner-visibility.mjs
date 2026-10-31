@@ -463,7 +463,7 @@ async function installMocks(page, scenario) {
 }
 
 async function openOwnerSpotlight(page) {
-  const summary = page.locator('[data-public-shop-more="secondary"] summary');
+  const summary = page.locator('[data-public-shop-more="secondary"] > summary');
   await summary.waitFor({ state: "visible", timeout: 15_000 });
   if ((await page.locator('[data-public-shop-more="secondary"]').getAttribute("open")) === null) {
     await summary.click();
@@ -517,6 +517,13 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   const spotlightInformation = spotlightRail.locator(
     '[data-spotlight-information-panel="true"]'
   );
+  const spotlightDisclosure = spotlightRail.locator(
+    '[data-spotlight-information-disclosure="true"]'
+  );
+  const spotlightDetails = spotlightRail.locator(
+    '[data-spotlight-information-details="true"]'
+  );
+  const spotlightDetailsToggle = spotlightDisclosure.locator('summary');
   const [railBounds, screenBounds, informationBounds, whatsappBounds] =
     await Promise.all([
       spotlightRail.boundingBox(),
@@ -527,20 +534,31 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   if ((await spotlightRail.getAttribute("data-spotlight-layout")) !== "screen-and-information") {
     throw new Error("Public Shop Spotlight lost the approved screen-and-information layout marker.");
   }
-  const informationText = await spotlightInformation.innerText();
-  for (const expectedInformation of [
+  if ((await spotlightDisclosure.getAttribute("open")) !== null) {
+    throw new Error("Compact Spotlight information should start collapsed on phone.");
+  }
+  if (await spotlightDetails.isVisible()) {
+    throw new Error("Compact Spotlight secondary facts were visible before the user opened them.");
+  }
+  const collapsedInformationText = await spotlightInformation.innerText();
+  for (const expectedSummary of [
     "Owner Visibility Shop",
     "Owner Visibility Community",
-    "Prepared offer with clear information for community members.",
-    "NGN 2500",
-    "Available now",
-    "Food and catering",
+    "Owner saved Spotlight",
   ]) {
-    if (!informationText.includes(expectedInformation)) {
+    if (!collapsedInformationText.includes(expectedSummary)) {
       throw new Error(
-        `Spotlight information console did not show ${expectedInformation}: ${informationText}`
+        `Collapsed Spotlight summary did not show ${expectedSummary}: ${collapsedInformationText}`
       );
     }
+  }
+  if (
+    collapsedInformationText.includes("NGN 2500") ||
+    collapsedInformationText.includes("Food and catering")
+  ) {
+    throw new Error(
+      `Collapsed Spotlight leaked secondary facts: ${collapsedInformationText}`
+    );
   }
   if (
     !railBounds ||
@@ -557,7 +575,7 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     whatsappBounds.x + whatsappBounds.width > informationBounds.x + informationBounds.width + 1
   ) {
     throw new Error(
-      `Compact Spotlight screen/information geometry is invalid: ${JSON.stringify({
+      `Compact Spotlight collapsed geometry is invalid: ${JSON.stringify({
         railBounds,
         screenBounds,
         informationBounds,
@@ -565,6 +583,37 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
       })}`
     );
   }
+  await spotlightDetailsToggle.click();
+  await spotlightDetails.waitFor({ state: "visible", timeout: 5_000 });
+  const expandedInformationText = await spotlightInformation.innerText();
+  for (const expectedInformation of [
+    "Prepared offer with clear information for community members.",
+    "NGN 2500",
+    "Available now",
+    "Food and catering",
+  ]) {
+    if (!expandedInformationText.includes(expectedInformation)) {
+      throw new Error(
+        `Expanded Spotlight information did not show ${expectedInformation}: ${expandedInformationText}`
+      );
+    }
+  }
+  const expandedScreenBounds = await spotlightScreen.boundingBox();
+  if (
+    !expandedScreenBounds ||
+    Math.abs(expandedScreenBounds.y - screenBounds.y) > 1 ||
+    Math.abs(expandedScreenBounds.height - screenBounds.height) > 1
+  ) {
+    throw new Error(
+      `Opening Spotlight information moved or resized the media screen: ${JSON.stringify({
+        screenBounds,
+        expandedScreenBounds,
+      })}`
+    );
+  }
+  await spotlightDetailsToggle.click();
+  await spotlightDetails.waitFor({ state: "hidden", timeout: 5_000 });
+  await spotlightWhatsApp.waitFor({ state: "visible", timeout: 5_000 });
   if (process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH) {
     await spotlightRail.screenshot({
       path: process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH,

@@ -1925,6 +1925,11 @@ export default function ShopGalleryPage() {
   const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
   const [shopOptionsOpen, setShopOptionsOpen] = useState(false);
   const [shopMoreOpen, setShopMoreOpen] = useState(false);
+  const [spotlightInformationOpen, setSpotlightInformationOpen] =
+    useState<boolean>(() => {
+      if (typeof window === "undefined") return true;
+      return window.innerWidth > 980;
+    });
   const gallerySlotsTotal = clampGallerySlotsTotal(shop?.publicSlotsTotal);
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
@@ -6953,50 +6958,110 @@ export default function ShopGalleryPage() {
                     </PrimaryButton>
                   ) : null}
                 </div>
-                {publicShopSpotlightActive &&
-                (spotlightAdvertiserLabel || spotlightCommunityLabel) ? (
-                  <div
-                    data-spotlight-source-line="true"
+                <details
+                  data-spotlight-information-disclosure="true"
+                  open={spotlightInformationOpen}
+                  onToggle={(event) => {
+                    setSpotlightInformationOpen(event.currentTarget.open);
+                    pauseSpotlightPresentationRotation();
+                  }}
+                  style={{ minWidth: 0 }}
+                >
+                  <StableDisclosureSummary
+                    debugId="shop-gallery.spotlight.information-toggle"
+                    stableHeight={isCompact ? 58 : 66}
+                    aria-expanded={spotlightInformationOpen}
+                    aria-controls="public-shop-spotlight-information-details"
                     style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      alignItems: "center",
+                      gap: 10,
                       minWidth: 0,
-                      color: "#425E78",
-                      fontSize: isCompact ? 11.5 : 13,
-                      fontWeight: 820,
-                      lineHeight: 1.3,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      padding: isCompact ? "6px 4px" : "8px 4px",
+                      color: "#07172C",
+                      borderRadius: 12,
+                      background: "transparent",
                     }}
                   >
-                    {spotlightAdvertiserLabel || "GSN Spotlight"}
-                    {spotlightCommunityLabel ? ` · ${spotlightCommunityLabel}` : ""}
-                  </div>
-                ) : null}
-                <div
-                  style={{
-                    marginTop: isCompact ? 0 : 10,
-                    color: "#07172C",
-                    fontSize: isCompact ? 20 : 34,
-                    fontWeight: 950,
-                    lineHeight: isCompact ? 1.04 : 1.04,
-                    textTransform: isCompact ? "none" : "uppercase",
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "clip",
-                    display: "-webkit-box",
-                    WebkitLineClamp: isCompact ? 2 : 3,
-                    WebkitBoxOrient: "vertical" as any,
-                    overflowWrap: "anywhere",
-                    wordBreak: "normal",
-                  }}
-                >
-                  {ownerSpotlightStatusView
-                    ? ownerSpotlightStatusView.title
-                    : publicShopSpotlightActive
-                    ? miniSpotlightView.title
-                    : "Discover what's new"}
-                </div>
-                {spotlightFeedError ? (
+                    <span
+                      style={{
+                        display: "grid",
+                        gap: 3,
+                        minWidth: 0,
+                        textAlign: "left",
+                      }}
+                    >
+                      {publicShopSpotlightActive &&
+                      (spotlightAdvertiserLabel || spotlightCommunityLabel) ? (
+                        <span
+                          data-spotlight-source-line="true"
+                          style={{
+                            minWidth: 0,
+                            color: "#425E78",
+                            fontSize: isCompact ? 10.5 : 12,
+                            fontWeight: 820,
+                            lineHeight: 1.2,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {spotlightAdvertiserLabel || "GSN Spotlight"}
+                          {spotlightCommunityLabel
+                            ? ` · ${spotlightCommunityLabel}`
+                            : ""}
+                        </span>
+                      ) : null}
+                      <strong
+                        data-spotlight-information-title="true"
+                        style={{
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          color: "#07172C",
+                          fontSize: isCompact ? 18 : 22,
+                          fontWeight: 950,
+                          lineHeight: 1.12,
+                        }}
+                      >
+                        {ownerSpotlightStatusView
+                          ? ownerSpotlightStatusView.title
+                          : publicShopSpotlightActive
+                          ? miniSpotlightView.title
+                          : "Discover what's new"}
+                      </strong>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: "grid",
+                        placeItems: "center",
+                        width: isCompact ? 34 : 38,
+                        height: isCompact ? 34 : 38,
+                        borderRadius: 999,
+                        background: spotlightInformationOpen
+                          ? "#E6F0FA"
+                          : "#0B63D1",
+                        color: spotlightInformationOpen ? "#0B4E8A" : "#FFFFFF",
+                        fontSize: 22,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {spotlightInformationOpen ? "−" : "+"}
+                    </span>
+                  </StableDisclosureSummary>
+                  <div
+                    id="public-shop-spotlight-information-details"
+                    data-spotlight-information-details="true"
+                    style={{
+                      display: "grid",
+                      gap: 7,
+                      paddingTop: 6,
+                    }}
+                  >
+                    {spotlightFeedError ? (
                   <div
                     data-spotlight-feed-error='true'
                     style={{
@@ -7093,6 +7158,8 @@ export default function ShopGalleryPage() {
                       : "Fresh items, hot deals, and public shop updates."}
                   </div>
                 ) : null}
+                  </div>
+                </details>
               </div>
               <div
                 data-spotlight-screen="true"
