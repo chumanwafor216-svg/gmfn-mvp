@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any, List, Optional
 from urllib.parse import quote, urlencode, urlparse
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
@@ -6924,6 +6924,7 @@ def update_invite_settings(
 @router.get("/{clan_id}/members", response_model=dict[str, Any])
 def list_members(
     clan_id: int,
+    limit: Optional[int] = Query(default=None, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -6933,15 +6934,18 @@ def list_members(
         current_user=current_user,
     )
 
-    member_rows = (
+    member_query = (
         db.query(ClanMembership)
         .filter(
             ClanMembership.clan_id == int(clan_id),
             ClanMembership.left_at.is_(None),
         )
         .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
-        .all()
     )
+    active_membership_total = int(member_query.order_by(None).count())
+    if limit is not None:
+        member_query = member_query.limit(int(limit))
+    member_rows = member_query.all()
     reviewer_members = [
         membership
         for membership, _user in _active_reviewer_memberships(db, clan_id=int(clan_id))
@@ -6952,8 +6956,9 @@ def list_members(
     capacity = _community_member_capacity_snapshot(db, clan_id=int(clan_id))
     return {
         "items": items,
-        "total": len(items),
-        "active_membership_total": len(items),
+        "total": active_membership_total,
+        "returned": len(items),
+        "active_membership_total": active_membership_total,
         "reviewer_items": reviewer_items,
         "reviewer_total": len(reviewer_items),
         "community_code": _community_code(clan_id),

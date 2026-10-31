@@ -1001,6 +1001,13 @@ Rules:
   words or clip controls. Desktop may retain the fuller workbench, but
   foldable/open phone states must use the same compact contract as closed phone
   states.
+- Marketplace shop discovery must remain bounded at scale. The first surface
+  shows no more than two shop previews; See all shops opens a search-first
+  selected-community directory that requests at most 20 compact rows at a time.
+  Search, offer availability, and contact-readiness filters run on the server,
+  and Show 20 more uses an opaque cursor. The phone must never download or
+  render the complete shop catalogue, silently search outside the selected
+  community, or mix paid Spotlight placement into neutral directory order.
 - Marketplace first-surface wording must explain member tasks rather than the
   implementation. Use `open requests`, `may be able to help`, `possible
   matches`, `shops`, `your recorded money here`, and direct verbs such as

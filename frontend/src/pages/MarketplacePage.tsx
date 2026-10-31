@@ -64,6 +64,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanSummary,
   getMarketplaceProducts,
+  getMarketplaceShopDirectory,
   listMarketplaceListingReviewQueue,
   getProtectedTrade,
   getMarketplaceShopByGmfnId,
@@ -275,6 +276,8 @@ export type MarketplaceShop = {
   follower_count?: number | string | null;
   followers_count?: number | string | null;
   shop_follower_count?: number | string | null;
+  contact_ready?: boolean | null;
+  offer_count?: number | string | null;
 };
 
 type MarketplaceDirectoryProduct = {
@@ -1646,6 +1649,8 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
       src?.public_slots_total
     ),
     follower_count: firstDefined(src?.follower_count, src?.followers_count),
+    contact_ready: Boolean(src?.contact_ready),
+    offer_count: firstDefined(src?.offer_count, src?.product_count),
     followers_count: firstDefined(src?.followers_count, src?.follower_count),
     shop_follower_count: firstDefined(src?.shop_follower_count, src?.follower_count),
   };
@@ -4338,6 +4343,8 @@ export default function MarketplacePage() {
   const [memberCommunityIds, setMemberCommunityIds] = useState<number[]>([]);
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
+  const [marketplaceShopDirectoryTotal, setMarketplaceShopDirectoryTotal] =
+    useState(0);
   const [marketplaceDirectoryProducts, setMarketplaceDirectoryProducts] = useState<
     MarketplaceDirectoryProduct[]
   >([]);
@@ -5995,23 +6002,15 @@ export default function MarketplacePage() {
       ] =
         await Promise.all([
           currentCommunityId
-            ? listClanMembers(currentCommunityId).catch(() => ({ items: [] }))
+            ? listClanMembers(currentCommunityId, { limit: 50 }).catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] }),
           currentCommunityId
-            ? getMarketplaceShops({
+            ? getMarketplaceShopDirectory({
                 clan_id: currentCommunityId,
-                only_active: true,
-                limit: 200,
-              }).catch(() => ({ items: [] }))
-            : Promise.resolve({ items: [] }),
-          currentCommunityId
-            ? getMarketplaceProducts({
-                clan_id: currentCommunityId,
-                only_active: true,
-                include_reposted: false,
-                limit: 200,
-              }).catch(() => ({ items: [] }))
-            : Promise.resolve({ items: [] }),
+                limit: 6,
+              }).catch(() => ({ items: [], total: 0 }))
+            : Promise.resolve({ items: [], total: 0 }),
+          Promise.resolve({ items: [] }),
           currentMemberGmfnId
             ? getMyMarketplaceShop({
                 clan_id: currentCommunityId || undefined,
@@ -6100,6 +6099,9 @@ export default function MarketplacePage() {
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
       setShops(shopRows);
+      setMarketplaceShopDirectoryTotal(
+        Math.max(0, Number((shopsRes as any)?.total || shopRows.length))
+      );
       setMarketplaceDirectoryProducts(directoryProductRows);
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setMarketplaceTrust(trustRes || null);
@@ -6134,34 +6136,24 @@ export default function MarketplacePage() {
   const refreshMarketplaceDirectory = useCallback(async () => {
     if (!activeCommunityId) return;
 
-    const [shopsRes, productsRes] = await Promise.all([
-      getMarketplaceShops({
-        clan_id: activeCommunityId,
-        only_active: true,
-        limit: 200,
-      }).catch(() => ({ items: [] })),
-      getMarketplaceProducts({
-        clan_id: activeCommunityId,
-        only_active: true,
-        include_reposted: false,
-        limit: 200,
-      }).catch(() => ({ items: [] })),
-    ]);
+    const directoryRes = await getMarketplaceShopDirectory({
+      clan_id: activeCommunityId,
+      limit: 6,
+    }).catch(() => ({ items: [], total: 0 }));
 
-    const shopRows = rowsOf<any>(shopsRes)
+    const shopRows = rowsOf<any>(directoryRes)
       .map((row) => normalizeMarketplaceShop(row))
       .filter(Boolean)
       .filter(
         (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
       ) as MarketplaceShop[];
-    const productRows = rowsOf<any>(productsRes)
-      .map((row) => normalizeMarketplaceDirectoryProduct(row))
-      .filter(Boolean) as MarketplaceDirectoryProduct[];
 
     setShops(shopRows);
-    setMarketplaceDirectoryProducts(productRows);
+    setMarketplaceShopDirectoryTotal(
+      Math.max(0, Number((directoryRes as any)?.total || shopRows.length))
+    );
+    setMarketplaceDirectoryProducts([]);
   }, [activeCommunityId]);
-
   useEffect(() => {
     if (!activeCommunityId) return;
 
@@ -7199,11 +7191,12 @@ export default function MarketplacePage() {
           shop?.shop_logo_url
         ),
         contactAvailable: Boolean(
-          firstTruthy(shop?.whatsapp_number, shop?.telegram_handle)
+          shop?.contact_ready ||
+            firstTruthy(shop?.whatsapp_number, shop?.telegram_handle)
         ),
         activeState: shop?.is_active === false ? "Inactive" : shop ? "Public shop" : "No shop yet",
         createdAt: firstTruthy(shop?.created_at),
-        productCount: shopProducts.length,
+        productCount: Math.max(shopProducts.length, positiveNumber(shop?.offer_count)),
         productTitles,
         productDescriptions,
         serviceSummary,
@@ -8827,7 +8820,10 @@ export default function MarketplacePage() {
 
   const visibleTradeMemberRows = memberRows.slice(0, isCompact ? 6 : 8);
   const hiddenTradeMemberRows = memberRows.slice(visibleTradeMemberRows.length);
-  const visibleTradeShopCount = memberRows.filter((row) => row.shopTo).length;
+  const visibleTradeShopCount = Math.max(
+    marketplaceShopDirectoryTotal,
+    memberRows.filter((row) => row.shopTo).length
+  );
   const visibleMarketNeeds = marketplaceNeedRows.slice(0, isCompact ? 3 : 4);
   const visibleNeedIds = new Set(
     visibleMarketNeeds
@@ -8850,7 +8846,10 @@ export default function MarketplacePage() {
     .slice(0, isCompact ? 1 : 3);
   const shopDirectoryRows = memberRows.filter((row) => Boolean(row.shopTo));
   const visibleShopDirectoryRows = shopDirectoryRows.slice(0, isCompact ? 2 : 6);
-  const hiddenShopDirectoryCount = Math.max(0, shopDirectoryRows.length - visibleShopDirectoryRows.length);
+  const hiddenShopDirectoryCount = Math.max(
+    0,
+    marketplaceShopDirectoryTotal - visibleShopDirectoryRows.length
+  );
   const marketplaceStats = [
     {
       label: "Members",
@@ -9758,7 +9757,7 @@ export default function MarketplacePage() {
                   Public shops
                 </span>
                 <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                  {shopDirectoryRows.length} visible
+                  {marketplaceShopDirectoryTotal.toLocaleString()} visible
                 </span>
                 {hiddenShopDirectoryCount ? (
                   <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
@@ -10911,6 +10910,7 @@ export default function MarketplacePage() {
         <Suspense fallback={null}>
           <MarketplaceMembersSection
             isCompact={isCompact}
+            activeCommunityId={activeCommunityId}
             memberRows={memberRows}
             visibleTradeMemberRows={visibleTradeMemberRows}
             hiddenTradeMemberRows={hiddenTradeMemberRows}

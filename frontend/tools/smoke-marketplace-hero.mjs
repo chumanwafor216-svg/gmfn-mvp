@@ -165,6 +165,54 @@ async function installApiMocks(page, baseURL) {
       const shops = shopsByClan[clanId] || [];
       return route.fulfill(json({ shop: shops[0] || null, products: [] }));
     }
+    if (path === "/marketplace/shops/directory") {
+      const clanId = Number(url.searchParams.get("clan_id") || 8);
+      const query = String(url.searchParams.get("q") || "").trim().toLowerCase();
+      const contactReadyOnly = url.searchParams.get("contact_ready") === "true";
+      const offersListedOnly = url.searchParams.get("offers_listed") === "true";
+      const limit = Math.max(1, Number(url.searchParams.get("limit") || 20));
+      const directoryItems = (shopsByClan[clanId] || [])
+        .map((shop, index) => ({
+          id: shop.id,
+          clan_id: clanId,
+          owner_user_id: shop.owner_user_id,
+          owner_name:
+            membersByClan[clanId]?.find(
+              (member) => member.user_id === shop.owner_user_id
+            )?.display_name || "GSN member",
+          gmfn_id: shop.owner_gmfn_id,
+          shop_name: shop.name,
+          name: shop.name,
+          description: shop.description,
+          service_summary: shop.description,
+          image_url: shop.image_url,
+          contact_ready: index === 0,
+          offer_count: index + 1,
+          is_active: true,
+        }))
+        .filter((shop) =>
+          query
+            ? [shop.shop_name, shop.description, shop.owner_name]
+                .join(" ")
+                .toLowerCase()
+                .includes(query)
+            : true
+        )
+        .filter((shop) => (contactReadyOnly ? shop.contact_ready : true))
+        .filter((shop) => (offersListedOnly ? shop.offer_count > 0 : true));
+      return route.fulfill(
+        json({
+          items: directoryItems.slice(0, limit),
+          total: directoryItems.length,
+          limit,
+          has_more: directoryItems.length > limit,
+          next_cursor: null,
+          clan_id: clanId,
+          scope: "selected_community",
+          sort: query ? "relevance_then_name" : "name_ascending",
+        })
+      );
+    }
     if (/^\/marketplace\/shops/.test(path)) {
       const clanId = Number(url.searchParams.get("clan_id") || 8);
       const shops = shopsByClan[clanId] || [];
@@ -527,10 +575,8 @@ async function run() {
         document.getElementById("marketplace-members-shops")?.textContent || "";
       const required = [
         "Community Domains",
-        "Professional marketplace communities",
         "Pillar of Hope",
-        "Open marketplace | pillar-of-hope",
-        "Nwafor Chuma",
+        "No public shops are visible in this marketplace yet.",
       ];
       const forbidden = ["Ardent Ebony Uplift LTD", "Setup Domain"];
       return {

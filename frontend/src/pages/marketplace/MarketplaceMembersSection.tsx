@@ -1,8 +1,13 @@
-﻿import React from "react";
+import React from "react";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { StableDisclosureSummary } from "../../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
 import { marketplaceSectionStyle } from "../../lib/marketplaceActionStability";
+import {
+  getMarketplaceShopDirectory,
+  type MarketplaceShopDirectoryItem,
+} from "../../lib/api";
+import { publicShopSharePath } from "../../lib/publicLinks";
 
 type MarketplaceMemberRow = {
   name: string;
@@ -45,6 +50,7 @@ type MarketplaceCommunityDomainRow = {
 
 type Props = {
   isCompact: boolean;
+  activeCommunityId: number;
   memberRows: MarketplaceMemberRow[];
   visibleTradeMemberRows: MarketplaceMemberRow[];
   hiddenTradeMemberRows: MarketplaceMemberRow[];
@@ -694,9 +700,46 @@ function listingReviewText(
   return "";
 }
 
+function directoryItemToMemberRow(
+  item: MarketplaceShopDirectoryItem,
+  communityId: number
+): MarketplaceMemberRow {
+  const gmfnId = String(item.gmfn_id || "").trim();
+  const offerCount = Math.max(0, Number(item.offer_count || 0));
+
+  return {
+    name: item.shop_name || item.name || "Public shop",
+    shopName: item.shop_name || item.name || "Public shop",
+    gmfnId,
+    userId: item.owner_user_id,
+    ownerName: item.owner_name,
+    description: item.description || "",
+    serviceSummary:
+      item.service_summary ||
+      (offerCount
+        ? offerCount + " public offer" + (offerCount === 1 ? "" : "s") + " listed."
+        : "Open the Public Shop to see current details."),
+    imageUrl: item.image_url || "",
+    contactAvailable: Boolean(item.contact_ready),
+    activeState: "Public shop",
+    createdAt: item.created_at || "",
+    productCount: offerCount,
+    productTitles: [],
+    productDescriptions: [],
+    searchText: "",
+    demandMatchTitles: [],
+    shopTo: gmfnId
+      ? publicShopSharePath({
+          gmfnId,
+          clanId: communityId,
+        })
+      : "",
+  };
+}
+
 export default function MarketplaceMembersSection({
   isCompact,
-  memberRows,
+  activeCommunityId,
   visibleTradeShopCount,
   marketplaceCommunityDomainRows,
   marketplaceSurfaceTouchProps,
@@ -706,38 +749,91 @@ export default function MarketplaceMembersSection({
   onOpenCommunityDomain,
 }: Props) {
   const [shopSearch, setShopSearch] = React.useState("");
-  const directoryRows = React.useMemo(() => {
-    const shopRows = memberRows.filter((row) => Boolean(row.shopTo));
-    return shopRows.length ? shopRows : memberRows;
-  }, [memberRows]);
-  const normalizedSearch = shopSearch.trim().toLowerCase();
-  const searchedDirectoryRows = React.useMemo(() => {
-    if (!normalizedSearch) return directoryRows;
-    return directoryRows.filter((row) => {
-      const haystack = [
-        row.searchText,
-        row.name,
-        row.shopName,
-        row.ownerName,
-        row.description,
-        row.communityName,
-        ...(row.productTitles || []),
-        ...(row.productDescriptions || []),
-        ...(row.demandMatchTitles || []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(normalizedSearch);
-    });
-  }, [directoryRows, normalizedSearch]);
-  const visibleDirectoryRows = searchedDirectoryRows.slice(0, isCompact ? 6 : 10);
-  const hiddenDirectoryCount = Math.max(
-    0,
-    searchedDirectoryRows.length - visibleDirectoryRows.length
+  const [contactReadyOnly, setContactReadyOnly] = React.useState(false);
+  const [offersListedOnly, setOffersListedOnly] = React.useState(false);
+  const [directoryRows, setDirectoryRows] = React.useState<MarketplaceMemberRow[]>([]);
+  const [directoryTotal, setDirectoryTotal] = React.useState<number | null>(null);
+  const [directoryCursor, setDirectoryCursor] = React.useState<string | null>(null);
+  const [directoryHasMore, setDirectoryHasMore] = React.useState(false);
+  const [directoryLoading, setDirectoryLoading] = React.useState(false);
+  const [directoryError, setDirectoryError] = React.useState("");
+  const requestSequenceRef = React.useRef(0);
+  const normalizedSearch = shopSearch.trim();
+
+  const loadDirectoryPage = React.useCallback(
+    async (nextCursor: string | null, append: boolean) => {
+      if (!activeCommunityId) return;
+
+      const requestSequence = requestSequenceRef.current + 1;
+      requestSequenceRef.current = requestSequence;
+      setDirectoryLoading(true);
+      setDirectoryError("");
+
+      try {
+        const response = await getMarketplaceShopDirectory({
+          clan_id: activeCommunityId,
+          q: normalizedSearch || undefined,
+          contact_ready: contactReadyOnly ? true : undefined,
+          offers_listed: offersListedOnly ? true : undefined,
+          cursor: nextCursor,
+          limit: 20,
+        });
+        if (requestSequence !== requestSequenceRef.current) return;
+
+        const nextRows = (Array.isArray(response.items) ? response.items : []).map(
+          (item) => directoryItemToMemberRow(item, activeCommunityId)
+        );
+        setDirectoryRows((current) => (append ? [...current, ...nextRows] : nextRows));
+        setDirectoryTotal((current) =>
+          typeof response.total === "number" ? response.total : current
+        );
+        setDirectoryCursor(response.next_cursor || null);
+        setDirectoryHasMore(Boolean(response.has_more && response.next_cursor));
+      } catch {
+        if (requestSequence !== requestSequenceRef.current) return;
+        setDirectoryError(
+          "The shop directory could not load. Please try again without leaving this marketplace."
+        );
+        if (!append) {
+          setDirectoryRows([]);
+          setDirectoryTotal(null);
+          setDirectoryCursor(null);
+          setDirectoryHasMore(false);
+        }
+      } finally {
+        if (requestSequence === requestSequenceRef.current) {
+          setDirectoryLoading(false);
+        }
+      }
+    },
+    [
+      activeCommunityId,
+      contactReadyOnly,
+      normalizedSearch,
+      offersListedOnly,
+    ]
   );
+
+  React.useEffect(() => {
+    requestSequenceRef.current += 1;
+    setDirectoryRows([]);
+    setDirectoryTotal(null);
+    setDirectoryCursor(null);
+    setDirectoryHasMore(false);
+
+    const timer = window.setTimeout(
+      () => {
+        void loadDirectoryPage(null, false);
+      },
+      normalizedSearch ? 300 : 0
+    );
+
+    return () => window.clearTimeout(timer);
+  }, [loadDirectoryPage, normalizedSearch]);
+
+  const visibleDirectoryCount = directoryTotal ?? directoryRows.length;
   const weakDataCount = directoryRows.filter(
-    (row) => row.shopTo && !row.description && !(row.productTitles || []).length
+    (row) => !row.description && Number(row.productCount || 0) === 0
   ).length;
 
   return (
@@ -754,14 +850,7 @@ export default function MarketplaceMembersSection({
           flexWrap: "wrap",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            minWidth: 0,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <span
             aria-hidden="true"
             style={marketplaceOsIconStyle(
@@ -774,8 +863,8 @@ export default function MarketplaceMembersSection({
           <div style={{ minWidth: 0 }}>
             <div style={sectionLabel()}>Shops & Services Directory</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Browse public shops in this selected marketplace. Open shop is the
-              handoff to the canonical Public Shop; management stays elsewhere.
+              Search this selected marketplace. Results arrive in groups of 20,
+              so the page stays fast as the community grows.
             </div>
           </div>
         </div>
@@ -790,103 +879,56 @@ export default function MarketplaceMembersSection({
         </StableButton>
       </div>
 
-      <div
-        style={{
-          marginTop: 12,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-        }}
-      >
-        <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
-          {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
+      <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <span style={stableStatusPillStyle(visibleDirectoryCount > 0)}>
+          {visibleDirectoryCount.toLocaleString()} public shop
+          {visibleDirectoryCount === 1 ? "" : "s"}
         </span>
         <span style={stableStatusPillStyle(directoryRows.length > 0)}>
-          {directoryRows.length} searchable entr{directoryRows.length === 1 ? "y" : "ies"}
-        </span>
-        <span style={stableStatusPillStyle(marketplaceCommunityDomainRows.length > 0)}>
-          {marketplaceCommunityDomainRows.length} domain
-          {marketplaceCommunityDomainRows.length === 1 ? "" : "s"}
+          {directoryRows.length} loaded now
         </span>
         <span style={stableStatusPillStyle(weakDataCount === 0)}>
-          {weakDataCount ? `${weakDataCount} light profile${weakDataCount === 1 ? "" : "s"}` : "Profiles readable"}
+          {weakDataCount
+            ? weakDataCount +
+              " light profile" +
+              (weakDataCount === 1 ? "" : "s")
+            : "Profiles readable"}
         </span>
+        {visibleTradeShopCount > directoryRows.length ? (
+          <span style={stableStatusPillStyle(false)}>Preview data refreshing</span>
+        ) : null}
       </div>
 
       {marketplaceCommunityDomainRows.length ? (
-        <div
-          style={{
-            ...marketplaceLinkRowStyle(isCompact, true),
-            marginTop: 12,
-            marginBottom: 12,
-          }}
-        >
-          <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
-            <span
-              aria-hidden="true"
-              style={marketplaceLinkRowIconStyle("gold", isCompact)}
-            >
-              <MarketplaceGlyph name="shop" size={isCompact ? 25 : 30} />
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Community Domains</div>
-              <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                Professional marketplace communities
-              </div>
-              <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                They sit with community members and shops. Setup stays in the
-                Community Domain dashboard.
-              </div>
-            </div>
-            <span
-              style={marketplaceLinkRowStatusStyle(
-                marketplaceCommunityDomainRows.some((row) => row.marketplaceReady)
-                  ? "ready"
-                  : "idle",
-                isCompact
-              )}
-            >
-              {marketplaceCommunityDomainRows.length} linked
-            </span>
-          </div>
+        <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <div style={sectionLabel()}>Community Domains</div>
           <div
             style={{
-              marginTop: 10,
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 10,
+              gap: 8,
             }}
           >
             {marketplaceCommunityDomainRows.slice(0, 4).map((row) => (
               <StableButton
                 key={row.key}
-                debugId={`marketplace.domain.${row.id || row.key}.open`}
+                debugId={"marketplace.domain." + (row.id || row.key) + ".open"}
                 type="button"
-                stableHeight={isCompact ? 76 : 86}
+                stableHeight={isCompact ? 62 : 70}
                 onClick={(event) => {
                   void onOpenCommunityDomain(event, row);
                 }}
                 style={marketplaceLinkChooserButtonStyle(isCompact)}
               >
-                <span
-                  aria-hidden="true"
-                  style={marketplaceLinkRowIconStyle(
-                    row.marketplaceReady ? "gold" : "navy",
-                    isCompact
-                  )}
-                >
-                  <MarketplaceGlyph name="shop" size={isCompact ? 24 : 28} />
-                </span>
+                <MarketplaceGlyph name="shop" size={isCompact ? 22 : 26} />
                 <span style={marketplaceLinkChooserTextStyle()}>
                   <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
                     {row.name}
                   </span>
                   <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
-                    {row.marketplaceReady
-                      ? `Open marketplace | ${row.code}`
-                      : `Finish setup | ${row.code}`}
+                    {row.marketplaceReady ? "Open marketplace" : "Finish setup"}
                   </span>
                 </span>
               </StableButton>
@@ -897,20 +939,33 @@ export default function MarketplaceMembersSection({
 
       <div
         {...marketplaceSurfaceTouchProps("marketplace.members.visible-members-module")}
-        style={marketplaceDepartmentShellStyle("members", isCompact)}
+        style={{
+          ...marketplaceDepartmentShellStyle("members", isCompact),
+          marginTop: 12,
+        }}
       >
         <div style={marketplaceDepartmentHeaderStyle(isCompact)}>
           <div style={{ minWidth: 0 }}>
             <div style={sectionLabel()}>Find a shop or service</div>
-            <div style={{ marginTop: 4, ...helperText(), fontSize: isCompact ? 12.5 : 13.5 }}>
-              Search uses loaded shop names, descriptions, product/service text,
-              owner labels, and DemandBox match titles.
+            <div
+              style={{
+                marginTop: 4,
+                ...helperText(),
+                fontSize: isCompact ? 12.5 : 13.5,
+              }}
+            >
+              Search runs on the server across shop, service, product, and owner
+              text. It never loads the whole directory onto this phone.
             </div>
           </div>
-          <span style={stableStatusPillStyle(searchedDirectoryRows.length > 0)}>
-            {normalizedSearch
-              ? `${searchedDirectoryRows.length} result${searchedDirectoryRows.length === 1 ? "" : "s"}`
-              : "Neutral A-Z order"}
+          <span style={stableStatusPillStyle(directoryRows.length > 0)}>
+            {directoryLoading
+              ? "Searching..."
+              : normalizedSearch
+                ? visibleDirectoryCount.toLocaleString() +
+                  " result" +
+                  (visibleDirectoryCount === 1 ? "" : "s")
+                : "Neutral A-Z order"}
           </span>
         </div>
 
@@ -930,20 +985,45 @@ export default function MarketplaceMembersSection({
           style={directorySearchInputStyle(isCompact)}
         />
 
-        {directoryRows.length === 0 ? (
-          <div style={{ ...innerCard("#FCFEFF"), color: "#64748B", lineHeight: 1.6 }}>
-            No public shops are visible in this marketplace yet. This is the
-            current community scope only.
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          <StableButton
+            debugId="marketplace.directory.filter.offers"
+            type="button"
+            aria-pressed={offersListedOnly}
+            stableHeight={44}
+            onClick={() => setOffersListedOnly((current) => !current)}
+            style={marketplaceActionStyle(offersListedOnly ? "primary" : "soft")}
+          >
+            {offersListedOnly ? "Offers listed ✓" : "Offers listed"}
+          </StableButton>
+          <StableButton
+            debugId="marketplace.directory.filter.contact"
+            type="button"
+            aria-pressed={contactReadyOnly}
+            stableHeight={44}
+            onClick={() => setContactReadyOnly((current) => !current)}
+            style={marketplaceActionStyle(contactReadyOnly ? "primary" : "soft")}
+          >
+            {contactReadyOnly ? "Contact ready ✓" : "Contact ready"}
+          </StableButton>
+        </div>
+
+        {directoryError ? (
+          <div role="alert" style={{ ...innerCard("#FCFEFF"), color: "#8A2C2C" }}>
+            {directoryError}
           </div>
-        ) : visibleDirectoryRows.length === 0 ? (
+        ) : null}
+
+        {!directoryLoading && directoryRows.length === 0 && !directoryError ? (
           <div style={{ ...innerCard("#FCFEFF"), color: "#64748B", lineHeight: 1.6 }}>
-            No shop in this marketplace matches that search yet. Try a business
-            name, service, product, or owner label.
+            {normalizedSearch || contactReadyOnly || offersListedOnly
+              ? "No public shop in this marketplace matches those choices yet."
+              : "No public shops are visible in this marketplace yet."}
           </div>
         ) : (
-          visibleDirectoryRows.map((row, index) => (
+          directoryRows.map((row, index) => (
             <MemberRowCard
-              key={`${row.gmfnId || row.userId || index}`}
+              key={String(row.gmfnId || row.userId || index)}
               row={row}
               isCompact={isCompact}
               safeDateTime={safeDateTime}
@@ -951,58 +1031,28 @@ export default function MarketplaceMembersSection({
           ))
         )}
 
-        {hiddenDirectoryCount > 0 ? (
-          <details
+        {directoryHasMore && directoryCursor ? (
+          <StableButton
+            debugId="marketplace.directory.load-more"
+            type="button"
+            stableHeight={48}
+            disabled={directoryLoading}
+            onClick={() => {
+              void loadDirectoryPage(directoryCursor, true);
+            }}
             style={{
-              ...innerCard("#FFFFFF"),
-              padding: 0,
-              overflow: "hidden",
+              ...marketplaceActionStyle("soft"),
+              width: "100%",
+              marginTop: 8,
             }}
           >
-            <StableDisclosureSummary
-              debugId="marketplace.members.more-visible.summary"
-              stableHeight={50}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-                padding: "0 12px",
-                color: "#173750",
-                fontSize: isCompact ? 13 : 14,
-                fontWeight: 950,
-                background:
-                  "linear-gradient(180deg, rgba(236,243,250,0.96) 0%, rgba(222,233,244,0.92) 100%)",
-              }}
-            >
-              <span>More directory results</span>
-              <span>{hiddenDirectoryCount}</span>
-            </StableDisclosureSummary>
-            <div
-              style={{
-                padding: 10,
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              {searchedDirectoryRows.slice(visibleDirectoryRows.length).map((row, index) => (
-                <MemberRowCard
-                  key={`${
-                    row.gmfnId || row.userId || visibleDirectoryRows.length + index
-                  }`}
-                  row={row}
-                  isCompact={isCompact}
-                  safeDateTime={safeDateTime}
-                />
-              ))}
-            </div>
-          </details>
+            {directoryLoading ? "Loading..." : "Show 20 more"}
+          </StableButton>
         ) : null}
       </div>
     </section>
   );
 }
-
 function MemberRowCard({
   row,
   isCompact,

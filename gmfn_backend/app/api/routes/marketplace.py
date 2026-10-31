@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -13,7 +14,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import case, func, or_
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -4879,6 +4880,228 @@ def _repost_out(db: Session, repost: MarketplaceProductRepost) -> Dict[str, Any]
     }
 
 
+def _marketplace_directory_cursor_encode(*, rank: int, name: str, shop_id: int) -> str:
+    payload = json.dumps(
+        {"rank": int(rank), "name": str(name or "").lower(), "id": int(shop_id)},
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
+
+
+def _marketplace_directory_cursor_decode(cursor: str) -> tuple[int, str, int]:
+    try:
+        raw = str(cursor or "").strip()
+        padding = "=" * (-len(raw) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(raw + padding).decode("utf-8"))
+        rank = int(payload["rank"])
+        name = str(payload["name"] or "").lower()
+        shop_id = int(payload["id"])
+        if rank < 0 or shop_id <= 0:
+            raise ValueError("invalid cursor values")
+        return rank, name, shop_id
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid marketplace directory cursor") from exc
+
+
+def _marketplace_directory_like(value: str) -> str:
+    return str(value or "").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+@router.get("/shops/directory")
+def list_marketplace_shop_directory(
+    clan_id: Optional[int] = Query(default=None),
+    q: Optional[str] = Query(default=None, max_length=120),
+    contact_ready: Optional[bool] = Query(default=None),
+    offers_listed: Optional[bool] = Query(default=None),
+    cursor: Optional[str] = Query(default=None, max_length=512),
+    limit: int = Query(default=20, ge=1, le=50),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    visible_offer_filters = (
+        MarketplaceProduct.shop_id == MarketplaceShop.id,
+        MarketplaceProduct.clan_id == int(resolved_clan_id),
+        MarketplaceProduct.is_active.is_(True),
+        MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY,
+    )
+    offer_count_expr = (
+        select(func.count(MarketplaceProduct.id))
+        .where(*visible_offer_filters)
+        .correlate(MarketplaceShop)
+        .scalar_subquery()
+    )
+    offer_exists_expr = (
+        db.query(MarketplaceProduct.id)
+        .filter(*visible_offer_filters)
+        .exists()
+    )
+    contact_ready_expr = or_(
+        func.length(func.trim(func.coalesce(MarketplaceShop.whatsapp_number, ""))) > 0,
+        func.length(func.trim(func.coalesce(MarketplaceShop.telegram_handle, ""))) > 0,
+    )
+    normalized_query = str(q or "").strip().lower()
+    shop_name_expr = func.lower(MarketplaceShop.name)
+
+    directory_query = (
+        db.query(
+            MarketplaceShop,
+            User,
+            offer_count_expr.label("offer_count"),
+        )
+        .join(
+            ClanMembership,
+            and_(
+                ClanMembership.user_id == MarketplaceShop.owner_user_id,
+                ClanMembership.clan_id == int(resolved_clan_id),
+                ClanMembership.left_at.is_(None),
+            ),
+        )
+        .join(User, User.id == MarketplaceShop.owner_user_id)
+        .filter(MarketplaceShop.is_active.is_(True))
+    )
+
+    if normalized_query:
+        escaped_query = _marketplace_directory_like(normalized_query)
+        contains_pattern = f"%{escaped_query}%"
+        starts_pattern = f"{escaped_query}%"
+        product_match = (
+            db.query(MarketplaceProduct.id)
+            .filter(
+                MarketplaceProduct.shop_id == MarketplaceShop.id,
+                MarketplaceProduct.clan_id == int(resolved_clan_id),
+                MarketplaceProduct.is_active.is_(True),
+                MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY,
+                or_(
+                    func.lower(MarketplaceProduct.name).like(contains_pattern, escape="\\"),
+                    func.lower(func.coalesce(MarketplaceProduct.description, "")).like(
+                        contains_pattern,
+                        escape="\\",
+                    ),
+                ),
+            )
+            .exists()
+        )
+        directory_query = directory_query.filter(
+            or_(
+                shop_name_expr.like(contains_pattern, escape="\\"),
+                func.lower(func.coalesce(MarketplaceShop.description, "")).like(
+                    contains_pattern,
+                    escape="\\",
+                ),
+                func.lower(func.coalesce(User.display_name, "")).like(
+                    contains_pattern,
+                    escape="\\",
+                ),
+                func.lower(func.coalesce(User.gmfn_id, "")).like(
+                    contains_pattern,
+                    escape="\\",
+                ),
+                product_match,
+            )
+        )
+        rank_expr = case(
+            (shop_name_expr == normalized_query, 0),
+            (shop_name_expr.like(starts_pattern, escape="\\"), 1),
+            (shop_name_expr.like(contains_pattern, escape="\\"), 2),
+            else_=3,
+        )
+    else:
+        rank_expr = case((MarketplaceShop.id > 0, 0), else_=0)
+
+    if contact_ready is not None:
+        directory_query = directory_query.filter(
+            contact_ready_expr if contact_ready else ~contact_ready_expr
+        )
+    if offers_listed is not None:
+        directory_query = directory_query.filter(
+            offer_exists_expr if offers_listed else ~offer_exists_expr
+        )
+
+    total = None
+    if not cursor:
+        total = int(directory_query.order_by(None).count())
+
+    if cursor:
+        cursor_rank, cursor_name, cursor_shop_id = _marketplace_directory_cursor_decode(cursor)
+        directory_query = directory_query.filter(
+            or_(
+                rank_expr > cursor_rank,
+                and_(rank_expr == cursor_rank, shop_name_expr > cursor_name),
+                and_(
+                    rank_expr == cursor_rank,
+                    shop_name_expr == cursor_name,
+                    MarketplaceShop.id > cursor_shop_id,
+                ),
+            )
+        )
+
+    rows = (
+        directory_query.add_columns(rank_expr.label("directory_rank"))
+        .order_by(
+            rank_expr.asc(),
+            shop_name_expr.asc(),
+            MarketplaceShop.id.asc(),
+        )
+        .limit(int(limit) + 1)
+        .all()
+    )
+    has_more = len(rows) > int(limit)
+    page_rows = rows[: int(limit)]
+
+    items = []
+    for shop, owner, offer_count, directory_rank in page_rows:
+        owner_name = str(getattr(owner, "display_name", "") or "").strip()
+        owner_gmfn_id = str(getattr(owner, "gmfn_id", "") or "").strip()
+        items.append(
+            {
+                "id": int(shop.id),
+                "clan_id": int(resolved_clan_id),
+                "owner_user_id": int(shop.owner_user_id),
+                "owner_name": owner_name or owner_gmfn_id or "GSN member",
+                "gmfn_id": owner_gmfn_id or None,
+                "shop_name": str(shop.name or "").strip(),
+                "name": str(shop.name or "").strip(),
+                "description": str(shop.description or "").strip() or None,
+                "service_summary": str(shop.description or "").strip() or None,
+                "image_url": str(shop.image_url or "").strip() or None,
+                "contact_ready": bool(
+                    str(shop.whatsapp_number or "").strip()
+                    or str(shop.telegram_handle or "").strip()
+                ),
+                "offer_count": int(offer_count or 0),
+                "is_active": True,
+                "created_at": shop.created_at.isoformat() if shop.created_at else None,
+            }
+        )
+
+    next_cursor = None
+    if has_more and page_rows:
+        last_shop, _last_owner, _last_offer_count, last_rank = page_rows[-1]
+        next_cursor = _marketplace_directory_cursor_encode(
+            rank=int(last_rank or 0),
+            name=str(last_shop.name or ""),
+            shop_id=int(last_shop.id),
+        )
+
+    return {
+        "items": items,
+        "total": total,
+        "limit": int(limit),
+        "has_more": has_more,
+        "next_cursor": next_cursor,
+        "clan_id": int(resolved_clan_id),
+        "scope": "selected_community",
+        "sort": "relevance_then_name" if normalized_query else "name_ascending",
+    }
+
 @router.get("/shops")
 def list_marketplace_shops(
     clan_id: Optional[int] = Query(default=None),
@@ -4895,18 +5118,25 @@ def list_marketplace_shops(
         header_clan_id=x_clan_id,
     )
 
-    q = db.query(MarketplaceShop)
+    q = (
+        db.query(MarketplaceShop)
+        .join(
+            ClanMembership,
+            and_(
+                ClanMembership.user_id == MarketplaceShop.owner_user_id,
+                ClanMembership.clan_id == int(resolved_clan_id),
+                ClanMembership.left_at.is_(None),
+            ),
+        )
+    )
     if only_active:
         q = q.filter(MarketplaceShop.is_active.is_(True))
 
-    rows = (
+    visible = (
         q.order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
+        .limit(int(limit))
         .all()
     )
-
-    visible = [
-        row for row in rows if _shop_is_visible_in_clan(db, shop=row, clan_id=resolved_clan_id)
-    ][: int(limit)]
     marketplace_governance_policy = _marketplace_governance_policy_for_clan(
         db,
         clan_id=resolved_clan_id,

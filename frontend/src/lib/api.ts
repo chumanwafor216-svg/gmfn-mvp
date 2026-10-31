@@ -2184,15 +2184,19 @@ export async function updateClanQrPreApprovalStatus(
     { header_clan_id: clanId }
   );
 }
-export async function listClanMembers(clanId: number): Promise<any> {
+export async function listClanMembers(
+  clanId: number,
+  params?: { limit?: number }
+): Promise<any> {
   return httpJson(
-    `/clans/${encodeURIComponent(String(clanId))}/members`,
+    `/clans/${encodeURIComponent(String(clanId))}/members${buildQuery({
+      limit: params?.limit,
+    })}`,
     "GET",
     undefined,
     { header_clan_id: clanId }
   );
 }
-
 export async function submitJoinRequest(
   payload: {
     invite_code: string;
@@ -6751,6 +6755,56 @@ export async function getMarketplaceShops(params?: {
   );
 }
 
+export type MarketplaceShopDirectoryItem = {
+  id: number;
+  clan_id: number;
+  owner_user_id: number;
+  owner_name: string;
+  gmfn_id?: string | null;
+  shop_name: string;
+  name: string;
+  description?: string | null;
+  service_summary?: string | null;
+  image_url?: string | null;
+  contact_ready: boolean;
+  offer_count: number;
+  is_active: boolean;
+  created_at?: string | null;
+};
+
+export type MarketplaceShopDirectoryResponse = {
+  items: MarketplaceShopDirectoryItem[];
+  total: number | null;
+  limit: number;
+  has_more: boolean;
+  next_cursor?: string | null;
+  clan_id: number;
+  scope: "selected_community";
+  sort: "name_ascending" | "relevance_then_name";
+};
+
+export async function getMarketplaceShopDirectory(params: {
+  clan_id: number;
+  q?: string;
+  contact_ready?: boolean;
+  offers_listed?: boolean;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<MarketplaceShopDirectoryResponse> {
+  return httpJson(
+    `/marketplace/shops/directory${buildQuery({
+      clan_id: params.clan_id,
+      q: params.q?.trim() || undefined,
+      contact_ready: params.contact_ready,
+      offers_listed: params.offers_listed,
+      cursor: params.cursor || undefined,
+      limit: params.limit ?? 20,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: params.clan_id }
+  );
+}
 export async function getMarketplaceShopByGmfnId(
   gmfnId: string,
   params?: {
