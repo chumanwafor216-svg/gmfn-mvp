@@ -122,18 +122,23 @@ assertContains(
 );
 assertContains(
   "communityConfirmationInbox",
-  /data-gsn-community-confirmation-summary="true"[\s\S]*?What needs your answer\?[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/,
-  "Community Confirmation Inbox must keep one compact answer summary with one state-aware action and three request counts."
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?You're up to date[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?Check again[\s\S]*?pendingCount > 0 \? \([\s\S]*?data-gsn-community-confirmation-counts="true"/,
+  "Community Confirmation Inbox must keep one compact state-aware answer summary and hide count chips when nothing is waiting."
 );
 assertContains(
   "communityConfirmationInbox",
-  /data-gsn-community-confirmation-tools="true"[\s\S]*?data-gsn-community-confirmation-review-cases="true"[\s\S]*?data-gsn-community-confirmation-relay-settings="true"[\s\S]*?data-gsn-community-confirmation-requests="true"/,
-  "Community Confirmation Inbox must keep tools, reviewer work, and relay settings closed before the request task."
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?order: 1[\s\S]*?data-gsn-community-confirmation-tools="true"[\s\S]*?order: 4[\s\S]*?data-gsn-community-confirmation-review-cases="true"[\s\S]*?order: 5[\s\S]*?data-gsn-community-confirmation-relay-settings="true"[\s\S]*?order: 6[\s\S]*?data-gsn-community-confirmation-requests="true"[\s\S]*?order: 3/,
+  "Community Confirmation Inbox must visually place the live request before closed tools, reviewer work, and relay settings."
 );
 assertContains(
   "communityConfirmationInbox",
-  /data-gsn-community-confirmation-request-navigator="true"[\s\S]*?one person and one decision at a time[\s\S]*?data-gsn-community-confirmation-request-evidence="true"[\s\S]*?data-gsn-community-confirmation-private-note="true"[\s\S]*?data-gsn-community-confirmation-response-groups="true"/,
-  "Community Confirmation Inbox must show one request at a time, with evidence and optional private context collapsed before the grouped decision choices."
+  /data-gsn-community-confirmation-simple-response="true"[\s\S]*?data-gsn-community-confirmation-quick-answers="true"[\s\S]*?data-gsn-community-confirmation-specific-answers="true"[\s\S]*?data-gsn-community-confirmation-record-answer="true"/,
+  "Community Confirmation Inbox must lead with three simple choices and keep specialist answers behind one disclosure."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /data-gsn-community-confirmation-request-navigator="true"[\s\S]*?one person and one decision at a time[\s\S]*?renderResponseTask\(row\)[\s\S]*?data-gsn-community-confirmation-request-evidence="true"[\s\S]*?data-gsn-community-confirmation-private-note="true"/,
+  "Community Confirmation Inbox must show one request at a time and put the answer task before closed evidence and optional context."
 );
 
 if (findings.length > 0) {

@@ -1309,29 +1309,38 @@ contact preferences available without turning the first surface into an
 operations dashboard.
 
 Must show:
-- one compact `What needs your answer?` summary
-- pending, instant-pulse, and relay-request counts
+- one compact state-aware summary: `What needs your answer?` when requests are
+  waiting, `You're up to date` when empty, and a clear closed-request state
+  for an expired or completed notification
+- compact waiting, instant-pulse, and relay-request chips only when at least
+  one request is waiting; do not show three zero-count boxes in the empty state
 - one state-aware first action: `Review first request`,
   `Answer this request` for a focused notification, or
-  `Refresh inbox` when nothing is waiting
+  `Check again` when nothing is waiting
 - the existing request identity, purpose guide, aggregate response reading,
   private-note field, TrustSlip route, and full response-choice inventory
 - one active request card at a time, with a compact `Request x of y`
   navigator when more than one request is waiting
-- all nine response choices visible on the active request, grouped as
+- three immediate plain-language choices: `I can confirm`, `I'm not sure`,
+  and `I cannot confirm`
+- the remaining six specialist choices behind one closed
+  `Choose a more specific answer` disclosure, grouped as
   `What you can confirm`, `Where caution is needed`, and
-  `What you cannot support`
+  `What you cannot support`; all nine backend response types remain reachable
 - selection without submission, followed by one explicit
-  `Record: <selected answer>` action
-- compact request facts before the choice task, with fuller purpose/evidence
-  context and the optional private note in separate closed disclosures
+  `Record my answer` action
+- compact request facts followed immediately by the answer task, with fuller
+  purpose/evidence context and the optional private note in separate closed
+  disclosures below it
 - refresh and protected copy-summary controls inside a closed
-  `Inbox tools` disclosure
+  `Inbox tools` disclosure below the live request task
 - reviewer queue, assignment, evidence, SLA-marker, and resolution controls
   inside a closed `Review cases` disclosure
 - relay opt-in, instant-pulse preference, and policy route inside a closed
   `Relay settings` disclosure
-- clear empty and expired-or-completed focused-request states
+- one clear empty state without a duplicate empty request card
+- enough phone bottom clearance that the fixed authenticated navigation does
+  not cover the final disclosure or action
 
 Rules:
 - Preserve `request_id` notification focus and `case_id` reviewer focus.
@@ -1350,11 +1359,15 @@ Rules:
 - Preserve the existing authenticated inbox, self-service relay-setting,
   response, reviewer-assignment, evidence, resolution, and policy contracts.
   Backend permission checks remain authoritative.
-- Keep all existing response choices visible once a request is deliberately
-  reviewed. Do not hide caution or objection behind a positive action or a
-  collapsed category.
-- Do not restore the exposed explanation panel, reviewer controls, relay
-  settings, or copy tools above the request task.
+- Keep the three plain-language choices visible on the active request. Keep
+  every specialist positive, caution, and objection choice reachable through
+  the single specific-answer disclosure; do not remove or remap backend types.
+- Do not restore the exposed explanation panel, zero-count tiles, reviewer
+  controls, relay settings, or copy tools above the request task.
+- Owner-approved 2026-10-31 simplification: response selection is simple-first,
+  the empty state is compact, and the request task visually precedes tools.
+  Existing authentication, permissions, evidence meaning, response payloads,
+  reviewer contracts, and relay contracts remain unchanged.
 
 Primary action:
 

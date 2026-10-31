@@ -510,8 +510,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /function responseCategoryLabel[\s\S]*?RESPONSE_GROUPS\.map[\s\S]*?RESPONSE_OPTIONS\.filter[\s\S]*?type="radio"[\s\S]*?selectedResponseTypes[\s\S]*?debugId=\{`community-confirmation-inbox\.\$\{row\.id\}\.record-selected-response`\}/,
-  "Community confirmation inbox response choices must keep grouped radio selection and one stable explicit record action."
+  /function renderResponseTask[\s\S]*?QUICK_RESPONSE_TYPES\.map[\s\S]*?data-gsn-community-confirmation-quick-answers="true"[\s\S]*?type="radio"[\s\S]*?data-gsn-community-confirmation-specific-answers="true"[\s\S]*?RESPONSE_GROUPS\.map[\s\S]*?data-gsn-community-confirmation-record-answer="true"[\s\S]*?debugId=\{`community-confirmation-inbox\.\$\{row\.id\}\.record-selected-response`\}/,
+  "Community confirmation inbox must keep simple-first radio selection, specialist choices, and one stable explicit record action."
 );
 
 assertContains(

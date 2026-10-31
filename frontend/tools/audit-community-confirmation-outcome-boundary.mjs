@@ -112,22 +112,15 @@ assertContains(
 
 assertContains(
   "inbox",
-  /data-gsn-community-confirmation-summary="true"[\s\S]*?What needs your answer\?[\s\S]*?data-gsn-community-confirmation-priority="true"[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?Answer this request[\s\S]*?Review first request[\s\S]*?Refresh inbox[\s\S]*?Pending[\s\S]*?Instant[\s\S]*?Relay/,
-  "Community Confirmation Inbox must keep one compact request summary and one state-aware first action."
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?You're up to date[\s\S]*?data-gsn-community-confirmation-priority="true"[\s\S]*?debugId="community-confirmation-inbox\.priority-action"[\s\S]*?Answer this request[\s\S]*?Review first request[\s\S]*?Check again[\s\S]*?pendingCount > 0 \? \([\s\S]*?data-gsn-community-confirmation-counts="true"/,
+  "Community Confirmation Inbox must keep one compact state-aware summary, one first action, and nonzero-only count chips."
 );
 
-assertOrder(
+assertContains(
   "inbox",
-  [
-    { label: "request summary", pattern: /data-gsn-community-confirmation-summary="true"/ },
-    { label: "inbox tools disclosure", pattern: /data-gsn-community-confirmation-tools="true"/ },
-    { label: "review cases disclosure", pattern: /data-gsn-community-confirmation-review-cases="true"/ },
-    { label: "relay settings disclosure", pattern: /data-gsn-community-confirmation-relay-settings="true"/ },
-    { label: "request work", pattern: /data-gsn-community-confirmation-requests="true"/ },
-  ],
-  "Community Confirmation Inbox must put the response task before deliberately disclosed tools and operations."
+  /data-gsn-community-confirmation-summary="true"[\s\S]*?order: 1[\s\S]*?data-gsn-community-confirmation-tools="true"[\s\S]*?order: 4[\s\S]*?data-gsn-community-confirmation-review-cases="true"[\s\S]*?order: 5[\s\S]*?data-gsn-community-confirmation-relay-settings="true"[\s\S]*?order: 6[\s\S]*?data-gsn-community-confirmation-requests="true"[\s\S]*?order: 3/,
+  "Community Confirmation Inbox must visually put the response task before deliberately disclosed tools and operations."
 );
-
 assertContains(
   "inbox",
   /data-gsn-community-confirmation-review-cases="true"[\s\S]*?open=\{isReviewCaseFocusMode\}[\s\S]*?data-gsn-community-confirmation-relay-settings="true"/,
@@ -148,16 +141,21 @@ assertContains(
 
 assertContains(
   "inbox",
-  /title: "What you can confirm"[\s\S]*?title: "Where caution is needed"[\s\S]*?title: "What you cannot support"[\s\S]*?data-gsn-community-confirmation-response-groups="true"[\s\S]*?type="radio"/,
-  "Community Confirmation Inbox must keep positive, caution, and objection choices equally discoverable."
+  /label: "I can confirm"[\s\S]*?label: "I'm not sure"[\s\S]*?label: "I cannot confirm"[\s\S]*?const QUICK_RESPONSE_TYPES = \[[\s\S]*?"known_here"[\s\S]*?"cannot_confirm_now"[\s\S]*?"not_known"/,
+  "Community Confirmation Inbox must lead with three plain-language answer choices mapped to the existing backend response types."
 );
 
 assertContains(
   "inbox",
-  /Nothing is recorded until you use the button below\.[\s\S]*?onClick=\{\(\) => selectedOption && void answer\(row, selectedOption\)\}[\s\S]*?disabled=\{!selectedOption \|\| Boolean\(busyKey\)\}[\s\S]*?record-selected-response/,
-  "Community Confirmation Inbox must not submit a response until the responder explicitly records one selected answer."
+  /data-gsn-community-confirmation-response-groups="true"[\s\S]*?data-gsn-community-confirmation-quick-answers="true"[\s\S]*?data-gsn-community-confirmation-specific-answers="true"[\s\S]*?Choose a more specific answer[\s\S]*?RESPONSE_GROUPS\.map[\s\S]*?specificOptions[\s\S]*?type="radio"/,
+  "Community Confirmation Inbox must show three simple answers first and keep the six specialist choices inside one deliberate disclosure."
 );
 
+assertContains(
+  "inbox",
+  /Nothing is recorded until you press Record my answer\.[\s\S]*?onClick=\{\(\) => selectedOption && void answer\(row, selectedOption\)\}[\s\S]*?disabled=\{!selectedOption \|\| Boolean\(busyKey\)\}[\s\S]*?record-selected-response[\s\S]*?Record my answer/,
+  "Community Confirmation Inbox must not submit a response until the responder explicitly records one selected answer."
+);
 assertNotContains(
   "inbox",
   /ExplainToggle|label="How to answer"/,

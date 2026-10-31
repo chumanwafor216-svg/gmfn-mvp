@@ -207,8 +207,11 @@ async function run() {
     const tools = page.locator('[data-gsn-community-confirmation-tools="true"]');
     const reviews = page.locator('[data-gsn-community-confirmation-review-cases="true"]');
     const relay = page.locator('[data-gsn-community-confirmation-relay-settings="true"]');
+    const requests = page.locator('[data-gsn-community-confirmation-requests="true"]');
     await summary.waitFor();
-    await summary.getByText("2 requests need an honest answer.", { exact: true }).waitFor();
+    await summary
+      .getByText("2 requests waiting. Answer only what you personally know.", { exact: true })
+      .waitFor();
     assert(
       await page.getByRole("button", { name: "Review first request", exact: true }).count() === 1,
       "Populated inbox must show one Review first request action."
@@ -219,6 +222,18 @@ async function run() {
     assert(
       await page.getByText("How to answer", { exact: true }).count() === 0,
       "The old exposed explanation must not return."
+    );
+    assert(
+      await requests.evaluate((requestElement) => {
+        const toolsElement = document.querySelector(
+          '[data-gsn-community-confirmation-tools="true"]'
+        );
+        return Boolean(
+          toolsElement &&
+            requestElement.getBoundingClientRect().top < toolsElement.getBoundingClientRect().top
+        );
+      }),
+      "The live answer task must appear before inbox tools on phone."
     );
 
     await page.getByRole("button", { name: "Review first request", exact: true }).click();
@@ -237,24 +252,34 @@ async function run() {
       await page.getByText("Request 1 of 2", { exact: true }).count() === 1,
       "A multi-request inbox must show the active request position."
     );
-    assert(
-      await page.getByRole("radio").count() === 9,
-      "The active request must keep all nine response choices visible."
+    const specificAnswers = page.locator(
+      '[data-gsn-community-confirmation-specific-answers="true"]'
     );
     assert(
-      await page.getByText("What you can confirm", { exact: true }).count() === 1 &&
-        await page.getByText("Where caution is needed", { exact: true }).count() === 1 &&
-        await page.getByText("What you cannot support", { exact: true }).count() === 1,
-      "Positive, caution, and objection choices must remain equally discoverable."
+      (await page.locator('input[type="radio"]:visible').count()) === 3 &&
+        (await page.locator('input[type="radio"]').count()) === 9,
+      "The active request must show three simple answers first while preserving all nine response types."
+    );
+    assert(
+      !(await detailsIsOpen(specificAnswers)),
+      "Specific response choices must start closed."
+    );
+    assert(
+      await page.getByRole("button", { name: "Choose an answer", exact: true }).isDisabled(),
+      "The record action must stay disabled until one answer is selected."
+    );
+    await specificAnswers.locator("summary").click();
+    assert(
+      (await page.locator('input[type="radio"]:visible').count()) === 9 &&
+        (await page.getByText("What you can confirm", { exact: true }).isVisible()) &&
+        (await page.getByText("Where caution is needed", { exact: true }).isVisible()) &&
+        (await page.getByText("What you cannot support", { exact: true }).isVisible()),
+      "Opening the specific-answer disclosure must expose the six specialist choices across all three evidence tones."
     );
     assert(
       !(await detailsIsOpen(page.locator('[data-gsn-community-confirmation-request-evidence="true"]'))) &&
         !(await detailsIsOpen(page.locator('[data-gsn-community-confirmation-private-note="true"]'))),
       "Evidence detail and optional private context must start closed."
-    );
-    assert(
-      await page.getByRole("button", { name: "Choose one answer", exact: true }).isDisabled(),
-      "The record action must stay disabled until one answer is selected."
     );
 
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -262,9 +287,9 @@ async function run() {
     assert(recordedResponses.length === 0, "Moving to the next request must not submit a response.");
     await page.getByRole("button", { name: "Previous", exact: true }).click();
     await page.locator("#community-confirmation-request-101").waitFor();
-    await page.getByRole("radio", { name: /Known here/ }).check();
+    await page.getByRole("radio", { name: /I can confirm/ }).check();
     assert(recordedResponses.length === 0, "Selecting an answer must not submit it.");
-    await page.getByRole("button", { name: "Record: Known here", exact: true }).click();
+    await page.getByRole("button", { name: "Record my answer", exact: true }).click();
     await page.locator("#community-confirmation-request-102").waitFor();
     assert(
       recordedResponses.length === 1 &&
@@ -284,19 +309,28 @@ async function run() {
       token: "local-community-confirmation-empty-token",
     });
     await emptyPage.goto(routeUrl, { waitUntil: "networkidle" });
-    await emptyPage.getByText("Nothing is waiting for your answer right now.", { exact: true }).waitFor();
+    await emptyPage.getByText("You're up to date", { exact: true }).waitFor();
     assert(
-      await emptyPage.getByRole("button", { name: "Refresh inbox", exact: true }).count() === 1,
-      "Empty inbox must show one Refresh inbox action."
+      await emptyPage.getByRole("button", { name: "Check again", exact: true }).count() === 1,
+      "Empty inbox must show one quiet Check again action."
     );
-    await emptyPage.getByText("No community confirmation requests need your answer.", { exact: true }).waitFor();
+    assert(
+      await emptyPage.locator('[data-gsn-community-confirmation-counts="true"]').count() === 0,
+      "Empty inbox must not show three zero-count tiles or chips."
+    );
+    assert(
+      await emptyPage.locator('[data-gsn-community-confirmation-requests="true"]').isHidden(),
+      "Empty inbox must not repeat the empty state in a second card."
+    );
     await emptyPage.close();
 
     const focusedPage = await createPhonePage(browser, {
       token: "local-community-confirmation-focused-token",
     });
     await focusedPage.goto(routeUrl + "?request_id=102", { waitUntil: "networkidle" });
-    await focusedPage.getByText("This request needs your honest answer.", { exact: true }).waitFor();
+    await focusedPage
+      .getByText("One request is ready for your honest answer.", { exact: true })
+      .waitFor();
     assert(
       await focusedPage.getByRole("button", { name: "Answer this request", exact: true }).count() === 1,
       "Focused notification must show one Answer this request action."
@@ -307,9 +341,10 @@ async function run() {
       "Focused notification must show only its requested response card."
     );
     assert(
-      await focusedPage.getByRole("radio").count() === 9 &&
+      (await focusedPage.locator('input[type="radio"]:visible').count()) === 3 &&
+        (await focusedPage.locator('input[type="radio"]').count()) === 9 &&
         await focusedPage.locator('[data-gsn-community-confirmation-request-navigator="true"]').count() === 0,
-      "A focused notification must retain every response choice without unrelated queue navigation."
+      "A focused notification must show three simple answers first while retaining every backend response type."
     );
     assert(
       await focusedPage.locator('[data-gsn-community-confirmation-review-cases="true"]').count() === 0 &&
@@ -336,7 +371,7 @@ async function run() {
     );
 
     console.log(
-      "Community Confirmation Inbox guided phone smoke passed: one-request navigation, selection-before-record safety, complete grouped response inventory, closed detail work, empty refresh, focused request, focused review case, and 390x844 overflow."
+      "Community Confirmation Inbox guided phone smoke passed: task-first visual order, three simple answers, preserved specialist inventory, selection-before-record safety, compact empty state, focused request, focused review case, and 390x844 overflow."
     );
   } finally {
     await browser?.close();
