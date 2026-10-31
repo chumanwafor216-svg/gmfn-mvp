@@ -1876,6 +1876,18 @@ Rules:
   product, a guessed category scene, or an unsaved profile portrait. Do not
   invent trust status, business activity or location to make the hero look
   richer.
+- Owner-approved 2026-10-31 Public Shop Spotlight presentation: Spotlight is a
+  media-first attention surface. On phone, the image/video screen occupies the
+  former complete compact-card footprint and a separate information console
+  follows beneath it. The console may show only the real advertiser/shop,
+  community, offer title, two-line description, stored price, availability and
+  category, plus the existing source-aware contact action and exact-owner Add
+  Spotlight shortcut. Wider screens place the enlarged screen first and the
+  same information console beside it. Do not invent likes, comments, views,
+  urgency, trust, sales or contact readiness. This is presentation-only: media
+  preparation, serving, queue selection, dwell, visibility qualification,
+  impression accounting, self-exclusion, pacing, permissions, publishing,
+  payment, Vault, Shop Update and Dashboard Market Wisdom remain unchanged.
 - Public Shop may expose an on-demand Verify Shop panel with the shop owner ID,
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip

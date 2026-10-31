@@ -578,8 +578,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 456 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?!isCompact && \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 318 : 340[\s\S]*?height: isCompact \? 318 : 340[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one contact action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
+  /const spotlightScreenHeight = isCompact[\s\S]*?"clamp\(390px, 112vw, 470px\)"[\s\S]*?: 430;[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?data-spotlight-layout="screen-and-information"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?"minmax\(0, 1\.25fr\) minmax\(300px, 0\.75fr\)"[\s\S]*?data-spotlight-information-panel="true"[\s\S]*?gridColumn: isCompact \? "1" : "2"[\s\S]*?data-spotlight-source-line="true"[\s\S]*?data-spotlight-information-detail="true"[\s\S]*?data-spotlight-fact-line="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?gridColumn: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight must keep the enlarged media screen, separate factual information console, one-column phone stack, and media-first desktop composition without stretching.",
 );
 
 assertContains(

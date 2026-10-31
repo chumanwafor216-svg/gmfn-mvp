@@ -322,8 +322,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /spotlightWhatsAppAvailable[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 1fr\) 48px"[\s\S]*?gridColumn: isCompact \? "1 \/ -1"[\s\S]*?heroImage && !ownerSpotlightStatusView/,
-  "Compact Spotlight contact must remain inside the card, disappear without a live contact, and never reuse shop hero media for a non-live owner status."
+  /const spotlightContactAvailable = Boolean\([\s\S]*?data-spotlight-information-panel="true"[\s\S]*?\{spotlightContactAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
+  "Compact Spotlight contact must remain inside the factual information console, disappear without a live contact, and never reuse shop hero media for owner status."
 );
 
 assertContains(

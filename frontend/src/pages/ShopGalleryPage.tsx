@@ -4210,6 +4210,38 @@ export default function ShopGalleryPage() {
   ]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
+  const spotlightScreenHeight = isCompact
+    ? "clamp(390px, 112vw, 470px)"
+    : 430;
+  const spotlightAdvertiserLabel = firstMeaningful(
+    miniSpotlight?.sourceShopName,
+    miniSpotlight?.authorName
+  );
+  const spotlightCommunityLabel = firstMeaningful(
+    miniSpotlight?.sourceClanName
+  );
+  const spotlightAvailabilityLabel = firstMeaningful(
+    miniSpotlight?.sourceProductAvailability
+  );
+  const spotlightCategoryLabel = firstMeaningful(
+    miniSpotlight?.sourceProductCategory
+  );
+  const spotlightFactLabels = Array.from(
+    new Set(
+      [
+        ownerSpotlightStatusView ? miniSpotlightView.priceLabel : "",
+        spotlightAvailabilityLabel,
+        spotlightCategoryLabel,
+      ].filter(Boolean)
+    )
+  );
+  const spotlightInformationDetail = firstMeaningful(
+    ownerSpotlightStatusView?.detail,
+    safeStr(miniSpotlightView.detail).trim().toLocaleLowerCase() !==
+      safeStr(miniSpotlightView.title).trim().toLocaleLowerCase()
+      ? miniSpotlightView.detail
+      : ""
+  );
   const spotlightWhatsAppAvailable = Boolean(
     publicShopSpotlightActive &&
       normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
@@ -6742,6 +6774,7 @@ export default function ShopGalleryPage() {
             data-owner-spotlight-inspection={
               ownerSpotlightStatusView?.state || "visitor"
             }
+            data-spotlight-layout="screen-and-information"
             onPointerEnter={pauseSpotlightPresentationRotation}
             onPointerDown={pauseSpotlightPresentationRotation}
             onFocusCapture={(event) => {
@@ -6781,8 +6814,8 @@ export default function ShopGalleryPage() {
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr"
-                  : "minmax(0, 0.95fr) minmax(340px, 0.9fr)",
-                gap: isCompact ? 8 : 18,
+                  : "minmax(0, 1.25fr) minmax(300px, 0.75fr)",
+                gap: isCompact ? 10 : 18,
                 alignItems: "stretch",
                 height: isCompact ? "auto" : undefined,
                 minHeight: isCompact ? 0 : undefined,
@@ -6790,18 +6823,23 @@ export default function ShopGalleryPage() {
               }}
             >
               <div
+                data-spotlight-information-panel="true"
                 style={{
                   position: "relative",
                   zIndex: 2,
-                  gridColumn: isCompact ? "1" : "1",
+                  gridColumn: isCompact ? "1" : "2",
                   gridRow: isCompact ? "2" : "1",
                   minWidth: 0,
                   overflow: "hidden",
                   display: "grid",
                   alignContent: "start",
-                  gap: isCompact ? 5 : 0,
-                  padding: isCompact ? "5px 4px 0" : 0,
+                  gap: isCompact ? 7 : 0,
+                  padding: isCompact ? "11px 10px 12px" : "16px 14px",
                   maxWidth: isCompact ? "none" : undefined,
+                  borderRadius: isCompact ? 16 : 20,
+                  border: "1px solid rgba(255,255,255,0.92)",
+                  background: "rgba(255,255,255,0.88)",
+                  boxShadow: "0 12px 24px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
                 }}
               >
                 <div
@@ -6829,7 +6867,7 @@ export default function ShopGalleryPage() {
                 >
                   <span
                     style={{
-                      display: isCompact ? "none" : "inline-flex",
+                      display: "inline-flex",
                       alignItems: "center",
                       gap: 4,
                       minHeight: isCompact ? 28 : "auto",
@@ -6846,7 +6884,12 @@ export default function ShopGalleryPage() {
                   >
                     {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
                     {ownerSpotlightStatusView
-                      ? ownerSpotlightStatusView.label
+                      ? isCompact
+                        ? firstMeaningful(
+                            ownerSpotlightStatusView.label.split("\u00B7").pop(),
+                            ownerSpotlightStatusView.label
+                          )
+                        : ownerSpotlightStatusView.label
                       : publicShopSpotlightActive
                       ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
                       : "Spotlight"}
@@ -6910,6 +6953,25 @@ export default function ShopGalleryPage() {
                     </PrimaryButton>
                   ) : null}
                 </div>
+                {publicShopSpotlightActive &&
+                (spotlightAdvertiserLabel || spotlightCommunityLabel) ? (
+                  <div
+                    data-spotlight-source-line="true"
+                    style={{
+                      minWidth: 0,
+                      color: "#425E78",
+                      fontSize: isCompact ? 11.5 : 13,
+                      fontWeight: 820,
+                      lineHeight: 1.3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {spotlightAdvertiserLabel || "GSN Spotlight"}
+                    {spotlightCommunityLabel ? ` · ${spotlightCommunityLabel}` : ""}
+                  </div>
+                ) : null}
                 <div
                   style={{
                     marginTop: isCompact ? 0 : 10,
@@ -6963,17 +7025,50 @@ export default function ShopGalleryPage() {
                     Media could not be shown. GSN will not count this showing and will retry automatically.
                   </div>
                 ) : null}
-                {isCompact && ownerSpotlightStatusView?.detail ? (
+                {isCompact && spotlightInformationDetail ? (
                   <div
-                    data-owner-spotlight-status-detail="true"
+                    data-spotlight-information-detail="true"
                     style={{
                       color: "#425E78",
-                      fontSize: 11.5,
-                      lineHeight: 1.35,
+                      fontSize: 12.5,
+                      lineHeight: 1.4,
                       fontWeight: 720,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical" as any,
                     }}
                   >
-                    {ownerSpotlightStatusView.detail}
+                    {spotlightInformationDetail}
+                  </div>
+                ) : null}
+                {publicShopSpotlightActive && spotlightFactLabels.length > 0 ? (
+                  <div
+                    data-spotlight-fact-line="true"
+                    style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+                  >
+                    {spotlightFactLabels.map((label) => (
+                      <span
+                        key={label}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          minHeight: 25,
+                          maxWidth: "100%",
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: "#EDF5E9",
+                          color: "#276E4A",
+                          fontSize: 10.5,
+                          fontWeight: 850,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {label}
+                      </span>
+                    ))}
                   </div>
                 ) : null}
                 {!isCompact && (!ownerSpotlightStatusView || ownerSpotlightStatusView.detail) ? (
@@ -7000,13 +7095,14 @@ export default function ShopGalleryPage() {
                 ) : null}
               </div>
               <div
+                data-spotlight-screen="true"
                 style={{
-                  minHeight: isCompact ? 318 : 340,
-                  height: isCompact ? 318 : 340,
+                  minHeight: spotlightScreenHeight,
+                  height: spotlightScreenHeight,
                   borderRadius: isCompact ? 18 : 20,
                   overflow: "hidden",
                   position: "relative",
-                  gridColumn: isCompact ? "1" : "2",
+                  gridColumn: "1",
                   gridRow: "1",
                   zIndex: 1,
                   background:
@@ -7049,7 +7145,7 @@ export default function ShopGalleryPage() {
                         style={{
                           width: '100%',
                           height: '100%',
-                          minHeight: isCompact ? 318 : 340,
+                          minHeight: spotlightScreenHeight,
                           display: 'grid',
                           placeItems: 'center',
                           padding: 18,
@@ -7097,8 +7193,8 @@ export default function ShopGalleryPage() {
                     maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     frameStyle={{
                       width: "100%",
-                      height: isCompact ? 318 : 340,
-                      minHeight: isCompact ? 318 : 340,
+                      height: spotlightScreenHeight,
+                      minHeight: spotlightScreenHeight,
                       borderRadius: isCompact ? 18 : 20,
                       position: 'relative',
                       zIndex: 1,
@@ -7147,8 +7243,8 @@ export default function ShopGalleryPage() {
                         position: 'absolute',
                         inset: 0,
                         width: '100%',
-                        height: isCompact ? 318 : 340,
-                        minHeight: isCompact ? 318 : 340,
+                        height: spotlightScreenHeight,
+                        minHeight: spotlightScreenHeight,
                         borderRadius: isCompact ? 18 : 20,
                         opacity: 0,
                         pointerEvents: 'none',
@@ -7169,8 +7265,8 @@ export default function ShopGalleryPage() {
                     alt={shopNameText}
                     style={{
                       width: "100%",
-                      height: isCompact ? 318 : 340,
-                      minHeight: isCompact ? 318 : undefined,
+                      height: spotlightScreenHeight,
+                      minHeight: spotlightScreenHeight,
                       objectFit: "cover",
                       objectPosition: "center",
                       display: "block",
@@ -7179,8 +7275,8 @@ export default function ShopGalleryPage() {
                 ) : (
                   <div
                     style={{
-                      height: isCompact ? 318 : 340,
-                      minHeight: isCompact ? 318 : undefined,
+                      height: spotlightScreenHeight,
+                      minHeight: spotlightScreenHeight,
                       display: "grid",
                       placeItems: "center",
                       color: "#D7E3F1",

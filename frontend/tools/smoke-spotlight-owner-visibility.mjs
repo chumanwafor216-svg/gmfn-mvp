@@ -152,6 +152,12 @@ function spotlightItem({
     author_gmfn_id: canonical ? `GSN-U-OTHEROWNER-${streamIndex}` : ownerGsnId,
     source_shop_name: canonical ? `Eligible visitor source ${streamIndex}` : "Owner Visibility Shop",
     source_shop_whatsapp: "+441234567890",
+    source_clan_name: "Owner Visibility Community",
+    source_product_description: "Prepared offer with clear information for community members.",
+    source_product_price: "2500",
+    source_product_currency: "NGN",
+    source_product_category: "Food and catering",
+    source_product_availability: "Available now",
     message: label,
     image_url: imageUrl,
     video_url: videoUrl,
@@ -507,17 +513,62 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     );
   }
   await spotlightWhatsApp.waitFor({ state: "visible", timeout: 15_000 });
-  const [railBounds, whatsappBounds] = await Promise.all([
-    spotlightRail.boundingBox(),
-    spotlightWhatsApp.boundingBox(),
-  ]);
+  const spotlightScreen = spotlightRail.locator('[data-spotlight-screen="true"]');
+  const spotlightInformation = spotlightRail.locator(
+    '[data-spotlight-information-panel="true"]'
+  );
+  const [railBounds, screenBounds, informationBounds, whatsappBounds] =
+    await Promise.all([
+      spotlightRail.boundingBox(),
+      spotlightScreen.boundingBox(),
+      spotlightInformation.boundingBox(),
+      spotlightWhatsApp.boundingBox(),
+    ]);
+  if ((await spotlightRail.getAttribute("data-spotlight-layout")) !== "screen-and-information") {
+    throw new Error("Public Shop Spotlight lost the approved screen-and-information layout marker.");
+  }
+  const informationText = await spotlightInformation.innerText();
+  for (const expectedInformation of [
+    "Owner Visibility Shop",
+    "Owner Visibility Community",
+    "Prepared offer with clear information for community members.",
+    "NGN 2500",
+    "Available now",
+    "Food and catering",
+  ]) {
+    if (!informationText.includes(expectedInformation)) {
+      throw new Error(
+        `Spotlight information console did not show ${expectedInformation}: ${informationText}`
+      );
+    }
+  }
   if (
     !railBounds ||
+    !screenBounds ||
+    !informationBounds ||
     !whatsappBounds ||
-    whatsappBounds.x < railBounds.x - 1 ||
-    whatsappBounds.x + whatsappBounds.width > railBounds.x + railBounds.width + 1
+    screenBounds.height < 390 ||
+    informationBounds.y < screenBounds.y + screenBounds.height - 1 ||
+    screenBounds.x < railBounds.x - 1 ||
+    screenBounds.x + screenBounds.width > railBounds.x + railBounds.width + 1 ||
+    informationBounds.x < railBounds.x - 1 ||
+    informationBounds.x + informationBounds.width > railBounds.x + railBounds.width + 1 ||
+    whatsappBounds.x < informationBounds.x - 1 ||
+    whatsappBounds.x + whatsappBounds.width > informationBounds.x + informationBounds.width + 1
   ) {
-    throw new Error("Compact Spotlight WhatsApp action overflowed the card bounds.");
+    throw new Error(
+      `Compact Spotlight screen/information geometry is invalid: ${JSON.stringify({
+        railBounds,
+        screenBounds,
+        informationBounds,
+        whatsappBounds,
+      })}`
+    );
+  }
+  if (process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH) {
+    await spotlightRail.screenshot({
+      path: process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH,
+    });
   }
   await openOwnerSpotlight(page);
   await page.waitForTimeout(1_200);
