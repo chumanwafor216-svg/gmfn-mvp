@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
+import os
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -35,6 +37,11 @@ from app.services.liquidity_engine_service import build_user_liquidity_profile
 from app.services.loan_readiness_service import build_loan_readiness_plan
 from app.services.trust_score_service import compute_trust_breakdown
 from app.services.community_confirmation_service import public_community_verification
+from app.services.trust_slip_v1_evidence import collect_trust_slip_v1_evidence
+from app.services.trust_slip_v1_projection import (
+    authorize_stage_a_evidence_bundle,
+    project_trust_slip_v1,
+)
 
 try:
     from app.services.trust_graph_service import build_trust_graph  # type: ignore
@@ -43,6 +50,16 @@ except Exception:
 
 
 SNAPSHOT_VERSION = "trustslip-snapshot/v2"
+V3_SNAPSHOT_VERSION = "trustslip-snapshot/v3"
+TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV = "GSN_TRUSTSLIP_V1_SNAPSHOT_WRITES_ENABLED"
+_TRUSTSLIP_V1_RUNTIME_ENVIRONMENT_NAMES = (
+    "GSN_RUNTIME_ENVIRONMENT",
+    "GMFN_ENVIRONMENT",
+    "ENVIRONMENT",
+    "RENDER_ENV",
+)
+_NON_PRODUCTION_RUNTIME_ENVIRONMENTS = frozenset({"local", "development", "dev", "test", "non_production"})
+_BLOCKED_RUNTIME_ENVIRONMENTS = frozenset({"production", "prod", "live", "staging", "stage"})
 PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES = PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES
 logger = logging.getLogger(__name__)
 
@@ -2052,6 +2069,49 @@ def _snapshot_checksum(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def verify_trust_slip_snapshot_checksum(slip: TrustSlip) -> Dict[str, Any]:
+    """Verify a stored TrustSlip snapshot without mutating it or the database."""
+
+    raw = getattr(slip, "snapshot_json", None)
+    expected = _safe_str(getattr(slip, "snapshot_checksum", None))
+    if not raw:
+        return {
+            "status": "snapshot_unreadable",
+            "verified": False,
+            "legacy_compatible": False,
+            "computed_checksum": None,
+        }
+
+    try:
+        payload = json.loads(raw)
+    except Exception:
+        payload = None
+    if not isinstance(payload, dict):
+        return {
+            "status": "snapshot_unreadable",
+            "verified": False,
+            "legacy_compatible": False,
+            "computed_checksum": None,
+        }
+
+    computed = _snapshot_checksum(payload)
+    if not expected:
+        return {
+            "status": "legacy_checksum_missing",
+            "verified": False,
+            "legacy_compatible": True,
+            "computed_checksum": computed,
+        }
+
+    verified = hmac.compare_digest(expected, computed)
+    return {
+        "status": "verified" if verified else "checksum_mismatch",
+        "verified": verified,
+        "legacy_compatible": False,
+        "computed_checksum": computed,
+    }
+
+
 def read_trust_slip_snapshot(slip: TrustSlip) -> Optional[Dict[str, Any]]:
     raw = getattr(slip, "snapshot_json", None)
     if not raw:
@@ -2094,6 +2154,104 @@ def store_trust_slip_snapshot(
     slip.snapshot_version = SNAPSHOT_VERSION
     slip.snapshot_checksum = checksum
 
+    db.add(slip)
+    if commit:
+        db.commit()
+        db.refresh(slip)
+    else:
+        db.flush()
+
+    snapshot["snapshot_checksum"] = checksum
+    return snapshot
+
+
+def _truthy_environment_value(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _trustslip_v1_runtime_environment() -> str:
+    configured_environments: dict[str, str] = {}
+    for name in _TRUSTSLIP_V1_RUNTIME_ENVIRONMENT_NAMES:
+        raw_value = os.getenv(name)
+        if raw_value is None:
+            continue
+        value = _safe_str(raw_value).lower()
+        if not value:
+            raise RuntimeError("trustslip_v1_snapshot_writes_malformed_runtime_environment")
+        configured_environments[name] = value
+
+    if not configured_environments:
+        raise RuntimeError("trustslip_v1_snapshot_writes_require_explicit_non_production_environment")
+
+    distinct_environments = set(configured_environments.values())
+    if len(distinct_environments) != 1:
+        raise RuntimeError("trustslip_v1_snapshot_writes_conflicting_runtime_environments")
+    return next(iter(distinct_environments))
+
+
+def _trustslip_v1_shadow_writes_enabled() -> bool:
+    if not _truthy_environment_value(os.getenv(TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "false")):
+        return False
+
+    runtime_environment = _trustslip_v1_runtime_environment()
+    if runtime_environment in _BLOCKED_RUNTIME_ENVIRONMENTS:
+        raise RuntimeError("trustslip_v1_snapshot_writes_forbidden_in_live_environment")
+    if runtime_environment not in _NON_PRODUCTION_RUNTIME_ENVIRONMENTS:
+        raise RuntimeError("trustslip_v1_snapshot_writes_require_explicit_non_production_environment")
+    return True
+
+
+def _store_newly_issued_trust_slip_snapshot(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    full_payload: Dict[str, Any],
+    visibility_level: str,
+    v1_purpose: str,
+    commit: bool = True,
+) -> Dict[str, Any]:
+    if not _trustslip_v1_shadow_writes_enabled():
+        return store_trust_slip_snapshot(
+            db,
+            slip=slip,
+            full_payload=full_payload,
+            visibility_level=visibility_level,
+            commit=commit,
+        )
+
+    snapshot_issued_at = _now_iso()
+    evidence_bundle = collect_trust_slip_v1_evidence(
+        db,
+        slip=slip,
+        holder_user_id=int(slip.holder_user_id),
+        purpose=v1_purpose,
+        identity_payload=full_payload,
+        identity_subject_user_id=int(slip.holder_user_id),
+        as_of=datetime.fromisoformat(snapshot_issued_at),
+    )
+    authorised_evidence = authorize_stage_a_evidence_bundle(evidence_bundle)
+    projection = project_trust_slip_v1(authorised_evidence)
+    merchant_view = build_trust_slip_visibility_view(full_payload, level=visibility_level)
+    snapshot = {
+        "snapshot_version": V3_SNAPSHOT_VERSION,
+        "snapshot_issued_at": snapshot_issued_at,
+        "merchant_visibility_level": visibility_level,
+        "merchant_view": merchant_view,
+        "full_summary": full_payload,
+        "trustslip_code": full_payload.get("code") or getattr(slip, "code", None),
+        "gmfn_id": full_payload.get("gmfn_id"),
+        "cci_score": full_payload.get("cci_score"),
+        "cci_band": full_payload.get("cci_band"),
+        "status": full_payload.get("status"),
+        "expires_at": full_payload.get("expires_at"),
+        "trustslip_v1_projection": projection,
+    }
+    checksum = _snapshot_checksum(snapshot)
+
+    slip.snapshot_json = json.dumps(snapshot, ensure_ascii=False)
+    slip.snapshot_visibility_level = visibility_level
+    slip.snapshot_version = V3_SNAPSHOT_VERSION
+    slip.snapshot_checksum = checksum
     db.add(slip)
     if commit:
         db.commit()
@@ -2609,6 +2767,7 @@ def issue_trust_slip_for_user(
     user_id: int,
     include_payload: bool = False,
     preferred_clan_id: Any = None,
+    v1_purpose: str = "general",
 ) -> Dict[str, Any]:
     uid = int(user_id)
     user = db.get(User, uid)
@@ -2669,6 +2828,7 @@ def issue_trust_slip_for_user(
                 reason="expired_trustslip_auto_refresh",
                 include_payload=include_payload,
                 preferred_clan_id=selected_clan_id,
+                v1_purpose=v1_purpose,
             ),
         }
 
@@ -2716,11 +2876,12 @@ def issue_trust_slip_for_user(
             user_id=uid,
             preferred_clan_id=clan_id,
         )
-        snapshot = store_trust_slip_snapshot(
+        snapshot = _store_newly_issued_trust_slip_snapshot(
             db,
             slip=slip,
             full_payload=issued_payload,
             visibility_level=_saved_visibility_level(user),
+            v1_purpose=v1_purpose,
             commit=False,
         )
         db.commit()
@@ -2824,6 +2985,7 @@ def reissue_trust_slip(
     reason: str,
     include_payload: bool = False,
     preferred_clan_id: Any = None,
+    v1_purpose: str = "general",
 ) -> Dict[str, Any]:
     uid = int(user_id)
     current_slip = get_current_trust_slip_for_user(db, user_id=uid)
@@ -2907,11 +3069,12 @@ def reissue_trust_slip(
             user_id=uid,
             preferred_clan_id=clan_id,
         )
-        store_trust_slip_snapshot(
+        _store_newly_issued_trust_slip_snapshot(
             db,
             slip=new_slip,
             full_payload=new_payload,
             visibility_level=_saved_visibility_level(user),
+            v1_purpose=v1_purpose,
             commit=False,
         )
         db.commit()

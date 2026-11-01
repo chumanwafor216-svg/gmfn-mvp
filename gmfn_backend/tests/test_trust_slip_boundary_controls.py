@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+import pytest
 from sqlalchemy import text
 
 from app.api.routes import trust_slips as trust_slips_route
@@ -651,6 +652,202 @@ def test_trust_slip_reissue_snapshot_failure_preserves_existing_current_slip(
         assert slips[0].superseded_by_trust_slip_id is None
     finally:
         db.close()
+
+
+def test_trust_slip_stage_b_flag_disabled_preserves_v2_issue_behavior(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "false")
+
+    db = SessionLocal()
+    try:
+        result = trust_slips_services.issue_trust_slip_for_user(db, user_id=1)
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, result["trust_slip_id"])
+        assert slip is not None
+        assert result["snapshot_version"] == "trustslip-snapshot/v2"
+        assert slip.snapshot_version == "trustslip-snapshot/v2"
+        assert "trustslip_v1_projection" not in json.loads(slip.snapshot_json)
+    finally:
+        db.close()
+
+
+def test_trust_slip_stage_b_enabled_nonproduction_issue_writes_v3_shadow_snapshot(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "true")
+    monkeypatch.setenv("GSN_RUNTIME_ENVIRONMENT", "test")
+
+    db = SessionLocal()
+    try:
+        result = trust_slips_services.issue_trust_slip_for_user(
+            db,
+            user_id=1,
+            v1_purpose="shop_review",
+        )
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, result["trust_slip_id"])
+        assert slip is not None
+        snapshot = json.loads(slip.snapshot_json)
+        projection = snapshot["trustslip_v1_projection"]
+        assert result["snapshot_version"] == "trustslip-snapshot/v3"
+        assert slip.snapshot_version == "trustslip-snapshot/v3"
+        assert projection["purpose"] == "shop_review"
+        assert len(projection["answers"]) == 8
+        assert trust_slips_services.verify_trust_slip_snapshot_checksum(slip)["verified"] is True
+    finally:
+        db.close()
+
+
+def test_trust_slip_stage_b_projection_failure_rolls_back_first_issue(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "true")
+    monkeypatch.setenv("GSN_RUNTIME_ENVIRONMENT", "test")
+
+    def fail_projection(*args, **kwargs):
+        raise RuntimeError("forced Stage B projection failure")
+
+    monkeypatch.setattr(trust_slips_services, "project_trust_slip_v1", fail_projection)
+    db = SessionLocal()
+    try:
+        with pytest.raises(RuntimeError, match="forced Stage B projection failure"):
+            trust_slips_services.issue_trust_slip_for_user(db, user_id=1)
+    finally:
+        db.close()
+
+    assert _trust_slip_count() == 0
+
+
+def test_trust_slip_stage_b_projection_failure_preserves_existing_current_on_reissue(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="STAGE-B-REISSUE-OLD", clan_id=1)
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        slip.snapshot_json = json.dumps(
+            {"snapshot_version": "trustslip-snapshot/v2", "merchant_view": {}, "full_summary": {}}
+        )
+        slip.snapshot_version = "trustslip-snapshot/v2"
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "true")
+    monkeypatch.setenv("GSN_RUNTIME_ENVIRONMENT", "test")
+
+    def fail_projection(*args, **kwargs):
+        raise RuntimeError("forced Stage B reissue projection failure")
+
+    monkeypatch.setattr(trust_slips_services, "project_trust_slip_v1", fail_projection)
+    db = SessionLocal()
+    try:
+        with pytest.raises(RuntimeError, match="forced Stage B reissue projection failure"):
+            trust_slips_services.reissue_trust_slip(
+                db,
+                user_id=1,
+                reason="holder_requested_fresh_public_trustslip",
+            )
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        slips = db.query(TrustSlip).order_by(TrustSlip.id.asc()).all()
+        assert len(slips) == 1
+        assert slips[0].code == "STAGE-B-REISSUE-OLD"
+        assert slips[0].snapshot_version == "trustslip-snapshot/v2"
+        assert slips[0].is_current is True
+        assert slips[0].superseded_by_trust_slip_id is None
+    finally:
+        db.close()
+
+
+def test_trust_slip_stage_b_successful_reissue_preserves_historical_v2_snapshot_bytes(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="STAGE-B-IMMUTABLE-V2", clan_id=1)
+    historical_snapshot = json.dumps(
+        {
+            "snapshot_version": "trustslip-snapshot/v2",
+            "merchant_view": {"status": "active"},
+            "full_summary": {"immutable_marker": "DO-NOT-REWRITE"},
+        },
+        ensure_ascii=False,
+    )
+    historical_checksum = "historical-v2-checksum-preserved"
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        slip.snapshot_json = historical_snapshot
+        slip.snapshot_version = "trustslip-snapshot/v2"
+        slip.snapshot_checksum = historical_checksum
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "true")
+    monkeypatch.setenv("GSN_RUNTIME_ENVIRONMENT", "test")
+    db = SessionLocal()
+    try:
+        result = trust_slips_services.reissue_trust_slip(
+            db,
+            user_id=1,
+            reason="holder_requested_fresh_public_trustslip",
+            v1_purpose="general",
+        )
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        old_slip = db.get(TrustSlip, slip_id)
+        new_slip = db.get(TrustSlip, result["new_trust_slip_id"])
+        assert old_slip.snapshot_json == historical_snapshot
+        assert old_slip.snapshot_checksum == historical_checksum
+        assert old_slip.snapshot_version == "trustslip-snapshot/v2"
+        assert old_slip.is_current is False
+        assert new_slip.snapshot_version == "trustslip-snapshot/v3"
+        assert json.loads(new_slip.snapshot_json)["trustslip_v1_projection"]["purpose"] == "general"
+    finally:
+        db.close()
+
+
+def test_trust_slip_stage_b_production_guard_rolls_back_first_issue(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    monkeypatch.setenv(trust_slips_services.TRUSTSLIP_V1_SNAPSHOT_WRITES_ENV, "true")
+    monkeypatch.setenv("GSN_RUNTIME_ENVIRONMENT", "production")
+
+    db = SessionLocal()
+    try:
+        with pytest.raises(RuntimeError, match="forbidden_in_live_environment"):
+            trust_slips_services.issue_trust_slip_for_user(db, user_id=1)
+    finally:
+        db.close()
+
+    assert _trust_slip_count() == 0
 
 
 def test_trust_slip_optional_evidence_sql_error_is_labelled_without_poisoning_later_reads(
