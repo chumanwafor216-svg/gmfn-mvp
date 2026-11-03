@@ -15,7 +15,10 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session, object_session
-from app.services.notification_service import create_notification
+from app.services.notification_service import (
+    create_notification,
+    retire_join_review_notifications,
+)
 from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
 from app.core.clan_auth import (
     _is_default_clan_name,
@@ -3299,6 +3302,10 @@ def _approve_join_request(
 
     join_request.status = "approved"
     join_request.decided_at = datetime.now(timezone.utc)
+    retire_join_review_notifications(
+        db,
+        join_request_id=int(join_request.id),
+    )
 
     if existing_identity:
         join_request.activation_link = None
@@ -3453,6 +3460,10 @@ def _reject_join_request(
 
     join_request.status = "rejected"
     join_request.decided_at = datetime.now(timezone.utc)
+    retire_join_review_notifications(
+        db,
+        join_request_id=int(join_request.id),
+    )
 
     db.add(join_request)
     db.commit()
@@ -5713,6 +5724,12 @@ def vote_join_request(
                 created_at=datetime.now(timezone.utc),
             )
         )
+
+    retire_join_review_notifications(
+        db,
+        join_request_id=int(req.id),
+        reviewer_user_id=int(current_user.id),
+    )
 
     db.commit()
     db.refresh(req)

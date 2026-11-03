@@ -5,6 +5,7 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { subscribeWorkspaceDataChanged } from "../lib/workspaceEvents";
 
 const COMPANION_BLOCKED_PATH_PREFIXES = [
   "/app/finance",
@@ -58,12 +59,16 @@ export default function WorkspaceCompanionBridge() {
 
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    const unsubscribeWorkspaceDataChanged = subscribeWorkspaceDataChanged(() => {
+      void loadSnapshot();
+    });
 
     return () => {
       alive = false;
       window.clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      unsubscribeWorkspaceDataChanged();
     };
   }, [companionBlocked, location.pathname, location.search]);
 

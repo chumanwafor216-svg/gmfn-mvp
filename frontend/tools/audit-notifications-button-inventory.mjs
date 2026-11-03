@@ -337,8 +337,8 @@ assertContains(
 );
 
 assertGuidanceContains(
-  /getMyNotifications\(20, false\)/,
-  "Shared guidance snapshot must request at most the bounded 20-notification pilot read."
+  /getMyNotifications\(20, false, \{ fresh: true \}\)/,
+  "Shared guidance snapshot must request a fresh bounded 20-notification pilot read."
 );
 
 

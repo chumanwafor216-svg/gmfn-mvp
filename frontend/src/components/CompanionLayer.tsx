@@ -44,6 +44,23 @@ function isUnreadNotification(row: any): boolean {
   return row?.is_read !== true;
 }
 
+function isResolvedJoinReviewNotification(row: any): boolean {
+  if (notificationKind(row).toLowerCase() !== "approval_request") return false;
+  if (row?.attention_actionable === false || row?.join_request_resolved === true) {
+    return true;
+  }
+  const status = String(row?.join_request_status || "").trim().toLowerCase();
+  return Boolean(status && status !== "pending");
+}
+
+function isActionableUnreadNotification(row: any): boolean {
+  return (
+    isUnreadNotification(row) &&
+    row?.attention_actionable !== false &&
+    !isResolvedJoinReviewNotification(row)
+  );
+}
+
 function isPhoneTriggerNotification(row: any): boolean {
   const kind = notificationKind(row);
   return isUnreadNotification(row) && PHONE_TRIGGER_NOTIFICATION_KINDS.has(kind);
@@ -408,7 +425,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       const rows = Array.isArray(result?.items) ? result.items : [];
       const urgent = rows.find(isUrgentNotification);
       const phoneNotice =
-        urgent || rows.find(isPhoneTriggerNotification) || rows.find(isUnreadNotification);
+        urgent ||
+        rows.find(isPhoneTriggerNotification) ||
+        rows.find(isActionableUnreadNotification);
 
       if (!phoneNotice) return;
 

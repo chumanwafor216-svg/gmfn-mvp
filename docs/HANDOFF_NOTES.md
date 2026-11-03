@@ -5130,3 +5130,32 @@ under `docs/` or `docs/archive/`, then link that file here.
   stale against pre-existing source changes (its stored 94-action baseline sees
   99 current actions and several retired directory patterns); do not absorb that
   unrelated baseline drift into this focused Marketplace presentation commit.
+
+## 2026-11-03 - Join-review success and stale Companion closure
+
+- Owner trigger: preserve the original GSN habit of visibly confirming a
+  completed action as successful, and stop Companion from repeatedly asking a
+  reviewer to handle a join request after that reviewer has already acted or
+  the request has been approved/rejected.
+- Routes affected: community join review vote and admin-approval routes plus
+  authenticated notification reads. No admission threshold, permission,
+  invite, QR, activation, membership, or GSN-ID rule changed.
+- Backend lifecycle changed: a reviewer's own unread `approval_request` notice
+  is retired in the same transaction as their vote. When a request reaches a
+  final approved/rejected state, all unread review notices for that exact
+  request are retired. Notification actionability also returns false for a
+  resolved request or a reviewer who already voted.
+- Frontend guidance changed: join-review actions emit a workspace data-change
+  signal, Companion rebuilds immediately with a fresh notification read, and
+  both guidance and phone fallback ignore resolved or explicitly
+  non-actionable review rows.
+- Success response changed: join-review outcomes use the shared action-response
+  helper and a visible live status card. A recorded vote says it was saved
+  successfully; only a request that actually crosses the approval threshold
+  says `Approval successful`, preserving governance truth.
+- Verification passed: three focused backend lifecycle tests, focused ESLint,
+  dashboard attention semantics, the action-response protocol audit, backend
+  compileall, the complete protected-button freeze, and the 313-module
+  production build. The broad link-contract audit still has unrelated
+  pre-existing failures in `pwaInstall.ts` and `ShopGalleryPage.tsx`; this fix
+  does not touch or conceal them.

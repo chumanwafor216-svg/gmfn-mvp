@@ -10,6 +10,7 @@ from app.core.auth import is_user_activation_pending
 from app.db.models import (
     Clan,
     ClanJoinRequest,
+    ClanJoinVote,
     ClanMembership,
     MarketplaceRequest,
     RoscaParticipant,
@@ -123,6 +124,26 @@ def notification_attention_actionable(
     kind = _safe_str(notification.kind).lower()
     if not notification_requires_attention(kind=kind):
         return False
+
+    if kind == "approval_request":
+        request_id = _join_request_id_from_action_url(notification.action_url)
+        if request_id <= 0:
+            # Historic review notices did not always identify one exact request.
+            return True
+
+        request = db.get(ClanJoinRequest, int(request_id))
+        if not request or _safe_str(getattr(request, "status", None)).lower() != "pending":
+            return False
+
+        existing_vote = (
+            db.query(ClanJoinVote.id)
+            .filter(
+                ClanJoinVote.join_request_id == int(request_id),
+                ClanJoinVote.voter_user_id == int(notification.user_id),
+            )
+            .first()
+        )
+        return existing_vote is None
 
     if kind != "demand_tagged":
         return True
@@ -525,16 +546,54 @@ def _retire_stale_join_review_notifications(
         status = _safe_str(getattr(join_request, "status", None)).lower()
         request_clan_id = int(getattr(join_request, "clan_id", 0) or 0)
         applicant_user_id = int(getattr(join_request, "applicant_user_id", 0) or 0)
+        reviewer_has_voted = bool(
+            join_request
+            and db.query(ClanJoinVote.id)
+            .filter(
+                ClanJoinVote.join_request_id == int(request_id),
+                ClanJoinVote.voter_user_id == int(reviewer_user_id),
+            )
+            .first()
+        )
         still_actionable = bool(
             join_request
             and status == "pending"
             and request_clan_id in active_ids
             and applicant_user_id != int(reviewer_user_id)
+            and not reviewer_has_voted
         )
 
         if still_actionable:
             continue
 
+        row.is_read = True
+        row.read_at = now
+        db.add(row)
+        retired += 1
+
+    return int(retired)
+
+
+def retire_join_review_notifications(
+    db: Session,
+    *,
+    join_request_id: int,
+    reviewer_user_id: int | None = None,
+) -> int:
+    """Close review reminders immediately after this reviewer's work is done."""
+
+    query = db.query(Notification).filter(
+        Notification.kind == "approval_request",
+        Notification.is_read == False,  # noqa: E712
+    )
+    if reviewer_user_id is not None:
+        query = query.filter(Notification.user_id == int(reviewer_user_id))
+
+    retired = 0
+    now = _now_utc()
+    for row in query.all():
+        if _join_request_id_from_action_url(row.action_url) != int(join_request_id):
+            continue
         row.is_read = True
         row.read_at = now
         db.add(row)

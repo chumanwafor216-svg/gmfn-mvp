@@ -24,6 +24,8 @@ import {
   communityQrPolicyByKey,
   isCommunityQrPolicyKey,
 } from "../lib/communityQrPolicies";
+import { buildActionSuccessMessage } from "../lib/actionResponseProtocol";
+import { emitWorkspaceDataChanged } from "../lib/workspaceEvents";
 
 type JoinRequestItem = {
   id: number;
@@ -634,18 +636,33 @@ function approvalNextStepText(
 function approvalSuccessText(res: VoteResponse, fallback: string): string {
   const request = res?.request;
   if (res?.status_already_final) {
-    return safeStr(res.message, fallback);
+    return buildActionSuccessMessage({
+      prefix: "Already completed.",
+      message: safeStr(res.message, fallback),
+    });
   }
   if (res?.approved_now) {
-    return `Approval successful. ${approvalProgressText(request)}. ${approvalNextStepText(request)}`;
+    return buildActionSuccessMessage({
+      prefix: "Approval successful.",
+      message: `${approvalProgressText(request)}.`,
+      nextStep: approvalNextStepText(request),
+    });
   }
   if (res?.rejected_now) {
-    return safeStr(
-      res?.rejection_result?.decision_message,
-      `Decision recorded. ${approvalProgressText(request)}. ${approvalNextStepText(request)}`
-    );
+    return buildActionSuccessMessage({
+      prefix: "Decision saved successfully.",
+      message: safeStr(
+        res?.rejection_result?.decision_message,
+        `${approvalProgressText(request)}.`
+      ),
+      nextStep: approvalNextStepText(request),
+    });
   }
-  return `${fallback} ${approvalProgressText(request)}. ${approvalNextStepText(request)}`;
+  return buildActionSuccessMessage({
+    prefix: "Saved successfully.",
+    message: `${fallback} ${approvalProgressText(request)}.`,
+    nextStep: approvalNextStepText(request),
+  });
 }
 
 export default function CommunityJoinRequestsPage() {
@@ -897,6 +914,13 @@ export default function CommunityJoinRequestsPage() {
         setSuccess(approvalSuccessText(res, "Rejection recorded."));
       }
 
+      emitWorkspaceDataChanged({
+        scope: "community-join-request",
+        requestId,
+        status: safeStr(res?.request?.status, "pending"),
+        reviewerActionCompleted: true,
+      });
+
       await load();
     } catch (err: any) {
       setError(err?.message || "Vote failed.");
@@ -930,6 +954,16 @@ export default function CommunityJoinRequestsPage() {
       } else {
         setSuccess(approvalSuccessText(res, "Admin approval completed."));
       }
+
+      emitWorkspaceDataChanged({
+        scope: "community-join-request",
+        requestId,
+        status: safeStr(
+          res?.request?.status,
+          res?.approved_now ? "approved" : "pending"
+        ),
+        reviewerActionCompleted: true,
+      });
 
       await load();
     } catch (err: any) {
@@ -1331,6 +1365,8 @@ export default function CommunityJoinRequestsPage() {
 
         {success ? (
           <div
+            role="status"
+            aria-live="polite"
             style={{
               ...whitePanel(16),
               border: "1px solid #A7F3D0",

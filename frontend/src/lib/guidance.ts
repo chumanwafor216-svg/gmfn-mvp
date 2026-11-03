@@ -1089,6 +1089,7 @@ function isResolvedJoinReviewNotification(raw: any): boolean {
   const kind = safeStr(raw?.kind).toLowerCase();
   if (kind !== "approval_request") return false;
 
+  if (raw?.attention_actionable === false) return true;
   if (raw?.join_request_resolved === true) return true;
 
   const status = firstTruthy(
@@ -2588,7 +2589,7 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     dailyInsight,
     myDemandsRaw,
   ] = await Promise.all([
-    getMyNotifications(20, false).catch(() => ({ items: [] })),
+    getMyNotifications(20, false, { fresh: true }).catch(() => ({ items: [] })),
     getLoanGuarantorInbox({
       clan_id: selectedClanId || undefined,
       status: "pending",

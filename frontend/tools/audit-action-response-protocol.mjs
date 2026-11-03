@@ -148,6 +148,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityJoinRequestsPage.tsx",
+  /buildActionSuccessMessage[\s\S]*?Approval successful\.[\s\S]*?Saved successfully\.[\s\S]*?emitWorkspaceDataChanged[\s\S]*?role="status"[\s\S]*?aria-live="polite"/,
+  "Join-request review actions must keep a visible shared success response and refresh workspace guidance after the reviewer finishes."
+);
+
+assertContains(
   "src/pages/CommunityHomePage.tsx",
   /case "circle":[\s\S]*?Opening First Circle now\.[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)/,
   "Community Home circle actions must route First Circle directly instead of opening hidden sections."

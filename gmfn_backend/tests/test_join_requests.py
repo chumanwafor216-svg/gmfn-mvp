@@ -3423,6 +3423,22 @@ def test_approving_existing_member_join_request_does_not_create_activation(
                 created_at=datetime.now(timezone.utc),
             )
         )
+        db.add(
+            Notification(
+                id=1,
+                user_id=1,
+                kind="approval_request",
+                title="Pending join request",
+                message="An existing member is waiting for community review.",
+                action_url=(
+                    "/app/community/1/join-requests"
+                    "?request_id=1&community_code=GMFN-C-000001"
+                ),
+                action_label="Review",
+                is_read=False,
+                created_at=datetime.now(timezone.utc),
+            )
+        )
         db.commit()
 
     res = client.post(
@@ -3454,6 +3470,7 @@ def test_approving_existing_member_join_request_does_not_create_activation(
     with SessionLocal() as db:
         applicant = db.get(User, 2)
         request = db.get(ClanJoinRequest, 1)
+        review_notice = db.get(Notification, 1)
         membership = (
             db.query(ClanMembership)
             .filter(ClanMembership.clan_id == 1, ClanMembership.user_id == 2)
@@ -3463,6 +3480,9 @@ def test_approving_existing_member_join_request_does_not_create_activation(
         assert applicant.gmfn_id == "GMFN-U-APPROVED-EXISTING"
         assert request is not None
         assert request.activation_delivery_status == "not_required"
+        assert review_notice is not None
+        assert review_notice.is_read is True
+        assert review_notice.read_at is not None
         assert membership is not None
 
 
@@ -3809,6 +3829,22 @@ def test_activated_reviewer_neutral_vote_records_reason_without_final_decision(
                 created_at=datetime.now(timezone.utc),
             )
         )
+        db.add(
+            Notification(
+                id=1,
+                user_id=1,
+                kind="approval_request",
+                title="Pending join request",
+                message="A member is waiting for community review.",
+                action_url=(
+                    "/app/community/1/join-requests"
+                    "?request_id=1&community_code=GMFN-C-000001"
+                ),
+                action_label="Review",
+                is_read=False,
+                created_at=datetime.now(timezone.utc),
+            )
+        )
         db.commit()
 
     from app.core import auth as auth_core
@@ -3847,6 +3883,7 @@ def test_activated_reviewer_neutral_vote_records_reason_without_final_decision(
     with SessionLocal() as db:
         req = db.get(ClanJoinRequest, 1)
         vote = db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).one()
+        review_notice = db.get(Notification, 1)
         event = (
             db.query(TrustEvent)
             .filter(TrustEvent.event_type == "join_request.vote_recorded")
@@ -3857,6 +3894,9 @@ def test_activated_reviewer_neutral_vote_records_reason_without_final_decision(
         assert req is not None
         assert req.status == "pending"
         assert vote.vote == "neutral"
+        assert review_notice is not None
+        assert review_notice.is_read is True
+        assert review_notice.read_at is not None
         assert event is not None
         meta = json.loads(event.meta_json or "{}")
         assert meta["vote"] == "neutral"
