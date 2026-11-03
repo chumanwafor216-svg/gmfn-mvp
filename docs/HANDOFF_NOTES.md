@@ -5098,3 +5098,35 @@ under `docs/` or `docs/archive/`, then link that file here.
   audits; mocked Playwright journeys at `390x844` and `360x780`; production
   build with 313 modules; protected-button freeze; Marketplace DemandBox
   ownership; surface ownership; and mobile tap stability.
+
+## 2026-11-03 - Marketplace collapsed Shops & Services entry
+
+- Owner trigger: the main Marketplace permanently exposed individual shop cards
+  beneath `Shops & Services`, making two named businesses look favoured and
+  repeating the directory entry point.
+- Route affected: authenticated `/app/marketplace` only. The main page now keeps
+  one neutral `Open directory` action and no permanent individual shop cards or
+  duplicate phone `Browse shops` action.
+- Directory preserved: the existing authorised `Shops & Services Directory`
+  still uses selected-community scope, server-side search, privacy-aware contact
+  readiness, neutral ordering, cursor pagination, and canonical Public Shop
+  handoffs. Eligible service providers remain represented through their active
+  Shop records; no separate unrestricted member roster was introduced.
+- Request presentation: category, area, and urgency use readable labels;
+  requester, community, posted time, and visibility context now sit behind an
+  optional `Request details` disclosure. Raw `community_visible` wording is not
+  shown to members.
+- Preserved: Shop Gallery, DemandBox lifecycle, Spotlight, Public Shop, privacy
+  permissions, selected-community discovery, frozen Dashboard, app navigation,
+  backend routes, and database schema.
+- Verification passed: Marketplace front, DemandBox ownership, department
+  boundary and surface-ownership audits; 9 backend directory/privacy tests; the
+  protected-button freeze; the 313-module production build; and a mocked mobile
+  smoke at `390x844` plus `457x915` covering one collapsed entry, 21 eligible
+  paginated directory results, private/inactive/out-of-community exclusion,
+  request-detail disclosure, and Public Shop navigation.
+- No migration, backend route, runtime configuration, or feature activation is
+  included in this package. The broad Marketplace button-inventory audit remains
+  stale against pre-existing source changes (its stored 94-action baseline sees
+  99 current actions and several retired directory patterns); do not absorb that
+  unrelated baseline drift into this focused Marketplace presentation commit.

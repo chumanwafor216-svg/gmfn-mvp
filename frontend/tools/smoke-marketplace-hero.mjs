@@ -1,4 +1,4 @@
-/* global console, process, URL, localStorage, document, window */
+/* global console, process, URL, localStorage, document, window, HTMLDetailsElement, getComputedStyle */
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -67,14 +67,14 @@ async function installApiMocks(page, baseURL) {
     {
       id: 216,
       user_id: 216,
-      display_name: "Ardent Ebony Uplift LTD",
+      display_name: "Apex Home Services",
       gmfn_id: "GMFN-U-63655DE6",
       role: "Merchant",
     },
     {
       id: 217,
       user_id: 217,
-      display_name: "Arinze Nnamani",
+      display_name: "Enugu Food & Delivery",
       gmfn_id: "GMFN-U-22222222",
       role: "Merchant",
     },
@@ -97,7 +97,7 @@ async function installApiMocks(page, baseURL) {
       clan_id: 8,
       owner_user_id: 216,
       owner_gmfn_id: "GMFN-U-63655DE6",
-      name: "Ardent Ebony Uplift LTD",
+      name: "Apex Home Services",
       description: "Home appliances, electronics and more",
       image_url:
         "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=320&h=240&fit=crop",
@@ -109,7 +109,7 @@ async function installApiMocks(page, baseURL) {
       clan_id: 8,
       owner_user_id: 217,
       owner_gmfn_id: "GMFN-U-22222222",
-      name: "Arinze Nnamani",
+      name: "Enugu Food & Delivery",
       description: "Shawarma affair and Chinese delicacy",
       image_url:
         "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=320&h=240&fit=crop",
@@ -118,6 +118,81 @@ async function installApiMocks(page, baseURL) {
     ],
     13: [],
   };
+  const directoryCatalog = [
+    ...Array.from({ length: 21 }, (_, index) => {
+      const sequence = index + 1;
+      return {
+        id: 100 + sequence,
+        clan_id: 8,
+        owner_user_id: 300 + sequence,
+        owner_name: `Directory Owner ${String(sequence).padStart(2, "0")}`,
+        gmfn_id: `GMFN-U-DIR${String(sequence).padStart(4, "0")}`,
+        shop_name: `Community Service ${String(sequence).padStart(2, "0")}`,
+        name: `Community Service ${String(sequence).padStart(2, "0")}`,
+        description:
+          sequence % 2 === 0
+            ? "Repairs, installation and practical services"
+            : "Products and everyday community support",
+        service_summary:
+          sequence % 2 === 0
+            ? "Repairs, installation and practical services"
+            : "Products and everyday community support",
+        image_url: "",
+        contact_ready: sequence % 2 === 0,
+        offer_count: sequence % 3,
+        is_active: true,
+        visibility_mode: "community_visible",
+      };
+    }),
+    {
+      id: 900,
+      clan_id: 8,
+      owner_user_id: 900,
+      owner_name: "Private Owner",
+      gmfn_id: "GMFN-U-PRIVATE",
+      shop_name: "Private Workshop",
+      name: "Private Workshop",
+      description: "Must not appear",
+      service_summary: "Must not appear",
+      image_url: "",
+      contact_ready: true,
+      offer_count: 1,
+      is_active: true,
+      visibility_mode: "vault_private",
+    },
+    {
+      id: 901,
+      clan_id: 8,
+      owner_user_id: 901,
+      owner_name: "Inactive Owner",
+      gmfn_id: "GMFN-U-INACTIVE",
+      shop_name: "Inactive Business",
+      name: "Inactive Business",
+      description: "Must not appear",
+      service_summary: "Must not appear",
+      image_url: "",
+      contact_ready: true,
+      offer_count: 1,
+      is_active: false,
+      visibility_mode: "community_visible",
+    },
+    {
+      id: 902,
+      clan_id: 99,
+      owner_user_id: 902,
+      owner_name: "Outside Owner",
+      gmfn_id: "GMFN-U-OUTSIDE",
+      shop_name: "Outside Community Service",
+      name: "Outside Community Service",
+      description: "Must not appear",
+      service_summary: "Must not appear",
+      image_url: "",
+      contact_ready: true,
+      offer_count: 1,
+      is_active: true,
+      visibility_mode: "community_visible",
+    },
+  ];
   const domains = [
     {
       id: 13,
@@ -171,25 +246,14 @@ async function installApiMocks(page, baseURL) {
       const contactReadyOnly = url.searchParams.get("contact_ready") === "true";
       const offersListedOnly = url.searchParams.get("offers_listed") === "true";
       const limit = Math.max(1, Number(url.searchParams.get("limit") || 20));
-      const directoryItems = (shopsByClan[clanId] || [])
-        .map((shop, index) => ({
-          id: shop.id,
-          clan_id: clanId,
-          owner_user_id: shop.owner_user_id,
-          owner_name:
-            membersByClan[clanId]?.find(
-              (member) => member.user_id === shop.owner_user_id
-            )?.display_name || "GSN member",
-          gmfn_id: shop.owner_gmfn_id,
-          shop_name: shop.name,
-          name: shop.name,
-          description: shop.description,
-          service_summary: shop.description,
-          image_url: shop.image_url,
-          contact_ready: index === 0,
-          offer_count: index + 1,
-          is_active: true,
-        }))
+      const cursor = String(url.searchParams.get("cursor") || "");
+      const directoryItems = directoryCatalog
+        .filter(
+          (shop) =>
+            shop.clan_id === clanId &&
+            shop.is_active &&
+            shop.visibility_mode === "community_visible"
+        )
         .filter((shop) =>
           query
             ? [shop.shop_name, shop.description, shop.owner_name]
@@ -200,18 +264,49 @@ async function installApiMocks(page, baseURL) {
         )
         .filter((shop) => (contactReadyOnly ? shop.contact_ready : true))
         .filter((shop) => (offersListedOnly ? shop.offer_count > 0 : true));
+      const offset = cursor === "directory-page-2" ? 20 : 0;
+      const pageItems = directoryItems.slice(offset, offset + limit);
+      const hasMore = offset + pageItems.length < directoryItems.length;
       return route.fulfill(
         json({
-          items: directoryItems.slice(0, limit),
-          total: directoryItems.length,
+          items: pageItems,
+          total: cursor ? null : directoryItems.length,
           limit,
-          has_more: directoryItems.length > limit,
-          next_cursor: null,
+          has_more: hasMore,
+          next_cursor: hasMore ? "directory-page-2" : null,
           clan_id: clanId,
           scope: "selected_community",
           sort: query ? "relevance_then_name" : "name_ascending",
         })
       );
+    }
+    if (path === "/marketplace/requests") {
+      const clanId = Number(url.searchParams.get("clan_id") || 8);
+      return route.fulfill(
+        json(
+          clanId === 8
+            ? [
+                {
+                  id: 710,
+                  clan_id: 8,
+                  title: "I need appliance repair",
+                  description: "My fridge needs an experienced repairer.",
+                  category: "home_appliance_repair",
+                  area: "New Haven",
+                  urgency: "normal_priority",
+                  status: "open",
+                  requester_display_name: "Community Member",
+                  marketplace_name: "Builders corporation Marketplace",
+                  created_at: "2026-11-03T08:30:00Z",
+                  visibility_scope: "community_visible",
+                },
+              ]
+            : []
+        )
+      );
+    }
+    if (/^\/marketplace\/requests\/\d+\/matches/.test(path)) {
+      return route.fulfill(json({ matches: [] }));
     }
     if (/^\/marketplace\/shops/.test(path)) {
       const clanId = Number(url.searchParams.get("clan_id") || 8);
@@ -333,11 +428,10 @@ async function run() {
         "Post or view what the community needs.",
         "Add need",
         "Shops & Services",
-        "Discover and support shops in this community.",
-        "See all shops",
+        "Browse eligible shops and service providers in this community.",
+        "Open directory",
         "Invite someone",
         "More things you can do",
-        "Browse shops",
         "Support members",
         "Share a resource",
         "Suggested next step",
@@ -350,7 +444,22 @@ async function run() {
         "Visible shop faces",
         "More marketplace tools",
         "local net position",
+        "Ardent Ebony Uplift LTD",
+        "Blessed Satch family Marketplace",
+        "community_visible",
       ].filter((item) => text.includes(item));
+      const shopEntryCount = document.querySelectorAll(
+        '[data-cta-id="marketplace.job.find-people-services"]'
+      ).length;
+      const duplicateShopEntryCount = document.querySelectorAll(
+        '[data-cta-id="marketplace.progressive.browse-shops"]'
+      ).length;
+      const shopPreviewCount = document.querySelectorAll(
+        '[data-gmfn-debug-id="marketplace.front.shop-previews"]'
+      ).length;
+      const requestDetails = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.need.710.details"]'
+      );
       const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
@@ -387,18 +496,60 @@ async function run() {
           clientHeight: element.clientHeight,
           scrollHeight: element.scrollHeight,
         }));
-      return { missing, forbiddenPresent, overflow, clippedHeroStats };
+      return {
+        missing,
+        forbiddenPresent,
+        overflow,
+        clippedHeroStats,
+        shopEntryCount,
+        duplicateShopEntryCount,
+        shopPreviewCount,
+        requestDetailsCollapsed:
+          requestDetails instanceof HTMLDetailsElement && !requestDetails.open,
+      };
     });
 
     if (
       result.missing.length ||
       result.forbiddenPresent.length ||
       result.overflow.length ||
-      result.clippedHeroStats.length
+      result.clippedHeroStats.length ||
+      result.shopEntryCount !== 1 ||
+      result.duplicateShopEntryCount !== 0 ||
+      result.shopPreviewCount !== 0 ||
+      !result.requestDetailsCollapsed
     ) {
       console.error("Marketplace hero smoke failed:", result);
       process.exit(1);
     }
+
+    await page
+      .locator('[data-cta-id="marketplace.front.need.710.details-toggle"]')
+      .click();
+    const requestDetailsResult = await page.evaluate(() => {
+      const details = document.querySelector(
+        '[data-gmfn-debug-id="marketplace.front.need.710.details"]'
+      );
+      const text = details?.textContent || "";
+      return {
+        open: details instanceof HTMLDetailsElement && details.open,
+        hasPlainRequester: text.includes("Posted by Community Member"),
+        hasPlainVisibility: text.includes("Visible in this community"),
+        hasRawVisibility: text.includes("community_visible"),
+      };
+    });
+    if (
+      !requestDetailsResult.open ||
+      !requestDetailsResult.hasPlainRequester ||
+      !requestDetailsResult.hasPlainVisibility ||
+      requestDetailsResult.hasRawVisibility
+    ) {
+      console.error("Marketplace request-details disclosure smoke failed:", requestDetailsResult);
+      process.exit(1);
+    }
+    await page
+      .locator('[data-cta-id="marketplace.front.need.710.details-toggle"]')
+      .click();
 
     await page.setViewportSize({ width: 457, height: 915 });
     await page.waitForTimeout(250);
@@ -424,9 +575,6 @@ async function run() {
         (position, index) => position >= 0 && (index === 0 || position > positions[index - 1])
       );
       const hero = document.querySelector('[data-gmfn-debug-id="marketplace.identity"]');
-      const preview = document.querySelector(
-        '[data-gmfn-debug-id="marketplace.front.shop-previews"]'
-      );
       const needsHeader = document.querySelector(
         '[data-gmfn-debug-id="marketplace.front.needs-header"]'
       );
@@ -465,10 +613,9 @@ async function run() {
         ordered,
         positions,
         heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
-        shopPreviewCount: preview?.children.length || 0,
-        shopColumnCount: preview
-          ? getComputedStyle(preview).gridTemplateColumns.split(" ").filter(Boolean).length
-          : 0,
+        shopEntryCount: document.querySelectorAll(
+          '[data-cta-id="marketplace.job.find-people-services"]'
+        ).length,
         progressiveColumnCount: progressiveActions
           ? getComputedStyle(progressiveActions).gridTemplateColumns.split(" ").filter(Boolean).length
           : 0,
@@ -500,8 +647,7 @@ async function run() {
       !chikaResult.ordered ||
       chikaResult.heroHeight <= 0 ||
       chikaResult.heroHeight > 230 ||
-      chikaResult.shopPreviewCount !== 2 ||
-      chikaResult.shopColumnCount !== 1 ||
+      chikaResult.shopEntryCount !== 1 ||
       chikaResult.progressiveColumnCount !== 1 ||
       !chikaResult.needsActionStacked ||
       !chikaResult.shopsActionStacked ||
@@ -515,8 +661,10 @@ async function run() {
     await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click();
     await page.waitForFunction(
       () =>
-        (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
-          "Find a shop or service"
+        ["Find a shop or service", "Community Service 20"].every((text) =>
+          (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
+            text
+          )
         ),
       null,
       { timeout: 30000 }
@@ -530,10 +678,17 @@ async function run() {
       const required = [
         "Shops & Services Directory",
         "Find a shop or service",
-        "Ardent Ebony Uplift LTD",
+        "Community Service 01",
+        "Community Service 20",
       ];
       const missing = required.filter((item) => !membersSection.includes(item));
-      const scopedLeak = ["Pillar of Hope", "Setup Domain"].filter((item) =>
+      const scopedLeak = [
+        "Pillar of Hope",
+        "Setup Domain",
+        "Private Workshop",
+        "Inactive Business",
+        "Outside Community Service",
+      ].filter((item) =>
         membersSection.includes(item)
       );
       const toolsLeak = ["Pillar of Hope", "Setup Domain", "Domain marketplaces"].filter(
@@ -549,6 +704,64 @@ async function run() {
       memberDomainResult.toolsLeak.length
     ) {
       console.error("Marketplace selected-community scope smoke failed:", memberDomainResult);
+      process.exit(1);
+    }
+
+    const loadMore = page.locator('[data-cta-id="marketplace.directory.load-more"]');
+    if ((await loadMore.count()) !== 1) {
+      console.error("Marketplace directory pagination smoke failed: Show 20 more was missing.");
+      process.exit(1);
+    }
+    await loadMore.click();
+    await page.waitForFunction(
+      () =>
+        (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
+          "Community Service 21"
+        ),
+      null,
+      { timeout: 30000 }
+    );
+
+    const completeDirectoryResult = await page.evaluate(() => {
+      const membersSection =
+        document.getElementById("marketplace-members-shops")?.textContent || "";
+      const openShopLinks = document.querySelectorAll(
+        '#marketplace-members-shops [data-cta-id^="marketplace.member."][data-cta-id$=".shop"]'
+      );
+      return {
+        hasLastEligibleShop: membersSection.includes("Community Service 21"),
+        openShopCount: openShopLinks.length,
+        forbiddenPresent: [
+          "Private Workshop",
+          "Inactive Business",
+          "Outside Community Service",
+        ].filter((item) => membersSection.includes(item)),
+      };
+    });
+
+    if (
+      !completeDirectoryResult.hasLastEligibleShop ||
+      completeDirectoryResult.openShopCount !== 21 ||
+      completeDirectoryResult.forbiddenPresent.length
+    ) {
+      console.error("Marketplace complete eligible directory smoke failed:", completeDirectoryResult);
+      process.exit(1);
+    }
+
+    await page
+      .locator(
+        '#marketplace-members-shops [data-cta-id^="marketplace.member."][data-cta-id$=".shop"]'
+      )
+      .first()
+      .click();
+    await page.waitForURL(/\/shop\/GMFN-U-DIR0001/i, { timeout: 30000 });
+    const shopNavigationUrl = new URL(page.url());
+    if (
+      !/^\/shop\/GMFN-U-DIR0001$/i.test(shopNavigationUrl.pathname) ||
+      shopNavigationUrl.searchParams.get("clan_id") !== "8" ||
+      shopNavigationUrl.hash !== "#shop-diaries"
+    ) {
+      console.error("Marketplace directory navigation smoke failed:", page.url());
       process.exit(1);
     }
 
@@ -578,7 +791,7 @@ async function run() {
         "Pillar of Hope",
         "No public shops are visible in this marketplace yet.",
       ];
-      const forbidden = ["Ardent Ebony Uplift LTD", "Setup Domain"];
+      const forbidden = ["Community Service 01", "Setup Domain"];
       return {
         missing: required.filter((item) => !membersSection.includes(item)),
         forbiddenPresent: forbidden.filter((item) => membersSection.includes(item)),
@@ -591,7 +804,7 @@ async function run() {
     }
 
     console.log(
-      "Marketplace hero smoke passed: selected marketplace/domain scope, 390x844 phone, and 457x915 Chika foldable frame verified."
+      "Marketplace hero smoke passed: collapsed entry, complete eligible directory, visibility scope, shop navigation, 390x844 phone, and 457x915 foldable frame verified."
     );
   } finally {
     if (browser) await browser.close();

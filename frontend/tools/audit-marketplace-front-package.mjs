@@ -186,15 +186,15 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /isCompactAppViewport.+?orientationchange.+?pageshow.+?visualViewport.+?addEventListener.+?resize.+?marketplace[.]front[.]invite-someone.+?marketplace[.]front[.]needs.+?Needs [/] Demand.+?Add need.+?marketplace[.]front[.]shops.+?Shops & Services.+?marketplace[.]progressive[.]browse-shops.+?Browse shops.+?marketplace[.]progressive[.]support-members.+?Support members.+?marketplace[.]progressive[.]share-resource.+?Share a resource.+?marketplace[.]front[.]suggested-next-step/s,
-  "Marketplace phone front must stay foldable-aware and preserve the approved identity, invite, needs, shops, three secondary actions, and suggested-step order."
+  /isCompactAppViewport.+?orientationchange.+?pageshow.+?visualViewport.+?addEventListener.+?resize.+?marketplace[.]front[.]invite-someone.+?marketplace[.]front[.]needs.+?Needs [/] Demand.+?Add need.+?marketplace[.]front[.]shops.+?Shops & Services.+?marketplace[.]job[.]find-people-services.+?Open directory.+?marketplace[.]progressive[.]support-members.+?Support members.+?marketplace[.]progressive[.]share-resource.+?Share a resource.+?marketplace[.]front[.]suggested-next-step/s,
+  "Marketplace phone front must stay foldable-aware and preserve the approved identity, invite, needs, single shop-directory entry, two secondary actions, and suggested-step order."
 );
 
-assertContains(
+assertNotContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace[.]front[.]shop-previews".+?gridTemplateColumns: "1fr".+?row[.]imageUrl.+?Open shop/s,
-  "Marketplace phone Shops & Services preview must show two stacked image-led shop cards with canonical Open shop handoffs."
+  /data-gmfn-debug-id="marketplace[.]front[.]shop-previews"|marketplace[.]progressive[.]browse-shops/g,
+  "Marketplace front must not permanently expose individual shop previews or a duplicate Browse shops entry point."
 );
 assertContains(
   marketplaceFile,
@@ -206,8 +206,15 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /Who can provide something[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?visibleShopDirectoryRows\.map[\s\S]*?debugId=\{`marketplace\.front\.shop\.\$\{row\.gmfnId \|\| row\.userId \|\| "unknown"\}\.open`\}[\s\S]*?to=\{row\.shopTo \|\| routeWithCommunity\(APP_ROUTES\.MARKETPLACE, activeCommunityId\)\}/,
-  "Marketplace front must expose visible public shops while Public Shop owns the detail route."
+  /Who can provide something[\s\S]*?Browse eligible shops and service providers in this community[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Open directory/,
+  "Marketplace front must expose one neutral entry into the authorised Shops & Services directory."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /marketplaceRequestDetailLabel[\s\S]*?marketplaceRequestVisibilityLabel[\s\S]*?Request details[\s\S]*?Posted by \{requesterLabel\}[\s\S]*?Community: \{needCommunity\}[\s\S]*?Posted \{needCreated\}[\s\S]*?\{visibilityText\}/,
+  "Marketplace request metadata must use plain labels and stay behind an optional Request details disclosure."
 );
 
 assertContains(
@@ -275,7 +282,7 @@ assertContains(
 assertContains(
   marketplaceMembersFile,
   marketplaceMembersSource,
-  /id="marketplace-members-shops"[\s\S]*?Shops & Services Directory[\s\S]*?public shop[\s\S]*?searchable entr[\s\S]*?Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Find a shop or service[\s\S]*?marketplaceFieldTouchProps\("marketplace\.members\.search"\)[\s\S]*?Relevant to current need[\s\S]*?Open shop/,
+  /getMarketplaceShopDirectory\(\{[\s\S]*?clan_id: activeCommunityId[\s\S]*?limit: 20[\s\S]*?id="marketplace-members-shops"[\s\S]*?Shops & Services Directory[\s\S]*?marketplaceCommunityDomainRows[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Find a shop or service[\s\S]*?marketplaceFieldTouchProps\("marketplace\.members\.search"\)[\s\S]*?Relevant to current need[\s\S]*?Open shop/,
   "Shops & Services Directory must render as the community-bound shop/service discovery lane."
 );
 
@@ -324,8 +331,8 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Community need[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Shops & Services[\s\S]*?data-marketplace-wisdom-lens="true"/,
-  "Marketplace front package must keep the live needs, shop directory, match preview, and compact next-step order."
+  /data-gmfn-debug-id="marketplace\.live-market-front"[\s\S]*?debugId="marketplace\.job\.add-request-shortcut"[\s\S]*?Community need[\s\S]*?Shops & Services[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?Open directory[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front package must keep live needs, one shop-directory entry, and the compact next-step order."
 );
 
 assertContains(

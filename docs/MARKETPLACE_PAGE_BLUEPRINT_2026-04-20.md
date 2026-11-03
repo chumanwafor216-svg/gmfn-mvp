@@ -23,8 +23,8 @@ workflow ownership:
 1. photo-led selected-community identity with Community ID and active status;
 2. direct Invite someone;
 3. Needs / Demand with authorised + Add need handoff to DemandBox;
-4. two-card Shops & Services preview with canonical Public Shop handoffs;
-5. Browse shops, Support members, and Share a resource;
+4. one collapsed Shops & Services directory entry point; individual eligible shops and service providers appear only after the authorised directory is opened;
+5. Support members and Share a resource as compact secondary actions;
 6. compact suggested next step.
 
 Foldable open/closed states must resolve through the shared compact app
@@ -65,7 +65,17 @@ The canonical `/app/marketplace` surface now starts from the human flow `NEED ->
 ## Phase 2 Shops & Services discovery note - 2026-10-08
 The canonical `/app/marketplace` Shops & Services lane is a lightweight community business directory, not a member roster and not a mini Public Shop. It uses only existing visible shop/product/match data: shop/business name, owner label, description, public contact availability, image/logo aliases, active/public status, community/domain labels, loaded product/service names/descriptions, and existing DemandBox match titles.
 
-Search is local/client-side across those loaded text fields. No category filters are exposed in this phase because current shop/product responses do not provide a trustworthy structured category taxonomy. Ordering is neutral alphabetical by displayed business/shop name; it must not imply quality, TrustSlip/CCI rank, paid placement, or recommendation. DemandBox relevance may appear only as a light `Relevant to current need` signal from existing match rows, without exposing scores or absorbing the DemandBox lifecycle. The primary card action remains `Open shop` to the canonical Public Shop.
+Search is bounded and server-side across authorised shop, service, product, and owner text, with cursor pagination rather than loading the whole directory onto the phone. No category filters are exposed in this phase because current shop/product responses do not provide a trustworthy structured category taxonomy. Ordering is neutral alphabetical by displayed business/shop name; it must not imply quality, TrustSlip/CCI rank, paid placement, or recommendation. DemandBox relevance may appear only as a light `Relevant to current need` signal from existing match rows, without exposing scores or absorbing the DemandBox lifecycle. The primary directory-result action remains `Open shop` to the canonical Public Shop.
+
+## Owner-approved collapsed directory amendment - 2026-11-03
+The main Marketplace must not permanently render individual shop cards beneath
+`Shops & Services`. It keeps one neutral directory entry point. Opening that
+entry reveals the existing authorised, selected-community directory with all
+eligible businesses and service providers available through its bounded
+pagination. No named business is hardcoded, favoured, or permanently featured
+on the Marketplace front. Public Shop remains the canonical detail/contact
+handoff, and existing privacy, Shop Gallery, DemandBox, Spotlight, and
+navigation ownership remain unchanged.
 ## Phase 3 Needs to Relevant Providers note - 2026-10-08
 The canonical `/app/marketplace` live front now translates the human flow `Need -> Relevant provider -> Open shop -> act`. A visible request is labelled as a `Community need`; an associated DemandBox supply match is labelled as a `Relevant provider`; an unassociated directory listing remains a normal `Shops & Services` shop.
 

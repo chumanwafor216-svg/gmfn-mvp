@@ -2482,6 +2482,24 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
+function marketplaceRequestDetailLabel(value: unknown): string {
+  const text = safeStr(value).trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function marketplaceRequestVisibilityLabel(value: unknown): string {
+  const normalized = safeStr(value).trim().toLowerCase();
+  if (!normalized) return "";
+  if (normalized === "community_visible" || normalized === "community") {
+    return "Visible in this community";
+  }
+  if (normalized === "protected_target") {
+    return "Shared only with the intended person";
+  }
+  return marketplaceRequestDetailLabel(normalized);
+}
+
 function supportCadenceLabel(value: any): string {
   const cadence = safeStr(value).toLowerCase();
   if (cadence === "weekly") return "Weekly";
@@ -8844,12 +8862,6 @@ export default function MarketplacePage() {
   const hiddenNeedProviderMatches = marketplaceMatchRows
     .filter((item) => !visibleNeedIds.has(positiveNumber(item.request?.id || item.match?.demand_id)))
     .slice(0, isCompact ? 1 : 3);
-  const shopDirectoryRows = memberRows.filter((row) => Boolean(row.shopTo));
-  const visibleShopDirectoryRows = shopDirectoryRows.slice(0, isCompact ? 2 : 6);
-  const hiddenShopDirectoryCount = Math.max(
-    0,
-    marketplaceShopDirectoryTotal - visibleShopDirectoryRows.length
-  );
   const marketplaceStats = [
     {
       label: "Members",
@@ -9518,10 +9530,13 @@ export default function MarketplacePage() {
                       firstTruthy(need.area),
                       firstTruthy(need.urgency),
                     ]
+                      .map(marketplaceRequestDetailLabel)
                       .filter(Boolean)
-                      .join(" - ") || "Open request";
+                      .join(" · ") || "Open request";
                   const needCreated = safeDateTime(need.created_at);
-                  const visibilityText = firstTruthy(need.visibility_scope);
+                  const visibilityText = marketplaceRequestVisibilityLabel(
+                    need.visibility_scope
+                  );
 
                   return (
                     <div key={need.id || index} style={marketplaceLiveRowStyle(isCompact)}>
@@ -9573,35 +9588,60 @@ export default function MarketplacePage() {
                         </div>
                       ) : null}
 
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 6,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        {requesterLabel ? (
-                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                            {requesterLabel}
-                          </span>
-                        ) : null}
-                        {needCommunity ? (
-                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                            {needCommunity}
-                          </span>
-                        ) : null}
-                        {needCreated ? (
-                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                            {needCreated}
-                          </span>
-                        ) : null}
-                        {visibilityText ? (
-                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                            {visibilityText}
-                          </span>
-                        ) : null}
-                      </div>
+                      {requesterLabel || needCommunity || needCreated || visibilityText ? (
+                        <details
+                          data-gmfn-debug-id={`marketplace.front.need.${needId || index}.details`}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid rgba(16,37,59,0.10)",
+                            background: "rgba(247,250,253,0.82)",
+                            padding: "0 10px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <StableDisclosureSummary
+                            debugId={`marketplace.front.need.${needId || index}.details-toggle`}
+                            stableHeight={40}
+                            style={{
+                              color: "#34506A",
+                              fontSize: 12,
+                              fontWeight: 900,
+                            }}
+                          >
+                            Request details
+                          </StableDisclosureSummary>
+                          <div
+                            style={{
+                              padding: "0 0 10px",
+                              display: "flex",
+                              gap: 6,
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                            }}
+                          >
+                            {requesterLabel ? (
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                                Posted by {requesterLabel}
+                              </span>
+                            ) : null}
+                            {needCommunity ? (
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                                Community: {needCommunity}
+                              </span>
+                            ) : null}
+                            {needCreated ? (
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                                Posted {needCreated}
+                              </span>
+                            ) : null}
+                            {visibilityText ? (
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                                {visibilityText}
+                              </span>
+                            ) : null}
+                          </div>
+                        </details>
+                      ) : null}
 
                       <div style={{ display: "grid", gap: 7 }}>
                         {marketplaceMatchesLoading ? (
@@ -9717,8 +9757,8 @@ export default function MarketplacePage() {
                   </div>
                   <div style={{ marginTop: 3, ...marketplaceLiveMetaStyle(isCompact) }}>
                     {isCompact
-                      ? "Discover and support shops in this community."
-                      : "Shops in this community. Open one to see its products or services."}
+                      ? "Browse eligible shops and service providers in this community."
+                      : "Open the community directory to find eligible shops and service providers."}
                   </div>
                 </div>
               </div>
@@ -9739,7 +9779,7 @@ export default function MarketplacePage() {
                   background: isCompact ? "#F2FAF4" : undefined,
                 }}
               >
-                {isCompact ? <>See all shops &rarr;</> : "Shops & Services"}
+                Open directory &rarr;
               </StableButton>
             </div>
 
@@ -9759,138 +9799,8 @@ export default function MarketplacePage() {
                 <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
                   {marketplaceShopDirectoryTotal.toLocaleString()} visible
                 </span>
-                {hiddenShopDirectoryCount ? (
-                  <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                    {hiddenShopDirectoryCount} more shop{hiddenShopDirectoryCount === 1 ? "" : "s"}
-                  </span>
-                ) : null}
               </div>
             ) : null}
-
-            <div
-              data-gmfn-debug-id="marketplace.front.shop-previews"
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: "1fr",
-                gap: 8,
-              }}
-            >
-              {visibleShopDirectoryRows.length ? (
-                visibleShopDirectoryRows.map((row, index) => (
-                  <div
-                    key={`${row.gmfnId || row.userId || index}:front-shop`}
-                    style={{
-                      ...marketplaceLiveRowStyle(isCompact),
-                      padding: isCompact ? 7 : 11,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "minmax(0, 1fr) auto",
-                        gap: 8,
-                        alignItems: "center",
-                      }}
-                    >
-                      {isCompact ? (
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            width: 58,
-                            height: 58,
-                            borderRadius: 12,
-                            overflow: "hidden",
-                            display: "grid",
-                            placeItems: "center",
-                            color: "#0B4EA2",
-                            background: "#E7F1FE",
-                          }}
-                        >
-                          {row.imageUrl ? (
-                            <img
-                              src={row.imageUrl}
-                              alt=""
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                display: "block",
-                              }}
-                            />
-                          ) : (
-                            <MarketplaceGlyph name="shop" size={28} />
-                          )}
-                        </div>
-                      ) : null}
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          style={{
-                            color: "#07172C",
-                            fontSize: isCompact ? 11.5 : 15,
-                            fontWeight: 950,
-                            lineHeight: 1.15,
-                            overflowWrap: "break-word",
-                            display: isCompact ? "-webkit-box" : undefined,
-                            WebkitLineClamp: isCompact ? 2 : undefined,
-                            WebkitBoxOrient: isCompact ? "vertical" : undefined,
-                            overflow: "hidden",
-                          }}
-                        >
-                          {row.shopName || row.name}
-                        </div>
-                        {!isCompact ? (
-                          <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            {row.gmfnId ? displayGsnLabel(row.gmfnId) : "GSN shop"}
-                          </div>
-                        ) : null}
-                        {row.serviceSummary ? (
-                          <div
-                            style={{
-                              ...marketplaceLiveMetaStyle(isCompact),
-                              fontSize: isCompact ? 10.5 : undefined,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                            }}
-                          >
-                            {row.serviceSummary}
-                          </div>
-                        ) : null}
-                        {!isCompact && (row.productTitles || []).length ? (
-                          <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            {(row.productTitles || []).slice(0, 2).join(" | ")}
-                          </div>
-                        ) : null}
-                      </div>
-                      <StableCtaLink
-                        debugId={`marketplace.front.shop.${row.gmfnId || row.userId || "unknown"}.open`}
-                        to={row.shopTo || routeWithCommunity(APP_ROUTES.MARKETPLACE, activeCommunityId)}
-                        stableHeight={isCompact ? 36 : 46}
-                        style={{
-                          ...marketplaceInlineActionStyle("secondary", !row.shopTo, isCompact),
-                          minWidth: isCompact ? 0 : 104,
-                          width: isCompact ? "100%" : undefined,
-                          gridColumn: isCompact ? "1 / -1" : undefined,
-                          fontSize: isCompact ? 11.5 : undefined,
-                          padding: isCompact ? "7px 8px" : undefined,
-                        }}
-                      >
-                        <MarketplaceGlyph name="shop" size={isCompact ? 14 : 16} />
-                        <span style={{ marginLeft: 5 }}>Open shop</span>
-                      </StableCtaLink>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={marketplaceLiveRowStyle(isCompact)}>
-                  <div style={marketplaceLiveMetaStyle(isCompact)}>
-                    No public shops are showing in this community yet.
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
           {hiddenNeedProviderMatches.length ? (
@@ -10052,36 +9962,6 @@ export default function MarketplacePage() {
                 gap: 8,
               }}
             >
-              <StableButton
-                type="button"
-                debugId="marketplace.progressive.browse-shops"
-                aria-label="Browse shops in this community"
-                onClick={(event) =>
-                  openMarketplaceSection(event, "members", "marketplace-members-shops")
-                }
-                stableHeight={66}
-                style={{
-                  ...marketplaceInlineActionStyle("secondary", false, true),
-                  display: "grid",
-                  gridTemplateColumns: "30px minmax(0, 1fr)",
-                  gap: 7,
-                  alignItems: "center",
-                  textAlign: "left",
-                  padding: 9,
-                  color: "#07172C",
-                  background: "#F7FAFF",
-                }}
-              >
-                <MarketplaceGlyph name="shop" size={22} />
-                <span>
-                  <span style={{ display: "block", fontSize: 12, fontWeight: 950 }}>
-                    Browse shops
-                  </span>
-                  <span style={{ display: "block", marginTop: 4, color: "#52677C", fontSize: 10.5, lineHeight: 1.2 }}>
-                    Find products and services
-                  </span>
-                </span>
-              </StableButton>
               <StableButton
                 type="button"
                 debugId="marketplace.progressive.support-members"
