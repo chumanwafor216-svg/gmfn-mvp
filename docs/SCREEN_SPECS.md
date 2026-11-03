@@ -1096,9 +1096,10 @@ Rules:
 - The queue exposes only `All`, `For you`, and `Yours` first. `Tagged`,
   `Questions`, `Urgent`, and `Need types` remain reachable behind one
   `More filters` disclosure. All direct `?queue=` routes remain supported.
-- Phone request cards start closed with title, urgent status when applicable,
-  requester/owner context, area, and one `Open` action. Opening another card
-  closes the previous card. The open state must retain supply matches,
+- Phone request cards start closed as message-first previews with truthful
+  status, requester/owner context, up to three title lines, area, date, and one
+  `Details` action. Decorative icon tiles must not squeeze or dominate the
+  request message. Opening another card closes the previous card. The open state must retain supply matches,
   contact/copy actions, fulfil/cancel controls, privacy and evidence details,
   and governed expanded search.
 - Approved 2026-11-03 open-request amendment: on phone, an opened request may
@@ -1106,7 +1107,9 @@ Rules:
   only the real status, request title, area, and date. The hero must remain
   category-neutral: do not use a mechanic, tradesperson, product, requester,
   provider, or other category-specific person/photo because the demand may be
-  about anything. Use the shared request/community icon language instead.
+  about anything. Use the shared request/community icon language instead, but
+  keep that icon in a supporting badge no larger than 44px so the request
+  message owns the hero.
 - The same open-request amendment places `Request details` and `Privacy & terms`
   in one compact two-choice control, keeps the successful zero-match state in
   one compact card, and keeps Fulfilled, Cancel, Copy request, WhatsApp Chat,

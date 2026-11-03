@@ -154,7 +154,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked from a closed card.");
 
   const transportCard = cards.filter({ hasText: "Need school transport" });
-  await transportCard.getByRole("button", { name: "Open", exact: true }).click();
+  assert((await transportCard.getAttribute("data-gsn-demand-request-preview")) === "message-first", "The closed request is not using the message-first preview.");
+  assert(await transportCard.getByText("Open request", { exact: true }).isVisible(), "The request status is missing from the closed preview.");
+  assert(await transportCard.getByText("Need school transport", { exact: true }).isVisible(), "The request message is missing from the closed preview.");
+  await transportCard.getByRole("button", { name: "Details", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked before the user asked.");
@@ -168,7 +171,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
   const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
-  await freezerCard.getByRole("button", { name: "Open", exact: true }).click();
+  await freezerCard.getByRole("button", { name: "Details", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
 
@@ -176,6 +179,13 @@ async function verifyViewport(browser, baseURL, viewport) {
   await ownerHero.waitFor();
   assert(await freezerCard.getByText("Open request", { exact: true }).isVisible(), "The truthful request status is missing from the visual hero.");
   assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "The real request title is missing from the visual hero.");
+  const compactRequestIcon = ownerHero.locator('[data-gsn-demand-request-icon="compact"]');
+  assert(await compactRequestIcon.isVisible(), "The compact generic request icon is missing.");
+  const compactIconGeometry = await compactRequestIcon.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return { width: Math.round(rect.width), height: Math.round(rect.height) };
+  });
+  assert(compactIconGeometry.width <= 44 && compactIconGeometry.height <= 44, "The request icon is dominating the request message again.");
   const heroBackground = await ownerHero.evaluate((node) => getComputedStyle(node).backgroundImage);
   assert(!heroBackground.includes("url("), "The category-neutral request hero unexpectedly contains a photo.");
 
@@ -212,7 +222,7 @@ async function verifyViewport(browser, baseURL, viewport) {
       noOverflow: card.scrollWidth <= card.clientWidth + 1,
     };
   });
-  assert(focusGeometry.heroHeight >= 200 && focusGeometry.heroHeight <= 230, "The request hero is outside the compact height boundary.");
+  assert(focusGeometry.heroHeight >= 170 && focusGeometry.heroHeight <= 195, "The request hero is outside the message-first compact height boundary.");
   assert(focusGeometry.actionCount === 5 && focusGeometry.oneActionRow, "The five owner actions did not remain in one compact row.");
   assert(focusGeometry.noOverflow, "The opened request card overflows horizontally.");
 

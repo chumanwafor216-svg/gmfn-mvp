@@ -2055,6 +2055,7 @@ export default function DemandBoxPage() {
       <div
         key={rowKey}
         data-gsn-demand-record={recordOpen ? "open" : "closed"}
+        data-gsn-demand-request-preview={!recordOpen && isCompact ? "message-first" : undefined}
         data-gsn-demand-open-presentation={isCompact && recordOpen ? "visual-focus" : "standard"}
         style={{
           ...recordCard(),
@@ -2066,7 +2067,7 @@ export default function DemandBoxPage() {
           <div
             data-gsn-demand-request-hero="request"
             style={{
-              minHeight: 216,
+              minHeight: 176,
               position: "relative",
               display: "flex",
               alignItems: "stretch",
@@ -2103,70 +2104,76 @@ export default function DemandBoxPage() {
             </SecondaryButton>
 
             <div
-              aria-hidden="true"
               style={{
-                position: "absolute",
-                left: 24,
-                top: 56,
-                width: 104,
-                height: 104,
-                borderRadius: 30,
+                width: "100%",
+                padding: "14px 16px 16px",
                 display: "grid",
-                placeItems: "center",
-                background: "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, rgba(229,240,255,0.94) 100%)",
-                border: "1px solid rgba(255,255,255,0.66)",
-                boxShadow: "0 18px 30px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.92)",
-              }}
-            >
-              <GsnLegacyIcon
-                name={fromAskCommunity ? "community" : "megaphone"}
-                size={68}
-                style={{ filter: "drop-shadow(0 12px 18px rgba(7,58,119,0.22))" }}
-              />
-            </div>
-
-            <div
-              style={{
-                width: "58%",
-                marginLeft: "auto",
-                padding: "18px 14px 16px 8px",
-                display: "grid",
-                alignContent: "center",
-                gap: 10,
+                alignContent: "start",
+                gap: 9,
                 minWidth: 0,
               }}
             >
-              <span
+              <div
                 style={{
-                  justifySelf: "start",
-                  display: "inline-flex",
+                  minHeight: 40,
+                  paddingLeft: 44,
+                  display: "flex",
                   alignItems: "center",
-                  gap: 7,
-                  padding: "6px 10px",
-                  borderRadius: 999,
-                  color: "#17652B",
-                  background: "#D9FAD8",
-                  fontSize: 11,
-                  fontWeight: 900,
-                  lineHeight: 1,
+                  justifyContent: "space-between",
+                  gap: 10,
                 }}
               >
                 <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    color: "#17652B",
+                    background: "#D9FAD8",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    lineHeight: 1,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{ width: 8, height: 8, borderRadius: 999, background: "#22A447" }}
+                  />
+                  {demandStatusLabel(row)}
+                </span>
+                <span
                   aria-hidden="true"
-                  style={{ width: 8, height: 8, borderRadius: 999, background: "#22A447" }}
-                />
-                {demandStatusLabel(row)}
-              </span>
+                  data-gsn-demand-request-icon="compact"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    flex: "0 0 40px",
+                    borderRadius: 14,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "rgba(255,255,255,0.94)",
+                    border: "1px solid rgba(255,255,255,0.72)",
+                    boxShadow: "0 8px 18px rgba(2,12,27,0.20)",
+                  }}
+                >
+                  <GsnLegacyIcon
+                    name={fromAskCommunity ? "community" : "megaphone"}
+                    size={27}
+                  />
+                </span>
+              </div>
 
               <div
                 style={{
-                  fontSize: 21,
+                  fontSize: 23,
                   fontWeight: 950,
-                  lineHeight: 1.05,
+                  lineHeight: 1.08,
                   letterSpacing: "-0.02em",
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 4,
+                  WebkitLineClamp: 3,
                   overflow: "hidden",
                   textShadow: "0 2px 12px rgba(0,0,0,0.36)",
                 }}
@@ -2206,48 +2213,48 @@ export default function DemandBoxPage() {
           style={{
             display: "grid",
             gridTemplateColumns: isCompact
-              ? "54px minmax(0, 1fr) auto"
+              ? "minmax(0, 1fr) 76px"
               : "minmax(0, 1fr) auto",
-            gap: 10,
+            gap: isCompact ? 12 : 10,
             alignItems: "center",
           }}
         >
-          {isCompact ? (
-            <div
-              aria-hidden="true"
-              style={{
-                width: 54,
-                height: 54,
-                borderRadius: 16,
-                display: "grid",
-                placeItems: "center",
-                background: fromAskCommunity
-                  ? "linear-gradient(180deg, #EFFAF2 0%, #E4F5E9 100%)"
-                  : "linear-gradient(180deg, #EEF5FF 0%, #DFECFC 100%)",
-                border: "1px solid rgba(13,95,168,0.10)",
-              }}
-            >
-              <GsnLegacyIcon
-                name={fromAskCommunity ? "community" : "briefcase"}
-                size={30}
-              />
-            </div>
-          ) : null}
-
           <div
             style={{
               minWidth: 0,
             }}
           >
+            {isCompact ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  marginBottom: 6,
+                  color: "#426078",
+                  fontSize: 11,
+                  fontWeight: 900,
+                  lineHeight: 1.1,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{ width: 7, height: 7, borderRadius: 999, background: "#22A447" }}
+                />
+                <span>{demandStatusLabel(row)}</span>
+                <span aria-hidden="true" style={{ color: "#9AAABD" }}>·</span>
+                <span>{scope === "community" ? requesterName(row) : "Your request"}</span>
+              </div>
+            ) : null}
             <div
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: isCompact ? 15 : 17,
-                lineHeight: 1.28,
+                fontSize: 17,
+                lineHeight: isCompact ? 1.2 : 1.28,
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
-                WebkitLineClamp: recordOpen ? 3 : 2,
+                WebkitLineClamp: isCompact ? 3 : recordOpen ? 3 : 2,
                 overflow: "hidden",
               }}
             >
@@ -2255,19 +2262,29 @@ export default function DemandBoxPage() {
             </div>
             <div
               style={{
-                marginTop: 5,
+                marginTop: isCompact ? 7 : 5,
                 display: "flex",
-                gap: 7,
+                gap: isCompact ? 10 : 7,
                 flexWrap: "wrap",
                 color: "#587087",
-                fontSize: 12,
+                fontSize: isCompact ? 11 : 12,
                 fontWeight: 800,
                 lineHeight: 1.35,
               }}
             >
-              <span>{scope === "community" ? requesterName(row) : "Your request"}</span>
-              {safeStr(row?.area) ? <span>· {safeStr(row?.area)}</span> : null}
-              {safeStr(row?.created_at) ? <span>· {safeDate(row?.created_at)}</span> : null}
+              {!isCompact ? <span>{scope === "community" ? requesterName(row) : "Your request"}</span> : null}
+              {safeStr(row?.area) ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  {isCompact ? <GsnLegacyIcon name="navigation" size={15} /> : <span>·</span>}
+                  {safeStr(row?.area)}
+                </span>
+              ) : null}
+              {safeStr(row?.created_at) ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  {isCompact ? <GsnLegacyIcon name="calendar" size={15} /> : <span>·</span>}
+                  {safeDate(row?.created_at)}
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -2276,7 +2293,7 @@ export default function DemandBoxPage() {
               display: "grid",
               justifyItems: "end",
               gap: 7,
-              minWidth: isCompact ? 68 : 0,
+              minWidth: isCompact ? 76 : 0,
             }}
           >
             {isUrgentDemand(row) ? (
@@ -2293,15 +2310,16 @@ export default function DemandBoxPage() {
                 type="button"
                 onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
                 debugId={debugBase + ".open"}
-                stableHeight={42}
+                stableHeight={54}
                 style={{
-                  ...demandActionStyle(42),
-                  minWidth: 68,
-                  padding: "0 10px",
-                  borderRadius: 14,
+                  ...demandActionStyle(54),
+                  minWidth: 76,
+                  padding: "0 8px",
+                  borderRadius: 16,
+                  fontSize: 12,
                 }}
               >
-                {recordOpen ? "Close" : "Open"}
+                Details
               </SecondaryButton>
             ) : null}
           </div>
