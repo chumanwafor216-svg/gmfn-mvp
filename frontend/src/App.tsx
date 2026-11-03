@@ -21,6 +21,7 @@ import {
   publishRecoveryTarget,
 } from "./lib/publishRecovery";
 import { gmfnBrand } from "./styles/gmfnBrand";
+import BackgroundSessionGuard from "./components/BackgroundSessionGuard";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
 const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
@@ -743,8 +744,10 @@ function PublicHostRedirect() {
 
 export default function App() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <PublicHostRedirect />
+    <>
+      <BackgroundSessionGuard />
+      <Suspense fallback={<RouteFallback />}>
+        <PublicHostRedirect />
       <GlobalSessionResetGate>
         <RememberAuthenticatedAppRoute />
         <Routes>
@@ -1389,6 +1392,7 @@ export default function App() {
         <Route path="*" element={<RedirectUnknownRoute />} />
         </Routes>
       </GlobalSessionResetGate>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }

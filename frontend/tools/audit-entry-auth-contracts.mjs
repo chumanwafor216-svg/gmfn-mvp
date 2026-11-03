@@ -75,6 +75,29 @@ assertContains(
   /publishRecoveryReturnTarget[\s\S]*previous sign-in expired before GSN could finish the action[\s\S]*previous sign-in expired while GSN was closed\. Sign in again to continue\./,
   "Expired-session sign-in must distinguish ordinary app resume from interrupted Spotlight publishing."
 );
+assertContains(
+  "src/App.tsx",
+  /import BackgroundSessionGuard from "\.\/components\/BackgroundSessionGuard";[\s\S]*?<BackgroundSessionGuard \/>/,
+  "The root application must protect authenticated sessions even on signed-in public Shop routes outside /app RequireAuth."
+);
+
+assertContains(
+  "src/components/BackgroundSessionGuard.tsx",
+  /getAccessToken\(\)[\s\S]*setPrivacyCovered\(true\)[\s\S]*filePickerOpenRef\.current[\s\S]*sessionClosedRef\.current = true[\s\S]*clearAuthSession\(\)[\s\S]*document\.visibilityState === "hidden"[\s\S]*navigate\("\/login\?session=closed"/,
+  "Authenticated sessions must hide member data, clear local authentication on background exit, and require sign-in on return."
+);
+
+assertContains(
+  "src/components/BackgroundSessionGuard.tsx",
+  /candidate instanceof HTMLInputElement[\s\S]*candidate\.type\.toLowerCase\(\) === "file"[\s\S]*document\.addEventListener\("click", markFilePicker, true\)/,
+  "The background guard must treat GSN file and camera pickers as internal actions rather than accidental app exits."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /const BACKGROUND_SESSION_NOTICE =[\s\S]*GSN secured your member session when the app left the screen\. Sign in again to continue\.[\s\S]*sessionClosed[\s\S]*setSessionNotice\(BACKGROUND_SESSION_NOTICE\)/,
+  "Background session closure must have truthful sign-in guidance and refresh it even when Login was already mounted."
+);
 
 assertContains(
   "src/pages/LoginPage.tsx",

@@ -34,6 +34,8 @@ import { APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE } from "../lib/appRoutes";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 const LOGIN_SESSION_NOTICE_MS = 12_000;
+const BACKGROUND_SESSION_NOTICE =
+  "GSN secured your member session when the app left the screen. Sign in again to continue.";
 const LOGIN_SHORTCUT_REMINDER_MS = 10_000;
 
 function pageShell(compact = false): React.CSSProperties {
@@ -561,6 +563,7 @@ export default function LoginPage() {
   const founderCommunityName = safeStr(founderContext.clan_name || "");
   const forceLogin = searchParams.get("force") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
+  const sessionClosed = searchParams.get("session") === "closed";
   const publishRecoveryReturnTarget = useMemo(
     () => peekPublishRecoveryTarget(),
     []
@@ -596,7 +599,9 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [sessionNotice, setSessionNotice] = useState<string | null>(() =>
-    sessionExpired
+    sessionClosed
+      ? BACKGROUND_SESSION_NOTICE
+      : sessionExpired
       ? publishRecoveryReturnTarget
         ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
         : "Your previous sign-in expired while GSN was closed. Sign in again to continue."
@@ -672,6 +677,11 @@ export default function LoginPage() {
       document.title = "GSN | Sign In";
     }
   }, []);
+
+  useEffect(() => {
+    if (!sessionClosed) return;
+    setSessionNotice(BACKGROUND_SESSION_NOTICE);
+  }, [sessionClosed]);
 
   useEffect(() => {
     if (!sessionNotice) return;
