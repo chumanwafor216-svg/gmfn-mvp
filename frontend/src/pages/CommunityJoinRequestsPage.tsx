@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
@@ -13,6 +13,7 @@ import {
   type CommunityAdmissionMode,
   getCommunityAdmissionPolicy,
   getCommunityJoinRequests,
+  getJoinApprovalStatus,
   safeCopy,
   selectClan,
   updateCommunityAdmissionPolicy,
@@ -664,6 +665,8 @@ export default function CommunityJoinRequestsPage() {
   const [activationPack, setActivationPack] = useState<ApprovalResult | null>(null);
   const [activationPackDetailsOpen, setActivationPackDetailsOpen] = useState(false);
   const [activationCopyStatus, setActivationCopyStatus] = useState("");
+  const [activationHandoffBusyId, setActivationHandoffBusyId] = useState<number | null>(null);
+  const activationPackRef = useRef<HTMLDivElement | null>(null);
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
@@ -808,6 +811,14 @@ export default function CommunityJoinRequestsPage() {
     setActiveRequestId(firstPending?.id || visibleItems[0]?.id || null);
   }, [activeRequestId, visibleItems]);
 
+  useEffect(() => {
+    if (!activationPack?.gmfn_id || !activationPackRef.current) return;
+
+    activationPackRef.current.scrollIntoView({
+      block: "start",
+    });
+  }, [activationPack?.gmfn_id]);
+
   const communityHomeCta = useMemo(
     () =>
       resolveCtaTarget("communityHome", {
@@ -870,6 +881,7 @@ export default function CommunityJoinRequestsPage() {
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
         setSuccess(approvalSuccessText(res, `GSN ID issued: ${res.approval_result.gmfn_id}.`));
         setActivationPack(res.approval_result || null);
+        setActivationPackDetailsOpen(true);
       } else if (vote === "approve") {
         setSuccess(approvalSuccessText(res, "Your approval was recorded."));
       } else if (res?.rejected_now) {
@@ -914,6 +926,7 @@ export default function CommunityJoinRequestsPage() {
           )
         );
         setActivationPack(res.approval_result || null);
+        setActivationPackDetailsOpen(true);
       } else {
         setSuccess(approvalSuccessText(res, "Admin approval completed."));
       }
@@ -923,6 +936,32 @@ export default function CommunityJoinRequestsPage() {
       setError(err?.message || "Admin approval failed.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function openApprovedHandoff(item: JoinRequestItem) {
+    try {
+      setActivationHandoffBusyId(item.id);
+      setError("");
+      setSuccess("");
+      setActivationCopyStatus("");
+
+      const result = (await getJoinApprovalStatus(item.id)) as ApprovalResult;
+      if (!result?.gmfn_id) {
+        throw new Error("GSN could not recover the approved member ID yet.");
+      }
+
+      setActivationPack(result);
+      setActivationPackDetailsOpen(Boolean(result.activation_message));
+      setSuccess(
+        result.activation_message
+          ? "Approved member handoff opened. Copy and send the message to the approved person."
+          : "Approved member GSN ID opened. This person already had a GSN identity, so no new activation message is required."
+      );
+    } catch (err: any) {
+      setError(err?.message || "Approved member handoff could not be opened.");
+    } finally {
+      setActivationHandoffBusyId(null);
     }
   }
 
@@ -1417,8 +1456,10 @@ export default function CommunityJoinRequestsPage() {
 
       {activationPack?.gmfn_id ? (
         <div
+          ref={activationPackRef}
           style={{
             ...whitePanel(18),
+            scrollMarginTop: 96,
           }}
           data-gsn-activation-handoff="admin-share"
         >
@@ -1937,26 +1978,43 @@ export default function CommunityJoinRequestsPage() {
                 </div>
               ) : null}
               {!isPending ? (
-                <div
-                  style={{
-                    marginTop: 14,
-                    padding: 12,
-                    borderRadius: 12,
-                    border: status === "approved"
-                      ? "1px solid rgba(34,197,94,0.18)"
-                      : "1px solid rgba(239,68,68,0.18)",
-                    background: status === "approved" ? "#F0FDF4" : "#FEF2F2",
-                    color: "#0B1F33",
-                    fontWeight: 800,
-                  }}
-                >
-                  {iconText(
-                    status === "approved" ? "approve" : "reject",
-                    <>
-                      This request is {status}. {approvalProgressText(item)}.
-                    </>
-                  )}
-                </div>
+                <>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: 12,
+                      borderRadius: 12,
+                      border: status === "approved"
+                        ? "1px solid rgba(34,197,94,0.18)"
+                        : "1px solid rgba(239,68,68,0.18)",
+                      background: status === "approved" ? "#F0FDF4" : "#FEF2F2",
+                      color: "#0B1F33",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {iconText(
+                      status === "approved" ? "approve" : "reject",
+                      <>
+                        This request is {status}. {approvalProgressText(item)}.
+                      </>
+                    )}
+                  </div>
+                  {status === "approved" ? (
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => void openApprovedHandoff(item)}
+                      disabled={activationHandoffBusyId === item.id}
+                      busy={activationHandoffBusyId === item.id}
+                      busyLabel="Opening..."
+                      stableHeight={54}
+                      fullWidth
+                      debugId="community-join-requests.open-approved-handoff"
+                      style={{ marginTop: 12 }}
+                    >
+                      {iconText("id", "Open GSN ID & approval message")}
+                    </SecondaryButton>
+                  ) : null}
+                </>
               ) : (
                 <>
                   <div
