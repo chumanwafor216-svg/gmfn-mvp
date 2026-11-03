@@ -261,7 +261,7 @@ Rules:
 
 ## MyGMFNAndIPage / Profile
 
-Status: CLOSED/FROZEN as of 2026-10-15 after the approved novice-first phone simplification.
+Status: CLOSED/FROZEN as of 2026-11-03 after the approved premium phone-profile enhancement.
 
 Purpose:
 Member home for `me across the whole GSN network`.
@@ -306,6 +306,12 @@ Rules:
 - When Companion Mode is expanded on a phone, start with the first usable control instead of repeating a headline, behavior paragraph, and passive browser-permission chip. Use the phone labels `Reminder level`, `Sound`, `Spoken reminders`, `Daily reminder limit`, and `Repeat after (minutes)`, with the short helpers `Spoken reminders for important alerts.` and `Get reminders when GSN is not open.` Keep every control and use status text when a save or permission event actually occurs. Desktop retains the fuller introduction and technical labels.
 - Inside expanded phone Companion Mode, keep `Reminder level` immediately visible and place the six secondary settings behind two value-bearing rows: `Sound & notifications` and `Timing & limits`. Opening one row must close the other. The rows must summarize the current saved choices before a tap, every original control must remain reachable, status feedback must stay visible, and desktop must retain the fully expanded presentation.
 - When a phone member has multiple communities, keep the full portfolio reachable from one compact `Switch community (N)` row inside `More profile details`; opening it must not replace the profile primary action. When the member has exactly one community, place its name, role, and stable ID directly in the `My communities` section and omit the switch/list control. Keep the section-level community icon for wayfinding. Desktop retains the fuller count, selected-card label, icon treatment, and visible portfolio control.
+- Approved 2026-11-03 premium phone-profile presentation: the compact identity hero may use a richer navy, blue, and gold treatment around the member's saved portrait or initials. It must still show the real display name, GSN ID, one bounded profile status, and no invented person, community, business, trust, or verification imagery.
+- The hero may show one secondary `Phone verified` chip and portrait check mark only when the existing account evidence says the phone is verified. Recorded, missing, or unconfirmed phone evidence must not receive that chip or check mark.
+- When the profile is active and a selected community exists, the existing state-aware `Open community` primary action may sit on the premium selected-community card instead of repeating beneath the identity hero. Incomplete identity, unconfirmed phone, and no-community states keep their exact existing completion action with the identity state. There must still be only one primary action.
+- The compact selected-community card uses the approved realistic community object icon, community name, role/stable ID, and the real active-community count only when more than one community exists. Multi-community switching remains inside `More profile details`; no public location, member roster, or invented community image is introduced.
+- Conditional phone attention is one closed compact row showing its real loading, unavailable, or waiting state. Opening it reveals the existing Notifications and DemandBox readings and actions. Empty attention remains absent.
+- The closed `More profile details` row may summarize its preserved contents as `Shop, trust, credits, settings & help`. Shop, Trust Passport, TrustSlip, Pipeline Credits, account settings, Help, official links, and quiet activity must remain behind that one default-phone disclosure with their nested disclosures closed.
 ## Mobile Task Page Rule
 
 ## Foldable Continuity Rule
@@ -1095,6 +1101,21 @@ Rules:
   closes the previous card. The open state must retain supply matches,
   contact/copy actions, fulfil/cancel controls, privacy and evidence details,
   and governed expanded search.
+- Approved 2026-11-03 open-request amendment: on phone, an opened request may
+  replace the plain record header with one compact navy/gold visual hero showing
+  only the real status, request title, area, and date. The hero must remain
+  category-neutral: do not use a mechanic, tradesperson, product, requester,
+  provider, or other category-specific person/photo because the demand may be
+  about anything. Use the shared request/community icon language instead.
+- The same open-request amendment places `Request details` and `Privacy & terms`
+  in one compact two-choice control, keeps the successful zero-match state in
+  one compact card, and keeps Fulfilled, Cancel, Copy request, WhatsApp Chat,
+  and WhatsApp Call in one bounded action dock when those existing actions are
+  available. No action, privacy fact, relay control, or evidence detail may be
+  removed; deeper facts remain available only after the member asks for them.
+- A small DemandBox identity banner may reuse the approved generic DemandBox
+  marketplace image after the action dock, but it must not be presented as the
+  requester, provider, match, or evidence for this request.
 - The create form shows only need, type, area, and Community/One person
   visibility first. The matched-person chooser appears only for One person.
   Explanation, WhatsApp override, urgency, payment, requested proof, expiry,

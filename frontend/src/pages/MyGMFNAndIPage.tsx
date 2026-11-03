@@ -33,10 +33,7 @@ import {
   brandSoftCard,
   gmfnBrand,
 } from "../styles/gmfnBrand";
-import {
-  GMFN_CAPABILITY_COUNT,
-  GMFN_CAPABILITIES,
-} from "../lib/gmfnCapabilities";
+import { GMFN_CAPABILITIES } from "../lib/gmfnCapabilities";
 import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { resolveSharedProfileImage } from "../lib/profileImage";
@@ -2232,8 +2229,6 @@ export default function MyGMFNAndIPage() {
     firstPositiveNumber(currentClan?.id, currentClan?.clan_id, memberCommunities[0]?.id, memberCommunities[0]?.clan_id);
   const selectedCommunityForShop =
     memberCommunityRows.find((community) => community.isSelected) || memberCommunityRows[0];
-  const flattenCompactSingleCommunity =
-    isCompact && Boolean(selectedCommunityForShop) && !memberHomeHasMultipleCommunities;
   const selectedCommunityName =
     firstTruthy(
       selectedCommunityForShop?.name,
@@ -2873,34 +2868,52 @@ export default function MyGMFNAndIPage() {
                   gap: 12,
                 }}
               >
-                <div style={memberHomeSectionShell(true)} data-my-gsn-identity-first="true">
+                <div
+                  style={
+                    isCompact
+                      ? {
+                          borderRadius: 26,
+                          border: "1px solid rgba(214,170,69,0.42)",
+                          background:
+                            "radial-gradient(circle at 92% 16%, rgba(51,132,219,0.34) 0%, rgba(51,132,219,0) 34%), radial-gradient(circle at 12% 100%, rgba(214,170,69,0.22) 0%, rgba(214,170,69,0) 36%), linear-gradient(145deg, #061827 0%, #0B2D4A 58%, #0B63D1 132%)",
+                          boxShadow:
+                            "0 24px 48px rgba(4,18,32,0.28), inset 0 1px 0 rgba(255,255,255,0.16)",
+                          padding: 16,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          boxSizing: "border-box",
+                        }
+                      : memberHomeSectionShell(true)
+                  }
+                  data-my-gsn-identity-first="true"
+                >
                   {isCompact ? (
                     <>
                       <div
                         data-my-gsn-profile-status-hero="true"
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "72px minmax(0, 1fr)",
-                          gap: 12,
+                          gridTemplateColumns: "84px minmax(0, 1fr)",
+                          gap: 14,
                           alignItems: "center",
                         }}
                       >
                         <div
                           data-my-gsn-profile-photo={profileImageUrl ? "image" : "initials"}
                           style={{
-                            width: 72,
-                            height: 72,
-                            borderRadius: 22,
-                            overflow: "hidden",
+                            width: 84,
+                            height: 84,
+                            borderRadius: 28,
                             display: "grid",
                             placeItems: "center",
+                            position: "relative",
                             background:
                               "linear-gradient(145deg, #082846 0%, #0B63D1 100%)",
-                            border: "2px solid rgba(214,170,69,0.68)",
+                            border: "3px solid rgba(255,255,255,0.92)",
                             boxShadow:
-                              "0 12px 24px rgba(7,28,49,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
+                              "0 14px 28px rgba(0,0,0,0.28), 0 0 0 3px rgba(214,170,69,0.58)",
                             color: "#FFFFFF",
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: 1000,
                           }}
                         >
@@ -2912,46 +2925,46 @@ export default function MyGMFNAndIPage() {
                                 width: "100%",
                                 height: "100%",
                                 objectFit: "cover",
+                                borderRadius: 25,
                                 display: "block",
                               }}
                             />
                           ) : (
                             <span aria-hidden="true">{profileInitials}</span>
                           )}
+                          {profileStatus.tone === "ready" ? (
+                            <span
+                              data-my-gsn-profile-ready-mark="true"
+                              aria-hidden="true"
+                              style={{
+                                position: "absolute",
+                                right: -3,
+                                bottom: -3,
+                                width: 28,
+                                height: 28,
+                                borderRadius: 999,
+                                display: "grid",
+                                placeItems: "center",
+                                background: "#22A447",
+                                border: "3px solid #FFFFFF",
+                                color: "#FFFFFF",
+                                fontSize: 16,
+                                fontWeight: 1000,
+                                lineHeight: 1,
+                                boxShadow: "0 8px 16px rgba(3,80,36,0.28)",
+                              }}
+                            >
+                              ✓
+                            </span>
+                          ) : null}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div
-                            data-my-gsn-profile-status={profileStatus.tone}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              minHeight: 28,
-                              padding: "4px 10px",
-                              borderRadius: 999,
-                              border:
-                                profileStatus.tone === "ready"
-                                  ? "1px solid rgba(22,163,74,0.24)"
-                                  : "1px solid rgba(214,170,69,0.34)",
-                              background:
-                                profileStatus.tone === "ready"
-                                  ? "rgba(236,253,245,0.98)"
-                                  : "rgba(255,249,232,0.98)",
-                              color:
-                                profileStatus.tone === "ready"
-                                  ? "#166534"
-                                  : "#7A4A00",
-                              fontSize: 11.5,
-                              fontWeight: 1000,
-                              lineHeight: 1.15,
-                            }}
-                          >
-                            {profileStatus.label}
-                          </div>
                           <h2
                             style={{
                               ...memberHomeSectionTitle(),
-                              marginTop: 7,
-                              fontSize: 24,
+                              color: "#FFFFFF",
+                              fontSize: 25,
+                              lineHeight: 1.05,
                               overflowWrap: "anywhere",
                             }}
                           >
@@ -2960,8 +2973,8 @@ export default function MyGMFNAndIPage() {
                           <div
                             data-my-gsn-profile-id="true"
                             style={{
-                              marginTop: 5,
-                              color: "#526174",
+                              marginTop: 7,
+                              color: "#E7F1FB",
                               fontSize: 12.5,
                               fontWeight: 900,
                               lineHeight: 1.25,
@@ -2971,33 +2984,94 @@ export default function MyGMFNAndIPage() {
                             GSN ID: {gmfnId}
                           </div>
                           <div
-                            data-my-gsn-profile-status-detail="true"
                             style={{
-                              marginTop: 3,
-                              color: "#64748B",
-                              fontSize: 11.5,
-                              fontWeight: 800,
-                              lineHeight: 1.25,
+                              marginTop: 10,
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 7,
+                              alignItems: "center",
                             }}
                           >
-                            {profileStatus.detail}
+                            <span
+                              data-my-gsn-profile-status={profileStatus.tone}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                minHeight: 29,
+                                padding: "5px 10px",
+                                borderRadius: 999,
+                                border:
+                                  profileStatus.tone === "ready"
+                                    ? "1px solid rgba(134,239,172,0.48)"
+                                    : "1px solid rgba(242,199,102,0.54)",
+                                background:
+                                  profileStatus.tone === "ready"
+                                    ? "rgba(22,101,52,0.88)"
+                                    : "rgba(122,74,0,0.78)",
+                                color: "#FFFFFF",
+                                fontSize: 11.5,
+                                fontWeight: 1000,
+                                lineHeight: 1.15,
+                              }}
+                            >
+                              {profileStatus.label}
+                            </span>
+                            {accountPhoneVerified ? (
+                              <span
+                                data-my-gsn-phone-verified="true"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  minHeight: 29,
+                                  padding: "5px 10px",
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(147,197,253,0.56)",
+                                  background: "rgba(11,99,209,0.82)",
+                                  color: "#FFFFFF",
+                                  fontSize: 11.5,
+                                  fontWeight: 1000,
+                                  lineHeight: 1.15,
+                                }}
+                              >
+                                Phone verified
+                              </span>
+                            ) : null}
                           </div>
+                          {profileStatus.tone !== "ready" ? (
+                            <div
+                              data-my-gsn-profile-status-detail="true"
+                              style={{
+                                marginTop: 8,
+                                color: "#DCEBFA",
+                                fontSize: 11.5,
+                                fontWeight: 800,
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {profileStatus.detail}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
-                      <StableCtaLink
-                        to={profilePrimaryAction.to}
-                        kind="primary"
-                        debugId="my-gmfn.profile.primary-action"
-                        style={{
-                          marginTop: 12,
-                          minHeight: 50,
-                          borderRadius: 16,
-                          justifyContent: "center",
-                          fontSize: 14,
-                        }}
-                      >
-                        {profilePrimaryAction.label}
-                      </StableCtaLink>
+                      {!selectedCommunityForShop || profileStatus.tone !== "ready" ? (
+                        <StableCtaLink
+                          to={profilePrimaryAction.to}
+                          kind="primary"
+                          debugId="my-gmfn.profile.primary-action"
+                          style={{
+                            marginTop: 14,
+                            minHeight: 50,
+                            borderRadius: 16,
+                            justifyContent: "center",
+                            fontSize: 14,
+                            background: "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)",
+                            borderColor: "rgba(255,255,255,0.30)",
+                            boxShadow: "0 14px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.24)",
+                          }}
+                        >
+                          {profilePrimaryAction.label}
+                        </StableCtaLink>
+                      ) : null}
                     </>
                   ) : (
                     <>
@@ -3039,84 +3113,180 @@ export default function MyGMFNAndIPage() {
                   )}
                 </div>
 
-                <div style={memberHomeSectionShell()} data-my-gsn-community-portfolio="true">
-                  {memberHomeSectionKicker("community", "My communities", isCompact)}
-                  {!isCompact || memberHomeHasMultipleCommunities || !selectedCommunityForShop ? (
-                    <h2 data-my-gsn-community-count="true" style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                      {communityStatus}
-                    </h2>
-                  ) : null}
-                  {!isCompact ? (
-                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                      Open your community list when you need it. Use Community Home to work inside the selected community.
-                    </div>
-                  ) : null}
-                  {selectedCommunityForShop ? (
+                <div
+                  style={{
+                    ...memberHomeSectionShell(),
+                    ...(isCompact
+                      ? {
+                          borderRadius: 24,
+                          border: "1px solid rgba(214,170,69,0.30)",
+                          padding: 14,
+                          boxShadow:
+                            "0 18px 36px rgba(7,28,49,0.15), inset 0 1px 0 rgba(255,255,255,0.98)",
+                        }
+                      : {}),
+                  }}
+                  data-my-gsn-community-portfolio="true"
+                >
+                  {isCompact ? (
                     <>
                       <div
                         data-my-gsn-selected-community-card="true"
-                        data-my-gsn-selected-community-mode={
-                          flattenCompactSingleCommunity ? "flat-single" : "card"
-                        }
-                        style={
-                          flattenCompactSingleCommunity
-                            ? { marginTop: 10, minWidth: 0 }
-                            : {
-                                ...memberHomeCard(true),
-                                marginTop: isCompact ? 10 : 12,
-                                minHeight: isCompact ? 72 : 92,
-                              }
-                        }
+                        data-my-gsn-selected-community-mode="premium-card"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "52px minmax(0, 1fr)",
+                          alignItems: "center",
+                          gap: 12,
+                          minWidth: 0,
+                        }}
                       >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        {!isCompact ? memberHomeIconBadge("community", true, true) : null}
+                        {memberHomeIconBadge("community", true, true)}
                         <div style={{ minWidth: 0 }}>
-                          {!flattenCompactSingleCommunity ? (
-                            <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
-                              Selected community
+                          <div style={sectionLabel()}>My community</div>
+                          <h2
+                            style={{
+                              ...memberHomeSectionTitle(),
+                              marginTop: 5,
+                              fontSize: 18,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {selectedCommunityForShop?.name || communityStatus}
+                          </h2>
+                          {selectedCommunityForShop ? (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                                alignItems: "center",
+                                color: "#526174",
+                                fontSize: 11.5,
+                                fontWeight: 850,
+                                lineHeight: 1.3,
+                              }}
+                            >
+                              <span>
+                                {selectedCommunityForShop.roleStatus}
+                                {selectedCommunityForShop.stableId
+                                  ? ` / ${selectedCommunityForShop.stableId}`
+                                  : ""}
+                              </span>
+                              {memberHomeHasMultipleCommunities ? (
+                                <span
+                                  data-my-gsn-community-count="true"
+                                  style={{
+                                    minHeight: 24,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "3px 8px",
+                                    borderRadius: 999,
+                                    background: "#EEF6FF",
+                                    border: "1px solid rgba(11,99,209,0.16)",
+                                    color: "#0B4F92",
+                                    fontSize: 10.5,
+                                    fontWeight: 1000,
+                                  }}
+                                >
+                                  {communityStatus}
+                                </span>
+                              ) : null}
                             </div>
-                          ) : null}
-                          <div style={{ marginTop: flattenCompactSingleCommunity ? 0 : 4, color: "#07172C", fontSize: isCompact ? 13 : 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
-                            {selectedCommunityForShop.name}
-                          </div>
-                          <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
-                            {selectedCommunityForShop.roleStatus}{selectedCommunityForShop.stableId ? ` / ${selectedCommunityForShop.stableId}` : ""}
-                          </div>
+                          ) : (
+                            <div style={{ marginTop: 6, ...helperText(), color: "#64748B" }}>
+                              Create or join a community to see it here.
+                            </div>
+                          )}
                         </div>
                       </div>
-                      </div>
-                    {!isCompact ? (
-                    <StableCtaLink
-                      to={communityRouteFor(selectedCommunityForShop.id)}
-                      kind="primary"
-                      debugId="my-gmfn.selected-community.open"
-                      style={{ marginTop: 10, minHeight: 48, borderRadius: 999, justifyContent: "center" }}
-                    >
-                      Open community
-                    </StableCtaLink>
-                    ) : null}
+                      {selectedCommunityForShop && profileStatus.tone === "ready" ? (
+                        <StableCtaLink
+                          to={profilePrimaryAction.to}
+                          kind="primary"
+                          debugId="my-gmfn.profile.primary-action"
+                          style={{
+                            marginTop: 12,
+                            minHeight: 50,
+                            borderRadius: 16,
+                            justifyContent: "center",
+                            fontSize: 14,
+                            background: "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)",
+                            boxShadow:
+                              "0 14px 28px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)",
+                          }}
+                        >
+                          <GsnLegacyIcon name="community" size={21} decorative />
+                          {profilePrimaryAction.label}
+                        </StableCtaLink>
+                      ) : null}
                     </>
-                  ) : null}
-                  {!isCompact ? (
-                    <SecondaryButton
-                      type="button"
-                      stableHeight={44}
-                      debugId="my-gmfn.communities.toggle"
-                      onClick={() => setCommunitiesOpen((value) => !value)}
-                      style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
-                      aria-expanded={communitiesOpen}
-                    >
-                      <GsnLegacyIcon name="community" size={20} decorative />
-                      {communitiesOpen
-                        ? "Hide communities"
-                        : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
-                    </SecondaryButton>
-                  ) : null}
-                  {communitiesOpen && !isCompact ? (
-                    <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
-                      {renderMemberCommunityRows()}
-                    </div>
-                  ) : null}
+                  ) : (
+                    <>
+                      {memberHomeSectionKicker("community", "My communities", false)}
+                      <h2 data-my-gsn-community-count="true" style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                        {communityStatus}
+                      </h2>
+                      <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                        Open your community list when you need it. Use Community Home to work inside the selected community.
+                      </div>
+                      {selectedCommunityForShop ? (
+                        <>
+                          <div
+                            data-my-gsn-selected-community-card="true"
+                            data-my-gsn-selected-community-mode="card"
+                            style={{
+                              ...memberHomeCard(true),
+                              marginTop: 12,
+                              minHeight: 92,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                              {memberHomeIconBadge("community", true, true)}
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                                  Selected community
+                                </div>
+                                <div style={{ marginTop: 4, color: "#07172C", fontSize: 14.5, fontWeight: 1000, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                                  {selectedCommunityForShop.name}
+                                </div>
+                                <div style={{ marginTop: 5, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+                                  {selectedCommunityForShop.roleStatus}{selectedCommunityForShop.stableId ? ` / ${selectedCommunityForShop.stableId}` : ""}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <StableCtaLink
+                            to={communityRouteFor(selectedCommunityForShop.id)}
+                            kind="primary"
+                            debugId="my-gmfn.selected-community.open"
+                            style={{ marginTop: 10, minHeight: 48, borderRadius: 999, justifyContent: "center" }}
+                          >
+                            Open community
+                          </StableCtaLink>
+                        </>
+                      ) : null}
+                      <SecondaryButton
+                        type="button"
+                        stableHeight={44}
+                        debugId="my-gmfn.communities.toggle"
+                        onClick={() => setCommunitiesOpen((value) => !value)}
+                        style={{ marginTop: 10, width: "100%", justifyContent: "center", borderRadius: 999 }}
+                        aria-expanded={communitiesOpen}
+                      >
+                        <GsnLegacyIcon name="community" size={20} decorative />
+                        {communitiesOpen
+                          ? "Hide communities"
+                          : `Show communities (${memberCommunityRows.length || memberCommunityCount || 0})`}
+                      </SecondaryButton>
+                      {communitiesOpen ? (
+                        <div style={{ marginTop: 12, display: "grid", gap: 9 }}>
+                          {renderMemberCommunityRows()}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -3131,17 +3301,87 @@ export default function MyGMFNAndIPage() {
                 }}
               >
                 {shouldShowAttentionSummary ? (
-                  <div style={memberHomeSectionShell()} data-my-gsn-attention-summary="true">
-                    {memberHomeSectionKicker("alert", isCompact ? "Attention" : "What needs my attention", isCompact)}
-                    <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                      {attentionStatus}
-                    </h2>
+                  <details
+                    data-my-gsn-attention-summary="true"
+                    data-my-gsn-attention-disclosure={isCompact ? "compact" : "desktop-open"}
+                    open={isCompact ? undefined : true}
+                    style={{
+                      ...memberHomeSectionShell(),
+                      ...(isCompact
+                        ? {
+                            borderRadius: 22,
+                            padding: 12,
+                            border: "1px solid rgba(200,58,58,0.18)",
+                            boxShadow:
+                              "0 16px 32px rgba(7,28,49,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
+                          }
+                        : {}),
+                    }}
+                  >
+                    <StableDisclosureSummary
+                      debugId="my-gmfn.attention.toggle"
+                      stableHeight={64}
+                      style={{
+                        display: isCompact ? "grid" : "none",
+                        gridTemplateColumns: "44px minmax(0, 1fr) auto auto",
+                        alignItems: "center",
+                        gap: 10,
+                        minHeight: 64,
+                        listStyle: "none",
+                        cursor: "pointer",
+                        color: "#07172C",
+                      }}
+                    >
+                      {memberHomeIconBadge("alert", true)}
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 16, fontWeight: 1000, lineHeight: 1.1 }}>
+                          Attention
+                        </span>
+                        <span style={{ display: "block", marginTop: 4, color: "#64748B", fontSize: 11.5, fontWeight: 850, lineHeight: 1.2 }}>
+                          {memberOpportunityStillLoading
+                            ? "Checking for anything that needs you"
+                            : attentionSourceUnavailable
+                              ? "Some information could not load"
+                              : "Action needed"}
+                        </span>
+                      </span>
+                      <span
+                        data-my-gsn-attention-status="true"
+                        style={{
+                          minHeight: 30,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "5px 10px",
+                          borderRadius: 999,
+                          border: attentionSourceUnavailable
+                            ? "1px solid rgba(214,170,69,0.28)"
+                            : "1px solid rgba(200,58,58,0.16)",
+                          background: attentionSourceUnavailable ? "#FFF8DF" : "#FFF0F0",
+                          color: attentionSourceUnavailable ? "#7A4A00" : "#A91D1D",
+                          fontSize: 11.5,
+                          fontWeight: 1000,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {attentionStatus}
+                      </span>
+                      <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24, fontWeight: 900, lineHeight: 1 }}>
+                        ›
+                      </span>
+                    </StableDisclosureSummary>
+                    <div style={{ marginTop: isCompact ? 10 : 0 }}>
                     {!isCompact ? (
-                      <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                        This is a short summary. Open Notifications to see and act on every item.
-                      </div>
+                      <>
+                        {memberHomeSectionKicker("alert", "What needs my attention", false)}
+                        <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                          {attentionStatus}
+                        </h2>
+                        <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                          This is a short summary. Open Notifications to see and act on every item.
+                        </div>
+                      </>
                     ) : null}
-                    <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <div style={{ marginTop: isCompact ? 0 : 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                       {([
                         ["megaphone", "DemandBox", demandStatus],
                         ["spark", "Signals", opportunityStatus],
@@ -3167,7 +3407,8 @@ export default function MyGMFNAndIPage() {
                         {isCompact ? "DemandBox" : "Open DemandBox"}
                       </StableCtaLink>
                     </div>
-                  </div>
+                    </div>
+                  </details>
                 ) : null}
 
                 {!isCompact ? (
@@ -3183,26 +3424,71 @@ export default function MyGMFNAndIPage() {
                   onToggle={(event) => {
                     if (isCompact) setMemberHomeMoreOpen(event.currentTarget.open);
                   }}
-                  style={isCompact ? memberHomeSectionShell() : { display: "contents" }}
+                  style={
+                    isCompact
+                      ? {
+                          ...memberHomeSectionShell(),
+                          borderRadius: 22,
+                          padding: 12,
+                          boxShadow:
+                            "0 16px 32px rgba(7,28,49,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
+                        }
+                      : { display: "contents" }
+                  }
                 >
                   <StableDisclosureSummary
                     debugId="my-gmfn.more.toggle"
-                    stableHeight={48}
+                    stableHeight={64}
                     style={{
-                      display: isCompact ? "flex" : "none",
-                      minHeight: 48,
+                      display: isCompact ? "grid" : "none",
+                      gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                      minHeight: 64,
                       alignItems: "center",
-                      justifyContent: "space-between",
                       gap: 10,
                       cursor: "pointer",
                       color: "#07172C",
-                      fontSize: 14,
-                      fontWeight: 1000,
                       listStyle: "none",
                     }}
                   >
-                    <span>More profile details</span>
-                    <span aria-hidden="true">{memberHomeMoreOpen ? "-" : "+"}</span>
+                    {memberHomeIconBadge("id", true, true)}
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        data-my-gsn-more-title="true"
+                        style={{ display: "block", fontSize: 15.5, fontWeight: 1000, lineHeight: 1.1 }}
+                      >
+                        More profile details
+                      </span>
+                      <span
+                        data-my-gsn-more-summary="true"
+                        style={{
+                          display: "block",
+                          marginTop: 4,
+                          color: "#64748B",
+                          fontSize: 11.5,
+                          fontWeight: 850,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Shop, trust, credits, settings & help
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        background: "#EEF6FF",
+                        color: "#0B4F92",
+                        fontSize: 19,
+                        fontWeight: 1000,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {memberHomeMoreOpen ? "−" : "+"}
+                    </span>
                   </StableDisclosureSummary>
                   <div
                     style={{

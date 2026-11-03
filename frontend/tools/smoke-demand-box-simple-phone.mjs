@@ -1,4 +1,4 @@
-/* global console, process, URL, localStorage */
+/* global console, process, URL, localStorage, getComputedStyle */
 
 import { chromium } from "playwright";
 import { createServer } from "vite";
@@ -34,6 +34,9 @@ const requests = [
     area: "Onitsha",
     status: "open",
     is_mine: true,
+    relay_consent_granted: true,
+    whatsapp_number: "+447700900216",
+    payment_mode: "Agree directly",
     requester_display_name: "Ada Example",
     requester_gmfn_id: "GSN-U-216",
     clan_name: community.name,
@@ -153,11 +156,13 @@ async function verifyViewport(browser, baseURL, viewport) {
   const transportCard = cards.filter({ hasText: "Need school transport" });
   await transportCard.getByRole("button", { name: "Open", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
-  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "Opened request detail is missing.");
+  assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
+  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked before the user asked.");
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   await transportCard
     .locator('[data-cta-id$=".request-details"]')
     .evaluate((element) => element.click());
+  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "Opened request detail is missing.");
   assert(await page.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
@@ -166,6 +171,55 @@ async function verifyViewport(browser, baseURL, viewport) {
   await freezerCard.getByRole("button", { name: "Open", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
+
+  const ownerHero = freezerCard.locator('[data-gsn-demand-request-hero="request"]');
+  await ownerHero.waitFor();
+  assert(await freezerCard.getByText("Open request", { exact: true }).isVisible(), "The truthful request status is missing from the visual hero.");
+  assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "The real request title is missing from the visual hero.");
+  const heroBackground = await ownerHero.evaluate((node) => getComputedStyle(node).backgroundImage);
+  assert(!heroBackground.includes("url("), "The category-neutral request hero unexpectedly contains a photo.");
+
+  const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
+  assert((await compactTabs.getByRole("button").count()) === 2, "The compact request/privacy tabs are incomplete.");
+  assert(!(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible()), "Request details opened before the member asked.");
+  await compactTabs.getByRole("button", { name: "Request details", exact: true }).click();
+  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "Request details did not open.");
+  assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
+  await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
+  assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy & terms did not open.");
+  await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
+
+  const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');
+  assert(await expandedSearch.getByText("No match in this community yet", { exact: true }).isVisible(), "The compact no-match state is missing.");
+  assert(await expandedSearch.getByRole("button", { name: "Search in one other community", exact: true }).isVisible(), "The compact one-hop search action is missing.");
+  assert(await expandedSearch.getByRole("button", { name: "Stop expanded search", exact: true }).isVisible(), "Withdrawable relay consent is missing.");
+
+  const actionDock = freezerCard.locator('[data-gsn-demand-action-dock="compact"]');
+  assert((await actionDock.getByRole("button").count()) === 5, "The owner action dock must contain five actions.");
+  for (const label of ["Fulfilled", "Cancel", "Copy request", "WhatsApp Chat", "WhatsApp Call"]) {
+    assert(await actionDock.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact owner action: " + label);
+  }
+  assert(await freezerCard.locator('[data-gsn-demand-brand-banner="true"]').isVisible(), "The compact DemandBox identity banner is missing.");
+
+  const focusGeometry = await freezerCard.evaluate((card) => {
+    const hero = card.querySelector('[data-gsn-demand-request-hero="request"]');
+    const dock = card.querySelector('[data-gsn-demand-action-dock="compact"]');
+    const actionRects = dock ? Array.from(dock.children).map((node) => node.getBoundingClientRect()) : [];
+    return {
+      heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
+      actionCount: actionRects.length,
+      oneActionRow: actionRects.length > 0 && actionRects.every((rect) => Math.abs(rect.top - actionRects[0].top) <= 1),
+      noOverflow: card.scrollWidth <= card.clientWidth + 1,
+    };
+  });
+  assert(focusGeometry.heroHeight >= 200 && focusGeometry.heroHeight <= 230, "The request hero is outside the compact height boundary.");
+  assert(focusGeometry.actionCount === 5 && focusGeometry.oneActionRow, "The five owner actions did not remain in one compact row.");
+  assert(focusGeometry.noOverflow, "The opened request card overflows horizontally.");
+
+  const screenshotPath = process.env.GSN_DEMAND_BOX_SCREENSHOT_PATH?.trim();
+  if (screenshotPath && viewport.width === 390) {
+    await freezerCard.screenshot({ path: screenshotPath });
+  }
 
   await page.locator('[data-cta-id="demand-box.more-filters"]').click();
   for (const label of ["Tagged 1", "Questions 0", "Urgent 1", "Need types 2"]) {

@@ -193,8 +193,8 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /data-my-gsn-profile-status-hero="true"[\s\S]*?data-my-gsn-profile-status=\{profileStatus\.tone\}[\s\S]*?data-my-gsn-profile-id="true"[\s\S]*?debugId="my-gmfn\.profile\.primary-action"[\s\S]*?Open your community list when you need it[\s\S]*?isCompact \? "Attention" : "What needs my attention"[\s\S]*?!isCompact[\s\S]*?Open Notifications to see and act on every item[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
-  "Phone My GSN must lead with one status hero and one primary action, hide repeated helper explanations, and preserve the desktop guidance."
+  /data-my-gsn-profile-status-hero="true"[\s\S]*?data-my-gsn-profile-id="true"[\s\S]*?data-my-gsn-profile-status=\{profileStatus\.tone\}[\s\S]*?data-my-gsn-phone-verified="true"[\s\S]*?debugId="my-gmfn\.profile\.primary-action"[\s\S]*?data-my-gsn-selected-community-mode="premium-card"[\s\S]*?data-my-gsn-attention-disclosure=\{isCompact \? "compact" : "desktop-open"\}[\s\S]*?Open Notifications to see and act on every item[\s\S]*?isCompact \? "Shop & trust" : "Shop \/ TrustSlip"[\s\S]*?isCompact \? "Account" : "Settings \/ Official GSN"/,
+  "Phone My GSN must lead with the truthful premium status hero, keep one primary action, collapse attention, and preserve desktop guidance."
 );
 
 assertContains(
@@ -295,14 +295,14 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /\{!isCompact \|\| memberHomeHasMultipleCommunities \|\| !selectedCommunityForShop \? \([\s\S]*?data-my-gsn-community-count="true"[\s\S]*?data-my-gsn-selected-community-card="true"[\s\S]*?minHeight: isCompact \? 72 : 92[\s\S]*?\{!isCompact \? memberHomeIconBadge\("community", true, true\) : null\}/,
-  "One-community phone My GSN must omit the repeated active count while multi-community phone and desktop keep the richer selected-community treatment."
+  /data-my-gsn-selected-community-mode="premium-card"[\s\S]*?My community[\s\S]*?memberHomeHasMultipleCommunities \? \([\s\S]*?data-my-gsn-community-count="true"[\s\S]*?\{communityStatus\}[\s\S]*?debugId="my-gmfn\.profile\.primary-action"/,
+  "Phone My GSN must show one premium selected-community card and only show the active-community count when multiple communities exist."
 );
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  myGsn,
-  /const flattenCompactSingleCommunity =[\s\S]*?isCompact && Boolean\(selectedCommunityForShop\) && !memberHomeHasMultipleCommunities;[\s\S]*?data-my-gsn-selected-community-mode=\{[\s\S]*?flattenCompactSingleCommunity \? "flat-single" : "card"[\s\S]*?flattenCompactSingleCommunity[\s\S]*?\? \{ marginTop: 10, minWidth: 0 \}[\s\S]*?\.\.\.memberHomeCard\(true\)[\s\S]*?\{!flattenCompactSingleCommunity \? \([\s\S]*?Selected community/,
-  "One-community phone My GSN must remove the nested selected-community card and duplicate label without changing multi-community or desktop presentation."
+  memberHomeBranch,
+  /data-my-gsn-selected-community-mode="premium-card"[\s\S]*?My community[\s\S]*?\) : \([\s\S]*?memberHomeSectionKicker\("community", "My communities", false\)[\s\S]*?data-my-gsn-selected-community-mode="card"[\s\S]*?Selected community/,
+  "Phone My GSN must use the single premium community card while desktop retains the fuller community portfolio treatment."
 );
 
 

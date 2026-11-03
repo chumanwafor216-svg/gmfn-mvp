@@ -40,6 +40,12 @@ requirePattern(
   "the no-match card must keep its plain action and truthful boundary"
 );
 requirePattern(
+  demand,
+  demandPath,
+  /isCompact[\s\S]*?Let GSN check one other permitted community for a suitable provider\.[\s\S]*?Search in one other community[\s\S]*?Stop expanded search[\s\S]*?One-hop community search only\. Not public, paid or guaranteed\./,
+  "the phone no-match state must use the approved compact wording without weakening the one-hop boundary"
+);
+requirePattern(
   credential,
   credentialPath,
   /window\.innerWidth <= 620[\s\S]*?data-gsn-member-credential-actions=\{compact \? "compact" : "wide"\}/,

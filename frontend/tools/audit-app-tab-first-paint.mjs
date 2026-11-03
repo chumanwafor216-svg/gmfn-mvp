@@ -1,4 +1,4 @@
-/* global console, process, URL, URLSearchParams, localStorage, document, window */
+/* global console, process, URL, URLSearchParams, localStorage, document, window, HTMLElement, HTMLDetailsElement, getComputedStyle */
 
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -199,6 +199,28 @@ async function installApiMocks(page, mode) {
     const clanSelectMatch = path.match(/^\/clans\/(\d+)\/select\/?$/);
     if (clanSelectMatch) {
       return route.fulfill(json({ selected_clan_id: Number(clanSelectMatch[1]) }));
+    }
+    if (mode === "my-gsn-attention" && path === "/marketplace/requests") {
+      const isMine = url.searchParams.get("mine_only") === "true";
+      const status = url.searchParams.get("status");
+      if (isMine && status === "open") {
+        return route.fulfill(
+          json([
+            {
+              id: 91,
+              requester_user_id: 216,
+              requester_gmfn_id: "GMFN-U-63655DE6",
+              title: "Need help finding a local supplier",
+              category: "services",
+              status: "open",
+              urgency: "normal",
+              area: "Homeland isa",
+              visibility_scope: "community",
+            },
+          ])
+        );
+      }
+      return route.fulfill(json([]));
     }
     if (path === "/trust-slips/me" && mode !== "profile" && mode !== "trust-slip") {
       return route.fulfill(json(slowEmpty(path)));
@@ -510,8 +532,12 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
     const profileStatusHero = document.querySelector('[data-my-gsn-profile-status-hero="true"]');
     const profileStatus = document.querySelector('[data-my-gsn-profile-status]');
     const profilePhoto = document.querySelector('[data-my-gsn-profile-photo]');
+    const profileReadyMark = document.querySelector('[data-my-gsn-profile-ready-mark="true"]');
+    const phoneVerified = document.querySelector('[data-my-gsn-phone-verified="true"]');
     const profilePrimaryAction = document.querySelector('[data-cta-id="my-gmfn.profile.primary-action"]');
     const coveredPipelineCredits = document.querySelector('[data-my-gsn-pipeline-credits="covered"]');
+    const moreTitle = document.querySelector('[data-my-gsn-more-title="true"]');
+    const moreSummary = document.querySelector('[data-my-gsn-more-summary="true"]');
     const selectedCommunityCardStyle = selectedCommunityCard instanceof HTMLElement ? getComputedStyle(selectedCommunityCard) : null;
     const identityFacts = Array.from(document.querySelectorAll('[data-my-gsn-identity-fact]'));
     const identityHeading = document.querySelector('[data-my-gsn-identity-heading]');
@@ -552,11 +578,14 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       profileStatusText: profileStatus?.textContent?.trim() ?? null,
       profileStatusTone: profileStatus?.getAttribute("data-my-gsn-profile-status") ?? null,
       profilePhotoMode: profilePhoto?.getAttribute("data-my-gsn-profile-photo") ?? null,
+      hasProfileReadyMark: Boolean(profileReadyMark),
+      phoneVerificationText: phoneVerified?.textContent?.trim() ?? null,
       profilePrimaryActionText: profilePrimaryAction?.textContent?.trim() ?? null,
       profilePrimaryActionBottom: profilePrimaryAction instanceof HTMLElement ? Math.round(profilePrimaryAction.getBoundingClientRect().bottom) : null,
       coveredPipelineCreditsPresent: Boolean(coveredPipelineCredits),
       coveredPipelineCreditsVisible: isVisible(coveredPipelineCredits),
-      moreLabel: more?.querySelector("summary")?.textContent?.replace(/[+-]/g, "")?.trim() ?? null,
+      moreLabel: moreTitle?.textContent?.trim() ?? null,
+      moreSummaryText: moreSummary?.textContent?.trim() ?? null,
       identityHasGsnId: Boolean(identity?.textContent?.includes("GSN ID")),
       identityHasPhone: Boolean(identity?.textContent?.includes("Phone")),
       identityHasHandle: Boolean(identity?.textContent?.includes("Handle")),
@@ -781,13 +810,13 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       !result.hasCommunityToggle &&
       result.hasShopBusiness &&
       !result.hasCommunityCount &&
-      result.selectedCommunityMode === "flat-single" &&
+      result.selectedCommunityMode === "premium-card" &&
       !result.selectedCommunityHasSelectionLabel &&
       result.selectedCommunityCardBorderWidth === 0 &&
       result.selectedCommunityCardPadding === 0 &&
       result.selectedCommunityCardHeight !== null &&
-      result.selectedCommunityCardHeight <= 90 &&
-      result.selectedCommunityCardImageCount === 0 &&
+      result.selectedCommunityCardHeight <= 110 &&
+      result.selectedCommunityCardImageCount === 1 &&
       result.hasTrustEvidence &&
       result.hasSettingsAccount &&
       !result.hasSettingsEditor &&
@@ -795,12 +824,15 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.profileStatusText === "Profile active" &&
       result.profileStatusTone === "ready" &&
       ["image", "initials"].includes(result.profilePhotoMode) &&
+      result.hasProfileReadyMark &&
+      result.phoneVerificationText === "Phone verified" &&
       result.profilePrimaryActionText === "Open community" &&
       result.profilePrimaryActionBottom !== null &&
       result.profilePrimaryActionBottom <= 844 &&
       result.coveredPipelineCreditsPresent &&
       !result.coveredPipelineCreditsVisible &&
       result.moreLabel === "More profile details" &&
+      result.moreSummaryText === "Shop, trust, credits, settings & help" &&
       result.identityHasGsnId &&
       result.identityHasPhone &&
       !result.identityHasHandle &&
@@ -892,6 +924,94 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
   };
 }
 
+async function measureMyGsnAttentionCollapsed(browser, baseURL) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await installApiMocks(page, "my-gsn-attention");
+
+  await page.addInitScript(() => {
+    localStorage.setItem("access_token", "app-tab-first-paint-token");
+    localStorage.setItem("gmfn_selected_clan_id", "8");
+  });
+
+  await page.goto(baseURL + "/app/my-gmfn-and-i?community=8", {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+  await page.waitForSelector('[data-my-gsn-attention-summary="true"]', {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-my-gsn-attention-status="true"]')?.textContent?.trim() ===
+      "1 waiting",
+    undefined,
+    { timeout: MAX_FIRST_SURFACE_MS }
+  );
+
+  const readState = () =>
+    page.evaluate(() => {
+      const isVisible = (node) =>
+        node instanceof HTMLElement &&
+        !node.closest("details:not([open])") &&
+        node.getClientRects().length > 0 &&
+        getComputedStyle(node).visibility !== "hidden";
+      const attention = document.querySelector('[data-my-gsn-attention-summary="true"]');
+      const status = document.querySelector('[data-my-gsn-attention-status="true"]');
+      const toggle = document.querySelector('[data-cta-id="my-gmfn.attention.toggle"]');
+      const notifications = document.querySelector('[data-cta-id="my-gmfn.attention.notifications"]');
+      const demandBox = document.querySelector('[data-cta-id="my-gmfn.attention.demand-box"]');
+      const more = document.querySelector('[data-my-gsn-more="secondary"]');
+      return {
+        open: attention instanceof HTMLDetailsElement ? attention.open : null,
+        status: status?.textContent?.trim() ?? null,
+        summaryVisible:
+          toggle instanceof HTMLElement &&
+          toggle.getClientRects().length > 0 &&
+          getComputedStyle(toggle).visibility !== "hidden",
+        notificationsVisible: isVisible(notifications),
+        demandBoxVisible: isVisible(demandBox),
+        moreBottom:
+          more instanceof HTMLElement ? Math.round(more.getBoundingClientRect().bottom) : null,
+        documentHeight: document.documentElement.scrollHeight,
+        noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+      };
+    });
+
+  const closed = await readState();
+  const screenshotPath = process.env.GSN_MY_GSN_ATTENTION_SCREENSHOT_PATH?.trim();
+  if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true });
+
+  await page.locator('[data-cta-id="my-gmfn.attention.toggle"]').click();
+  await delay(200);
+  const expanded = await readState();
+
+  await context.close();
+
+  return {
+    name: "My GSN conditional attention disclosure",
+    passed:
+      closed.open === false &&
+      closed.status === "1 waiting" &&
+      closed.summaryVisible &&
+      !closed.notificationsVisible &&
+      !closed.demandBoxVisible &&
+      closed.moreBottom !== null &&
+      closed.moreBottom <= 844 &&
+      closed.documentHeight === 844 &&
+      closed.noHorizontalOverflow &&
+      expanded.open === true &&
+      expanded.notificationsVisible &&
+      expanded.demandBoxVisible &&
+      expanded.noHorizontalOverflow,
+    result: { closed, expanded },
+  };
+}
+
 async function run() {
   let server;
   let browser;
@@ -918,7 +1038,7 @@ async function run() {
       mode: "profile",
       path: "/app/profile?community=8",
       selector: '[data-my-gsn-member-home="true"]',
-      text: "My communities",
+      text: "My community",
       loadingText: "Loading device preferences",
       expectDelayed: false,
     },
@@ -927,7 +1047,7 @@ async function run() {
       mode: "my-gsn",
       path: "/app/my-gmfn-and-i?community=8",
       selector: '[data-my-gsn-member-home="true"]',
-      text: "My communities",
+      text: "My community",
       loadingText: "Loading device preferences",
       expectDelayed: false,
     },
@@ -980,6 +1100,7 @@ async function run() {
       await measureShopDefaultAndPrimaryNav(browser, baseURL),
       await measureProfileBottomNavSettled(browser, baseURL),
       await measureMyGsnMemberHomeSettled(browser, baseURL),
+      await measureMyGsnAttentionCollapsed(browser, baseURL),
     ];
 
     const failures = results.filter(
