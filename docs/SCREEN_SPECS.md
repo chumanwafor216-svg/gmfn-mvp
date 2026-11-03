@@ -635,7 +635,17 @@ Must show:
 - privacy, membership, and verification boundary
 
 Phone-first rule:
-- Show community, inviter, expiry where known, the saved joining rule, one
+- Open with one compact `You're Invited!` card that resolves the authoritative
+  community name and inviter from the invite preview. Use one welcome sentence,
+  one truthful mode-aware joining action, and a visually secondary existing
+  member Sign in action.
+- On phone, move the formal invitation note, membership boundary, expiry,
+  governance context, and safety explanation into one collapsed `Invitation &
+  safety details` disclosure. Keep required consent visible when it blocks
+  submission.
+- State `Free to join. No payment required` on the compact invitation surface.
+  Do not imply instant membership when the saved admission mode still requires
+  review or voting.- Show community, inviter, expiry where known, the saved joining rule, one
   short membership/verification boundary, and the next action.
 - A fresh invite must show Sign in and the mode-aware action before the
   requester fields. Tapping it must visibly open and move to the Full name,

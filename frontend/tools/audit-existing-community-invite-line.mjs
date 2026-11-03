@@ -124,6 +124,23 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
+  /function CompactInviteWelcome[\s\S]*?data-gsn-compact-invite-welcome="true"[\s\S]*?You&apos;re Invited![\s\S]*?Join \{safeCommunityName\} on GSN[\s\S]*?Invited by: \{inviterLabel\}[\s\S]*?Welcome to your community[\s\S]*?showcase your business and discover opportunities/,
+  "Phone invite entry must open with the compact dynamic community welcome instead of the long invitation paper."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const compactJoinActionLabel = isInstantJoin \? "Join Community" : "Request to Join";[\s\S]*?isCompact && inviteAcknowledged && !storedRequest\?\.request_id[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Already on GSN\? Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?compactJoinActionLabel/,
+  "Phone invite entry must keep one truthful primary join action while preserving the existing-member sign-in path."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /debugId="join-entry\.compact-invitation-safety-details"[\s\S]*?Invitation & safety details[\s\S]*?identity verification remains separate[\s\S]*?Free to join\. No payment required/,
+  "Phone invite entry must keep consent and safety information accessible without exposing it on the main surface."
+);
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
   /const restoredJoinDraftHasInput = useMemo[\s\S]*?if \(!restoredJoinDraftHasInput\) return false;[\s\S]*?return restoredJoinDraft\?\.formOpen !== false;[\s\S]*?if \(restoredJoinDraftHasInput && restoredJoinDraft\?\.formOpen !== false\) return "new";[\s\S]*?return null;[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?order: isCompact \? 1 : 2[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters/,
   "Fresh existing-community invite links must show the path choice before opening the form, while real saved input may resume and invitation details stay second on phone."
 );

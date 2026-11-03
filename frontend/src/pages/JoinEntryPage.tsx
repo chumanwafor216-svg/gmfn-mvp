@@ -1236,6 +1236,119 @@ function readStoredJoinRequest(key: string): any | null {
   }
 }
 
+function CompactInviteWelcome({
+  communityName,
+  inviterLabel,
+  inviteChecking,
+  inviteReady,
+}: {
+  communityName: string;
+  inviterLabel: string;
+  inviteChecking: boolean;
+  inviteReady: boolean;
+}) {
+  const safeCommunityName = cleanText(communityName) || "this GSN community";
+
+  return (
+    <section
+      data-gsn-compact-invite-welcome="true"
+      aria-label={`Invitation to join ${safeCommunityName}`}
+      style={{
+        overflow: "hidden",
+        borderRadius: 24,
+        border: "1px solid rgba(37,78,119,0.16)",
+        background: "#FFFFFF",
+        boxShadow: "0 18px 36px rgba(8,35,58,0.12)",
+      }}
+    >
+      <div
+        style={{
+          padding: "24px 18px 22px",
+          textAlign: "center",
+          color: "#FFFFFF",
+          background:
+            "radial-gradient(circle at top, rgba(70,133,218,0.24) 0%, rgba(70,133,218,0) 48%), linear-gradient(180deg, #123862 0%, #0B2D4A 100%)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          {joinEntryIconTile("join-person-plus", 52)}
+        </div>
+        <h1
+          style={{
+            margin: "12px 0 0",
+            fontSize: 30,
+            lineHeight: 1.08,
+            fontWeight: 1000,
+            letterSpacing: -0.6,
+          }}
+        >
+          You&apos;re Invited!
+        </h1>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 17,
+            lineHeight: 1.35,
+            fontWeight: 800,
+            color: "#EAF3FF",
+          }}
+        >
+          Join {safeCommunityName} on GSN
+        </div>
+      </div>
+
+      <div style={{ padding: "20px 18px 18px", textAlign: "center" }}>
+        <div style={{ color: "#64748B", fontSize: 13, fontWeight: 800 }}>
+          Invited by: {inviterLabel}
+        </div>
+        <h2
+          style={{
+            margin: "12px 0 0",
+            color: "#0B1F33",
+            fontSize: 22,
+            lineHeight: 1.2,
+            fontWeight: 1000,
+          }}
+        >
+          Welcome to your community
+        </h2>
+        <p
+          style={{
+            margin: "10px auto 0",
+            maxWidth: 430,
+            color: "#526A82",
+            fontSize: 15,
+            lineHeight: 1.55,
+            fontWeight: 700,
+          }}
+        >
+          Join to connect, showcase your business and discover opportunities.
+        </p>
+        {inviteChecking || inviteReady ? (
+          <div
+            style={{
+              margin: "14px auto 0",
+              width: "fit-content",
+              maxWidth: "100%",
+              padding: "7px 11px",
+              borderRadius: 999,
+              color: inviteReady ? "#24734B" : "#526A82",
+              background: inviteReady ? "#ECF8F0" : "#F1F5F9",
+              border: inviteReady
+                ? "1px solid rgba(46,155,98,0.18)"
+                : "1px solid rgba(82,106,130,0.14)",
+              fontSize: 12,
+              fontWeight: 900,
+            }}
+          >
+            {inviteReady ? "Invite link checked" : "Checking invite link..."}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 function BrandedInvitationPaper({
   lines,
   inviterLabel,
@@ -1671,6 +1784,7 @@ export default function JoinEntryPage() {
   ).toLowerCase();
   const isInstantJoin = inviteAdmissionMode === "instant_invite";
   const joinActionLabel = isInstantJoin ? "Accept invite" : "Request access";
+  const compactJoinActionLabel = isInstantJoin ? "Join Community" : "Request to Join";
 
   const inviteGovernanceTitle = useMemo(() => {
     if (!inviteGovernanceProfile) return "";
@@ -2755,6 +2869,10 @@ export default function JoinEntryPage() {
             style={{
               ...invitationMessageCardStyle(isCompact),
               order: isCompact && inviteAcknowledged ? 2 : 1,
+              display:
+                isCompact && inviteAcknowledged && !storedRequest?.request_id
+                  ? "none"
+                  : undefined,
             }}
           >
             <div
@@ -3088,51 +3206,62 @@ export default function JoinEntryPage() {
           <div
             style={{
               ...pageCard(),
+              padding: isCompact ? 12 : 24,
               order: isCompact ? 1 : 2,
             }}
           >
-            <div style={labelText()}>
-              {joinEntryIconText(
-                "join-person-plus",
-                isInstantJoin ? "Accept invitation" : "Join request form",
-                22
-              )}
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                fontSize: 22,
-                fontWeight: 1000,
-                color: "#0B1F33",
-              }}
-            >
-              {joinEntryIconText("pen", joinActionLabel, 24)}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText() }}>
-              {isInstantJoin
-                ? "Add your details once. GSN will create your membership and take you to password setup."
-                : "Add your details once. The community’s saved approval rule applies next."}
-            </div>
-
-            <details style={{ marginTop: 14 }}>
-              <StableDisclosureSummary
-                debugId="join-entry.request-meaning-details"
-                stableHeight={48}
-                style={entryChoiceActionStyle("secondary")}
-              >
-                {joinEntryIconText("eye", "Why review matters", 20)}
-              </StableDisclosureSummary>
-              <RealLifeMeaningGuide
-                compact={isCompact}
-                guidance={getRealLifeTrustGuidance("join-request", {
-                  communityName: resolvedCommunityName || "this community",
-                })}
-                style={{ marginTop: 10 }}
+            {isCompact ? (
+              <CompactInviteWelcome
+                communityName={resolvedCommunityName}
+                inviterLabel={inviterLabel}
+                inviteChecking={inviteChecking}
+                inviteReady={inviteReady}
               />
-            </details>
+            ) : (
+              <>
+                <div style={labelText()}>
+                  {joinEntryIconText(
+                    "join-person-plus",
+                    isInstantJoin ? "Accept invitation" : "Join request form",
+                    22
+                  )}
+                </div>
 
+                <div
+                  style={{
+                    marginTop: 12,
+                    fontSize: 22,
+                    fontWeight: 1000,
+                    color: "#0B1F33",
+                  }}
+                >
+                  {joinEntryIconText("pen", joinActionLabel, 24)}
+                </div>
+
+                <div style={{ marginTop: 10, ...helperText() }}>
+                  {isInstantJoin
+                    ? "Add your details once. GSN will create your membership and take you to password setup."
+                    : "Add your details once. The community's saved approval rule applies next."}
+                </div>
+
+                <details style={{ marginTop: 14 }}>
+                  <StableDisclosureSummary
+                    debugId="join-entry.request-meaning-details"
+                    stableHeight={48}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("eye", "Why review matters", 20)}
+                  </StableDisclosureSummary>
+                  <RealLifeMeaningGuide
+                    compact={isCompact}
+                    guidance={getRealLifeTrustGuidance("join-request", {
+                      communityName: resolvedCommunityName || "this community",
+                    })}
+                    style={{ marginTop: 10 }}
+                  />
+                </details>
+              </>
+            )}
             {joinRequiresRulesAcceptance && isCompact ? (
               <label
                 style={{
@@ -3154,7 +3283,9 @@ export default function JoinEntryPage() {
                   style={{ width: 18, height: 18, marginTop: 2 }}
                 />
                 <span>
-                  I understand this community uses rules acceptance and admin review before membership is confirmed.
+                  {isCompact
+                    ? `I understand that ${resolvedCommunityName} reviews this request before membership.`
+                    : "I understand this community uses rules acceptance and admin review before membership is confirmed."}
                 </span>
               </label>
             ) : null}
@@ -3302,6 +3433,7 @@ export default function JoinEntryPage() {
                   gap: 12,
                 }}
               >
+                {!isCompact ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ ...labelText(), marginBottom: 0 }}>
                     {joinEntryIconText("id", "Community invitation", 22)}
@@ -3326,6 +3458,7 @@ export default function JoinEntryPage() {
                     </div>
                   ) : null}
                 </div>
+                ) : null}
 
                 <div style={entryActionGrid(isCompact)}>
                   <StableCtaLink
@@ -3333,9 +3466,15 @@ export default function JoinEntryPage() {
                     kind="secondary"
                     debugId="join-entry.sign-in-existing"
                     stableHeight={52}
-                    style={entryChoiceActionStyle("primary")}
+                    style={{
+                      ...entryChoiceActionStyle(isCompact ? "secondary" : "primary"),
+                      order: isCompact ? 2 : 1,
+                    }}
                   >
-                    {joinEntryIconText("id", "Sign in")}
+                    {joinEntryIconText(
+                      "id",
+                      isCompact ? "Already on GSN? Sign in" : "Sign in"
+                    )}
                   </StableCtaLink>
                   <SecondaryButton
                     type="button"
@@ -3347,15 +3486,20 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={{
                       ...entryChoiceActionStyle(
-                        joinPathChoice === "new" ? "primary" : "secondary"
+                        isCompact || joinPathChoice === "new" ? "primary" : "secondary"
                       ),
+                      order: isCompact ? 1 : 2,
                       opacity: canOpenForm ? 1 : 0.62,
                       cursor: canOpenForm ? "pointer" : "not-allowed",
                     }}
                   >
                     {joinEntryIconText(
                       "join-person-plus",
-                      inviteChecking ? "Checking" : joinActionLabel
+                      inviteChecking
+                        ? "Checking"
+                        : isCompact
+                          ? compactJoinActionLabel
+                          : joinActionLabel
                     )}
                   </SecondaryButton>
                 </div>
@@ -3910,10 +4054,76 @@ export default function JoinEntryPage() {
                     width: isCompact ? "100%" : "min(100%, 420px)",
                   }}
                 >
-                  {joinEntryIconText("join-person-plus", "Submit request")}
+                  {joinEntryIconText(
+                    "join-person-plus",
+                    isCompact ? compactJoinActionLabel : "Submit request"
+                  )}
                 </PrimaryButton>
               </div>
             </form>
+            ) : null}
+            {isCompact ? (
+              <>
+                <details style={{ marginTop: 14 }}>
+                  <StableDisclosureSummary
+                    debugId="join-entry.compact-invitation-safety-details"
+                    stableHeight={48}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("lock", "Invitation & safety details", 20)}
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    <div style={innerCard("#FFF8E6")}>
+                      <div style={labelText()}>What joining means</div>
+                      <div
+                        style={{
+                          marginTop: 7,
+                          color: "#0B1F33",
+                          fontSize: 14,
+                          lineHeight: 1.55,
+                          fontWeight: 850,
+                        }}
+                      >
+                        {isInstantJoin
+                          ? "Joining confirms community membership. It does not verify identity, money, conduct or trust."
+                          : "This sends a membership request. The community still decides, and identity verification remains separate."}
+                      </div>
+                    </div>
+                    <div style={innerCard("#F8FBFF")}>
+                      <div style={labelText()}>Invitation</div>
+                      <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
+                        Invited by {inviterLabel} to join {resolvedCommunityName}.
+                        {resolvedInviteExpiry
+                          ? ` Open until ${safeDateTime(resolvedInviteExpiry)}.`
+                          : ""}
+                      </div>
+                      <div style={{ marginTop: 10 }}>
+                        {renderInvitationMessageLines(inviteLetter, true)}
+                      </div>
+                    </div>
+                    {selectedQrPolicy || inviteGovernanceProfile ? (
+                      <div style={innerCard("#F8FBFF")}>
+                        <div style={labelText()}>Community joining rule</div>
+                        <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
+                          {selectedQrPolicy?.announcement || inviteGovernanceNote}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+                <div
+                  style={{
+                    marginTop: 14,
+                    textAlign: "center",
+                    color: "#64748B",
+                    fontSize: 13,
+                    lineHeight: 1.4,
+                    fontWeight: 850,
+                  }}
+                >
+                  Free to join. No payment required
+                </div>
+              </>
             ) : null}
           </div>
           ) : null}
