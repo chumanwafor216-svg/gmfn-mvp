@@ -113,7 +113,7 @@ async function installApiMocks(page) {
 
 async function verifyViewport(browser, baseURL, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true });
-  page.setDefaultTimeout(240000);
+  page.setDefaultTimeout(45000);
   page.on("pageerror", (error) => console.error("Browser page error:", error));
   page.on("console", (message) => {
     if (message.type() === "error") console.error("Browser console error:", message.text());
@@ -128,7 +128,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   const frontDoor = page.locator('[data-gsn-demand-front-door="simple"]');
   await frontDoor.waitFor();
 
-  assert(await page.getByText("What do you need?", { exact: true }).isVisible(), "The short DemandBox question is missing.");
+  assert(await page.getByText("Find what you need", { exact: true }).isVisible(), "The human-first DemandBox title is missing.");
+  assert(await page.getByText("Ask, request or get help from people in Blessed Satch family.", { exact: true }).isVisible(), "The plain DemandBox explanation is missing.");
   assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
   assert(await page.getByRole("link", { name: "Ask a question", exact: true }).isVisible(), "Ask a question is missing.");
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
@@ -145,18 +146,26 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await queue.getByRole("button", { name: /Tagged/ }).isVisible().catch(() => false)), "Tagged is exposed before More filters opens.");
 
   const cards = page.locator('[data-gsn-demand-record]');
-  assert((await cards.count()) === 2, "Expected two compact request cards.");
+  assert((await cards.count()) === 1, "The phone queue should begin with one compact request preview.");
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 0, "A phone request opened before a tap.");
-  assert(!(await page.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible()), "Request detail leaked from a closed card.");
+  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked from a closed card.");
 
-  const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
   const transportCard = cards.filter({ hasText: "Need school transport" });
-  await freezerCard.getByRole("button", { name: "Open", exact: true }).click();
-  assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
-  assert(await page.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "Opened request detail is missing.");
   await transportCard.getByRole("button", { name: "Open", exact: true }).click();
+  assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
+  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "Opened request detail is missing.");
+  assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
+  await transportCard
+    .locator('[data-cta-id$=".request-details"]')
+    .evaluate((element) => element.click());
+  assert(await page.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
+
+  await page.getByRole("button", { name: "View more needs", exact: true }).click();
+  assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
+  const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
+  await freezerCard.getByRole("button", { name: "Open", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
-  assert(!(await page.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
+  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
 
   await page.locator('[data-cta-id="demand-box.more-filters"]').click();
   for (const label of ["Tagged 1", "Questions 0", "Urgent 1", "Need types 2"]) {

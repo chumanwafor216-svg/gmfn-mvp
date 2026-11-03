@@ -20,10 +20,11 @@ function forbidPattern(input, file, pattern, message) {
 }
 
 [
-  [/data-gsn-demand-front-door="simple"[\s\S]*?What do you need\?/, "the first surface must ask one short question"],
+  [/dashboard-demand-market\.jpg/, "the first surface must reuse the approved human marketplace image"],
+  [/data-gsn-demand-front-door="simple"[\s\S]*?Find what you need[\s\S]*?Ask, request or get help from people in/, "the first surface must explain DemandBox in plain human language"],
   [/debugId="demand-box\.create"[\s\S]*?Post a need/, "the first surface must keep one clear Post a need action"],
   [/debugId="demand-box\.ask-community"[\s\S]*?Ask a question/, "the first surface must keep Ask Community under the plain Ask a question label"],
-  [/data-gsn-demand-facts="compact"[\s\S]*?Yours \{myOpenRows\.length\}[\s\S]*?For you \{visibleRows\.length\}[\s\S]*?\{currentCommunityName\}/, "the first surface must keep only the two useful counts and community context"],
+  [/data-gsn-demand-facts="compact"[\s\S]*?\{currentCommunityName\}[\s\S]*?Yours \{myOpenRows\.length\}[\s\S]*?For you \{visibleRows\.length\}/, "the first surface must keep only community context and the two useful counts"],
   [/!showCreateWorkSurface && selectedClanId && canManageRelayPolicy/, "community search policy controls must stay hidden from ordinary members"],
   [/<span>Community search settings<\/span>/, "admin relay controls need a plain collapsed label"],
   [/data-gsn-demand-create-form="simple"/, "the create form must expose the simple-form contract"],
@@ -46,6 +47,8 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-record=\{recordOpen \? "open" : "closed"\}/, "request cards must expose their compact open state"],
   [/openDemandRecordKey === rowKey[\s\S]*?setOpenDemandRecordKey\(recordOpen \? "" : rowKey\)/, "phone cards must use a single shared open key"],
   [/recordOpen \? "Close" : "Open"/, "closed cards must offer one plain Open action"],
+  [/debugId=\{debugBase \+ "\.request-details"\}[\s\S]*?Request details[\s\S]*?Privacy and terms/, "technical request metadata must remain behind a plain disclosure"],
+  [/showMoreQueueRows \? 12 : 1[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?View more needs/, "phone queues must start with one request and provide a deliberate view-more action"],
   [/directDemandId[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must open the requested card"],
   [/debugId=\{[^\n]*fulfilled[^\n]*\}[\s\S]*?debugId=\{[^\n]*cancelled[^\n]*\}/, "owner fulfil and cancel controls must remain available inside open cards"],
   [/demandPaperAction\(row, scope, copyDebugId\)[\s\S]*?demandContactActions\(row/, "copy and contact actions must remain inside open cards"],

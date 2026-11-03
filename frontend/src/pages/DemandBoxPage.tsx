@@ -51,6 +51,7 @@ import {
   normalizeWhatsAppRecipient,
 } from "../lib/whatsappLinks";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
 
 const CommunityNoticeModal = lazy(
   () => import("../components/CommunityNoticeModal")
@@ -271,6 +272,22 @@ function demandBrandShell(): React.CSSProperties {
   };
 }
 
+function demandHumanHeroShell(isCompact: boolean): React.CSSProperties {
+  return {
+    ...demandBrandShell(),
+    minHeight: isCompact ? 222 : 250,
+    padding: isCompact ? 18 : 24,
+    display: "flex",
+    alignItems: "flex-end",
+    backgroundImage: isCompact
+      ? `linear-gradient(90deg, rgba(3,17,31,0.96) 0%, rgba(3,17,31,0.82) 52%, rgba(3,17,31,0.24) 100%), linear-gradient(0deg, rgba(3,17,31,0.82) 0%, rgba(3,17,31,0.04) 70%), url("${dashboardDemandMarket}")`
+      : `linear-gradient(90deg, rgba(3,17,31,0.97) 0%, rgba(3,17,31,0.82) 44%, rgba(3,17,31,0.12) 78%), url("${dashboardDemandMarket}")`,
+    backgroundPosition: isCompact ? "center" : "center right",
+    backgroundSize: "cover",
+    backgroundRepeat: "no-repeat",
+  };
+}
+
 function communityChoiceStyle(active: boolean): React.CSSProperties {
   return {
     height: 58,
@@ -394,9 +411,7 @@ function demandHeroActionRowStyle(isCompact: boolean): React.CSSProperties {
   return {
     marginTop: isCompact ? 14 : 18,
     display: "grid",
-    gridTemplateColumns: isCompact
-      ? "1fr"
-      : "repeat(2, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gridAutoRows: isCompact ? "52px" : "54px",
     gap: 10,
     alignItems: "stretch",
@@ -535,6 +550,18 @@ function safeDateTime(x: any): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
+}
+
+function safeDate(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function communityName(currentClan: any, selectedClanId: number): string {
@@ -799,6 +826,7 @@ export default function DemandBoxPage() {
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
   const [openMatchDemandId, setOpenMatchDemandId] = useState<number>(0);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
+  const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1899,82 +1927,146 @@ export default function DemandBoxPage() {
       <div
         key={rowKey}
         data-gsn-demand-record={recordOpen ? "open" : "closed"}
-        style={recordCard()}
+        style={{ ...recordCard(), padding: isCompact ? 12 : 18 }}
       >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "54px minmax(0, 1fr) auto"
+              : "minmax(0, 1fr) auto",
             gap: 10,
-            flexWrap: "wrap",
             alignItems: "center",
           }}
         >
+          {isCompact ? (
+            <div
+              aria-hidden="true"
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 16,
+                display: "grid",
+                placeItems: "center",
+                background: fromAskCommunity
+                  ? "linear-gradient(180deg, #EFFAF2 0%, #E4F5E9 100%)"
+                  : "linear-gradient(180deg, #EEF5FF 0%, #DFECFC 100%)",
+                border: "1px solid rgba(13,95,168,0.10)",
+              }}
+            >
+              <GsnLegacyIcon
+                name={fromAskCommunity ? "community" : "briefcase"}
+                size={30}
+              />
+            </div>
+          ) : null}
+
           <div
             style={{
-              color: "#0B1F33",
-              fontWeight: 900,
-              lineHeight: 1.32,
               minWidth: 0,
             }}
           >
-            {firstTruthy(row?.title, "Need")}
+            <div
+              style={{
+                color: "#0B1F33",
+                fontWeight: 900,
+                fontSize: isCompact ? 15 : 17,
+                lineHeight: 1.28,
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: recordOpen ? 3 : 2,
+                overflow: "hidden",
+              }}
+            >
+              {firstTruthy(row?.title, "Need")}
+            </div>
+            <div
+              style={{
+                marginTop: 5,
+                display: "flex",
+                gap: 7,
+                flexWrap: "wrap",
+                color: "#587087",
+                fontSize: 12,
+                fontWeight: 800,
+                lineHeight: 1.35,
+              }}
+            >
+              <span>{scope === "community" ? requesterName(row) : "Your request"}</span>
+              {safeStr(row?.area) ? <span>· {safeStr(row?.area)}</span> : null}
+              {safeStr(row?.created_at) ? <span>· {safeDate(row?.created_at)}</span> : null}
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "grid",
+              justifyItems: "end",
+              gap: 7,
+              minWidth: isCompact ? 68 : 0,
+            }}
+          >
             {isUrgentDemand(row) ? (
               <span style={badge(true)}>Urgent</span>
             ) : null}
-            {recordOpen && safeStr(row?.status) ? (
+            {!isCompact && recordOpen && safeStr(row?.status) ? (
               <span style={badge(false)}>{safeStr(row?.status)}</span>
             ) : null}
-            {recordOpen && trustPosture && scope === "community" ? (
+            {!isCompact && recordOpen && trustPosture && scope === "community" ? (
               <span style={badge(false)}>General evidence: {trustPosture}</span>
+            ) : null}
+            {isCompact ? (
+              <SecondaryButton
+                type="button"
+                onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
+                debugId={debugBase + ".open"}
+                stableHeight={42}
+                style={{
+                  ...demandActionStyle(42),
+                  minWidth: 68,
+                  padding: "0 10px",
+                  borderRadius: 14,
+                }}
+              >
+                {recordOpen ? "Close" : "Open"}
+              </SecondaryButton>
             ) : null}
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 8,
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-            color: "#466078",
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          {scope === "community" ? <span>By {requesterName(row)}</span> : <span>Yours</span>}
-          {safeStr(row?.area) ? <span>· {safeStr(row?.area)}</span> : null}
-        </div>
-
-        {isCompact ? (
-          <SecondaryButton
-            type="button"
-            onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
-            debugId={debugBase + ".open"}
-            stableHeight={48}
-            style={{ ...demandActionStyle(48), marginTop: 10 }}
-          >
-            {demandIconText(recordOpen ? "lock" : "document", recordOpen ? "Close" : "Open", 18)}
-          </SecondaryButton>
-        ) : null}
-
         {recordOpen ? (
         <>
+          {isCompact && (safeStr(row?.status) || (trustPosture && scope === "community")) ? (
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {safeStr(row?.status) ? (
+                <span style={badge(false)}>{safeStr(row?.status)}</span>
+              ) : null}
+              {trustPosture && scope === "community" ? (
+                <span style={badge(false)}>Evidence: {trustPosture}</span>
+              ) : null}
+            </div>
+          ) : null}
           <div style={{ marginTop: 10, ...helperText() }}>
             {firstTruthy(row?.description, "No extra detail yet.")}
           </div>
 
-          <div
-            style={{
-              marginTop: 10,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
+          <details style={{ ...detailsShell(), marginTop: 12 }}>
+            <StableDisclosureSummary
+              style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
+              stableHeight={48}
+              debugId={debugBase + ".request-details"}
+            >
+              <span>Request details</span>
+              <span style={{ color: "#64748B", fontSize: 12 }}>Privacy and terms</span>
+            </StableDisclosureSummary>
+            <div
+              style={{
+                padding: "0 14px 14px",
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
           <span style={badge(fromAskCommunity || protectedTarget)}>
             Source: {sourceLabel}
           </span>
@@ -2030,7 +2122,8 @@ export default function DemandBoxPage() {
           {safeStr(row?.created_at) ? (
             <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
           ) : null}
-          </div>
+            </div>
+          </details>
 
           {renderDemandMatchPanel(row, matchState, debugBase)}
           {renderExpandedSearchPanel(row, matchState, debugBase)}
@@ -2652,34 +2745,48 @@ export default function DemandBoxPage() {
       {!showCreateWorkSurface ? (
       <section
         data-gsn-demand-front-door="simple"
-        style={{
-          ...demandBrandShell(),
-          padding: isCompact ? 16 : 20,
-        }}
+        style={demandHumanHeroShell(isCompact)}
       >
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr",
-            gap: 16,
+            gap: 12,
             alignItems: "start",
+            width: "100%",
+            maxWidth: isCompact ? 430 : 650,
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#C9D7E8" }}>
+            <div style={{ ...sectionLabel(), color: "#F1C96A" }}>
               DemandBox
             </div>
 
             <div
               style={{
-                marginTop: 10,
+                marginTop: 8,
                 color: "#F8FBFF",
                 fontWeight: 900,
-                fontSize: isCompact ? 24 : 34,
-                lineHeight: 1.12,
+                fontSize: isCompact ? 29 : 38,
+                lineHeight: 1.06,
+                textShadow: "0 3px 14px rgba(0,0,0,0.34)",
               }}
             >
-              What do you need?
+              Find what you need
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                maxWidth: 520,
+                color: "#E6EEF7",
+                fontSize: isCompact ? 14 : 16,
+                fontWeight: 700,
+                lineHeight: 1.45,
+                textShadow: "0 2px 10px rgba(0,0,0,0.36)",
+              }}
+            >
+              Ask, request or get help from people in {currentCommunityName}.
             </div>
 
             <div style={demandHeroActionRowStyle(isCompact)}>
@@ -2705,18 +2812,23 @@ export default function DemandBoxPage() {
 
             <div
               style={{
-                marginTop: 12,
+                marginTop: 10,
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
               }}
               data-gsn-demand-facts="compact"
             >
-              <span style={badge(myOpenRows.length > 0)}>Yours {myOpenRows.length}</span>
-              <span style={badge(visibleRows.length > 0)}>
-                For you {visibleRows.length}
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(3,17,31,0.68)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                }}
+              >
+                {currentCommunityName} · Yours {myOpenRows.length} · For you {visibleRows.length}
               </span>
-              <span style={badge(false)}>{currentCommunityName}</span>
             </div>
           </div>
         </div>
@@ -3262,40 +3374,42 @@ export default function DemandBoxPage() {
         <section
           id="demand-box-queue-board"
           data-gsn-demand-queue="simple"
-          style={pageCard("#FFFFFF")}
+          style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 12 : 20 }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-            }}
-          >
-            <div style={{ minWidth: 0, flex: "1 1 320px" }}>
-              <div style={sectionLabel()}>Needs</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 24 : 30,
-                  fontWeight: 900,
-                  lineHeight: 1.12,
-                }}
-              >
-                Can you help?
+          {!isCompact ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "flex-start",
+              }}
+            >
+              <div style={{ minWidth: 0, flex: "1 1 320px" }}>
+                <div style={sectionLabel()}>Needs</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontSize: 30,
+                    fontWeight: 900,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  Can you help?
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           <div
             data-gsn-demand-queue-lanes="true"
             style={{
-              marginTop: 14,
+              marginTop: isCompact ? 0 : 14,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 10,
+              gap: isCompact ? 7 : 10,
             }}
           >
             {queueLanes.filter((lane) => ["open", "for_me", "mine"].includes(lane.key)).map((lane) => {
@@ -3305,20 +3419,27 @@ export default function DemandBoxPage() {
               return (
                 <Button
                   key={lane.key}
-                  onClick={() => setActiveQueueLane(lane.key)}
+                  onClick={() => {
+                    setActiveQueueLane(lane.key);
+                    setShowMoreQueueRows(false);
+                    setOpenDemandRecordKey("");
+                  }}
                   debugId={`demand-box.queue-lane.${lane.key}`}
                   style={{
-                    minHeight: 54,
+                    minHeight: isCompact ? 44 : 54,
+                    height: isCompact ? 44 : 54,
                     alignItems: "center",
                     justifyContent: "center",
                     textAlign: "center",
-                    padding: "8px",
-                    gap: 6,
+                    padding: isCompact ? "7px 6px" : "8px",
+                    gap: isCompact ? 0 : 6,
                     whiteSpace: "nowrap",
                     lineHeight: 1.2,
+                    borderRadius: 999,
+                    fontSize: isCompact ? 12 : undefined,
                   }}
                 >
-                  <GsnLegacyIcon name={lane.icon} size={22} />
+                  {!isCompact ? <GsnLegacyIcon name={lane.icon} size={22} /> : null}
                   <span style={{ fontWeight: 900 }}>{lane.label} {lane.count}</span>
                 </Button>
               );
@@ -3327,11 +3448,15 @@ export default function DemandBoxPage() {
 
           <details
             data-gsn-demand-more-filters="true"
-            style={{ ...detailsShell(), marginTop: 14 }}
+            style={{ ...detailsShell(), marginTop: isCompact ? 10 : 14 }}
           >
             <StableDisclosureSummary
-              style={detailsSummary()}
-              stableHeight={54}
+              style={{
+                ...detailsSummary(),
+                padding: isCompact ? "11px 14px" : "16px 18px",
+                fontSize: isCompact ? 13 : 16,
+              }}
+              stableHeight={isCompact ? 46 : 54}
               debugId="demand-box.more-filters"
             >
               <span>More filters</span>
@@ -3353,7 +3478,11 @@ export default function DemandBoxPage() {
                 return (
                   <Button
                     key={lane.key}
-                    onClick={() => setActiveQueueLane(lane.key)}
+                    onClick={() => {
+                      setActiveQueueLane(lane.key);
+                      setShowMoreQueueRows(false);
+                      setOpenDemandRecordKey("");
+                    }}
                     debugId={`demand-box.queue-lane.${lane.key}`}
                     stableHeight={52}
                     style={demandActionStyle(52)}
@@ -3432,7 +3561,7 @@ export default function DemandBoxPage() {
                           : "When someone in this community asks for help, their request will appear here."
                   )
                 : (queueLaneRows[activeQueueLane] || [])
-                    .slice(0, isCompact ? 12 : 24)
+                    .slice(0, isCompact ? (showMoreQueueRows ? 12 : 1) : 24)
                     .map((row, index) =>
                       renderDemandRecord(
                         row,
@@ -3444,6 +3573,21 @@ export default function DemandBoxPage() {
                         }
                       )
                     )}
+              {isCompact && (queueLaneRows[activeQueueLane] || []).length > 1 ? (
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    setShowMoreQueueRows((current) => !current);
+                    setOpenDemandRecordKey("");
+                  }}
+                  fullWidth
+                  stableHeight={48}
+                  debugId="demand-box.queue.view-more"
+                  style={{ ...demandActionStyle(48), marginTop: 2 }}
+                >
+                  {showMoreQueueRows ? "Show fewer needs" : "View more needs"}
+                </SecondaryButton>
+              ) : null}
               {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
                 <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
                   Showing the first {isCompact ? 12 : 24} rows in this lane. Use

@@ -5070,3 +5070,31 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Added projection, schema-allowlist, seven-outcome, deterministic JSON, privacy threshold, private-data rejection, V2 byte-compatibility, V3 checksum/tamper, production guard, explicit-environment agreement, blank/malformed configuration rejection, generic-ensure V2, issue/reissue rollback, and historical immutability tests. Final focused integrity verification passed 29 tests, and the final scoped regression command passed 117 tests with no skips or failures: `python -m pytest tests/test_trust_slip_v1_projection.py tests/test_trust_slip_v1_integrity.py tests/test_trust_slip_v1_evidence.py tests/test_trust_slip_boundary_controls.py tests/test_trust_slip_display_name_recovery.py -q`.
 - Public TrustSlip routes and frontend presentation are unchanged. Dashboard, Community Home, Marketplace, Spotlight, DemandBox, Protected Trade, Trust Passport, database models, migrations, commerce taxonomy, and public discovery were not modified.
 - Rollback is independently reversible: keep/remove the write flag (default false) to retain existing V2 behaviour; if code rollback is approved later, remove the guarded new-issue/reissue helper calls and the V3 projector without any data migration. Historical V3 test snapshots are local-only and no production records exist.
+
+## 2026-11-03 - DemandBox human-first phone surface
+
+- Owner trigger: the DemandBox member page still felt busy and machine-led. The
+  approved direction was one natural first screen with a human face, plain
+  language, two obvious actions, compact needs, and technical detail hidden
+  until requested.
+- Route affected: authenticated `/app/demand-box` only. The existing GSN app
+  shell and frozen `Shop -> Community Home -> Marketplace -> Dashboard ->
+  Profile` navigation remain unchanged.
+- Presentation changed: the front door now reuses the approved human marketplace
+  photo, leads with `Find what you need`, keeps `Post a need` and `Ask a
+  question` side by side on phone, and shows the selected community plus
+  `Yours`/`For you` counts in one compact context line.
+- Queue changed: phone shows the three primary filters first, one compact request
+  preview by default, and one `View more needs` action. Request cards now use a
+  stable visual cue, human title/area/date language, and one `Open` action.
+  Source, routing, GSN ID, contact-path, relay and term metadata remain preserved
+  behind `Request details`.
+- Preserved: all DemandBox API calls, selected-community permission checks,
+  private one-person targeting, Ask Community mode, fulfil/cancel actions,
+  contact/copy actions, supply matching, one-hop relay consent, pagination,
+  direct queue links, backend lifecycle, Marketplace, Dashboard, Spotlight,
+  TrustSlip and frozen navigation.
+- Verification passed: focused ESLint; DemandBox front-package and expanded-search
+  audits; mocked Playwright journeys at `390x844` and `360x780`; production
+  build with 313 modules; protected-button freeze; Marketplace DemandBox
+  ownership; surface ownership; and mobile tap stability.
