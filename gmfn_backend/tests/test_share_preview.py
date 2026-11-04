@@ -48,10 +48,25 @@ def _seed_public_shop():
             text(
                 """
                 INSERT INTO clans (
-                    id, name, invite_code, community_code, status, invite_uses, created_at
+                    id, name, invite_code, community_code, created_by_user_id,
+                    status, invite_uses, created_at
                 )
                 VALUES (
-                    1, 'Share Clan', 'share-invite', 'GMFN-C-SHARE', 'active', 0, CURRENT_TIMESTAMP
+                    1, 'Share Clan', 'share-invite', 'GMFN-C-SHARE', 1,
+                    'active', 0, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_invites (
+                    id, clan_id, created_by_user_id, code, is_active,
+                    max_uses, uses, created_at
+                )
+                VALUES (
+                    1, 1, 1, 'share-invite', 1, 100, 0, CURRENT_TIMESTAMP
                 )
                 """
             )
@@ -215,7 +230,7 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert "Fresh rice bag | Ada Trust Shop" in res.text
     assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?product_id=3&amp;block=1" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
-    assert "GSN public shop item. Tap to open product." in res.text
+    assert "Open this public item and check the shop details." in res.text
     assert "Trusted GSN shop item. Tap to open product." not in res.text
     assert "Trusted GSN shop. Tap to open shop." not in res.text
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3&amp;gsn_share=share_product&amp;gsn_channel=facebook&amp;utm_source=gsn_shop_gallery#shop-block-1" in res.text
@@ -330,8 +345,8 @@ def test_share_join_preview_exposes_open_graph_card(client, monkeypatch):
 
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
-    assert "Fresh rice bag | Share Clan GSN invite" in res.text
-    assert "GSN invite pack. Tap to request access. Approval required." in res.text
+    assert "Ada Seller invited you to join Share Clan on GSN" in res.text
+    assert "Open to request access. Approval is required." in res.text
     assert "https://api.gsn.example/share/join/share-invite/card.png?community_code=GMFN-C-SHARE&amp;qr_policy=market_access" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
     assert "https://pilot.gsn.example/start/join/share-invite" in res.text

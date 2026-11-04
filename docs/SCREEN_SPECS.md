@@ -1897,6 +1897,23 @@ Rules:
 - Explicit legacy/deep-link handling may still reveal a shelf or product after the full public shop loads, but it must be separate from default ordinary public sharing. Vault/private access links remain exact private targets such as `/vault/{token}`.
 - Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
 - Recipient, inviter, community, marketplace, note, and duplicate invite metadata belong in the human-readable share message or the server-resolved invite record, never in the copied URL query string. The invite code remains the only public URL credential; Join Entry must resolve authoritative context from the backend preview.
+- Canonical invite URLs must also resolve their pre-click social preview from
+  that authoritative invite record. The preview may name the recorded inviter
+  and community, but it may use only that inviter's already-public saved shop
+  picture, then that inviter's eligible public-product picture. It must never
+  borrow another community member's media or silently expose the inviter's GSN
+  profile portrait. When no eligible inviter-owned public picture exists, use
+  the approved lively GSN people-market fallback.
+- The invite social card leads with Come and join me on GSN, the real community
+  or marketplace name, and Request access - approval required. The public-shop
+  social card leads with Explore my shop on GSN, then uses the requested public
+  product picture, first eligible active public-product picture, owner-saved
+  shop picture, and people-market fallback in that order. Do not add invented
+  verification, sales, popularity, location, availability, or trust claims.
+- Pre-click link packaging is a static image, title, and short description.
+  Any owner-recorded welcome video belongs on the opened landing page behind an
+  explicit Play action; do not promise or imply autoplay video inside WhatsApp
+  or another receiving app.
 - Ordinary outbound invite copy must contain only one personal invitation line, one accurate next-step line, and the canonical link. Native share payloads must send the text and URL separately so the receiving app does not get a duplicated URL.
 - Preserve the recipient, inviter, and community names when known. A genuine personal note may add one short line; default instructions must not be repeated as a note.
 - Keep identity disclaimers, community IDs, marketplace IDs, QR-policy labels, admission explanations, and promotional GSN paragraphs on the authoritative Join Entry surface rather than in the forwarded message.

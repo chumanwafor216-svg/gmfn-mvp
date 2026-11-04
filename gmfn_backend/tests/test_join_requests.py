@@ -13,7 +13,17 @@ from app.core import auth
 from app.core import clan_auth
 from app.core.security import create_access_token
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, ClanQrPreApproval, TrustEvent, User
+from app.db.models import (
+    Clan,
+    ClanInvite,
+    ClanJoinRequest,
+    ClanMembership,
+    ClanQrPreApproval,
+    MarketplaceProduct,
+    MarketplaceShop,
+    TrustEvent,
+    User,
+)
 from app.db.notification_models import Notification
 from app.db.verification_models import IdentityVerificationCheck
 from app.main import app
@@ -636,6 +646,90 @@ def test_public_join_invite_preview_uses_safe_inviter_display_without_contact(cl
     assert data["invited_by_user_id"] == 1
     assert data["invited_by_display"] == "Pastor Ada"
     assert "admin@example.com" not in json.dumps(data)
+
+
+def test_public_join_invite_preview_uses_only_inviter_owned_public_shop_media(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        inviter = db.get(User, 1)
+        inviter.display_name = "Pastor Ada"
+        other_member = User(
+            id=2,
+            email="other-member@example.com",
+            hashed_password="hashed",
+            display_name="Other Seller",
+            role="user",
+            gmfn_id="GMFN-U-OTHER",
+        )
+        inviter_shop = MarketplaceShop(
+            id=11,
+            clan_id=1,
+            owner_user_id=1,
+            name="Ada Community Shop",
+            image_url="/uploads/marketplace/images/ada-public.jpg",
+            is_active=True,
+        )
+        other_shop = MarketplaceShop(
+            id=12,
+            clan_id=1,
+            owner_user_id=2,
+            name="Other Community Shop",
+            image_url="/uploads/marketplace/images/other-public.jpg",
+            is_active=True,
+        )
+        db.add_all([inviter, other_member, inviter_shop, other_shop])
+        db.flush()
+        db.add_all(
+            [
+                MarketplaceProduct(
+                    id=21,
+                    clan_id=1,
+                    shop_id=11,
+                    seller_user_id=1,
+                    name="Ada public item",
+                    image_url="/uploads/marketplace/images/ada-item.jpg",
+                    visibility_mode="public",
+                    is_active=True,
+                ),
+                MarketplaceProduct(
+                    id=22,
+                    clan_id=1,
+                    shop_id=12,
+                    seller_user_id=2,
+                    name="Other public item",
+                    image_url="/uploads/marketplace/images/other-item.jpg",
+                    visibility_mode="public",
+                    is_active=True,
+                ),
+            ]
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="sender-media-code",
+                is_active=True,
+                max_uses=100,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-invite/preview?code=sender-media-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["invited_by_display"] == "Pastor Ada"
+    assert data["shop_name"] == "Ada Community Shop"
+    assert data["shop_image_url"] == "/uploads/marketplace/images/ada-public.jpg"
+    assert data["product_name"] == "Ada public item"
+    assert data["product_image_url"] == "/uploads/marketplace/images/ada-item.jpg"
+    assert "Other Community Shop" not in json.dumps(data)
+    assert "other-public.jpg" not in json.dumps(data)
 
 
 def test_public_join_invite_preview_exposes_governance_profile(client):

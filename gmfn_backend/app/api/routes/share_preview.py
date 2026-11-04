@@ -6,13 +6,14 @@ import os
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from html import escape
+from pathlib import Path
 from textwrap import wrap
 from typing import Any, Optional
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 from sqlalchemy.orm import Session
 
 from app.db.models import Clan, ClanInvite, ClanMembership, MarketplaceProduct, MarketplaceShop, ShopDiaryEntry, TrustSlip, User
@@ -535,17 +536,20 @@ def _join_invite_preview_payload(
     code: str,
     community_code: str = "",
 ) -> dict[str, str]:
-    clan, _invite_row = _get_join_invite_context(
+    clan, invite_row = _get_join_invite_context(
         db,
         code=code,
         community_code=community_code,
     )
+    inviter = None
     shop = None
     product = None
-    if clan is not None:
+    if clan is not None and invite_row is not None:
+        inviter = db.get(User, int(invite_row.created_by_user_id))
         shop = (
             db.query(MarketplaceShop)
             .filter(MarketplaceShop.clan_id == int(clan.id))
+            .filter(MarketplaceShop.owner_user_id == int(invite_row.created_by_user_id))
             .filter(MarketplaceShop.is_active.is_(True))
             .order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
             .first()
@@ -555,6 +559,7 @@ def _join_invite_preview_payload(
                 db.query(MarketplaceProduct)
                 .filter(MarketplaceProduct.shop_id == int(shop.id))
                 .filter(MarketplaceProduct.clan_id == int(clan.id))
+                .filter(MarketplaceProduct.seller_user_id == int(invite_row.created_by_user_id))
                 .filter(MarketplaceProduct.is_active.is_(True))
                 .filter(MarketplaceProduct.visibility_mode.in_(PUBLIC_VISIBILITY_MODES))
                 .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
@@ -564,20 +569,24 @@ def _join_invite_preview_payload(
     resolved_community_code = _safe_str(getattr(clan, "community_code", None)) or _safe_str(community_code) or "GSN INVITE"
     community_name = _safe_str(getattr(clan, "name", None), "GSN community")
     marketplace_name = _safe_str(getattr(clan, "marketplace_name", None)) or community_name
-    shop_name = _safe_str(getattr(shop, "name", None)) or marketplace_name
-    product_name = _safe_str(getattr(product, "name", None))
-    product_line = product_name or "GSN access invite"
+    inviter_name = _safe_str(getattr(inviter, "display_name", None))
+    shop_name = marketplace_name
+    product_line = "Come and join me on GSN" if inviter_name else "Join this GSN community"
     title = (
-        f"{product_line} | {marketplace_name} GSN invite"
-        if product is not None
-        else f"{marketplace_name} | GSN invite"
+        f"{inviter_name} invited you to join {marketplace_name} on GSN"
+        if inviter_name
+        else f"Invitation to join {marketplace_name} on GSN"
     )
-    description = "GSN invite pack. Tap to request access. Approval required."
+    description = "Open to request access. Approval is required."
     target_url = _join_frontend_url(code)
+    hero_image_url = (
+        _safe_str(getattr(shop, "image_url", None))
+        or _safe_str(getattr(product, "image_url", None))
+    )
 
     return {
         "gmfn_id": resolved_community_code,
-        "owner_name": community_name,
+        "owner_name": inviter_name or "A known GSN member",
         "shop_name": shop_name,
         "product_line": product_line,
         "trust_line": "Request access - approval required",
@@ -588,6 +597,7 @@ def _join_invite_preview_payload(
         "community_name": community_name,
         "marketplace_name": marketplace_name,
         "invite_code": _safe_str(code),
+        "hero_image_url": hero_image_url,
     }
 
 
@@ -653,7 +663,25 @@ def _preview_payload(
     )
     product_title = _safe_str(getattr(product, "name", None))
     product_description = _safe_str(getattr(product, "description", None))
-    product_line = product_title or product_description or "Public shop diary"
+    product_line = product_title or product_description or "Explore my shop on GSN"
+
+    visual_product = product if _safe_str(getattr(product, "image_url", None)) else None
+    if visual_product is None and shop is not None:
+        visual_product = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.shop_id == int(shop.id))
+            .filter(MarketplaceProduct.seller_user_id == int(owner.id))
+            .filter(MarketplaceProduct.is_active.is_(True))
+            .filter(MarketplaceProduct.visibility_mode.in_(PUBLIC_VISIBILITY_MODES))
+            .filter(MarketplaceProduct.image_url.isnot(None))
+            .filter(MarketplaceProduct.image_url != "")
+            .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+            .first()
+        )
+    hero_image_url = (
+        _safe_str(getattr(visual_product, "image_url", None))
+        or _safe_str(getattr(shop, "image_url", None))
+    )
 
     title = (
         f"{product_line} | {shop_name}"
@@ -661,9 +689,9 @@ def _preview_payload(
         else f"{shop_name} | GSN public shop"
     )
     description = (
-        "GSN public shop item. Tap to open product."
+        "Open this public item and check the shop details."
         if product is not None
-        else "GSN public shop. Tap to open shop."
+        else f"Explore {owner_name}'s public shop on GSN."
     )
 
     return {
@@ -671,10 +699,11 @@ def _preview_payload(
         "owner_name": owner_name,
         "shop_name": shop_name,
         "product_line": product_line,
-        "trust_line": "Public shop record - Tap to open",
+        "trust_line": "Public shop - Check items and contact details",
         "title": title,
         "description": description,
         "price": _money_text(product),
+        "hero_image_url": hero_image_url,
     }
 
 
@@ -877,6 +906,118 @@ def _gradient_card(size: tuple[int, int]) -> Image.Image:
     return image
 
 
+def _local_marketplace_image_path(value: Any) -> Optional[Path]:
+    path = urlsplit(_safe_str(value)).path
+    prefix = "/uploads/marketplace/images/"
+    if not path.startswith(prefix):
+        return None
+
+    filename = Path(path).name
+    if not filename or filename != path[len(prefix):]:
+        return None
+
+    root = (
+        Path(_safe_str(os.getenv("GMFN_UPLOADS_DIR", "uploads"), "uploads"))
+        .expanduser()
+        .resolve()
+        / "marketplace"
+        / "images"
+    )
+    candidate = (root / filename).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
+
+
+def _share_card_hero(value: Any, size: tuple[int, int]) -> Optional[Image.Image]:
+    source_path = _local_marketplace_image_path(value)
+    if source_path is None:
+        return None
+
+    try:
+        with Image.open(source_path) as source:
+            prepared = ImageOps.exif_transpose(source).convert("RGB")
+            return ImageOps.fit(
+                prepared,
+                size,
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.42),
+            ).convert("RGBA")
+    except Exception:
+        return None
+
+
+def _draw_people_market_fallback(size: tuple[int, int]) -> Image.Image:
+    width, height = size
+    image = Image.new("RGBA", size, "#0B2D4A")
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((-120, -80, width + 80, height + 180), fill="#0A6FAE")
+    draw.ellipse((width // 4, -110, width + 160, height // 2 + 90), fill="#D6AA45")
+    draw.rectangle((0, int(height * 0.68), width, height), fill="#113C50")
+
+    stall_y = int(height * 0.18)
+    draw.polygon(
+        [
+            (int(width * 0.08), stall_y),
+            (int(width * 0.92), stall_y),
+            (int(width * 0.82), int(height * 0.38)),
+            (int(width * 0.18), int(height * 0.38)),
+        ],
+        fill="#F7FAFF",
+    )
+    stripe_width = max(1, int(width * 0.105))
+    for index in range(8):
+        left = int(width * 0.08) + index * stripe_width
+        right = min(int(width * 0.92), left + stripe_width)
+        if index % 2 == 0:
+            draw.polygon(
+                [
+                    (left, stall_y),
+                    (right, stall_y),
+                    (right - int(width * 0.02), int(height * 0.38)),
+                    (left + int(width * 0.02), int(height * 0.38)),
+                ],
+                fill="#F2C766",
+            )
+
+    people = (
+        (int(width * 0.27), int(height * 0.48), "#F2C3A2", "#E88935"),
+        (int(width * 0.52), int(height * 0.43), "#70422F", "#0B2440"),
+        (int(width * 0.73), int(height * 0.51), "#A96E48", "#1F8B6A"),
+    )
+    for center_x, center_y, skin, clothing in people:
+        radius = int(width * 0.075)
+        draw.ellipse(
+            (center_x - radius, center_y - radius, center_x + radius, center_y + radius),
+            fill=skin,
+        )
+        draw.rounded_rectangle(
+            (
+                center_x - int(width * 0.12),
+                center_y + radius - 4,
+                center_x + int(width * 0.12),
+                height + 50,
+            ),
+            radius=int(width * 0.08),
+            fill=clothing,
+        )
+
+    for x, color in (
+        (int(width * 0.16), "#DF3F42"),
+        (int(width * 0.31), "#F2C766"),
+        (int(width * 0.47), "#4CA85B"),
+        (int(width * 0.64), "#E88935"),
+        (int(width * 0.82), "#4CA85B"),
+    ):
+        draw.ellipse(
+            (x - 28, int(height * 0.78), x + 28, int(height * 0.9)),
+            fill=color,
+        )
+    return image
+
+
 def _draw_share_card_png(
     payload: dict[str, str],
     *,
@@ -884,105 +1025,169 @@ def _draw_share_card_png(
     block: Optional[int],
     eyebrow: str = "PUBLIC SHOP",
     block_label_override: str = "",
+    cta_label: str = "EXPLORE SHOP",
 ) -> bytes:
-    image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#F7FAFF")
-    draw = ImageDraw.Draw(image)
-
+    image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#EAF2F8")
     shadow = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow)
-    shadow_draw.rounded_rectangle((48, 56, 1152, 598), radius=42, fill=(0, 0, 0, 78))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        (48, 56, 1152, 598),
+        radius=42,
+        fill=(0, 0, 0, 82),
+    )
     image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(18)))
 
     card_box = (44, 42, 1156, 588)
     card = _gradient_card((card_box[2] - card_box[0], card_box[3] - card_box[1]))
-    mask = Image.new("L", card.size, 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, card.size[0], card.size[1]), radius=42, fill=255)
-    image.paste(card, card_box[:2], mask)
+    card_mask = Image.new("L", card.size, 0)
+    ImageDraw.Draw(card_mask).rounded_rectangle(
+        (0, 0, card.size[0], card.size[1]),
+        radius=42,
+        fill=255,
+    )
+    image.paste(card, card_box[:2], card_mask)
     draw = ImageDraw.Draw(image)
 
-    # Subtle institutional watermark pattern: shield outlines stay quiet behind content.
-    for x, y, scale in ((824, 146, 0.86), (930, 396, 1.12), (654, 462, 0.68)):
-        w = int(118 * scale)
-        h = int(142 * scale)
-        points = [
-            (x, y),
-            (x + w, y + int(44 * scale)),
-            (x + w, y + int(90 * scale)),
-            (x + int(82 * scale), y + h),
-            (x + int(36 * scale), y + h),
-            (x, y + int(90 * scale)),
-        ]
-        draw.line([*points, points[0]], fill=(255, 255, 255, 6), width=max(2, int(3 * scale)))
+    photo_box = (724, 78, 1112, 552)
+    photo_size = (photo_box[2] - photo_box[0], photo_box[3] - photo_box[1])
+    hero = _share_card_hero(payload.get("hero_image_url"), photo_size)
+    if hero is None:
+        hero = _draw_people_market_fallback(photo_size)
+    photo_mask = Image.new("L", photo_size, 0)
+    ImageDraw.Draw(photo_mask).rounded_rectangle(
+        (0, 0, photo_size[0], photo_size[1]),
+        radius=34,
+        fill=255,
+    )
+    image.paste(hero, photo_box[:2], photo_mask)
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle(photo_box, radius=34, outline="#F2C766", width=4)
 
-    draw.rounded_rectangle((94, 82, 246, 138), radius=28, fill="#F7FAFF")
+    photo_overlay = Image.new("RGBA", photo_size, (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(photo_overlay)
+    for y in range(photo_size[1]):
+        alpha = int(max(0, (y - photo_size[1] * 0.52) / (photo_size[1] * 0.48)) * 196)
+        overlay_draw.line((0, y, photo_size[0], y), fill=(6, 24, 39, alpha))
+    image.paste(photo_overlay, photo_box[:2], photo_overlay)
+    draw = ImageDraw.Draw(image)
 
-    font_label = _font(20, bold=True)
     font_badge = _font(25, bold=True)
-    font_trusted = _font(24, bold=True)
-    font_price = _font(32, bold=True)
-    font_title = _font(60, bold=True)
-    font_market = _font(36, bold=True)
-    font_trust = _font(27, bold=True)
-    font_chip = _font(24, bold=True)
-    font_cta = _font(28, bold=True)
+    font_eyebrow = _font(22, bold=True)
+    font_title = _font(53, bold=True)
+    font_market = _font(34, bold=True)
+    font_trust = _font(25, bold=True)
+    font_chip = _font(21, bold=True)
+    font_cta = _font(27, bold=True)
+    font_owner = _font(26, bold=True)
+    font_price = _font(26, bold=True)
 
-    draw.text((130, 100), "GSN", font=font_badge, fill="#D6AA45")
-    draw.text((272, 100), eyebrow, font=font_trusted, fill="#F7FAFF")
+    draw.rounded_rectangle((88, 78, 226, 134), radius=28, fill="#F7FAFF")
+    draw.text((124, 95), "GSN", font=font_badge, fill="#B78321")
+    draw.text((252, 96), eyebrow, font=font_eyebrow, fill="#F2CF77")
 
-    price = payload["price"]
-    if price:
-        draw.rounded_rectangle((918, 82, 1096, 144), radius=31, fill="#F2C766")
-        price_width = _text_width(draw, price, font_price)
-        draw.text((918 + (178 - price_width) / 2, 96), price, font=font_price, fill="#07172C")
-
-    product_lines = _png_text_lines(
+    title_lines = _png_text_lines(
         payload["product_line"],
         draw=draw,
         font=font_title,
-        max_width=690,
+        max_width=582,
         max_lines=2,
     )
-    after_title = _draw_lines(draw, product_lines, x=96, y=186, font=font_title, fill="#FFFFFF", gap=8)
+    after_title = _draw_lines(
+        draw,
+        title_lines,
+        x=88,
+        y=174,
+        font=font_title,
+        fill="#FFFFFF",
+        gap=8,
+    )
 
     market_lines = _png_text_lines(
         payload["shop_name"],
         draw=draw,
         font=font_market,
-        max_width=680,
+        max_width=586,
         max_lines=2,
     )
-    after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 10, font=font_market, fill="#D8E7F5", gap=5)
+    after_market = _draw_lines(
+        draw,
+        market_lines,
+        x=92,
+        y=after_title + 14,
+        font=font_market,
+        fill="#D8E7F5",
+        gap=4,
+    )
 
     trust_lines = _png_text_lines(
-        payload.get("trust_line", "Public shop record - Tap to open"),
+        payload.get("trust_line", "Open the current public record"),
         draw=draw,
         font=font_trust,
-        max_width=680,
+        max_width=585,
+        max_lines=2,
+    )
+    _draw_lines(
+        draw,
+        trust_lines,
+        x=92,
+        y=after_market + 18,
+        font=font_trust,
+        fill="#F2CF77",
+        gap=3,
+    )
+
+    owner_label = _safe_str(payload.get("owner_name"), "GSN member")
+    owner_lines = _png_text_lines(
+        owner_label,
+        draw=draw,
+        font=font_owner,
+        max_width=318,
         max_lines=1,
     )
-    _draw_lines(draw, trust_lines, x=100, y=after_market + 20, font=font_trust, fill="#F2CF77", gap=0)
+    draw.rounded_rectangle((752, 462, 1084, 528), radius=22, fill=(6, 24, 39, 218))
+    _draw_lines(
+        draw,
+        owner_lines,
+        x=774,
+        y=482,
+        font=font_owner,
+        fill="#FFFFFF",
+        gap=0,
+    )
 
-    cta_center = (936, 326)
-    draw.ellipse((882, 272, 990, 380), fill="#D6AA45")
-    draw.line((916, 326, 954, 326), fill="#07172C", width=9)
-    draw.line((940, 310, 960, 326, 940, 342), fill="#07172C", width=9, joint="curve")
-    draw.ellipse((914, 298, 926, 310), fill="#07172C")
-    draw.line((920, 310, 920, 348), fill="#07172C", width=7)
-    cta_text = "TAP TO OPEN"
-    cta_width = _text_width(draw, cta_text, font_cta)
-    draw.text((cta_center[0] - cta_width / 2, 410), cta_text, font=font_cta, fill="#FFFFFF")
+    price = _safe_str(payload.get("price"))
+    if price:
+        price_width = int(_text_width(draw, price, font_price))
+        price_left = max(752, 1084 - price_width - 44)
+        draw.rounded_rectangle(
+            (price_left, 98, 1084, 154),
+            radius=28,
+            fill="#F2C766",
+        )
+        draw.text((price_left + 22, 114), price, font=font_price, fill="#07172C")
+
+    cta_width = max(252, int(_text_width(draw, cta_label, font_cta)) + 92)
+    draw.rounded_rectangle(
+        (88, 476, 88 + cta_width, 544),
+        radius=34,
+        fill="#F2C766",
+    )
+    draw.text((122, 496), cta_label, font=font_cta, fill="#07172C")
+    arrow_left = 88 + cta_width - 48
+    draw.line((arrow_left - 12, 510, arrow_left + 12, 510), fill="#07172C", width=6)
+    draw.line((arrow_left + 1, 499, arrow_left + 14, 510, arrow_left + 1, 521), fill="#07172C", width=6, joint="curve")
 
     block_label = block_label_override or (f"Block {int(block)}" if block else "Public shop")
-    chip_y = 502
-    block_width = int(_text_width(draw, block_label, font_chip)) + 62
-    block_right = 94 + max(146, block_width)
-    draw.rounded_rectangle((94, chip_y, block_right, chip_y + 56), radius=28, fill="#F7FAFF")
-    draw.text((124, chip_y + 15), block_label, font=font_chip, fill="#07172C")
-    gmfn_text = payload["gmfn_id"]
-    gmfn_width = int(_text_width(draw, gmfn_text, font_chip))
-    gmfn_left = block_right + 26
-    draw.rounded_rectangle((gmfn_left, chip_y, gmfn_left + 60 + gmfn_width, chip_y + 56), radius=28, fill="#0B2D4A", outline="#D6AA45", width=2)
-    draw.text((gmfn_left + 30, chip_y + 15), gmfn_text, font=font_chip, fill="#F2CF77")
+    block_width = int(_text_width(draw, block_label, font_chip)) + 44
+    chip_left = 88 + cta_width + 18
+    if chip_left + block_width < 704:
+        draw.rounded_rectangle(
+            (chip_left, 486, chip_left + block_width, 538),
+            radius=26,
+            fill="#0B2D4A",
+            outline="#D6AA45",
+            width=2,
+        )
+        draw.text((chip_left + 22, 502), block_label, font=font_chip, fill="#F2CF77")
 
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)
@@ -1210,6 +1415,7 @@ def public_join_invite_share_card_png(
         block=None,
         eyebrow="GSN INVITE",
         block_label_override="Join request",
+        cta_label="OPEN INVITATION",
     )
     return Response(
         content=png,
@@ -1288,6 +1494,7 @@ def public_vault_request_share_card_png(
         block=None,
         eyebrow="PRIVATE VAULT",
         block_label_override="Vault request",
+        cta_label="OPEN REQUEST",
     )
     return Response(
         content=png,
@@ -1388,6 +1595,7 @@ def public_shop_update_share_card_png(
         block=None,
         eyebrow="SHOP UPDATE",
         block_label_override="Live update",
+        cta_label="OPEN UPDATE",
     )
     return Response(
         content=png,
@@ -1474,7 +1682,12 @@ def public_shop_share_card_png(
 ) -> Response:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
     target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
-    png = _draw_share_card_png(payload, target_url=target_url, block=block)
+    png = _draw_share_card_png(
+        payload,
+        target_url=target_url,
+        block=block,
+        cta_label="EXPLORE SHOP",
+    )
     return Response(
         content=png,
         media_type="image/png",

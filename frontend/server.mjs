@@ -8,6 +8,13 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distRoot = path.join(__dirname, "dist");
 const indexPath = path.join(distRoot, "index.html");
+const marketplaceWelcomeImagePath = path.join(
+  __dirname,
+  "src",
+  "assets",
+  "dashboard",
+  "dashboard-demand-market.jpg"
+);
 const publicFrontendOrigin = firstOrigin(
   [
     process.env.PUBLIC_FRONTEND_URL,
@@ -198,38 +205,43 @@ function humanInviteName(value, fallback = "A known GSN member") {
   return text;
 }
 
-function joinInviteMeta(searchParams, pathname, search) {
+function fallbackJoinInviteMeta(pathname) {
+  return {
+    title: "Come and join me on GSN",
+    description: "Open to request access. Approval is required.",
+    imageUrl: frontendUrl("/gsn-marketplace-welcome.jpg"),
+    targetUrl: frontendUrl(pathname),
+  };
+}
+
+async function fetchJoinInviteMeta(code, pathname) {
+  const url = new URL(apiUrl("/clans/join-invite/preview"));
+  url.searchParams.set("code", code);
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!response.ok) {
+    throw new Error("Join invite lookup failed: " + response.status);
+  }
+
+  const data = await response.json();
+  if (!data?.valid) throw new Error("Join invite is not active");
+
   const community = decodeShareText(
-    firstText(
-      searchParams.get("marketplace_name"),
-      searchParams.get("community_name"),
-      searchParams.get("clan_name"),
-      "this GSN community"
-    )
+    firstText(data?.marketplace_name, data?.community_name, "this GSN community")
   );
-  const inviter = humanInviteName(
-    firstText(
-      searchParams.get("inviter_name"),
-      searchParams.get("invited_by"),
-      searchParams.get("sender_name")
-    )
-  );
-  const receiver = decodeShareText(
-    firstText(
-      searchParams.get("receiver_name"),
-      searchParams.get("receiver"),
-      searchParams.get("to")
-    )
-  );
-  const addressed = receiver ? `${receiver}: ` : "";
-  const title = "GSN Invite";
-  const description = `${addressed}${inviter} invites you to request access to ${community}.`;
+  const inviter = humanInviteName(data?.invited_by_display);
+  const inviterKnown = inviter !== "A known GSN member";
+  const title = inviterKnown
+    ? inviter + " invited you to join " + community + " on GSN"
+    : "Invitation to join " + community + " on GSN";
 
   return {
     title,
-    description,
-    imageUrl: frontendUrl("/gsn-community-invitation-poster.png"),
-    targetUrl: frontendUrl(pathname, search),
+    description: "Open to request access. Approval is required.",
+    imageUrl: frontendUrl(pathname.replace(/\/$/, "") + "/share-card.png"),
+    targetUrl: frontendUrl(pathname),
   };
 }
 
@@ -299,15 +311,53 @@ async function serveShopHtml(res, gmfnId, searchParams) {
 }
 
 async function serveJoinInviteHtml(res, url) {
+  const code = decodeURIComponent(
+    url.pathname.split("/").filter(Boolean).at(-1) || ""
+  );
+  let meta = fallbackJoinInviteMeta(url.pathname);
   try {
-    const html = await indexHtmlWithMeta(
-      joinInviteMeta(url.searchParams, url.pathname, url.search)
-    );
+    meta = await fetchJoinInviteMeta(code, url.pathname);
+  } catch {
+    meta = fallbackJoinInviteMeta(url.pathname);
+  }
+
+  try {
+    const html = await indexHtmlWithMeta(meta);
     send(res, 200, html, "text/html; charset=utf-8", {
       "Cache-Control": "public, max-age=300",
     });
   } catch {
     createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+  }
+}
+
+async function serveJoinShareCardProxy(res, code) {
+  try {
+    const response = await fetch(
+      apiUrl("/share/join/" + encodeURIComponent(code) + "/card.png"),
+      {
+        headers: { accept: "image/png" },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Invite preview card failed: " + response.status);
+    }
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+    send(res, 200, bytes, "image/png", {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    if (existsSync(marketplaceWelcomeImagePath)) {
+      createReadStream(marketplaceWelcomeImagePath).pipe(
+        writeHead(res, 200, "image/jpeg", {
+          "Cache-Control": "public, max-age=300",
+        })
+      );
+      return;
+    }
+    send(res, 404, "Invite preview unavailable", "text/plain; charset=utf-8");
   }
 }
 
@@ -415,6 +465,19 @@ createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === "/gsn-marketplace-welcome.jpg") {
+      if (existsSync(marketplaceWelcomeImagePath)) {
+        createReadStream(marketplaceWelcomeImagePath).pipe(
+          writeHead(res, 200, "image/jpeg", {
+            "Cache-Control": "public, max-age=86400",
+          })
+        );
+        return;
+      }
+      send(res, 404, "Marketplace image unavailable", "text/plain; charset=utf-8");
+      return;
+    }
+
     const match = url.pathname.match(/^\/shop\/([^/]+)(?:\/share-card\.png)?$/);
     if (match && url.pathname.endsWith("/share-card.png")) {
       await serveShareCardProxy(res, decodeURIComponent(match[1]), url.searchParams);
@@ -422,6 +485,13 @@ createServer(async (req, res) => {
     }
     if (match) {
       await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
+      return;
+    }
+    const joinCardMatch = url.pathname.match(
+      new RegExp("^/(?:start/join|start/invite|join|get-invite|join/community)/([^/]+)/share-card[.]png$")
+    );
+    if (joinCardMatch) {
+      await serveJoinShareCardProxy(res, decodeURIComponent(joinCardMatch[1]));
       return;
     }
     const joinMatch = url.pathname.match(/^\/(?:start\/join|start\/invite|join|get-invite|join\/community)\/([^/]+)$/);

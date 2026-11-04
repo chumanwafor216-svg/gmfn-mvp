@@ -627,8 +627,20 @@ assertNotContains(
 
 assertContains(
   "server.mjs",
-  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Invite[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|start\\\/invite\|join\|get-invite\|join\\\/community\)/,
-  "The frontend server must serve short route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops or formal documents."
+  /function fallbackJoinInviteMeta\(pathname\)[\s\S]*?Come and join me on GSN[\s\S]*?gsn-marketplace-welcome\.jpg[\s\S]*?async function fetchJoinInviteMeta\(code, pathname\)[\s\S]*?\/clans\/join-invite\/preview[\s\S]*?invited_by_display[\s\S]*?share-card\.png[\s\S]*?async function serveJoinInviteHtml[\s\S]*?async function serveJoinShareCardProxy[\s\S]*?\/share\/join\//,
+  "Canonical invite pages must resolve authoritative inviter/community metadata and use the existing photo-led share-card route with a lively human-market fallback."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/clans.py",
+  /def _join_invite_visual_payload\([\s\S]*?invited_by_user_id: Optional\[int\][\s\S]*?MarketplaceShop\.owner_user_id == int\(invited_by_user_id\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(invited_by_user_id\)/,
+  "Invite previews may use only the actual inviter's public shop and public-product media, never an unrelated community member's picture."
+);
+
+assertNotContains(
+  "../gmfn_backend/app/api/routes/share_preview.py",
+  /_join_invite_preview_payload[\s\S]*?profile_image_url/,
+  "Social invite cards must not silently publish the inviter's private profile portrait."
 );
 
 assertContains(

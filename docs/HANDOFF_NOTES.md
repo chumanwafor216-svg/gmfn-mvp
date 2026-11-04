@@ -5,6 +5,33 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Human-led invite and public-shop link packaging - 2026-11-04
+
+- Existing canonical invite and public-shop link systems were retained; no new
+  link, QR, invite, shop, schema, upload, or consent system was created.
+- Canonical /start/join/{code} pages now ask the authoritative join-preview API
+  for the inviter and community before emitting social metadata, while the
+  copied URL remains clean and query-free.
+- Invite visual media is restricted to the actual inviter's active public shop:
+  saved public shop picture first, then that inviter's eligible public-product
+  picture. Another community member's shop/product can no longer become the
+  invitation face. Private GSN profile portraits are not read by the social
+  preview path.
+- The shared PNG is now a photo-led navy-and-gold card with the message on the
+  left and public media on the right. Missing/broken media uses a lively
+  people-market illustration instead of the former formal-document treatment.
+- Public Shop cards now say Explore my shop on GSN when no exact product is
+  being shared, use eligible public product/shop media when locally available,
+  and retain truthful public-record language without inventing verification,
+  sales, popularity, reach, location, or availability.
+- Static talking video before click is not promised. A future owner-recorded
+  welcome video remains a separate landing-page phase with an explicit Play
+  action and consent.
+- Focused verification passed during implementation: backend compile, complete
+  share-preview tests, public join-preview tests, generated-card visual review,
+  and the new inviter-media ownership audit. Full build/deploy verification is
+  recorded when this slice is published.
+
 ## Marketplace Community QR simplification - 2026-11-04
 
 - Owner phone evidence showed the reusable community QR hidden behind the

@@ -578,13 +578,18 @@ def _raise_if_qr_policy_vote_blocked(
         },
     )
 
-def _join_invite_visual_payload(db: Optional[Session], clan: Optional[Clan]) -> dict[str, Any]:
-    if db is None or clan is None:
+def _join_invite_visual_payload(
+    db: Optional[Session],
+    clan: Optional[Clan],
+    invited_by_user_id: Optional[int] = None,
+) -> dict[str, Any]:
+    if db is None or clan is None or invited_by_user_id is None:
         return {}
 
     shop = (
         db.query(MarketplaceShop)
         .filter(MarketplaceShop.clan_id == int(clan.id))
+        .filter(MarketplaceShop.owner_user_id == int(invited_by_user_id))
         .filter(MarketplaceShop.is_active.is_(True))
         .order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
         .first()
@@ -595,6 +600,7 @@ def _join_invite_visual_payload(db: Optional[Session], clan: Optional[Clan]) -> 
             db.query(MarketplaceProduct)
             .filter(MarketplaceProduct.shop_id == int(shop.id))
             .filter(MarketplaceProduct.clan_id == int(clan.id))
+            .filter(MarketplaceProduct.seller_user_id == int(invited_by_user_id))
             .filter(MarketplaceProduct.is_active.is_(True))
             .filter(MarketplaceProduct.visibility_mode.in_(("community_visible", "public", "community")))
             .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
@@ -645,7 +651,11 @@ def _invite_preview_payload(
                 db,
                 clan_id=int(clan.id),
             )
-            visual_payload = _join_invite_visual_payload(db, clan)
+            visual_payload = _join_invite_visual_payload(
+                db,
+                clan,
+                invited_by_user_id=invited_by_user_id,
+            )
             admission_policy = _community_admission_policy(
                 db,
                 clan=clan,
