@@ -1647,6 +1647,21 @@ Rules:
 - Do not expose private Trust Passport evidence on the public TrustSlip flow.
 - Opening the current paper is allowed when a TrustSlip code already exists, but generating after changing purpose/community remains the clean path.
 - Once the paper opens, show the official summary plus one active pack; do not expose holder, community, evidence, confirmation, limits, and action panels as one long stack.
+- The signed-in focus=community-confirmation variant is the simple member
+  starter for live community confirmation. It must replace the full TrustSlip
+  surface with one short purpose statement, one community choice, three steps,
+  one state-aware primary action, one Back action, and one closed meaning block.
+- The three steps are: choose one community, send one request through the
+  existing eligible-responder pool, and follow the focused public outcome page.
+  Do not hardcode a 2-3 members promise because the backend policy owns the
+  eligible responder count for each community.
+- Starting from Identity Integrity or the normal holder TrustSlip must open this
+  focused variant before mutating a confirmation request. The existing request
+  API, responder privacy, eligibility policy, success notice, and automatic
+  /community-confirmations/public/{token} handoff remain authoritative.
+- Keep requester labels, callback channels, business-number fields, readiness
+  tables, and the full TrustSlip paper off the focused starter. Deeper evidence
+  meaning stays closed until the member opens it.
 
 ## TrustSlipVerifyPage
 

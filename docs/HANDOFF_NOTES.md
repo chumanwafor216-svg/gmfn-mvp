@@ -5,6 +5,28 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Simple member community-confirmation starter - 2026-11-04
+
+- The existing confirmation API, responder inbox, eligibility policy, and
+  public outcome remain authoritative. No second confirmation engine or
+  backend route was created.
+- Signed-in TrustSlip now supports a focused community-confirmation variant.
+  Identity Integrity and the normal TrustSlip confirmation actions open this
+  simple starter before any confirmation request is sent.
+- The starter shows only three guided steps: choose one community, send one
+  request through the backend-owned eligible responder pool, and follow the
+  focused result as members respond.
+- The screen does not hardcode two or three members. It displays the actual
+  eligible responder count when the backend provides one, because community
+  confirmation policy remains server-owned.
+- Phone, community, TrustSlip, selected-community, and responder-readiness
+  blockers become one state-aware primary action. Callback channels, business
+  numbers, readiness tables, and the full TrustSlip paper stay off this starter.
+- Existing success feedback and the automatic public outcome handoff remain in
+  place after a request is accepted.
+- Verification passed: production frontend build, focused ESLint, whitespace
+  checks, and the existing 390 by 844 Trust infrastructure mobile visual audit.
+
 ## Human-led invite and public-shop link packaging - 2026-11-04
 
 - Existing canonical invite and public-shop link systems were retained; no new

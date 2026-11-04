@@ -522,6 +522,24 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /communityConfirmationFocus[^]*data-gsn-community-confirmation-focus="true"[^]*Ask your community to confirm you[^]*Choose your community[^]*Send one request[^]*Follow the result[^]*debugId="trust-slip[.]community-confirmation[.]focus[.]request"[^]*data-gsn-community-confirmation-focus-details="true"/,
+  "Signed-in community confirmation must have a focused three-step starter instead of exposing the full TrustSlip page."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipPage.tsx",
+  /Send (?:to )?2[–-]3 members/i,
+  "Community confirmation must not hardcode a two-to-three-member delivery claim when the backend owns the eligible responder pool."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /key: "community"[^]*actionLabel: "Start confirmation"[^]*focus=community-confirmation/,
+  "Identity Integrity must send the member to the focused confirmation starter instead of the responder inbox."
+);
+
+assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
   /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "community", "document", "qr"\]\}[\s\S]*data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*gridTemplateColumns:[\s\S]*"repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"/,
   "Public Community Confirmation Outcome must carry a recurring watermark field and phone-safe public-paper proof grid."

@@ -2750,6 +2750,8 @@ function buildConfirmedTrustSlipIssueSummary(
 export default function TrustSlipPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const communityConfirmationFocus =
+    new URLSearchParams(location.search).get("focus") === "community-confirmation";
   const pageTopRef = useRef<HTMLDivElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
   const trustSlipContextKey = String(selectedClanId || 0);
@@ -4482,6 +4484,27 @@ export default function TrustSlipPage() {
       safeDateTime(communityConfirmation?.last_community_confirmation) || "Not requested yet",
     ],
   ];
+  const eligibleConfirmationResponderCount = Number(
+    communityConfirmation?.contactable_reference_count || 0
+  );
+  const focusedConfirmationBlocker = trustSlipSummaryLoading
+    ? "GSN is checking your TrustSlip and community."
+    : trustSlipBlockedByPhone
+      ? "Verify your phone first so GSN can prepare the confirmation request."
+      : trustSlipBlockedByCommunity
+        ? "Choose an active community first."
+        : !trustSlipCode
+          ? firstTruthy(
+              trustSlipBlockDetail,
+              "Prepare your TrustSlip before sending a community confirmation request."
+            )
+          : trustSlipNeedsSelectedCommunityRefresh
+            ? "Prepare the TrustSlip for the selected community before sending the request."
+          : !communityPulseAvailable
+            ? eligibleConfirmationResponderCount <= 0
+              ? "No eligible community responders are ready yet. A community owner must enable confirmation contacts first."
+              : "Community confirmation is not available for this TrustSlip yet."
+            : "";
   const confirmationResult = confirmationOutcome?.community_response || null;
   const confirmationPublicPath = confirmationOutcome?.public_token
     ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
@@ -5188,7 +5211,7 @@ export default function TrustSlipPage() {
     trustSlipPaperPackOptions.find((pack) => pack.key === activeTrustSlipPaperPack) ||
     trustSlipPaperPackOptions[0];
   const trustSlipPaperFrameEnabled = true;
-  if (trustSlipPaperFrameEnabled) {
+  if (trustSlipPaperFrameEnabled && !communityConfirmationFocus) {
     return (
       <div
         ref={pageTopRef}
@@ -7510,16 +7533,20 @@ export default function TrustSlipPage() {
                     <CardActionRow>
                       <PrimaryButton
                         type="button"
-                        onClick={() => { void requestCommunityPulse(); }}
-                        busy={confirmationBusy}
-                        busyLabel="Requesting..."
+                        onClick={() =>
+                          navigateWithOrigin(
+                            navigate,
+                            location.pathname + "?focus=community-confirmation",
+                            location
+                          )
+                        }
                         fullWidth
                         stableHeight={isCompact ? 52 : 50}
                         debugId="trust-slip.paper-pack.community.request"
                         style={trustSlipPrimaryActionStyle(isCompact)}
                       >
                         {trustSlipIconBadge("community", isCompact ? 26 : 28, "blue")}
-                        Request confirmation
+                        Start confirmation
                       </PrimaryButton>
                       {communityVerifyPath ? (
                         <StableCtaLink
@@ -7810,18 +7837,20 @@ export default function TrustSlipPage() {
                 </div>
                 <PrimaryButton
                   type="button"
-                  onClick={() => {
-                    void requestCommunityPulse();
-                  }}
-                  busy={confirmationBusy}
-                  busyLabel="Requesting..."
+                  onClick={() =>
+                    navigateWithOrigin(
+                      navigate,
+                      location.pathname + "?focus=community-confirmation",
+                      location
+                    )
+                  }
                   fullWidth
                   stableHeight={isCompact ? 52 : 52}
                   debugId="trust-slip.community-confirmation.request"
                   style={trustSlipPrimaryActionStyle(isCompact)}
                 >
                   {trustSlipIconBadge("community", isCompact ? 26 : 28, "blue")}
-                  Request instant confirmation
+                  Start community confirmation
                 </PrimaryButton>
                 {communityVerifyPath ? (
                   <StableCtaLink
@@ -8425,6 +8454,392 @@ export default function TrustSlipPage() {
           </details>
         </section>
         )}
+      </div>
+    );
+  }
+
+  if (communityConfirmationFocus) {
+    const focusedPrimaryLabel = trustSlipBlockedByPhone
+      ? "Verify phone first"
+      : trustSlipBlockedByCommunity
+        ? "Choose community first"
+        : !trustSlipCode
+          ? "Prepare confirmation"
+          : trustSlipNeedsSelectedCommunityRefresh
+            ? "Prepare selected community"
+            : !communityPulseAvailable
+              ? "Confirmation not ready"
+              : "Send confirmation request";
+    const focusedPrimaryBusy =
+      trustSlipSummaryLoading || refreshing || confirmationBusy;
+    const focusedPrimaryDisabled =
+      trustSlipSummaryLoading ||
+      Boolean(trustSlipCode && !trustSlipNeedsSelectedCommunityRefresh && !communityPulseAvailable);
+    const responderStepText =
+      eligibleConfirmationResponderCount > 0
+        ? "GSN will send this privately to " +
+          eligibleConfirmationResponderCount +
+          " eligible community responder" +
+          (eligibleConfirmationResponderCount === 1 ? "." : "s.")
+        : "GSN will use the eligible responders configured by this community.";
+
+    return (
+      <div
+        ref={pageTopRef}
+        data-gsn-community-confirmation-focus="true"
+        style={{
+          width: "100%",
+          maxWidth: 760,
+          margin: "0 auto",
+          paddingBottom: isCompact ? 142 : 56,
+          boxSizing: "border-box",
+          display: "grid",
+          gap: 14,
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Community confirmation"
+          title="Confirm Your Community"
+          subtitle="Choose one community and send one clear request."
+          homeTo={routes.dashboard}
+          homeLabel="Dashboard"
+          backTo={location.pathname}
+          backLabel="TrustSlip"
+        />
+
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+        <section
+          style={{
+            ...pageCard("#FFFFFF"),
+            padding: isCompact ? 18 : 26,
+            border: "1px solid rgba(37,78,119,0.14)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <TrustPaperWatermark
+            name="community"
+            color="#0B63D1"
+            size={180}
+            opacity={0.035}
+            style={{ top: 18, right: -42, bottom: "auto" }}
+          />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "56px minmax(0, 1fr)" : "68px minmax(0, 1fr)",
+                gap: 14,
+                alignItems: "center",
+              }}
+            >
+              {trustSlipIconBadge("community", isCompact ? 48 : 58, "blue")}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+                  Community confirmation
+                </div>
+                <h1
+                  style={{
+                    margin: "5px 0 0",
+                    color: "#07172C",
+                    fontSize: isCompact ? 26 : 34,
+                    lineHeight: 1.08,
+                    fontWeight: 1000,
+                  }}
+                >
+                  Ask your community to confirm you
+                </h1>
+              </div>
+            </div>
+            <p
+              style={{
+                margin: "14px 0 0",
+                color: "#526579",
+                fontSize: isCompact ? 15 : 16,
+                fontWeight: 800,
+                lineHeight: 1.48,
+              }}
+            >
+              GSN asks eligible members what they personally know. Their names,
+              phone numbers, and private notes stay out of the public result.
+            </p>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(37,78,119,0.14)",
+                  background: "#F8FBFF",
+                  padding: 14,
+                  display: "grid",
+                  gridTemplateColumns: "40px minmax(0, 1fr)",
+                  gap: 12,
+                  alignItems: "start",
+                }}
+              >
+                <span
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#F2C766",
+                    color: "#07172C",
+                    fontWeight: 1000,
+                  }}
+                >
+                  1
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#07172C", fontSize: 16, fontWeight: 1000 }}>
+                    Choose your community
+                  </div>
+                  {verificationCommunityOptions.length > 1 ? (
+                    <select
+                      aria-label="Choose confirmation community"
+                      value={selectedVerificationCommunityId}
+                      onChange={(event) => {
+                        trustSlipSetupControlsTouchedRef.current = true;
+                        setVisibilityScope("community_specific");
+                        setSelectedIssuingCommunityOptionId(event.target.value);
+                      }}
+                      style={{
+                        width: "100%",
+                        minHeight: 50,
+                        marginTop: 9,
+                        borderRadius: 14,
+                        border: "1px solid rgba(37,78,119,0.2)",
+                        background: "#FFFFFF",
+                        color: "#07172C",
+                        fontSize: 16,
+                        fontWeight: 900,
+                        padding: "0 38px 0 12px",
+                      }}
+                    >
+                      {verificationCommunityOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div
+                      style={{
+                        marginTop: 5,
+                        color: "#526579",
+                        fontSize: 14,
+                        fontWeight: 850,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {selectedVerificationCommunityName || "No active community selected"}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(37,78,119,0.14)",
+                  background: "#FFFFFF",
+                  padding: 14,
+                  display: "grid",
+                  gridTemplateColumns: "40px minmax(0, 1fr)",
+                  gap: 12,
+                  alignItems: "start",
+                }}
+              >
+                <span
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#EAF5FF",
+                    color: "#0B63D1",
+                    fontWeight: 1000,
+                  }}
+                >
+                  2
+                </span>
+                <div>
+                  <div style={{ color: "#07172C", fontSize: 16, fontWeight: 1000 }}>
+                    Send one request
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#526579",
+                      fontSize: 14,
+                      fontWeight: 850,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {responderStepText}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(46,155,98,0.2)",
+                  background: "#F2FBF5",
+                  padding: 14,
+                  display: "grid",
+                  gridTemplateColumns: "40px minmax(0, 1fr)",
+                  gap: 12,
+                  alignItems: "start",
+                }}
+              >
+                <span
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#2E9B62",
+                    color: "#FFFFFF",
+                    fontWeight: 1000,
+                  }}
+                >
+                  3
+                </span>
+                <div>
+                  <div style={{ color: "#07172C", fontSize: 16, fontWeight: 1000 }}>
+                    Follow the result
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#526579",
+                      fontSize: 14,
+                      fontWeight: 850,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    GSN opens the focused result page after the request is sent.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {focusedConfirmationBlocker ? (
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 16,
+                  border: "1px solid rgba(245,158,11,0.26)",
+                  background: "#FFF8E6",
+                  padding: 12,
+                  color: "#7A4A00",
+                  fontSize: 13,
+                  fontWeight: 900,
+                  lineHeight: 1.42,
+                }}
+              >
+                {focusedConfirmationBlocker}
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+              <PrimaryButton
+                type="button"
+                debugId="trust-slip.community-confirmation.focus.request"
+                onClick={() => {
+                  if (trustSlipBlockedByPhone) {
+                    navigateWithOrigin(navigate, routes.identityPhone, location);
+                    return;
+                  }
+                  if (trustSlipBlockedByCommunity) {
+                    navigateWithOrigin(navigate, routes.communityHome, location);
+                    return;
+                  }
+                  if (!trustSlipCode || trustSlipNeedsSelectedCommunityRefresh) {
+                    void refreshTrustSlip();
+                    return;
+                  }
+                  if (communityPulseAvailable) {
+                    void requestCommunityPulse();
+                  }
+                }}
+                busy={focusedPrimaryBusy}
+                busyLabel={
+                  confirmationBusy
+                    ? "Sending..."
+                    : trustSlipSummaryLoading
+                      ? "Checking..."
+                      : "Preparing..."
+                }
+                disabled={focusedPrimaryDisabled}
+                fullWidth
+                stableHeight={56}
+                style={trustSlipPrimaryActionStyle(isCompact)}
+              >
+                {trustSlipIconBadge("community", 28, "blue")}
+                {focusedPrimaryLabel}
+              </PrimaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => navigate(location.pathname)}
+                fullWidth
+                stableHeight={52}
+                debugId="trust-slip.community-confirmation.focus.back"
+                style={trustSlipActionButtonStyle(isCompact)}
+              >
+                Back to TrustSlip
+              </SecondaryButton>
+            </div>
+
+            <details
+              data-gsn-community-confirmation-focus-details="true"
+              style={{
+                marginTop: 14,
+                borderRadius: 16,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "#F8FBFF",
+                padding: "0 12px 12px",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="trust-slip.community-confirmation.focus.details"
+                stableHeight={50}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "center",
+                  color: "#07172C",
+                  fontWeight: 1000,
+                }}
+              >
+                <span>What this confirmation means</span>
+                <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 20 }}>
+                  +
+                </span>
+              </StableDisclosureSummary>
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  color: "#526579",
+                  fontSize: 13,
+                  fontWeight: 820,
+                  lineHeight: 1.48,
+                }}
+              >
+                Community confirmation records personal responses from eligible
+                members. It is evidence for judgement, not government identity
+                verification, payment approval, a guarantee, or proof of future
+                behaviour.
+              </p>
+            </details>
+          </div>
+        </section>
       </div>
     );
   }

@@ -58,7 +58,7 @@ Bottom navigation is allowed here.
 15. AdminCommunityOwnershipPage (`/app/command-center/community-ownership`; platform-admin-only guided ownership, steward setup, pilot cleanup, and lifecycle review; compact one-lane first surface reviewed 2026-10-26)
 16. SupportPage
 17. AdminSupportPage
-18. TrustSlipPage
+18. TrustSlipPage (includes the signed-in focus=community-confirmation simple starter variant)
 19. WhatsAppBridgePage
 20. CommitmentsPage
 21. DemandBoxPage (`/app/demand-box`; authenticated needs lifecycle owner, novice-first phone surface reviewed 2026-10-17)

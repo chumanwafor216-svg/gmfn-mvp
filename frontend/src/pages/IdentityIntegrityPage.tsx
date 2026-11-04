@@ -1994,11 +1994,6 @@ export default function IdentityIntegrityPage() {
         selectedClanId,
         "identity-integrity.route.payout-details"
       ),
-      communityConfirmations: routeTarget(
-        "communityConfirmationInbox",
-        selectedClanId,
-        "identity-integrity.route.community-confirmations"
-      ),
       notifications: routeTarget(
         "notifications",
         selectedClanId,
@@ -2761,18 +2756,21 @@ export default function IdentityIntegrityPage() {
       key: "community",
       icon: "community",
       title: "Community",
-      status: identitySignals.communityReady ? "Selected" : "Open inbox",
+      status: identitySignals.communityReady ? "Ready" : "Choose community",
       tone: identitySignals.communityReady ? "ready" : "watch",
       detail: identitySignals.communityReady
-        ? "This identity is currently tied to a selected community."
-        : "Use the confirmation inbox to review community identity confirmation work.",
-      actionLabel: "Open confirmations",
+        ? "Ask this community to confirm what eligible members personally know about your membership."
+        : "Choose an active community before starting confirmation.",
+      actionLabel: "Start confirmation",
       completionSteps: [
-        "Open the confirmation inbox.",
-        "Review or request community confirmation.",
-        "Return here after the community record updates.",
+        "Choose the community.",
+        "Send one confirmation request.",
+        "Follow the result page as members respond.",
       ],
-      to: routes.communityConfirmations,
+      to:
+        routes.trustSlip +
+        (routes.trustSlip.includes("?") ? "&" : "?") +
+        "focus=community-confirmation",
     },
     {
       key: "bank",

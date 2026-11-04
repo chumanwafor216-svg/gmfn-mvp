@@ -475,6 +475,11 @@ const routeChecks = [
     selector: '[data-gsn-trust-document-certificate="trustslip-holder"], [data-gsn-trustslip-setup-only="true"]',
   },
   {
+    label: "Simple community confirmation starter",
+    path: "/app/trust-slip?focus=community-confirmation",
+    selector: '[data-gsn-community-confirmation-focus="true"]',
+  },
+  {
     label: "Open Trust Reading",
     path: "/app/open-trust-reading",
     selector: 'main, [data-page-shell="open-trust-reading"]',
