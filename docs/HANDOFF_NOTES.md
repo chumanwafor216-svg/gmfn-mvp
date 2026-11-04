@@ -5,6 +5,24 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Marketplace Community QR simplification - 2026-11-04
+
+- Owner phone evidence showed the reusable community QR hidden behind the
+  Marketplace Access & Public Links explanation and a long personal-invite
+  relationship form. Blessed Satch is an ordinary community and does not need a
+  Community Domain before it can create this QR.
+- Marketplace Invite people now leads with Community QR and the existing
+  Reviewed community access policy. The owner presses one Create community QR
+  action, then sees the QR plus Copy community link and Share community link.
+- Invite one person instead remains available behind one closed disclosure. The
+  long relationship questionnaire and Real-life meaning lecture stay off the
+  compact phone surface; desktop retains the advanced optional form.
+- No QR engine, route, schema, permission, or Community Domain dependency was
+  added. This presentation calls the existing community invite-link endpoint
+  with qr_policy_key reviewed_access.
+- Verification passed: focused ESLint, simple-community-invite audit,
+  TypeScript/Vite production build, and the complete protected-button freeze.
+
 ## Public community QR visibility - 2026-11-04
 
 - Confirmed the existing QR infrastructure already lives in the community invite

@@ -1008,6 +1008,7 @@ Rules:
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
 - Every selected-community Marketplace must show one direct `Invite someone` action without requiring search or opening `More things you can do`. It opens the shared compact Copy/Share card; receiver and relationship personalization remain optional and collapsed.
+- On phone, Invite someone must lead with Community QR using the existing Reviewed community access policy. One QR may serve many applicants, each request still requires community approval, and Community Domain is not required. Keep Invite one person instead collapsed beneath it, keep the relationship questionnaire off the phone surface, and keep the long public-link meaning guide off this focused task.
 - On phone, the Marketplace identity uses a photo-led selected-community hero with the community name, Community ID, active status, and the short line Buy, sell, support and grow together in our community. The first market cards use the friendly headings Needs / Demand and Shops & Services, each with one clear action and one short explanatory line; technical tags and raw counts stay off the first surface.
 - Owner-approved phone order as of 2026-10-30: photo-led Marketplace identity,
   direct Invite someone, Needs / Demand, two-card Shops & Services preview,

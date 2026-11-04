@@ -58,6 +58,7 @@ type MarketplaceLinkRowStatus = "ready" | "warn" | "idle";
 export type MarketplaceToolsSectionData = {
   MarketplaceGlyph: MarketplaceGlyphComponent;
   activeCommunityId: number;
+  activeCommunityName: string;
   activeLinkCenterTool: LinkCenterTool | null;
   canManageMarketplaceLinks: boolean;
   canPlaceMarketplaceRepost: boolean;
@@ -271,6 +272,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
   const {
     MarketplaceGlyph,
     activeCommunityId,
+    activeCommunityName,
     activeLinkCenterTool,
     canManageMarketplaceLinks,
     canPlaceMarketplaceRepost,
@@ -513,16 +515,21 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
           <div style={marketplaceLinkHeroBodyStyle(isCompact)}>
             <div>
               <div style={marketplaceLinkHeroTitleStyle(isCompact)}>
-                {activeLinkCenterTool === "repost"
+                {isCompact && activeLinkCenterTool === "join"
+                  ? "Invite people"
+                  : activeLinkCenterTool === "repost"
                   ? "Promote in another community"
                   : "Access & Public Links"}
               </div>
               <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
-                {activeLinkCenterTool === "repost"
+                {isCompact && activeLinkCenterTool === "join"
+                  ? "One community QR for many people, or one personal invite."
+                  : activeLinkCenterTool === "repost"
                   ? "Choose one shop item, one permitted community, and how long it should appear."
                   : "Verify the community, invite someone, start your own community, or share the public shop."}
               </div>
             </div>
+            {!(isCompact && activeLinkCenterTool === "join") ? (
             <div style={marketplaceLinkHeroPillRowStyle()}>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="links" size={16} />
@@ -537,10 +544,11 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                 {activeLinkCenterTool === "repost" ? "Marketplace-safe" : "Fast links"}
               </span>
             </div>
+            ) : null}
           </div>
         </div>
 
-        {sectionsOpen.tools && activeLinkCenterTool !== "repost" ? (
+        {sectionsOpen.tools && activeLinkCenterTool !== "repost" && !isCompact ? (
           <RealLifeMeaningGuide
             compact={isCompact}
             guidance={getRealLifeTrustGuidance("marketplace-public-link-readiness")}
@@ -700,10 +708,12 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                 <>
                 <SimpleCommunityInviteCard
                   communityId={activeCommunityId}
+                  communityName={activeCommunityName}
                   initialLink={inviteLink}
                   compact={isCompact}
                   embedded
                 />
+                {!isCompact ? (
                 <details
                   style={{
                     borderRadius: 16,
@@ -1180,6 +1190,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                   ) : null}
                 </div>
                 </details>
+                ) : null}
                 </>
                 ) : null}
 

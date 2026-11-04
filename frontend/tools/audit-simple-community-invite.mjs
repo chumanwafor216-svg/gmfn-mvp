@@ -50,6 +50,27 @@ assertContains(
   /const message = buildSimpleJoinInviteMessage\([\s\S]*?inviteLink: linkToShare[\s\S]*?const shareText = buildSimpleJoinInviteMessage\([\s\S]*?text: shareText,[\s\S]*?url: linkToShare/,
   "Community Home native and clipboard sharing must both use the shared short invite copy."
 );
+assertContains(
+  "component",
+  /qr_policy_key: "reviewed_access"/,
+  "The shared Marketplace invite card must use the existing reviewed community QR policy."
+);
+assertContains(
+  "component",
+  /<QRCodeSVG/,
+  "The shared Marketplace invite card must render the existing community QR."
+);
+assertContains(
+  "component",
+  /Create community QR/,
+  "The shared Marketplace invite card must make community QR creation obvious."
+);
+assertContains(
+  "component",
+  /Invite one person instead/,
+  "The one-person invite must stay secondary to the community QR."
+);
+
 assertNotContains(
   "component",
   /Membership does not mean identity or financial verification|Community members will vote|A community admin will decide/,
@@ -89,6 +110,12 @@ assertContains(
   "marketplaceTools",
   /activeLinkCenterTool === "join"[\s\S]*?<SimpleCommunityInviteCard[\s\S]*?Personalise invite \(optional\)/,
   "Marketplace Invite Someone must show the simple card first and keep personalization optional."
+);
+
+assertContains(
+  "marketplaceTools",
+  /activeLinkCenterTool !== "repost" && !isCompact/,
+  "Marketplace must keep the long public-link explanation off the compact phone surface."
 );
 
 if (findings.length > 0) {

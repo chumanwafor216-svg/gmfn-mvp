@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { createClanInvite, getClanInviteLink } from "../lib/api";
 import {
   normalizedJoinInviteUrl,
@@ -59,13 +60,15 @@ export default function SimpleCommunityInviteCard({
   );
   const [inviteLink, setInviteLink] = useState(normalizedInitialLink);
   const [loading, setLoading] = useState(
-    Boolean(!hero && communityId && !normalizedInitialLink)
+    Boolean(!hero && !embedded && communityId && !normalizedInitialLink)
   );
   const [preparedInviterName, setPreparedInviterName] = useState("");
-  const [admissionMode, setAdmissionMode] = useState("community_vote");
   const admissionModeRef = useRef("community_vote");
   const [recipientName, setRecipientName] = useState("");
   const [feedback, setFeedback] = useState<InviteFeedback>(null);
+  const [communityQrLink, setCommunityQrLink] = useState("");
+  const [communityQrLoading, setCommunityQrLoading] = useState(false);
+  const [communityQrFeedback, setCommunityQrFeedback] = useState<InviteFeedback>(null);
 
   const prepareInviteLink = useCallback(async (): Promise<string> => {
     if (!communityId) return "";
@@ -88,7 +91,6 @@ export default function SimpleCommunityInviteCard({
       );
       const nextAdmissionMode = String(response?.admission_mode || "community_vote");
       admissionModeRef.current = nextAdmissionMode;
-      setAdmissionMode(nextAdmissionMode);
       return nextLink;
     } catch {
       setFeedback({
@@ -107,10 +109,9 @@ export default function SimpleCommunityInviteCard({
     setInviteLink(normalizedInitialLink);
     setPreparedInviterName("");
     admissionModeRef.current = "community_vote";
-    setAdmissionMode("community_vote");
     setRecipientName("");
 
-    if (!communityId || normalizedInitialLink || hero) {
+    if (!communityId || normalizedInitialLink || hero || embedded) {
       setLoading(false);
       return () => {
         alive = false;
@@ -132,7 +133,6 @@ export default function SimpleCommunityInviteCard({
         );
         const nextAdmissionMode = String(response?.admission_mode || "community_vote");
         admissionModeRef.current = nextAdmissionMode;
-        setAdmissionMode(nextAdmissionMode);
       })
       .catch(() => {
         if (!alive) return;
@@ -148,7 +148,80 @@ export default function SimpleCommunityInviteCard({
     return () => {
       alive = false;
     };
-  }, [communityId, hero, normalizedInitialLink]);
+  }, [communityId, embedded, hero, normalizedInitialLink]);
+
+  useEffect(() => {
+    setCommunityQrLink("");
+    setCommunityQrFeedback(null);
+  }, [communityId]);
+
+  async function prepareCommunityQrLink(): Promise<string> {
+    if (!communityId) return "";
+    if (communityQrLink) return communityQrLink;
+
+    setCommunityQrLoading(true);
+    setCommunityQrFeedback(null);
+    try {
+      const response = await getClanInviteLink(communityId, {
+        qr_policy_key: "reviewed_access",
+      });
+      const nextLink = normalizedJoinInviteUrl(response);
+      if (!nextLink) throw new Error("Community QR unavailable");
+      setCommunityQrLink(nextLink);
+      setCommunityQrFeedback({
+        tone: "success",
+        text: "Community QR ready.",
+      });
+      return nextLink;
+    } catch {
+      setCommunityQrFeedback({
+        tone: "error",
+        text: "The community QR is not available right now. Try again.",
+      });
+      return "";
+    } finally {
+      setCommunityQrLoading(false);
+    }
+  }
+
+  async function copyCommunityQrLink() {
+    const link = await prepareCommunityQrLink();
+    if (!link) return;
+    const copied = await copyToClipboard(link);
+    setCommunityQrFeedback({
+      tone: copied ? "success" : "error",
+      text: copied ? "Community link copied." : "Copy failed. Try Share instead.",
+    });
+  }
+
+  async function shareCommunityQrLink() {
+    const link = await prepareCommunityQrLink();
+    if (!link) return;
+    const safeCommunityName = communityName.trim() || "this GSN community";
+    const message = `Join ${safeCommunityName} on GSN. Open to request access. Community approval is required. ${link}`;
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: `Join ${safeCommunityName}`,
+          text: "Open to request access. Community approval is required.",
+          url: link,
+        });
+        setCommunityQrFeedback({ tone: "success", text: "Community QR opened for sharing." });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    const copied = await copyToClipboard(message);
+    setCommunityQrFeedback({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Community invite copied. Paste it into WhatsApp or any message."
+        : "Sharing is not available on this device.",
+    });
+  }
 
   async function readyLink(): Promise<string> {
     return inviteLink || prepareInviteLink();
@@ -407,7 +480,7 @@ export default function SimpleCommunityInviteCard({
             border: `1px solid ${gmfnBrand.colors.accentBorder}`,
           }}
         >
-          <GsnLegacyIcon name="community" size={compact ? 28 : 32} />
+          <GsnLegacyIcon name="qr" size={compact ? 28 : 32} />
         </span>
 
         <div style={{ minWidth: 0 }}>
@@ -419,7 +492,10 @@ export default function SimpleCommunityInviteCard({
               lineHeight: 1.15,
             }}
           >
-            Invite someone
+            Community QR
+          </div>
+          <div style={{ marginTop: 4, color: "#24734B", fontSize: 12, fontWeight: 950 }}>
+            Reviewed community access
           </div>
         </div>
       </div>
@@ -433,25 +509,49 @@ export default function SimpleCommunityInviteCard({
           lineHeight: 1.45,
         }}
       >
-        {admissionMode === "instant_invite"
-          ? "Copy and send the link. They accept, set a password, and enter. Each link is for one person."
-          : admissionMode === "admin_approval"
-            ? "Copy and send the link. They submit their details, then an admin decides."
-            : "Copy and send the link. They submit their details, then members vote."}
+        One QR for many people. Each person requests access, then your community approves them.
       </div>
 
       <div
         aria-live="polite"
         style={{
-          marginTop: feedback || loading ? 10 : 0,
-          minHeight: feedback || loading ? 22 : 0,
-          color: feedback?.tone === "error" ? "#991B1B" : gmfnBrand.colors.accent,
+          marginTop: communityQrFeedback || communityQrLoading ? 10 : 0,
+          minHeight: communityQrFeedback || communityQrLoading ? 22 : 0,
+          color: communityQrFeedback?.tone === "error" ? "#991B1B" : gmfnBrand.colors.accent,
           fontSize: 13,
           fontWeight: 900,
         }}
       >
-        {feedback?.text || (loading ? "Preparing link..." : "")}
+        {communityQrFeedback?.text || (communityQrLoading ? "Creating community QR..." : "")}
       </div>
+
+      {communityQrLink ? (
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            justifyItems: "center",
+            gap: 9,
+            padding: 12,
+            borderRadius: 16,
+            border: "1px solid rgba(37,78,119,0.16)",
+            background: "#FFFFFF",
+          }}
+        >
+          <QRCodeSVG
+            value={communityQrLink}
+            size={compact ? 176 : 196}
+            bgColor="#FFFFFF"
+            fgColor="#07172C"
+            level="M"
+            marginSize={1}
+            aria-label={`Community QR for ${communityName || "this GSN community"}`}
+          />
+          <div style={{ color: gmfnBrand.colors.muted, fontSize: 12, fontWeight: 800 }}>
+            Scan to request access
+          </div>
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -464,29 +564,96 @@ export default function SimpleCommunityInviteCard({
         <StableButton
           type="button"
           kind="primary"
-          debugId="simple-community-invite.copy"
-          onClick={copyInviteLink}
-          busy={loading}
-          busyLabel="Preparing..."
+          debugId="simple-community-invite.community-qr"
+          onClick={communityQrLink ? copyCommunityQrLink : prepareCommunityQrLink}
+          busy={communityQrLoading}
+          busyLabel="Creating..."
           disabled={!communityId}
           fullWidth
           stableHeight={52}
         >
-          <GsnLegacyIcon name="copy" size={19} />
-          Copy invite link
+          <GsnLegacyIcon name={communityQrLink ? "copy" : "qr"} size={19} />
+          {communityQrLink ? "Copy community link" : "Create community QR"}
         </StableButton>
         <StableButton
           type="button"
           kind="secondary"
-          debugId="simple-community-invite.share"
-          onClick={shareInviteLink}
-          disabled={!communityId || loading}
+          debugId="simple-community-invite.community-qr-share"
+          onClick={shareCommunityQrLink}
+          disabled={!communityId || communityQrLoading}
           fullWidth
           stableHeight={52}
         >
-          Share invite
+          Share community link
         </StableButton>
       </div>
+
+      <details style={{ marginTop: 12 }}>
+        <StableDisclosureSummary
+          debugId="simple-community-invite.personal"
+          stableHeight={48}
+          style={{
+            width: "100%",
+            borderRadius: 14,
+            border: "1px solid rgba(37,78,119,0.16)",
+            background: "#F8FBFF",
+            color: gmfnBrand.colors.ink,
+            fontSize: 14,
+            fontWeight: 950,
+          }}
+        >
+          Invite one person instead
+        </StableDisclosureSummary>
+        <div style={{ marginTop: 10, color: gmfnBrand.colors.muted, fontSize: 13, fontWeight: 760 }}>
+          Send one ordinary invite link to one person.
+        </div>
+        <div
+          aria-live="polite"
+          style={{
+            marginTop: feedback || loading ? 8 : 0,
+            minHeight: feedback || loading ? 20 : 0,
+            color: feedback?.tone === "error" ? "#991B1B" : gmfnBrand.colors.accent,
+            fontSize: 13,
+            fontWeight: 900,
+          }}
+        >
+          {feedback?.text || (loading ? "Preparing invite..." : "")}
+        </div>
+        <div
+          style={{
+            marginTop: 9,
+            display: "grid",
+            gridTemplateColumns: compact ? "1fr" : "minmax(0, 1.25fr) minmax(0, 1fr)",
+            gap: 9,
+          }}
+        >
+          <StableButton
+            type="button"
+            kind="primary"
+            debugId="simple-community-invite.copy"
+            onClick={copyInviteLink}
+            busy={loading}
+            busyLabel="Preparing..."
+            disabled={!communityId}
+            fullWidth
+            stableHeight={52}
+          >
+            <GsnLegacyIcon name="copy" size={19} />
+            Copy personal link
+          </StableButton>
+          <StableButton
+            type="button"
+            kind="secondary"
+            debugId="simple-community-invite.share"
+            onClick={shareInviteLink}
+            disabled={!communityId || loading}
+            fullWidth
+            stableHeight={52}
+          >
+            Share personal invite
+          </StableButton>
+        </div>
+      </details>
     </section>
   );
 }

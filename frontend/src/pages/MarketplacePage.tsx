@@ -10563,6 +10563,7 @@ export default function MarketplacePage() {
             data={{
               MarketplaceGlyph,
               activeCommunityId,
+              activeCommunityName,
               activeLinkCenterTool,
               canManageMarketplaceLinks,
               canPlaceMarketplaceRepost,
