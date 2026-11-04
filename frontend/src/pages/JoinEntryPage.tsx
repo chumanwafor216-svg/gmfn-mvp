@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMark from "../components/GSNBrandMark";
@@ -43,6 +44,7 @@ import {
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
 import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
+import { canonicalJoinInviteUrl } from "../lib/joinLinks";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { publicApiUrl } from "../lib/publicLinks";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
@@ -1349,6 +1351,69 @@ function CompactInviteWelcome({
   );
 }
 
+function CommunityInviteQr({
+  inviteUrl,
+  communityName,
+  compact = false,
+}: {
+  inviteUrl: string;
+  communityName: string;
+  compact?: boolean;
+}) {
+  const safeCommunityName = cleanText(communityName) || "this GSN community";
+
+  return (
+    <div
+      data-gsn-community-invite-qr="true"
+      style={{
+        display: "grid",
+        justifyItems: "center",
+        gap: 10,
+        marginTop: 12,
+        padding: compact ? 12 : 14,
+        borderRadius: 18,
+        border: "1px solid rgba(37,78,119,0.16)",
+        background: "#FFFFFF",
+      }}
+    >
+      <div style={{ color: "#0B1F33", fontSize: 15, fontWeight: 1000 }}>
+        Community join QR
+      </div>
+      <div
+        style={{
+          padding: 10,
+          borderRadius: 14,
+          border: "1px solid rgba(7,23,44,0.10)",
+          background: "#FFFFFF",
+          lineHeight: 0,
+        }}
+      >
+        <QRCodeSVG
+          value={inviteUrl}
+          size={compact ? 176 : 196}
+          bgColor="#FFFFFF"
+          fgColor="#07172C"
+          level="M"
+          marginSize={1}
+          aria-label={`QR code to join ${safeCommunityName}`}
+        />
+      </div>
+      <div
+        style={{
+          maxWidth: 340,
+          color: "#526A82",
+          fontSize: 13,
+          fontWeight: 800,
+          lineHeight: 1.5,
+          textAlign: "center",
+        }}
+      >
+        Scan to open this same invitation for {safeCommunityName}. Community approval is still required.
+      </div>
+    </div>
+  );
+}
+
 function BrandedInvitationPaper({
   lines,
   inviterLabel,
@@ -1895,6 +1960,10 @@ export default function JoinEntryPage() {
     inviteCode && invitePreview && invitePreview.valid === false
   );
   const inviteReady = Boolean(invitePreview && invitePreview.valid === true);
+  const communityQrInviteUrl =
+    inviteReady && selectedQrPolicy
+      ? canonicalJoinInviteUrl(effectiveInviteCode)
+      : "";
   const invitePreviewMessage = cleanText(invitePreview?.message);
   const canOpenForm = Boolean(inviteCode) && !inviteBlocked && !inviteChecking;
   const showInviteLauncher = Boolean(inviteCode) && !inviteBlocked;
@@ -3048,6 +3117,12 @@ export default function JoinEntryPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     {selectedQrPolicy.announcement}
                   </div>
+                  {communityQrInviteUrl ? (
+                    <CommunityInviteQr
+                      inviteUrl={communityQrInviteUrl}
+                      communityName={resolvedCommunityName}
+                    />
+                  ) : null}
                   <div
                     style={{
                       marginTop: 10,
@@ -3100,7 +3175,11 @@ export default function JoinEntryPage() {
                     stableHeight={48}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("eye", "Invitation details", 20)}
+                    {joinEntryIconText(
+                      "eye",
+                      communityQrInviteUrl ? "Show community QR & details" : "Invitation details",
+                      20
+                    )}
                   </StableDisclosureSummary>
                   <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                     {selectedQrPolicy ? (
@@ -3122,6 +3201,13 @@ export default function JoinEntryPage() {
                         <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                           {selectedQrPolicy.announcement}
                         </div>
+                        {communityQrInviteUrl ? (
+                          <CommunityInviteQr
+                            inviteUrl={communityQrInviteUrl}
+                            communityName={resolvedCommunityName}
+                            compact
+                          />
+                        ) : null}
                       </div>
                     ) : null}
                     {inviteGovernanceProfile ? (
@@ -3211,12 +3297,30 @@ export default function JoinEntryPage() {
             }}
           >
             {isCompact ? (
-              <CompactInviteWelcome
-                communityName={resolvedCommunityName}
-                inviterLabel={inviterLabel}
-                inviteChecking={inviteChecking}
-                inviteReady={inviteReady}
-              />
+              <>
+                <CompactInviteWelcome
+                  communityName={resolvedCommunityName}
+                  inviterLabel={inviterLabel}
+                  inviteChecking={inviteChecking}
+                  inviteReady={inviteReady}
+                />
+                {communityQrInviteUrl ? (
+                  <details style={{ marginTop: 12 }}>
+                    <StableDisclosureSummary
+                      debugId="join-entry.community-qr"
+                      stableHeight={48}
+                      style={entryChoiceActionStyle("secondary")}
+                    >
+                      {joinEntryIconText("navigation", "Show community QR", 20)}
+                    </StableDisclosureSummary>
+                    <CommunityInviteQr
+                      inviteUrl={communityQrInviteUrl}
+                      communityName={resolvedCommunityName}
+                      compact
+                    />
+                  </details>
+                ) : null}
+              </>
             ) : (
               <>
                 <div style={labelText()}>

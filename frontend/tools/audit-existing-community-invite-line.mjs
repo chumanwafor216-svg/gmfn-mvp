@@ -281,6 +281,27 @@ assertContains(
   "The copied QR handover must tell executives how to use the manual invite-code fallback without weakening the approval-versus-verification boundary."
 );
 assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /data-gsn-community-invite-qr="true"/,
+  "A valid community QR-policy invite must expose the existing community QR presentation."
+);
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /inviteReady && selectedQrPolicy/,
+  "The public community QR must stay restricted to valid QR-policy invites."
+);
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /canonicalJoinInviteUrl/,
+  "The public community QR must encode the canonical join route."
+);
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /debugId="join-entry.community-qr"/,
+  "Compact invite pages must provide an explicit community QR disclosure."
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/clans.py",
   /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?claimed_existing_identity_user[\s\S]*?existing_identity_join = bool\([\s\S]*?claimed_existing_identity_user is not None[\s\S]*?existing_gsn_id_required[\s\S]*?Enter that GSN ID/,
   "Backend join-request creation must reuse typed existing GSN IDs and block duplicate-phone creation without requiring the invite recipient to sign in."

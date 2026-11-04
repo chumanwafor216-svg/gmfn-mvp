@@ -5,6 +5,22 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Public community QR visibility - 2026-11-04
+
+- Confirmed the existing QR infrastructure already lives in the community invite
+  package; no second QR system was created.
+- Valid QR-policy links on /start/join/:code now expose the same canonical
+  community join QR. Phone keeps the page compact behind an explicit Show
+  community QR disclosure; desktop shows the QR with the entry-policy details.
+- Personal invite links and invalid or expired links remain QR-free. The
+  previously shared Blessed Satch code lJjNHMkb returns not_found from the
+  production preview API, so the owner must create a fresh Blessed Satch
+  community QR package rather than reuse or relabel that dead credential.
+- The QR encodes only the canonical /start/join/:code URL. Scanning still
+  preserves the community approval boundary and does not imply verification.
+- Verification passed: focused ESLint, existing-community invite-line audit,
+  TypeScript/Vite production build, and the complete protected-button freeze.
+
 ## Private Vault everyday-item visual correction - 2026-10-29
 
 - Owner clarification defines Vault as a private, consent-led way to offer lawful
