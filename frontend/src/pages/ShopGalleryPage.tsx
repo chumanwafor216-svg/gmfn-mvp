@@ -5014,7 +5014,7 @@ export default function ShopGalleryPage() {
       <SocialTagShareButton
         target={{
           title: "Open Shop",
-          message: buildPublicShopMessage(attributedShopShareLink || absoluteShopShareLink),
+          message: "",
           socialMessage: "",
           socialUrl: attributedShopSocialLink,
           url: attributedShopShareLink || absoluteShopShareLink,

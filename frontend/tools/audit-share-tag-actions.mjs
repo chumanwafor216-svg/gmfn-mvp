@@ -225,7 +225,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*const attributedShopSocialLink = useMemo[\s\S]*publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*function buildPublicShopMessage[\s\S]*title: "Open Shop"[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: ""[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*const attributedShopSocialLink = useMemo[\s\S]*publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*function buildPublicShopMessage[\s\S]*title: "Open Shop"[\s\S]*message: ""[\s\S]*socialMessage: ""[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must send only Open Shop plus the clean static-preview URL to social channels.",
   ],
   [
