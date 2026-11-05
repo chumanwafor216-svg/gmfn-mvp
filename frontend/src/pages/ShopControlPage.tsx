@@ -59,6 +59,7 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnVaultInviteMessage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
   SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
@@ -6828,6 +6829,7 @@ export default function ShopControlPage() {
       });
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+        maxSourceBytes: SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
         maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
       });
 

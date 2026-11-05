@@ -32,6 +32,7 @@ import {
 } from "../lib/spotlightMediaPrep";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
@@ -706,6 +707,7 @@ export default function AdminGsnHouseCampaignPage() {
           if (kind === "video") {
             const prepared = await prepareSpotlightVideoFile(file, {
               maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+              maxSourceBytes: SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
               maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
             });
             preparedItem = {
