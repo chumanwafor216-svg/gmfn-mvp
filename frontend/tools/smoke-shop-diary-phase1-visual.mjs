@@ -924,6 +924,19 @@ async function run() {
         }
       }
       if (item.name === "19-public-shop-alternate-owner-360") {
+        const validOwnerActionMetrics = [...metrics.actionTops, ...metrics.actionHeights].every(
+          (value) => typeof value === "number"
+        );
+        if (
+          !validOwnerActionMetrics ||
+          Math.max(...metrics.actionTops) - Math.min(...metrics.actionTops) > 1 ||
+          Math.max(...metrics.actionHeights) - Math.min(...metrics.actionHeights) > 1
+        ) {
+          throw new Error(
+            "Owner Share, Verify, and WhatsApp actions are not aligned: " +
+              JSON.stringify({ tops: metrics.actionTops, heights: metrics.actionHeights })
+          );
+        }
         if (metrics.openShopPanelTop !== null || metrics.openShopNamePresent) {
           throw new Error(
             `${item.name} showed the redundant external Open Shop panel to the signed-in owner.`

@@ -142,7 +142,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
-.public-shop-neon-environment [data-public-shop-neon-action="true"] {
+.public-shop-neon-environment [data-gmfn-action-root="true"] {
   position: relative;
   isolation: isolate;
   outline: 1px solid rgba(72, 183, 255, 0.82);
@@ -151,7 +151,7 @@
 
 
 @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
-  .public-shop-neon-environment [data-public-shop-neon-action="true"]::after {
+  .public-shop-neon-environment [data-gmfn-action-root="true"]::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -194,7 +194,7 @@
   }
 }
 
-.public-shop-neon-environment [data-public-shop-neon-action="true"]:focus-visible {
+.public-shop-neon-environment [data-gmfn-action-root="true"]:focus-visible {
   outline: 3px solid #f2cf77;
   outline-offset: 3px;
 }
@@ -321,7 +321,7 @@
     scroll-behavior: auto;
     transition: none !important;
   }
-  .public-shop-neon-environment [data-public-shop-neon-action="true"]::after {
+  .public-shop-neon-environment [data-gmfn-action-root="true"]::after {
     animation: none !important;
     background-position: 50% 50%;
   }

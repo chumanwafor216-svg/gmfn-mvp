@@ -69,7 +69,28 @@ assertContains(files.presentation, ".public-shop-neon-environment .shop-diary-ca
 assertContains(files.presentation, ".public-shop-neon-environment .public-shop-inner::before", "The approved showroom must retain its static neon side rails.");
 assertContains(files.presentation, "pointer-events: none", "Decorative neon layers must never intercept shop interactions.");
 assertContains(files.presentation, ".public-shop-neon-environment .public-shop-vault-ad", "Private Vault must remain inside the scoped neon environment.");
-assertNotContains(files.presentation, /@keyframes|animation\s*:/, "The neon background must remain static and must not introduce flashing or decorative animation.");
+const presentationSource = read(files.presentation);
+const approvedAnimationNames = new Set([
+  "public-shop-button-neon-travel",
+  "public-shop-product-update-scroll",
+]);
+const declaredKeyframes = Array.from(
+  presentationSource.matchAll(/@keyframes\s+([a-zA-Z0-9_-]+)/g),
+  (match) => match[1]
+);
+const unapprovedKeyframes = declaredKeyframes.filter(
+  (name) => !approvedAnimationNames.has(name)
+);
+if (unapprovedKeyframes.length) {
+  findings.push(
+    `${path.relative(repo, files.presentation)}: The neon background must remain static; unapproved animation found: ${unapprovedKeyframes.join(", ")}.`
+  );
+}
+assertNotContains(
+  files.presentation,
+  /\.public-shop-(?:shell|inner)(?:::[a-z-]+)?\s*\{[^}]*animation\s*:/s,
+  "The neon showroom background and rails must remain static."
+);
 
 if (findings.length) {
   console.error("Shop Diary Phase 1 audit failed:");

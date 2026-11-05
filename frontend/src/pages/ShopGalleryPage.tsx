@@ -5009,7 +5009,7 @@ export default function ShopGalleryPage() {
     });
   }
 
-  function renderShopShareButton(ownerPlacement = false) {
+  function renderShopShareButton() {
     return (
       <SocialTagShareButton
         target={{
@@ -5025,13 +5025,12 @@ export default function ShopGalleryPage() {
         triggerIcon={inlineShareGlyph("#8C6829", isCompact ? 18 : 21)}
         minWidth={0}
         fullWidth
-        stableHeight={ownerPlacement ? (isCompact ? 44 : 48) : isCompact ? 46 : 54}
+        stableHeight={isCompact ? 46 : 54}
         debugId="shop-gallery.share-shop"
         style={{
           ...secondaryBtn(shopLoadFailed || !absoluteShopShareLink),
-          gridColumn: ownerPlacement && isCompact ? "1 / -1" : undefined,
           alignSelf: "stretch",
-          minHeight: ownerPlacement ? (isCompact ? 44 : 48) : isCompact ? 46 : 54,
+          minHeight: isCompact ? 46 : 54,
           borderRadius: isCompact ? 14 : 18,
           fontSize: isCompact ? 11.2 : 14,
           padding: isCompact ? "5px 8px" : "10px 12px",
@@ -5697,7 +5696,6 @@ export default function ShopGalleryPage() {
                   </span>
                 </StableCtaLink>
               ) : null}
-              {shopOptionsOwner ? renderShopShareButton(true) : null}
               </details>
               <div
                 className="public-shop-identity-grid"
@@ -5827,16 +5825,14 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? `repeat(${shopOptionsOwner ? 2 : 3}, minmax(0, 1fr))`
-                : `repeat(${shopOptionsOwner ? 2 : 3}, minmax(0, 1fr))`,
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               alignItems: "stretch",
               gap: isCompact ? 5 : 10,
               marginTop: isCompact ? 8 : 18,
             }}
             aria-label="Public shop actions"
           >
-            {!shopOptionsOwner ? renderShopShareButton() : null}
+            {renderShopShareButton()}
             <SecondaryButton
               onClick={toggleShopVerificationPanel}
               minWidth={0}

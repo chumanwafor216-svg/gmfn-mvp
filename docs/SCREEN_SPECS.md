@@ -2007,6 +2007,14 @@ Rules:
   behind content and pointer-transparent. Do not introduce background motion,
   flashing, global CSS, reconstructed cards, new business logic or changes to
   the animated Shop Entrance.
+- Founder-approved Public Shop action-rim refinement: apply the existing slow
+  blue-gold-violet neon rim to every stable action on the canonical Public
+  Shop/Products & Services page. Preserve each action's existing fill colour,
+  label, geometry, route, permission and behavior, stop rim movement for
+  reduced-motion users, and keep visible keyboard focus. For the signed-in
+  owner, Share, Verify and WhatsApp form one equal three-column row beneath the
+  closed-by-default Shop options disclosure; follower count and Analytics stay
+  inside that disclosure.
 - Owner-approved 2026-10-31 Public Shop Spotlight presentation: Spotlight is a
   media-first attention surface. On phone, the image/video screen occupies the
   former complete compact-card footprint and a separate information console

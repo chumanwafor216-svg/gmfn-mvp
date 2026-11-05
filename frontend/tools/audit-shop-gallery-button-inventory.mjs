@@ -507,13 +507,13 @@ assertContains(
 );
 
 assertContains(
-  /function renderShopShareButton\(ownerPlacement = false\)[\s\S]*?buttonLabel="Share"[\s\S]*?stableHeight=\{ownerPlacement \? \(isCompact \? 44 : 48\) : isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"/,
-  "Public Shop Share must remain one reusable action with compact owner placement and stable visitor sizing."
+  /function renderShopShareButton\(\)[\s\S]*?buttonLabel="Share"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"/,
+  "Public Shop Share must remain one reusable stable action."
 );
 
 assertContains(
-  /\{shopOptionsOwner \? renderShopShareButton\(true\) : null\}[\s\S]*?className="public-shop-action-row"[\s\S]*?repeat\(\$\{shopOptionsOwner \? 2 : 3\}, minmax\(0, 1fr\)\)[\s\S]*?\{!shopOptionsOwner \? renderShopShareButton\(\) : null\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?0 10px 0 rgba\(4,72,35,0\.28\)/,
-  "Owner Share must stay inside Shop options while visitors retain the three-action Share, Verify, and WhatsApp row."
+  /className="public-shop-action-row"[\s\S]*?gridTemplateColumns: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?\{renderShopShareButton\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?0 10px 0 rgba\(4,72,35,0\.28\)/,
+  "Owners and visitors must retain one aligned Share, Verify, and WhatsApp action row."
 );
 
 assertContains(
@@ -539,25 +539,20 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-neon-environment \[data-public-shop-neon-action="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?@keyframes public-shop-button-neon-travel/,
-  "Public Shop must keep the approved travelling neon rim only on explicitly approved controls without changing their stable geometry."
+  /\.public-shop-neon-environment \[data-gmfn-action-root="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?@keyframes public-shop-button-neon-travel/,
+  "Public Shop must keep the approved travelling neon rim on every stable action without changing their stable geometry."
 );
 
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\[data-public-shop-neon-action="true"\]::after[\s\S]*?animation: none !important;/,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\[data-gmfn-action-root="true"\]::after[\s\S]*?animation: none !important;/,
   "Public Shop neon button rims must stop moving when the user prefers reduced motion."
 );
 
-assertContains(
-  /debugId="shop-gallery\.toggle-all-products"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId='shop-gallery\.spotlight\.owner-shortcut'[\s\S]*?data-public-shop-neon-action='true'[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?data-public-shop-neon-action="true"/,
-  "Only product plus, compact reveal, and Spotlight controls may receive the approved neon marker."
-);
-
 assertNotContains(
-  /debugId="shop-gallery\.(?:ask-vault-access|copy-vault-request-link)"[\s\S]{0,180}?data-public-shop-neon-action/,
-  "Private Vault Request access and Copy request must remain plain controls without the neon rim."
+  /public-shop-neon-environment[\s\S]{0,120}\[data-public-shop-neon-action="true"\]/,
+  "Public Shop must not limit the founder-approved neon rim to a partial action allowlist."
 );
 
 assertContains(
