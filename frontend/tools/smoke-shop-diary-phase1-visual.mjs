@@ -76,6 +76,11 @@ const products = [
   product(4, 4, "Weekend delivery"),
   product(5, 5, "Bulk snack pack"),
   product(6, 6, "Community lunch service"),
+  product(7, 7, "Celebration cake"),
+  product(8, 8, "Office lunch tray"),
+  product(9, 9, "Fresh juice pack"),
+  product(10, 10, "Family meal plan"),
+  product(11, 11, "Event snack box"),
 ];
 
 const liveSpotlight = {
@@ -113,7 +118,7 @@ const shop = {
   whatsapp_number: "+447900000001",
   image_url: imageDataUrl,
   is_active: true,
-  shop_product_slots_total: 6,
+  shop_product_slots_total: 11,
 };
 function recentIso(hoursAgo) {
   return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
@@ -401,6 +406,14 @@ async function collectMetrics(page) {
     const productCardRect = productCard?.getBoundingClientRect();
     const productAudioRect = productAudio?.getBoundingClientRect();
     const productAudioStyle = productAudio ? getComputedStyle(productAudio) : null;
+    const productRevealAction = document.querySelector(
+      'button[data-cta-id="shop-gallery.toggle-all-products"]'
+    );
+    const spotlightRevealAction = document.querySelector(
+      'button[data-cta-id="shop-gallery.more.compact-toggle"]'
+    );
+    const productRevealActionRect = productRevealAction?.getBoundingClientRect();
+    const spotlightRevealActionRect = spotlightRevealAction?.getBoundingClientRect();
     const shareAction = document.querySelector('button[data-cta-id="shop-gallery.share-shop"]');
     const verifyAction = document.querySelector('button[data-cta-id="shop-gallery.verify-shop.toggle"]');
     const whatsappAction = document.querySelector('button[data-cta-id="shop-gallery.owner-contact.choose"]');
@@ -485,6 +498,12 @@ async function collectMetrics(page) {
       liveSpotlight: more?.getAttribute("data-public-shop-live-spotlight") || null,
       spotlightDisplay: spotlight ? getComputedStyle(spotlight).display : null,
       spotlightHeight: spotlightRect ? Math.round(spotlightRect.height) : null,
+      revealActionTops: [productRevealActionRect?.top, spotlightRevealActionRect?.top]
+        .map((value) => typeof value === "number" ? Math.round(value) : null),
+      revealActionHeights: [productRevealActionRect?.height, spotlightRevealActionRect?.height]
+        .map((value) => typeof value === "number" ? Math.round(value) : null),
+      revealActionWidths: [productRevealActionRect?.width, spotlightRevealActionRect?.width]
+        .map((value) => typeof value === "number" ? Math.round(value) : null),
       shopEntranceVideoPresent: shopEntranceVideo instanceof HTMLVideoElement,
       shopEntranceWidth: shopEntranceRect ? Math.round(shopEntranceRect.width) : null,
       shopEntranceHeight: shopEntranceRect ? Math.round(shopEntranceRect.height) : null,
@@ -598,21 +617,46 @@ async function run() {
         }
       }
       if (item.spotlight) {
-        const liveDisclosure = page.locator(
-          '[data-public-shop-more="secondary"] > summary'
-        );
         const details = page.locator('[data-public-shop-more="secondary"]');
-        if (!(await details.evaluate((node) => node.open))) {
-          throw new Error("The live Spotlight disclosure did not open automatically.");
-        }
-        await liveDisclosure.click();
+        const productRevealAction = page.locator(
+          'button[data-cta-id="shop-gallery.toggle-all-products"]'
+        );
+        const spotlightRevealAction = page.locator(
+          'button[data-cta-id="shop-gallery.more.compact-toggle"]'
+        );
         if (await details.evaluate((node) => node.open)) {
-          throw new Error("The live Spotlight disclosure could not be closed.");
+          throw new Error("The live Spotlight disclosure lengthened the page before it was tapped.");
         }
-        await liveDisclosure.click();
-        if (!(await details.evaluate((node) => node.open))) {
-          throw new Error("The live Spotlight disclosure could not be reopened.");
+        if (
+          !(await productRevealAction.isVisible()) ||
+          !(await spotlightRevealAction.isVisible())
+        ) {
+          throw new Error("The compact product and Spotlight controls were not both visible.");
         }
+        const productRevealBox = await productRevealAction.boundingBox();
+        const spotlightRevealBox = await spotlightRevealAction.boundingBox();
+        if (
+          !productRevealBox ||
+          !spotlightRevealBox ||
+          Math.abs(productRevealBox.y - spotlightRevealBox.y) > 1 ||
+          Math.abs(productRevealBox.height - spotlightRevealBox.height) > 1 ||
+          Math.abs(productRevealBox.width - spotlightRevealBox.width) > 2
+        ) {
+          throw new Error("The compact product and Spotlight controls did not share one equal row.");
+        }
+        await spotlightRevealAction.click();
+        await page.waitForFunction(
+          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === true
+        );
+        await page.waitForTimeout(250);
+        const spotlightBox = await page.locator(".public-shop-spotlight").boundingBox();
+        if (!spotlightBox || spotlightBox.height < 400) {
+          throw new Error("The live Spotlight billboard did not render after its control was tapped.");
+        }
+        await spotlightRevealAction.click();
+        await page.waitForFunction(
+          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === false
+        );
       }
       const metrics = await collectMetrics(page);
       let loopStability = null;
@@ -890,15 +934,17 @@ async function run() {
         }
       }
       if (item.name === "17-public-shop-live-spotlight-390") {
-        if (!metrics.moreOpen || metrics.liveSpotlight !== "true") {
-          throw new Error("A resolved live Spotlight remained behind the closed More row.");
+        if (metrics.moreOpen || metrics.liveSpotlight !== "true") {
+          throw new Error("A resolved live Spotlight did not return to its compact closed state.");
         }
         if (
-          metrics.spotlightDisplay === "none" ||
-          metrics.spotlightHeight === null ||
-          metrics.spotlightHeight < 400
+          metrics.revealActionTops.some((value) => value === null) ||
+          Math.abs(metrics.revealActionTops[0] - metrics.revealActionTops[1]) > 1 ||
+          metrics.revealActionHeights.some((value) => value !== 46) ||
+          metrics.revealActionWidths.some((value) => value === null) ||
+          Math.abs(metrics.revealActionWidths[0] - metrics.revealActionWidths[1]) > 2
         ) {
-          throw new Error("The live Spotlight billboard did not render.");
+          throw new Error("Show more and Live Spotlight did not retain one equal compact row.");
         }
       }
       if (item.route.includes("#shop-diaries") && !item.route.includes("diary_entry_id=")) {

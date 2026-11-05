@@ -4259,11 +4259,21 @@ export default function ShopGalleryPage() {
     spotlightWhatsAppAvailable || spotlightAdvertiserCallUrl
   );
 
-  useEffect(() => {
-    if (isCompact && publicShopSpotlightActive) {
-      setShopMoreOpen(true);
-    }
-  }, [isCompact, publicShopSpotlightActive]);
+  const publicShopMoreHashOpen = [
+    `#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
+    `#${PUBLIC_SHOP_VAULT_ANCHOR}`,
+    `#${PUBLIC_SHOP_DIARIES_ANCHOR}`,
+  ].includes(location.hash);
+  const publicShopMoreDisclosureOpen =
+    !isCompact || shopMoreOpen || publicShopMoreHashOpen;
+  const publicShopMoreLabel =
+    routeDiaryEntryId > 0
+      ? "Shared shop update"
+      : ownerSpotlightStatusView
+      ? ownerSpotlightStatusView.label
+      : publicShopSpotlightActive
+      ? "Live Spotlight"
+      : "More from this shop";
 
   const absoluteShopLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
@@ -6790,30 +6800,83 @@ export default function ShopGalleryPage() {
           </section>
         ) : null}
 
+        {!focusedBlockLinkActive &&
+        (hiddenShelfEntryCount > 0 ||
+          showAllProducts ||
+          (isCompact && routeDiaryEntryId <= 0)) ? (
+          <div
+            className="public-shop-compact-reveal-row"
+            data-public-shop-reveal-controls="true"
+            style={{
+              order: routeDiaryEntryId > 0 ? 3 : 2,
+              display: "grid",
+              gridTemplateColumns:
+                isCompact && (hiddenShelfEntryCount > 0 || showAllProducts)
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "minmax(0, 1fr)",
+              gap: isCompact ? 7 : 10,
+              alignItems: "stretch",
+            }}
+          >
+            {hiddenShelfEntryCount > 0 || showAllProducts ? (
+              <SecondaryButton
+                onClick={() => setShowAllProducts((current) => !current)}
+                minWidth={0}
+                fullWidth
+                stableHeight={isCompact ? 46 : 48}
+                debugId="shop-gallery.toggle-all-products"
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: isCompact ? 46 : 48,
+                  borderRadius: isCompact ? 14 : 16,
+                  padding: isCompact ? "5px 7px" : "8px 12px",
+                  fontSize: isCompact ? 11.2 : 13.5,
+                }}
+              >
+                {showAllProducts ? "Show less" : `Show ${hiddenShelfEntryCount} more`}
+              </SecondaryButton>
+            ) : null}
+            {isCompact && routeDiaryEntryId <= 0 ? (
+              <SecondaryButton
+                onClick={() => setShopMoreOpen((current) => !current)}
+                minWidth={0}
+                fullWidth
+                stableHeight={46}
+                debugId="shop-gallery.more.compact-toggle"
+                aria-expanded={publicShopMoreDisclosureOpen}
+                aria-controls="public-shop-more-panel"
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: 46,
+                  borderRadius: 14,
+                  padding: "5px 8px",
+                  fontSize: 11.2,
+                  justifyContent: "space-between",
+                  gap: 6,
+                }}
+              >
+                <span>{publicShopMoreLabel}</span>
+                <span aria-hidden="true">
+                  {publicShopMoreDisclosureOpen ? "-" : "+"}
+                </span>
+              </SecondaryButton>
+            ) : null}
+          </div>
+        ) : null}
+
         <details
+          id="public-shop-more-panel"
           ref={spotlightPresentationGateRef}
           data-public-shop-more="secondary"
           data-public-shop-live-spotlight={publicShopSpotlightActive ? "true" : "false"}
           data-public-shop-exact-update={routeDiaryEntryId > 0 ? "true" : "false"}
-          open={
-            !isCompact ||
-            shopMoreOpen ||
-            [
-              `#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
-              `#${PUBLIC_SHOP_VAULT_ANCHOR}`,
-              `#${PUBLIC_SHOP_DIARIES_ANCHOR}`,
-            ].includes(location.hash)
-          }
+          open={publicShopMoreDisclosureOpen}
           onToggle={(event) => {
-            if (!isCompact) return;
-            if (publicShopSpotlightActive && !event.currentTarget.open) {
-              setShopMoreOpen(true);
-              return;
-            }
+            if (!isCompact || publicShopMoreHashOpen) return;
             setShopMoreOpen(event.currentTarget.open);
           }}
           style={{
-            order: routeDiaryEntryId > 0 ? 1 : 2,
+            order: routeDiaryEntryId > 0 ? 1 : 3,
             display: focusedBlockLinkActive ? "none" : "block",
           }}
         >
@@ -6821,7 +6884,7 @@ export default function ShopGalleryPage() {
             debugId="shop-gallery.more.toggle"
             stableHeight={50}
             style={{
-              display: isCompact ? "flex" : "none",
+              display: isCompact && routeDiaryEntryId > 0 ? "flex" : "none",
               minHeight: 50,
               alignItems: "center",
               justifyContent: "space-between",
@@ -6837,17 +6900,9 @@ export default function ShopGalleryPage() {
               listStyle: "none",
             }}
           >
-            <span>
-              {routeDiaryEntryId > 0
-                ? "Shared shop update"
-                : ownerSpotlightStatusView
-                ? ownerSpotlightStatusView.label
-                : publicShopSpotlightActive
-                ? "Live Spotlight"
-                : "More from this shop"}
-            </span>
+            <span>{publicShopMoreLabel}</span>
             <span aria-hidden="true">
-              {routeDiaryEntryId > 0 || shopMoreOpen ? "-" : "+"}
+              {publicShopMoreDisclosureOpen ? "-" : "+"}
             </span>
           </StableDisclosureSummary>
           <div style={{ display: "grid", gap: isCompact ? 10 : 14, marginTop: isCompact ? 9 : 0 }}>
@@ -8446,21 +8501,7 @@ export default function ShopGalleryPage() {
             </div>
           )}
 
-          {hiddenShelfEntryCount > 0 || showAllProducts ? (
-            <SecondaryButton
-              onClick={() => setShowAllProducts((current) => !current)}
-              fullWidth
-              stableHeight={48}
-              debugId="shop-gallery.toggle-all-products"
-              style={{
-                ...secondaryBtn(false),
-                width: "100%",
-                marginTop: 14,
-              }}
-            >
-              {showAllProducts ? "Show less" : `Show ${hiddenShelfEntryCount} more`}
-            </SecondaryButton>
-          ) : null}
+
         </section>
       </section>
       </div>

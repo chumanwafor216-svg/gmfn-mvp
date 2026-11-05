@@ -144,7 +144,8 @@
 
 .public-shop-options-panel > [data-gmfn-action-root="true"],
 .public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"],
-.public-shop-action-row > [data-gmfn-action-root="true"] {
+.public-shop-action-row > [data-gmfn-action-root="true"],
+.public-shop-compact-reveal-row > [data-gmfn-action-root="true"] {
   position: relative;
   isolation: isolate;
   outline: 1px solid rgba(72, 183, 255, 0.82);
@@ -158,7 +159,8 @@
 @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
   .public-shop-options-panel > [data-gmfn-action-root="true"]::after,
   .public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"]::after,
-  .public-shop-action-row > [data-gmfn-action-root="true"]::after {
+  .public-shop-action-row > [data-gmfn-action-root="true"]::after,
+  .public-shop-compact-reveal-row > [data-gmfn-action-root="true"]::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -219,7 +221,8 @@
 .public-shop-options-panel
   > .public-shop-follow-actions
   > [data-gmfn-action-root="true"]:focus-visible,
-.public-shop-action-row > [data-gmfn-action-root="true"]:focus-visible {
+.public-shop-action-row > [data-gmfn-action-root="true"]:focus-visible,
+.public-shop-compact-reveal-row > [data-gmfn-action-root="true"]:focus-visible {
   outline: 3px solid #f2cf77;
   outline-offset: 3px;
 }
@@ -264,7 +267,8 @@
   }
   .public-shop-options-panel > [data-gmfn-action-root="true"]::after,
   .public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"]::after,
-  .public-shop-action-row > [data-gmfn-action-root="true"]::after {
+  .public-shop-action-row > [data-gmfn-action-root="true"]::after,
+  .public-shop-compact-reveal-row > [data-gmfn-action-root="true"]::after {
     animation: none !important;
     background-position: 50% 50%;
   }

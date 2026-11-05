@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 7,
-  SecondaryButton: 11,
+  SecondaryButton: 12,
   StableCtaLink: 8,
-  total: 26,
+  total: 27,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -207,6 +207,8 @@ const expectedActionOrder = [
   "shop-gallery.verify-shop.open-community-record",
   "shop-gallery.owner-contact.whatsapp-chat",
   "shop-gallery.owner-contact.phone-call",
+  "shop-gallery.toggle-all-products",
+  "shop-gallery.more.compact-toggle",
   "shop-gallery.spotlight.contact-advertiser",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
@@ -217,7 +219,6 @@ const expectedActionOrder = [
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
   "shop-gallery.product.${productOpenId}.owner-manage",
-  "shop-gallery.toggle-all-products",
 ];
 let cursor = -1;
 
@@ -526,7 +527,7 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-options-panel > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-action-row > \[data-gmfn-action-root="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?data-cta-id="shop-gallery\.owner-contact\.choose"[\s\S]*?@keyframes public-shop-button-neon-travel/,
+  /\.public-shop-options-panel > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-action-row > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-compact-reveal-row > \[data-gmfn-action-root="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?data-cta-id="shop-gallery\.owner-contact\.choose"[\s\S]*?@keyframes public-shop-button-neon-travel/,
   "Public Shop must keep the approved travelling neon rim on its Shop Options and main action buttons without changing their stable geometry."
 );
 
@@ -538,17 +539,22 @@ assertFileContains(
 );
 
 assertContains(
-  /data-public-shop-more="secondary"[\s\S]*?order: routeDiaryEntryId > 0 \? 1 : 2[\s\S]*?More from this shop[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?className="public-shop-section"[\s\S]*?order: routeDiaryEntryId > 0 \? 2 : 1/,
-  "Public Shop must stay Products-first ordinarily and move only an exact shared Shop Update ahead of Products."
+  /data-public-shop-reveal-controls="true"[\s\S]*?order: routeDiaryEntryId > 0 \? 3 : 2[\s\S]*?data-public-shop-more="secondary"[\s\S]*?order: routeDiaryEntryId > 0 \? 1 : 3[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-diary"[\s\S]*?className="public-shop-section"[\s\S]*?order: routeDiaryEntryId > 0 \? 2 : 1/,
+  "Public Shop must keep Products first, the compact reveal controls second, and Spotlight content third, while exact shared Shop Updates retain focused priority."
 );
 
 assertContains(
-  /const publicShopSpotlightActive = Boolean\(miniSpotlight\);[\s\S]*?useEffect\(\(\) => \{[\s\S]*?if \(isCompact && publicShopSpotlightActive\) \{[\s\S]*?setShopMoreOpen\(true\);[\s\S]*?\}, \[isCompact, publicShopSpotlightActive\]\);[\s\S]*?data-public-shop-live-spotlight=\{publicShopSpotlightActive \? "true" : "false"\}[\s\S]*?open=\{[\s\S]*?!isCompact \|\|[\s\S]*?shopMoreOpen \|\|[\s\S]*?publicShopSpotlightActive[\s\S]*?"Live Spotlight"[\s\S]*?routeDiaryEntryId > 0 \|\| shopMoreOpen \? "-" : "\+"/,
-  "A resolved live Spotlight must open the phone lane once and identify itself instead of looking disconnected, while preserving a truthful close/reopen control."
+  /const publicShopMoreHashOpen = \[[\s\S]*?const publicShopMoreDisclosureOpen =[\s\S]*?!isCompact \|\| shopMoreOpen \|\| publicShopMoreHashOpen;[\s\S]*?className="public-shop-compact-reveal-row"[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?debugId="shop-gallery\.toggle-all-products"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?aria-expanded=\{publicShopMoreDisclosureOpen\}[\s\S]*?id="public-shop-more-panel"[\s\S]*?open=\{publicShopMoreDisclosureOpen\}[\s\S]*?display: isCompact && routeDiaryEntryId > 0 \? "flex" : "none"/,
+  "Public Shop phone must keep Show more and Live Spotlight in one compact two-button row, leave Spotlight collapsed until tapped, and preserve hash-driven or exact-update disclosure behavior."
+);
+
+assertNotContains(
+  /if \(isCompact && publicShopSpotlightActive\)[\s\S]*?setShopMoreOpen\(true\)/,
+  "A live Spotlight must not force the phone disclosure open and lengthen the page before the visitor asks to see it."
 );
 
 assertContains(
-  /data-public-shop-exact-update=\{routeDiaryEntryId > 0 \? "true" : "false"\}[\s\S]*?Shared shop update[\s\S]*?data-public-shop-secondary-features="spotlight-vault"[\s\S]*?focusedBlockLinkActive \|\| routeDiaryEntryId > 0 \? "none" : "grid"[\s\S]*?className="public-shop-section public-shop-diary"/,
+  /const publicShopMoreLabel =[\s\S]*?routeDiaryEntryId > 0[\s\S]*?"Shared shop update"[\s\S]*?data-public-shop-exact-update=\{routeDiaryEntryId > 0 \? "true" : "false"\}[\s\S]*?data-public-shop-secondary-features="spotlight-vault"[\s\S]*?focusedBlockLinkActive \|\| routeDiaryEntryId > 0 \? "none" : "grid"[\s\S]*?className="public-shop-section public-shop-diary"/,
   "An exact shared Shop Update must hide unrelated Spotlight and Vault content while keeping the requested update visible."
 );
 
