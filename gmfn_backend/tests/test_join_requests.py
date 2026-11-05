@@ -4636,7 +4636,13 @@ def test_instant_invite_acceptance_creates_membership_and_closes_single_use_link
         assert link_row.is_active is False
 
     second_payload = _join_payload(invite["invite_code"])
+    second_payload["first_name"] = "Chidinma"
+    second_payload["surname"] = "Okafor"
     second_payload["phone_e164"] = "+2348077000099"
+    second_payload["date_of_birth"] = "1991-08-14"
+    second_payload["birth_place"] = "Enugu"
+    second_payload["residential_area"] = "New Haven, Enugu"
+    second_payload["business_name"] = "Workshop Services"
     reuse_res = client.post("/clans/join-requests", json=second_payload)
     assert reuse_res.status_code == 400
     assert "no longer active" in reuse_res.text.lower()
@@ -4651,6 +4657,62 @@ def test_instant_invite_acceptance_creates_membership_and_closes_single_use_link
     assert preview_old["valid"] is False
     assert preview_old["status"] == "inactive"
     assert preview_old["invite_code"] == invite["invite_code"]
+
+
+def test_instant_community_qr_is_reusable_and_routes_each_member_to_activation(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    with SessionLocal() as db:
+        clan = db.get(Clan, 1)
+        clan.admission_mode = "instant_invite"
+        clan.voting_admin_override = False
+        db.commit()
+
+    invite_res = client.get(
+        "/clans/1/invite-link?qr_policy_key=reviewed_access",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert invite_res.status_code == 200, invite_res.text
+    invite = invite_res.json()
+    assert invite["admission_mode"] == "instant_invite"
+    assert invite["reusable_community_qr"] is True
+    assert invite["invite_max_uses"] is None
+
+    first_res = client.post(
+        "/clans/join-requests",
+        json=_join_payload(invite["invite_code"]),
+    )
+    assert first_res.status_code == 201, first_res.text
+    first = first_res.json()
+    assert first["result_status"] == "instant_invite_accepted"
+    assert first["status"] == "approved"
+    assert first["activation_required"] is True
+    assert first["activation_path"].startswith("/activate-membership?")
+
+    second_payload = _join_payload(invite["invite_code"])
+    second_payload["first_name"] = "Chidinma"
+    second_payload["surname"] = "Okafor"
+    second_payload["phone_e164"] = "+2348077000099"
+    second_payload["date_of_birth"] = "1991-08-14"
+    second_payload["birth_place"] = "Enugu"
+    second_payload["residential_area"] = "New Haven, Enugu"
+    second_payload["business_name"] = "Workshop Services"
+    second_res = client.post("/clans/join-requests", json=second_payload)
+    assert second_res.status_code == 201, second_res.text
+    second = second_res.json()
+    assert second["result_status"] == "instant_invite_accepted"
+    assert second["status"] == "approved"
+    assert second["activation_required"] is True
+    assert second["activation_path"].startswith("/activate-membership?")
+    assert second["gmfn_id"] != first["gmfn_id"]
+
+    with SessionLocal() as db:
+        link_row = db.query(ClanInvite).filter_by(code=invite["invite_code"]).one()
+        assert link_row.uses == 2
+        assert link_row.max_uses == 0
+        assert link_row.is_active is True
 
 
 def test_admin_can_change_admission_policy_and_old_links_are_retired(

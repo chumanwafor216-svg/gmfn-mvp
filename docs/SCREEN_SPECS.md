@@ -672,6 +672,10 @@ After submission:
 - Each newly generated invite snapshots the joining rule. Changing the
   community rule retires active links so recipients cannot receive a silently
   changed contract.
+- Personal instant invitations remain single-use. An explicitly generated
+  Community QR is reusable for many people and follows the same saved joining
+  rule; in instant mode, every scanner moves directly from the first form to
+  Activate Membership with their own generated GSN ID.
 
 ## CommunityHomePage
 

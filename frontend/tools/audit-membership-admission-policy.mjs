@@ -40,8 +40,13 @@ requirePattern(
 );
 requirePattern(
   "gmfn_backend/app/api/routes/clans.py",
-  /if admission_policy\["instant_join"\][\s\S]*?else None[\s\S]*?admission_mode=admission_policy\["admission_mode"\][\s\S]*?voting_admin_override=admission_policy\["voting_admin_override"\]/,
-  "Instant links must remain single-use and every new link must snapshot its policy."
+  /reusable_community_qr = bool\(desired_qr_policy_key\)[\s\S]*?None[\s\S]*?if reusable_community_qr[\s\S]*?else 1[\s\S]*?if admission_policy\["instant_join"\][\s\S]*?admission_mode=admission_policy\["admission_mode"\][\s\S]*?voting_admin_override=admission_policy\["voting_admin_override"\]/,
+  "Personal instant links must remain single-use while an explicit Community QR stays reusable, and every new link must snapshot its policy."
+);
+requirePattern(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /if \(status === "approved"\)[\s\S]*?activationRouteFor\(result, location\.search\)[\s\S]*?navigate\(activationTo/,
+  "An approved new member must continue directly from the join form to Activate Membership."
 );
 requirePattern(
   "frontend/src/lib/api.ts",

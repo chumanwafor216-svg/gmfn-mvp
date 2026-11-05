@@ -15,7 +15,10 @@ Every community has one admission mode:
    - a new person receives a GSN ID and sets a password before entering the
      community;
    - an existing GSN identity enters with the same identity;
-   - each generated instant invitation is single-use.
+   - a personal instant invitation is single-use;
+   - an explicitly generated Community QR is reusable for many people until it
+     expires, is retired, or the community changes its admission mode. Every
+     scanner still completes their own identity and account setup.
 2. admin_approval
    - the recipient submits the same short join form;
    - one authorised community admin accepts or rejects the request.
@@ -81,3 +84,9 @@ The public invite page uses:
 
 After password activation, the member is signed in and taken directly to the
 joined Community Home.
+
+The reusable Community QR follows the same saved admission mode. Under
+instant_invite, each scanner becomes a member after the first form and moves
+straight to Activate Membership to use the generated GSN ID and create a
+password. Under either reviewed mode, each scanner remains pending until the
+required decision is recorded.

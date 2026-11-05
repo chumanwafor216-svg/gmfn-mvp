@@ -57,6 +57,11 @@ assertContains(
 );
 assertContains(
   "component",
+  /communityQrAdmissionModeRef\.current = nextAdmissionMode[\s\S]*?buildSimpleJoinInviteMessage\([\s\S]*?admissionMode[\s\S]*?Instant admission[\s\S]*?One QR for many people\.[\s\S]*?Scan to join immediately/,
+  "The reusable Community QR must show and share the community's real instant-or-reviewed admission rule."
+);
+assertContains(
+  "component",
   /<QRCodeSVG/,
   "The shared Marketplace invite card must render the existing community QR."
 );

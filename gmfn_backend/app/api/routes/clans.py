@@ -4215,13 +4215,16 @@ def get_invite_link(
     can_refresh_invite = True
     policy_clan = db.get(Clan, int(clan_id)) or clan
     admission_policy = _community_admission_policy(db, clan=policy_clan)
+    desired_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
+    reusable_community_qr = bool(desired_qr_policy_key)
     max_uses_norm = (
-        1
+        None
+        if reusable_community_qr
+        else 1
         if admission_policy["instant_join"]
         else None
     )
     strict_max_uses = bool(admission_policy["instant_join"])
-    desired_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
 
     latest_invite = _latest_usable_clan_invite(
         db,
@@ -4275,8 +4278,8 @@ def get_invite_link(
         return {
             "clan_id": int(clan.id),
             "community_code": _community_code(clan.id),
-            "community_name": clan.name,
-            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "community_name": policy_clan.name,
+            "marketplace_name": getattr(policy_clan, "marketplace_name", None),
             "invited_by_user_id": int(invite_creator.id),
             "invited_by_email": getattr(invite_creator, "email", None),
             "invited_by_display": _member_display(invite_creator),
@@ -4295,10 +4298,14 @@ def get_invite_link(
             "invite_source": "clan_invite",
             "can_refresh_invite": bool(can_refresh_invite),
             "requires_admin_refresh": False,
+            "reusable_community_qr": reusable_community_qr,
             "retired_qr_policy_invites": int(retired_qr_policy_invites),
             **admission_policy,
             "message": (
-                "Official join link ready. The recipient joins immediately after "
+                "Reusable Community QR ready. Each person joins immediately after "
+                "accepting and completes their own account setup."
+                if admission_policy["instant_join"] and reusable_community_qr
+                else "Official join link ready. The recipient joins immediately after "
                 "accepting and completing account setup."
                 if admission_policy["instant_join"]
                 else "Official join link ready. Any active member may share it. "
@@ -4311,7 +4318,7 @@ def get_invite_link(
             "share_link": share_link,
             "api_link": api_join_link(request, latest_invite.code),
             "invite_text": _build_invite_text(
-                clan=clan,
+                clan=policy_clan,
                 invite_link=share_link,
                 inviter=invite_creator,
                 instant_join=bool(admission_policy["instant_join"]),

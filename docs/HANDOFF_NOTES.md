@@ -5,6 +5,33 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Reusable instant-admission Community QR - 2026-11-05
+
+- Production diagnosis confirmed the two previously supplied links were not
+  fresh instant-admission links: `27gKWQinb-HGiQ` is inactive and snapshots
+  `admin_approval`; `-ac-2BHEezQPlw` belongs to Homeland isa and snapshots
+  `community_vote` with reviewed access.
+- Root cause confirmed: personal instant invitations were correctly single-use,
+  but the explicit Community QR was generated through the same one-use limit
+  while its UI simultaneously claimed it could serve many people. Its share
+  text also hardcoded community approval even when the saved community mode was
+  Instant Join.
+- The explicit Community QR is now reusable until expiry, retirement, or an
+  admission-mode change. Personal instant invitations remain single-use.
+  Instant QR submissions create membership immediately, generate one GSN ID per
+  person, and return the existing direct `/activate-membership` handoff so the
+  person creates a password without closing and reopening the flow.
+- The Marketplace Community QR card now reads the generated link's actual
+  admission snapshot. Instant mode says `Instant admission`, shares
+  `Open to join`, and explains the GSN-ID/password step; reviewed modes still
+  state that community approval is required.
+- Existing approved reviewed requests cannot remotely move a closed browser.
+  If the applicant left the pending page, the admin must use the existing
+  approved-member activation handoff and send its activation message/link.
+- Verification passed: all 83 join-request tests, two admission/share source
+  audits, the 313-module production frontend build, whitespace checks, and the
+  complete protected-button freeze.
+
 ## GSN Shop Entrance Gate 3 - 2026-11-05
 
 - Status: founder-approved Gate 3 is implemented and release-verified.

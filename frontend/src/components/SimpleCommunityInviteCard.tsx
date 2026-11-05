@@ -67,6 +67,8 @@ export default function SimpleCommunityInviteCard({
   const [recipientName, setRecipientName] = useState("");
   const [feedback, setFeedback] = useState<InviteFeedback>(null);
   const [communityQrLink, setCommunityQrLink] = useState("");
+  const [communityQrAdmissionMode, setCommunityQrAdmissionMode] = useState("");
+  const communityQrAdmissionModeRef = useRef("");
   const [communityQrLoading, setCommunityQrLoading] = useState(false);
   const [communityQrFeedback, setCommunityQrFeedback] = useState<InviteFeedback>(null);
 
@@ -152,6 +154,8 @@ export default function SimpleCommunityInviteCard({
 
   useEffect(() => {
     setCommunityQrLink("");
+    setCommunityQrAdmissionMode("");
+    communityQrAdmissionModeRef.current = "";
     setCommunityQrFeedback(null);
   }, [communityId]);
 
@@ -167,7 +171,10 @@ export default function SimpleCommunityInviteCard({
       });
       const nextLink = normalizedJoinInviteUrl(response);
       if (!nextLink) throw new Error("Community QR unavailable");
+      const nextAdmissionMode = String(response?.admission_mode || "community_vote");
       setCommunityQrLink(nextLink);
+      setCommunityQrAdmissionMode(nextAdmissionMode);
+      communityQrAdmissionModeRef.current = nextAdmissionMode;
       setCommunityQrFeedback({
         tone: "success",
         text: "Community QR ready.",
@@ -198,13 +205,22 @@ export default function SimpleCommunityInviteCard({
     const link = await prepareCommunityQrLink();
     if (!link) return;
     const safeCommunityName = communityName.trim() || "this GSN community";
-    const message = `Join ${safeCommunityName} on GSN. Open to request access. Community approval is required. ${link}`;
+    const admissionMode = communityQrAdmissionModeRef.current || "community_vote";
+    const message = buildSimpleJoinInviteMessage({
+      communityName: safeCommunityName,
+      inviteLink: link,
+      admissionMode,
+    });
+    const shareText = buildSimpleJoinInviteMessage({
+      communityName: safeCommunityName,
+      admissionMode,
+    });
 
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
           title: `Join ${safeCommunityName}`,
-          text: "Open to request access. Community approval is required.",
+          text: shareText,
           url: link,
         });
         setCommunityQrFeedback({ tone: "success", text: "Community QR opened for sharing." });
@@ -298,6 +314,7 @@ export default function SimpleCommunityInviteCard({
   const cardStyle = embedded
     ? brandInnerCard("linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)")
     : brandPageCard("linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)");
+  const communityQrIsInstant = communityQrAdmissionMode === "instant_invite";
 
   if (hero) {
     const visibleInviterName = inviterName.trim() || preparedInviterName || "Your GSN name";
@@ -495,7 +512,11 @@ export default function SimpleCommunityInviteCard({
             Community QR
           </div>
           <div style={{ marginTop: 4, color: "#24734B", fontSize: 12, fontWeight: 950 }}>
-            Reviewed community access
+            {communityQrAdmissionMode
+              ? communityQrIsInstant
+                ? "Instant admission"
+                : "Community approval"
+              : "Follows your joining rule"}
           </div>
         </div>
       </div>
@@ -509,7 +530,11 @@ export default function SimpleCommunityInviteCard({
           lineHeight: 1.45,
         }}
       >
-        One QR for many people. Each person requests access, then your community approves them.
+        {communityQrAdmissionMode
+          ? communityQrIsInstant
+            ? "One QR for many people. Each person joins immediately, receives a GSN ID, then creates their password."
+            : "One QR for many people. Each person requests access, then your community approves them."
+          : "One QR for many people. Instant Join admits them immediately; reviewed modes wait for community approval."}
       </div>
 
       <div
@@ -548,7 +573,7 @@ export default function SimpleCommunityInviteCard({
             aria-label={`Community QR for ${communityName || "this GSN community"}`}
           />
           <div style={{ color: gmfnBrand.colors.muted, fontSize: 12, fontWeight: 800 }}>
-            Scan to request access
+            {communityQrIsInstant ? "Scan to join immediately" : "Scan to request access"}
           </div>
         </div>
       ) : null}
