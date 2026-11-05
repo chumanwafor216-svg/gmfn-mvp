@@ -4583,6 +4583,10 @@ export default function CommunityHomePage() {
           location
         );
       } else {
+        navigate(
+          routeWithCommunity(`/app/community/${clanId}`, clanId),
+          { replace: true, state: location.state }
+        );
         showNotice(
           "success",
           `${getClanName(clan)} is now your current community.`

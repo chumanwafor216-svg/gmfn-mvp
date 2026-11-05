@@ -189,7 +189,7 @@ async function run() {
         "Homeland isa Marketplace",
         "GMFN-C-000008",
         "Bulletin",
-        "Community actions",
+        "More community tools",
         "Marketplace",
         "Manage shop",
         "Finance",
@@ -263,13 +263,11 @@ async function run() {
 
     controls.selectClanCalls = [];
     await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
-    await page.locator('[data-cta-id="community-home.goto.toggle"]').click();
-    await page.waitForSelector('[data-cta-id="community-home.goto.marketplace"]', { timeout: 30000 });
+    await page.waitForSelector('[data-cta-id="app-layout.bottom-nav.marketplace"]', { timeout: 30000 });
 
     const selectCallsBeforeOpen = controls.selectClanCalls.length;
     controls.communityPhase = false;
-    await page.locator('[data-cta-id="community-home.goto.marketplace"]').click();
+    await page.locator('[data-cta-id="app-layout.bottom-nav.marketplace"]').click();
     await page.waitForURL(/\/app\/marketplace/, { timeout: 30000 });
     if (controls.selectClanCalls.length !== selectCallsBeforeOpen) {
       console.error("Community Home repeated selectClan before opening already-selected Marketplace.", controls);
@@ -294,6 +292,32 @@ async function run() {
       process.exit(1);
     }
 
+    await page.locator('[data-cta-id="community-home.switch.select.9"]').click();
+    await page.waitForURL(/\/app\/community\/9\?community=9/, { timeout: 30000 });
+    await page.waitForSelector('[data-cta-id="app-layout.bottom-nav.marketplace"]', { timeout: 30000 });
+    await page.waitForFunction(
+      () => document
+        .querySelector('[data-cta-id="app-layout.bottom-nav.marketplace"]')
+        ?.getAttribute("href")
+        ?.includes("/app/marketplace?community=9"),
+      undefined,
+      { timeout: 30000 }
+    );
+    const selectedMarketplaceTarget = await page
+      .locator('[data-cta-id="app-layout.bottom-nav.marketplace"]')
+      .getAttribute("href");
+    if (!selectedMarketplaceTarget?.includes("/app/marketplace?community=9")) {
+      console.error("Community Home selection did not carry the selected community into Marketplace navigation.", {
+        selectedMarketplaceTarget,
+        storage: await page.evaluate(() => localStorage.getItem("gmfn_selected_clan_id")),
+      });
+      process.exit(1);
+    }
+    await page.locator('[data-cta-id="app-layout.bottom-nav.marketplace"]').click();
+    await page.waitForURL(/\/app\/marketplace\?community=9/, { timeout: 30000 });
+
+    await page.goto(`${baseURL}/app/community/8`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForSelector('[data-cta-id="community-home.admin.toggle"]', { timeout: 30000 });
     await page.locator('[data-cta-id="community-home.admin.toggle"]').click();
     await page.waitForSelector('[data-cta-id="community-home.admin.community-domain"]', { timeout: 30000 });
     await page.locator('[data-cta-id="community-home.admin.community-domain"]').click();
