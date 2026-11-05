@@ -180,8 +180,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/components/SocialTagShareButton.tsx",
-    /type NativeFileShare[\s\S]*prepareFile: \(signal: AbortSignal\) => Promise<File>[\s\S]*navigator\.canShare\(\{ files: \[file\] \}\)[\s\S]*navigator\.share\(\{[\s\S]*text: nativeFileShare\.caption,[\s\S]*files: \[nativeFileState\.file\][\s\S]*debugId="social-tag-share\.native-file"[\s\S]*WhatsApp link/,
-    "Live shop sharing must stay user-controlled through supported phone file sharing with a normal WhatsApp-link fallback.",
+    /type NativeFileShare[\s\S]*statusLink\?: string[\s\S]*prepareFile: \(signal: AbortSignal\) => Promise<File>[\s\S]*navigator\.canShare\(\{ files: \[file\] \}\)[\s\S]*copyToClipboard\(nativeFileShare\.statusLink\)[\s\S]*navigator\.share\(\{[\s\S]*text: nativeFileShare\.caption,[\s\S]*files: \[nativeFileState\.file\][\s\S]*debugId="social-tag-share\.native-file"[\s\S]*For WhatsApp Status:[\s\S]*WhatsApp link/,
+    "Live shop picture sharing must copy the canonical Status link, explain WhatsApp's separate Text/pencil paste step, and retain the normal WhatsApp-link fallback.",
   ],
   [
     "src/pages/ShopAssetsPage.tsx",
@@ -240,7 +240,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /preparePublicShopSharePosterFile[\s\S]*fetch\(sourceUrl[\s\S]*createImageBitmap[\s\S]*canvas\.toBlob[\s\S]*publicShopShareCaption[\s\S]*Open Shop: \$\{absoluteShopLink\}[\s\S]*mediaKind: "image"[\s\S]*label: "Share shop picture"[\s\S]*nativeFileShare=\{publicShopNativeFileShare\}/,
+    /preparePublicShopSharePosterFile[\s\S]*fetch\(sourceUrl[\s\S]*createImageBitmap[\s\S]*canvas\.toBlob[\s\S]*publicShopShareCaption[\s\S]*Open Shop: \$\{absoluteShopLink\}[\s\S]*statusLink: absoluteShopLink[\s\S]*mediaKind: "image"[\s\S]*label: "Share shop picture"[\s\S]*nativeFileShare=\{publicShopNativeFileShare\}/,
     "Ordinary Public Shop Share must prefer the approved static storefront as a native image attachment with one clean shop caption.",
   ],
   [

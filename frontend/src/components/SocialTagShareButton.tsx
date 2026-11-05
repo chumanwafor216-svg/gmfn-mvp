@@ -24,6 +24,7 @@ type NoticeTone = "success" | "error";
 type NativeFileShare = {
   sourceKey: string;
   caption: string;
+  statusLink?: string;
   prepareFile: (signal: AbortSignal) => Promise<File>;
   mediaKind?: "image" | "video";
   label?: string;
@@ -371,12 +372,22 @@ export default function SocialTagShareButton({
     }
 
     try {
-      await navigator.share({
+      const statusLinkCopy = nativeFileShare.statusLink
+        ? copyToClipboard(nativeFileShare.statusLink)
+        : Promise.resolve(false);
+      const shareResult = navigator.share({
         title: cleanTarget.title,
         text: nativeFileShare.caption,
         files: [nativeFileState.file],
       });
-      report("success", `${nativeFileLabelCapitalized} shared from your phone.`, "native");
+      const [statusLinkCopied] = await Promise.all([statusLinkCopy, shareResult]);
+      report(
+        "success",
+        statusLinkCopied
+          ? `${nativeFileLabelCapitalized} shared. The Open Shop link was copied for WhatsApp Status.`
+          : `${nativeFileLabelCapitalized} shared from your phone.`,
+        "native"
+      );
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       report(
@@ -524,7 +535,9 @@ export default function SocialTagShareButton({
                 </PrimaryButton>
                 <div style={{ ...noteStyle, marginTop: 7 }}>
                   {nativeFileState.status === "ready"
-                    ? `Tap, choose WhatsApp, then choose who receives the ${nativeFileLabel}.`
+                    ? nativeFileShare.statusLink
+                      ? "For WhatsApp Status: tap Share shop picture, choose WhatsApp and My status, then use Text/pencil to paste the copied Open Shop link before posting. A photo caption alone may not open."
+                      : `Tap, choose WhatsApp, then choose who receives the ${nativeFileLabel}.`
                     : nativeFileState.status === "unsupported"
                       ? `This browser cannot attach the ${nativeFileLabel}. Use the WhatsApp link below.`
                       : nativeFileState.status === "error"

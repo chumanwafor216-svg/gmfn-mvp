@@ -4616,6 +4616,7 @@ export default function ShopGalleryPage() {
         ? {
             sourceKey: publicShopSharePosterUrl,
             caption: publicShopShareCaption,
+            statusLink: absoluteShopLink,
             prepareFile: preparePublicShopSharePoster,
             mediaKind: "image" as const,
             label: "Share shop picture",
