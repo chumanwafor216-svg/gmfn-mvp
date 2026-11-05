@@ -6,11 +6,16 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const shopGalleryFile = "src/pages/ShopGalleryPage.tsx";
+const publicShopStylesFile = "src/styles/public-shop.css";
 const ownerSurfaceNavFile = "src/components/OwnerOnlySurfaceNav.tsx";
 const mediaFrameFile = "src/components/SpotlightMediaFrame.tsx";
 const shopDiaryVisualSmokeFile = "tools/smoke-shop-diary-phase1-visual.mjs";
 const shopGallerySource = readFileSync(
   join(frontendRoot, shopGalleryFile),
+  "utf8"
+);
+const publicShopStylesSource = readFileSync(
+  join(frontendRoot, publicShopStylesFile),
   "utf8"
 );
 const ownerSurfaceNavSource = readFileSync(
@@ -516,6 +521,20 @@ assertNotContains(
 assertContains(
   /className="public-shop-options-panel"[\s\S]*?open=\{shopOptionsOpen\}[\s\S]*?debugId="shop-gallery\.options\.toggle"[\s\S]*?shopOptionsOwner \? "Shop options" : "Follow shop"/,
   "Public Shop follow and owner controls must stay collapsed behind one tactile Shop options row on phone and desktop."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-options-panel > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-action-row > \[data-gmfn-action-root="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?data-cta-id="shop-gallery\.owner-contact\.choose"[\s\S]*?@keyframes public-shop-button-neon-travel/,
+  "Public Shop must keep the approved travelling neon rim on its Shop Options and main action buttons without changing their stable geometry."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-options-panel > \[data-gmfn-action-root="true"\]::after[\s\S]*?animation: none !important;/,
+  "Public Shop neon button rims must stop moving when the user prefers reduced motion."
 );
 
 assertContains(
