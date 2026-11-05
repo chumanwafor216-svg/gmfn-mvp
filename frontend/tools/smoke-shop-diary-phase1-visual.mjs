@@ -593,17 +593,17 @@ async function run() {
     const cases = [
       { name: "01-shop-control-no-diary-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No shop updates yet" },
       { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Delivered a weekend food tray" },
-      { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
-      { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
+      { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update", authenticated: false },
+      { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update", authenticated: false },
       { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services", authenticated: false },
       { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Shared item." },
       { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-assets-diary", width: 430, expect: "Shared a short video update" },
       { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No confirmed Trade Evidence is linked to this shop yet" },
       { name: "09-shop-control-promote-action-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Promote this update" },
-      { name: "10-public-shop-text-only-diary-360", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "without adding media" },
-      { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings" },
-      { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Work completed" },
-      { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media" },
+      { name: "10-public-shop-text-only-diary-360", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "without adding media", authenticated: false },
+      { name: "11-public-shop-multiple-chronology-390", scenario: "text", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Opened bookings", authenticated: false },
+      { name: "12-public-shop-confirmed-activity-430", scenario: "confirmed", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 430, expect: "Work completed", authenticated: false },
+      { name: "13-public-shop-weak-data-diary-360", scenario: "weak", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "weak supporting media", authenticated: false },
       { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Diary Kitchen. Ask about stock.", authenticated: false },
       { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
@@ -611,6 +611,7 @@ async function run() {
       { name: "18-shop-picture-entrance-390", scenario: "image", route: "/app/shop-control#shop-assets-picture", width: 390, expect: "Every public shop uses the approved My GSN Shop entrance." },
       { name: "19-public-shop-alternate-owner-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, expect: "Ardent Ebony Uplift LTD", shopName: "Ardent Ebony Uplift LTD" },
       { name: "20-public-shop-desktop-1024", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 1024, height: 900, expect: "Shop Update", authenticated: false },
+      { name: "21-public-shop-verify-compact-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Request TrustSlip", authenticated: false, openVerify: true },
     ];
     const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
       .split(",")
@@ -649,6 +650,21 @@ async function run() {
           }
         }
       }
+      if (item.openVerify) {
+        await page.locator('button[data-cta-id="shop-gallery.verify-shop.toggle"]').click();
+        const verifyActions = [
+          "shop-gallery.verify-shop.request-trustslip",
+          "shop-gallery.verify-shop.toggle-scan",
+          "shop-gallery.verify-shop.open-community-record",
+        ];
+        for (const actionId of verifyActions) {
+          const action = page.locator(`[data-cta-id="${actionId}"]`);
+          await action.waitFor({ state: "visible", timeout: 20_000 });
+        }
+        if (await page.getByText("Why trust this shop?", { exact: true }).count()) {
+          throw new Error("The simplified Verify panel restored the removed long-form trust card.");
+        }
+      }
       if (item.spotlight) {
         const details = page.locator('[data-public-shop-more="secondary"]');
         const productRevealAction = page.locator(
@@ -657,8 +673,8 @@ async function run() {
         const spotlightRevealAction = page.locator(
           'button[data-cta-id="shop-gallery.more.compact-toggle"]'
         );
-        if (await details.evaluate((node) => node.open)) {
-          throw new Error("The live Spotlight disclosure lengthened the page before it was tapped.");
+        if (!(await details.evaluate((node) => node.open))) {
+          throw new Error("The live Spotlight disclosure was not open by default.");
         }
         if (
           !(await productRevealAction.isVisible()) ||
@@ -677,19 +693,20 @@ async function run() {
         ) {
           throw new Error("The compact product and Spotlight controls did not share one equal row.");
         }
-        await spotlightRevealAction.click();
-        await page.waitForFunction(
-          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === true
-        );
-        await page.waitForTimeout(250);
         const spotlightBox = await page.locator(".public-shop-spotlight").boundingBox();
         if (!spotlightBox || spotlightBox.height < 400) {
-          throw new Error("The live Spotlight billboard did not render after its control was tapped.");
+          throw new Error("The open-by-default live Spotlight billboard did not render.");
         }
         await spotlightRevealAction.click();
         await page.waitForFunction(
           () => document.querySelector('[data-public-shop-more="secondary"]')?.open === false
         );
+        await page.waitForTimeout(350);
+        await spotlightRevealAction.click({ force: true });
+        await page.waitForFunction(
+          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === true
+        );
+        await page.waitForTimeout(250);
       }
       const metrics = await collectMetrics(page);
       let loopStability = null;
@@ -867,8 +884,8 @@ async function run() {
               })
           );
         }
-        if (metrics.moreOpen || metrics.optionsOpen) {
-          throw new Error(`${item.name} did not keep secondary shop lanes closed by default.`);
+        if (!metrics.moreOpen || metrics.optionsOpen) {
+          throw new Error(`${item.name} did not keep Spotlight open and Shop options closed by default.`);
         }
         if (
           metrics.productUpdateTickerPresent ||
@@ -976,8 +993,8 @@ async function run() {
         }
       }
       if (item.name === "17-public-shop-live-spotlight-390") {
-        if (metrics.moreOpen || metrics.liveSpotlight !== "true") {
-          throw new Error("A resolved live Spotlight did not return to its compact closed state.");
+        if (!metrics.moreOpen || metrics.liveSpotlight !== "true") {
+          throw new Error("A resolved live Spotlight did not remain open until intentionally closed.");
         }
         if (metrics.diaryDisplay !== null) {
           throw new Error("The owner Public Shop still rendered the retired lower Shop Update block.");
@@ -1024,7 +1041,11 @@ async function run() {
           throw new Error(`${item.name} did not keep Products & Services before the expanded secondary lane.`);
         }
       }
-      if (item.name.includes("focused") && metrics.diaryDisplay !== "none") {
+      if (
+        item.name.includes("focused") &&
+        metrics.diaryDisplay !== null &&
+        metrics.diaryDisplay !== "none"
+      ) {
         throw new Error(`${item.name} did not hide Shop Diary during focused product mode.`);
       }
       manifest.push({ ...item, screenshot, metrics });

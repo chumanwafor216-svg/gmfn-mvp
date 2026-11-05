@@ -561,8 +561,13 @@ assertContains(
 );
 
 assertContains(
-  /const publicShopMoreHashOpen = \[[\s\S]*?const publicShopMoreDisclosureOpen =[\s\S]*?!isCompact \|\| shopMoreOpen \|\| publicShopMoreHashOpen;[\s\S]*?className="public-shop-compact-reveal-row"[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?debugId="shop-gallery\.toggle-all-products"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?aria-expanded=\{publicShopMoreDisclosureOpen\}[\s\S]*?id="public-shop-more-panel"[\s\S]*?open=\{publicShopMoreDisclosureOpen\}[\s\S]*?display: isCompact && routeDiaryEntryId > 0 \? "flex" : "none"/,
-  "Public Shop phone must keep Show more and Live Spotlight in one compact two-button row, leave Spotlight collapsed until tapped, and preserve hash-driven or exact-update disclosure behavior."
+  /const \[shopMoreOpen, setShopMoreOpen\] = useState\(true\);[\s\S]*?const publicShopMoreHashOpen = \[[\s\S]*?const publicShopMoreDisclosureOpen =[\s\S]*?!isCompact \|\| shopMoreOpen \|\| publicShopMoreHashOpen;[\s\S]*?className="public-shop-compact-reveal-row"[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?debugId="shop-gallery\.toggle-all-products"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?aria-expanded=\{publicShopMoreDisclosureOpen\}[\s\S]*?id="public-shop-more-panel"[\s\S]*?open=\{publicShopMoreDisclosureOpen\}[\s\S]*?display: isCompact && routeDiaryEntryId > 0 \? "flex" : "none"/,
+  "Public Shop phone must keep Show more and Live Spotlight in one compact two-button row, keep Spotlight open until intentionally closed, and preserve hash-driven or exact-update disclosure behavior."
+);
+
+assertNotContains(
+  /CommunityProofPanel|Why trust this shop\?/,
+  "Public Shop Verify must not restore the removed long-form trust-reading card."
 );
 
 assertNotContains(
