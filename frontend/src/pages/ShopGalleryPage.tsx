@@ -4381,6 +4381,7 @@ export default function ShopGalleryPage() {
           shopFollowState.shopId === positiveNumber(effectiveShop?.id) &&
           shopFollowState.isOwner))
   );
+  const shopOptionsOwner = signedInOwnsShop || shopFollowState.isOwner;
   const nextEmptyProductSlot = useMemo(() => {
     if (focusedBlockLinkActive) return 0;
     const occupiedSlots = new Set(
@@ -5051,6 +5052,75 @@ export default function ShopGalleryPage() {
     });
   }
 
+  function renderShopShareButton(ownerPlacement = false) {
+    return (
+      <SocialTagShareButton
+        target={{
+          title: firstMeaningful(
+            effectiveShop?.shopName,
+            effectiveShop?.ownerName,
+            "GSN public shop"
+          ),
+          message: buildPublicShopMessage(attributedShopShareLink || absoluteShopShareLink),
+          socialMessage: `${firstMeaningful(
+            effectiveShop?.shopName,
+            effectiveShop?.ownerName,
+            "GSN public shop"
+          )} on GSN. Public shop record. Open the shop link.`,
+          socialUrl: attributedShopSocialLink,
+          url: attributedShopShareLink || absoluteShopShareLink,
+        }}
+        disabled={shopLoadFailed || !absoluteShopShareLink}
+        nativeFileShare={{
+          sourceKey: liveShopShareVideoUrl,
+          caption: `${firstMeaningful(
+            effectiveShop?.shopName,
+            effectiveShop?.ownerName,
+            "My GSN Shop"
+          )}\nOpen Shop: ${absoluteShopLink}`,
+          prepareFile: prepareLiveShopShareFile,
+          label: "Share live shop video",
+        }}
+        buttonLabel="Share"
+        buttonKind="secondary"
+        triggerIcon={inlineShareGlyph("#8C6829", isCompact ? 18 : 21)}
+        minWidth={0}
+        fullWidth
+        stableHeight={ownerPlacement ? (isCompact ? 44 : 48) : isCompact ? 46 : 54}
+        debugId="shop-gallery.share-shop"
+        style={{
+          ...secondaryBtn(shopLoadFailed || !absoluteShopShareLink),
+          gridColumn: ownerPlacement && isCompact ? "1 / -1" : undefined,
+          alignSelf: "stretch",
+          minHeight: ownerPlacement ? (isCompact ? 44 : 48) : isCompact ? 46 : 54,
+          borderRadius: isCompact ? 14 : 18,
+          fontSize: isCompact ? 11.2 : 14,
+          padding: isCompact ? "5px 8px" : "10px 12px",
+          gap: isCompact ? 5 : 8,
+          color: "#07172C",
+          background:
+            "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 54%, #E8F0FA 100%)",
+          border: "1px solid rgba(214,170,69,0.58)",
+          boxShadow:
+            "0 10px 0 rgba(4,25,45,0.10), 0 15px 26px rgba(23,103,211,0.16), inset 0 2px 0 rgba(255,255,255,0.98), inset 0 -2px 5px rgba(84,118,153,0.14)",
+        }}
+        onResult={(tone, text, channel) => {
+          if (tone === "success") {
+            trackShopShareAction(
+              "share_shop",
+              appendShopShareAttribution(
+                absoluteShopShareLink,
+                "share_shop",
+                channel
+              )
+            );
+          }
+          setNotice({ tone, text });
+        }}
+      />
+    );
+  }
+
   return (
     <main
       className="public-shop-shell theme-public-shop public-shop-neon-environment"
@@ -5424,77 +5494,97 @@ export default function ShopGalleryPage() {
                 ) : null}
               </div>
               <details
+                className="public-shop-options-panel"
                 data-public-shop-options="secondary"
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? shopFollowState.isOwner
+                    ? shopOptionsOwner
                       ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)"
+                    : shopOptionsOwner
+                    ? "repeat(3, minmax(0, 1fr))"
                     : "minmax(0, 1fr) auto",
                   gridColumn: "1 / -1",
-                  gap: isCompact ? 6 : 10,
+                  gap: isCompact ? 8 : 12,
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
                   order: 2,
+                  padding: isCompact ? 6 : 9,
+                  borderRadius: isCompact ? 17 : 22,
+                  border: "1px solid rgba(83,177,255,0.72)",
+                  background:
+                    "radial-gradient(circle at 88% 0%, rgba(146,76,255,0.22) 0%, transparent 34%), linear-gradient(145deg, rgba(5,27,52,0.98) 0%, rgba(8,46,79,0.98) 68%, rgba(24,31,80,0.98) 100%)",
+                  boxShadow:
+                    "0 14px 30px rgba(2,12,27,0.22), 0 0 0 1px rgba(146,76,255,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
                 }}
-                open={!isCompact || shopOptionsOpen}
+                open={shopOptionsOpen}
                 onToggle={(event) => {
-                  if (isCompact) setShopOptionsOpen(event.currentTarget.open);
+                  setShopOptionsOpen(event.currentTarget.open);
                 }}
-                aria-label="Shop follow controls"
+                aria-label="Shop options and follow controls"
               >
                 <StableDisclosureSummary
+                  className="public-shop-options-summary"
                   debugId="shop-gallery.options.toggle"
-                  stableHeight={40}
+                  stableHeight={isCompact ? 44 : 50}
                   style={{
-                    display: isCompact ? "flex" : "none",
+                    display: "flex",
                     gridColumn: "1 / -1",
-                    minHeight: 40,
+                    minHeight: isCompact ? 44 : 50,
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 8,
-                    padding: "5px 8px",
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.82)",
-                    color: "#07172C",
+                    padding: isCompact ? "7px 11px" : "9px 14px",
+                    borderRadius: isCompact ? 13 : 16,
+                    border: "1px solid rgba(246,215,122,0.62)",
+                    background:
+                      "linear-gradient(180deg, #153E68 0%, #092B4A 48%, #061C33 100%)",
+                    color: "#FFFFFF",
                     cursor: "pointer",
-                    fontSize: 11.5,
-                    fontWeight: 900,
+                    fontSize: isCompact ? 12.5 : 15,
+                    fontWeight: 950,
                     listStyle: "none",
+                    textShadow: "0 2px 4px rgba(0,0,0,0.28)",
+                    boxShadow:
+                      "0 7px 0 rgba(1,13,27,0.58), 0 12px 24px rgba(45,132,255,0.24), inset 0 2px 0 rgba(255,255,255,0.22), inset 0 -2px 5px rgba(0,0,0,0.26)",
                   }}
                 >
-                  <span>{shopFollowState.isOwner ? "Shop options" : "Follow shop"}</span>
-                  <span aria-hidden="true">{shopOptionsOpen ? "-" : "+"}</span>
+                  <span>{shopOptionsOwner ? "Shop options" : "Follow shop"}</span>
+                  <span className="public-shop-options-chevron" aria-hidden="true">
+                    {shopOptionsOpen ? "-" : "+"}
+                  </span>
                 </StableDisclosureSummary>
                 <div
+                  className="public-shop-follower-pill"
                   style={{
-                    minHeight: isCompact ? 30 : 44,
-                    width: isCompact && shopFollowState.isOwner ? "100%" : "fit-content",
+                    minHeight: isCompact ? 44 : 48,
+                    width: "100%",
                     maxWidth: "100%",
                     justifySelf: "start",
                     display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: isCompact && shopFollowState.isOwner ? "center" : "flex-start",
+                    justifyContent: shopOptionsOwner ? "center" : "flex-start",
                     gap: isCompact ? 5 : 8,
-                    padding: isCompact ? "4px 8px" : "8px 12px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(214,170,69,0.24)",
+                    padding: isCompact ? "7px 10px" : "9px 14px",
+                    borderRadius: isCompact ? 14 : 17,
+                    border: "1px solid rgba(214,170,69,0.62)",
                     background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.94) 100%)",
+                      "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 48%, #E5EDF7 100%)",
                     color: "#07172C",
                     fontSize: isCompact ? 10.5 : 13,
-                    fontWeight: 850,
+                    fontWeight: 950,
                     boxShadow:
-                      "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+                      "0 7px 0 rgba(1,13,27,0.32), 0 12px 24px rgba(40,129,255,0.17), inset 0 2px 0 rgba(255,255,255,0.98), inset 0 -2px 5px rgba(73,103,135,0.16)",
                     whiteSpace: "nowrap",
                   }}
                 >
                   {inlineShopIcon("shop", "#8C6829", isCompact ? 11 : 15)}
                   <span>{shopFollowerText}</span>
                 </div>
-                {!shopFollowState.isOwner ? (
+                {!shopOptionsOwner ? (
                   <div
+                    className="public-shop-follow-actions"
                     style={{
                       display: "grid",
                       gridTemplateColumns:
@@ -5607,8 +5697,9 @@ export default function ShopGalleryPage() {
                   Follow to keep this shop in your GSN updates. Still verify
                   the seller before goods, credit, or money move.
                 </div>
-              {shopFollowState.isOwner ? (
+              {shopOptionsOwner ? (
                 <StableCtaLink
+                  className="public-shop-analytics-button"
                   to={ownerShopAnalyticsPath}
                   fullWidth
                   stableHeight={isCompact ? 44 : 46}
@@ -5620,7 +5711,6 @@ export default function ShopGalleryPage() {
                     background: "linear-gradient(180deg, #08233A 0%, #0B2D4A 100%)",
                     color: "#FFFFFF",
                     border: "1px solid rgba(214,170,69,0.28)",
-                    boxShadow: "0 10px 20px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
                     fontSize: isCompact ? 10.8 : 13,
                     fontWeight: 900,
                     gap: isCompact ? 6 : 8,
@@ -5630,6 +5720,8 @@ export default function ShopGalleryPage() {
                     justifyContent: isCompact ? "center" : "flex-start",
                     whiteSpace: "normal",
                     textOverflow: "clip",
+                    boxShadow:
+                      "0 7px 0 rgba(1,13,27,0.68), 0 14px 25px rgba(38,123,255,0.24), inset 0 2px 0 rgba(255,255,255,0.18), inset 0 -2px 5px rgba(0,0,0,0.28)",
                   }}
                 >
                   {inlineShopIcon("chart", "#FFFFFF", isCompact ? 9 : 15)}
@@ -5660,21 +5752,23 @@ export default function ShopGalleryPage() {
                   </span>
                 </StableCtaLink>
               ) : null}
+              {shopOptionsOwner ? renderShopShareButton(true) : null}
               </details>
               <div
+                className="public-shop-identity-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                   gridColumn: "1 / -1",
                   gap: 0,
                   order: 1,
-                  borderRadius: isCompact ? 14 : 18,
-                  border: "1px solid rgba(214,170,69,0.24)",
+                  borderRadius: isCompact ? 17 : 22,
+                  border: "1px solid rgba(102,187,255,0.72)",
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(248,251,254,0.72) 100%)",
+                    "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 50%, #E8EFF8 100%)",
                   overflow: "hidden",
                   boxShadow:
-                    "0 10px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    "0 8px 0 rgba(1,13,27,0.16), 0 16px 30px rgba(45,132,255,0.20), 0 0 0 1px rgba(145,76,255,0.18), inset 0 2px 0 rgba(255,255,255,0.98), inset 0 -3px 7px rgba(66,98,132,0.16)",
                   marginTop: isCompact ? 0 : 0,
                 }}
               >
@@ -5683,6 +5777,7 @@ export default function ShopGalleryPage() {
                   { icon: "community" as ShopIconName, label: "Homeland", value: shopLocationText },
                 ].map((row, rowIndex) => (
                   <div
+                    className="public-shop-identity-card"
                     key={row.label}
                     style={{
                       display: "grid",
@@ -5692,49 +5787,51 @@ export default function ShopGalleryPage() {
                       gap: isCompact ? 8 : 10,
                       alignItems: "center",
                       minWidth: 0,
-                      padding: isCompact ? "8px 10px" : "10px 12px",
+                      padding: isCompact ? "10px 11px" : "13px 15px",
                       borderTop: "none",
                       borderLeft:
                         rowIndex > 0
-                          ? "1px solid rgba(214,170,69,0.16)"
+                          ? "1px solid rgba(84,165,242,0.34)"
                           : "none",
                     }}
                   >
                     <span
+                      className="public-shop-identity-icon"
                       aria-hidden="true"
                       style={{
                         display: "grid",
                         placeItems: "center",
-                        width: isCompact ? 24 : 28,
-                        height: isCompact ? 24 : 28,
-                        borderRadius: isCompact ? 8 : 8,
-                        background: "rgba(246,215,122,0.18)",
+                        width: isCompact ? 32 : 40,
+                        height: isCompact ? 32 : 40,
+                        borderRadius: isCompact ? 11 : 14,
+                        border: "1px solid rgba(214,170,69,0.62)",
+                        background:
+                          "linear-gradient(145deg, #FFF9E6 0%, #F1CF70 48%, #C88D2D 100%)",
                         color: "#8C6829",
                         boxShadow:
-                          "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+                          "0 5px 0 rgba(121,78,16,0.34), 0 9px 17px rgba(8,38,67,0.18), inset 0 2px 0 rgba(255,255,255,0.88), inset 0 -2px 4px rgba(98,56,6,0.18)",
                       }}
                     >
                       <GsnRealisticIcon
                         name={shop3DIconName(row.icon)}
-                        size={isCompact ? 22 : 28}
+                        size={isCompact ? 29 : 37}
                         decorative
                       />
                     </span>
                     <div
                       style={{
-                        display: "flex",
-                        flexWrap: "wrap",
+                        display: "grid",
                         gap: isCompact ? 3 : 5,
-                        alignItems: "baseline",
+                        alignItems: "start",
                         minWidth: 0,
                         color: "#29394A",
-                        fontSize: isCompact ? 12.2 : 13.5,
+                        fontSize: isCompact ? 12 : 13.5,
                         fontWeight: 760,
                         lineHeight: isCompact ? 1.18 : 1.22,
                       }}
                       title={row.value}
                     >
-                      <span style={{ color: "#6F7F91" }}>
+                      <span style={{ color: "#66798E", fontWeight: 900 }}>
                         {row.label === "Homeland"
                           ? "Community"
                           : row.label === "GSN ID"
@@ -5747,6 +5844,8 @@ export default function ShopGalleryPage() {
                       <strong
                         style={{
                           color: row.label === "Homeland" ? "#276E4A" : "#07172C",
+                          fontSize: isCompact ? 13.2 : 15,
+                          lineHeight: 1.14,
                           minWidth: 0,
                           overflowWrap: "anywhere",
                           wordBreak: "break-word",
@@ -5784,77 +5883,15 @@ export default function ShopGalleryPage() {
               position: "relative",
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "repeat(3, minmax(0, 1fr))"
-                : "repeat(3, minmax(0, 1fr))",
+                ? `repeat(${shopOptionsOwner ? 2 : 3}, minmax(0, 1fr))`
+                : `repeat(${shopOptionsOwner ? 2 : 3}, minmax(0, 1fr))`,
               alignItems: "stretch",
               gap: isCompact ? 5 : 10,
               marginTop: isCompact ? 8 : 18,
             }}
             aria-label="Public shop actions"
           >
-            <SocialTagShareButton
-              target={{
-                title: firstMeaningful(
-                  effectiveShop?.shopName,
-                  effectiveShop?.ownerName,
-                  "GSN public shop"
-                ),
-                message: buildPublicShopMessage(attributedShopShareLink || absoluteShopShareLink),
-                socialMessage: `${firstMeaningful(
-                  effectiveShop?.shopName,
-                  effectiveShop?.ownerName,
-                  "GSN public shop"
-                )} on GSN. Public shop record. Open the shop link.`,
-                socialUrl: attributedShopSocialLink,
-                url: attributedShopShareLink || absoluteShopShareLink,
-              }}
-              disabled={shopLoadFailed || !absoluteShopShareLink}
-              nativeFileShare={{
-                sourceKey: liveShopShareVideoUrl,
-                caption: `${firstMeaningful(
-                  effectiveShop?.shopName,
-                  effectiveShop?.ownerName,
-                  "My GSN Shop"
-                )}\nOpen Shop: ${absoluteShopLink}`,
-                prepareFile: prepareLiveShopShareFile,
-                label: "Share live shop video",
-              }}
-              buttonLabel="Share"
-              buttonKind="secondary"
-              triggerIcon={inlineShareGlyph("#8C6829", isCompact ? 18 : 21)}
-              minWidth={0}
-              fullWidth
-              stableHeight={isCompact ? 46 : 54}
-              debugId="shop-gallery.share-shop"
-              style={{
-                ...secondaryBtn(shopLoadFailed || !absoluteShopShareLink),
-                alignSelf: "stretch",
-                minHeight: isCompact ? 46 : 54,
-                borderRadius: isCompact ? 14 : 18,
-                fontSize: isCompact ? 11.2 : 14,
-                padding: isCompact ? "5px 3px" : "10px 12px",
-                gap: isCompact ? 4 : 7,
-                color: "#07172C",
-                background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
-                border: "1px solid rgba(214,170,69,0.28)",
-                boxShadow:
-                  "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
-              }}
-              onResult={(tone, text, channel) => {
-                if (tone === "success") {
-                  trackShopShareAction(
-                    "share_shop",
-                    appendShopShareAttribution(
-                      absoluteShopShareLink,
-                      "share_shop",
-                      channel
-                    )
-                  );
-                }
-                setNotice({ tone, text });
-              }}
-            />
+            {!shopOptionsOwner ? renderShopShareButton() : null}
             <SecondaryButton
               onClick={toggleShopVerificationPanel}
               minWidth={0}
@@ -5873,9 +5910,9 @@ export default function ShopGalleryPage() {
                 color: "#07172C",
                 border: "1px solid rgba(214,170,69,0.28)",
                 background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+                  "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 54%, #E8F0FA 100%)",
                 boxShadow:
-                  "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
+                  "0 10px 0 rgba(4,25,45,0.10), 0 15px 26px rgba(23,103,211,0.16), inset 0 2px 0 rgba(255,255,255,0.98), inset 0 -2px 5px rgba(84,118,153,0.14)",
                 gap: isCompact ? 4 : 7,
               }}
             >
@@ -5901,7 +5938,7 @@ export default function ShopGalleryPage() {
                   "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
                 border: "1px solid rgba(37,211,102,0.38)",
                 boxShadow:
-                  "0 10px 22px rgba(18,140,74,0.14), inset 0 1px 0 rgba(255,255,255,0.30)",
+                  "0 10px 0 rgba(4,72,35,0.28), 0 15px 27px rgba(18,140,74,0.26), inset 0 2px 0 rgba(255,255,255,0.42), inset 0 -2px 5px rgba(0,69,31,0.28)",
                 gap: isCompact ? 4 : 7,
               }}
             >

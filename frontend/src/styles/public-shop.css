@@ -121,6 +121,75 @@
   outline-offset: 3px;
 }
 
+.public-shop-options-panel {
+  overflow: visible;
+  transition: none;
+}
+
+.public-shop-options-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.public-shop-options-panel > summary::marker {
+  content: "";
+}
+
+.public-shop-options-panel[open] {
+  box-shadow:
+    0 16px 34px rgba(2, 12, 27, 0.26),
+    0 0 18px rgba(58, 151, 255, 0.26),
+    0 0 24px rgba(142, 72, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.public-shop-options-chevron {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  color: #07172c;
+  background: linear-gradient(145deg, #fff9e6 0%, #f1cf70 52%, #c88d2d 100%);
+  border: 1px solid rgba(255, 236, 173, 0.86);
+  box-shadow:
+    0 4px 0 rgba(84, 50, 8, 0.58),
+    0 7px 14px rgba(0, 0, 0, 0.24),
+    inset 0 2px 0 rgba(255, 255, 255, 0.78);
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.public-shop-identity-card:nth-child(2) {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(226, 238, 252, 0.58));
+}
+
+.public-shop-identity-icon,
+.public-shop-follower-pill,
+.public-shop-options-summary,
+.public-shop-analytics-button,
+.public-shop-action-row [data-gmfn-action-root="true"] {
+  transform: translateZ(0);
+  transition: none;
+}
+
+.public-shop-options-summary:active,
+.public-shop-analytics-button:active,
+.public-shop-action-row [data-gmfn-action-root="true"]:active {
+  transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-shop-options-panel,
+  .public-shop-options-summary,
+  .public-shop-analytics-button,
+  .public-shop-action-row [data-gmfn-action-root="true"] {
+    scroll-behavior: auto;
+    transition: none !important;
+  }
+}
+
 .public-shop-signboard {
   background: var(--hero-bg);
   border: 2px solid var(--hero-border);

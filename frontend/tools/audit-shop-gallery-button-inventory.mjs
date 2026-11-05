@@ -194,7 +194,6 @@ const expectedActionOrder = [
   "shop-gallery.public-shop.unfollow",
   "shop-gallery.public-shop.follow",
   "shop-gallery.owner.shop-analytics",
-  "shop-gallery.share-shop",
   "shop-gallery.verify-shop.toggle",
   "shop-gallery.owner-contact.choose",
   "shop-gallery.verify-shop.close",
@@ -317,11 +316,11 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: "1 \/ -1"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 44 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
+  /gridTemplateColumns: isCompact\s*\? shopOptionsOwner\s*\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: "1 \/ -1"[\s\S]*?gap: isCompact \? 8 : 12[\s\S]*?stableHeight=\{isCompact \? 44 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?justifyContent: isCompact \? "center" : "flex-start"[\s\S]*?\{isCompact \? "Analytics" : "Shop analytics"\}/,
   "Public Shop owner compact signboard must keep follower count and Analytics as equal-width phone pills."
 );
 assertContains(
-  /shopFollowState\.isOwner[\s\S]*?display: "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
+  /!shopOptionsOwner[\s\S]*?display: "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
   "Public Shop compact signboard must keep the follow/sign-in action visible on phones.",
 );
 
@@ -490,8 +489,13 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?alignItems: "stretch"[\s\S]*?buttonLabel="Share"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?alignSelf: "stretch"[\s\S]*?borderRadius: isCompact \? 14 : 18[\s\S]*?fontSize: isCompact \? 11\.2 : 14[\s\S]*?0 10px 22px rgba\(18,140,74,0\.14\)/,
-  "Public Shop Share, Verify, and WhatsApp actions must share one stretched height, radius, and visual footprint while WhatsApp remains primary."
+  /function renderShopShareButton\(ownerPlacement = false\)[\s\S]*?buttonLabel="Share"[\s\S]*?stableHeight=\{ownerPlacement \? \(isCompact \? 44 : 48\) : isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"/,
+  "Public Shop Share must remain one reusable action with compact owner placement and stable visitor sizing."
+);
+
+assertContains(
+  /\{shopOptionsOwner \? renderShopShareButton\(true\) : null\}[\s\S]*?className="public-shop-action-row"[\s\S]*?repeat\(\$\{shopOptionsOwner \? 2 : 3\}, minmax\(0, 1fr\)\)[\s\S]*?\{!shopOptionsOwner \? renderShopShareButton\(\) : null\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?0 10px 0 rgba\(4,72,35,0\.28\)/,
+  "Owner Share must stay inside Shop options while visitors retain the three-action Share, Verify, and WhatsApp row."
 );
 
 assertContains(
@@ -510,8 +514,8 @@ assertNotContains(
 );
 
 assertContains(
-  /open=\{!isCompact \|\| shopOptionsOpen\}[\s\S]*?debugId="shop-gallery\.options\.toggle"[\s\S]*?shopFollowState\.isOwner \? "Shop options" : "Follow shop"/,
-  "Public Shop phone follow and owner controls must stay collapsed behind one Shop options row."
+  /className="public-shop-options-panel"[\s\S]*?open=\{shopOptionsOpen\}[\s\S]*?debugId="shop-gallery\.options\.toggle"[\s\S]*?shopOptionsOwner \? "Shop options" : "Follow shop"/,
+  "Public Shop follow and owner controls must stay collapsed behind one tactile Shop options row on phone and desktop."
 );
 
 assertContains(
