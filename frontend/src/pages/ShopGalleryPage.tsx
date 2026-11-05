@@ -7676,19 +7676,20 @@ export default function ShopGalleryPage() {
           </section>
         </div>
 
-        <section
-          id={PUBLIC_SHOP_DIARIES_ANCHOR}
-          className="public-shop-section public-shop-diary"
-          style={{
-            display: focusedBlockLinkActive ? "none" : "block",
-            borderRadius: isCompact ? 24 : 28,
-            padding: isCompact ? 10 : 18,
-            border: "1px solid rgba(255,255,255,0.92)",
-            background: "linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 58%, #EEF6FF 100%)",
-            boxShadow: "0 24px 52px rgba(8,38,67,0.12), 0 0 0 1px rgba(13,95,168,0.07), inset 0 1px 0 rgba(255,255,255,0.96)",
-            scrollMarginTop: 12,
-          }}
-        >
+        {!signedInOwnsShop || routeDiaryEntryId > 0 ? (
+          <section
+            id={PUBLIC_SHOP_DIARIES_ANCHOR}
+            className="public-shop-section public-shop-diary"
+            style={{
+              display: focusedBlockLinkActive ? "none" : "block",
+              borderRadius: isCompact ? 24 : 28,
+              padding: isCompact ? 10 : 18,
+              border: "1px solid rgba(255,255,255,0.92)",
+              background: "linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 58%, #EEF6FF 100%)",
+              boxShadow: "0 24px 52px rgba(8,38,67,0.12), 0 0 0 1px rgba(13,95,168,0.07), inset 0 1px 0 rgba(255,255,255,0.96)",
+              scrollMarginTop: 12,
+            }}
+          >
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: isCompact ? 8 : 12, marginBottom: isCompact ? 10 : 14 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: "#07172C", fontSize: isCompact ? 15 : 17, fontWeight: 950, textTransform: "uppercase" }}>Shop Update</div>
@@ -7729,7 +7730,8 @@ export default function ShopGalleryPage() {
               <div style={{ marginTop: 8, ...helperText() }}>{routeDiaryEntryId > 0 ? "It may have expired or been made private. You can still browse this shop." : "Browse the products and services above, or contact the owner to ask what is available today."}</div>
             </div>
           )}
-        </section>
+          </section>
+        ) : null}
           </div>
         </details>
         <section

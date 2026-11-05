@@ -979,6 +979,9 @@ async function run() {
         if (metrics.moreOpen || metrics.liveSpotlight !== "true") {
           throw new Error("A resolved live Spotlight did not return to its compact closed state.");
         }
+        if (metrics.diaryDisplay !== null) {
+          throw new Error("The owner Public Shop still rendered the retired lower Shop Update block.");
+        }
         if (
           metrics.revealActionTops.some((value) => value === null) ||
           Math.abs(metrics.revealActionTops[0] - metrics.revealActionTops[1]) > 1 ||
