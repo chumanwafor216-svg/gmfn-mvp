@@ -534,15 +534,25 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-options-panel > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-action-row > \[data-gmfn-action-root="true"\][\s\S]*?\.public-shop-compact-reveal-row > \[data-gmfn-action-root="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?data-cta-id="shop-gallery\.owner-contact\.choose"[\s\S]*?@keyframes public-shop-button-neon-travel/,
-  "Public Shop must keep the approved travelling neon rim on its Shop Options and main action buttons without changing their stable geometry."
+  /\.public-shop-neon-environment \[data-public-shop-neon-action="true"\][\s\S]*?@supports \(\(-webkit-mask-composite: xor\) or \(mask-composite: exclude\)\)[\s\S]*?animation: public-shop-button-neon-travel 8s linear infinite alternate;[\s\S]*?@keyframes public-shop-button-neon-travel/,
+  "Public Shop must keep the approved travelling neon rim only on explicitly approved controls without changing their stable geometry."
 );
 
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-options-panel > \[data-gmfn-action-root="true"\]::after[\s\S]*?animation: none !important;/,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\[data-public-shop-neon-action="true"\]::after[\s\S]*?animation: none !important;/,
   "Public Shop neon button rims must stop moving when the user prefers reduced motion."
+);
+
+assertContains(
+  /debugId="shop-gallery\.toggle-all-products"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId='shop-gallery\.spotlight\.owner-shortcut'[\s\S]*?data-public-shop-neon-action='true'[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?data-public-shop-neon-action="true"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?data-public-shop-neon-action="true"/,
+  "Only product plus, compact reveal, and Spotlight controls may receive the approved neon marker."
+);
+
+assertNotContains(
+  /debugId="shop-gallery\.(?:ask-vault-access|copy-vault-request-link)"[\s\S]{0,180}?data-public-shop-neon-action/,
+  "Private Vault Request access and Copy request must remain plain controls without the neon rim."
 );
 
 assertContains(

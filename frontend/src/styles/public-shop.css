@@ -142,25 +142,16 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
-.public-shop-options-panel > [data-gmfn-action-root="true"],
-.public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"],
-.public-shop-action-row > [data-gmfn-action-root="true"],
-.public-shop-compact-reveal-row > [data-gmfn-action-root="true"] {
+.public-shop-neon-environment [data-public-shop-neon-action="true"] {
   position: relative;
   isolation: isolate;
   outline: 1px solid rgba(72, 183, 255, 0.82);
   outline-offset: 1px;
 }
 
-.public-shop-action-row > [data-cta-id="shop-gallery.owner-contact.choose"] {
-  outline-color: rgba(76, 237, 148, 0.88);
-}
 
 @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
-  .public-shop-options-panel > [data-gmfn-action-root="true"]::after,
-  .public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"]::after,
-  .public-shop-action-row > [data-gmfn-action-root="true"]::after,
-  .public-shop-compact-reveal-row > [data-gmfn-action-root="true"]::after {
+  .public-shop-neon-environment [data-public-shop-neon-action="true"]::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -191,20 +182,6 @@
     animation: public-shop-button-neon-travel 8s linear infinite alternate;
   }
 
-  .public-shop-action-row
-    > [data-cta-id="shop-gallery.owner-contact.choose"]::after {
-    background: linear-gradient(
-      110deg,
-      #47ef95 0%,
-      #47ef95 18%,
-      #f2cf77 34%,
-      #30dfff 52%,
-      #47ef95 68%,
-      #f2cf77 84%,
-      #47ef95 100%
-    );
-    background-size: 260% 100%;
-  }
 }
 
 @keyframes public-shop-button-neon-travel {
@@ -217,12 +194,7 @@
   }
 }
 
-.public-shop-options-panel > [data-gmfn-action-root="true"]:focus-visible,
-.public-shop-options-panel
-  > .public-shop-follow-actions
-  > [data-gmfn-action-root="true"]:focus-visible,
-.public-shop-action-row > [data-gmfn-action-root="true"]:focus-visible,
-.public-shop-compact-reveal-row > [data-gmfn-action-root="true"]:focus-visible {
+.public-shop-neon-environment [data-public-shop-neon-action="true"]:focus-visible {
   outline: 3px solid #f2cf77;
   outline-offset: 3px;
 }
@@ -349,10 +321,7 @@
     scroll-behavior: auto;
     transition: none !important;
   }
-  .public-shop-options-panel > [data-gmfn-action-root="true"]::after,
-  .public-shop-options-panel > .public-shop-follow-actions > [data-gmfn-action-root="true"]::after,
-  .public-shop-action-row > [data-gmfn-action-root="true"]::after,
-  .public-shop-compact-reveal-row > [data-gmfn-action-root="true"]::after {
+  .public-shop-neon-environment [data-public-shop-neon-action="true"]::after {
     animation: none !important;
     background-position: 50% 50%;
   }

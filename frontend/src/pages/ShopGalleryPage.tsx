@@ -6869,6 +6869,7 @@ export default function ShopGalleryPage() {
                 fullWidth
                 stableHeight={isCompact ? 46 : 48}
                 debugId="shop-gallery.toggle-all-products"
+                data-public-shop-neon-action="true"
                 style={{
                   ...secondaryBtn(false),
                   minHeight: isCompact ? 46 : 48,
@@ -6887,6 +6888,7 @@ export default function ShopGalleryPage() {
                 fullWidth
                 stableHeight={46}
                 debugId="shop-gallery.more.compact-toggle"
+                data-public-shop-neon-action="true"
                 aria-expanded={publicShopMoreDisclosureOpen}
                 aria-controls="public-shop-more-panel"
                 style={{
@@ -7109,6 +7111,7 @@ export default function ShopGalleryPage() {
                       label='Add Spotlight'
                       debugId='shop-gallery.spotlight.owner-shortcut'
                       shortcut='spotlight'
+                      data-public-shop-neon-action='true'
                       data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
                       style={
                         isCompact
@@ -7127,6 +7130,7 @@ export default function ShopGalleryPage() {
                       fullWidth={false}
                       stableHeight={isCompact ? 34 : 52}
                       debugId="shop-gallery.spotlight.contact-advertiser"
+                      data-public-shop-neon-action="true"
                       style={{
                         ...primaryBtn(false),
                         gridColumn: isCompact ? "3" : undefined,
@@ -7174,6 +7178,7 @@ export default function ShopGalleryPage() {
                   <StableDisclosureSummary
                     debugId="shop-gallery.spotlight.information-toggle"
                     stableHeight={isCompact ? 58 : 66}
+                    data-public-shop-neon-action="true"
                     aria-expanded={spotlightInformationOpen}
                     aria-controls="public-shop-spotlight-information-details"
                     style={{
@@ -8217,6 +8222,7 @@ export default function ShopGalleryPage() {
                           minWidth={0}
                           stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.toggle`}
+                          data-public-shop-neon-action="true"
                           aria-label={isProductOpen ? `Close ${displayTitle}` : `Open ${displayTitle}`}
                           title={isProductOpen ? "Close" : "Open"}
                           style={{
