@@ -253,8 +253,13 @@ assertContains(
 );
 
 assertContains(
-  /<PublicShopPhotoHero[\s\S]*?data-public-shop-open-panel="true"[\s\S]*?My GSN Shop[\s\S]*?\{shopNameText\}[\s\S]*?to=\{`#\$\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}`\}[\s\S]*?debugId="shop-gallery\.open-shop"[\s\S]*?Open Shop[\s\S]*?id=\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}/,
-  "External Public Shop sharing must keep the dynamic My GSN Shop and Open Shop HTML panel immediately after the approved animated entrance."
+  /<PublicShopPhotoHero[\s\S]*?data-public-shop-open-panel="true"[\s\S]*?to=\{`#\$\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}`\}[\s\S]*?debugId="shop-gallery\.open-shop"[\s\S]*?Open Shop[\s\S]*?id=\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}/,
+  "External Public Shop sharing must keep one Open Shop HTML action immediately after the approved entrance."
+);
+
+assertNotContains(
+  /data-public-shop-open-panel-name|data-public-shop-open-panel="true"[\s\S]{0,1800}My GSN Shop/,
+  "The permanent Open Shop panel must not repeat the shop identity already visible on the entrance."
 );
 
 const memberSurfaceLinksBlock =

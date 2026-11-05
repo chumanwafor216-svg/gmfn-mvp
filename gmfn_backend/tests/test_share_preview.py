@@ -229,8 +229,8 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
     assert "Fresh rice bag | Ada Trust Shop | Open Shop" in res.text
-    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE?preview=open-shop-v2&amp;product_id=3&amp;block=1" in res.text
-    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?preview=open-shop-v2&amp;product_id=3&amp;block=1" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/open?product_id=3&amp;block=1" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?preview=open-shop-v3&amp;product_id=3&amp;block=1" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
     assert "Tap Open Shop to view this item and current shop details." in res.text
     assert '<meta http-equiv="refresh" content="0;url=' in res.text
@@ -238,6 +238,22 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert "Trusted GSN shop item. Tap to open product." not in res.text
     assert "Trusted GSN shop. Tap to open shop." not in res.text
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3&amp;gsn_share=share_product&amp;gsn_channel=facebook&amp;utm_source=gsn_shop_gallery#shop-block-1" in res.text
+
+
+def test_share_shop_clean_open_preview_uses_single_action_and_default_attribution(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/shop/GMFN-U-SHARE/open?gsn_channel=whatsapp")
+
+    assert res.status_code == 200
+    assert '<meta property="og:title" content="Open Shop" />' in res.text
+    assert '<meta property="og:description" content="Click to open shop." />' in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/open" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?preview=open-shop-v3" in res.text
+    assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?gsn_share=share_shop&amp;gsn_channel=whatsapp&amp;utm_source=gsn_shop_gallery" in res.text
+    assert "Ada Trust Shop | Open Shop" not in res.text
 
 
 def test_share_shop_live_video_is_personalized_and_cached(
@@ -358,6 +374,30 @@ def test_share_shop_card_png_uses_approved_shopfront(client, monkeypatch):
     assert calls == [(388, 474)]
     with Image.open(BytesIO(res.content)) as card:
         assert card.convert("RGB").getpixel((900, 250)) == (255, 0, 255)
+
+
+def test_root_share_shop_card_keeps_static_storefront_as_primary_image(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    calls = []
+
+    def approved_shopfront(size):
+        calls.append(size)
+        return Image.new("RGBA", size, (255, 0, 255, 255))
+
+    monkeypatch.setattr(
+        share_preview_route,
+        "_approved_shopfront_share_hero",
+        approved_shopfront,
+    )
+
+    res = client.get("/share/shop/GMFN-U-SHARE/card.png")
+
+    assert res.status_code == 200
+    assert calls == [(660, 630)]
+    with Image.open(BytesIO(res.content)) as card:
+        assert card.size == (1200, 630)
+        assert card.convert("RGB").getpixel((600, 250)) == (255, 0, 255)
 
 
 def test_approved_shopfront_poster_is_packaged_with_backend():

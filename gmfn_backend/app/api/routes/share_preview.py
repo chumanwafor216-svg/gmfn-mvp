@@ -43,7 +43,7 @@ SHOP_DIARY_ACTIVITY_LABELS = {
 PUBLIC_SHOP_DIARY_LIVE_HOURS = 24
 PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com"
 PUBLIC_VISIBILITY_MODES = ("community_visible", "public", "community")
-PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v2"
+PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v3"
 CARD_WIDTH = 1200
 CARD_HEIGHT = 630
 APPROVED_SHOPFRONT_POSTER_PATH = (
@@ -681,10 +681,8 @@ def _share_page_url(
     block: Optional[int] = None,
 ) -> str:
     base = _public_api_origin(request)
-    path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}"
-    query: list[str] = [
-        f"preview={quote(PUBLIC_SHOP_PREVIEW_VERSION, safe='')}"
-    ]
+    path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}/open"
+    query: list[str] = []
     if product_id:
         query.append(f"product_id={quote(str(product_id), safe='')}")
     if block:
@@ -757,15 +755,11 @@ def _preview_payload(
         or _safe_str(getattr(shop, "image_url", None))
     )
 
-    title = (
-        f"{product_line} | {shop_name} | Open Shop"
-        if product is not None
-        else f"{shop_name} | Open Shop"
-    )
+    title = f"{product_line} | {shop_name} | Open Shop" if product is not None else "Open Shop"
     description = (
         "Tap Open Shop to view this item and current shop details."
         if product is not None
-        else "Tap Open Shop to view items and contact details."
+        else "Click to open shop."
     )
 
     return {
@@ -1288,6 +1282,95 @@ def _draw_share_card_png(
     image.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
 
+def _draw_public_shop_share_card_png(payload: dict[str, str]) -> bytes:
+    poster_size = (660, CARD_HEIGHT)
+    poster = _approved_shopfront_share_hero(poster_size)
+    if poster is None:
+        poster = _draw_people_market_fallback(poster_size)
+
+    background = ImageOps.fit(
+        poster.convert("RGB"),
+        (CARD_WIDTH, CARD_HEIGHT),
+        method=Image.Resampling.LANCZOS,
+        centering=(0.5, 0.5),
+    ).filter(ImageFilter.GaussianBlur(24)).convert("RGBA")
+    background.alpha_composite(Image.new("RGBA", background.size, (3, 18, 34, 142)))
+
+    poster_left = (CARD_WIDTH - poster_size[0]) // 2
+    background.paste(poster, (poster_left, 0))
+    draw = ImageDraw.Draw(background, "RGBA")
+    draw.rectangle((0, 0, poster_left, CARD_HEIGHT), fill=(3, 18, 34, 82))
+    draw.rectangle(
+        (poster_left + poster_size[0], 0, CARD_WIDTH, CARD_HEIGHT),
+        fill=(3, 18, 34, 82),
+    )
+    draw.rounded_rectangle(
+        (poster_left + 18, 18, poster_left + 150, 70),
+        radius=26,
+        fill=(247, 250, 255, 238),
+    )
+    draw.text(
+        (poster_left + 52, 33),
+        "GSN",
+        font=_font(25, bold=True),
+        fill="#B78321",
+    )
+
+    overlay_box = (
+        poster_left + 22,
+        456,
+        poster_left + poster_size[0] - 22,
+        CARD_HEIGHT - 18,
+    )
+    draw.rounded_rectangle(
+        overlay_box,
+        radius=30,
+        fill=(4, 21, 38, 112),
+        outline=(214, 170, 69, 186),
+        width=3,
+    )
+    shop_name_font = _font(39, bold=True)
+    shop_name_lines = _png_text_lines(
+        payload["shop_name"],
+        draw=draw,
+        font=shop_name_font,
+        max_width=overlay_box[2] - overlay_box[0] - 48,
+        max_lines=2,
+    )
+    after_shop_name = _draw_lines(
+        draw,
+        shop_name_lines,
+        x=overlay_box[0] + 24,
+        y=overlay_box[1] + 22,
+        font=shop_name_font,
+        fill="#FFFFFF",
+        gap=2,
+    )
+    category_label = "General merchandise"
+    category_font = _font(19, bold=True)
+    if after_shop_name <= overlay_box[3] - 54:
+        category_width = int(_text_width(draw, category_label, category_font)) + 38
+        category_top = after_shop_name + 8
+        draw.rounded_rectangle(
+            (
+                overlay_box[0] + 24,
+                category_top,
+                overlay_box[0] + 24 + category_width,
+                category_top + 38,
+            ),
+            radius=19,
+            fill=(242, 199, 102, 224),
+        )
+        draw.text(
+            (overlay_box[0] + 43, category_top + 9),
+            category_label,
+            font=category_font,
+            fill="#07172C",
+        )
+
+    out = BytesIO()
+    background.convert("RGB").save(out, format="PNG", optimize=True)
+    return out.getvalue()
 
 
 def _draw_trustslip_card_png(payload: dict[str, str]) -> bytes:
@@ -1698,6 +1781,7 @@ def public_shop_update_share_card_png(
         headers={"Cache-Control": "public, max-age=60"},
     )
 
+@router.get("/shop/{gmfn_id}/open", response_class=HTMLResponse)
 @router.get("/shop/{gmfn_id}", response_class=HTMLResponse)
 def public_shop_share_preview(
     gmfn_id: str,
@@ -1705,9 +1789,9 @@ def public_shop_share_preview(
     product_id: Optional[int] = Query(default=None),
     block: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
-    gsn_share: str = Query(default="", max_length=80),
+    gsn_share: str = Query(default="share_shop", max_length=80),
     gsn_channel: str = Query(default="", max_length=80),
-    utm_source: str = Query(default="", max_length=80),
+    utm_source: str = Query(default="gsn_shop_gallery", max_length=80),
 ) -> HTMLResponse:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
     target_url = _shop_frontend_url(
@@ -1833,14 +1917,17 @@ def public_shop_share_card_png(
     db: Session = Depends(get_db),
 ) -> Response:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
-    target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
-    png = _draw_share_card_png(
-        payload,
-        target_url=target_url,
-        block=block,
-        cta_label="OPEN SHOP",
-        use_approved_shopfront=True,
-    )
+    if product_id is None:
+        png = _draw_public_shop_share_card_png(payload)
+    else:
+        target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
+        png = _draw_share_card_png(
+            payload,
+            target_url=target_url,
+            block=block,
+            cta_label="OPEN SHOP",
+            use_approved_shopfront=True,
+        )
     return Response(
         content=png,
         media_type="image/png",

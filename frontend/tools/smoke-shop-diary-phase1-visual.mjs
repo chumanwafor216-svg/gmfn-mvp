@@ -452,7 +452,7 @@ async function collectMetrics(page) {
     const openShopPanel = document.querySelector('[data-public-shop-open-panel="true"]');
     const openShopPanelRect = openShopPanel?.getBoundingClientRect();
     const openShopAction = document.querySelector('a[data-cta-id="shop-gallery.open-shop"]');
-    const openShopName = document.querySelector('[data-public-shop-open-panel-name="true"]');
+
     const productUpdateTicker = document.querySelector(
       '[data-public-shop-product-update-ticker="true"]'
     );
@@ -573,7 +573,7 @@ async function collectMetrics(page) {
       shopLoopCoverPresent: shopLoopCover instanceof HTMLImageElement,
       openShopPanelTop: openShopPanelRect ? Math.round(openShopPanelRect.top) : null,
       openShopPanelText: (openShopPanel?.textContent || "").replace(/\s+/g, " ").trim(),
-      openShopName: (openShopName?.textContent || "").trim(),
+      openShopNamePresent: Boolean(document.querySelector('[data-public-shop-open-panel-name="true"]')),
       openShopHref: openShopAction instanceof HTMLAnchorElement ? openShopAction.getAttribute("href") : null,
     };
   });
@@ -867,8 +867,8 @@ async function run() {
           metrics.openShopPanelTop === null ||
           metrics.shopEntranceBottom === null ||
           metrics.openShopPanelTop < metrics.shopEntranceBottom ||
-          metrics.openShopPanelText !== "My GSN ShopDiary KitchenOpen Shop" ||
-          metrics.openShopName !== "Diary Kitchen" ||
+          metrics.openShopPanelText !== "Open Shop" ||
+          metrics.openShopNamePresent ||
           !metrics.openShopHref?.endsWith("#products-services") ||
           openShopClickHash !== "#products-services"
         ) {
@@ -878,7 +878,7 @@ async function run() {
                 entranceBottom: metrics.shopEntranceBottom,
                 panelTop: metrics.openShopPanelTop,
                 panelText: metrics.openShopPanelText,
-                panelName: metrics.openShopName,
+                panelNamePresent: metrics.openShopNamePresent,
                 href: metrics.openShopHref,
                 clickHash: openShopClickHash,
               })
@@ -924,7 +924,7 @@ async function run() {
         }
       }
       if (item.name === "19-public-shop-alternate-owner-360") {
-        if (metrics.openShopPanelTop !== null || metrics.openShopName) {
+        if (metrics.openShopPanelTop !== null || metrics.openShopNamePresent) {
           throw new Error(
             `${item.name} showed the redundant external Open Shop panel to the signed-in owner.`
           );

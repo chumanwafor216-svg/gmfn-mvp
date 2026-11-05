@@ -1961,17 +1961,20 @@ Rules:
   removable and visibly reviewable as supporting shop identity media; this
   presentation change does not delete or repurpose them.
 - On an externally opened or shared Public Shop, immediately beneath the
-  animated entrance, render a separate permanent HTML panel containing
-  `My GSN Shop`, the current shop's own dynamic name and one clickable
-  `Open Shop` action. The action targets the existing Products & Services
+  animated entrance, render a separate permanent HTML panel containing only
+  one clickable `Open Shop` action. The shop identity already remains visible
+  in the transparent entrance overlay and must not be repeated below it. The
+  action targets the existing Products & Services
   section on the same canonical public-shop page and preserves any valid query
   context. This panel is stationary and must not be embedded in the animation,
   poster or social-preview image. When the signed-in owner is already viewing
   their own Shop Diaries/Public Shop, omit this redundant `Open Shop` panel.
 - The Public Shop `Share` chooser uses the static Open Graph preview instead
-  of preparing or promoting the optional ten-second MP4. The preview keeps the
-  approved storefront, the current active shop's dynamic name and one prominent
-  `OPEN SHOP` call to action. Do not use the owner's GSN ID as the preview
+  of preparing or promoting the optional ten-second MP4. The image keeps the
+  approved storefront and the current active shop's dynamic name in the same
+  shallow transparent identity treatment as the Public Shop hero. `Open Shop`r
+  appears as the single metadata/action label beneath that image rather than
+  being repeated inside the picture. Do not use the owner's GSN ID as the
   call to action. The receiving platform makes the complete preview card
   clickable; ordinary WhatsApp sharing cannot create a custom HTML button or
   hide the underlying link protocol. Keep the canonical shop destination,

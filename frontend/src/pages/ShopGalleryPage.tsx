@@ -4292,12 +4292,7 @@ export default function ShopGalleryPage() {
 
   const attributedShopSocialLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    return ownerId
-      ? appendShopShareAttribution(
-          publicShopSocialPreviewUrl({ gmfnId: ownerId }),
-          "share_shop"
-        )
-      : "";
+    return ownerId ? publicShopSocialPreviewUrl({ gmfnId: ownerId }) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
   const shopRootPath = useMemo(() => {
@@ -5018,13 +5013,9 @@ export default function ShopGalleryPage() {
     return (
       <SocialTagShareButton
         target={{
-          title: firstMeaningful(
-            effectiveShop?.shopName,
-            effectiveShop?.ownerName,
-            "GSN public shop"
-          ),
+          title: "Open Shop",
           message: buildPublicShopMessage(attributedShopShareLink || absoluteShopShareLink),
-          socialMessage: "Tap the Open Shop preview to view items and contact details.",
+          socialMessage: "",
           socialUrl: attributedShopSocialLink,
           url: attributedShopShareLink || absoluteShopShareLink,
         }}
@@ -5299,12 +5290,9 @@ export default function ShopGalleryPage() {
             aria-label="Open this GSN shop"
             style={{
               position: "relative",
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto",
-              alignItems: "center",
-              gap: isCompact ? 10 : 16,
+              display: "block",
               marginTop: isCompact ? 8 : 12,
-              padding: isCompact ? "11px 12px" : "15px 18px",
+              padding: isCompact ? 8 : 10,
               borderRadius: isCompact ? 16 : 22,
               border: "1px solid rgba(214,170,69,0.34)",
               background:
@@ -5312,32 +5300,6 @@ export default function ShopGalleryPage() {
               boxShadow: "0 12px 28px rgba(8,38,67,0.10)",
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  color: "#8C6829",
-                  fontSize: isCompact ? 10.5 : 12,
-                  fontWeight: 950,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                My GSN Shop
-              </div>
-              <div
-                data-public-shop-open-panel-name="true"
-                style={{
-                  marginTop: 3,
-                  color: "#07172C",
-                  fontSize: isCompact ? 16 : 21,
-                  fontWeight: 950,
-                  lineHeight: 1.18,
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {shopNameText}
-              </div>
-            </div>
             <StableCtaLink
               to={`#${PUBLIC_SHOP_PRODUCTS_ANCHOR}`}
               preserveSearch
@@ -5345,7 +5307,8 @@ export default function ShopGalleryPage() {
               debugId="shop-gallery.open-shop"
               aria-label={`Open ${shopNameText} products and services`}
               style={{
-                minWidth: isCompact ? 104 : 132,
+                width: "100%",
+                minWidth: 0,
                 padding: isCompact ? "8px 12px" : "10px 18px",
                 borderRadius: 999,
                 color: "#07172C",
@@ -5354,6 +5317,7 @@ export default function ShopGalleryPage() {
                 boxShadow: "0 10px 22px rgba(183,131,33,0.22)",
                 fontSize: isCompact ? 12 : 14,
                 fontWeight: 950,
+                boxSizing: "border-box",
               }}
             >
               Open Shop

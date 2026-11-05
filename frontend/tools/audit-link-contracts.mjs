@@ -1162,7 +1162,7 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopSocialPreviewPath\(params: \{[\s\S]*?\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\$\{suffix\}[\s\S]*?export function publicShopSocialPreviewUrl\(params: \{[\s\S]*?return path \? publicApiUrl\(path\) : "";/,
+  /export function publicShopSocialPreviewPath\(params: \{[\s\S]*?\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\/open\$\{suffix\}[\s\S]*?export function publicShopSocialPreviewUrl\(params: \{[\s\S]*?return path \? publicApiUrl\(path\) : "";/,
   "Public Shop social-preview URLs must point social scrapers at the backend /share/shop route while normal app navigation stays on the frontend shop route."
 );
 

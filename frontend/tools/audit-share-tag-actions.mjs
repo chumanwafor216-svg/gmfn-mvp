@@ -225,13 +225,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: "Tap the Open Shop preview to view items and contact details\."[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
-    "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
+    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*const attributedShopSocialLink = useMemo[\s\S]*publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*function buildPublicShopMessage[\s\S]*title: "Open Shop"[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: ""[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    "Public Shop Share must send only Open Shop plus the clean static-preview URL to social channels.",
   ],
   [
     "src/lib/publicLinks.ts",
-    /PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v2"[\s\S]*publicShopSocialPreviewPath[\s\S]*query\.set\("preview", PUBLIC_SHOP_PREVIEW_VERSION\)/,
-    "Public Shop Share must version the static Open Shop preview so receiving apps do not reuse the superseded card.",
+    /publicShopSocialPreviewPath[\s\S]*\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\/open\$\{suffix\}/,
+    "Public Shop Share must use the clean cache-safe Open Shop preview route.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
