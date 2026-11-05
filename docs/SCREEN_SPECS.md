@@ -1981,6 +1981,18 @@ Rules:
   Update/Diary, a private product, a guessed category scene, or an unsaved
   profile portrait. Do not invent trust status, business activity or location
   to make the hero look richer.
+- Founder-approved Shop Diaries neon background (`GSN-SD-NEON-001`): keep
+  the complete existing Public Shop structure and mount it in one static,
+  scoped deep-midnight showroom environment. Use electric-blue and violet
+  illumination with restrained pink accents at approximately 20% below the
+  approved high-intensity reference, not a half-strength substitute. Products
+  & Services, existing product/service cards, Live Spotlight, Private Vault,
+  Shop Update and the Marketplace return area retain their current order,
+  content, media, dimensions, controls, destinations, permissions and
+  responsive behavior. Neon rails and card-edge framing stay decorative,
+  behind content and pointer-transparent. Do not introduce background motion,
+  flashing, global CSS, reconstructed cards, new business logic or changes to
+  the animated Shop Entrance.
 - Owner-approved 2026-10-31 Public Shop Spotlight presentation: Spotlight is a
   media-first attention surface. On phone, the image/video screen occupies the
   former complete compact-card footprint and a separate information console

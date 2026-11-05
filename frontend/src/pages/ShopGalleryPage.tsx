@@ -5007,7 +5007,10 @@ export default function ShopGalleryPage() {
   }
 
   return (
-    <main className="public-shop-shell theme-public-shop">
+    <main
+      className="public-shop-shell theme-public-shop public-shop-neon-environment"
+      data-public-shop-neon-environment="approved-soft"
+    >
       <div className="public-shop-inner">
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}

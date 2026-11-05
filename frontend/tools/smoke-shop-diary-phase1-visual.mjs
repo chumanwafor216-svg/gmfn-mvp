@@ -344,7 +344,11 @@ async function installApiMocks(page) {
 
 async function preparePage(browser, width, height = 844, authenticated = true) {
   activeAuthenticated = authenticated;
-  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true });
+  const page = await browser.newPage({
+    viewport: { width, height },
+    deviceScaleFactor: width <= 520 ? 2 : 1,
+    isMobile: width <= 520,
+  });
   await installApiMocks(page);
   await page.addInitScript((isAuthenticated) => {
     if (isAuthenticated) {
@@ -360,13 +364,20 @@ async function preparePage(browser, width, height = 844, authenticated = true) {
 
 async function capture(page, name) {
   const file = join(screenshotDir, `${name}.png`);
-  await page.screenshot({ path: file, fullPage: false });
+  await page.screenshot({
+    path: file,
+    fullPage: process.env.GSN_SHOP_VISUAL_FULL_PAGE === "true",
+  });
   return file.replace(frontendRoot + "\\", "frontend\\").replaceAll("\\", "/");
 }
 
 async function collectMetrics(page) {
   return page.evaluate(() => {
     const diary = document.getElementById("shop-diaries");
+    const neonEnvironment = document.querySelector(
+      '[data-public-shop-neon-environment="approved-soft"]'
+    );
+    const neonInner = neonEnvironment?.querySelector(".public-shop-inner");
     const productHeading = Array.from(document.querySelectorAll("*"))
       .find((node) => (node.textContent || "").trim() === "Products & Services");
     const frame = document.querySelector(".public-shop-diary-featured video, .public-shop-diary-featured img");
@@ -442,6 +453,16 @@ async function collectMetrics(page) {
       hasVideo: Boolean(document.querySelector(".public-shop-diary-featured video")),
       hasImage: Boolean(document.querySelector(".public-shop-diary-featured img")),
       diaryDisplay: diary ? getComputedStyle(diary).display : null,
+      neonEnvironmentPresent: Boolean(neonEnvironment),
+      neonShellBackground: neonEnvironment
+        ? getComputedStyle(neonEnvironment).backgroundImage
+        : null,
+      neonInnerBackground: neonInner
+        ? getComputedStyle(neonInner).backgroundImage
+        : null,
+      neonProductOutline: productCard
+        ? getComputedStyle(productCard).outlineColor
+        : null,
       moreTop: moreRect ? Math.round(moreRect.top) : null,
       moreOpen: more instanceof HTMLDetailsElement ? more.open : null,
       optionsTop: optionsRect ? Math.round(optionsRect.top) : null,
@@ -537,6 +558,7 @@ async function run() {
       { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Baby skin care set.", spotlight: true },
       { name: "18-shop-picture-entrance-390", scenario: "image", route: "/app/shop-control#shop-assets-picture", width: 390, expect: "Every public shop uses the approved My GSN Shop entrance." },
       { name: "19-public-shop-alternate-owner-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, expect: "Ardent Ebony Uplift LTD", shopName: "Ardent Ebony Uplift LTD" },
+      { name: "20-public-shop-desktop-1024", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 1024, height: 900, expect: "Shop Update", authenticated: false },
     ];
     const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
       .split(",")
@@ -550,7 +572,12 @@ async function run() {
       activeScenario = item.scenario;
       activeSpotlight = Boolean(item.spotlight);
       activeShopName = item.shopName || shop.name;
-      const page = await preparePage(browser, item.width, 844, item.authenticated !== false);
+      const page = await preparePage(
+        browser,
+        item.width,
+        item.height || 844,
+        item.authenticated !== false
+      );
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
       if (item.route.startsWith("/app/shop-control")) {
@@ -608,28 +635,11 @@ async function run() {
               }
 
               let seekingOpacity = "";
+              let seekSeen = false;
+              let playingSeenAfterSeek = false;
               let settled = false;
-              const timeout = window.setTimeout(() => {
-                if (settled) return;
-                settled = true;
-                resolve({
-                  ok: false,
-                  reason: "loop-seek-timeout",
-                  seekingOpacity,
-                });
-              }, 12000);
-
-              video.addEventListener(
-                "seeking",
-                () => {
-                  window.requestAnimationFrame(() => {
-                    seekingOpacity = getComputedStyle(cover).opacity;
-                  });
-                },
-                { once: true }
-              );
-              video.addEventListener("playing", () => {
-                if (!seekingOpacity || settled) return;
+              const finishWhenReady = () => {
+                if (!seekingOpacity || !playingSeenAfterSeek || settled) return;
                 window.setTimeout(() => {
                   if (settled) return;
                   settled = true;
@@ -645,6 +655,32 @@ async function run() {
                       ),
                   });
                 }, 100);
+              };
+              const timeout = window.setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                resolve({
+                  ok: false,
+                  reason: "loop-seek-timeout",
+                  seekingOpacity,
+                });
+              }, 12000);
+
+              video.addEventListener(
+                "seeking",
+                () => {
+                  seekSeen = true;
+                  window.requestAnimationFrame(() => {
+                    seekingOpacity = getComputedStyle(cover).opacity;
+                    finishWhenReady();
+                  });
+                },
+                { once: true }
+              );
+              video.addEventListener("playing", () => {
+                if (!seekSeen) return;
+                playingSeenAfterSeek = true;
+                finishWhenReady();
               });
             })
         );
@@ -695,15 +731,32 @@ async function run() {
         }
       }
       if (item.name.includes("public-shop")) {
+        const maximumIdentityOverlayHeight = item.width <= 520 ? 120 : 160;
+        if (
+          !metrics.neonEnvironmentPresent ||
+          !String(metrics.neonShellBackground || "").includes("radial-gradient") ||
+          !String(metrics.neonInnerBackground || "").includes("linear-gradient") ||
+          !String(metrics.neonProductOutline || "").startsWith("rgb")
+        ) {
+          throw new Error(
+            `${item.name} did not retain the approved scoped static neon showroom: ` +
+              JSON.stringify({
+                present: metrics.neonEnvironmentPresent,
+                shell: metrics.neonShellBackground,
+                inner: metrics.neonInnerBackground,
+                productOutline: metrics.neonProductOutline,
+              })
+          );
+        }
         if (metrics.hasPublicShopInstallPrompt) {
           throw new Error(`${item.name} restored the unrelated Public Shop install prompt.`);
         }
-        if (metrics.brandDisplay !== "none") {
+        if (item.width <= 520 && metrics.brandDisplay !== "none") {
           throw new Error(`${item.name} restored the duplicate Public Shop phone brand bar.`);
         }
         if (
           metrics.shopIdentityOverlayHeight === null ||
-          metrics.shopIdentityOverlayHeight > 120 ||
+          metrics.shopIdentityOverlayHeight > maximumIdentityOverlayHeight ||
           !String(metrics.shopIdentityOverlayBackground || "").includes("0.25")
         ) {
           throw new Error(

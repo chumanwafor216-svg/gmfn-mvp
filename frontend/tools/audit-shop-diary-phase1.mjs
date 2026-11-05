@@ -13,6 +13,7 @@ const files = {
   api: path.join(root, "src/lib/api.ts"),
   assets: path.join(root, "src/pages/ShopAssetsPage.tsx"),
   gallery: path.join(root, "src/pages/ShopGalleryPage.tsx"),
+  presentation: path.join(root, "src/styles/public-shop.css"),
 };
 
 const findings = [];
@@ -61,6 +62,14 @@ assertNotContains(files.gallery, "The shop owner says this happened", "Public Sh
 assertNotContains(files.gallery, "Visible for 24 hours on this shop face", "Public Shop diary must not explain internal expiry mechanics to visitors.");
 assertNotContains(files.gallery, "Show first 12 blocks", "Public Shop must not keep stale 12-block product wording.");
 assertNotContains(files.assets, "inside the Shop Diaries", "Product share feedback must not call product blocks Shop Diaries.");
+assertContains(files.gallery, 'data-public-shop-neon-environment="approved-soft"', "Public Shop must expose the approved scoped neon presentation marker.");
+assertContains(files.presentation, ".public-shop-shell.public-shop-neon-environment", "The approved neon environment must stay scoped to Public Shop.");
+assertContains(files.presentation, "--shop-neon-blue", "The approved neon environment must retain its controlled blue illumination token.");
+assertContains(files.presentation, ".public-shop-neon-environment .shop-diary-card", "Existing product cards must receive only the scoped neon frame.");
+assertContains(files.presentation, ".public-shop-neon-environment .public-shop-inner::before", "The approved showroom must retain its static neon side rails.");
+assertContains(files.presentation, "pointer-events: none", "Decorative neon layers must never intercept shop interactions.");
+assertContains(files.presentation, ".public-shop-neon-environment .public-shop-vault-ad", "Private Vault must remain inside the scoped neon environment.");
+assertNotContains(files.presentation, /@keyframes|animation\s*:/, "The neon background must remain static and must not introduce flashing or decorative animation.");
 
 if (findings.length) {
   console.error("Shop Diary Phase 1 audit failed:");

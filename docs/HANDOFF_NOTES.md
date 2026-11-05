@@ -5,6 +5,42 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Shop Diaries approved neon background - 2026-11-05
+
+- Founder-approved protocol `GSN-SD-NEON-001` is implemented locally as a
+  presentation-only Public Shop/Shop Diaries enhancement. The existing
+  `ShopGalleryPage` structure now sits in one scoped deep-midnight showroom
+  with static electric-blue, violet and restrained pink illumination.
+- The approved Shop Entrance, Products & Services order, product cards/media,
+  add/open controls, Show More, Live Spotlight, Private Vault, Shop Update,
+  Marketplace navigation, permissions, routes, data and backend contracts are
+  unchanged. Decorative rails and card-edge lighting use CSS only, remain
+  pointer-transparent and introduce no animation or flashing.
+- Genuine same-data evidence uses the live Ardent Ebony Uplift LTD Public Shop:
+  `frontend/screenshots/shop-diary-neon/before-live-ardent-products-430.png`
+  and
+  `frontend/screenshots/shop-diary-neon/after-live-ardent-products-430.png`.
+  The read-only comparison confirmed the same six visible product ids, names
+  and prices and no failed images; only the local after page carried the neon
+  marker. Full-page styling evidence uses the same fixed six-product fixture at
+  `frontend/screenshots/shop-diary-neon/before-visitor-430.png` and
+  `frontend/screenshots/shop-diary-neon/after-visitor-430.png`; desktop
+  evidence is
+  `frontend/screenshots/shop-diary-neon/after-desktop-1024.png`.
+- Verification passed: Shop Diary Phase 1 and Phase 2, Universal Shop Hero,
+  Public Shop button inventory, all 20 Shop Diary browser scenarios at
+  360/390/430/1024 px, the complete protected-button freeze, and the production
+  frontend build.
+- The separate live product-count diagnostic still reports 11 of 12 visible
+  products for `GMFN-U-63655DE6`, with block 2 empty. That is current shop
+  data, not a neon regression, and was not altered. Live Spotlight delivery can
+  vary between sequential public sessions, so the dynamic full-page live
+  captures are not presented as same-data proof; the fixed-fixture browser
+  suite verifies Spotlight/Vault/Shop Update styling and behavior instead.
+  Founder deployment approval was received on 2026-11-05. This verified
+  frontend-only slice is authorised for commit, promotion to `main`, and
+  Render deployment.
+
 ## Shop Diaries storefront visibility correction - 2026-11-05
 
 - Founder video review confirmed that the Public Shop/Shop Diaries identity
