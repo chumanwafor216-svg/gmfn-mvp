@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   CardActionRow,
   PrimaryButton,
@@ -21,6 +21,18 @@ import {
 
 type NoticeTone = "success" | "error";
 
+type NativeFileShare = {
+  sourceKey: string;
+  caption: string;
+  prepareFile: (signal: AbortSignal) => Promise<File>;
+  label?: string;
+};
+
+type NativeFileShareState = {
+  status: "idle" | "preparing" | "ready" | "unsupported" | "error";
+  file?: File;
+};
+
 type SocialTagShareButtonProps = {
   target: ShareTarget;
   disabled?: boolean;
@@ -34,6 +46,7 @@ type SocialTagShareButtonProps = {
   style?: React.CSSProperties;
   onBeforeOpen?: () => boolean | Promise<boolean>;
   onResult?: (tone: NoticeTone, text: string, channel?: ShareResultChannel) => void;
+  nativeFileShare?: NativeFileShare;
 };
 
 const overlayStyle: React.CSSProperties = {
@@ -110,12 +123,16 @@ export default function SocialTagShareButton({
   style,
   onBeforeOpen,
   onResult,
+  nativeFileShare,
 }: SocialTagShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [shareName, setShareName] = useState("");
   const [handleOpen, setHandleOpen] = useState(false);
   const [moreCopyOpen, setMoreCopyOpen] = useState(false);
   const [localNotice, setLocalNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
+  const [nativeFileState, setNativeFileState] = useState<NativeFileShareState>({
+    status: "idle",
+  });
 
   const cleanTarget = useMemo<ShareTarget>(
     () => ({
@@ -128,6 +145,41 @@ export default function SocialTagShareButton({
     [target]
   );
   const canShare = Boolean(cleanTarget.url) && !disabled;
+
+  useEffect(() => {
+    if (!open || !nativeFileShare) {
+      setNativeFileState({ status: "idle" });
+      return;
+    }
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.share !== "function" ||
+      typeof navigator.canShare !== "function"
+    ) {
+      setNativeFileState({ status: "unsupported" });
+      return;
+    }
+
+    const controller = new AbortController();
+    setNativeFileState({ status: "preparing" });
+    void nativeFileShare
+      .prepareFile(controller.signal)
+      .then((file) => {
+        if (controller.signal.aborted) return;
+        if (!navigator.canShare({ files: [file] })) {
+          setNativeFileState({ status: "unsupported" });
+          return;
+        }
+        setNativeFileState({ status: "ready", file });
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setNativeFileState({ status: "error" });
+      });
+
+    return () => controller.abort();
+  }, [nativeFileShare?.prepareFile, nativeFileShare?.sourceKey, open]);
 
   function report(tone: NoticeTone, text: string, channel?: ShareResultChannel) {
     setLocalNotice({ tone, text });
@@ -289,6 +341,44 @@ export default function SocialTagShareButton({
     }
   }
 
+  async function openNativeFileShare() {
+    if (
+      !nativeFileShare ||
+      nativeFileState.status !== "ready" ||
+      !nativeFileState.file
+    ) {
+      report("error", "The live shop video is not ready yet.");
+      return;
+    }
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.share !== "function" ||
+      typeof navigator.canShare !== "function" ||
+      !navigator.canShare({ files: [nativeFileState.file] })
+    ) {
+      report(
+        "error",
+        "This browser cannot send the live video. Use the WhatsApp link instead."
+      );
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: cleanTarget.title,
+        text: nativeFileShare.caption,
+        files: [nativeFileState.file],
+      });
+      report("success", "Live shop video shared from your phone.", "native");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      report(
+        "error",
+        "Live video sharing did not complete. Use the WhatsApp link instead."
+      );
+    }
+  }
+
   const nativeShareAvailable =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -394,6 +484,49 @@ export default function SocialTagShareButton({
               ) : null}
             </div>
 
+            {nativeFileShare ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 10,
+                  borderRadius: 14,
+                  border: "1px solid rgba(214, 170, 69, 0.42)",
+                  background: "linear-gradient(180deg, #FFF9E8 0%, #FFFFFF 100%)",
+                }}
+              >
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    void openNativeFileShare();
+                  }}
+                  disabled={nativeFileState.status !== "ready"}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="social-tag-share.native-file"
+                  style={shareButtonStyle}
+                >
+                  {nativeFileState.status === "preparing"
+                    ? "Preparing live shop video…"
+                    : nativeFileState.status === "ready"
+                      ? nativeFileShare.label || "Share live shop video"
+                      : nativeFileState.status === "unsupported"
+                        ? "Live video needs phone sharing"
+                        : nativeFileState.status === "error"
+                          ? "Live video temporarily unavailable"
+                          : "Preparing live shop video…"}
+                </PrimaryButton>
+                <div style={{ ...noteStyle, marginTop: 7 }}>
+                  {nativeFileState.status === "ready"
+                    ? "Tap, choose WhatsApp, then choose who receives the playable shop video."
+                    : nativeFileState.status === "unsupported"
+                      ? "This browser cannot attach the video. Use WhatsApp link below."
+                      : nativeFileState.status === "error"
+                        ? "The video could not be prepared. The normal shop link still works."
+                        : "GSN is adding this shop name to the approved entrance video."}
+                </div>
+              </div>
+            ) : null}
+
             <CardActionRow
               minHeight={46}
               align="stretch"
@@ -411,9 +544,9 @@ export default function SocialTagShareButton({
                 debugId="social-tag-share.whatsapp"
                 style={shareButtonStyle}
               >
-                WhatsApp
+                {nativeFileShare ? "WhatsApp link" : "WhatsApp"}
               </PrimaryButton>
-              {nativeShareAvailable ? (
+              {nativeShareAvailable && !nativeFileShare ? (
                 <SecondaryButton
                   type="button"
                   onClick={() => {

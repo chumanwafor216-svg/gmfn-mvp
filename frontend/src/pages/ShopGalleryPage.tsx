@@ -42,6 +42,7 @@ import {
   PUBLIC_SHOP_SPOTLIGHT_ANCHOR,
   PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
+  publicShopLiveShareVideoUrl,
   publicShopPath,
   publicShopShareUrl,
   publicShopSocialPreviewUrl,
@@ -4270,6 +4271,50 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopUrl(ownerId) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const liveShopShareVideoUrl = useMemo(() => {
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId ? publicShopLiveShareVideoUrl(ownerId) : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
+
+  const prepareLiveShopShareFile = useCallback(
+    async (signal: AbortSignal): Promise<File> => {
+      if (!liveShopShareVideoUrl) {
+        throw new Error("Live shop video URL is not ready.");
+      }
+
+      const response = await fetch(liveShopShareVideoUrl, {
+        method: "GET",
+        credentials: "omit",
+        signal,
+      });
+      if (!response.ok) {
+        throw new Error("Live shop video could not be prepared.");
+      }
+
+      const video = await response.blob();
+      if (video.size <= 0) {
+        throw new Error("Live shop video was empty.");
+      }
+      const shopFileName =
+        firstMeaningful(
+          effectiveShop?.shopName,
+          effectiveShop?.ownerName,
+          "My GSN Shop"
+        )
+          .replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 64) || "My-GSN-Shop";
+      return new File([video], `${shopFileName}-GSN-Shop.mp4`, {
+        type: "video/mp4",
+      });
+    },
+    [
+      effectiveShop?.ownerName,
+      effectiveShop?.shopName,
+      liveShopShareVideoUrl,
+    ]
+  );
+
   const absoluteShopShareLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     return ownerId ? publicShopShareUrl({ gmfnId: ownerId }) : "";
@@ -5764,6 +5809,16 @@ export default function ShopGalleryPage() {
                 url: attributedShopShareLink || absoluteShopShareLink,
               }}
               disabled={shopLoadFailed || !absoluteShopShareLink}
+              nativeFileShare={{
+                sourceKey: liveShopShareVideoUrl,
+                caption: `${firstMeaningful(
+                  effectiveShop?.shopName,
+                  effectiveShop?.ownerName,
+                  "My GSN Shop"
+                )}\nOpen Shop: ${absoluteShopLink}`,
+                prepareFile: prepareLiveShopShareFile,
+                label: "Share live shop video",
+              }}
               buttonLabel="Share"
               buttonKind="secondary"
               triggerIcon={inlineShareGlyph("#8C6829", isCompact ? 18 : 21)}

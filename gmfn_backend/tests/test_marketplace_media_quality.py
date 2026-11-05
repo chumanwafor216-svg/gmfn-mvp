@@ -35,6 +35,7 @@ from app.services.marketplace_media_quality_service import (
     normalize_marketplace_image,
     normalize_marketplace_video,
     render_marketplace_image_reel,
+    render_public_shop_share_video,
 )
 
 
@@ -119,6 +120,22 @@ def test_approved_shopfront_reel_asset_is_packaged_exactly():
     assert hashlib.sha256(APPROVED_SHOPFRONT_REEL_PATH.read_bytes()).hexdigest() == (
         "f7fef6f29627aec2a72687f14fa5e741f1951bc8e05f0508392b688a118f0284"
     )
+
+
+def test_public_shop_share_video_uses_approved_entrance_and_stays_bounded(
+    tmp_path: Path,
+):
+    output = tmp_path / "ada-trust-shop.mp4"
+
+    render_public_shop_share_video(output, shop_name="Ada Trust Shop")
+
+    inspection = inspect_video(output)
+    assert output.is_file()
+    assert inspection.width == 430
+    assert inspection.height == 414
+    assert inspection.duration_seconds <= 10.1
+    assert inspection.codec == "h264"
+    assert output.stat().st_size <= MAX_GSN_NATURAL_FINISH_BYTES
 
 
 def test_image_finish_rejects_unreadable_input(tmp_path: Path):

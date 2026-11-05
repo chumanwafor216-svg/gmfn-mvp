@@ -434,6 +434,18 @@ export function publicShopSocialPreviewUrl(params: {
   return path ? publicApiUrl(path) : "";
 }
 
+export function publicShopLiveShareVideoPath(gmfnId: string): string {
+  const ownerId = cleanText(gmfnId);
+  return ownerId
+    ? `/share/shop/${encodeURIComponent(ownerId)}/live.mp4`
+    : "";
+}
+
+export function publicShopLiveShareVideoUrl(gmfnId: string): string {
+  const path = publicShopLiveShareVideoPath(gmfnId);
+  return path ? publicApiUrl(path) : "";
+}
+
 export function publicShopUpdateSocialPreviewPath(entryId: string | number): string {
   const cleanEntryId = cleanText(entryId);
   return cleanEntryId

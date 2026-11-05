@@ -1968,6 +1968,18 @@ Rules:
   context. This panel is stationary and must not be embedded in the animation,
   poster or social-preview image. When the signed-in owner is already viewing
   their own Shop Diaries/Public Shop, omit this redundant `Open Shop` panel.
+- The Public Shop `Share` chooser may offer `Share live shop video` when the
+  browser supports native file sharing. GSN prepares a bounded MP4 from the
+  exact approved entrance, adds only a shallow transparent `My GSN Shop`
+  caption with the current active shop's dynamic name, and passes that file
+  with `Shop name\nOpen Shop: <canonical public-shop URL>` to the phone share
+  sheet. The owner still chooses WhatsApp or another app and the recipient.
+  Do not claim automatic posting or delivery, and do not imply that ordinary
+  WhatsApp sharing can create a custom in-message `Open Shop` button.
+  Unsupported browsers retain the existing static social-preview and
+  `WhatsApp link` fallback. Keep the canonical shop page, stationary HTML
+  `Open Shop` panel, static Open Graph card, product/block links and existing
+  privacy and permission boundaries unchanged.
 - Keep shop name, category, a bounded short description and truthful
   GSN-member/community context readable through a shallow, genuinely
   see-through navy-and-gold caption near the bottom of the animation. It must

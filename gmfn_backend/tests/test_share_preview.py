@@ -237,6 +237,46 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3&amp;gsn_share=share_product&amp;gsn_channel=facebook&amp;utm_source=gsn_shop_gallery#shop-block-1" in res.text
 
 
+def test_share_shop_live_video_is_personalized_and_cached(
+    client,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setenv("GMFN_PUBLIC_SHOP_VIDEO_CACHE_DIR", str(tmp_path))
+    _seed_public_shop()
+    render_calls = []
+
+    def fake_render(output_path, *, shop_name):
+        render_calls.append(shop_name)
+        output_path.write_bytes(b"personalized-mp4")
+        return output_path
+
+    monkeypatch.setattr(
+        share_preview_route,
+        "render_public_shop_share_video",
+        fake_render,
+    )
+
+    first = client.get("/share/shop/GMFN-U-SHARE/live.mp4")
+    second = client.get("/share/shop/GMFN-U-SHARE/live.mp4")
+
+    assert first.status_code == 200, first.text
+    assert first.headers["content-type"] == "video/mp4"
+    assert first.headers["cache-control"] == "public, max-age=300"
+    assert first.headers["content-disposition"].startswith("inline;")
+    assert first.content == b"personalized-mp4"
+    assert second.status_code == 200
+    assert second.content == first.content
+    assert render_calls == ["Ada Trust Shop"]
+
+
+def test_share_shop_live_video_requires_active_public_shop(client):
+    response = client.get("/share/shop/GMFN-U-MISSING/live.mp4")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Public shop not found."
+
+
 
 def test_share_shop_update_preview_targets_exact_live_update(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")

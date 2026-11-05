@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
+import tempfile
+import threading
+import uuid
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from html import escape
@@ -12,12 +16,16 @@ from typing import Any, Optional
 from urllib.parse import quote, urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 from sqlalchemy.orm import Session
 
 from app.db.models import Clan, ClanInvite, ClanMembership, MarketplaceProduct, MarketplaceShop, ShopDiaryEntry, TrustSlip, User
 from app.deps import get_db
+from app.services.marketplace_media_quality_service import (
+    MediaQualityError,
+    render_public_shop_share_video,
+)
 from app.services.trust_slip_decision_packs import DECISION_PACKS, DecisionPackDefinition
 
 router = APIRouter(prefix="/share", tags=["share-preview"])
@@ -42,6 +50,13 @@ APPROVED_SHOPFRONT_POSTER_PATH = (
     / "assets"
     / "gsn-shop-entrance-approved-poster.jpg"
 )
+APPROVED_SHOPFRONT_VIDEO_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "assets"
+    / "gsn-shop-entrance-approved.mp4"
+)
+PUBLIC_SHOP_SHARE_VIDEO_CACHE_LIMIT = 96
+PUBLIC_SHOP_SHARE_VIDEO_RENDER_LOCK = threading.Lock()
 
 
 def _safe_str(value: Any, default: str = "") -> str:
@@ -151,6 +166,55 @@ def _get_share_shop(db: Session, owner: User) -> Optional[MarketplaceShop]:
         .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
         .first()
     )
+
+
+def _public_shop_share_video_cache_dir() -> Path:
+    configured = _safe_str(os.getenv("GMFN_PUBLIC_SHOP_VIDEO_CACHE_DIR", ""))
+    root = (
+        Path(configured).expanduser()
+        if configured
+        else Path(tempfile.gettempdir()) / "gmfn-public-shop-share"
+    )
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _prune_public_shop_share_video_cache(cache_dir: Path) -> None:
+    try:
+        cached = sorted(
+            (
+                path
+                for path in cache_dir.glob("*.mp4")
+                if path.is_file()
+            ),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+    except OSError:
+        return
+
+    for stale_path in cached[PUBLIC_SHOP_SHARE_VIDEO_CACHE_LIMIT:]:
+        try:
+            stale_path.unlink()
+        except OSError:
+            pass
+
+
+def _public_shop_share_video_path(*, owner: User, shop: MarketplaceShop) -> Path:
+    source_stat = APPROVED_SHOPFRONT_VIDEO_PATH.stat()
+    owner_id = _safe_str(getattr(owner, "gmfn_id", None)).upper()
+    shop_name = _safe_str(getattr(shop, "name", None), "GSN public shop")
+    cache_key = "|".join(
+        (
+            owner_id,
+            shop_name,
+            str(source_stat.st_size),
+            str(source_stat.st_mtime_ns),
+            "v1",
+        )
+    )
+    digest = hashlib.sha256(cache_key.encode("utf-8")).hexdigest()[:24]
+    return _public_shop_share_video_cache_dir() / f"shop-{digest}.mp4"
 
 
 def _get_share_product(
@@ -1695,6 +1759,63 @@ def public_shop_share_preview(
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/shop/{gmfn_id}/live.mp4")
+def public_shop_share_video(
+    gmfn_id: str,
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    owner = _get_share_owner(db, gmfn_id)
+    shop = _get_share_shop(db, owner) if owner else None
+    if owner is None or shop is None:
+        raise HTTPException(status_code=404, detail="Public shop not found.")
+
+    try:
+        cache_path = _public_shop_share_video_path(owner=owner, shop=shop)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The live shop video is temporarily unavailable.",
+        ) from exc
+
+    if not cache_path.is_file() or cache_path.stat().st_size <= 0:
+        with PUBLIC_SHOP_SHARE_VIDEO_RENDER_LOCK:
+            if not cache_path.is_file() or cache_path.stat().st_size <= 0:
+                temporary_path = cache_path.with_name(
+                    f"{cache_path.stem}-{uuid.uuid4().hex}.rendering.mp4"
+                )
+                try:
+                    render_public_shop_share_video(
+                        temporary_path,
+                        shop_name=_safe_str(
+                            getattr(shop, "name", None),
+                            "GSN public shop",
+                        ),
+                    )
+                    os.replace(temporary_path, cache_path)
+                    _prune_public_shop_share_video_cache(cache_path.parent)
+                except MediaQualityError as exc:
+                    temporary_path.unlink(missing_ok=True)
+                    raise HTTPException(status_code=503, detail=str(exc)) from exc
+                except OSError as exc:
+                    temporary_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=503,
+                        detail="The live shop video is temporarily unavailable.",
+                    ) from exc
+
+    owner_id = _safe_str(getattr(owner, "gmfn_id", None), "GSN-shop")
+    return FileResponse(
+        path=cache_path,
+        media_type="video/mp4",
+        filename=f"{owner_id}-My-GSN-Shop.mp4",
+        content_disposition_type="inline",
+        headers={
+            "Cache-Control": "public, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

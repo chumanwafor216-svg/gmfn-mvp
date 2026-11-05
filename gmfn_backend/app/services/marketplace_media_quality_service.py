@@ -482,6 +482,141 @@ def _build_finish_overlay(profile: VideoFinishProfile, width: int, height: int, 
     canvas.save(path, format='PNG', optimize=True)
 
 
+def _build_public_shop_share_overlay(
+    *,
+    shop_name: str,
+    width: int,
+    height: int,
+    path: Path,
+) -> None:
+    canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+    margin = max(10, int(width * 0.03))
+    panel_height = max(74, min(94, int(height * 0.22)))
+    top = height - panel_height - margin
+    draw.rounded_rectangle(
+        (margin, top, width - margin, height - margin),
+        radius=max(14, int(width * 0.035)),
+        fill=(4, 20, 37, 174),
+        outline=(214, 170, 69, 226),
+        width=max(2, int(width * 0.005)),
+    )
+    label_font = _font(max(13, min(18, int(width * 0.037))))
+    name_font = _font(max(20, min(30, int(width * 0.061))))
+    text_left = margin + max(14, int(width * 0.035))
+    max_width = width - text_left - margin - max(14, int(width * 0.035))
+    label = "My GSN Shop"
+    clean_name = " ".join(str(shop_name or "GSN public shop").split())
+    name = _ellipsize(draw, clean_name, name_font, max_width)
+    label_y = top + max(10, int(panel_height * 0.12))
+    draw.text((text_left, label_y), label, font=label_font, fill=(242, 207, 119, 255))
+    name_y = label_y + draw.textbbox((0, 0), label, font=label_font)[3] + 2
+    draw.text((text_left, name_y), name, font=name_font, fill=(255, 255, 255, 255))
+    canvas.save(path, format="PNG", optimize=True)
+
+
+def render_public_shop_share_video(
+    output_path: str | Path,
+    *,
+    shop_name: str,
+) -> Path:
+    source_path = _approved_shopfront_reel_path()
+    inspection = inspect_video(source_path)
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    overlay_path = destination.with_suffix(".overlay.png")
+    _build_public_shop_share_overlay(
+        shop_name=shop_name,
+        width=inspection.width,
+        height=inspection.height,
+        path=overlay_path,
+    )
+
+    try:
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception as exc:
+        overlay_path.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_processor_unavailable",
+            "GSN could not prepare the live shop video right now.",
+        ) from exc
+
+    duration_seconds = min(10.0, max(1.0, inspection.duration_seconds))
+    command = [
+        ffmpeg_exe,
+        "-y",
+        "-nostdin",
+        "-v",
+        "error",
+        "-threads",
+        str(FFMPEG_THREAD_LIMIT),
+        "-filter_threads",
+        str(FFMPEG_THREAD_LIMIT),
+        "-i",
+        str(source_path),
+        "-loop",
+        "1",
+        "-framerate",
+        "30",
+        "-i",
+        str(overlay_path),
+        "-filter_complex_threads",
+        str(FFMPEG_THREAD_LIMIT),
+        "-filter_complex",
+        "[0:v]fps=30,format=yuv420p[shop];"
+        "[shop][1:v]overlay=0:0:shortest=1,format=yuv420p[shared]",
+        "-map",
+        "[shared]",
+        "-an",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1200k",
+        "-bufsize",
+        "2400k",
+        "-movflags",
+        "+faststart",
+        "-t",
+        f"{duration_seconds:g}",
+        str(destination),
+    ]
+
+    try:
+        completed = _run_video_process(command)
+    except subprocess.TimeoutExpired as exc:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_processing_timeout",
+            "The live shop video took too long to prepare. Please try again.",
+        ) from exc
+    except OSError as exc:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_processor_unavailable",
+            "GSN could not prepare the live shop video right now.",
+        ) from exc
+    finally:
+        overlay_path.unlink(missing_ok=True)
+
+    if completed.returncode != 0 or not destination.is_file():
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_processing_failed",
+            "GSN could not prepare the live shop video right now.",
+        )
+    if destination.stat().st_size <= 0 or destination.stat().st_size > MAX_GSN_NATURAL_FINISH_BYTES:
+        destination.unlink(missing_ok=True)
+        raise MediaQualityError(
+            "video_output_too_large",
+            "GSN could not prepare a lightweight live shop video right now.",
+        )
+    return destination
+
+
 def _safe_float(value: Any) -> float:
     try:
         parsed = float(value)

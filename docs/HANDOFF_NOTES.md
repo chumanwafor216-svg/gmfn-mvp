@@ -5,6 +5,36 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Playable Public Shop sharing - 2026-11-05
+
+- Founder-approved first step is implemented locally: Public Shop `Share`
+  prepares a lightweight playable MP4 from the exact approved `My GSN Shop`
+  entrance, adds the active shop's dynamic name in a shallow transparent lower
+  caption, and opens the phone's native share sheet. The user then chooses
+  WhatsApp or another app and the recipient.
+- The native caption is deliberately short: the dynamic shop name followed by
+  `Open Shop: <canonical /shop/{GSN_ID} URL>`. The video itself contains no
+  `Open Shop` button. Ordinary WhatsApp sharing cannot create a custom
+  interactive button, so unsupported browsers retain the existing
+  `WhatsApp link` and static Open Graph preview fallbacks.
+- Backend `GET /share/shop/{GSN_ID}/live.mp4` is read-only and available only
+  for a real active shop. It uses the backend-packaged approved source,
+  one-thread bounded FFmpeg rendering, a serialized render guard, a
+  source/name-aware temporary cache and a 96-file cache cap.
+- The canonical Public Shop page, stationary visitor `Open Shop` HTML panel,
+  static social card, Public Shop URL structure, Shop Diary, Products &
+  Services, Spotlight, Vault, TrustSlip, permissions, privacy and payments are
+  unchanged. Network fetching remains page-scoped; the reusable social chooser
+  receives only a file-preparation callback and does not become an auto-post
+  integration.
+- Verification passed: all 25 share-preview tests; approved-asset and real
+  personalized-render tests; share-action, Universal Shop Hero and Public Shop
+  action audits; complete protected-button freeze; 313-module production build;
+  and rendered-frame review using `Ardent Ebony Uplift LTD`. The older
+  `smoke:shop-gallery-slot-replacement` still fails its unrelated pre-existing
+  newest-replacement-block assertion and reports duplicate key `0`; this
+  sharing slice does not alter slot replacement.
+
 ## Shop Diaries approved neon background - 2026-11-05
 
 - Founder-approved protocol `GSN-SD-NEON-001` is implemented locally as a

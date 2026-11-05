@@ -179,6 +179,11 @@ function assertNotContains(file, pattern, message) {
     "Live owner Shop Diary updates must expose one exact Share update handoff.",
   ],
   [
+    "src/components/SocialTagShareButton.tsx",
+    /type NativeFileShare[\s\S]*prepareFile: \(signal: AbortSignal\) => Promise<File>[\s\S]*navigator\.canShare\(\{ files: \[file\] \}\)[\s\S]*navigator\.share\(\{[\s\S]*text: nativeFileShare\.caption,[\s\S]*files: \[nativeFileState\.file\][\s\S]*debugId="social-tag-share\.native-file"[\s\S]*WhatsApp link/,
+    "Live shop sharing must stay user-controlled through supported phone file sharing with a normal WhatsApp-link fallback.",
+  ],
+  [
     "src/pages/ShopAssetsPage.tsx",
     /isLivePublicDiaryEntry[\s\S]*Date\.now\(\) - 24 \* 60 \* 60 \* 1000[\s\S]*isLivePublicDiaryEntry\(entry\) \? \(/,
     "Expired, private, inactive, and system-insight diary rows must not expose a public share action.",
@@ -192,6 +197,11 @@ function assertNotContains(file, pattern, message) {
     "src/pages/BuildFirstCirclePage.tsx",
     /debugId="build-first-circle\.tag-invite"/,
     "Build First Circle invite surface is missing social tag sharing.",
+  ],
+  [
+    "src/lib/publicLinks.ts",
+    /publicShopLiveShareVideoPath[\s\S]*live\.mp4[\s\S]*publicShopLiveShareVideoUrl/,
+    "Public Shop live-file sharing must use the dedicated API video route.",
   ],
   [
     "src/pages/ClansPage.tsx",
@@ -217,6 +227,11 @@ function assertNotContains(file, pattern, message) {
     "src/pages/ShopGalleryPage.tsx",
     /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
+  ],
+  [
+    "src/pages/ShopGalleryPage.tsx",
+    /publicShopLiveShareVideoUrl[\s\S]*prepareLiveShopShareFile[\s\S]*fetch\(liveShopShareVideoUrl[\s\S]*new File\(\[video\][\s\S]*nativeFileShare=\{\{[\s\S]*caption:[\s\S]*Open Shop:[\s\S]*absoluteShopLink[\s\S]*prepareFile: prepareLiveShopShareFile/,
+    "Public Shop Share must prepare the personalized playable MP4 and pair it with the canonical Open Shop caption.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
