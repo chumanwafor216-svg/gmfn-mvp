@@ -43,6 +43,7 @@ import {
   PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
   publicShopPath,
+  publicShopShareCardUrl,
   publicShopShareUrl,
   publicShopSocialPreviewUrl,
   publicShopUrl,
@@ -670,6 +671,71 @@ function appendShopShareAttribution(
     });
     if (channel) params.set("gsn_channel", channel);
     return `${rawUrl}${joiner}${params.toString()}`;
+  }
+}
+
+async function preparePublicShopSharePosterFile(
+  sourceUrl: string,
+  shopName: string,
+  signal: AbortSignal
+): Promise<File> {
+  if (!sourceUrl) throw new Error("Shop picture is not ready.");
+
+  const response = await fetch(sourceUrl, { signal, cache: "no-store" });
+  if (!response.ok) throw new Error("Shop picture could not be opened.");
+
+  const sourceBlob = await response.blob();
+  const fileBase =
+    firstMeaningful(shopName, "My GSN Shop")
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+|-+$/g, "") || "My-GSN-Shop";
+  const sourceFile = new File([sourceBlob], `${fileBase}-GSN-Shop.png`, {
+    type: "image/png",
+  });
+
+  if (typeof createImageBitmap !== "function") return sourceFile;
+
+  const bitmap = await createImageBitmap(sourceBlob);
+  try {
+    if (signal.aborted) throw new DOMException("Share cancelled.", "AbortError");
+
+    const cropWidth = Math.min(
+      bitmap.width,
+      Math.round(bitmap.height * (660 / 630))
+    );
+    if (cropWidth >= bitmap.width) return sourceFile;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cropWidth;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d");
+    if (!context) return sourceFile;
+
+    const cropLeft = Math.max(0, Math.round((bitmap.width - cropWidth) / 2));
+    context.drawImage(
+      bitmap,
+      cropLeft,
+      0,
+      cropWidth,
+      bitmap.height,
+      0,
+      0,
+      cropWidth,
+      bitmap.height
+    );
+
+    const croppedBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Shop picture could not be prepared."));
+      }, "image/png");
+    });
+
+    return new File([croppedBlob], `${fileBase}-GSN-Shop.png`, {
+      type: "image/png",
+    });
+  } finally {
+    bitmap.close();
   }
 }
 
@@ -4526,6 +4592,42 @@ export default function ShopGalleryPage() {
     Boolean(shopDescriptionText) &&
     shopDescriptionText.toLowerCase() !== shopCategoryText.toLowerCase();
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
+  const publicShopSharePosterUrl = publicShopShareCardUrl(
+    firstMeaningful(shopGmfnText, gmfnId)
+  );
+  const publicShopShareCaption = [
+    shopNameText,
+    absoluteShopLink ? `Open Shop: ${absoluteShopLink}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const preparePublicShopSharePoster = useCallback(
+    (signal: AbortSignal) =>
+      preparePublicShopSharePosterFile(
+        publicShopSharePosterUrl,
+        shopNameText,
+        signal
+      ),
+    [publicShopSharePosterUrl, shopNameText]
+  );
+  const publicShopNativeFileShare = useMemo(
+    () =>
+      publicShopSharePosterUrl && absoluteShopLink
+        ? {
+            sourceKey: publicShopSharePosterUrl,
+            caption: publicShopShareCaption,
+            prepareFile: preparePublicShopSharePoster,
+            mediaKind: "image" as const,
+            label: "Share shop picture",
+          }
+        : undefined,
+    [
+      absoluteShopLink,
+      preparePublicShopSharePoster,
+      publicShopShareCaption,
+      publicShopSharePosterUrl,
+    ]
+  );
   const shopCommunityText = safeStr(effectiveShop?.communityName);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
   const publicBlockText = autoRefreshingShop
@@ -5019,6 +5121,7 @@ export default function ShopGalleryPage() {
           socialUrl: attributedShopSocialLink,
           url: attributedShopShareLink || absoluteShopShareLink,
         }}
+        nativeFileShare={publicShopNativeFileShare}
         disabled={shopLoadFailed || !absoluteShopShareLink}
         buttonLabel="Share"
         buttonKind="secondary"

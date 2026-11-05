@@ -25,6 +25,7 @@ type NativeFileShare = {
   sourceKey: string;
   caption: string;
   prepareFile: (signal: AbortSignal) => Promise<File>;
+  mediaKind?: "image" | "video";
   label?: string;
 };
 
@@ -145,9 +146,16 @@ export default function SocialTagShareButton({
     [target]
   );
   const canShare = Boolean(cleanTarget.url) && !disabled;
+  const nativeFileIsImage = nativeFileShare?.mediaKind === "image";
+  const nativeFileLabel = nativeFileIsImage ? "shop picture" : "live shop video";
+  const nativeFileLabelCapitalized = nativeFileIsImage
+    ? "Shop picture"
+    : "Live shop video";
+  const nativeFilePrepareFile = nativeFileShare?.prepareFile;
+  const nativeFileSourceKey = nativeFileShare?.sourceKey;
 
   useEffect(() => {
-    if (!open || !nativeFileShare) {
+    if (!open || !nativeFilePrepareFile) {
       setNativeFileState({ status: "idle" });
       return;
     }
@@ -162,8 +170,7 @@ export default function SocialTagShareButton({
 
     const controller = new AbortController();
     setNativeFileState({ status: "preparing" });
-    void nativeFileShare
-      .prepareFile(controller.signal)
+    void nativeFilePrepareFile(controller.signal)
       .then((file) => {
         if (controller.signal.aborted) return;
         if (!navigator.canShare({ files: [file] })) {
@@ -179,7 +186,7 @@ export default function SocialTagShareButton({
       });
 
     return () => controller.abort();
-  }, [nativeFileShare?.prepareFile, nativeFileShare?.sourceKey, open]);
+  }, [nativeFilePrepareFile, nativeFileSourceKey, open]);
 
   function report(tone: NoticeTone, text: string, channel?: ShareResultChannel) {
     setLocalNotice({ tone, text });
@@ -347,7 +354,7 @@ export default function SocialTagShareButton({
       nativeFileState.status !== "ready" ||
       !nativeFileState.file
     ) {
-      report("error", "The live shop video is not ready yet.");
+      report("error", `${nativeFileLabelCapitalized} is not ready yet.`);
       return;
     }
     if (
@@ -358,7 +365,7 @@ export default function SocialTagShareButton({
     ) {
       report(
         "error",
-        "This browser cannot send the live video. Use the WhatsApp link instead."
+        `This browser cannot send the ${nativeFileLabel}. Use the WhatsApp link instead.`
       );
       return;
     }
@@ -369,12 +376,12 @@ export default function SocialTagShareButton({
         text: nativeFileShare.caption,
         files: [nativeFileState.file],
       });
-      report("success", "Live shop video shared from your phone.", "native");
+      report("success", `${nativeFileLabelCapitalized} shared from your phone.`, "native");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       report(
         "error",
-        "Live video sharing did not complete. Use the WhatsApp link instead."
+        `${nativeFileLabelCapitalized} sharing did not complete. Use the WhatsApp link instead.`
       );
     }
   }
@@ -506,23 +513,25 @@ export default function SocialTagShareButton({
                   style={shareButtonStyle}
                 >
                   {nativeFileState.status === "preparing"
-                    ? "Preparing live shop video…"
+                    ? `Preparing ${nativeFileLabel}…`
                     : nativeFileState.status === "ready"
-                      ? nativeFileShare.label || "Share live shop video"
+                      ? nativeFileShare.label || `Share ${nativeFileLabel}`
                       : nativeFileState.status === "unsupported"
-                        ? "Live video needs phone sharing"
+                        ? `${nativeFileLabelCapitalized} needs phone sharing`
                         : nativeFileState.status === "error"
-                          ? "Live video temporarily unavailable"
-                          : "Preparing live shop video…"}
+                          ? `${nativeFileLabelCapitalized} temporarily unavailable`
+                          : `Preparing ${nativeFileLabel}…`}
                 </PrimaryButton>
                 <div style={{ ...noteStyle, marginTop: 7 }}>
                   {nativeFileState.status === "ready"
-                    ? "Tap, choose WhatsApp, then choose who receives the playable shop video."
+                    ? `Tap, choose WhatsApp, then choose who receives the ${nativeFileLabel}.`
                     : nativeFileState.status === "unsupported"
-                      ? "This browser cannot attach the video. Use WhatsApp link below."
+                      ? `This browser cannot attach the ${nativeFileLabel}. Use the WhatsApp link below.`
                       : nativeFileState.status === "error"
-                        ? "The video could not be prepared. The normal shop link still works."
-                        : "GSN is adding this shop name to the approved entrance video."}
+                        ? `${nativeFileLabelCapitalized} could not be prepared. The normal shop link still works.`
+                        : nativeFileIsImage
+                          ? "GSN is preparing the approved storefront with this shop name."
+                          : "GSN is adding this shop name to the approved entrance video."}
                 </div>
               </div>
             ) : null}

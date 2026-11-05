@@ -234,6 +234,16 @@ function assertNotContains(file, pattern, message) {
     "Public Shop Share must use the clean cache-safe Open Shop preview route.",
   ],
   [
+    "src/lib/publicLinks.ts",
+    /publicShopShareCardPath[\s\S]*\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\/card\.png\?preview=open-shop-v3[\s\S]*publicShopShareCardUrl/,
+    "Public Shop picture sharing must use the existing dynamic storefront poster route.",
+  ],
+  [
+    "src/pages/ShopGalleryPage.tsx",
+    /preparePublicShopSharePosterFile[\s\S]*fetch\(sourceUrl[\s\S]*createImageBitmap[\s\S]*canvas\.toBlob[\s\S]*publicShopShareCaption[\s\S]*Open Shop: \$\{absoluteShopLink\}[\s\S]*mediaKind: "image"[\s\S]*label: "Share shop picture"[\s\S]*nativeFileShare=\{publicShopNativeFileShare\}/,
+    "Ordinary Public Shop Share must prefer the approved static storefront as a native image attachment with one clean shop caption.",
+  ],
+  [
     "src/pages/ShopGalleryPage.tsx",
     /showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
     "Shop Diary blocks must reserve the block social share slot for owners only.",
@@ -252,7 +262,7 @@ function assertNotContains(file, pattern, message) {
 
 assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /publicShopLiveShareVideoUrl|prepareLiveShopShareFile|nativeFileShare=\{\{/,
+  /publicShopLiveShareVideoUrl|prepareLiveShopShareFile/,
   "Public Shop Share must not prepare or promote the superseded ten-second MP4."
 );
 

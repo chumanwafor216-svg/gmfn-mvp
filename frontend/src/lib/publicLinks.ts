@@ -435,6 +435,18 @@ export function publicShopSocialPreviewUrl(params: {
   return path ? publicApiUrl(path) : "";
 }
 
+export function publicShopShareCardPath(gmfnId: string): string {
+  const ownerId = cleanText(gmfnId);
+  return ownerId
+    ? `/share/shop/${encodeURIComponent(ownerId)}/card.png?preview=open-shop-v3`
+    : "";
+}
+
+export function publicShopShareCardUrl(gmfnId: string): string {
+  const path = publicShopShareCardPath(gmfnId);
+  return path ? publicApiUrl(path) : "";
+}
+
 export function publicShopLiveShareVideoPath(gmfnId: string): string {
   const ownerId = cleanText(gmfnId);
   return ownerId
