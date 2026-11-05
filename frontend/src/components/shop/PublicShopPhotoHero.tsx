@@ -138,18 +138,20 @@ export default function PublicShopPhotoHero({
         </div>
 
         <div
+          data-public-shop-identity-overlay="true"
           style={{
             display: "grid",
-            gap: compact ? 10 : 14,
+            gap: compact ? 7 : 11,
             alignSelf: "end",
-            width: compact ? "100%" : "70%",
+            width: compact ? "100%" : "min(70%, 650px)",
             maxWidth: 650,
-            padding: compact ? "11px 12px" : "15px 17px",
-            borderRadius: compact ? 16 : 21,
-            background: "rgba(3,20,36,0.50)",
-            border: "1px solid rgba(246,215,122,0.42)",
-            boxShadow: "0 14px 32px rgba(0,0,0,0.24)",
-            backdropFilter: "blur(5px)",
+            padding: compact ? "8px 10px 9px" : "12px 14px 13px",
+            borderRadius: compact ? 13 : 18,
+            background:
+              "linear-gradient(180deg, rgba(3,20,36,0.04) 0%, rgba(3,20,36,0.25) 100%)",
+            border: "1px solid rgba(246,215,122,0.16)",
+            boxShadow: "0 8px 22px rgba(0,0,0,0.12)",
+            backdropFilter: "blur(1px)",
           }}
         >
           <h1
@@ -158,50 +160,17 @@ export default function PublicShopPhotoHero({
               maxWidth: compact ? 285 : 620,
               color: "#FFFFFF",
               fontFamily: "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-              fontSize: compact ? 27 : 44,
-              lineHeight: compact ? 1 : 0.94,
+              fontSize: compact ? 21 : 36,
+              lineHeight: compact ? 1.02 : 0.98,
               fontWeight: 950,
-              letterSpacing: compact ? -1.1 : -1.7,
-              textShadow: "0 12px 26px rgba(0,0,0,0.42)",
+              letterSpacing: compact ? -0.7 : -1.3,
+              textShadow:
+                "0 2px 3px rgba(0,0,0,0.92), 0 8px 18px rgba(0,0,0,0.44)",
               overflowWrap: "anywhere",
             }}
           >
             {shopName}
           </h1>
-
-          <div
-            style={{
-              width: "fit-content",
-              maxWidth: "100%",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: compact ? 7 : 9,
-              minHeight: compact ? 32 : 42,
-              padding: compact ? "7px 11px" : "9px 15px",
-              borderRadius: compact ? 12 : 15,
-              color: "#07172C",
-              background: "linear-gradient(180deg, #FFE48B 0%, #F5BE45 100%)",
-              border: "1px solid rgba(255,240,190,0.76)",
-              boxShadow: "0 10px 24px rgba(0,0,0,0.24)",
-              fontSize: compact ? 12 : 16,
-              fontWeight: 950,
-            }}
-          >
-            <GsnRealisticIcon
-              name="shop-storefront"
-              size={compact ? 20 : 25}
-              decorative
-            />
-            <span
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {category}
-            </span>
-          </div>
 
           {description ? (
             <p
@@ -228,10 +197,43 @@ export default function PublicShopPhotoHero({
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: compact ? 7 : 10,
-              paddingTop: compact ? 2 : 4,
+              gap: compact ? 6 : 9,
+              paddingTop: compact ? 0 : 2,
             }}
           >
+            <div
+              style={{
+                width: "fit-content",
+                maxWidth: compact ? 185 : 280,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: compact ? 6 : 8,
+                minHeight: compact ? 30 : 38,
+                padding: compact ? "5px 9px" : "7px 12px",
+                borderRadius: compact ? 11 : 14,
+                color: "#07172C",
+                background: "rgba(255,218,112,0.78)",
+                border: "1px solid rgba(255,240,190,0.54)",
+                boxShadow: "0 7px 16px rgba(0,0,0,0.14)",
+                fontSize: compact ? 11 : 14,
+                fontWeight: 950,
+              }}
+            >
+              <GsnRealisticIcon
+                name="shop-storefront"
+                size={compact ? 18 : 22}
+                decorative
+              />
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {category}
+              </span>
+            </div>
             {showIdentityMeta && gmfnId ? (
               <span style={metaPillStyle(compact)}>
                 <GsnRealisticIcon name="identity-card" size={compact ? 18 : 22} decorative />

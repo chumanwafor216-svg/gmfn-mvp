@@ -72,7 +72,9 @@ requireText("entrance", "/branding/gsn-shop-entrance-approved-poster.jpg", "The 
 requireText("publicHero", 'data-public-shop-photo-hero="true"', "The full-width Public Shop photo hero contract is missing.");
 requireText("publicHero", "<GsnShopEntranceAnimation", "Public Shop must reuse the approved animated entrance.");
 requireText("publicHero", 'minHeight: compact ? 348 : 500', "The Public Shop hero must reserve enough space for the animated entrance.");
-requireText("publicHero", 'background: "rgba(3,20,36,0.50)"', "Shop identity must remain readable in a transparent lower overlay.");
+requireText("publicHero", 'data-public-shop-identity-overlay="true"', "The transparent shop-identity overlay contract is missing.");
+requireText("publicHero", 'rgba(3,20,36,0.25)', "Shop identity must remain readable without hiding the animated entrance behind an opaque card.");
+forbidText("publicHero", 'background: "rgba(3,20,36,0.50)"', "The old obstructive shop-identity card must not return.");
 
 requireText("gallery", "selectShopHeroSource({", "Public Shop must use the deterministic selector.");
 requireText("gallery", "image_url_available === false", "Public Shop must respect backend media availability.");

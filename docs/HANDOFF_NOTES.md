@@ -5,6 +5,29 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Shop Diaries storefront visibility correction - 2026-11-05
+
+- Founder video review confirmed that the Public Shop/Shop Diaries identity
+  card covered too much of the approved glass-door entrance and that the
+  signed-in owner saw a redundant `Open Shop` panel while already inside their
+  own shop.
+- The dynamic shop name, category and existing owner Edit Shop action now sit
+  in one shallow, genuinely see-through lower caption. Text shadow preserves
+  readability while the storefront merchandise and doors remain visible.
+- The separate stationary `My GSN Shop / shop name / Open Shop` HTML panel
+  remains directly below the animation for external visitors and shared-link
+  recipients. It is omitted only when the authenticated owner is viewing their
+  own Shop Diaries/Public Shop.
+- Canonical `/shop/{GSN_ID}` URLs, shop data, Products & Services, sharing,
+  social-preview metadata, TrustSlip, privacy, Marketplace and Reel behavior
+  remain unchanged.
+- Verification passed: Universal Shop Hero and Public Shop action inventories,
+  the 313-module production build, and focused 430 px logged-out visitor plus
+  360 px signed-in owner browser cases. The visual test cages the caption at no
+  more than 120 px, confirms the visitor `Open Shop` link still targets
+  `#products-services`, and confirms the owner does not receive that redundant
+  panel.
+
 ## Reusable instant-admission Community QR - 2026-11-05
 
 - Production diagnosis confirmed the two previously supplied links were not

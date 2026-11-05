@@ -5173,9 +5173,9 @@ export default function ShopGalleryPage() {
                     padding: isCompact ? "7px 11px" : "9px 14px",
                     borderRadius: 999,
                     color: "#FFFFFF",
-                    background: "rgba(3,20,36,0.72)",
-                    border: "1px solid rgba(246,215,122,0.54)",
-                    boxShadow: "0 10px 22px rgba(0,0,0,0.24)",
+                    background: "rgba(3,20,36,0.34)",
+                    border: "1px solid rgba(246,215,122,0.38)",
+                    boxShadow: "0 7px 16px rgba(0,0,0,0.14)",
                     fontSize: isCompact ? 10.5 : 13,
                     fontWeight: 900,
                     gap: isCompact ? 6 : 8,
@@ -5193,6 +5193,7 @@ export default function ShopGalleryPage() {
               }));
             }}
           />
+          {!signedInOwnsShop ? (
           <section
             data-public-shop-open-panel="true"
             aria-label="Open this GSN shop"
@@ -5258,6 +5259,7 @@ export default function ShopGalleryPage() {
               Open Shop
             </StableCtaLink>
           </section>
+          ) : null}
           <div
             style={{
               position: "relative",

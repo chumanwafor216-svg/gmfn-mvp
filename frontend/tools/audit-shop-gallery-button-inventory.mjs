@@ -243,8 +243,13 @@ for (const debugId of expectedActionOrder) {
 }
 
 assertContains(
+  /!signedInOwnsShop \? \([\s\S]*?data-public-shop-open-panel="true"/,
+  "The signed-in owner must not see the redundant external Open Shop panel inside their own Shop Diaries."
+);
+
+assertContains(
   /<PublicShopPhotoHero[\s\S]*?data-public-shop-open-panel="true"[\s\S]*?My GSN Shop[\s\S]*?\{shopNameText\}[\s\S]*?to=\{`#\$\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}`\}[\s\S]*?debugId="shop-gallery\.open-shop"[\s\S]*?Open Shop[\s\S]*?id=\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}/,
-  "Public Shop sharing must keep the permanent dynamic My GSN Shop and Open Shop HTML panel immediately after the approved animated entrance."
+  "External Public Shop sharing must keep the dynamic My GSN Shop and Open Shop HTML panel immediately after the approved animated entrance."
 );
 
 const memberSurfaceLinksBlock =

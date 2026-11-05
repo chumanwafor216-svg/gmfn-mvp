@@ -400,6 +400,11 @@ async function collectMetrics(page) {
     const spotlightRect = spotlight?.getBoundingClientRect();
     const shopEntranceVideo = document.querySelector('[data-gsn-shop-entrance-video="true"]');
     const shopEntranceRect = shopEntranceVideo?.getBoundingClientRect();
+    const shopIdentityOverlay = document.querySelector('[data-public-shop-identity-overlay="true"]');
+    const shopIdentityOverlayRect = shopIdentityOverlay?.getBoundingClientRect();
+    const shopIdentityOverlayStyle = shopIdentityOverlay
+      ? getComputedStyle(shopIdentityOverlay)
+      : null;
     const openShopPanel = document.querySelector('[data-public-shop-open-panel="true"]');
     const openShopPanelRect = openShopPanel?.getBoundingClientRect();
     const openShopAction = document.querySelector('a[data-cta-id="shop-gallery.open-shop"]');
@@ -453,6 +458,10 @@ async function collectMetrics(page) {
       shopEntranceInline:
         shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.playsInline : null,
       shopEntranceBottom: shopEntranceRect ? Math.round(shopEntranceRect.bottom) : null,
+      shopIdentityOverlayHeight: shopIdentityOverlayRect
+        ? Math.round(shopIdentityOverlayRect.height)
+        : null,
+      shopIdentityOverlayBackground: shopIdentityOverlayStyle?.backgroundImage || null,
       openShopPanelTop: openShopPanelRect ? Math.round(openShopPanelRect.top) : null,
       openShopPanelText: (openShopPanel?.textContent || "").replace(/\s+/g, " ").trim(),
       openShopName: (openShopName?.textContent || "").trim(),
@@ -477,7 +486,7 @@ async function run() {
       { name: "02-shop-control-image-diary-390", scenario: "image", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Delivered a weekend food tray" },
       { name: "03-public-shop-image-diary-360", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 360, expect: "Shop Update" },
       { name: "04-public-shop-video-diary-390", scenario: "video", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 390, expect: "Shared a short video update" },
-      { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services" },
+      { name: "05-public-shop-normal-visitor-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, expect: "Products & Services", authenticated: false },
       { name: "06-public-shop-focused-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Shared item." },
       { name: "07-shop-control-video-diary-430", scenario: "video", route: "/app/shop-control#shop-assets-diary", width: 430, expect: "Shared a short video update" },
       { name: "08-shop-control-no-confirmed-evidence-360", scenario: "none", route: "/app/shop-control#shop-assets-diary", width: 360, expect: "No confirmed Trade Evidence is linked to this shop yet" },
@@ -595,6 +604,19 @@ async function run() {
         if (metrics.brandDisplay !== "none") {
           throw new Error(`${item.name} restored the duplicate Public Shop phone brand bar.`);
         }
+        if (
+          metrics.shopIdentityOverlayHeight === null ||
+          metrics.shopIdentityOverlayHeight > 120 ||
+          !String(metrics.shopIdentityOverlayBackground || "").includes("0.25")
+        ) {
+          throw new Error(
+            `${item.name} did not keep the shop identity in a shallow see-through caption: ` +
+              JSON.stringify({
+                height: metrics.shopIdentityOverlayHeight,
+                background: metrics.shopIdentityOverlayBackground,
+              })
+          );
+        }
       }
       if (item.name === "05-public-shop-normal-visitor-430") {
         if (
@@ -648,13 +670,12 @@ async function run() {
           );
         }
       }
-      if (
-        item.name === "19-public-shop-alternate-owner-360" &&
-        metrics.openShopName !== "Ardent Ebony Uplift LTD"
-      ) {
-        throw new Error(
-          `${item.name} did not render the current owner's shop name in the permanent Open Shop panel.`
-        );
+      if (item.name === "19-public-shop-alternate-owner-360") {
+        if (metrics.openShopPanelTop !== null || metrics.openShopName) {
+          throw new Error(
+            `${item.name} showed the redundant external Open Shop panel to the signed-in owner.`
+          );
+        }
       }
       if (item.name === "06-public-shop-focused-product-390") {
         if (metrics.productToggleSymbol !== "close" || metrics.productToggleText !== "×") {

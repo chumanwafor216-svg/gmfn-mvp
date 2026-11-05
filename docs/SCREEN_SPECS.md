@@ -1957,16 +1957,20 @@ Rules:
   animation muted, inline and free of controls. Existing owner-selected shop
   pictures remain stored, removable and visibly reviewable as supporting shop
   identity media; this presentation change does not delete or repurpose them.
-- Immediately beneath the animated entrance, render a separate permanent HTML
-  panel containing `My GSN Shop`, the current shop's own dynamic name and one
-  clickable `Open Shop` action. The action targets the existing Products &
-  Services section on the same canonical public-shop page and preserves any
-  valid query context. This panel is stationary and must not be embedded in the
-  animation, poster or social-preview image.
+- On an externally opened or shared Public Shop, immediately beneath the
+  animated entrance, render a separate permanent HTML panel containing
+  `My GSN Shop`, the current shop's own dynamic name and one clickable
+  `Open Shop` action. The action targets the existing Products & Services
+  section on the same canonical public-shop page and preserves any valid query
+  context. This panel is stationary and must not be embedded in the animation,
+  poster or social-preview image. When the signed-in owner is already viewing
+  their own Shop Diaries/Public Shop, omit this redundant `Open Shop` panel.
 - Keep shop name, category, a bounded short description and truthful
-  GSN-member/community context readable through the approved navy-and-gold
-  overlay. An existing-owner Edit Shop route may appear only for the signed-in
-  owner. Keep GSN ID, community, Share, Verify, WhatsApp, follow/analytics and
+  GSN-member/community context readable through a shallow, genuinely
+  see-through navy-and-gold caption near the bottom of the animation. It must
+  not cover the glass-door entrance like an opaque card. An existing-owner
+  Edit Shop route may appear only for the signed-in owner. Keep GSN ID,
+  community, Share, Verify, WhatsApp, follow/analytics and
   the product shelf intact below the hero.
   Never source the billboard animation from Vault, Spotlight, Shop
   Update/Diary, a private product, a guessed category scene, or an unsaved
