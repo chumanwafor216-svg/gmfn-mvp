@@ -263,7 +263,7 @@ def _shop_frontend_url(
         path += f"#shop-block-{int(block)}"
     elif product_id:
         path += f"#product-{quote(str(product_id), safe='')}"
-    else:
+    elif diary_entry_id:
         path += "#shop-diaries"
     return f"{base}{path}"
 

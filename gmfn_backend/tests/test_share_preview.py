@@ -253,6 +253,7 @@ def test_share_shop_clean_open_preview_uses_single_action_and_default_attributio
     assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/open" in res.text
     assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?preview=open-shop-v3" in res.text
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?gsn_share=share_shop&amp;gsn_channel=whatsapp&amp;utm_source=gsn_shop_gallery" in res.text
+    assert "gsn_shop_gallery#shop-diaries" not in res.text
     assert "Ada Trust Shop | Open Shop" not in res.text
 
 
