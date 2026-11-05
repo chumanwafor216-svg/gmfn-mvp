@@ -170,14 +170,7 @@
 .public-shop-options-summary,
 .public-shop-analytics-button,
 .public-shop-action-row [data-gmfn-action-root="true"] {
-  transform: translateZ(0);
   transition: none;
-}
-
-.public-shop-options-summary:active,
-.public-shop-analytics-button:active,
-.public-shop-action-row [data-gmfn-action-root="true"]:active {
-  transform: translateY(2px);
 }
 
 @media (prefers-reduced-motion: reduce) {

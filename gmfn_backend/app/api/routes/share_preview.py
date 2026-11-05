@@ -43,6 +43,7 @@ SHOP_DIARY_ACTIVITY_LABELS = {
 PUBLIC_SHOP_DIARY_LIVE_HOURS = 24
 PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com"
 PUBLIC_VISIBILITY_MODES = ("community_visible", "public", "community")
+PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v2"
 CARD_WIDTH = 1200
 CARD_HEIGHT = 630
 APPROVED_SHOPFRONT_POSTER_PATH = (
@@ -282,7 +283,9 @@ def _share_card_url(
 ) -> str:
     base = _public_api_origin(request)
     path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}/card.png"
-    query: list[str] = []
+    query: list[str] = [
+        f"preview={quote(PUBLIC_SHOP_PREVIEW_VERSION, safe='')}"
+    ]
     if product_id:
         query.append(f"product_id={quote(str(product_id), safe='')}")
     if block:
@@ -679,7 +682,9 @@ def _share_page_url(
 ) -> str:
     base = _public_api_origin(request)
     path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}"
-    query: list[str] = []
+    query: list[str] = [
+        f"preview={quote(PUBLIC_SHOP_PREVIEW_VERSION, safe='')}"
+    ]
     if product_id:
         query.append(f"product_id={quote(str(product_id), safe='')}")
     if block:
@@ -732,7 +737,7 @@ def _preview_payload(
     )
     product_title = _safe_str(getattr(product, "name", None))
     product_description = _safe_str(getattr(product, "description", None))
-    product_line = product_title or product_description or "Explore my shop on GSN"
+    product_line = product_title or product_description or "My GSN Shop"
 
     visual_product = product if _safe_str(getattr(product, "image_url", None)) else None
     if visual_product is None and shop is not None:
@@ -753,14 +758,14 @@ def _preview_payload(
     )
 
     title = (
-        f"{product_line} | {shop_name}"
+        f"{product_line} | {shop_name} | Open Shop"
         if product is not None
-        else f"{shop_name} | GSN public shop"
+        else f"{shop_name} | Open Shop"
     )
     description = (
-        "Open this public item and check the shop details."
+        "Tap Open Shop to view this item and current shop details."
         if product is not None
-        else f"Explore {owner_name}'s public shop on GSN."
+        else "Tap Open Shop to view items and contact details."
     )
 
     return {
@@ -768,7 +773,7 @@ def _preview_payload(
         "owner_name": owner_name,
         "shop_name": shop_name,
         "product_line": product_line,
-        "trust_line": "Public shop - Check items and contact details",
+        "trust_line": "Tap Open Shop to view items and contact details",
         "title": title,
         "description": description,
         "price": _money_text(product),
@@ -1742,17 +1747,17 @@ def public_shop_share_preview(
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
     <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
-    <meta http-equiv="refresh" content="1;url={target}" />
+    <meta http-equiv="refresh" content="0;url={target}" />
     <style>
       body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
       main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
-      a {{ color: #0B4EA2; font-weight: 800; }}
+      a {{ display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 0 24px; border-radius: 24px; background: #D6AA45; color: #07172C; font-weight: 900; text-decoration: none; }}
     </style>
   </head>
   <body>
     <main>
-      <p>Opening the GSN public shop...</p>
-      <p><a href="{target}">Open shop now</a></p>
+      <p>Opening this GSN shop...</p>
+      <p><a href="{target}">Open Shop</a></p>
     </main>
   </body>
 </html>"""
@@ -1898,10 +1903,9 @@ def public_shop_share_card(
   <text x="94" y="326" fill="#F2CF77" font-size="22" font-weight="950" letter-spacing="3" font-family="Arial, sans-serif">{escape(block_label.upper())}</text>
   {tspans(product_lines, x=94, y=382, size=34, color="#FFFFFF", weight=950)}
   {tspans(desc_lines, x=94, y=450, size=23, color="#D8E7F5", weight=750)}
-  <rect x="94" y="512" width="146" height="56" rx="28" fill="#FFFFFF"/>
-  <text x="124" y="548" fill="#07172C" font-size="22" font-weight="950" font-family="Arial, sans-serif">{escape(block_label)}</text>
-  <rect x="266" y="512" width="266" height="56" rx="28" fill="#0B2D4A" stroke="#D6AA45" stroke-width="2"/>
-  <text x="296" y="548" fill="#F2CF77" font-size="22" font-weight="950" font-family="Arial, sans-serif">{escape(payload["gmfn_id"])}</text>
+  <rect x="94" y="504" width="330" height="68" rx="34" fill="url(#gold)"/>
+  <text x="132" y="548" fill="#07172C" font-size="26" font-weight="950" font-family="Arial, sans-serif">OPEN SHOP</text>
+  <path d="M354 538 H386 M374 524 L390 538 L374 552" fill="none" stroke="#07172C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="954" cy="400" r="62" fill="url(#gold)"/>
   <text x="860" y="510" fill="#FFFFFF" font-size="30" font-weight="950" font-family="Arial, sans-serif">TAP TO OPEN</text>
   {f'<rect x="910" y="305" width="196" height="76" rx="38" fill="url(#gold)"/>' if price else ''}

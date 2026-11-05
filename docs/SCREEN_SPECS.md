@@ -1968,18 +1968,17 @@ Rules:
   context. This panel is stationary and must not be embedded in the animation,
   poster or social-preview image. When the signed-in owner is already viewing
   their own Shop Diaries/Public Shop, omit this redundant `Open Shop` panel.
-- The Public Shop `Share` chooser may offer `Share live shop video` when the
-  browser supports native file sharing. GSN prepares a bounded MP4 from the
-  exact approved entrance, adds only a shallow transparent `My GSN Shop`
-  caption with the current active shop's dynamic name, and passes that file
-  with `Shop name\nOpen Shop: <canonical public-shop URL>` to the phone share
-  sheet. The owner still chooses WhatsApp or another app and the recipient.
-  Do not claim automatic posting or delivery, and do not imply that ordinary
-  WhatsApp sharing can create a custom in-message `Open Shop` button.
-  Unsupported browsers retain the existing static social-preview and
-  `WhatsApp link` fallback. Keep the canonical shop page, stationary HTML
-  `Open Shop` panel, static Open Graph card, product/block links and existing
-  privacy and permission boundaries unchanged.
+- The Public Shop `Share` chooser uses the static Open Graph preview instead
+  of preparing or promoting the optional ten-second MP4. The preview keeps the
+  approved storefront, the current active shop's dynamic name and one prominent
+  `OPEN SHOP` call to action. Do not use the owner's GSN ID as the preview
+  call to action. The receiving platform makes the complete preview card
+  clickable; ordinary WhatsApp sharing cannot create a custom HTML button or
+  hide the underlying link protocol. Keep the canonical shop destination,
+  stationary HTML `Open Shop` panel, product/block links and existing privacy
+  and permission boundaries unchanged. The read-only legacy
+  `/share/shop/{GSN_ID}/live.mp4` route may remain for backward compatibility
+  but is not promoted by Public Shop Share.
 - Keep shop name, category, a bounded short description and truthful
   GSN-member/community context readable through a shallow, genuinely
   see-through navy-and-gold caption near the bottom of the animation. It must

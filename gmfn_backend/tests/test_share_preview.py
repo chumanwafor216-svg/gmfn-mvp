@@ -228,10 +228,13 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
 
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
-    assert "Fresh rice bag | Ada Trust Shop" in res.text
-    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?product_id=3&amp;block=1" in res.text
+    assert "Fresh rice bag | Ada Trust Shop | Open Shop" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE?preview=open-shop-v2&amp;product_id=3&amp;block=1" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?preview=open-shop-v2&amp;product_id=3&amp;block=1" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
-    assert "Open this public item and check the shop details." in res.text
+    assert "Tap Open Shop to view this item and current shop details." in res.text
+    assert '<meta http-equiv="refresh" content="0;url=' in res.text
+    assert ">Open Shop</a>" in res.text
     assert "Trusted GSN shop item. Tap to open product." not in res.text
     assert "Trusted GSN shop. Tap to open shop." not in res.text
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3&amp;gsn_share=share_product&amp;gsn_channel=facebook&amp;utm_source=gsn_shop_gallery#shop-block-1" in res.text
@@ -374,8 +377,10 @@ def test_share_shop_card_svg_remains_as_fallback(client, monkeypatch):
     assert res.headers["content-type"].startswith("image/svg+xml")
     assert "GLOBAL SUPPORT NETWORK" in res.text
     assert "Ada Trust Shop" in res.text
+    assert "OPEN SHOP" in res.text
     assert "TAP TO OPEN" in res.text
     assert "NGN 45000" in res.text
+    assert "GMFN-U-SHARE" not in res.text
     assert "Trusted product" not in res.text
     assert "pilot.gsn.example/shop" not in res.text
 

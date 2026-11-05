@@ -225,13 +225,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: "Tap the Open Shop preview to view items and contact details\."[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="secondary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
   ],
   [
-    "src/pages/ShopGalleryPage.tsx",
-    /publicShopLiveShareVideoUrl[\s\S]*prepareLiveShopShareFile[\s\S]*fetch\(liveShopShareVideoUrl[\s\S]*new File\(\[video\][\s\S]*nativeFileShare=\{\{[\s\S]*caption:[\s\S]*Open Shop:[\s\S]*absoluteShopLink[\s\S]*prepareFile: prepareLiveShopShareFile/,
-    "Public Shop Share must prepare the personalized playable MP4 and pair it with the canonical Open Shop caption.",
+    "src/lib/publicLinks.ts",
+    /PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v2"[\s\S]*publicShopSocialPreviewPath[\s\S]*query\.set\("preview", PUBLIC_SHOP_PREVIEW_VERSION\)/,
+    "Public Shop Share must version the static Open Shop preview so receiving apps do not reuse the superseded card.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
@@ -249,6 +249,12 @@ function assertNotContains(file, pattern, message) {
     "Vault private block social sharing must stay owner-issued and disabled until a private Vault link exists.",
   ],
 ].forEach(([file, pattern, message]) => assertContains(file, pattern, message));
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /publicShopLiveShareVideoUrl|prepareLiveShopShareFile|nativeFileShare=\{\{/,
+  "Public Shop Share must not prepare or promote the superseded ten-second MP4."
+);
 
 assertNotContains(
   "src/components/SocialTagShareButton.tsx",

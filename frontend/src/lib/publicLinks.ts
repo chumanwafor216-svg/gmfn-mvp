@@ -1,5 +1,6 @@
 const DEFAULT_PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
 const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
+const PUBLIC_SHOP_PREVIEW_VERSION = "open-shop-v2";
 export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
 export const PUBLIC_SHOP_PRODUCTS_ANCHOR = "products-services";
 export const PUBLIC_SHOP_SPOTLIGHT_ANCHOR = "public-shop-spotlight";
@@ -414,6 +415,7 @@ export function publicShopSocialPreviewPath(params: {
   const productId = cleanText(params.productId);
   const blockNumber = Number(params.block || 0);
   const query = new URLSearchParams();
+  query.set("preview", PUBLIC_SHOP_PREVIEW_VERSION);
   if (productId) {
     query.set("product_id", productId);
   }
