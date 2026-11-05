@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 7,
   SecondaryButton: 11,
-  StableCtaLink: 7,
-  total: 25,
+  StableCtaLink: 8,
+  total: 26,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -188,6 +188,7 @@ for (const action of actions) {
 
 const expectedActionOrder = [
   "shop-gallery.return-marketplace",
+  "shop-gallery.open-shop",
   "shop-gallery.public-shop.sign-in-follow",
   "shop-gallery.public-shop.following",
   "shop-gallery.public-shop.unfollow",
@@ -240,6 +241,11 @@ for (const debugId of expectedActionOrder) {
 
   cursor = next;
 }
+
+assertContains(
+  /<PublicShopPhotoHero[\s\S]*?data-public-shop-open-panel="true"[\s\S]*?My GSN Shop[\s\S]*?\{shopNameText\}[\s\S]*?to=\{`#\$\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}`\}[\s\S]*?debugId="shop-gallery\.open-shop"[\s\S]*?Open Shop[\s\S]*?id=\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}/,
+  "Public Shop sharing must keep the permanent dynamic My GSN Shop and Open Shop HTML panel immediately after the approved animated entrance."
+);
 
 const memberSurfaceLinksBlock =
   shopGallerySource.match(/const memberSurfaceLinks = useMemo\([\s\S]*?\n\s{2}\);/)?.[0] ||

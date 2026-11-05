@@ -1305,7 +1305,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             Create your Shop Reel
           </div>
           <div style={{ marginTop: 7, color: "#D7E3F1", fontSize: 13, fontWeight: 750, lineHeight: 1.45 }}>
-            Picture + optional sound, or video with its own sound. Your shop link stays attached.
+            Picture or video keeps your real shop content. The approved My GSN Shop entrance closes every Reel; optional sound is used only with your permission. Your shop link stays attached.
           </div>
 
           {shopReelShareReady ? (
@@ -1362,7 +1362,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 </SecondaryButton>
               </div>
               <div style={{ marginTop: 9, color: "#D7E3F1", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
-                Ready: framed Reel + link to this shop.
+                Ready: owner content + approved shop entrance + link to this shop.
               </div>
             </>
           ) : (
@@ -1600,7 +1600,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               What this pilot does
             </StableDisclosureSummary>
             <div style={{ marginTop: 8, color: "#D7E3F1", fontSize: 12, lineHeight: 1.45 }}>
-              Picture: add optional sound. Video: keep, mix or replace its sound. GSN adds your shop link. It does not auto-post, promise sales, use Vault content or provide music.
+              Picture: add optional authorised sound. Video: keep, mix or replace its sound. Your real shop content remains primary; the approved My GSN Shop entrance closes the Reel. GSN adds your shop link. It does not auto-post or autoplay sound, promise sales, use Vault content or provide music.
             </div>
           </details>
         </div>

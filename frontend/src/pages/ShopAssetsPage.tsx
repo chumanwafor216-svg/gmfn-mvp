@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
 import SocialTagShareButton from "../components/SocialTagShareButton";
+import GsnShopEntranceAnimation from "../components/shop/GsnShopEntranceAnimation";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -2908,8 +2909,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div style={sectionLabel()}>{labelWithIcon("image", pictureTaskFocused ? "Shop picture" : "Public shop picture")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {pictureTaskFocused
-                ? "Choose the picture people should recognise as your shop. It will not change your community picture."
-                : "This picture belongs to this shop only. It does not change the community picture or any other member's shop."}
+                ? "Every public shop uses the approved My GSN Shop entrance. Choose the supporting picture GSN should keep for this shop."
+                : "The animated entrance is shared by every GSN shop. This supporting picture belongs to this shop only."}
             </div>
           </div>
 
@@ -2964,26 +2965,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
                 }}
               >
-                {safeStr(shopPreviewUrl) ? (
-                  <img
-                    src={shopPreviewUrl}
-                    alt={firstTruthy(shop?.name, "Shop signboard")}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                ) : null}
+                <GsnShopEntranceAnimation compact fit="cover" />
 
                 <div
                   style={{
                     position: "absolute",
                     inset: 0,
-                    background: safeStr(shopPreviewUrl)
-                      ? "linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.56) 100%)"
-                      : "linear-gradient(180deg, rgba(17,38,59,0.20) 0%, rgba(10,22,37,0.42) 100%)",
+                    background:
+                      "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.08) 54%, rgba(0,0,0,0.50) 100%)",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-end",
@@ -3003,6 +2992,40 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </div>
               </div>
             </div>
+            {safeStr(shopPreviewUrl) ? (
+              <div
+                data-shop-supporting-picture-preview="true"
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: "56px minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "center",
+                  padding: 10,
+                  borderRadius: 16,
+                  border: "1px solid rgba(212,175,55,0.18)",
+                  background: "rgba(255,255,255,0.92)",
+                }}
+              >
+                <img
+                  src={shopPreviewUrl}
+                  alt="Current supporting shop picture"
+                  width={56}
+                  height={56}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    display: "block",
+                    objectFit: "cover",
+                    borderRadius: 13,
+                    border: "1px solid rgba(212,175,55,0.24)",
+                  }}
+                />
+                <div style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
+                  Supporting shop picture saved. The public billboard keeps the approved animated GSN entrance.
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div style={{ display: "grid", gap: 14 }}>

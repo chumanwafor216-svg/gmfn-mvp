@@ -7,6 +7,7 @@ from PIL import Image
 from sqlalchemy import text
 
 from app.db.database import engine
+from app.api.routes import share_preview as share_preview_route
 
 
 def _trustslip_share_ref(**overrides):
@@ -291,6 +292,36 @@ def test_share_shop_card_png_uses_scraper_friendly_image(client, monkeypatch):
     assert res.headers["content-type"].startswith("image/png")
     assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(res.content) > 10_000
+
+
+def test_share_shop_card_png_uses_approved_shopfront(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    calls = []
+
+    def approved_shopfront(size):
+        calls.append(size)
+        return Image.new("RGBA", size, (255, 0, 255, 255))
+
+    monkeypatch.setattr(
+        share_preview_route,
+        "_approved_shopfront_share_hero",
+        approved_shopfront,
+    )
+
+    res = client.get("/share/shop/GMFN-U-SHARE/card.png?product_id=3&block=1")
+
+    assert res.status_code == 200
+    assert calls == [(388, 474)]
+    with Image.open(BytesIO(res.content)) as card:
+        assert card.convert("RGB").getpixel((900, 250)) == (255, 0, 255)
+
+
+def test_approved_shopfront_poster_is_packaged_with_backend():
+    assert share_preview_route.APPROVED_SHOPFRONT_POSTER_PATH.is_file()
+    with Image.open(share_preview_route.APPROVED_SHOPFRONT_POSTER_PATH) as poster:
+        assert poster.width >= 400
+        assert poster.height >= 400
 
 
 def test_share_shop_card_svg_remains_as_fallback(client, monkeypatch):

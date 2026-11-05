@@ -37,6 +37,11 @@ PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com"
 PUBLIC_VISIBILITY_MODES = ("community_visible", "public", "community")
 CARD_WIDTH = 1200
 CARD_HEIGHT = 630
+APPROVED_SHOPFRONT_POSTER_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "assets"
+    / "gsn-shop-entrance-approved-poster.jpg"
+)
 
 
 def _safe_str(value: Any, default: str = "") -> str:
@@ -949,6 +954,20 @@ def _share_card_hero(value: Any, size: tuple[int, int]) -> Optional[Image.Image]
         return None
 
 
+def _approved_shopfront_share_hero(size: tuple[int, int]) -> Optional[Image.Image]:
+    try:
+        with Image.open(APPROVED_SHOPFRONT_POSTER_PATH) as source:
+            prepared = ImageOps.exif_transpose(source).convert("RGB")
+            return ImageOps.fit(
+                prepared,
+                size,
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.5),
+            ).convert("RGBA")
+    except Exception:
+        return None
+
+
 def _draw_people_market_fallback(size: tuple[int, int]) -> Image.Image:
     width, height = size
     image = Image.new("RGBA", size, "#0B2D4A")
@@ -1026,6 +1045,7 @@ def _draw_share_card_png(
     eyebrow: str = "PUBLIC SHOP",
     block_label_override: str = "",
     cta_label: str = "EXPLORE SHOP",
+    use_approved_shopfront: bool = False,
 ) -> bytes:
     image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#EAF2F8")
     shadow = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
@@ -1049,7 +1069,11 @@ def _draw_share_card_png(
 
     photo_box = (724, 78, 1112, 552)
     photo_size = (photo_box[2] - photo_box[0], photo_box[3] - photo_box[1])
-    hero = _share_card_hero(payload.get("hero_image_url"), photo_size)
+    hero = (
+        _approved_shopfront_share_hero(photo_size)
+        if use_approved_shopfront
+        else _share_card_hero(payload.get("hero_image_url"), photo_size)
+    )
     if hero is None:
         hero = _draw_people_market_fallback(photo_size)
     photo_mask = Image.new("L", photo_size, 0)
@@ -1157,13 +1181,15 @@ def _draw_share_card_png(
     price = _safe_str(payload.get("price"))
     if price:
         price_width = int(_text_width(draw, price, font_price))
-        price_left = max(752, 1084 - price_width - 44)
+        price_left = 88 if use_approved_shopfront else max(752, 1084 - price_width - 44)
+        price_top = 400 if use_approved_shopfront else 98
+        price_right = price_left + price_width + 44 if use_approved_shopfront else 1084
         draw.rounded_rectangle(
-            (price_left, 98, 1084, 154),
+            (price_left, price_top, price_right, price_top + 56),
             radius=28,
             fill="#F2C766",
         )
-        draw.text((price_left + 22, 114), price, font=font_price, fill="#07172C")
+        draw.text((price_left + 22, price_top + 16), price, font=font_price, fill="#07172C")
 
     cta_width = max(252, int(_text_width(draw, cta_label, font_cta)) + 92)
     draw.rounded_rectangle(
@@ -1686,7 +1712,8 @@ def public_shop_share_card_png(
         payload,
         target_url=target_url,
         block=block,
-        cta_label="EXPLORE SHOP",
+        cta_label="OPEN SHOP",
+        use_approved_shopfront=True,
     )
     return Response(
         content=png,

@@ -2,7 +2,7 @@ import React from "react";
 import GSNBrandMark from "../GSNBrandMark";
 import { GsnRealisticIcon } from "../GsnRealisticIcon";
 import type { ShopHeroSource } from "../../lib/shopHeroSelection";
-import UniversalShopHero from "./UniversalShopHero";
+import GsnShopEntranceAnimation from "./GsnShopEntranceAnimation";
 
 type PublicShopPhotoHeroProps = {
   source: ShopHeroSource;
@@ -27,7 +27,6 @@ export default function PublicShopPhotoHero({
   communityName,
   showIdentityMeta = false,
   ownerAction,
-  onImageError,
 }: PublicShopPhotoHeroProps) {
   return (
     <section
@@ -36,7 +35,7 @@ export default function PublicShopPhotoHero({
       aria-label={`${shopName} shop identity`}
       style={{
         position: "relative",
-        minHeight: compact ? 248 : 420,
+        minHeight: compact ? 348 : 500,
         overflow: "hidden",
         borderRadius: compact ? 16 : 26,
         color: "#FFFFFF",
@@ -46,12 +45,11 @@ export default function PublicShopPhotoHero({
           "0 22px 44px rgba(3,20,36,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
       }}
     >
-      <div style={{ position: "absolute", inset: 0 }}>
-        <UniversalShopHero
-          source={source}
-          compact={compact}
-          onImageError={onImageError}
-        />
+      <div
+        data-previous-shop-hero-source={source.kind}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <GsnShopEntranceAnimation compact={compact} />
       </div>
 
       <div
@@ -60,7 +58,7 @@ export default function PublicShopPhotoHero({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(90deg, rgba(2,16,31,0.98) 0%, rgba(3,24,43,0.91) 38%, rgba(3,24,43,0.38) 68%, rgba(3,24,43,0.10) 100%), linear-gradient(180deg, rgba(2,16,31,0.18) 0%, rgba(2,16,31,0.10) 48%, rgba(2,16,31,0.88) 100%)",
+            "linear-gradient(180deg, rgba(2,16,31,0.02) 0%, rgba(2,16,31,0.02) 48%, rgba(2,16,31,0.18) 70%, rgba(2,16,31,0.72) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -84,7 +82,7 @@ export default function PublicShopPhotoHero({
         style={{
           position: "relative",
           zIndex: 2,
-          minHeight: compact ? 248 : 420,
+          minHeight: compact ? 348 : 500,
           display: "grid",
           alignContent: "space-between",
           gap: compact ? 14 : 28,
@@ -144,8 +142,14 @@ export default function PublicShopPhotoHero({
             display: "grid",
             gap: compact ? 10 : 14,
             alignSelf: "end",
-            width: compact ? "88%" : "70%",
+            width: compact ? "100%" : "70%",
             maxWidth: 650,
+            padding: compact ? "11px 12px" : "15px 17px",
+            borderRadius: compact ? 16 : 21,
+            background: "rgba(3,20,36,0.50)",
+            border: "1px solid rgba(246,215,122,0.42)",
+            boxShadow: "0 14px 32px rgba(0,0,0,0.24)",
+            backdropFilter: "blur(5px)",
           }}
         >
           <h1
@@ -154,10 +158,10 @@ export default function PublicShopPhotoHero({
               maxWidth: compact ? 285 : 620,
               color: "#FFFFFF",
               fontFamily: "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-              fontSize: compact ? 31 : 58,
+              fontSize: compact ? 27 : 44,
               lineHeight: compact ? 1 : 0.94,
               fontWeight: 950,
-              letterSpacing: compact ? -1.4 : -2.1,
+              letterSpacing: compact ? -1.1 : -1.7,
               textShadow: "0 12px 26px rgba(0,0,0,0.42)",
               overflowWrap: "anywhere",
             }}

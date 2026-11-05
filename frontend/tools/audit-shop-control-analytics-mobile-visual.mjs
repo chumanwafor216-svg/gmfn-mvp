@@ -786,7 +786,7 @@ try {
     "share reel from phone",
     "choose link channel",
     "download reel",
-    "ready: framed reel + link to this shop",
+    "ready: owner content + approved shop entrance + link to this shop",
   ].filter((text) => !restoredReelText.includes(text));
   const restoredReelFrames = await restoredReelPilot.locator(
     '[data-shop-reel-standard-frame="true"]'

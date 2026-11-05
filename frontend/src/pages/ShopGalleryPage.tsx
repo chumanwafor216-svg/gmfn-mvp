@@ -38,6 +38,7 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
+  PUBLIC_SHOP_PRODUCTS_ANCHOR,
   PUBLIC_SHOP_SPOTLIGHT_ANCHOR,
   PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
@@ -5192,6 +5193,71 @@ export default function ShopGalleryPage() {
               }));
             }}
           />
+          <section
+            data-public-shop-open-panel="true"
+            aria-label="Open this GSN shop"
+            style={{
+              position: "relative",
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "center",
+              gap: isCompact ? 10 : 16,
+              marginTop: isCompact ? 8 : 12,
+              padding: isCompact ? "11px 12px" : "15px 18px",
+              borderRadius: isCompact ? 16 : 22,
+              border: "1px solid rgba(214,170,69,0.34)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,250,235,0.98) 100%)",
+              boxShadow: "0 12px 28px rgba(8,38,67,0.10)",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#8C6829",
+                  fontSize: isCompact ? 10.5 : 12,
+                  fontWeight: 950,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                My GSN Shop
+              </div>
+              <div
+                data-public-shop-open-panel-name="true"
+                style={{
+                  marginTop: 3,
+                  color: "#07172C",
+                  fontSize: isCompact ? 16 : 21,
+                  fontWeight: 950,
+                  lineHeight: 1.18,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {shopNameText}
+              </div>
+            </div>
+            <StableCtaLink
+              to={`#${PUBLIC_SHOP_PRODUCTS_ANCHOR}`}
+              preserveSearch
+              stableHeight={isCompact ? 44 : 48}
+              debugId="shop-gallery.open-shop"
+              aria-label={`Open ${shopNameText} products and services`}
+              style={{
+                minWidth: isCompact ? 104 : 132,
+                padding: isCompact ? "8px 12px" : "10px 18px",
+                borderRadius: 999,
+                color: "#07172C",
+                border: "1px solid rgba(183,131,33,0.54)",
+                background: "linear-gradient(135deg, #FFE28A 0%, #D6AA45 100%)",
+                boxShadow: "0 10px 22px rgba(183,131,33,0.22)",
+                fontSize: isCompact ? 12 : 14,
+                fontWeight: 950,
+              }}
+            >
+              Open Shop
+            </StableCtaLink>
+          </section>
           <div
             style={{
               position: "relative",
@@ -7529,6 +7595,7 @@ export default function ShopGalleryPage() {
           </div>
         </details>
         <section
+          id={PUBLIC_SHOP_PRODUCTS_ANCHOR}
           className="public-shop-section"
           style={{
             order: routeDiaryEntryId > 0 ? 2 : 1,

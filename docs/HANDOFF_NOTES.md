@@ -5,6 +5,88 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## GSN Shop Entrance Gate 3 - 2026-11-05
+
+- Status: founder-approved Gate 3 is implemented and release-verified.
+- The existing picture and video GSN Shop Reel renderers now preserve the
+  owner's actual content as the opening three/eight seconds and append the
+  exact approved `My GSN Shop` entrance as a bounded two-second closing
+  segment. The backend packages a byte-identical copy of the approved MP4 and
+  fails truthfully rather than silently substituting another storefront.
+- Existing five/ten-second duration, standard GSN frame, seller attribution,
+  public-shop destination, privacy, session restore, review, sharing and
+  download contracts remain unchanged. The API exposes the closing-segment
+  identity and duration and explicitly states that owner content remains
+  primary.
+- Picture sound remains optional and requires the owner to confirm creation or
+  permission. Video keeps its existing keep/mix/replace choices and rights
+  confirmation. The Reel preview remains muted with explicit `Sound on`
+  unlock; no public/browser autoplay restriction is bypassed and no built-in
+  music catalogue was added.
+- Verification passed: exact-asset packaging, rendered picture/video Reel
+  tests (including authorised picture sound), image-Reel API metadata/rights,
+  media-quality source audit and Shop Control action/button inventory.
+
+## GSN Shop Entrance Gate 2 - 2026-11-05
+
+- Status: founder-approved Gate 2 is implemented and release-verified; Gate 3
+  is now implemented too.
+- The canonical public shop destination remains `/shop/{GSN_ID}`. Immediately
+  beneath the approved animated entrance it now renders a separate permanent
+  HTML panel with `My GSN Shop`, the current shop's dynamic name and one
+  `Open Shop` action. That action preserves valid query context and opens the
+  existing `#products-services` section; it is not part of the video or poster.
+- Existing public-shop Share, Verify, WhatsApp, follow, analytics, Products &
+  Services, Shop Update, Spotlight, Vault, TrustSlip, privacy and permission
+  behavior remains unchanged. Product/block deep links and ordinary root-shop
+  links retain their existing URL structures.
+- The existing `/share/shop/{GSN_ID}` Open Graph/Twitter preview keeps its
+  dynamic shop/owner/product/price text and 1200x630 PNG contract, but the image
+  area now uses a backend-packaged byte-identical copy of the approved cropped
+  storefront poster and the card action reads `OPEN SHOP`. Shop Update, Vault
+  and join-preview cards remain on their existing visual paths. No claim is
+  made that WhatsApp can animate a link preview.
+- Verification passed: production TypeScript/Vite build (313 modules), Public
+  Shop action inventory and Gate 2 source contract, focused share-preview tests,
+  approved-poster packaging test, generated 1200x630 PNG, and 430/360 phone
+  browser cases. Browser checks proved the panel sits below the animation,
+  renders both `Diary Kitchen` and `Ardent Ebony Uplift LTD` dynamically,
+  has no horizontal overflow, and moves to `#products-services` when tapped.
+- The broad link-contract audit still reports five pre-existing mismatches in
+  PWA install, Shop Assets and older Public Shop patterns. Gate 2 does not hide
+  or modify those unrelated failures; its dedicated contract passes.
+
+## GSN Shop Entrance Gate 1 - 2026-11-05
+
+- Status: founder-approved Gate 1 is implemented and release-verified. At the
+  Gate 1 checkpoint, public shop sharing metadata and GSN Reel composition were
+  not changed.
+- The supplied approved 570x1280 screen recording contained phone/editor chrome.
+  The production asset is a non-generative crop of that exact recording using
+  `crop=430:414:70:421`; it removes every visible phone/editor control while
+  preserving the complete glowing `My GSN Shop` sign and glass-door animation.
+  The derived H.264 MP4 is muted, 549,379 bytes and has a cropped source poster.
+- One reusable `GsnShopEntranceAnimation` now owns muted autoplay, inline loop,
+  poster fallback and the static ambient treatment. Public Shop uses it behind
+  the existing shop identity/category/description/Edit Shop information in a
+  lighter transparent lower overlay. All Share, Verify, WhatsApp, follow,
+  analytics, products, Spotlight, Vault, TrustSlip and route behavior remains
+  unchanged.
+- Focused Shop Picture uses the same entrance preview. Existing owner-selected
+  picture upload, profile-portrait consent, save, reset, remove, payload,
+  storage and media preparation remain intact; the selected picture remains
+  visibly reviewable as supporting shop identity media.
+- Frozen specs and the Universal Shop Hero audit now cage this explicit visual
+  exception. The Shop Diary write/presentation contracts remain separate and
+  unchanged.
+- Verification passed: Universal Shop Hero, Public Shop button inventory, Shop
+  Assets slots, Shop Diary phases 1/2, Shop Control button inventory,
+  share/tag actions, complete protected-button freeze, TypeScript/Vite
+  production build, and focused 360/390/430 phone browser cases. Browser cases
+  proved decoded video, muted loop, inline/no-controls behavior, no horizontal
+  overflow, the owner preview, and the same entrance with both `Diary Kitchen`
+  and `Ardent Ebony Uplift LTD` dynamic shop identities.
+
 ## Simple member community-confirmation starter - 2026-11-04
 
 - The existing confirmation API, responder inbox, eligibility policy, and

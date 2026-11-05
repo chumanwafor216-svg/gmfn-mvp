@@ -40,6 +40,12 @@ VIDEO_PROCESS_TIMEOUT_SECONDS = 50
 # 10-second phone clip. One worker is slower but keeps preparation predictable;
 # this does not lower the accepted resolution or the encoded picture quality.
 FFMPEG_THREAD_LIMIT = 1
+SHOP_REEL_BRAND_SEGMENT_SECONDS = 2.0
+APPROVED_SHOPFRONT_REEL_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "assets"
+    / "gsn-shop-entrance-approved.mp4"
+)
 
 _MANAGED_VIDEO_PATH = re.compile(
     r"^/uploads/marketplace/videos/qv1_[A-Za-z0-9_-]+[.]mp4$"
@@ -192,6 +198,8 @@ class NormalizedVideo:
     added_sound: bool = False
     sound_mode: str | None = None
     output_has_audio: bool = False
+    branding_segment: str | None = None
+    branding_seconds: float = 0.0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -206,6 +214,8 @@ class NormalizedVideo:
             "added_sound": self.added_sound,
             "sound_mode": self.sound_mode,
             "output_has_audio": self.output_has_audio,
+            "branding_segment": self.branding_segment,
+            "branding_seconds": self.branding_seconds,
         }
 
 
@@ -220,6 +230,8 @@ class ImageReelVideo:
     added_sound: bool = False
     visual_preparation: str = "gsn_image_reel"
     finish_profile: str = "gsn_natural"
+    branding_segment: str = "approved_shopfront_closing"
+    branding_seconds: float = SHOP_REEL_BRAND_SEGMENT_SECONDS
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -235,6 +247,8 @@ class ImageReelVideo:
             "added_sound": self.added_sound,
             "visual_preparation": self.visual_preparation,
             "finish_profile": self.finish_profile,
+            "branding_segment": self.branding_segment,
+            "branding_seconds": self.branding_seconds,
         }
 
 
@@ -628,6 +642,50 @@ def _normalized_dimensions(inspection: VideoInspection) -> tuple[int, int]:
     return max(2, width), max(2, height)
 
 
+def _approved_shopfront_reel_path() -> Path:
+    if (
+        not APPROVED_SHOPFRONT_REEL_PATH.is_file()
+        or APPROVED_SHOPFRONT_REEL_PATH.stat().st_size <= 0
+    ):
+        raise MediaQualityError(
+            "shop_reel_branding_unavailable",
+            "GSN could not attach the approved shop entrance right now. Please try again shortly.",
+        )
+    return APPROVED_SHOPFRONT_REEL_PATH
+
+
+def _shop_reel_segment_timing(finish_seconds: int) -> tuple[float, float]:
+    branding_seconds = min(
+        SHOP_REEL_BRAND_SEGMENT_SECONDS,
+        max(1.0, float(finish_seconds) - 1.0),
+    )
+    return float(finish_seconds) - branding_seconds, branding_seconds
+
+
+def _approved_shopfront_filter(
+    *,
+    input_index: int,
+    width: int,
+    height: int,
+    duration_seconds: float,
+    output_label: str,
+) -> str:
+    foreground_width = max(2, int(width * 0.92))
+    foreground_height = max(2, int(height * 0.72))
+    foreground_width -= foreground_width % 2
+    foreground_height -= foreground_height % 2
+    return (
+        f"[{input_index}:v]split=2[shop_brand_bg_source][shop_brand_fg_source];"
+        f"[shop_brand_bg_source]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},boxblur=18:2,eq=brightness=-0.24:saturation=0.90[shop_brand_bg];"
+        f"[shop_brand_fg_source]scale={foreground_width}:{foreground_height}:"
+        "force_original_aspect_ratio=decrease[shop_brand_fg];"
+        "[shop_brand_bg][shop_brand_fg]overlay=(W-w)/2:(H-h)/2,"
+        "fps=30,format=yuv420p,settb=AVTB,"
+        f"trim=duration={duration_seconds:g},setpts=PTS-STARTPTS[{output_label}]"
+    )
+
+
 def normalize_marketplace_video(
     source_path: str | Path,
     output_path: str | Path,
@@ -691,6 +749,12 @@ def normalize_marketplace_video(
     )
     if finish_profile is not None and finish_seconds not in {5, 10}:
         raise MediaQualityError('video_finish_duration_invalid', 'Choose a 5-second or 10-second GSN finish.')
+    branding_path: Path | None = None
+    branding_seconds = 0.0
+    content_seconds = float(finish_seconds)
+    if finish_profile is not None:
+        branding_path = _approved_shopfront_reel_path()
+        content_seconds, branding_seconds = _shop_reel_segment_timing(finish_seconds)
     overlay_path = destination.with_suffix('.overlay.png')
     if finish_profile is not None:
         _build_finish_overlay(finish_profile, width, height, overlay_path)
@@ -708,14 +772,21 @@ def normalize_marketplace_video(
         "-i",
         str(input_path),
     ]
+    next_input_index = 1
     sound_input_index: int | None = None
     if added_sound_path is not None:
-        sound_input_index = 1
+        sound_input_index = next_input_index
+        next_input_index += 1
         command.extend(["-i", str(added_sound_path)])
     overlay_input_index: int | None = None
     if finish_profile is not None:
-        overlay_input_index = 2 if added_sound_path is not None else 1
+        overlay_input_index = next_input_index
+        next_input_index += 1
         command.extend(["-loop", "1", "-i", str(overlay_path)])
+    branding_input_index: int | None = None
+    if branding_path is not None:
+        branding_input_index = next_input_index
+        command.extend(["-i", str(branding_path)])
 
     command.extend(["-t", str(finish_seconds), "-map", "0:v:0"])
     if added_sound_path is not None:
@@ -773,7 +844,11 @@ def normalize_marketplace_video(
     command.append(str(destination))
 
     filter_parts: list[str] = []
-    if finish_profile is not None and overlay_input_index is not None:
+    if (
+        finish_profile is not None
+        and overlay_input_index is not None
+        and branding_input_index is not None
+    ):
         command[command.index('0:v:0')] = '[finished]'
         video_filter_index = command.index('-vf')
         del command[video_filter_index : video_filter_index + 2]
@@ -781,8 +856,23 @@ def normalize_marketplace_video(
             f'[0:v]scale={width}:{height},'
             'hqdn3d=1.4:1.0:2.0:1.5,'
             'eq=brightness=0.015:contrast=1.035:saturation=1.025,'
-            'unsharp=5:5:0.35:3:3:0[base];'
-            f'[base][{overlay_input_index}:v]overlay=0:0:eof_action=repeat[finished]'
+            'unsharp=5:5:0.35:3:3:0,'
+            f'tpad=stop_mode=clone:stop_duration={content_seconds:g},'
+            f'trim=duration={content_seconds:g},format=yuv420p,settb=AVTB,'
+            'setpts=PTS-STARTPTS[base];'
+            f'[base][{overlay_input_index}:v]overlay=0:0:eof_action=repeat[owner_finished]'
+        )
+        filter_parts.append(
+            _approved_shopfront_filter(
+                input_index=branding_input_index,
+                width=width,
+                height=height,
+                duration_seconds=branding_seconds,
+                output_label='shop_brand_segment',
+            )
+        )
+        filter_parts.append(
+            '[owner_finished][shop_brand_segment]concat=n=2:v=1:a=0[finished]'
         )
         command[command.index('-crf') + 1] = '23'
         command[command.index('-maxrate') + 1] = '1600k'
@@ -883,6 +973,10 @@ def normalize_marketplace_video(
         added_sound=added_sound_path is not None,
         sound_mode=selected_sound_mode,
         output_has_audio=output_has_audio,
+        branding_segment=(
+            "approved_shopfront_closing" if finish_profile is not None else None
+        ),
+        branding_seconds=branding_seconds,
     )
 
 
@@ -908,6 +1002,8 @@ def render_marketplace_image_reel(
             "image_reel_duration_invalid",
             "Choose a 5-second or 10-second GSN Reel.",
         )
+    branding_path = _approved_shopfront_reel_path()
+    content_seconds, branding_seconds = _shop_reel_segment_timing(finish_seconds)
 
     try:
         with Image.open(input_path) as opened:
@@ -1038,19 +1134,45 @@ def render_marketplace_image_reel(
             "-i",
             str(frame_path),
         ]
+        sound_input_index: int | None = None
         if added_sound_path is not None:
+            sound_input_index = 1
             command.extend(["-i", str(added_sound_path)])
-        command.extend([
-            "-t", str(finish_seconds),
-            "-map", "0:v:0",
-            "-vf",
+        branding_input_index = 2 if sound_input_index is not None else 1
+        command.extend(["-i", str(branding_path)])
+        filter_parts = [
             (
-                "zoompan="
+                "[0:v]zoompan="
                 "z='min(zoom+0.00012,1.035)':"
                 "x='iw/2-(iw/zoom/2)':"
                 "y='ih/2-(ih/zoom/2)':"
-                "d=1:s=720x1280:fps=30,format=yuv420p"
+                "d=1:s=720x1280:fps=30,"
+                f"trim=duration={content_seconds:g},format=yuv420p,settb=AVTB,"
+                "setpts=PTS-STARTPTS[shop_content]"
             ),
+            _approved_shopfront_filter(
+                input_index=branding_input_index,
+                width=width,
+                height=height,
+                duration_seconds=branding_seconds,
+                output_label="shop_brand_segment",
+            ),
+            "[shop_content][shop_brand_segment]concat=n=2:v=1:a=0[finished]",
+        ]
+        if added_sound_path is not None and sound_input_index is not None:
+            duration_filter = (
+                f"atrim=0:{finish_seconds},apad=pad_dur={finish_seconds},"
+                f"atrim=0:{finish_seconds},asetpts=PTS-STARTPTS,"
+                "loudnorm=I=-16:TP=-1.5:LRA=11[prepared_audio]"
+            )
+            filter_parts.append(
+                f"[{sound_input_index}:a:0]{duration_filter}"
+            )
+        command.extend([
+            "-filter_complex_threads", str(FFMPEG_THREAD_LIMIT),
+            "-filter_complex", ";".join(filter_parts),
+            "-t", str(finish_seconds),
+            "-map", "[finished]",
             "-r",
             "30",
             "-c:v",
@@ -1075,14 +1197,7 @@ def render_marketplace_image_reel(
             "-1",
         ])
         if added_sound_path is not None:
-            duration_filter = (
-                f"atrim=0:{finish_seconds},apad=pad_dur={finish_seconds},"
-                f"atrim=0:{finish_seconds},asetpts=PTS-STARTPTS,"
-                "loudnorm=I=-16:TP=-1.5:LRA=11[prepared_audio]"
-            )
             command.extend([
-                "-filter_complex_threads", str(FFMPEG_THREAD_LIMIT),
-                "-filter_complex", f"[1:a:0]{duration_filter}",
                 "-map", "[prepared_audio]",
                 "-c:a", "aac",
                 "-b:a", "96k",
@@ -1152,6 +1267,7 @@ def render_marketplace_image_reel(
             size_bytes=output_size,
             output_has_audio=output_has_audio,
             added_sound=added_sound_path is not None,
+            branding_seconds=branding_seconds,
         )
     finally:
         frame_path.unlink(missing_ok=True)

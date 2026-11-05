@@ -1757,9 +1757,9 @@ Shop Diary contract:
 - Every existing GSN video-selection surface uses one shared optional `Add sound` editor. A member may choose a supported audio file or record up to ten seconds, preview and remove that sound, then choose `Add over video` or `Replace video sound`. Upload remains blocked until the member confirms they created the sound or have permission to use it. The authenticated media service physically mixes or replaces the audio, applies bounded loudness normalisation, and verifies the prepared MP4 contains audio. This first version must not expose a built-in popular-music catalogue; music licensing and rights management remain a prerequisite.
 - Video guidance should tell members how to prepare before recording: clean the lens, use good light, hold the phone steady, keep the product centred, and choose a quiet place. Rejection messages must say what failed and the first corrective action. The gate guarantees measurable technical minimums; it does not claim to understand whether lighting, composition, speech, or the product demonstration is subjectively good.
 - Shop Control Free Spotlight and Subscription Spotlight may offer the optional `GSN Natural Finish` on a selected video. It must use the existing authenticated server media route, require the seller's own shop, offer only five or ten seconds, show the finished output for review before publish, and let the seller turn it off. The finish may apply conservative denoise, brightness/contrast/saturation, mild sharpening, lower bitrate, and a GSN-labelled lower third derived from the saved shop name, public WhatsApp contact and managed shop logo. It must remain under 4 MB, say `Presented through GSN`, and must not alter product identity/colour/shape/condition, invent detail, imply endorsement, or change Spotlight serving, pacing, payment or entitlement rules. Ordinary video upload behaviour remains unchanged when the option is off.
-- Directly below the Free Spotlight composer, show one compact `GSN Shop Reel` free-pilot section. It may reuse the reviewed `GSN Natural Finish` video or create a separate five/ten-second portrait MP4 from the owner's freshly selected Spotlight picture. The picture Reel may remain silent or use one owner-chosen sound file/phone recording through the existing bounded sound engine after the owner confirms creation or permission. Because the source picture has no original audio, do not show the video-only mix/replace decision; add the sound, normalise it, and verify that the output MP4 contains audio. GSN must not present a built-in or licensed music catalogue. Picture conversion uses the authenticated marketplace media service, contains the complete prepared image without product crop on a blurred presentation canvas, applies only a subtle camera push and the existing shop-derived GSN lower third, remains under 4 MB, and does not generate or repair product detail. Its primary action is `Create Reel from picture`; creating it must not change the picture into Spotlight video or publish Spotlight. The owner may instead add a short video, leave automatic improvement on, then choose `Check and publish`. When a Reel is ready, show it with `Share Reel from phone` as the primary combined video-and-attributed-public-shop-link handoff, plus `Choose link channel` through the existing Social/WhatsApp Bridge and `Download reel` as fallbacks. The prepared Reel may be restored from same-origin tab-session storage after refresh, scoped to the authenticated owner's GSN ID; a new sole-media selection must not leave another asset's Reel active. The compact outward caption may identify the public shop and current Spotlight, mention Demand Box as the GSN path for an unmet need, and tell recipients to check any available TrustSlip separately; it must not claim that every shop has Demand Box or TrustSlip evidence. Phone file sharing must use the explicit browser share sheet only when file sharing is supported; otherwise instruct the owner to download and post it themselves. Keep `What this pilot does` closed by default and state that GSN does not auto-post, prove delivery/sales, invent product detail, expose Vault content, or supply built-in music. The pilot is free and does not create or consume a paid entitlement or Pipeline Credit. No new screen or sixth Shop-home action is created, and the offline Campaign Renderer is not a production dependency.
+- Directly below the Free Spotlight composer, show one compact `GSN Shop Reel` free-pilot section. It may reuse the reviewed `GSN Natural Finish` video or create a separate five/ten-second portrait MP4 from the owner's freshly selected Spotlight picture. The owner's actual picture or video remains the primary opening content for three/eight seconds; the exact approved `My GSN Shop` entrance is appended as a two-second closing segment and must not replace owner products or services. The picture Reel may remain silent or use one owner-chosen sound file/phone recording through the existing bounded sound engine after the owner confirms creation or permission. Because the source picture has no original audio, do not show the video-only mix/replace decision; add the sound, normalise it, and verify that the output MP4 contains audio. Video retains the existing keep/mix/replace sound decision. Preview remains muted until explicit sound unlock, and GSN does not bypass browser or public-page autoplay restrictions. GSN must not present a built-in or licensed music catalogue. Picture conversion uses the authenticated marketplace media service, contains the complete prepared image without product crop on a blurred presentation canvas, applies only a subtle camera push and the existing shop-derived GSN lower third, remains under 4 MB, and does not generate or repair product detail. Its primary action is `Create Reel from picture`; creating it must not change the picture into Spotlight video or publish Spotlight. The owner may instead add a short video, leave automatic improvement on, then choose `Check and publish`. When a Reel is ready, show it with `Share Reel from phone` as the primary combined video-and-attributed-public-shop-link handoff, plus `Choose link channel` through the existing Social/WhatsApp Bridge and `Download reel` as fallbacks. The prepared Reel may be restored from same-origin tab-session storage after refresh, scoped to the authenticated owner's GSN ID; a new sole-media selection must not leave another asset's Reel active. The compact outward caption may identify the public shop and current Spotlight, mention Demand Box as the GSN path for an unmet need, and tell recipients to check any available TrustSlip separately; it must not claim that every shop has Demand Box or TrustSlip evidence. Phone file sharing must use the explicit browser share sheet only when file sharing is supported; otherwise instruct the owner to download and post it themselves. Keep `What this pilot does` closed by default and state that GSN does not auto-post, autoplay sound, prove delivery/sales, invent product detail, expose Vault content, or supply built-in music. The pilot is free and does not create or consume a paid entitlement or Pipeline Credit. No new screen or sixth Shop-home action is created, and the offline Campaign Renderer is not a production dependency.
 - Reel direct-entry correction: the empty `GSN Shop Reel` card must show one primary `Choose picture for Reel` action wired to the existing Spotlight picture-preparation handler. The owner must not have to discover a different control above. After selection, the card changes to the existing `Create Reel from picture` flow. This is another control surface for the same verified-media engine, not a second uploader or media system, and a selected picture remains eligible when a video is also selected.
-- Reel standard-frame and flexible-media correction: keep the visible Reel card short and show paired `Choose picture` and `Choose video` controls. Both controls reuse the existing Spotlight preparation handlers. If both media types are ready, the owner chooses which one becomes the Reel without changing the other draft. A picture uses optional confirmed owner sound and does not show mix/replace. A video keeps its existing audio by default and may optionally use the shared confirmed `Add over video` or `Replace video sound` controls. `Create Reel from picture` and `Create Reel from video` produce the existing bounded five/ten-second Natural Finish without publishing Spotlight. Both outputs use one standard navy-and-gold GSN outer frame; the complete still picture is also visibly enclosed in a navy-and-gold media frame rather than floating with open sides. The ready state says only that the framed Reel and shop link are ready, while the existing share caption retains the bounded Spotlight, Demand Box and separately checked TrustSlip language. The attributed shop link and explicit owner review/share/download requirements do not change.
+- Reel standard-frame and flexible-media correction: keep the visible Reel card short and show paired `Choose picture` and `Choose video` controls. Both controls reuse the existing Spotlight preparation handlers. If both media types are ready, the owner chooses which one becomes the Reel without changing the other draft. A picture uses optional confirmed owner sound and does not show mix/replace. A video keeps its existing audio by default and may optionally use the shared confirmed `Add over video` or `Replace video sound` controls. `Create Reel from picture` and `Create Reel from video` produce the bounded five/ten-second Natural Finish plus the approved two-second shop-entrance closing segment without publishing Spotlight. Both outputs use one standard navy-and-gold GSN outer frame around owner media; the complete still picture is also visibly enclosed in that frame rather than floating with open sides. The ready state says that owner content, the approved shop entrance and the shop link are ready, while the existing share caption retains the bounded Spotlight, Demand Box and separately checked TrustSlip language. The attributed shop link and explicit owner review/share/download requirements do not change.
 - A live owner-inspection Spotlight card on Public Shop shows the live label and content title without repeating start/expiry timestamps or the owner-exposure disclaimer. Shop Control remains the truthful timing and lifecycle-management surface; serving and exposure rules do not change.
 - Keep the Public Shop Vault card concise: `Private Vault`, `Owner invitation only.`, `Request access`, and `Copy request`. The request and copy handlers remain distinct and unchanged. On phones, keep `Private Vault | Owner invitation only.` on one line, retain `Everyday items shared privately.` as the single motto line, crop the everyday-item strip to a short banner, and use 44px actions with `Copy request` visually secondary rather than presenting two oversized equal buttons.
 - Owner-approved Vault visual language represents lawful ordinary personal goods that may still be in use, not a bank safe, locker, diamonds, luxury inventory or secret documents. Public Shop and Vault Control use one three-photo everyday-item strip (produce, clothes and home goods), supported by plain language such as `Everyday items shared privately.`; do not restore a safe-door emblem or safe icon as the primary Vault representation.
@@ -1830,8 +1830,10 @@ Owner-approved 2026-10-26 first-view correction, amended 2026-10-27:
   spaces, add/edit/delete/copy/repost actions, exact-product focus, media
   preparation, Diary separation, routes, permissions and backend contracts.
 - Shop picture (`#shop-assets-picture`) must be a focused reuse of the
-  existing picture editor. On phone, show the current preview, `Choose a
-  picture`, the existing file field and one primary `Save picture` action.
+  existing picture editor. On phone, show the approved animated `My GSN Shop`
+  entrance as the billboard preview, keep any current supporting shop picture
+  visibly reviewable, then show `Choose a picture`, the existing file field
+  and one primary `Save picture` action.
   Keep the pasted public-image URL behind closed `Use a picture link instead
   (optional)`; retain reset and remove-picture actions and return to Shop
   items. Do not expose the wider shop-details form, Shop items, Shop Update,
@@ -1921,10 +1923,12 @@ Rules:
   the approved lively GSN people-market fallback.
 - The invite social card leads with Come and join me on GSN, the real community
   or marketplace name, and Request access - approval required. The public-shop
-  social card leads with Explore my shop on GSN, then uses the requested public
-  product picture, first eligible active public-product picture, owner-saved
-  shop picture, and people-market fallback in that order. Do not add invented
-  verification, sales, popularity, location, availability, or trust claims.
+  social card keeps its dynamic shop, owner, product and price text but uses the
+  exact approved cropped `My GSN Shop` storefront poster as the static image
+  and `OPEN SHOP` as its call to action. Do not use a product, owner-saved
+  picture, profile portrait or another generated storefront in place of that
+  approved poster. Do not add invented verification, sales, popularity,
+  location, availability, or trust claims.
 - Pre-click link packaging is a static image, title, and short description.
   Any owner-recorded welcome video belongs on the opened landing page behind an
   explicit Play action; do not promise or imply autoplay video inside WhatsApp
@@ -1939,23 +1943,31 @@ Rules:
   blank or block that flow. It should use an already-ready public shop link and
   navigate in the same tab, or ask the user to refresh the link first.
 - Public Shop signboard identity must be shop/member scoped: shop name,
-  description, picture, WhatsApp, and Telegram come from the individual shop
-  record. Marketplace/community name may appear only as the shared community
-  context, not as a replacement for the shop name.
-- The Public Shop signboard uses a full-width, photo-led business hero rather
-  than reducing genuine media to a thumbnail tile. Use the first eligible
-  active public product picture in public-space order, then the owner-saved
-  shop picture, then the neutral branded GSN storefront fallback. Broken
-  images must advance through that same order.
+  description, WhatsApp, and Telegram come from the individual shop record.
+  Marketplace/community name may appear only as the shared community context,
+  not as a replacement for the shop name. The approved animated `My GSN Shop`
+  entrance is the shared billboard visual for every shop and must not be
+  replaced by an owner's product, service, profile, Shop Update, or Vault media.
+- The Public Shop signboard uses the approved slow, continuously looping glass-
+  door entrance with its cropped source poster as the static fallback. Keep the
+  animation muted, inline and free of controls. Existing owner-selected shop
+  pictures remain stored, removable and visibly reviewable as supporting shop
+  identity media; this presentation change does not delete or repurpose them.
+- Immediately beneath the animated entrance, render a separate permanent HTML
+  panel containing `My GSN Shop`, the current shop's own dynamic name and one
+  clickable `Open Shop` action. The action targets the existing Products &
+  Services section on the same canonical public-shop page and preserves any
+  valid query context. This panel is stationary and must not be embedded in the
+  animation, poster or social-preview image.
 - Keep shop name, category, a bounded short description and truthful
   GSN-member/community context readable through the approved navy-and-gold
   overlay. An existing-owner Edit Shop route may appear only for the signed-in
   owner. Keep GSN ID, community, Share, Verify, WhatsApp, follow/analytics and
   the product shelf intact below the hero.
-  Never source the hero from Vault, Spotlight, Shop Update/Diary, a private
-  product, a guessed category scene, or an unsaved profile portrait. Do not
-  invent trust status, business activity or location to make the hero look
-  richer.
+  Never source the billboard animation from Vault, Spotlight, Shop
+  Update/Diary, a private product, a guessed category scene, or an unsaved
+  profile portrait. Do not invent trust status, business activity or location
+  to make the hero look richer.
 - Owner-approved 2026-10-31 Public Shop Spotlight presentation: Spotlight is a
   media-first attention surface. On phone, the image/video screen occupies the
   former complete compact-card footprint and a separate information console

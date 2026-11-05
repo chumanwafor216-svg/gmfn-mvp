@@ -1,6 +1,6 @@
 /* global console, process */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   selector: "src/lib/shopHeroSelection.ts",
   component: "src/components/shop/UniversalShopHero.tsx",
+  entrance: "src/components/shop/GsnShopEntranceAnimation.tsx",
   publicHero: "src/components/shop/PublicShopPhotoHero.tsx",
   gallery: "src/pages/ShopGalleryPage.tsx",
   assets: "src/pages/ShopAssetsPage.tsx",
@@ -19,6 +20,14 @@ const source = Object.fromEntries(
   ])
 );
 const findings = [];
+for (const assetPath of [
+  "public/branding/gsn-shop-entrance-approved.mp4",
+  "public/branding/gsn-shop-entrance-approved-poster.jpg",
+]) {
+  if (!existsSync(join(frontendRoot, assetPath))) {
+    findings.push({ file: assetPath, message: "The approved shop-entrance asset is missing." });
+  }
+}
 
 function requireText(fileKey, text, message) {
   if (source[fileKey].includes(text)) return;
@@ -52,10 +61,18 @@ for (const forbidden of ["Spotlight", "spotlight", "ShopDiary", "shopDiary", "Tr
 requireText("component", 'data-universal-shop-hero="true"', "The shared hero component contract is missing.");
 requireText("component", "onError={() => onImageError?.(source.imageUrl)}", "Hero image failures must trigger fallback selection.");
 requireText("component", 'name="shop-storefront"', "Neutral GSN storefront fallback is missing.");
+requireText("entrance", 'data-gsn-shop-entrance-animation="true"', "The approved shared shop-entrance contract is missing.");
+requireText("entrance", 'data-gsn-shop-entrance-video="true"', "The approved shop entrance must render as video.");
+requireText("entrance", "autoPlay", "The muted shop entrance must start automatically.");
+requireText("entrance", "muted", "The shop entrance must remain muted on public surfaces.");
+requireText("entrance", "loop", "The shop entrance must continue without changing links.");
+requireText("entrance", "playsInline", "The shop entrance must remain inline on phones.");
+requireText("entrance", "/branding/gsn-shop-entrance-approved.mp4", "The approved cropped storefront asset is missing.");
+requireText("entrance", "/branding/gsn-shop-entrance-approved-poster.jpg", "The approved storefront poster fallback is missing.");
 requireText("publicHero", 'data-public-shop-photo-hero="true"', "The full-width Public Shop photo hero contract is missing.");
-requireText("publicHero", "<UniversalShopHero", "The photo-led Public Shop hero must reuse the audited media component.");
-requireText("publicHero", 'minHeight: compact ? 302 : 420', "The Public Shop hero must reserve a real photographic banner instead of a thumbnail tile.");
-requireText("publicHero", "linear-gradient(90deg", "The shop identity must remain readable over genuine business photography.");
+requireText("publicHero", "<GsnShopEntranceAnimation", "Public Shop must reuse the approved animated entrance.");
+requireText("publicHero", 'minHeight: compact ? 348 : 500', "The Public Shop hero must reserve enough space for the animated entrance.");
+requireText("publicHero", 'background: "rgba(3,20,36,0.50)"', "Shop identity must remain readable in a transparent lower overlay.");
 
 requireText("gallery", "selectShopHeroSource({", "Public Shop must use the deterministic selector.");
 requireText("gallery", "image_url_available === false", "Public Shop must respect backend media availability.");
@@ -67,6 +84,8 @@ requireText("assets", "Use this portrait publicly", "Portrait reuse must require
 requireText("assets", "new File(", "Portrait reuse must create an independent shop-media file.");
 requireText("assets", "setShopPreviewFromFile(profilePortraitFile)", "Portrait reuse must enter the ordinary shop preview path.");
 requireText("assets", "uploadMarketplaceImageFile(shopSelectedFile)", "Selected portraits must use the existing marketplace image engine.");
+requireText("assets", '<GsnShopEntranceAnimation compact fit="cover" />', "The owner billboard preview must use the approved animated entrance.");
+requireText("assets", 'data-shop-supporting-picture-preview="true"', "The existing owner-selected shop picture must remain visibly reviewable.");
 requireText(
   "assets",
   "will not\n                            change automatically when your profile portrait changes",
@@ -82,6 +101,6 @@ if (findings.length) {
 }
 
 console.log("Universal Shop Hero audit passed.");
-console.log("Source order: public product photo -> shop photo -> neutral GSN fallback.");
-console.log("Presentation: full-width photo-led Public Shop identity hero.");
+console.log("Supporting image order retained: public product photo -> shop photo -> neutral GSN fallback.");
+console.log("Presentation: approved animated My GSN Shop entrance with transparent identity overlay.");
 console.log("Profile portrait: explicit consent -> ordinary preview -> existing marketplace media engine.");

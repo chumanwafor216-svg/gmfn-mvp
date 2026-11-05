@@ -690,6 +690,8 @@ async def create_marketplace_image_reel(
         "finish": {
             "profile": "gsn_natural",
             "duration_seconds": int(finish.duration_seconds),
+            "branding_segment": reel.branding_segment,
+            "branding_seconds": reel.branding_seconds,
             "brand_name": finish.brand_name,
             "title": finish.title,
             "public_contact_present": bool(finish.public_contact),
@@ -705,7 +707,7 @@ async def create_marketplace_image_reel(
         "preparation": {
             "source_image": prepared_image.as_dict(),
             "motion": "gentle_camera_push",
-            "truth_boundary": "Presentation only: GSN contained the selected picture without product crop, added a subtle camera push and attribution, and did not invent or repair product detail.",
+            "truth_boundary": "Presentation only: the owner's picture remains the primary content, followed by the approved My GSN Shop entrance. GSN contained the picture without product crop, added a subtle camera push and attribution, and did not invent or repair product detail.",
         },
     }
 
@@ -886,12 +888,14 @@ async def upload_marketplace_video(
             {
                 "profile": "gsn_natural",
                 "duration_seconds": int(selected_finish.duration_seconds),
+                "branding_segment": normalized.branding_segment,
+                "branding_seconds": normalized.branding_seconds,
                 "brand_name": selected_finish.brand_name,
                 "title": selected_finish.title,
                 "public_contact_present": bool(selected_finish.public_contact),
                 "logo_applied": bool(selected_finish.logo_path),
                 "max_output_bytes": MAX_GSN_NATURAL_FINISH_BYTES,
-                "truth_boundary": "Presentation only: GSN does not certify the product or alter its claimed condition.",
+                "truth_boundary": "Presentation only: the owner's video remains the primary content, followed by the approved My GSN Shop entrance. GSN does not certify the product or alter its claimed condition.",
             }
             if selected_finish is not None
             else None

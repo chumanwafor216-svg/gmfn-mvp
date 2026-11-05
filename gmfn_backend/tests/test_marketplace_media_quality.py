@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import subprocess
 from io import BytesIO
 from pathlib import Path
@@ -15,6 +16,7 @@ from app.api.routes.marketplace_media import _read_limited_bytes, _write_limited
 from app.api.routes.marketplace import _require_verified_marketplace_video
 from app.db.database import engine
 from app.services.marketplace_media_quality_service import (
+    APPROVED_SHOPFRONT_REEL_PATH,
     FFMPEG_THREAD_LIMIT,
     MAX_GSN_NATURAL_FINISH_BYTES,
     MAX_NORMALIZED_IMAGE_BYTES,
@@ -23,6 +25,7 @@ from app.services.marketplace_media_quality_service import (
     MAX_VIDEO_DURATION_SECONDS,
     MIN_VIDEO_FPS,
     MIN_VIDEO_SHORT_EDGE,
+    SHOP_REEL_BRAND_SEGMENT_SECONDS,
     MediaQualityError,
     VideoFinishProfile,
     VideoInspection,
@@ -108,6 +111,14 @@ def test_gsn_finish_overlay_has_standard_navy_and_gold_frame(tmp_path: Path):
     with Image.open(overlay_path).convert("RGBA") as overlay:
         assert overlay.getpixel((360, 8))[:3] == (6, 21, 42)
         assert overlay.getpixel((360, 15))[:3] == (199, 158, 59)
+
+
+def test_approved_shopfront_reel_asset_is_packaged_exactly():
+    assert APPROVED_SHOPFRONT_REEL_PATH.is_file()
+    assert APPROVED_SHOPFRONT_REEL_PATH.stat().st_size == 549379
+    assert hashlib.sha256(APPROVED_SHOPFRONT_REEL_PATH.read_bytes()).hexdigest() == (
+        "f7fef6f29627aec2a72687f14fa5e741f1951bc8e05f0508392b688a118f0284"
+    )
 
 
 def test_image_finish_rejects_unreadable_input(tmp_path: Path):
@@ -304,6 +315,8 @@ def test_gsn_natural_finish_is_bounded_branded_profile(tmp_path: Path):
 
     assert output.is_file()
     assert result.finish_profile == 'gsn_natural'
+    assert result.branding_segment == 'approved_shopfront_closing'
+    assert result.branding_seconds == SHOP_REEL_BRAND_SEGMENT_SECONDS
     assert result.trimmed is True
     assert result.output.duration_seconds <= 5.35
     assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
@@ -336,6 +349,8 @@ def test_image_reel_creates_bounded_vertical_managed_video(tmp_path: Path):
     assert result.output.duration_seconds <= 5.35
     assert result.output.codec == "h264"
     assert result.output_has_audio is False
+    assert result.branding_segment == "approved_shopfront_closing"
+    assert result.branding_seconds == SHOP_REEL_BRAND_SEGMENT_SECONDS
     assert result.size_bytes <= MAX_GSN_NATURAL_FINISH_BYTES
 
 
@@ -439,6 +454,10 @@ def test_image_reel_upload_embeds_confirmed_owner_sound(
     body = response.json()
     assert body["source_kind"] == "image"
     assert body["quality_verified"] is True
+    assert body["quality"]["branding_segment"] == "approved_shopfront_closing"
+    assert body["quality"]["branding_seconds"] == SHOP_REEL_BRAND_SEGMENT_SECONDS
+    assert body["finish"]["branding_segment"] == "approved_shopfront_closing"
+    assert body["finish"]["branding_seconds"] == SHOP_REEL_BRAND_SEGMENT_SECONDS
     assert body["sound"] == {
         "added": True,
         "mode": "replace",

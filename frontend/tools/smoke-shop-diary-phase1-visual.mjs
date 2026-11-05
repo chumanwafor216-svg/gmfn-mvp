@@ -21,6 +21,7 @@ const mimeTypes = new Map([
   [".jpg", "image/jpeg"],
   [".jpeg", "image/jpeg"],
   [".webp", "image/webp"],
+  [".mp4", "video/mp4"],
 ]);
 
 const imageSvg = encodeURIComponent(`
@@ -205,6 +206,11 @@ const scenarios = {
 let activeScenario = "image";
 let activeAuthenticated = true;
 let activeSpotlight = false;
+let activeShopName = shop.name;
+
+function currentShop() {
+  return { ...shop, name: activeShopName, shop_name: activeShopName };
+}
 
 function serveDist() {
   if (!existsSync(join(distRoot, "index.html"))) {
@@ -267,11 +273,13 @@ async function installApiMocks(page) {
       return;
     }
     if (path === "/marketplace/shops/me") {
-      await route.fulfill(json({ ok: true, item: shop, shop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
+      const selectedShop = currentShop();
+      await route.fulfill(json({ ok: true, item: selectedShop, shop: selectedShop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
       return;
     }
     if (path === "/marketplace/shops/by-gmfn/GMFN-U-DIARY") {
-      await route.fulfill(json({ ok: true, item: shop, shop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
+      const selectedShop = currentShop();
+      await route.fulfill(json({ ok: true, item: selectedShop, shop: selectedShop, products, shop_diary_entries: scenarios[activeScenario] || [] }));
       return;
     }
     if (path === "/marketplace/shops/77/spotlight-status") {
@@ -298,10 +306,11 @@ async function installApiMocks(page) {
       return;
     }
     if (path === "/marketplace/public/shop/GMFN-U-DIARY") {
+      const selectedShop = currentShop();
       await route.fulfill(json({
         ok: true,
-        item: shop,
-        shop,
+        item: selectedShop,
+        shop: selectedShop,
         products,
         broadcasts: activeSpotlight ? [liveSpotlight] : [],
         primary_broadcast: activeSpotlight ? liveSpotlight : null,
@@ -389,6 +398,12 @@ async function collectMetrics(page) {
     const whatsappActionRect = whatsappAction?.getBoundingClientRect();
     const spotlight = document.querySelector(".public-shop-spotlight");
     const spotlightRect = spotlight?.getBoundingClientRect();
+    const shopEntranceVideo = document.querySelector('[data-gsn-shop-entrance-video="true"]');
+    const shopEntranceRect = shopEntranceVideo?.getBoundingClientRect();
+    const openShopPanel = document.querySelector('[data-public-shop-open-panel="true"]');
+    const openShopPanelRect = openShopPanel?.getBoundingClientRect();
+    const openShopAction = document.querySelector('a[data-cta-id="shop-gallery.open-shop"]');
+    const openShopName = document.querySelector('[data-public-shop-open-panel-name="true"]');
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -424,6 +439,24 @@ async function collectMetrics(page) {
       liveSpotlight: more?.getAttribute("data-public-shop-live-spotlight") || null,
       spotlightDisplay: spotlight ? getComputedStyle(spotlight).display : null,
       spotlightHeight: spotlightRect ? Math.round(spotlightRect.height) : null,
+      shopEntranceVideoPresent: shopEntranceVideo instanceof HTMLVideoElement,
+      shopEntranceWidth: shopEntranceRect ? Math.round(shopEntranceRect.width) : null,
+      shopEntranceHeight: shopEntranceRect ? Math.round(shopEntranceRect.height) : null,
+      shopEntranceReadyState:
+        shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.readyState : null,
+      shopEntranceMuted:
+        shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.muted : null,
+      shopEntranceLoop:
+        shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.loop : null,
+      shopEntranceControls:
+        shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.controls : null,
+      shopEntranceInline:
+        shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.playsInline : null,
+      shopEntranceBottom: shopEntranceRect ? Math.round(shopEntranceRect.bottom) : null,
+      openShopPanelTop: openShopPanelRect ? Math.round(openShopPanelRect.top) : null,
+      openShopPanelText: (openShopPanel?.textContent || "").replace(/\s+/g, " ").trim(),
+      openShopName: (openShopName?.textContent || "").trim(),
+      openShopHref: openShopAction instanceof HTMLAnchorElement ? openShopAction.getAttribute("href") : null,
     };
   });
 }
@@ -457,6 +490,8 @@ async function run() {
       { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
       { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Baby skin care set.", spotlight: true },
+      { name: "18-shop-picture-entrance-390", scenario: "image", route: "/app/shop-control#shop-assets-picture", width: 390, expect: "Every public shop uses the approved My GSN Shop entrance." },
+      { name: "19-public-shop-alternate-owner-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, expect: "Ardent Ebony Uplift LTD", shopName: "Ardent Ebony Uplift LTD" },
     ];
     const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
       .split(",")
@@ -469,6 +504,7 @@ async function run() {
     for (const item of casesToRun) {
       activeScenario = item.scenario;
       activeSpotlight = Boolean(item.spotlight);
+      activeShopName = item.shopName || shop.name;
       const page = await preparePage(browser, item.width, 844, item.authenticated !== false);
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
@@ -508,12 +544,49 @@ async function run() {
       }
       const metrics = await collectMetrics(page);
       const screenshot = await capture(page, item.name);
+      let openShopClickHash = null;
+      if (item.name === "05-public-shop-normal-visitor-430") {
+        await page.locator('a[data-cta-id="shop-gallery.open-shop"]').click();
+        await page.waitForTimeout(150);
+        openShopClickHash = await page.evaluate(() => window.location.hash);
+      }
       await page.close();
       if (!metrics.body.includes(item.expect)) {
         throw new Error(`${item.name} did not render expected text: ${item.expect}. Body: ${metrics.body}`);
       }
       if (metrics.scrollWidth > metrics.innerWidth) {
         throw new Error(`${item.name} widened horizontally: ${metrics.scrollWidth} > ${metrics.innerWidth}`);
+      }
+      if (item.route.startsWith("/shop/") || item.route.includes("#shop-assets-picture")) {
+        const minimumEntranceWidth = item.route.includes("#shop-assets-picture") ? 220 : 250;
+        const minimumEntranceHeight = item.route.includes("#shop-assets-picture") ? 180 : 220;
+        if (!metrics.shopEntranceVideoPresent) {
+          throw new Error(`${item.name} did not render the approved animated shop entrance.`);
+        }
+        if (
+          metrics.shopEntranceReadyState < 2 ||
+          metrics.shopEntranceWidth < minimumEntranceWidth ||
+          metrics.shopEntranceHeight < minimumEntranceHeight
+        ) {
+          throw new Error(
+            `${item.name} did not load a visible approved shop-entrance video: ` +
+            JSON.stringify({
+              readyState: metrics.shopEntranceReadyState,
+              width: metrics.shopEntranceWidth,
+              height: metrics.shopEntranceHeight,
+              minimumEntranceWidth,
+              minimumEntranceHeight,
+            })
+          );
+        }
+        if (
+          !metrics.shopEntranceMuted ||
+          !metrics.shopEntranceLoop ||
+          !metrics.shopEntranceInline ||
+          metrics.shopEntranceControls
+        ) {
+          throw new Error(`${item.name} changed the muted inline looping entrance contract.`);
+        }
       }
       if (item.name.includes("public-shop")) {
         if (metrics.hasPublicShopInstallPrompt) {
@@ -524,6 +597,27 @@ async function run() {
         }
       }
       if (item.name === "05-public-shop-normal-visitor-430") {
+        if (
+          metrics.openShopPanelTop === null ||
+          metrics.shopEntranceBottom === null ||
+          metrics.openShopPanelTop < metrics.shopEntranceBottom ||
+          metrics.openShopPanelText !== "My GSN ShopDiary KitchenOpen Shop" ||
+          metrics.openShopName !== "Diary Kitchen" ||
+          !metrics.openShopHref?.endsWith("#products-services") ||
+          openShopClickHash !== "#products-services"
+        ) {
+          throw new Error(
+            `${item.name} did not keep the permanent Open Shop panel immediately below the animation: ` +
+              JSON.stringify({
+                entranceBottom: metrics.shopEntranceBottom,
+                panelTop: metrics.openShopPanelTop,
+                panelText: metrics.openShopPanelText,
+                panelName: metrics.openShopName,
+                href: metrics.openShopHref,
+                clickHash: openShopClickHash,
+              })
+          );
+        }
         if (metrics.moreOpen || metrics.optionsOpen) {
           throw new Error(`${item.name} did not keep secondary shop lanes closed by default.`);
         }
@@ -553,6 +647,14 @@ async function run() {
               JSON.stringify({ tops: metrics.actionTops, heights: metrics.actionHeights })
           );
         }
+      }
+      if (
+        item.name === "19-public-shop-alternate-owner-360" &&
+        metrics.openShopName !== "Ardent Ebony Uplift LTD"
+      ) {
+        throw new Error(
+          `${item.name} did not render the current owner's shop name in the permanent Open Shop panel.`
+        );
       }
       if (item.name === "06-public-shop-focused-product-390") {
         if (metrics.productToggleSymbol !== "close" || metrics.productToggleText !== "×") {
