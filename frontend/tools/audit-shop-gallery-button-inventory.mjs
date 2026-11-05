@@ -341,8 +341,15 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? "Marketplace" : "Back to Marketplace"\}/,
-  "Public Shop visitors must have a fixed-height Back to Marketplace action that returns to the member shops section without exposing owner shortcuts."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?\{isCompact && signedInOwnsShop \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?Products and Services Update:[\s\S]*?\) : \([\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? "Marketplace" : "Back to Marketplace"\}/,
+  "Public Shop phone owners must use the duplicate Marketplace row for a compact Products and Services Update, while visitors retain the fixed-height Marketplace return action."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-product-update-ticker \{[\s\S]*?height: 44px;[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
+  "The owner Products and Services Update must remain a 44px slow ticker and become stationary when reduced motion is requested."
 );
 
 assertFileContains(

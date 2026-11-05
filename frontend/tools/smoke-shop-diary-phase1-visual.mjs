@@ -453,6 +453,17 @@ async function collectMetrics(page) {
     const openShopPanelRect = openShopPanel?.getBoundingClientRect();
     const openShopAction = document.querySelector('a[data-cta-id="shop-gallery.open-shop"]');
     const openShopName = document.querySelector('[data-public-shop-open-panel-name="true"]');
+    const productUpdateTicker = document.querySelector(
+      '[data-public-shop-product-update-ticker="true"]'
+    );
+    const productUpdateTickerRect = productUpdateTicker?.getBoundingClientRect();
+    const productUpdateTrack = productUpdateTicker?.querySelector(
+      ".public-shop-product-update-track"
+    );
+    const returnMarketplaceAction = document.querySelector(
+      'a[data-cta-id="shop-gallery.return-marketplace"]'
+    );
+    const returnMarketplaceRect = returnMarketplaceAction?.getBoundingClientRect();
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -504,6 +515,28 @@ async function collectMetrics(page) {
         .map((value) => typeof value === "number" ? Math.round(value) : null),
       revealActionWidths: [productRevealActionRect?.width, spotlightRevealActionRect?.width]
         .map((value) => typeof value === "number" ? Math.round(value) : null),
+      productUpdateTickerPresent: Boolean(productUpdateTicker),
+      productUpdateTickerTop: productUpdateTickerRect
+        ? Math.round(productUpdateTickerRect.top)
+        : null,
+      productUpdateTickerBottom: productUpdateTickerRect
+        ? Math.round(productUpdateTickerRect.bottom)
+        : null,
+      productUpdateTickerHeight: productUpdateTickerRect
+        ? Math.round(productUpdateTickerRect.height)
+        : null,
+      productUpdateTickerLabel:
+        productUpdateTicker?.querySelector(".public-shop-product-update-label")
+          ?.textContent?.replace(/\s+/g, " ")
+          .trim() || null,
+      productUpdateTickerAriaLabel: productUpdateTicker?.getAttribute("aria-label") || null,
+      productUpdateTickerAnimationName: productUpdateTrack
+        ? getComputedStyle(productUpdateTrack).animationName
+        : null,
+      returnMarketplacePresent: Boolean(returnMarketplaceAction),
+      returnMarketplaceHeight: returnMarketplaceRect
+        ? Math.round(returnMarketplaceRect.height)
+        : null,
       shopEntranceVideoPresent: shopEntranceVideo instanceof HTMLVideoElement,
       shopEntranceWidth: shopEntranceRect ? Math.round(shopEntranceRect.width) : null,
       shopEntranceHeight: shopEntranceRect ? Math.round(shopEntranceRect.height) : null,
@@ -837,6 +870,15 @@ async function run() {
         if (metrics.moreOpen || metrics.optionsOpen) {
           throw new Error(`${item.name} did not keep secondary shop lanes closed by default.`);
         }
+        if (
+          metrics.productUpdateTickerPresent ||
+          !metrics.returnMarketplacePresent ||
+          metrics.returnMarketplaceHeight !== 44
+        ) {
+          throw new Error(
+            `${item.name} did not preserve the compact Marketplace return for a public visitor.`
+          );
+        }
         if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
           throw new Error(`${item.name} did not place Products & Services before More from this shop.`);
         }
@@ -945,6 +987,30 @@ async function run() {
           Math.abs(metrics.revealActionWidths[0] - metrics.revealActionWidths[1]) > 2
         ) {
           throw new Error("Show more and Live Spotlight did not retain one equal compact row.");
+        }
+        if (
+          !metrics.productUpdateTickerPresent ||
+          metrics.returnMarketplacePresent ||
+          metrics.productUpdateTickerHeight !== 44 ||
+          metrics.productUpdateTickerTop === null ||
+          metrics.productUpdateTickerTop <= Math.max(...metrics.revealActionTops) ||
+          metrics.productUpdateTickerLabel !== "P&S Update" ||
+          !String(metrics.productUpdateTickerAriaLabel || "").includes("Delivered a weekend food tray") ||
+          metrics.productUpdateTickerAnimationName !== "public-shop-product-update-scroll"
+        ) {
+          throw new Error(
+            "The owner duplicate Marketplace row did not become the compact rolling Products and Services Update: " +
+              JSON.stringify({
+                present: metrics.productUpdateTickerPresent,
+                marketplace: metrics.returnMarketplacePresent,
+                height: metrics.productUpdateTickerHeight,
+                top: metrics.productUpdateTickerTop,
+                revealTops: metrics.revealActionTops,
+                label: metrics.productUpdateTickerLabel,
+                ariaLabel: metrics.productUpdateTickerAriaLabel,
+                animation: metrics.productUpdateTickerAnimationName,
+              })
+          );
         }
       }
       if (item.route.includes("#shop-diaries") && !item.route.includes("diary_entry_id=")) {

@@ -4545,6 +4545,17 @@ export default function ShopGalleryPage() {
     : shopLoadFailed
     ? "Needs refresh"
     : `${publicBlockCount} ${publicBlockCount === 1 ? "item" : "items"}`;
+  const productsServicesUpdateText = featuredDiaryEntry
+    ? firstMeaningful(
+        featuredDiaryEntry.note,
+        featuredDiaryEntry.activity_label,
+        "A new shop update is available."
+      )
+    : loading
+    ? "Loading the latest products and services."
+    : publicBlockCount > 0
+    ? `${shopDiaryCounterText} currently listed. Ask the owner about availability.`
+    : "No products or services update right now.";
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
@@ -5161,31 +5172,64 @@ export default function ShopGalleryPage() {
           </div>
         </div>
 
-        <StableCtaLink
-          to={marketplaceMemberShopsPath}
-          fullWidth
-          stableHeight={isCompact ? 44 : 50}
-          debugId="shop-gallery.return-marketplace"
-          aria-label="Back to Marketplace member shops"
-          style={{
-            ...secondaryBtn(false),
-            order: isCompact ? 3 : 0,
-            minHeight: isCompact ? 44 : 50,
-            borderRadius: isCompact ? 14 : 18,
-            fontSize: isCompact ? 12 : 14,
-            padding: isCompact ? "6px 9px" : "9px 14px",
-            color: "#07172C",
-            border: "1px solid rgba(214,170,69,0.26)",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
-            boxShadow:
-              "0 10px 22px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
-            gap: isCompact ? 6 : 8,
-          }}
-        >
-          {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
-          <span>{isCompact ? "Marketplace" : "Back to Marketplace"}</span>
-        </StableCtaLink>
+        {isCompact && signedInOwnsShop ? (
+          <div
+            className="public-shop-product-update-ticker"
+            data-public-shop-product-update-ticker="true"
+            role="note"
+            aria-label={`Products and Services Update: ${productsServicesUpdateText}`}
+            style={{ order: 3 }}
+          >
+            <span
+              className="public-shop-product-update-label"
+              aria-hidden="true"
+            >
+              {inlineShopIcon("cart", "#8C6829", 12)}
+              <span>P&amp;S Update</span>
+            </span>
+            <span
+              className="public-shop-product-update-viewport"
+              aria-hidden="true"
+            >
+              <span className="public-shop-product-update-track">
+                <span className="public-shop-product-update-message">
+                  {productsServicesUpdateText}
+                  <span className="public-shop-product-update-separator">•</span>
+                </span>
+                <span className="public-shop-product-update-message">
+                  {productsServicesUpdateText}
+                  <span className="public-shop-product-update-separator">•</span>
+                </span>
+              </span>
+            </span>
+          </div>
+        ) : (
+          <StableCtaLink
+            to={marketplaceMemberShopsPath}
+            fullWidth
+            stableHeight={isCompact ? 44 : 50}
+            debugId="shop-gallery.return-marketplace"
+            aria-label="Back to Marketplace member shops"
+            style={{
+              ...secondaryBtn(false),
+              order: isCompact ? 3 : 0,
+              minHeight: isCompact ? 44 : 50,
+              borderRadius: isCompact ? 14 : 18,
+              fontSize: isCompact ? 12 : 14,
+              padding: isCompact ? "6px 9px" : "9px 14px",
+              color: "#07172C",
+              border: "1px solid rgba(214,170,69,0.26)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
+              boxShadow:
+                "0 10px 22px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+              gap: isCompact ? 6 : 8,
+            }}
+          >
+            {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
+            <span>{isCompact ? "Marketplace" : "Back to Marketplace"}</span>
+          </StableCtaLink>
+        )}
 
         <section
           className="public-shop-signboard"
