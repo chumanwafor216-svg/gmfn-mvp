@@ -27,6 +27,19 @@ This file is the compact current-state handoff required by `README.md` and
   more than 120 px, confirms the visitor `Open Shop` link still targets
   `#products-services`, and confirms the owner does not receive that redundant
   panel.
+- Follow-up production monitoring ran the deployed owner shop for 38 seconds,
+  crossing three 10.3-second animation loops and the 30-second background
+  refresh. The page did not remount, the hero stayed 350 px high and fixed at
+  the same top position, scroll remained at zero, and the same video node stayed
+  connected. The proven blink risk was Chromium briefly dropping the video to
+  readyState 1 during each loop seek/wait.
+- The reusable entrance now preloads the approved MP4 and holds its exact
+  approved poster over that 20-40 ms decoder gap, then clears the poster only
+  after playback resumes. The phone caption also keeps the full category and
+  Edit shop action centered on one compact line directly beneath the shop name.
+  The focused 360 px browser check verifies the category is not ellipsized,
+  the loop cover appears during seek, playback clears it, and the original
+  video element is never replaced. The complete protected-button freeze passes.
 
 ## Reusable instant-admission Community QR - 2026-11-05
 

@@ -5170,18 +5170,19 @@ export default function ShopGalleryPage() {
                   debugId="shop-gallery.owner.edit-shop"
                   style={{
                     minHeight: isCompact ? 36 : 42,
-                    padding: isCompact ? "7px 11px" : "9px 14px",
+                    flex: isCompact ? "0 0 auto" : undefined,
+                    padding: isCompact ? "6px" : "9px 14px",
                     borderRadius: 999,
                     color: "#FFFFFF",
                     background: "rgba(3,20,36,0.34)",
                     border: "1px solid rgba(246,215,122,0.38)",
                     boxShadow: "0 7px 16px rgba(0,0,0,0.14)",
-                    fontSize: isCompact ? 10.5 : 13,
+                    fontSize: isCompact ? 9.5 : 13,
                     fontWeight: 900,
-                    gap: isCompact ? 6 : 8,
+                    gap: isCompact ? 4 : 8,
                   }}
                 >
-                  {inlineShopIcon("pen", "#F6D77A", isCompact ? 13 : 16)}
+                  {inlineShopIcon("pen", "#F6D77A", isCompact ? 12 : 16)}
                   <span>Edit shop</span>
                 </StableCtaLink>
               ) : null

@@ -67,12 +67,18 @@ requireText("entrance", "autoPlay", "The muted shop entrance must start automati
 requireText("entrance", "muted", "The shop entrance must remain muted on public surfaces.");
 requireText("entrance", "loop", "The shop entrance must continue without changing links.");
 requireText("entrance", "playsInline", "The shop entrance must remain inline on phones.");
+requireText("entrance", 'preload="auto"', "The approved entrance must preload enough media to minimise phone loop stalls.");
+requireText("entrance", 'data-gsn-shop-loop-cover="true"', "The exact approved poster must cover the brief decoder gap at each video loop.");
+requireText("entrance", "onSeeking={showLoopCover}", "Loop seeking must show the approved poster instead of a blank video frame.");
+requireText("entrance", "onPlaying={hideLoopCover}", "The loop cover must clear only after video playback resumes.");
 requireText("entrance", "/branding/gsn-shop-entrance-approved.mp4", "The approved cropped storefront asset is missing.");
 requireText("entrance", "/branding/gsn-shop-entrance-approved-poster.jpg", "The approved storefront poster fallback is missing.");
 requireText("publicHero", 'data-public-shop-photo-hero="true"', "The full-width Public Shop photo hero contract is missing.");
 requireText("publicHero", "<GsnShopEntranceAnimation", "Public Shop must reuse the approved animated entrance.");
 requireText("publicHero", 'minHeight: compact ? 348 : 500', "The Public Shop hero must reserve enough space for the animated entrance.");
 requireText("publicHero", 'data-public-shop-identity-overlay="true"', "The transparent shop-identity overlay contract is missing.");
+requireText("publicHero", 'data-public-shop-identity-actions="true"', "Shop category and owner Edit Shop must share one compact identity-action row.");
+requireText("publicHero", 'flexWrap: compact ? "nowrap" : "wrap"', "The phone identity actions must not stack over the shop entrance.");
 requireText("publicHero", 'rgba(3,20,36,0.25)', "Shop identity must remain readable without hiding the animated entrance behind an opaque card.");
 forbidText("publicHero", 'background: "rgba(3,20,36,0.50)"', "The old obstructive shop-identity card must not return.");
 

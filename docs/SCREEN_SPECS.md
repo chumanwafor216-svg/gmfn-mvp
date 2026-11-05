@@ -1954,9 +1954,12 @@ Rules:
   replaced by an owner's product, service, profile, Shop Update, or Vault media.
 - The Public Shop signboard uses the approved slow, continuously looping glass-
   door entrance with its cropped source poster as the static fallback. Keep the
-  animation muted, inline and free of controls. Existing owner-selected shop
-  pictures remain stored, removable and visibly reviewable as supporting shop
-  identity media; this presentation change does not delete or repurpose them.
+  animation muted, inline and free of controls. During the phone decoder's
+  brief seek at each loop boundary, hold the exact approved poster over the
+  media instead of exposing a blank/dark frame; do not remount the page or move
+  its scroll position. Existing owner-selected shop pictures remain stored,
+  removable and visibly reviewable as supporting shop identity media; this
+  presentation change does not delete or repurpose them.
 - On an externally opened or shared Public Shop, immediately beneath the
   animated entrance, render a separate permanent HTML panel containing
   `My GSN Shop`, the current shop's own dynamic name and one clickable
@@ -1969,8 +1972,10 @@ Rules:
   GSN-member/community context readable through a shallow, genuinely
   see-through navy-and-gold caption near the bottom of the animation. It must
   not cover the glass-door entrance like an opaque card. An existing-owner
-  Edit Shop route may appear only for the signed-in owner. Keep GSN ID,
-  community, Share, Verify, WhatsApp, follow/analytics and
+  Edit Shop route may appear only for the signed-in owner. On phone, keep the
+  category and Edit Shop action together on one compact line immediately below
+  the shop name. Keep GSN ID, community, Share, Verify, WhatsApp,
+  follow/analytics and
   the product shelf intact below the hero.
   Never source the billboard animation from Vault, Spotlight, Shop
   Update/Diary, a private product, a guessed category scene, or an unsaved

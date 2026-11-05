@@ -405,6 +405,26 @@ async function collectMetrics(page) {
     const shopIdentityOverlayStyle = shopIdentityOverlay
       ? getComputedStyle(shopIdentityOverlay)
       : null;
+    const shopIdentityActions = document.querySelector(
+      '[data-public-shop-identity-actions="true"]'
+    );
+    const shopIdentityActionRect = shopIdentityActions?.getBoundingClientRect();
+    const shopIdentityActionTops = Array.from(shopIdentityActions?.children || [])
+      .map((node) => Math.round(node.getBoundingClientRect().top));
+    const shopIdentityActionCenters = Array.from(
+      shopIdentityActions?.children || []
+    ).map((node) => {
+      const rect = node.getBoundingClientRect();
+      return Math.round(rect.top + rect.height / 2);
+    });
+    const shopIdentityName = shopIdentityOverlay?.querySelector("h1");
+    const shopIdentityNameRect = shopIdentityName?.getBoundingClientRect();
+    const shopCategoryText = document.querySelector(
+      '[data-public-shop-category-text="true"]'
+    );
+    const shopLoopCover = document.querySelector(
+      '[data-gsn-shop-loop-cover="true"]'
+    );
     const openShopPanel = document.querySelector('[data-public-shop-open-panel="true"]');
     const openShopPanelRect = openShopPanel?.getBoundingClientRect();
     const openShopAction = document.querySelector('a[data-cta-id="shop-gallery.open-shop"]');
@@ -462,6 +482,22 @@ async function collectMetrics(page) {
         ? Math.round(shopIdentityOverlayRect.height)
         : null,
       shopIdentityOverlayBackground: shopIdentityOverlayStyle?.backgroundImage || null,
+      shopIdentityActionHeight: shopIdentityActionRect
+        ? Math.round(shopIdentityActionRect.height)
+        : null,
+      shopIdentityActionTop: shopIdentityActionRect
+        ? Math.round(shopIdentityActionRect.top)
+        : null,
+      shopIdentityActionTops,
+      shopIdentityActionCenters,
+      shopIdentityNameBottom: shopIdentityNameRect
+        ? Math.round(shopIdentityNameRect.bottom)
+        : null,
+      shopCategoryClientWidth:
+        shopCategoryText instanceof HTMLElement ? shopCategoryText.clientWidth : null,
+      shopCategoryScrollWidth:
+        shopCategoryText instanceof HTMLElement ? shopCategoryText.scrollWidth : null,
+      shopLoopCoverPresent: shopLoopCover instanceof HTMLImageElement,
       openShopPanelTop: openShopPanelRect ? Math.round(openShopPanelRect.top) : null,
       openShopPanelText: (openShopPanel?.textContent || "").replace(/\s+/g, " ").trim(),
       openShopName: (openShopName?.textContent || "").trim(),
@@ -552,6 +588,67 @@ async function run() {
         }
       }
       const metrics = await collectMetrics(page);
+      let loopStability = null;
+      if (item.name === "19-public-shop-alternate-owner-360") {
+        loopStability = await page.evaluate(
+          () =>
+            new Promise((resolve) => {
+              const video = document.querySelector(
+                '[data-gsn-shop-entrance-video="true"]'
+              );
+              const cover = document.querySelector(
+                '[data-gsn-shop-loop-cover="true"]'
+              );
+              if (
+                !(video instanceof HTMLVideoElement) ||
+                !(cover instanceof HTMLImageElement)
+              ) {
+                resolve({ ok: false, reason: "missing-video-or-cover" });
+                return;
+              }
+
+              let seekingOpacity = "";
+              let settled = false;
+              const timeout = window.setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                resolve({
+                  ok: false,
+                  reason: "loop-seek-timeout",
+                  seekingOpacity,
+                });
+              }, 12000);
+
+              video.addEventListener(
+                "seeking",
+                () => {
+                  window.requestAnimationFrame(() => {
+                    seekingOpacity = getComputedStyle(cover).opacity;
+                  });
+                },
+                { once: true }
+              );
+              video.addEventListener("playing", () => {
+                if (!seekingOpacity || settled) return;
+                window.setTimeout(() => {
+                  if (settled) return;
+                  settled = true;
+                  window.clearTimeout(timeout);
+                  resolve({
+                    ok: true,
+                    seekingOpacity,
+                    playingOpacity: getComputedStyle(cover).opacity,
+                    sameVideo:
+                      video ===
+                      document.querySelector(
+                        '[data-gsn-shop-entrance-video="true"]'
+                      ),
+                  });
+                }, 100);
+              });
+            })
+        );
+      }
       const screenshot = await capture(page, item.name);
       let openShopClickHash = null;
       if (item.name === "05-public-shop-normal-visitor-430") {
@@ -674,6 +771,40 @@ async function run() {
         if (metrics.openShopPanelTop !== null || metrics.openShopName) {
           throw new Error(
             `${item.name} showed the redundant external Open Shop panel to the signed-in owner.`
+          );
+        }
+        if (
+          metrics.shopIdentityActionTops.length !== 2 ||
+          Math.max(...metrics.shopIdentityActionCenters) -
+            Math.min(...metrics.shopIdentityActionCenters) >
+            1 ||
+          metrics.shopIdentityActionHeight > 40 ||
+          metrics.shopIdentityNameBottom > metrics.shopIdentityActionTop ||
+          metrics.shopCategoryClientWidth < metrics.shopCategoryScrollWidth
+        ) {
+          throw new Error(
+            `${item.name} did not keep category and Edit shop on one compact line below the shop name: ` +
+              JSON.stringify({
+                actionTops: metrics.shopIdentityActionTops,
+                actionCenters: metrics.shopIdentityActionCenters,
+                actionHeight: metrics.shopIdentityActionHeight,
+                nameBottom: metrics.shopIdentityNameBottom,
+                actionTop: metrics.shopIdentityActionTop,
+                categoryClientWidth: metrics.shopCategoryClientWidth,
+                categoryScrollWidth: metrics.shopCategoryScrollWidth,
+              })
+          );
+        }
+        if (
+          !metrics.shopLoopCoverPresent ||
+          !loopStability?.ok ||
+          loopStability.seekingOpacity !== "1" ||
+          loopStability.playingOpacity !== "0" ||
+          !loopStability.sameVideo
+        ) {
+          throw new Error(
+            `${item.name} did not cover the decoder gap without remounting the approved video: ` +
+              JSON.stringify(loopStability)
           );
         }
       }

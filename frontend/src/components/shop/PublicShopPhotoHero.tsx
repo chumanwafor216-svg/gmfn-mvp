@@ -193,9 +193,10 @@ export default function PublicShopPhotoHero({
           ) : null}
 
           <div
+            data-public-shop-identity-actions="true"
             style={{
               display: "flex",
-              flexWrap: "wrap",
+              flexWrap: compact ? "nowrap" : "wrap",
               alignItems: "center",
               gap: compact ? 6 : 9,
               paddingTop: compact ? 0 : 2,
@@ -203,28 +204,31 @@ export default function PublicShopPhotoHero({
           >
             <div
               style={{
-                width: "fit-content",
-                maxWidth: compact ? 185 : 280,
+                width: compact ? "auto" : "fit-content",
+                minWidth: 0,
+                maxWidth: compact ? "none" : 280,
+                flex: compact ? "1 1 0" : undefined,
                 display: "inline-flex",
                 alignItems: "center",
-                gap: compact ? 6 : 8,
+                gap: compact ? 4 : 8,
                 minHeight: compact ? 30 : 38,
-                padding: compact ? "5px 9px" : "7px 12px",
+                padding: compact ? "5px" : "7px 12px",
                 borderRadius: compact ? 11 : 14,
                 color: "#07172C",
                 background: "rgba(255,218,112,0.78)",
                 border: "1px solid rgba(255,240,190,0.54)",
                 boxShadow: "0 7px 16px rgba(0,0,0,0.14)",
-                fontSize: compact ? 11 : 14,
+                fontSize: compact ? 9.6 : 14,
                 fontWeight: 950,
               }}
             >
               <GsnRealisticIcon
                 name="shop-storefront"
-                size={compact ? 18 : 22}
+                size={compact ? 16 : 22}
                 decorative
               />
               <span
+                data-public-shop-category-text="true"
                 style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",

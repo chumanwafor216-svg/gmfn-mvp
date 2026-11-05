@@ -16,6 +16,42 @@ export default function GsnShopEntranceAnimation({
   fit = "contain",
   style,
 }: GsnShopEntranceAnimationProps) {
+  const loopCoverRef = React.useRef<HTMLImageElement | null>(null);
+  const hideLoopCoverFrameRef = React.useRef<number | null>(null);
+
+  const showLoopCover = React.useCallback(() => {
+    if (hideLoopCoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hideLoopCoverFrameRef.current);
+      hideLoopCoverFrameRef.current = null;
+    }
+    if (loopCoverRef.current) {
+      loopCoverRef.current.style.opacity = "1";
+    }
+  }, []);
+
+  const hideLoopCover = React.useCallback(() => {
+    if (hideLoopCoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hideLoopCoverFrameRef.current);
+    }
+    hideLoopCoverFrameRef.current = window.requestAnimationFrame(() => {
+      hideLoopCoverFrameRef.current = window.requestAnimationFrame(() => {
+        hideLoopCoverFrameRef.current = null;
+        if (loopCoverRef.current) {
+          loopCoverRef.current.style.opacity = "0";
+        }
+      });
+    });
+  }, []);
+
+  React.useEffect(
+    () => () => {
+      if (hideLoopCoverFrameRef.current !== null) {
+        window.cancelAnimationFrame(hideLoopCoverFrameRef.current);
+      }
+    },
+    []
+  );
+
   return (
     <div
       data-gsn-shop-entrance-animation="true"
@@ -50,10 +86,15 @@ export default function GsnShopEntranceAnimation({
         loop
         playsInline
         disablePictureInPicture
-        preload="metadata"
+        preload="auto"
         poster={GSN_SHOP_ENTRANCE_POSTER}
         aria-hidden="true"
         tabIndex={-1}
+        onSeeking={showLoopCover}
+        onWaiting={showLoopCover}
+        onPlaying={hideLoopCover}
+        onCanPlay={hideLoopCover}
+        onError={showLoopCover}
         style={{
           position: "relative",
           zIndex: 1,
@@ -66,11 +107,33 @@ export default function GsnShopEntranceAnimation({
       >
         <source src={GSN_SHOP_ENTRANCE_VIDEO} type="video/mp4" />
       </video>
+      <img
+        ref={loopCoverRef}
+        data-gsn-shop-loop-cover="true"
+        src={GSN_SHOP_ENTRANCE_POSTER}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        style={{
+          position: "absolute",
+          zIndex: 2,
+          inset: 0,
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: fit,
+          objectPosition: "center",
+          opacity: 0,
+          pointerEvents: "none",
+          userSelect: "none",
+          background: "#041425",
+        }}
+      />
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
-          zIndex: 2,
+          zIndex: 3,
           inset: 0,
           pointerEvents: "none",
           background:
