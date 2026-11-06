@@ -19,6 +19,14 @@ This file is the compact current-state handoff required by `README.md` and
 - The exact owner sees one compact `+` inside the same strip. It reuses
   `/app/shop-control#shop-assets-diary` for Shop Update text and/or voice and
   performs no write on open. Visitors never receive that owner shortcut.
+- Founder follow-up proportion refinement keeps that owner shortcut's 42px tap
+  area but reduces its visible inset plus to 30px. The voice action is now a
+  quieter secondary pill capped at 100px wide and 40px high, while the ticker
+  remains 44px high and gives more width to the rotating message.
+- Pause remains available while audio is active. When playback naturally ends,
+  the voice pill collapses for that page visit and the rotating update continues
+  in the reclaimed space; refresh or revisit restores Listen. The compact ticker
+  no longer pauses from sticky hover after a phone touch.
 - The duplicate large lower Shop Update card is hidden on ordinary phone
   visits. An exact shared `diary_entry_id` still opens the full update and its
   own voice player; desktop retains the full card and Marketplace-return
@@ -26,8 +34,9 @@ This file is the compact current-state handoff required by `README.md` and
   Community Bulletin voice and backend contracts are unchanged.
 - Verification passes the production build; Shop Diary Phase 1, Public Shop
   action-inventory and workflow-plus audits; and all 21 Shop Diary browser
-  scenarios across 360/390/430/1024px. The visitor scenario also fetches, plays
-  and pauses a synthetic WAV instead of checking only for a visible button.
+  scenarios across 360/390/430/1024px. The visitor scenario fetches and plays a
+  synthetic WAV, completes playback, verifies the voice pill collapses, and
+  confirms the rotating message remains running.
 - The broader protected-button freeze reaches and passes the Shop checks, then
   remains red on pre-existing unrelated entry/auth guards: typed existing-GSN
   invite submission, Member Activation identifier copy, and existing-community

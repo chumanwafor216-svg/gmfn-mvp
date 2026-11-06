@@ -15,6 +15,7 @@ const files = {
   api: path.join(root, "src/lib/api.ts"),
   assets: path.join(root, "src/pages/ShopAssetsPage.tsx"),
   gallery: path.join(root, "src/pages/ShopGalleryPage.tsx"),
+  voicePlayer: path.join(root, "src/components/ShopVoiceNotePlayer.tsx"),
   presentation: path.join(root, "src/styles/public-shop.css"),
 };
 
@@ -68,6 +69,7 @@ assertContains(files.gallery, 'debugId="shop-gallery.welcome-voice.listen"', "Pu
 assertContains(files.gallery, /const effectiveShop = useMemo<ShopProfile \| null>[\s\S]*?voiceAttachmentId: positiveNumber\(shop\?\.voiceAttachmentId\)[\s\S]*?voiceSpeakerGmfnId: firstMeaningful\(shop\?\.voiceSpeakerGmfnId\)/, "Public Shop must preserve normalized shop voice metadata when it builds the effective public profile.");
 assertContains(files.gallery, /const effectiveShop = useMemo<ShopProfile \| null>[\s\S]*?voiceAttachmentId: positiveNumber\(shop\?\.voiceAttachmentId\)[\s\S]*?voiceSpeakerGmfnId: firstMeaningful\(shop\?\.voiceSpeakerGmfnId\)/, "Public Shop must preserve normalized shop voice metadata when it builds the effective public profile.");
 assertContains(files.gallery, /compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/, "Phone Public Shop must keep welcome playback inside the compact Shop Update strip.");
+assertContains(files.voicePlayer, /const \[completed, setCompleted\] = useState\(false\)[\s\S]*?if \(compactInline && completed\) return null;[\s\S]*?onEnded=\{\(\) => \{[\s\S]*?setCompleted\(true\);[\s\S]*?setAudioUrl\(""\);/, "Compact Public Shop voice must collapse after playback ends and release its loaded audio URL.");
 assertContains(files.gallery, 'label="Add Shop Update or voice note"', "The exact owner must reach the existing Shop Update and welcome-voice workflow from the compact strip.");
 assertContains(files.gallery, /focusedBlockLinkActive \|\| \(isCompact && routeDiaryEntryId <= 0\)/, "Ordinary phone shops must not restore the duplicate lower Shop Update card; exact shared updates remain reachable.");
 assertContains(files.gallery, 'label="Product or service voice note"', "Opened products/services must expose deliberate item voice playback.");
@@ -87,6 +89,7 @@ assertContains(files.presentation, ".public-shop-neon-environment .shop-diary-ca
 assertContains(files.presentation, ".public-shop-neon-environment .public-shop-inner::before", "The approved showroom must retain its static neon side rails.");
 assertContains(files.presentation, "pointer-events: none", "Decorative neon layers must never intercept shop interactions.");
 assertContains(files.presentation, ".public-shop-neon-environment .public-shop-vault-ad", "Private Vault must remain inside the scoped neon environment.");
+assertNotContains(files.presentation, /public-shop-product-update-ticker:hover/, "The compact Shop Update ticker must not pause from sticky phone hover after voice playback.");
 const presentationSource = read(files.presentation);
 const approvedAnimationNames = new Set([
   "public-shop-button-neon-travel",

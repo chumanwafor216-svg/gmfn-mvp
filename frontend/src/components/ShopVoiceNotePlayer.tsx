@@ -40,6 +40,7 @@ export default function ShopVoiceNotePlayer({
   const playAfterLoadRef = useRef(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [playing, setPlaying] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -62,6 +63,10 @@ export default function ShopVoiceNotePlayer({
       setError("Tap Listen again to play this voice note.");
     });
   }, [audioUrl, compactInline]);
+
+  useEffect(() => {
+    setCompleted(false);
+  }, [attachmentId]);
 
   async function loadAudio() {
     if (!attachmentId) return;
@@ -138,6 +143,8 @@ export default function ShopVoiceNotePlayer({
 
   if (!attachmentId) return null;
 
+  if (compactInline && completed) return null;
+
   if (compactInline) {
     const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
     const durationLabel = Number(durationSeconds || 0) > 0
@@ -157,47 +164,54 @@ export default function ShopVoiceNotePlayer({
           ref={audioRef}
           preload="metadata"
           src={audioUrl || undefined}
-          onPlay={() => setPlaying(true)}
+          onPlay={() => {
+            setCompleted(false);
+            setPlaying(true);
+          }}
           onPause={() => setPlaying(false)}
-          onEnded={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setCompleted(true);
+            setAudioUrl("");
+          }}
           onError={() => {
             setPlaying(false);
             setError("This voice note could not be played.");
           }}
         />
-        <PrimaryButton
+        <SecondaryButton
           type="button"
           onClick={() => void toggleCompactAudio()}
           disabled={loading}
           busy={loading}
           busyLabel="Opening..."
-          stableHeight={42}
+          stableHeight={40}
           minWidth={0}
           debugId={debugId}
           aria-label={`${playing ? "Pause" : "Listen to"} ${label}${attribution ? ` from ${attribution}` : ""}`}
           style={{
             width: "100%",
             minWidth: 0,
-            height: 42,
-            minHeight: 42,
-            padding: "4px 9px",
-            borderRadius: 12,
+            height: 40,
+            minHeight: 40,
+            padding: "3px 7px",
+            borderRadius: 10,
             display: "grid",
             gridTemplateColumns: "auto minmax(0, 1fr)",
             alignItems: "center",
-            gap: 6,
-            fontSize: 11,
+            gap: 5,
+            fontSize: 10,
             lineHeight: 1.05,
           }}
         >
-          <GsnLegacyIcon name="speaker" size={19} />
+          <GsnLegacyIcon name="speaker" size={16} />
           <span style={{ minWidth: 0, display: "grid", textAlign: "left" }}>
             <span style={{ fontWeight: 950 }}>{playing ? "Pause" : audioUrl ? "Play" : "Listen"}</span>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 8.5, fontWeight: 800, opacity: 0.86 }}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 7.5, fontWeight: 800, opacity: 0.82 }}>
               {secondaryLabel || "Voice note"}
             </span>
           </span>
-        </PrimaryButton>
+        </SecondaryButton>
       </div>
     );
   }

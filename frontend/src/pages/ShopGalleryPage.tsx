@@ -5249,7 +5249,11 @@ export default function ShopGalleryPage() {
           minHeight: 42,
           maxWidth: 42,
           maxHeight: 42,
-          borderRadius: 12,
+          borderRadius: 10,
+          padding: 0,
+          border: "none",
+          outline: "none",
+          background: "transparent",
           boxShadow: "none",
         } : undefined}
       />

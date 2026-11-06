@@ -510,9 +510,20 @@ async function collectMetrics(page) {
     const inlineWelcomeVoiceAction = inlineWelcomeVoice?.querySelector(
       'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
     );
+    const inlineWelcomeVoiceRect = inlineWelcomeVoice?.getBoundingClientRect();
+    const inlineWelcomeVoiceActionRect = inlineWelcomeVoiceAction?.getBoundingClientRect();
     const ownerShopUpdateShortcut = document.querySelector(
       'a[data-cta-id="shop-gallery.diary.owner-shortcut"]'
     );
+    const ownerShopUpdateShortcutRect = ownerShopUpdateShortcut?.getBoundingClientRect();
+    const ownerShopUpdateShortcutVisual = ownerShopUpdateShortcut?.querySelector(
+      'span[aria-hidden="true"]'
+    );
+    const ownerShopUpdateShortcutVisualRect = ownerShopUpdateShortcutVisual?.getBoundingClientRect();
+    const productUpdateLabel = productUpdateTicker?.querySelector(
+      ".public-shop-product-update-label"
+    );
+    const productUpdateLabelRect = productUpdateLabel?.getBoundingClientRect();
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -589,7 +600,22 @@ async function collectMetrics(page) {
       inlineWelcomeVoicePresent: Boolean(inlineWelcomeVoice),
       inlineWelcomeVoiceLabel:
         inlineWelcomeVoiceAction?.getAttribute("aria-label") || null,
+      inlineWelcomeVoiceWidth: inlineWelcomeVoiceRect
+        ? Math.round(inlineWelcomeVoiceRect.width)
+        : null,
+      inlineWelcomeVoiceActionHeight: inlineWelcomeVoiceActionRect
+        ? Math.round(inlineWelcomeVoiceActionRect.height)
+        : null,
       ownerShopUpdateShortcutPresent: Boolean(ownerShopUpdateShortcut),
+      ownerShopUpdateShortcutWidth: ownerShopUpdateShortcutRect
+        ? Math.round(ownerShopUpdateShortcutRect.width)
+        : null,
+      ownerShopUpdateShortcutVisualWidth: ownerShopUpdateShortcutVisualRect
+        ? Math.round(ownerShopUpdateShortcutVisualRect.width)
+        : null,
+      productUpdateLabelWidth: productUpdateLabelRect
+        ? Math.round(productUpdateLabelRect.width)
+        : null,
       shopEntranceVideoPresent: shopEntranceVideo instanceof HTMLVideoElement,
       shopEntranceWidth: shopEntranceRect ? Math.round(shopEntranceRect.width) : null,
       shopEntranceHeight: shopEntranceRect ? Math.round(shopEntranceRect.height) : null,
@@ -761,6 +787,8 @@ async function run() {
         );
         await page.waitForTimeout(250);
       }
+      const metrics = await collectMetrics(page);
+      let postPlaybackVoiceCollapsed = false;
       if (item.name === "05-public-shop-normal-visitor-430") {
         const welcomeVoiceAction = page.locator(
           'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
@@ -784,15 +812,18 @@ async function run() {
           );
           return audio instanceof HTMLAudioElement && !audio.paused;
         });
-        await welcomeVoiceAction.click();
+        await welcomeVoiceAudio.dispatchEvent("ended");
         await page.waitForFunction(() => {
-          const audio = document.querySelector(
-            '[data-gsn-shop-voice-inline="true"] audio'
+          const voice = document.querySelector(
+            '[data-gsn-shop-voice-inline="true"]'
           );
-          return audio instanceof HTMLAudioElement && audio.paused;
+          const track = document.querySelector(
+            ".public-shop-product-update-track"
+          );
+          return !voice && track && getComputedStyle(track).animationPlayState === "running";
         });
+        postPlaybackVoiceCollapsed = true;
       }
-      const metrics = await collectMetrics(page);
       let loopStability = null;
       if (item.name === "19-public-shop-alternate-owner-360") {
         loopStability = await page.evaluate(
@@ -976,9 +1007,12 @@ async function run() {
           metrics.returnMarketplacePresent ||
           metrics.productUpdateTickerHeight !== 44 ||
           !metrics.inlineWelcomeVoicePresent ||
+          metrics.inlineWelcomeVoiceWidth > 100 ||
+          metrics.inlineWelcomeVoiceActionHeight !== 40 ||
           metrics.ownerShopUpdateShortcutPresent ||
           !String(metrics.inlineWelcomeVoiceLabel || "").includes("Listen to Shop welcome voice") ||
-          metrics.diaryDisplay !== "none"
+          metrics.diaryDisplay !== "none" ||
+          !postPlaybackVoiceCollapsed
         ) {
           throw new Error(
             `${item.name} did not keep visitor Listen and the rotating update in one compact strip without the lower duplicate: ` +
@@ -987,9 +1021,12 @@ async function run() {
                 marketplace: metrics.returnMarketplacePresent,
                 tickerHeight: metrics.productUpdateTickerHeight,
                 voice: metrics.inlineWelcomeVoicePresent,
+                voiceWidth: metrics.inlineWelcomeVoiceWidth,
+                voiceActionHeight: metrics.inlineWelcomeVoiceActionHeight,
                 voiceLabel: metrics.inlineWelcomeVoiceLabel,
                 ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
                 diaryDisplay: metrics.diaryDisplay,
+                collapsedAfterPlayback: postPlaybackVoiceCollapsed,
               })
           );
         }
@@ -1128,7 +1165,12 @@ async function run() {
           !String(metrics.productUpdateTickerAriaLabel || "").includes("Delivered a weekend food tray") ||
           metrics.productUpdateTickerAnimationName !== "public-shop-product-update-scroll" ||
           !metrics.inlineWelcomeVoicePresent ||
-          !metrics.ownerShopUpdateShortcutPresent
+          metrics.inlineWelcomeVoiceWidth > 100 ||
+          metrics.inlineWelcomeVoiceActionHeight !== 40 ||
+          !metrics.ownerShopUpdateShortcutPresent ||
+          metrics.ownerShopUpdateShortcutWidth !== 42 ||
+          metrics.ownerShopUpdateShortcutVisualWidth !== 30 ||
+          metrics.productUpdateLabelWidth > 115
         ) {
           throw new Error(
             "The owner duplicate Marketplace row did not become the compact rolling Products and Services Update: " +
@@ -1142,7 +1184,12 @@ async function run() {
                 ariaLabel: metrics.productUpdateTickerAriaLabel,
                 animation: metrics.productUpdateTickerAnimationName,
                 voice: metrics.inlineWelcomeVoicePresent,
+                voiceWidth: metrics.inlineWelcomeVoiceWidth,
+                voiceActionHeight: metrics.inlineWelcomeVoiceActionHeight,
                 ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
+                ownerShortcutWidth: metrics.ownerShopUpdateShortcutWidth,
+                ownerShortcutVisualWidth: metrics.ownerShopUpdateShortcutVisualWidth,
+                labelWidth: metrics.productUpdateLabelWidth,
               })
           );
         }

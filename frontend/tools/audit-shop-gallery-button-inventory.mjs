@@ -358,8 +358,8 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\) auto;[\s\S]*?height: 44px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(112px, 31vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
-  "The combined Shop Update text and voice strip must remain 44px high and become stationary when reduced motion is requested."
+  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\) auto;[\s\S]*?height: 44px;[\s\S]*?data-existing-workflow-plus="shop-diary"\][\s\S]*?width: 30px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(100px, 27vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
+  "The combined Shop Update strip must keep a 30px visual owner plus, a 100px maximum voice pill, phone-safe continuous rotation, and reduced-motion support inside its 44px height."
 );
 
 assertFileContains(
