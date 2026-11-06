@@ -5,14 +5,34 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Join Requests plain-language review - 2026-11-06
+
+- The Join Requests page now defaults to ordinary language for community
+  leaders with limited technology experience. Statuses are `Waiting`,
+  `Accepted`, and `Not accepted`; decisions are `Let this person join`,
+  `Not sure`, and `Do not let them join`.
+- The default person card now shows the saved name, phone, inviter, community,
+  sent time, simple agreement progress, and direct safety guidance. Request
+  numbers, invite codes, Community IDs, GSN IDs, QR policy names, role badges,
+  and approval terminology are no longer exposed on that surface.
+- Joining-rule controls are closed behind `Change how people join`. Completed
+  decisions stay behind `Show past decisions`, and the duplicate approval-rule
+  card and two low-value summary counters were removed.
+- Approved-member follow-up now says `Send joining details`. The supervised
+  fallback says `Help them finish joining`, `Private number`, and `Joining
+  link`; its expiry, private-delivery warning, identity confirmation, backend
+  permissions, and single-use security controls remain unchanged.
+- The dedicated Join Requests audit now prevents the removed technical labels
+  from returning and requires the plain decision language. TypeScript and the
+  Vite production build pass.
+
 ## Join-request applicant identity display - 2026-11-06
 
 - The Join Requests review response now includes the stored applicant display
   name and E.164 phone number. The generated `@pending.gmfn.local` address is
   an internal placeholder and is no longer returned as a public applicant email.
-- The review card shows the applicant's real name and phone prominently and
-  labels the technical member identifier as `GSN ID`. The compact card also
-  keeps the phone visible without adding another long page section.
+- The review card shows the applicant's real name and phone prominently. The
+  compact card keeps the phone visible without exposing internal identifiers.
 - Existing requests benefit immediately because the name and phone were already
   stored on the pending user record; affected applicants do not need to submit
   another request. For request #26 this means the review can display the saved

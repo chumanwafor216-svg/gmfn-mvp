@@ -204,25 +204,6 @@ function sectionLabel(color = "#D6AA45"): React.CSSProperties {
   };
 }
 
-function reviewerBadge(canPilotApprove = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: 30,
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: canPilotApprove
-      ? "linear-gradient(180deg, rgba(255,247,232,0.98) 0%, rgba(251,232,180,0.96) 100%)"
-      : "linear-gradient(180deg, rgba(22,76,127,0.92) 0%, rgba(12,51,92,0.92) 100%)",
-    border: canPilotApprove
-      ? "1px solid rgba(201,161,54,0.28)"
-      : "1px solid rgba(123,161,204,0.22)",
-    color: canPilotApprove ? "#7C5A06" : "#F8FBFF",
-    fontWeight: 900,
-    fontSize: 12,
-    whiteSpace: "normal",
-  };
-}
 
 function requestFactTile(): React.CSSProperties {
   return {
@@ -295,7 +276,7 @@ type VoteReasonOption = {
 const MARKET_ACCESS_APPROVAL_REASON_OPTIONS: VoteReasonOption[] = [
   {
     code: "market_dues_or_permit_checked",
-    text: "I checked dues, stall, shop, permit, or organiser records.",
+    text: "I checked their dues, stall, shop, permit, or spoke to an organiser.",
   },
   {
     code: "known_from_marketplace",
@@ -307,7 +288,7 @@ const JOIN_VOTE_REASON_OPTIONS: Record<JoinVoteDecision, VoteReasonOption[]> = {
   approve: [
     {
       code: "know_directly",
-      text: "I know this person directly and can support the request.",
+      text: "I know this person and believe they should join.",
     },
     ...MARKET_ACCESS_APPROVAL_REASON_OPTIONS,
     {
@@ -322,7 +303,7 @@ const JOIN_VOTE_REASON_OPTIONS: Record<JoinVoteDecision, VoteReasonOption[]> = {
     },
     {
       code: "need_more_information",
-      text: "I need more information before supporting or rejecting.",
+      text: "I need more information before I decide.",
     },
     {
       code: "no_direct_relationship",
@@ -332,15 +313,15 @@ const JOIN_VOTE_REASON_OPTIONS: Record<JoinVoteDecision, VoteReasonOption[]> = {
   reject: [
     {
       code: "identity_not_clear",
-      text: "I am not satisfied that this person is clearly known to us.",
+      text: "I cannot clearly confirm who this person is.",
     },
     {
       code: "community_concern",
-      text: "I have a community concern and cannot support the request.",
+      text: "I have a concern and do not think this person should join.",
     },
     {
       code: "relationship_not_confirmed",
-      text: "The claimed relationship has not been confirmed enough for me.",
+      text: "I cannot confirm how this person is connected to our community.",
     },
   ],
 };
@@ -555,7 +536,7 @@ function ctaPath(target: CtaTarget): string {
 
 function safeDateTime(x: any): string {
   const raw = String(x || "").trim();
-  if (!raw) return "Not available yet";
+  if (!raw) return "Not ready yet";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -568,37 +549,13 @@ function friendlyStatus(value: any): string {
   return raw;
 }
 
-function governanceProfileTitle(profile: any): string {
-  if (!profile || typeof profile !== "object") return "";
-  const preset = safeStr(profile.preset_label);
-  const weight = safeStr(profile.governance_weight_label);
-  const type = safeStr(profile.community_type_label);
-  if (preset) return preset;
-  return safeStr(`${weight} ${type}`) || "Community setup profile";
+function statusLabel(value: any): string {
+  const status = friendlyStatus(value);
+  if (status === "approved") return "Accepted";
+  if (status === "rejected") return "Not accepted";
+  return "Waiting";
 }
 
-function governanceProfileRequirementText(profile: any): string {
-  if (!profile || typeof profile !== "object") return "";
-  const requirements =
-    profile.requirements && typeof profile.requirements === "object"
-      ? profile.requirements
-      : {};
-  const strongerChecks = Boolean(
-    requirements.passport_required_by_default ||
-      requirements.brp_or_evisa_required_by_default ||
-      requirements.proof_of_address_required_by_default
-  );
-
-  if (strongerChecks) {
-    return "This setup allows stronger member evidence after review. Check the applicant before approval if the activity is high trust.";
-  }
-
-  if (requirements.member_phone_required || requirements.rules_acceptance_required) {
-    return "Light member entry: name, phone, rules acceptance, and community review. Passport or BRP/eVisa is not required by default.";
-  }
-
-  return "Use the recorded setup as review context; it does not replace your decision.";
-}
 
 function qrPolicyReviewContext(
   item: JoinRequestItem | undefined | null
@@ -630,7 +587,17 @@ function approvalProgress(item: JoinRequestItem | undefined | null): {
 
 function approvalProgressText(item: JoinRequestItem | undefined | null): string {
   const progress = approvalProgress(item);
-  return `${progress.approvals} of ${progress.required} approvals recorded`;
+  if (progress.remaining <= 0) return "Enough people have agreed";
+  if (progress.approvals <= 0) {
+    return `No one has agreed yet. ${progress.required} ${
+      progress.required === 1 ? "person needs" : "people need"
+    } to agree`;
+  }
+  return `${progress.approvals} ${
+    progress.approvals === 1 ? "person has" : "people have"
+  } agreed. ${progress.remaining} more ${
+    progress.remaining === 1 ? "person is" : "people are"
+  } needed`;
 }
 
 function approvalNextStepText(
@@ -638,48 +605,37 @@ function approvalNextStepText(
   canAdminApproveNow = false
 ): string {
   const progress = approvalProgress(item);
-  if (friendlyStatus(item?.status) === "approved") return "Access request is approved; verification can still follow.";
-  if (friendlyStatus(item?.status) === "rejected") return "Request is rejected.";
-  if (progress.remaining <= 0) return "The community decision is ready.";
-  if (canAdminApproveNow) {
-    return (
-      "You can approve now as admin without waiting for " +
-      progress.remaining +
-      " more vote" +
-      (progress.remaining === 1 ? "" : "s") +
-      "."
-    );
-  }
-  return `${progress.remaining} more approval${progress.remaining === 1 ? "" : "s"} needed.`;
+  if (friendlyStatus(item?.status) === "approved") return "This person can now finish joining.";
+  if (friendlyStatus(item?.status) === "rejected") return "This person was not accepted.";
+  if (progress.remaining <= 0) return "The decision is ready.";
+  if (canAdminApproveNow) return "You can accept this person now.";
+  return "Please wait for the other people to answer.";
 }
 
 function approvalSuccessText(res: VoteResponse, fallback: string): string {
   const request = res?.request;
   if (res?.status_already_final) {
     return buildActionSuccessMessage({
-      prefix: "Already completed.",
-      message: safeStr(res.message, fallback),
+      prefix: "Already decided.",
+      message: "This person already has an answer.",
     });
   }
   if (res?.approved_now) {
     return buildActionSuccessMessage({
-      prefix: "Approval successful.",
+      prefix: "Person accepted.",
       message: `${approvalProgressText(request)}.`,
       nextStep: approvalNextStepText(request),
     });
   }
   if (res?.rejected_now) {
     return buildActionSuccessMessage({
-      prefix: "Decision saved successfully.",
-      message: safeStr(
-        res?.rejection_result?.decision_message,
-        `${approvalProgressText(request)}.`
-      ),
+      prefix: "Person not accepted.",
+      message: fallback,
       nextStep: approvalNextStepText(request),
     });
   }
   return buildActionSuccessMessage({
-    prefix: "Saved successfully.",
+    prefix: "Answer saved.",
     message: `${fallback} ${approvalProgressText(request)}.`,
     nextStep: approvalNextStepText(request),
   });
@@ -746,7 +702,7 @@ export default function CommunityJoinRequestsPage() {
       setError("");
 
       if (!clanNum) {
-        throw new Error("Invalid community ID.");
+        throw new Error("This community could not be opened.");
       }
 
       const [data, policy] = await Promise.all([
@@ -780,7 +736,7 @@ export default function CommunityJoinRequestsPage() {
         )
       );
     } catch (err: any) {
-      setError(err?.message || "Failed to load join requests.");
+      setError("The list could not be opened. Please try again.");
       setItems([]);
       setReviewerRole("user");
       setReviewerCanPilotApprove(false);
@@ -793,7 +749,7 @@ export default function CommunityJoinRequestsPage() {
 
   useEffect(() => {
     if (!clanNum) {
-      setError("Invalid community ID.");
+      setError("This community could not be opened.");
       setLoading(false);
       return;
     }
@@ -824,17 +780,10 @@ export default function CommunityJoinRequestsPage() {
     const rejected = items.filter(
       (item) => friendlyStatus(item.status) === "rejected"
     ).length;
-    const neutralVotes = items.reduce(
-      (sum, item) => sum + Number(item.neutrals || 0),
-      0
-    );
-
     return {
-      total: items.length,
       pending,
       approved,
       rejected,
-      neutralVotes,
     };
   }, [items]);
 
@@ -924,22 +873,22 @@ export default function CommunityJoinRequestsPage() {
       })) as VoteResponse;
 
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
-        setSuccess(approvalSuccessText(res, `GSN ID issued: ${res.approval_result.gmfn_id}.`));
+        setSuccess(approvalSuccessText(res, "This person was accepted. Their joining details are ready to send."));
         setActivationPack(res.approval_result || null);
         setActivationPackDetailsOpen(true);
       } else if (vote === "approve") {
-        setSuccess(approvalSuccessText(res, "Your approval was recorded."));
+        setSuccess(approvalSuccessText(res, "Your answer was saved."));
       } else if (res?.rejected_now) {
-        setSuccess(approvalSuccessText(res, "Rejection recorded."));
+        setSuccess(approvalSuccessText(res, "You chose not to accept this person."));
       } else if (vote === "neutral") {
         setSuccess(
           approvalSuccessText(
             res,
-            "Neutral vote recorded. GSN kept your reason in the community record."
+            "You said you are not sure. Your reason was saved."
           )
         );
       } else {
-        setSuccess(approvalSuccessText(res, "Rejection recorded."));
+        setSuccess(approvalSuccessText(res, "You chose not to accept this person."));
       }
 
       emitWorkspaceDataChanged({
@@ -951,7 +900,7 @@ export default function CommunityJoinRequestsPage() {
 
       await load();
     } catch (err: any) {
-      setError(err?.message || "Vote failed.");
+      setError("Your answer could not be saved. Please try again.");
     } finally {
       setBusyId(null);
     }
@@ -974,13 +923,13 @@ export default function CommunityJoinRequestsPage() {
         setSuccess(
           approvalSuccessText(
             res,
-            `Admin approval completed. GSN ID issued: ${res.approval_result.gmfn_id}.`
+            "This person was accepted. Their joining details are ready to send."
           )
         );
         setActivationPack(res.approval_result || null);
         setActivationPackDetailsOpen(true);
       } else {
-        setSuccess(approvalSuccessText(res, "Admin approval completed."));
+        setSuccess(approvalSuccessText(res, "This person was accepted."));
       }
 
       emitWorkspaceDataChanged({
@@ -995,7 +944,7 @@ export default function CommunityJoinRequestsPage() {
 
       await load();
     } catch (err: any) {
-      setError(err?.message || "Admin approval failed.");
+      setError("This person could not be accepted. Please try again.");
     } finally {
       setBusyId(null);
     }
@@ -1010,18 +959,18 @@ export default function CommunityJoinRequestsPage() {
 
       const result = (await getJoinApprovalStatus(item.id)) as ApprovalResult;
       if (!result?.gmfn_id) {
-        throw new Error("GSN could not recover the approved member ID yet.");
+        throw new Error("The joining details are not ready yet. Please try again.");
       }
 
       setActivationPack(result);
       setActivationPackDetailsOpen(Boolean(result.activation_message));
       setSuccess(
         result.activation_message
-          ? "Approved member handoff opened. Copy and send the message to the approved person."
-          : "Approved member GSN ID opened. This person already had a GSN identity, so no new activation message is required."
+          ? "The joining message is ready. Copy it and send it to the person."
+          : "This person already has an account. No new joining message is needed."
       );
     } catch (err: any) {
-      setError(err?.message || "Approved member handoff could not be opened.");
+      setError("The joining details could not be opened. Please try again.");
     } finally {
       setActivationHandoffBusyId(null);
     }
@@ -1040,11 +989,11 @@ export default function CommunityJoinRequestsPage() {
   async function handleIssueActivationAssistance(item: JoinRequestItem) {
     const verificationNote = assistanceNote.trim();
     if (!assistanceConfirmed) {
-      setError("Confirm that you personally recognized the approved applicant.");
+      setError("Please confirm that you know this person.");
       return;
     }
     if (verificationNote.length < 8) {
-      setError("Add a short private note explaining how you recognized the applicant.");
+      setError("Write a short note explaining how you know this person.");
       return;
     }
 
@@ -1059,10 +1008,10 @@ export default function CommunityJoinRequestsPage() {
       })) as ActivationAssistanceResult;
       setAssistancePack(result);
       setSuccess(
-        "Private activation code created. Give it only to the approved applicant through a trusted private channel."
+        "The private number is ready. Give it only to this person, in private."
       );
     } catch (err: any) {
-      setError(err?.message || "The private activation code could not be created.");
+      setError("The private number could not be made. Please try again.");
     } finally {
       setAssistanceBusyId(null);
     }
@@ -1096,12 +1045,12 @@ export default function CommunityJoinRequestsPage() {
       setVotingAdminOverride(Boolean(result?.voting_admin_override));
       setSuccess(
         Number(result?.retired_invites || 0) > 0
-          ? "Joining rule saved. Old live links were closed; create a fresh invite."
-          : "Joining rule saved."
+          ? "Saved. Old invite links no longer work. Make a new invite."
+          : "Saved."
       );
       await load();
     } catch (err: any) {
-      setError(err?.message || "Could not save how people join.");
+      setError("This choice could not be saved. Please try again.");
     } finally {
       setAdmissionSaving(false);
     }
@@ -1122,15 +1071,15 @@ export default function CommunityJoinRequestsPage() {
     setActivationCopyStatus(
       copied
         ? successMessage
-        : "Clipboard copy was blocked. Open details and copy the text manually."
+        : "The copy button did not work. Open the message and copy it by hand."
     );
   }
 
   return (
     <div style={pageShell()}>
       <PageTopNav
-        sectionLabel="Focused Task"
-        title="Join Requests"
+        sectionLabel="New Members"
+        title="People Joining"
         subtitle=""
       />
 
@@ -1145,7 +1094,7 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>Community join requests</div>
+            <div style={sectionLabel()}>New members</div>
             <h1
               style={{
                 margin: "12px 0 0",
@@ -1156,7 +1105,7 @@ export default function CommunityJoinRequestsPage() {
                 overflowWrap: "break-word",
               }}
             >
-              Membership Joining
+              Check the person before you answer
             </h1>
             <p
               style={{
@@ -1166,7 +1115,7 @@ export default function CommunityJoinRequestsPage() {
                 lineHeight: 1.5,
               }}
             >
-              Set one joining rule, then handle only the requests that need you.
+              Look at their name and phone. If you know them, choose an answer.
             </p>
           </div>
           <div
@@ -1199,7 +1148,7 @@ export default function CommunityJoinRequestsPage() {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Selected community</div>
+              <div style={sectionLabel()}>For this community</div>
               <div
                 style={{
                   marginTop: 10,
@@ -1220,19 +1169,12 @@ export default function CommunityJoinRequestsPage() {
                 }}
               >
                 {admissionMode === "instant_invite"
-                  ? "Invite acceptance is automatic."
+                  ? "Anyone with a fresh invite can join."
                   : admissionMode === "admin_approval"
-                    ? "An admin decides each request."
-                    : "Eligible members vote on each request."}
+                    ? "One community leader decides."
+                    : "Several trusted people must agree."}
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-                <span style={reviewerBadge(false)}>
-                  {iconText("review", "Step: Review")}
-                </span>
-                <span style={reviewerBadge(reviewerCanPilotApprove)}>
-                  {iconText("person", <>Role: {safeStr(reviewerRole || "user")}</>)}
-                </span>
-              </div>
+
             </div>
             <div
               aria-hidden="true"
@@ -1301,9 +1243,21 @@ export default function CommunityJoinRequestsPage() {
           </CardActionRow>
         </section>
 
-        <section style={{ ...whitePanel(16), display: "grid", gap: 14 }}>
+        <details style={{ ...whitePanel(16) }}>
+          <summary
+            style={{
+              cursor: "pointer",
+              color: "#0B1F33",
+              fontSize: isCompact ? 18 : 21,
+              fontWeight: 1000,
+              lineHeight: 1.35,
+            }}
+          >
+            Change how people join
+          </summary>
+          <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
           <div>
-            <div style={sectionLabel("#64748B")}>How people join</div>
+            <div style={sectionLabel("#64748B")}>Who decides?</div>
             <div
               style={{
                 marginTop: 6,
@@ -1312,11 +1266,10 @@ export default function CommunityJoinRequestsPage() {
                 fontWeight: 1000,
               }}
             >
-              Choose one clear rule
+              Choose one simple option
             </div>
             <div style={{ marginTop: 6, color: "#52667C", lineHeight: 1.5 }}>
-              Membership only confirms that a person belongs here. It does not
-              verify their identity, money, conduct, or trust.
+              Joining only means the person is part of this community. It does not mean every claim about them has been checked.
             </div>
           </div>
 
@@ -1332,18 +1285,18 @@ export default function CommunityJoinRequestsPage() {
             {[
               {
                 value: "instant_invite",
-                title: "Instant join",
-                note: "Accept link, set password, enter. Each link admits one person.",
+                title: "Join with an invite",
+                note: "A fresh invite lets one person join without waiting.",
               },
               {
                 value: "admin_approval",
-                title: "Admin approval",
-                note: "An admin accepts or rejects each request.",
+                title: "One leader decides",
+                note: "One community leader says yes or no.",
               },
               {
                 value: "community_vote",
-                title: "Community vote",
-                note: "Eligible members vote before entry.",
+                title: "Several people agree",
+                note: "Trusted community members answer before the person joins.",
               },
             ].map((option) => {
               const selected = admissionMode === option.value;
@@ -1411,7 +1364,7 @@ export default function CommunityJoinRequestsPage() {
                 onChange={(event) => setVotingAdminOverride(event.target.checked)}
                 style={{ width: 18, height: 18 }}
               />
-              <span>Allow an admin to approve without waiting for all votes.</span>
+              <span>Let one community leader accept someone without waiting for everyone.</span>
             </label>
           ) : null}
 
@@ -1426,10 +1379,11 @@ export default function CommunityJoinRequestsPage() {
               fullWidth
               debugId="community-join-requests.save-admission-policy"
             >
-              Save joining rule
+              Save this choice
             </PrimaryButton>
           ) : null}
-        </section>
+          </div>
+        </details>
 
         {error ? (
           <div
@@ -1464,20 +1418,25 @@ export default function CommunityJoinRequestsPage() {
             display: "grid",
             gridTemplateColumns: isCompact
               ? "repeat(2, minmax(0, 1fr))"
-              : "repeat(5, minmax(0, 1fr))",
+              : "repeat(3, minmax(0, 1fr))",
             gap: isCompact ? 10 : 14,
             width: "100%",
             minWidth: 0,
           }}
         >
           {[
-            ["review", "Total", summary.total, "#0B1F33"],
-            ["clock", "Pending", summary.pending, "#9A6A10"],
-            ["approve", "Approved", summary.approved, "#2E9B62"],
-            ["neutral", "Neutral", summary.neutralVotes, "#8A5A08"],
-            ["reject", "Rejected", summary.rejected, "#DC2626"],
+            ["clock", "Waiting", summary.pending, "#9A6A10"],
+            ["approve", "Accepted", summary.approved, "#2E9B62"],
+            ["reject", "Not accepted", summary.rejected, "#DC2626"],
           ].map(([icon, label, value, color]) => (
-            <div key={String(label)} style={statTile(String(color))}>
+            <div
+              key={String(label)}
+              style={{
+                ...statTile(String(color)),
+                gridColumn:
+                  isCompact && label === "Not accepted" ? "1 / -1" : undefined,
+              }}
+            >
               <div
                 style={{
                   display: "inline-flex",
@@ -1497,35 +1456,6 @@ export default function CommunityJoinRequestsPage() {
           ))}
         </section>
 
-        <section
-          style={{
-            ...whitePanel(16),
-            background:
-              "linear-gradient(180deg, #FFF7DA 0%, #FFF2C6 100%)",
-            border: "1px solid rgba(201,161,54,0.24)",
-          }}
-        >
-          <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 17 }}>
-            {iconText("shield", "Approval rule")}
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              color: "#42556C",
-              lineHeight: 1.55,
-              fontSize: 14,
-              fontWeight: 650,
-              maxWidth: "100%",
-              overflowWrap: "break-word",
-            }}
-          >
-            {admissionMode === "instant_invite"
-              ? "No review is needed. A fresh invite link admits one person, then closes."
-              : admissionMode === "admin_approval"
-                ? "One community admin accepts or rejects each request."
-                : "Members vote. Check Required approvals on each request."}
-          </div>
-        </section>
 
         <section
           style={{
@@ -1538,7 +1468,7 @@ export default function CommunityJoinRequestsPage() {
         >
           <div style={{ minWidth: 0 }}>
             <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 17 }}>
-              {iconText("review", showCompletedRequests ? "Showing all requests" : "Pending queue")}
+              {iconText("review", showCompletedRequests ? "Past decisions" : "People waiting")}
             </div>
             <div
               style={{
@@ -1550,8 +1480,8 @@ export default function CommunityJoinRequestsPage() {
               }}
             >
               {showCompletedRequests
-                ? "Approved and rejected requests are visible for checking."
-                : "Completed requests move out of the working queue so reviewers can focus on who still needs a decision."}
+                ? "You can see people who were accepted or not accepted."
+                : "Start with the people who still need an answer."}
             </div>
           </div>
           <SecondaryButton
@@ -1567,7 +1497,7 @@ export default function CommunityJoinRequestsPage() {
               padding: "0 10px",
             }}
           >
-            {iconText("review", showCompletedRequests ? "Hide completed" : "Show completed")}
+            {iconText("review", showCompletedRequests ? "Hide past decisions" : "Show past decisions")}
           </SecondaryButton>
         </section>
 
@@ -1581,7 +1511,7 @@ export default function CommunityJoinRequestsPage() {
           data-gsn-activation-handoff="admin-share"
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            {iconText("approve", "Approved member activation handoff")}
+            {iconText("approve", "Send joining details")}
           </div>
 
           <div
@@ -1593,33 +1523,21 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 800,
             }}
           >
-            This package is for the approved member, not your own next step.
-            Send it to the person you approved so they can activate their GSN ID. Verification can still be required later.
+            Send these details to the person you accepted so they can finish joining.
           </div>
 
           <div
             style={{
               marginTop: 12,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "minmax(0, 1fr)"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: 0,
-              overflow: "hidden",
+              padding: 12,
               borderRadius: 14,
-              border: "1px solid rgba(11,31,51,0.08)",
+              background: "#F8FAFC",
+              color: "#334155",
+              fontWeight: 850,
+              lineHeight: 1.5,
             }}
           >
-            {[
-              ["GSN ID for activation", safeStr(activationPack.gmfn_id)],
-              ["Community", safeStr(activationPack.community_name || "Not available yet")],
-              ["Community ID", safeStr(activationPack.community_code || "No community ID yet")],
-            ].map(([label, value]) => (
-              <div key={String(label)} style={requestFactTile()}>
-                <div style={requestFactLabel()}>{label}</div>
-                <div style={requestFactValue()}>{value}</div>
-              </div>
-            ))}
+            Community: {safeStr(activationPack.community_name || "This community")}
           </div>
 
           <div
@@ -1635,15 +1553,14 @@ export default function CommunityJoinRequestsPage() {
               lineHeight: 1.5,
             }}
           >
-            GSN prepared this delivery text. This screen does not send WhatsApp,
-            SMS, or email by itself.
+            Use a button below to copy the message. You still need to send it to the person.
           </div>
 
           {activationCopyStatus ? (
             <div
               style={{
                 marginTop: 12,
-                color: activationCopyStatus.startsWith("Copied") ? "#065F46" : "#8A5A08",
+                color: activationCopyStatus.toLowerCase().includes("copied") ? "#065F46" : "#8A5A08",
                 fontWeight: 900,
                 fontSize: 13,
                 lineHeight: 1.45,
@@ -1669,13 +1586,13 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_message || ""),
-                  "Copied activation message. Send it to the approved member."
+                  "Message copied. Send it to the person."
                 )
               }
               debugId="community-join-requests.copy-activation-message"
               fullWidth
             >
-              {iconText("copy", "Copy Message for Member")}
+              {iconText("copy", "Copy full message")}
             </PrimaryButton>
 
             <SecondaryButton
@@ -1684,13 +1601,13 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_link || ""),
-                  "Copied activation link. Send it to the approved member."
+                  "Joining link copied. Send it to the person."
                 )
               }
               debugId="community-join-requests.copy-activation-link"
               fullWidth
             >
-              {iconText("copy", "Copy Activation Link")}
+              {iconText("copy", "Copy joining link")}
             </SecondaryButton>
 
             <SecondaryButton
@@ -1701,7 +1618,7 @@ export default function CommunityJoinRequestsPage() {
             >
               {iconText(
                 "review",
-                activationPackDetailsOpen ? "Hide Message Details" : "Check Message Details"
+                activationPackDetailsOpen ? "Hide message" : "Show message"
               )}
             </SecondaryButton>
           </CardActionRow>
@@ -1726,7 +1643,7 @@ export default function CommunityJoinRequestsPage() {
                   letterSpacing: 0.35,
                 }}
               >
-                MESSAGE FOR APPROVED MEMBER
+                MESSAGE TO SEND
               </div>
 
               <div
@@ -1740,9 +1657,7 @@ export default function CommunityJoinRequestsPage() {
               >
                 Invited by:{" "}
                 {safeStr(
-                  activationPack.invited_by_display ||
-                    activationPack.invited_by_email ||
-                    "Not available yet"
+                  activationPack.invited_by_display || "a community member"
                 )}
               </div>
 
@@ -1770,8 +1685,8 @@ export default function CommunityJoinRequestsPage() {
                   wordBreak: "break-word",
                 }}
               >
-                Activation link:{" "}
-                {safeStr(activationPack.activation_link || "Not available yet")}
+                Joining link:{" "}
+                {safeStr(activationPack.activation_link || "Not ready yet")}
               </div>
             </div>
           ) : null}
@@ -1780,19 +1695,19 @@ export default function CommunityJoinRequestsPage() {
 
       {loading ? (
         <div style={whitePanel(18)}>
-          <strong>{iconText("clock", "Loading join requests...")}</strong>
+          <strong>{iconText("clock", "Opening the list...")}</strong>
         </div>
       ) : null}
 
       {!loading && !error && !items.length ? (
         <div style={whitePanel(18)}>
-          <strong>{iconText("review", "No join requests are currently shown.")}</strong>
+          <strong>{iconText("review", "No one is waiting to join.")}</strong>
         </div>
       ) : null}
 
       {!loading && !error && items.length > 0 && !visibleItems.length ? (
         <div style={whitePanel(18)}>
-          <strong>{iconText("approve", "No pending join requests.")}</strong>
+          <strong>{iconText("approve", "Everyone has an answer.")}</strong>
           <div
             style={{
               marginTop: 8,
@@ -1801,8 +1716,7 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 750,
             }}
           >
-            Approved or rejected requests are hidden from the working queue.
-            Use Show completed if you need to inspect the finished records.
+            Past decisions are hidden. Use Show past decisions if you need to see them.
           </div>
         </div>
       ) : null}
@@ -1875,7 +1789,7 @@ export default function CommunityJoinRequestsPage() {
                   >
                     <StatusMark status={status} />
                     <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
-                      Request #{item.id}
+                      {statusLabel(status)}
                     </span>
                   </div>
                   <div
@@ -1903,20 +1817,7 @@ export default function CommunityJoinRequestsPage() {
                       {applicantPhone}
                     </div>
                   ) : null}
-                  {qrPolicyContext ? (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#1D4ED8",
-                        fontSize: 12,
-                        fontWeight: 1000,
-                        lineHeight: 1.25,
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {qrPolicyContext.badge}
-                    </div>
-                  ) : null}
+
                 </div>
                 <SecondaryButton
                   type="button"
@@ -1931,7 +1832,7 @@ export default function CommunityJoinRequestsPage() {
                     padding: "0 10px",
                   }}
                 >
-                  {iconText("review", "Review")}
+                  {iconText("review", "Open")}
                 </SecondaryButton>
               </article>
             );
@@ -1967,20 +1868,9 @@ export default function CommunityJoinRequestsPage() {
                       overflowWrap: "break-word",
                     }}
                   >
-                    Request #{item.id}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      color: "#0B1F33",
-                      fontSize: 18,
-                      lineHeight: 1.35,
-                      fontWeight: 1000,
-                      overflowWrap: "break-word",
-                    }}
-                  >
                     {applicantLabel}
                   </div>
+
                   {applicantPhone && applicantPhone !== applicantLabel ? (
                     <div
                       style={{
@@ -2006,9 +1896,7 @@ export default function CommunityJoinRequestsPage() {
                     Invited by{" "}
                     <strong>
                       {safeStr(
-                        item.invited_by_display ||
-                          item.invited_by_email ||
-                          "a community member"
+                        item.invited_by_display || "a community member"
                       )}
                     </strong>
                   </div>
@@ -2018,7 +1906,7 @@ export default function CommunityJoinRequestsPage() {
                 </div>
                 <span style={statusPill(status)}>
                   <StatusMark status={status} />
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {statusLabel(status)}
                 </span>
               </div>
 
@@ -2037,23 +1925,8 @@ export default function CommunityJoinRequestsPage() {
                   }}
                 >
                   {[
-                    [
-                      "Community",
-                      safeStr(
-                        item.marketplace_name ||
-                          item.clan_name ||
-                          "Not available yet"
-                      ),
-                    ],
-                    ["Community ID", safeStr(item.community_code || "No community ID yet")],
-                    ["Invite", safeStr(item.invite_code || "Not available yet")],
-                    ["Submitted", safeDateTime(item.created_at)],
-                    ["Required", `${approvalProgress(item).required} approvals`],
-                    ["Approvals", approvalProgressText(item)],
-                    ["Neutral", String(Number(item.neutrals || 0))],
-                    ["Rejects", String(Number(item.rejects || 0))],
-                    ["Active", String(Number(item.active_member_count || 0))],
-                    ["GSN ID", safeStr(item.applicant_gmfn_id || "Not issued yet")],
+                    ["Sent", safeDateTime(item.created_at)],
+                    ["What others said", approvalProgressText(item)],
                   ].map(([label, value]) => (
                     <div key={`${item.id}-${label}`} style={requestFactTile()}>
                       <div style={requestFactLabel()}>{label}</div>
@@ -2062,7 +1935,7 @@ export default function CommunityJoinRequestsPage() {
                   ))}
                 </div>
               </div>
-              {qrPolicyContext ? (
+              {qrPolicyContext || governanceProfile ? (
                 <div
                   style={{
                     marginTop: 14,
@@ -2072,77 +1945,19 @@ export default function CommunityJoinRequestsPage() {
                     background: "#EFF6FF",
                   }}
                 >
-                  <div style={sectionLabel("#1D4ED8")}>QR entry policy</div>
+                  <div style={sectionLabel("#1D4ED8")}>Before you choose</div>
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 1000,
-                      fontSize: 15,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {qrPolicyContext.label}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 6,
                       color: "#1E3A8A",
-                      lineHeight: 1.65,
+                      lineHeight: 1.6,
                       fontSize: 14,
-                      fontWeight: 750,
+                      fontWeight: 800,
                     }}
                   >
-                    {qrPolicyContext.text}
-                  </div>
-                  {qrPolicyContext.guardrail ? (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#1D4ED8",
-                        lineHeight: 1.65,
-                        fontSize: 14,
-                        fontWeight: 850,
-                      }}
-                    >
-                      {qrPolicyContext.guardrail}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {governanceProfile ? (
-                <div
-                  style={{
-                    marginTop: 14,
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(201,161,54,0.24)",
-                    background: "#FFF7E8",
-                  }}
-                >
-                  <div style={sectionLabel("#8A5A08")}>Community setup</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 1000,
-                      fontSize: 15,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {governanceProfileTitle(governanceProfile)}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      color: "#5B4631",
-                      lineHeight: 1.65,
-                      fontSize: 14,
-                      fontWeight: 750,
-                    }}
-                  >
-                    {governanceProfileRequirementText(governanceProfile)}
+                    {pilotOverrideBlocked
+                      ? "Make sure this person is known by more than one trusted community member."
+                      : "Make sure you know this person, or that someone you trust can confirm who they are."}
                   </div>
                 </div>
               ) : null}
@@ -2164,7 +1979,9 @@ export default function CommunityJoinRequestsPage() {
                     {iconText(
                       status === "approved" ? "approve" : "reject",
                       <>
-                        This request is {status}. {approvalProgressText(item)}.
+                        {status === "approved"
+                          ? "This person was accepted."
+                          : "This person was not accepted."}
                       </>
                     )}
                   </div>
@@ -2181,7 +1998,7 @@ export default function CommunityJoinRequestsPage() {
                         debugId="community-join-requests.open-approved-handoff"
                         style={{ marginTop: 12 }}
                       >
-                        {iconText("id", "Open GSN ID & approval message")}
+                        {iconText("id", "Send joining details")}
                       </SecondaryButton>
 
                       {reviewerIsAdmin ? (
@@ -2197,8 +2014,8 @@ export default function CommunityJoinRequestsPage() {
                             {iconText(
                               "approve",
                               assistanceRequestId === item.id
-                                ? "Close private activation help"
-                                : "Create private activation code"
+                                ? "Close joining help"
+                                : "Help them finish joining"
                             )}
                           </SecondaryButton>
 
@@ -2213,7 +2030,7 @@ export default function CommunityJoinRequestsPage() {
                               }}
                             >
                               <div style={sectionLabel("#8A5A08")}>
-                                Supervised activation
+                                Private help
                               </div>
                               <div
                                 style={{
@@ -2223,7 +2040,7 @@ export default function CommunityJoinRequestsPage() {
                                   fontSize: 18,
                                 }}
                               >
-                                Help {applicantLabel} activate safely
+                                Help {applicantLabel} finish joining
                               </div>
                               <div
                                 style={{
@@ -2234,9 +2051,9 @@ export default function CommunityJoinRequestsPage() {
                                   lineHeight: 1.6,
                                 }}
                               >
-                                Use this only when you personally recognize the approved
-                                applicant. It restores account activation, but it does not
-                                verify ownership of their phone number.
+                                Only do this if you know this person. The private number lets
+                                them set up their password. It does not prove that the phone
+                                number belongs to them.
                               </div>
 
                               {assistancePack?.request_id === item.id &&
@@ -2258,7 +2075,7 @@ export default function CommunityJoinRequestsPage() {
                                     }}
                                   >
                                     <div style={sectionLabel("#8A5A08")}>
-                                      Private 15-minute code
+                                      Private number (15 minutes)
                                     </div>
                                     <div
                                       style={{
@@ -2279,7 +2096,7 @@ export default function CommunityJoinRequestsPage() {
                                         fontWeight: 800,
                                       }}
                                     >
-                                      Expires {safeDateTime(assistancePack.expires_at)}
+                                      Works until {safeDateTime(assistancePack.expires_at)}
                                     </div>
                                   </div>
 
@@ -2295,9 +2112,8 @@ export default function CommunityJoinRequestsPage() {
                                       fontWeight: 850,
                                     }}
                                   >
-                                    Give the code privately in person or during a trusted
-                                    call. Never put it in a QR code, public group, or
-                                    permanent notice.
+                                    Tell this number to the person in private. Do not post it
+                                    in a group or on a public notice.
                                   </div>
 
                                   <div
@@ -2314,28 +2130,28 @@ export default function CommunityJoinRequestsPage() {
                                       onClick={() =>
                                         void copyAssistanceText(
                                           safeStr(assistancePack.code),
-                                          "Private code copied."
+                                          "Private number copied."
                                         )
                                       }
                                       stableHeight={52}
                                       fullWidth
                                       debugId="community-join-requests.copy-assisted-code"
                                     >
-                                      Copy private code
+                                      Copy private number
                                     </PrimaryButton>
                                     <SecondaryButton
                                       type="button"
                                       onClick={() =>
                                         void copyAssistanceText(
                                           safeStr(assistancePack.activation_link),
-                                          "Activation link copied separately."
+                                          "Joining link copied."
                                         )
                                       }
                                       stableHeight={52}
                                       fullWidth
                                       debugId="community-join-requests.copy-assisted-link"
                                     >
-                                      Copy activation link
+                                      Copy joining link
                                     </SecondaryButton>
                                   </div>
                                   {assistanceCopyStatus ? (
@@ -2369,7 +2185,7 @@ export default function CommunityJoinRequestsPage() {
                                       fontSize: 14,
                                     }}
                                   >
-                                    Private verification note
+                                    How do you know this person?
                                     <textarea
                                       value={assistanceNote}
                                       onChange={(event) =>
@@ -2377,7 +2193,7 @@ export default function CommunityJoinRequestsPage() {
                                       }
                                       maxLength={240}
                                       rows={3}
-                                      placeholder="For example: Recognized in person at the CWCDW pilot desk."
+                                      placeholder="For example: I met her in person at the workshop."
                                       style={{
                                         width: "100%",
                                         boxSizing: "border-box",
@@ -2413,7 +2229,7 @@ export default function CommunityJoinRequestsPage() {
                                       style={{ width: 18, height: 18, marginTop: 2 }}
                                     />
                                     <span>
-                                      I personally confirmed this is the approved applicant.
+                                      I know this person and checked their name.
                                     </span>
                                   </label>
                                   <PrimaryButton
@@ -2432,7 +2248,7 @@ export default function CommunityJoinRequestsPage() {
                                     fullWidth
                                     debugId="community-join-requests.issue-activation-assistance"
                                   >
-                                    Create 15-minute private code
+                                    Make private number
                                   </PrimaryButton>
                                 </div>
                               )}
@@ -2475,7 +2291,7 @@ export default function CommunityJoinRequestsPage() {
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel("#8A5A08")}>Admin approval option</div>
+                      <div style={sectionLabel("#8A5A08")}>You can decide now</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -2486,11 +2302,11 @@ export default function CommunityJoinRequestsPage() {
                       >
                         {pilotOverrideBlocked
                           ? qrGuardrail?.approval_posture === "market_access"
-                            ? "Marketplace QR entry requires standard voting with a market, dues, stall, shop, permit, or organiser check; admin override is disabled."
-                            : "Strict QR entry requires standard multi-reviewer approval here; admin override is disabled."
+                            ? "Check that this person is known in the market or has a real stall, shop, permit, dues record, or organiser who knows them."
+                            : "More than one trusted person must agree before this person can join."
                           : item.admin_approval_basis === "current_community_setting"
-                            ? "The current community setting allows you to approve this pending request now without waiting for the remaining votes."
-                            : "This request allows you to approve now as admin without waiting for the remaining votes."}
+                            ? "You can accept this person now without waiting for the other answers."
+                            : "You can accept this person now without waiting for the other answers."}
                       </div>
                     </div>
                   ) : null}
@@ -2505,7 +2321,7 @@ export default function CommunityJoinRequestsPage() {
                     }}
                   >
                     <div>
-                      <div style={sectionLabel("#64748B")}>Your vote</div>
+                      <div style={sectionLabel("#64748B")}>Your answer</div>
                       <select
                         value={voteDecisions[item.id] || "approve"}
                         onChange={(event) => {
@@ -2531,14 +2347,14 @@ export default function CommunityJoinRequestsPage() {
                           background: "#FFFFFF",
                         }}
                       >
-                        <option value="approve">Approve</option>
-                        <option value="neutral">Neutral</option>
-                        <option value="reject">Reject</option>
+                        <option value="approve">Let this person join</option>
+                        <option value="neutral">I am not sure</option>
+                        <option value="reject">Do not let this person join</option>
                       </select>
                     </div>
 
                     <div>
-                      <div style={sectionLabel("#64748B")}>Reason</div>
+                      <div style={sectionLabel("#64748B")}>Why?</div>
                       <select
                         value={
                           voteReasonCodes[item.id] ||
@@ -2605,7 +2421,7 @@ export default function CommunityJoinRequestsPage() {
                     >
                       {iconText(
                         "approve",
-                        canAdminApproveNow ? "Approve now as admin" : "Approve"
+                        "Let this person join"
                       )}
                     </PrimaryButton>
 
@@ -2620,7 +2436,7 @@ export default function CommunityJoinRequestsPage() {
                       style={decisionButtonStyle("neutral")}
                       fullWidth
                     >
-                      {iconText("neutral", "Neutral")}
+                      {iconText("neutral", "Not sure")}
                     </SecondaryButton> : null}
 
                     <SecondaryButton
@@ -2634,7 +2450,7 @@ export default function CommunityJoinRequestsPage() {
                       style={decisionButtonStyle("reject")}
                       fullWidth
                     >
-                      {iconText("reject", "Reject")}
+                      {iconText("reject", "Do not let them join")}
                     </SecondaryButton>
 
                   </CardActionRow>

@@ -56,8 +56,8 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(5, minmax\(0, 1fr\)\)"/,
-  "Join Requests stats must use a 2x2 phone grid instead of a four-card overflow row."
+  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?\["clock", "Waiting"[\s\S]*?\["approve", "Accepted"[\s\S]*?\["reject", "Not accepted"[\s\S]*?gridColumn:[\s\S]*?label === "Not accepted" \? "1 \/ -1" : undefined/,
+  "Join Requests must keep one compact Waiting, Accepted, and Not accepted summary."
 );
 
 assertContains(
@@ -106,53 +106,44 @@ assertContains(
 );
 
 assertContains(
-  /function approvalProgress\(item: JoinRequestItem[\s\S]*?approvals[\s\S]*?required[\s\S]*?remaining[\s\S]*?function approvalSuccessText\(res: VoteResponse[\s\S]*?status_already_final[\s\S]*?Approval successful[\s\S]*?approvalProgressText\(request\)[\s\S]*?approvalNextStepText\(request\)/,
-  "Join Requests approval actions must answer with exact approval progress and must distinguish already-final requests from fresh successful approvals."
+  /function approvalProgress\(item: JoinRequestItem[\s\S]*?approvals[\s\S]*?required[\s\S]*?remaining[\s\S]*?Enough people have agreed[\s\S]*?No one has agreed yet[\s\S]*?function approvalSuccessText\(res: VoteResponse[\s\S]*?status_already_final[\s\S]*?Person accepted[\s\S]*?approvalProgressText\(request\)[\s\S]*?approvalNextStepText\(request\)/,
+  "Join Requests decisions must answer with plain-language progress and distinguish an old decision from a new one."
 );
 
 assertContains(
-  /reviewer_can_admin_approve[\s\S]*?canAdminApproveRequest[\s\S]*?approvalNextStepText\(item, canAdminApproveNow\)[\s\S]*?canAdminApproveNow[\s\S]*?handlePilotApprove\(item\.id\)[\s\S]*?Approve now as admin/,
-  "Join Requests must use each request's real admin authority, explain that remaining votes can be bypassed, and route the primary admin action to admin approval."
+  /reviewer_can_admin_approve[\s\S]*?canAdminApproveRequest[\s\S]*?approvalNextStepText\(item, canAdminApproveNow\)[\s\S]*?canAdminApproveNow[\s\S]*?handlePilotApprove\(item\.id\)[\s\S]*?"Let this person join"/,
+  "Join Requests must preserve real leader authority behind the plain Let this person join action."
+);
+
+
+assertContains(
+  /<details style=\{\{ \.\.\.whitePanel\(16\) \}\}>[\s\S]*?Change how people join[\s\S]*?Save this choice[\s\S]*?<\/details>/,
+  "Join Requests must keep joining-rule controls closed behind one plain-language row."
+);
+
+assertContains(
+  /data-gsn-activation-handoff="admin-share"[\s\S]*?Send joining details[\s\S]*?Send these details to the person you accepted[\s\S]*?Copy full message[\s\S]*?Copy joining link/,
+  "Join Requests must present the approved-member handoff as simple details to copy and send."
+);
+
+assertContains(
+  /const \[activationPackDetailsOpen, setActivationPackDetailsOpen\] = useState\(false\);[\s\S]*?debugId="community-join-requests\.toggle-activation-details"[\s\S]*?activationPackDetailsOpen \? "Hide message" : "Show message"[\s\S]*?data-gsn-activation-message-preview="collapsed-until-opened"[\s\S]*?<pre/,
+  "Join Requests must keep the message closed until the reviewer chooses Show message."
 );
 
 assertNotContains(
-  /isCompact\s*\?\s*"repeat\(2, minmax\(0, 1fr\)\)"\s*:\s*"repeat\(3, minmax\(0, 1fr\)\)"/g,
-  "Join Requests request fact grid must not return to a two-column phone layout."
+  /"Community ID"|"Invite"|"Required"|"Approvals"|"Neutral"|"Rejects"|"Active"|"GSN ID"|"QR entry policy"|"Admin approval option"|"Approve now as admin"|"Open GSN ID & approval message"|"Create private activation code"/g,
+  "Join Requests must not expose internal record labels or decision jargon on the default page."
 );
 
 assertContains(
-  /\["Community ID", safeStr\(item\.community_code \|\| "No community ID yet"\)\]/,
-  "Join Requests must use honest missing-community-ID copy instead of stale issue-tracking language."
+  /\["Sent", safeDateTime\(item\.created_at\)\][\s\S]*?\["What others said", approvalProgressText\(item\)\][\s\S]*?Before you choose/,
+  "Join Requests must limit the person card to understandable timing, progress, and safety guidance."
 );
 
 assertContains(
-  /\["Community ID", safeStr\(activationPack\.community_code \|\| "No community ID yet"\)\]/,
-  "Join Requests activation handoff must use honest missing-community-ID copy."
-);
-
-assertContains(
-  /data-gsn-activation-handoff="admin-share"[\s\S]*?Approved member activation handoff[\s\S]*?This package is for the approved member, not your own next step[\s\S]*?This screen does not send WhatsApp,[\s\S]*?SMS, or email by itself/,
-  "Join Requests admin approval response must frame activation as a member handoff, not the reviewer's own activation screen."
-);
-
-assertContains(
-  /const \[activationPackDetailsOpen, setActivationPackDetailsOpen\] = useState\(false\);[\s\S]*?debugId="community-join-requests\.toggle-activation-details"[\s\S]*?activationPackDetailsOpen \? "Hide Message Details" : "Check Message Details"[\s\S]*?data-gsn-activation-message-preview="collapsed-until-opened"[\s\S]*?<pre/,
-  "Join Requests must keep the receiver activation message collapsed until the reviewer asks to check details."
-);
-
-assertNotContains(
-  /Approval to activation package|Open Activation Page|debugId="community-join-requests\.open-activation"/g,
-  "Join Requests must not open the approved member activation package as a reviewer-facing next step."
-);
-
-assertNotContains(
-  /Awaiting issue/g,
-  "Join Requests must not display stale issue-tracking language for missing community IDs."
-);
-
-assertNotContains(
-  /activationPack\.community_code \|\| "Not available yet"/g,
-  "Join Requests must not use vague not-available copy for missing Community IDs."
+  /Your answer[\s\S]*?Let this person join[\s\S]*?I am not sure[\s\S]*?Do not let this person join[\s\S]*?Why\?[\s\S]*?Not sure[\s\S]*?Do not let them join/,
+  "Join Requests must use ordinary decision language instead of approve, neutral, and reject labels."
 );
 
 assertContains(
@@ -166,10 +157,6 @@ assertContains(
 assertContains(
   /const applicantName[\s\S]*?const applicantPhone[\s\S]*?Phone: \{applicantPhone\}/,
   "Join Requests must show the submitted applicant name and phone."
-);
-assertContains(
-  /\["GSN ID", safeStr\(item\.applicant_gmfn_id/,
-  "Join Requests must label the applicant's public identifier as GSN ID."
 );
 
 assertNotContains(
