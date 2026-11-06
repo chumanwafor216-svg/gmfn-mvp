@@ -22,6 +22,10 @@ function assertContains(key, pattern, message) {
   if (!pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
 }
 
+function assertNotContains(key, pattern, message) {
+  if (pattern.test(source[key])) findings.push(`${files[key]}: ${message}`);
+}
+
 function pageFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -72,6 +76,11 @@ assertContains(
   'shop',
   /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add diary entry["']/,
   'Shop Diary shortcut must be owner-only and reach the existing diary anchor with community context.'
+);
+assertNotContains(
+  'shop',
+  /\{!signedInOwnsShop \|\| routeDiaryEntryId > 0 \? \(\s*<section\s+id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}/,
+  'Public Shop must not hide the complete Shop Update section, including its owner-only plus shortcut, from the exact shop owner.'
 );
 assertContains(
   'shop',

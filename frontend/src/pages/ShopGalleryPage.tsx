@@ -7746,8 +7746,7 @@ export default function ShopGalleryPage() {
           </section>
         </div>
 
-        {!signedInOwnsShop || routeDiaryEntryId > 0 ? (
-          <section
+        <section
             id={PUBLIC_SHOP_DIARIES_ANCHOR}
             className="public-shop-section public-shop-diary"
             style={{
@@ -7800,7 +7799,7 @@ export default function ShopGalleryPage() {
                       shopName={shopNameText}
                       publicAccess
                       debugId="shop-gallery.update-voice.listen"
-                      label="Shop update voice note"
+                      label="Voice message - tap Listen to hear it"
                     />
                   </div>
                 </div>
@@ -7814,7 +7813,6 @@ export default function ShopGalleryPage() {
             </div>
           )}
           </section>
-        ) : null}
           </div>
         </details>
         <section

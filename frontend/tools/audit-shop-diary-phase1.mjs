@@ -63,6 +63,7 @@ assertContains(files.route, "PUBLIC_SHOP_DIARY_LIVE_HOURS = 24", "Public Shop di
 assertContains(files.route, ".filter(ShopDiaryEntry.occurred_at >= live_cutoff)", "Public Shop diary API must not replay expired historical entries.");
 assertContains(files.gallery, "liveShopDiaryEntries", "Public Shop must filter the diary shelf to one current live update.");
 assertContains(files.gallery, 'debugId="shop-gallery.update-voice.listen"', "Public Shop must expose deliberate playback for live Shop Update voice.");
+assertContains(files.gallery, 'label="Voice message - tap Listen to hear it"', "Public Shop must tell visitors to tap Listen before Shop Update voice plays.");
 assertContains(files.gallery, 'debugId="shop-gallery.welcome-voice.listen"', "Public Shop must expose deliberate shop-welcome playback.");
 assertContains(files.gallery, 'label="Product or service voice note"', "Opened products/services must expose deliberate item voice playback.");
 assertContains(files.gallery, "Latest message from this shop.", "Public Shop diary copy must speak to the visitor instead of explaining internal diary behavior.");
