@@ -359,46 +359,96 @@ function demandActionStyle(height = 54): React.CSSProperties {
 function demandCreateCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...pageCard(
-      "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(241,247,255,0.992) 100%)"
+      "radial-gradient(circle at 8% 2%, rgba(111,216,255,0.22) 0%, rgba(111,216,255,0) 28%), radial-gradient(circle at 96% 24%, rgba(190,105,255,0.14) 0%, rgba(190,105,255,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(239,246,255,0.994) 100%)"
     ),
-    padding: isCompact ? 14 : 22,
-    borderRadius: isCompact ? 26 : 30,
-    border: "1px solid rgba(56,135,214,0.28)",
+    padding: isCompact ? 16 : 24,
+    borderRadius: isCompact ? 28 : 32,
+    border: "2px solid rgba(112,217,255,0.88)",
     boxShadow:
-      "0 30px 62px rgba(7,20,36,0.16), 0 0 0 1px rgba(255,255,255,0.72) inset, 0 -12px 30px rgba(61,125,196,0.08) inset",
+      "0 0 0 2px rgba(255,255,255,0.72) inset, 0 0 24px rgba(25,207,255,0.68), 0 0 52px rgba(121,61,255,0.46), 0 28px 62px rgba(0,8,28,0.48)",
   };
 }
 
 function demandCreateHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 112 : 132,
-    padding: isCompact ? 16 : 20,
-    borderRadius: isCompact ? 20 : 24,
-    border: "1px solid rgba(214,170,69,0.34)",
-    background:
-      "radial-gradient(circle at 12% 0%, rgba(242,199,102,0.22) 0%, rgba(242,199,102,0) 34%), radial-gradient(circle at 96% 14%, rgba(67,146,233,0.28) 0%, rgba(67,146,233,0) 34%), linear-gradient(135deg, #071827 0%, #0B2D4A 66%, #123E66 100%)",
-    boxShadow:
-      "0 18px 34px rgba(7,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+    minHeight: isCompact ? 142 : 154,
+    padding: isCompact ? "8px 6px 16px" : "10px 10px 18px",
+    borderRadius: isCompact ? 22 : 26,
+    border: "none",
+    background: "transparent",
+    boxShadow: "none",
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr)",
-    gap: isCompact ? 13 : 16,
+    gap: isCompact ? 14 : 18,
     alignItems: "center",
     overflow: "hidden",
   };
 }
 
+function demandCreateShellStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    maxWidth: isCompact ? "none" : 1180,
+    margin: isCompact ? "0 -16px -40px" : "0 auto",
+    padding: isCompact ? "18px 16px 54px" : "24px",
+    paddingBottom: isCompact ? 54 : 56,
+    minHeight: isCompact ? "calc(100dvh - 84px)" : undefined,
+    display: "grid",
+    gap: isCompact ? 16 : 18,
+    background:
+      "radial-gradient(circle at 100% 26%, rgba(229,34,255,0.78) 0%, rgba(139,35,255,0.30) 12%, rgba(139,35,255,0) 31%), radial-gradient(circle at 0% 44%, rgba(0,214,255,0.68) 0%, rgba(0,128,255,0.28) 16%, rgba(0,128,255,0) 35%), linear-gradient(145deg, #03111F 0%, #062D62 46%, #15035D 100%)",
+    boxShadow: isCompact ? "inset 0 18px 38px rgba(0,0,0,0.32)" : undefined,
+  };
+}
+
+function demandCreateInputStyle(): React.CSSProperties {
+  return {
+    ...inputStyle(),
+    minHeight: 58,
+    borderRadius: 18,
+    border: "1px solid rgba(79,139,211,0.24)",
+    padding: "14px 16px",
+    fontSize: 16,
+    color: "#0B1F33",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+    boxShadow:
+      "0 10px 22px rgba(22,76,132,0.11), inset 0 1px 0 rgba(255,255,255,0.96)",
+  };
+}
+
+function demandCreateFieldLabel(
+  icon: GsnIconName,
+  label: string
+): React.ReactElement {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        ...sectionLabel(),
+        color: "#172B49",
+        fontSize: 13,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={22} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function demandVisibilityChoiceStyle(active: boolean): React.CSSProperties {
   return {
-    ...demandActionStyle(54),
+    ...demandActionStyle(58),
+    borderRadius: 18,
     border: active
-      ? "1px solid rgba(11,99,209,0.42)"
+      ? "2px solid rgba(32,184,241,0.78)"
       : "1px solid rgba(20,52,83,0.16)",
     background: active
-      ? "linear-gradient(180deg, #FFFFFF 0%, #DDEEFF 100%)"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #D7EDFF 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%)",
     color: active ? "#0B4FA8" : "#243E57",
     boxShadow: active
-      ? "0 10px 22px rgba(11,99,209,0.14), inset 0 1px 0 rgba(255,255,255,0.96)"
+      ? "0 10px 22px rgba(11,99,209,0.18), 0 0 14px rgba(31,203,255,0.18), inset 0 1px 0 rgba(255,255,255,0.96)"
       : "0 8px 18px rgba(7,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
@@ -701,6 +751,14 @@ function communityName(currentClan: any, selectedClanId: number): string {
       currentClan?.title
     ) || (selectedClanId ? `Community ${selectedClanId}` : "No community selected")
   );
+}
+
+function marketplaceCommunityName(name: string): string {
+  const cleanName = safeStr(name).trim();
+  if (!cleanName) return "Marketplace";
+  return /\bmarketplace$/i.test(cleanName)
+    ? cleanName
+    : `${cleanName} Marketplace`;
 }
 
 function requesterTrustPostureLabel(row?: DemandRow | null): string {
@@ -1644,6 +1702,10 @@ export default function DemandBoxPage() {
   const currentCommunityName = useMemo(
     () => communityName(currentClan, selectedClanId),
     [currentClan, selectedClanId]
+  );
+  const currentMarketplaceName = useMemo(
+    () => marketplaceCommunityName(currentCommunityName),
+    [currentCommunityName]
   );
   const currentCommunityRole = safeStr(
     currentClan?.membership_role || currentClan?.role
@@ -3236,24 +3298,29 @@ export default function DemandBoxPage() {
 
   return (
     <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
-      }}
+      data-gsn-demand-create-shell={showCreateWorkSurface ? "reference" : undefined}
+      style={
+        showCreateWorkSurface
+          ? demandCreateShellStyle(isCompact)
+          : {
+              maxWidth: 1180,
+              margin: "0 auto",
+              paddingBottom: 40,
+              display: "grid",
+              gap: 18,
+            }
+      }
     >
       <PageTopNav
         sectionLabel="DemandBox"
         title={
           isCreateMode
-            ? `${currentCommunityName} DemandBox`
+            ? `${currentMarketplaceName} DemandBox`
             : "DemandBox"
         }
         subtitle={
           isCreateMode
-            ? `You are posting from the ${currentCommunityName} marketplace.`
+            ? `You are posting from ${currentMarketplaceName}.`
             : "Ask for what you need, from the right community, with trust attached."
         }
         homeTo={routes.dashboard}
@@ -3449,41 +3516,57 @@ export default function DemandBoxPage() {
           <span
             aria-hidden="true"
             style={{
-              width: isCompact ? 52 : 60,
-              height: isCompact ? 52 : 60,
-              borderRadius: 18,
+              width: isCompact ? 76 : 88,
+              height: isCompact ? 76 : 88,
+              borderRadius: isCompact ? 22 : 26,
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               background: "linear-gradient(180deg, #FFFFFF 0%, #E8F2FF 100%)",
-              border: "1px solid rgba(255,255,255,0.68)",
-              boxShadow: "0 14px 26px rgba(0,0,0,0.22)",
+              border: "1px solid rgba(94,151,211,0.18)",
+              boxShadow:
+                "0 14px 28px rgba(11,63,117,0.18), inset 0 1px 0 rgba(255,255,255,0.98)",
             }}
           >
-            <GsnLegacyIcon name="megaphone" size={isCompact ? 38 : 44} />
+            <GsnLegacyIcon name="megaphone" size={isCompact ? 58 : 66} />
           </span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ ...sectionLabel(), color: "#F2C766" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: 28,
+                padding: "4px 12px",
+                borderRadius: 999,
+                color: "#FFFFFF",
+                background: "linear-gradient(180deg, #51B9F4 0%, #2087D8 100%)",
+                boxShadow: "0 7px 16px rgba(20,132,216,0.24)",
+                fontSize: 12,
+                fontWeight: 900,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
               Post a need
             </div>
             <div
               style={{
-                marginTop: 6,
-                color: "#F8FBFF",
-                fontSize: isCompact ? 23 : 30,
+                marginTop: 8,
+                color: "#07182F",
+                fontSize: isCompact ? 25 : 32,
                 fontWeight: 900,
-                lineHeight: 1.08,
+                lineHeight: 1.04,
                 textWrap: "balance",
               }}
             >
-              {isCreateMode ? "Post from " + currentCommunityName + "." : "Tell people what you need."}
+              {"Post from " + currentMarketplaceName + "."}
             </div>
             <div
               style={{
-                marginTop: 7,
-                color: "#D7E4F1",
-                fontSize: isCompact ? 12 : 14,
-                fontWeight: 700,
+                marginTop: 9,
+                color: "#405A76",
+                fontSize: isCompact ? 13 : 15,
+                fontWeight: 800,
                 lineHeight: 1.4,
               }}
             >
@@ -3578,30 +3661,35 @@ export default function DemandBoxPage() {
         ) : null}
 
         <div
+          data-gsn-demand-community-context="selected"
           style={{
-            marginTop: 12,
-            ...innerCard("#FCFEFF"),
-            padding: isCompact ? "11px 13px" : "13px 15px",
+            marginTop: 4,
+            padding: isCompact ? "12px 14px" : "14px 16px",
+            borderRadius: 20,
+            border: "2px solid rgba(220,168,45,0.56)",
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+            boxShadow:
+              "0 12px 24px rgba(20,67,118,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
             display: "grid",
             gridTemplateColumns: "auto minmax(0, 1fr)",
-            gap: 10,
+            gap: 12,
             alignItems: "center",
           }}
         >
-          <GsnLegacyIcon name="community" size={isCompact ? 28 : 32} />
+          <GsnLegacyIcon name="marketplace" size={isCompact ? 34 : 38} />
           <div style={{ minWidth: 0 }}>
             <div style={sectionLabel()}>Selected community</div>
             <div
               style={{
                 marginTop: 3,
                 color: "#0B4FA8",
-                fontSize: isCompact ? 14 : 16,
+                fontSize: isCompact ? 16 : 18,
                 fontWeight: 900,
                 lineHeight: 1.25,
                 overflowWrap: "anywhere",
               }}
             >
-              {currentCommunityName} Marketplace
+              {currentMarketplaceName}
             </div>
           </div>
         </div>
@@ -3623,7 +3711,7 @@ export default function DemandBoxPage() {
             marginTop: isCompact ? 14 : 18,
             display: "grid",
             gridTemplateColumns: "1fr",
-            gap: isCompact ? 14 : 16,
+            gap: isCompact ? 16 : 18,
             alignItems: "start",
           }}
         >
@@ -3636,23 +3724,27 @@ export default function DemandBoxPage() {
               }}
             >
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
-                <label htmlFor="demand-box-title" style={sectionLabel()}>What do you need?</label>
+                <label htmlFor="demand-box-title">
+                  {demandCreateFieldLabel("megaphone", "What do you need?")}
+                </label>
                 <input
                   id="demand-box-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Example: Need 5 bags of rice this week"
-                  style={{ ...inputStyle(), marginTop: 8 }}
+                  style={{ ...demandCreateInputStyle(), marginTop: 8 }}
                 />
               </div>
               <div style={{ order: 2 }}>
-                <label htmlFor="demand-box-type" style={sectionLabel()}>Type</label>
+                <label htmlFor="demand-box-type">
+                  {demandCreateFieldLabel("tag", "Type")}
+                </label>
                 <input
                   id="demand-box-type"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Food, vacancy, repair, transport"
-                  style={{ ...inputStyle(), marginTop: 8 }}
+                  style={{ ...demandCreateInputStyle(), marginTop: 8 }}
                 />
               </div>
 
@@ -3709,7 +3801,9 @@ export default function DemandBoxPage() {
               </div>
               ) : null}
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 4 }}>
-                <div style={sectionLabel()}>Who can see it?</div>
+                <div>
+                  {demandCreateFieldLabel("community", "Who can see it?")}
+                </div>
                 <div
                   data-gsn-demand-privacy-route="true"
                   style={{
@@ -3722,7 +3816,7 @@ export default function DemandBoxPage() {
                   <SecondaryButton
                     type="button"
                     debugId="demand-box.visibility.community"
-                    stableHeight={54}
+                    stableHeight={58}
                     aria-pressed={visibilityScope === DEMAND_VISIBILITY_COMMUNITY}
                     style={demandVisibilityChoiceStyle(
                       visibilityScope === DEMAND_VISIBILITY_COMMUNITY
@@ -3734,7 +3828,7 @@ export default function DemandBoxPage() {
                   <SecondaryButton
                     type="button"
                     debugId="demand-box.visibility.protected-target"
-                    stableHeight={54}
+                    stableHeight={58}
                     aria-pressed={visibilityScope === DEMAND_VISIBILITY_PROTECTED}
                     style={demandVisibilityChoiceStyle(
                       visibilityScope === DEMAND_VISIBILITY_PROTECTED
@@ -3751,13 +3845,15 @@ export default function DemandBoxPage() {
                 </div>
               </div>
               <div style={{ order: 3 }}>
-                <label htmlFor="demand-box-area" style={sectionLabel()}>Area</label>
+                <label htmlFor="demand-box-area">
+                  {demandCreateFieldLabel("navigation", "Area")}
+                </label>
                 <input
                   id="demand-box-area"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   placeholder="Area"
-                  style={{ ...inputStyle(), marginTop: 8 }}
+                  style={{ ...demandCreateInputStyle(), marginTop: 8 }}
                 />
               </div>
 
@@ -3766,15 +3862,30 @@ export default function DemandBoxPage() {
                   ...detailsShell(),
                   gridColumn: isCompact ? "auto" : "1 / span 2",
                   order: 6,
+                  borderRadius: 20,
+                  border: "1px solid rgba(79,139,211,0.20)",
+                  boxShadow: "0 12px 24px rgba(22,76,132,0.10)",
                 }}
               >
                 <StableDisclosureSummary
-                  style={detailsSummary()}
-                  stableHeight={52}
+                  style={{ ...detailsSummary(), padding: "0 14px" }}
+                  stableHeight={58}
                   debugId="demand-box.more-options"
                 >
-                  <span>More options</span>
-                  <span style={{ color: "#64748B", fontSize: 13 }}>Optional</span>
+                  {demandIconText("vault", "More options", 24)}
+                  <span
+                    style={{
+                      padding: "5px 10px",
+                      borderRadius: 999,
+                      color: "#3F5570",
+                      background: "#EDF4FC",
+                      border: "1px solid rgba(79,139,211,0.18)",
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    Optional
+                  </span>
                 </StableDisclosureSummary>
                 <div
                   style={{
@@ -3924,25 +4035,27 @@ export default function DemandBoxPage() {
               </details>
             </div>
 
-            <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
+            <div style={demandActionRowStyle(isCompact, 64, 180, 16)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
                 disabled={creating}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
-                stableHeight={54}
+                stableHeight={64}
                 debugId="demand-box.post"
                 style={{
-                  ...demandActionStyle(54),
-                  border: "1px solid rgba(242,199,102,0.72)",
+                  ...demandActionStyle(64),
+                  borderRadius: 24,
+                  border: "3px solid rgba(242,199,102,0.92)",
                   background:
-                    "linear-gradient(180deg, #1673DD 0%, #0756BB 100%)",
+                    "linear-gradient(180deg, #1685F0 0%, #0756C7 56%, #043C9B 100%)",
                   boxShadow:
-                    "0 14px 28px rgba(11,99,209,0.28), inset 0 1px 0 rgba(255,255,255,0.24)",
+                    "0 16px 30px rgba(4,62,156,0.34), 0 0 16px rgba(31,203,255,0.20), inset 0 2px 0 rgba(255,255,255,0.28)",
+                  fontSize: 18,
                 }}
               >
-                {demandIconText("document", "Post need", 20)}
+                {demandIconText("megaphone", "Post need", 24)}
               </PrimaryButton>
             </div>
           </div>

@@ -19,6 +19,7 @@ const community = {
   id: 8,
   clan_id: 8,
   name: "Blessed Satch family",
+  marketplace_name: "Blessed Satch family Marketplace",
   status: "active",
   membership_role: "member",
 };
@@ -132,7 +133,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await frontDoor.waitFor();
 
   assert(await page.getByText("Find what you need", { exact: true }).isVisible(), "The human-first DemandBox title is missing.");
-  assert(await page.getByText("Ask, request or get help from people in Blessed Satch family.", { exact: true }).isVisible(), "The plain DemandBox explanation is missing.");
+  assert(await page.getByText("Ask, request or get help from people in Blessed Satch family Marketplace.", { exact: true }).isVisible(), "The plain DemandBox explanation is missing.");
   assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
   assert(await page.getByRole("link", { name: "Ask a question", exact: true }).isVisible(), "Ask a question is missing.");
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
@@ -239,10 +240,27 @@ async function verifyViewport(browser, baseURL, viewport) {
   await page.getByRole("button", { name: "Post a need", exact: true }).click();
   const form = page.locator('[data-gsn-demand-create-form="simple"]');
   const createCard = page.locator('[data-gsn-demand-create-card="premium"]');
+  const createShell = page.locator('[data-gsn-demand-create-shell="reference"]');
+  const communityContext = createCard.locator('[data-gsn-demand-community-context="selected"]');
   await form.waitFor();
   assert(await createCard.isVisible(), "The premium create card is missing.");
+  assert(await createShell.isVisible(), "The approved DemandBox create background is missing.");
   assert(await createCard.getByText("Share one clear need with the right people.", { exact: true }).isVisible(), "The create task guidance is missing.");
-  assert(await createCard.getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(), "The selected community context is missing.");
+  assert(await communityContext.getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(), "The selected community context is missing.");
+  assert(!(await communityContext.getByText("Blessed Satch family Marketplace Marketplace", { exact: true }).isVisible().catch(() => false)), "Marketplace is duplicated in the selected community name.");
+  const createVisuals = await createShell.evaluate((shell) => {
+    const card = shell.querySelector('[data-gsn-demand-create-card="premium"]');
+    const shellStyle = getComputedStyle(shell);
+    const cardStyle = card ? getComputedStyle(card) : null;
+    return {
+      shellBackground: shellStyle.backgroundImage,
+      cardBackground: cardStyle?.backgroundImage || "",
+      cardShadow: cardStyle?.boxShadow || "",
+    };
+  });
+  assert(createVisuals.shellBackground.includes("radial-gradient"), "The approved blue-purple DemandBox background is missing.");
+  assert(createVisuals.cardBackground.includes("linear-gradient"), "The approved light DemandBox card is missing.");
+  assert(createVisuals.cardShadow !== "none", "The approved DemandBox card glow is missing.");
   assert(await page.getByLabel("What do you need?").isVisible(), "Need field is missing.");
   assert(await page.getByLabel("Type").isVisible(), "Type field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
@@ -251,7 +269,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await page.getByRole("button", { name: "Community", exact: true }).getAttribute("aria-pressed")) === "true", "Community visibility is not visibly selected by default.");
   const createScreenshotPath = process.env.GSN_DEMAND_BOX_CREATE_SCREENSHOT_PATH?.trim();
   if (createScreenshotPath && viewport.width === 390) {
-    await createCard.screenshot({ path: createScreenshotPath });
+    await createShell.screenshot({ path: createScreenshotPath });
   }
   assert(!(await page.getByLabel("Short explanation").isVisible().catch(() => false)), "Optional fields opened before More options.");
   await page.locator('[data-cta-id="demand-box.more-options"]').click();
