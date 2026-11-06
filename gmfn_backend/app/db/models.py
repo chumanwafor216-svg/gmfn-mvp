@@ -3721,12 +3721,13 @@ class CommunityNoticeVoiceAttachment(Base):
         UniqueConstraint("event_id", name="uq_community_notice_voice_event_v1"),
         UniqueConstraint("storage_key", name="uq_community_notice_voice_storage_key_v1"),
         Index("ix_community_notice_voice_clan_kind", "clan_id", "event_kind"),
+        Index("ix_notice_voice_source_submission", "source_submission_event_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     event_kind: Mapped[str] = mapped_column(String(24), nullable=False, index=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("trust_events.id", ondelete="CASCADE"), nullable=False, index=True)
-    source_submission_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trust_events.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_submission_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trust_events.id", ondelete="SET NULL"), nullable=True)
     clan_id: Mapped[int] = mapped_column(ForeignKey("clans.id", ondelete="CASCADE"), nullable=False, index=True)
     created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     storage_key: Mapped[str] = mapped_column(String(160), nullable=False)

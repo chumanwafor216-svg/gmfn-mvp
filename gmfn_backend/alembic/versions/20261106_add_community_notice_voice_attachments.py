@@ -52,7 +52,6 @@ def upgrade() -> None:
         "id",
         "event_kind",
         "event_id",
-        "source_submission_event_id",
         "clan_id",
         "created_by_user_id",
         "deleted_at",
@@ -66,6 +65,12 @@ def upgrade() -> None:
             [column],
             unique=False,
         )
+    op.create_index(
+        "ix_notice_voice_source_submission",
+        "community_notice_voice_attachments",
+        ["source_submission_event_id"],
+        unique=False,
+    )
     op.create_index(
         "ix_community_notice_voice_clan_kind",
         "community_notice_voice_attachments",

@@ -23,6 +23,18 @@ class Obj:
         self.__dict__.update(kwargs)
 
 
+def test_community_notice_voice_identifiers_fit_postgres_limit() -> None:
+    table = CommunityNoticeVoiceAttachment.__table__
+    identifiers = [
+        item.name
+        for item in (*table.indexes, *table.constraints)
+        if item.name
+    ]
+
+    assert identifiers
+    assert all(len(identifier) <= 63 for identifier in identifiers)
+
+
 def _wav_bytes(seconds: float = 0.25, sample_rate: int = 8000) -> bytes:
     frame_count = max(1, int(seconds * sample_rate))
     output = io.BytesIO()

@@ -25,7 +25,11 @@ This file is the compact current-state handoff required by `README.md` and
   access and participates in bounded reference-aware cleanup.
 - Backend coverage lives in
   `gmfn_backend/tests/test_community_notice_voice.py`; the pre-existing
-  Community Notice suite and frontend production build also pass. Final phone
+  Community Notice suite and frontend production build also pass. The first
+  API pre-deploy exposed and rejected an overlong PostgreSQL index name before
+  changing the live service; the migration now uses an explicit bounded name
+  and the voice suite guards every new table identifier against PostgreSQL's
+  63-character limit. Final phone
   microphone/playback review and pilot deployment verification remain part of
   this handoff until the published commit is confirmed live.
 
