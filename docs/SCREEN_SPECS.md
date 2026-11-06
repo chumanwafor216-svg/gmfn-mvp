@@ -676,6 +676,14 @@ After submission:
   Community QR is reusable for many people and follows the same saved joining
   rule; in instant mode, every scanner moves directly from the first form to
   Activate Membership with their own generated GSN ID.
+- If an already accepted member reopens the invite before creating a password,
+  show `Membership accepted - account setup not finished` and one `Finish
+  account setup` action. Do not call the request pending and do not send the
+  member to Community Home before protected password creation and sign-in.
+- A GSN ID is an identifier, not password-creation proof. A legacy approved
+  member whose old request has no activation grant may recover only through the
+  authenticated, supervised community-admin assistance flow bound to that exact
+  request and membership. That recovery must not claim phone verification.
 
 ## CommunityHomePage
 

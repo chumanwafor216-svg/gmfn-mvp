@@ -2823,6 +2823,25 @@ def _already_member_join_payload(
     user: User,
     membership: ClanMembership,
 ) -> dict[str, Any]:
+    activation_pending = is_user_activation_pending(user)
+    latest_join_request = None
+    if activation_pending:
+        latest_join_request = (
+            db.query(ClanJoinRequest)
+            .filter(
+                ClanJoinRequest.clan_id == int(clan.id),
+                ClanJoinRequest.applicant_user_id == int(user.id),
+                ClanJoinRequest.status == "approved",
+            )
+            .order_by(ClanJoinRequest.id.desc())
+            .first()
+        )
+    request_id = int(latest_join_request.id) if latest_join_request is not None else None
+    activation_path = (
+        _frontend_activation_path(_safe_str(getattr(user, "gmfn_id", None)), request_id)
+        if activation_pending and request_id is not None
+        else None
+    )
     return {
         "ok": True,
         "result_status": "already_member",
@@ -2841,8 +2860,14 @@ def _already_member_join_payload(
         "request": None,
         "existing_identity": True,
         "identity_reused": True,
+        "status": "approved",
+        "request_id": request_id,
+        "activation_pending": activation_pending,
+        "activation_required": activation_pending,
+        "activation_path": activation_path,
+        "result_channel": "activation-ready" if activation_pending else "approved-existing-member",
+        "result_path": activation_path or f"/app/community/{int(clan.id)}",
     }
-
 
 def _join_request_status_payload(
     db: Session,
@@ -6099,6 +6124,7 @@ def issue_join_activation_assistance(
             ClanJoinRequest.id == int(join_request_id),
             ClanJoinRequest.clan_id == int(clan_id),
         )
+        .with_for_update()
         .first()
     )
     if req is None or _safe_str(req.status).lower() != "approved":
@@ -6126,7 +6152,39 @@ def issue_join_activation_assistance(
         )
         .first()
     )
-    if grant is None or grant.activation_authorized_at is None:
+    if grant is None:
+        active_membership = _is_active_membership(
+            db,
+            clan_id=int(clan_id),
+            user_id=int(applicant.id),
+        )
+        if active_membership is None:
+            raise HTTPException(status_code=409, detail="Activation assistance is not available")
+        repaired = issue_activation_grant(
+            db,
+            user_id=int(applicant.id),
+            source_type="assisted_legacy_join_recovery",
+            join_request_id=int(req.id),
+            authorize_activation=True,
+        )
+        grant = repaired.row
+        log_trust_event(
+            db,
+            event_type="account_activation.legacy_grant_repaired",
+            clan_id=int(clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(applicant.id),
+            meta={
+                "reason": "approved_legacy_member_requested_supervised_activation",
+                "join_request_id": int(req.id),
+                "membership_id": int(active_membership.id),
+                "phone_verified": False,
+            },
+            dedupe_key=f"activation-legacy-grant-repaired:{int(req.id)}",
+            commit=False,
+            refresh=False,
+        )
+    if grant.activation_authorized_at is None:
         raise HTTPException(status_code=409, detail="Activation assistance is not available")
 
     issued = issue_assisted_activation_challenge(

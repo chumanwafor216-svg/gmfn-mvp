@@ -30,7 +30,7 @@ def _seed_pending_member(*, with_join_request: bool = False) -> tuple[str, str |
         )
         applicant = User(
             id=2,
-            email="applicant@pending.gmfn.local",
+            email="2348000000002@pending.gmfn.local",
             hashed_password="PENDING_APPROVAL",
             role="user",
             gmfn_id="GMFN-U-APPLICANT1",
@@ -518,6 +518,78 @@ def test_admin_assisted_code_recovers_activation_without_verifying_phone(
         assert challenge.confirmed_at is not None
         assert challenge.consumed_at is not None
 
+
+def test_admin_assisted_code_repairs_approved_legacy_member_without_grant(
+    client: TestClient,
+    override_clan_ctx_admin,
+):
+    _seed_pending_member(with_join_request=True)
+    with SessionLocal() as db:
+        db.query(AccountActivationGrant).delete(synchronize_session=False)
+        db.commit()
+
+    issued = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={
+            "confirmed_identity": True,
+            "verification_note": "Recognized the approved legacy member in person.",
+        },
+    )
+
+    assert issued.status_code == 201, issued.text
+    code = issued.json()["code"]
+    with SessionLocal() as db:
+        grant = db.query(AccountActivationGrant).one()
+        applicant = db.get(User, 2)
+        membership = (
+            db.query(ClanMembership)
+            .filter_by(clan_id=1, user_id=2)
+            .one()
+        )
+        assert grant.join_request_id == 1
+        assert grant.source_type == "assisted_legacy_join_recovery"
+        assert grant.activation_authorized_at is not None
+        assert membership.left_at is None
+        assert applicant is not None
+        assert applicant.phone_verified_at is None
+
+    confirmed = client.post(
+        "/clans/join-requests/1/activation-assistance/confirm",
+        json={"gmfn_id": "GMFN-U-APPLICANT1", "code": code},
+    )
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["activation_token"]
+    assert confirmed.json()["phone_verified"] is False
+
+
+def test_already_member_response_routes_unactivated_member_to_account_setup(
+    client: TestClient,
+):
+    _seed_pending_member(with_join_request=True)
+
+    response = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "security-invite",
+            "first_name": "Approved",
+            "surname": "Applicant",
+            "phone_e164": "+2348000000002",
+            "country": "Nigeria",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["result_status"] == "already_member"
+    assert body["status"] == "approved"
+    assert body["request_id"] == 1
+    assert body["activation_pending"] is True
+    assert body["activation_required"] is True
+    assert body["result_channel"] == "activation-ready"
+    assert body["activation_path"].startswith("/activate-membership?")
+    assert "gmfn_id=GMFN-U-APPLICANT1" in body["activation_path"]
+    assert "request_id=1" in body["activation_path"]
+    assert body["result_path"] == body["activation_path"]
 
 def test_admin_assisted_code_requires_community_admin(
     client: TestClient,

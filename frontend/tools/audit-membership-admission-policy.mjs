@@ -49,13 +49,23 @@ requirePattern(
   "An approved new member must continue directly from the join form to Activate Membership."
 );
 requirePattern(
+  "gmfn_backend/app/api/routes/clans.py",
+  /def issue_join_activation_assistance[\s\S]*?with_for_update\(\)[\s\S]*?source_type="assisted_legacy_join_recovery"[\s\S]*?account_activation\.legacy_grant_repaired[\s\S]*?issue_assisted_activation_challenge/,
+  "An approved legacy instant member without a grant must recover only through authenticated supervised activation."
+);
+requirePattern(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /alreadyMemberNeedsActivation[\s\S]*?Membership accepted - account setup not finished[\s\S]*?Finish account setup/,
+  "An already accepted but unactivated member must see account setup guidance instead of a false pending state or Community Home shortcut."
+);
+requirePattern(
   "frontend/src/lib/api.ts",
   /export type CommunityAdmissionMode[\s\S]*?"instant_invite"[\s\S]*?"admin_approval"[\s\S]*?"community_vote"[\s\S]*?updateCommunityAdmissionPolicy[\s\S]*?adminApproveJoinRequest/,
   "Frontend API helpers must expose all three modes and the admin decision."
 );
 requirePattern(
   "frontend/src/pages/CommunityJoinRequestsPage.tsx",
-  /How people join[\s\S]*?Instant join[\s\S]*?Admin approval[\s\S]*?Community vote[\s\S]*?admissionMode === "community_vote"[\s\S]*?Allow an admin to approve without waiting for all votes/,
+  /Choose one simple option[\s\S]*?Join with an invite[\s\S]*?One leader decides[\s\S]*?Several people agree[\s\S]*?admissionMode === "community_vote"[\s\S]*?Let one community leader accept someone without waiting for everyone/,
   "The settings surface must keep one clear three-mode choice and show override only for voting."
 );
 requirePattern(

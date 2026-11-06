@@ -5,6 +5,15 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Instant-join legacy activation continuity - 2026-11-06
+
+- Production inspection confirmed that current `instant_invite` entry works as designed: submission creates active membership and a GSN ID, then sends the new member directly to protected password creation before sign-in and Community Home. Recent requests #25 and #26 have activation grants; #25 completed activation successfully.
+- Request #24 is an older approved instant member created before activation grants were introduced. It has active membership and a GSN ID but no safe password-creation proof. This is a legacy data gap, not evidence that current instant join is generally failing.
+- Reopening an invite as an accepted but unactivated member now reports `Membership accepted - account setup not finished` and offers `Finish account setup`. It no longer shows a false pending status or sends that person toward Community Home before sign-in is possible.
+- An authenticated community administrator can repair an approved legacy request only through the existing supervised `Help them finish joining` flow. The backend locks the exact request, verifies the active membership, creates the missing request-bound activation grant, records a trust event, and then issues the existing 15-minute private code.
+- A GSN ID alone remains insufficient to create or reset a password. Allowing that would let anyone who learns another member's public identifier take over the account. Supervised recovery does not mark the phone as verified.
+- Focused activation coverage passes all 19 tests, the membership-admission policy audit passes, and Python compilation succeeds.
+
 ## Community voice destination clarification - 2026-11-06
 
 - Live Render logs and a read-only production database check confirmed that the

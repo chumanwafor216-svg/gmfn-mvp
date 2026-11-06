@@ -2025,6 +2025,21 @@ export default function JoinEntryPage() {
   const submittedRequestId = cleanText(
     success?.request?.id || success?.request_id || ""
   );
+  const successResultStatus = cleanText(
+    success?.result_status || success?.code || ""
+  ).toLowerCase();
+  const alreadyMemberNeedsActivation =
+    successResultStatus === "already_member" &&
+    Boolean(success?.activation_pending || success?.activation_required);
+  const alreadyMemberActivationTo = alreadyMemberNeedsActivation
+    ? activationRouteFor(success, location.search)
+    : "";
+  const successStatusText =
+    successResultStatus === "already_member"
+      ? alreadyMemberNeedsActivation
+        ? "Membership accepted - account setup not finished"
+        : "Active member"
+      : String(success?.request?.status || success?.status || "pending");
   const welcomeCta = useMemo(
     () =>
       resolveCtaTarget("welcome", {
@@ -3848,9 +3863,10 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div>
-                  {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
-                  "already_member"
-                    ? "You already belong to this community. Your current GSN identity stays the same."
+                  {successResultStatus === "already_member"
+                    ? alreadyMemberNeedsActivation
+                      ? "Your membership is accepted and your GSN ID is ready. Finish account setup by creating your password before signing in."
+                      : "You already belong to this community. Your current GSN identity stays the same."
                     : isInstantJoin
                     ? success?.existing_identity || success?.identity_reused
                       ? "You are now a member using your existing GSN identity."
@@ -3861,8 +3877,7 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div style={{ marginTop: 12 }}>
-                  <strong>Request status:</strong>{" "}
-                  {String(success?.request?.status || success?.status || "pending")}
+                  <strong>Status:</strong> {successStatusText}
                 </div>
 
                 <div style={{ marginTop: 6 }}>
@@ -3876,16 +3891,28 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div style={entryActionGrid(isCompact, 1)}>
-                  {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
-                  "already_member" ? (
+                  {successResultStatus === "already_member" ? (
                     <StableCtaLink
-                      to={ctaPath(alreadyMemberCta)}
+                      to={
+                        alreadyMemberNeedsActivation && alreadyMemberActivationTo
+                          ? alreadyMemberActivationTo
+                          : ctaPath(alreadyMemberCta)
+                      }
                       kind="secondary"
-                      debugId={alreadyMemberCta.debugId}
+                      debugId={
+                        alreadyMemberNeedsActivation
+                          ? "join-entry.finish-account-setup"
+                          : alreadyMemberCta.debugId
+                      }
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      {joinEntryIconText("community", "Open this community")}
+                      {joinEntryIconText(
+                        alreadyMemberNeedsActivation ? "lock" : "community",
+                        alreadyMemberNeedsActivation
+                          ? "Finish account setup"
+                          : "Open this community"
+                      )}
                     </StableCtaLink>
                   ) : submittedRequestId ? (
                     <StableCtaLink
