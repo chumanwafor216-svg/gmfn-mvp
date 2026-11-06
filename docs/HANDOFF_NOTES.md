@@ -5,6 +5,33 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Non-expiring Community QR links - 2026-11-06
+
+- Customer-discovery workshop follow-up removes calendar expiry only from an
+  explicit Community QR package, identified by its saved `qr_policy_key`.
+  Personal invitation links keep their existing expiry and, for instant entry,
+  their single-use boundary.
+- New Community QR records are stored with `expires_at = NULL`. Active legacy
+  Community QR records also ignore an older stored expiry so an already printed
+  or shared QR does not need replacement merely because its former date passed.
+- Permanent does not mean uncontrolled: inactive or revoked links remain
+  blocked, admission-policy changes still retire old links, QR-policy changes
+  still retire the previous QR package, and domain-level invite controls remain
+  authoritative.
+- Public preview and join-request responses report no expiry for Community QR
+  links. The Community QR screen therefore stops exposing an `Open until` date,
+  while ordinary invitation previews continue to show and enforce one.
+- Verification passes all 84 tests in
+  `gmfn_backend/tests/test_join_requests.py`, including an active expired legacy
+  Community QR that remains usable and an expired personal link that remains
+  rejected.
+- Exact workshop-link identity is not yet certified because the reported phone
+  screenshot does not expose the URL or invite token. If its record is active
+  and is an explicit Community QR, this fix preserves the same link. If it is
+  inactive, revoked, incomplete, or an ordinary personal invite, the owner must
+  generate one fresh Community QR after deployment and share that canonical
+  `/start/join/{invite_code}` URL.
+
 ## Public Shop compact voice and update strip - 2026-11-06
 
 - Founder phone-video follow-up removes the obsolete HTML `Open Shop` panel

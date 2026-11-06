@@ -679,6 +679,7 @@ def _invite_preview_payload(
         expires_at = _effective_invite_expires_at(
             created_at=getattr(invite_row, "created_at", None),
             expires_at=getattr(invite_row, "expires_at", None),
+            qr_policy_key=getattr(invite_row, "qr_policy_key", None),
         )
         uses = int(getattr(invite_row, "uses", 0) or 0)
         raw_max_uses = getattr(invite_row, "max_uses", None)
@@ -1763,7 +1764,11 @@ def _effective_invite_expires_at(
     *,
     created_at: Optional[datetime],
     expires_at: Optional[datetime],
+    qr_policy_key: Optional[str] = None,
 ) -> Optional[datetime]:
+    if _safe_str(qr_policy_key) in COMMUNITY_QR_POLICY_KEYS:
+        return None
+
     safe_expires_at = _utc_aware(expires_at)
     safe_created_at = _utc_aware(created_at)
     min_hours = _minimum_invite_ttl_hours()
@@ -1832,6 +1837,7 @@ def _is_clan_invite_expired(invite: ClanInvite) -> bool:
     expires_at = _effective_invite_expires_at(
         created_at=getattr(invite, "created_at", None),
         expires_at=getattr(invite, "expires_at", None),
+        qr_policy_key=getattr(invite, "qr_policy_key", None),
     )
     if expires_at is None:
         return False
@@ -4343,7 +4349,11 @@ def get_invite_link(
             "invite_code": latest_invite.code,
             "qr_policy_key": getattr(latest_invite, "qr_policy_key", None),
             "invite_created_at": latest_invite.created_at,
-            "invite_expires_at": latest_invite.expires_at,
+            "invite_expires_at": _effective_invite_expires_at(
+                created_at=getattr(latest_invite, "created_at", None),
+                expires_at=getattr(latest_invite, "expires_at", None),
+                qr_policy_key=getattr(latest_invite, "qr_policy_key", None),
+            ),
             "invite_max_uses": (
                 int(latest_invite.max_uses)
                 if latest_invite.max_uses is not None

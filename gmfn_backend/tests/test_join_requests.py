@@ -3912,6 +3912,44 @@ def test_public_join_request_rejects_short_lived_invite_after_daily_pilot_window
     assert res.json()["detail"] == "Invitation has expired"
 
 
+def test_active_community_qr_ignores_legacy_expiry_but_personal_invites_do_not(client):
+    _seed_join_context()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="legacy-expired-community-qr",
+                qr_policy_key="reviewed_access",
+                is_active=True,
+                max_uses=0,
+                uses=0,
+                created_at=now - timedelta(days=8),
+                expires_at=now - timedelta(days=1),
+            )
+        )
+        db.commit()
+
+    preview_res = client.get(
+        "/clans/join-invite/preview?code=legacy-expired-community-qr"
+    )
+    assert preview_res.status_code == 200, preview_res.text
+    preview = preview_res.json()
+    assert preview["valid"] is True
+    assert preview["status"] == "ready"
+    assert preview["expires_at"] is None
+
+    join_res = client.post(
+        "/clans/join-requests",
+        json=_join_payload("legacy-expired-community-qr"),
+    )
+    assert join_res.status_code == 201, join_res.text
+    assert join_res.json()["result_status"] == "pending_request_created"
+
+
 def test_public_join_request_still_accepts_legacy_community_invite_code(client):
     _seed_join_context(invite_code="legacy-code")
 
@@ -4249,6 +4287,7 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         assert "Any active member may share it" in data["message"]
         assert data["invite_link"]
         assert data["qr_policy_key"] == "market_access"
+        assert data["invite_expires_at"] is None
         assert data["invite_link"].endswith(f"/start/join/{data['invite_code']}")
         assert "?" not in data["invite_link"]
         assert data["retired_qr_policy_invites"] == 0
@@ -4264,6 +4303,7 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
             assert invite.created_by_user_id == 2
             assert invite.qr_policy_key == "market_access"
             assert invite.max_uses == 0
+            assert invite.expires_at is None
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 

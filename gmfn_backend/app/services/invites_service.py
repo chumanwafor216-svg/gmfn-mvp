@@ -106,6 +106,9 @@ def _minimum_invite_ttl_hours() -> int:
 
 
 def _effective_invite_expires_at(invite: ClanInvite) -> Optional[datetime]:
+    if str(getattr(invite, "qr_policy_key", None) or "").strip() in COMMUNITY_QR_POLICY_KEYS:
+        return None
+
     expires_at = _utc_aware(invite.expires_at)
     created_at = _utc_aware(invite.created_at)
     min_hours = _minimum_invite_ttl_hours()
@@ -248,8 +251,8 @@ def create_clan_invite(
     _require_member_or_admin(db, clan_id=clan_id, user=created_by_user)
     _rate_limit_create_invite(int(created_by_user.id), int(clan_id), limit=20, window_seconds=3600)
 
-    safe_expires_at = _utc_aware(expires_at)
     safe_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
+    safe_expires_at = None if safe_qr_policy_key else _utc_aware(expires_at)
     safe_admission_mode = str(admission_mode or "").strip() or None
     # The persisted legacy contract uses 0 for an unlimited reviewed link.
     # Positive values are real use limits; instant invitations pass 1.
@@ -341,7 +344,7 @@ def preview_invite(db: Session, *, code: str) -> dict:
         "is_active": invite.is_active,
         "uses": invite.uses or 0,
         "max_uses": int(invite.max_uses) if int(invite.max_uses or 0) > 0 else None,
-        "expires_at": invite.expires_at,
+        "expires_at": _effective_invite_expires_at(invite),
         "revoked_at": invite.revoked_at,
     }
 
