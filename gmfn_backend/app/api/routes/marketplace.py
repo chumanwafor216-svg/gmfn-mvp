@@ -35,6 +35,7 @@ from app.db.models import (
     ProtectedTradeRecord,
     ShopDiaryEntry,
     ShopFollower,
+    ShopVoiceAttachment,
     SpotlightCampaign,
     SpotlightCampaignPacingState,
     SpotlightContentVersion,
@@ -78,6 +79,12 @@ from app.services.marketplace_media_quality_service import (
 )
 from app.services.spotlight_retention_service import (
     compact_spotlight_payloads_for_deleted_product,
+)
+from app.services.demand_audio_service import PRIVATE_SHOP_VOICE_DIRECTORY
+from app.services.shop_voice_service import (
+    SHOP_VOICE_PRODUCT,
+    SHOP_VOICE_WELCOME,
+    shop_voice_payload,
 )
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.trust_events_services import log_trust_event
@@ -4368,6 +4375,11 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "follower_count": follower_count,
         "followers_count": follower_count,
         "shop_follower_count": follower_count,
+        **shop_voice_payload(
+            db,
+            parent_kind=SHOP_VOICE_WELCOME,
+            parent_id=int(shop.id),
+        ),
     }
 
 
@@ -4462,6 +4474,11 @@ def _product_out(
         "shop_product_slots_free": FREE_COMMUNITY_PRODUCT_SLOTS,
         "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
         "shop_product_slots_total": public_slots_total,
+        **shop_voice_payload(
+            db,
+            parent_kind=SHOP_VOICE_PRODUCT,
+            parent_id=int(product.id),
+        ),
     }
 
 
@@ -7408,17 +7425,33 @@ def delete_marketplace_product(
         product_id=int(product.id),
     )
     snapshot = _product_out(db, product)
+    product_voice = (
+        db.query(ShopVoiceAttachment)
+        .filter(
+            ShopVoiceAttachment.parent_kind == SHOP_VOICE_PRODUCT,
+            ShopVoiceAttachment.parent_id == int(product.id),
+        )
+        .first()
+    )
+    product_voice_url = (
+        f"/uploads/{PRIVATE_SHOP_VOICE_DIRECTORY}/{product_voice.storage_key}"
+        if product_voice is not None and product_voice.deleted_at is None
+        else ""
+    )
     media_urls = list(
         dict.fromkeys(
             value
             for value in (
                 _safe_str(getattr(product, "image_url", None)),
                 _safe_str(getattr(product, "video_url", None)),
+                product_voice_url,
                 *vault_media_urls,
             )
             if value
         )
     )
+    if product_voice is not None:
+        db.delete(product_voice)
     queued_media = queue_marketplace_media_deletions(
         db,
         media_urls=media_urls,
@@ -7449,6 +7482,7 @@ def delete_marketplace_product(
             "retired_vault_payload": retired_vault_payload,
             "retired_spotlight_payload": spotlight_retirement_audit,
             "detached_history_references": detached_history_references,
+            "voice_attachment_removed": product_voice is not None,
             "reason": "marketplace_product_deleted_hard",
         },
         commit=False,

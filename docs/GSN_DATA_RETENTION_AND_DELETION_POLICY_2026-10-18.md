@@ -87,6 +87,27 @@ scrubbed at deletion. Recipients, community owners, and admins cannot delete a
 recording they did not send. Expiry or closure never authorises deletion and
 there is no expiry-based voice cleanup.
 
+## Current Shop voice behavior
+
+Shop welcome, Shop Update and individual product/service voice notes are
+private managed media objects. Direct static access is blocked. Public playback
+is available only through a checked endpoint while the parent shop, update or
+item is publicly eligible; exact-owner playback remains authenticated.
+
+Welcome voice follows the active shop until replaced or removed. Product/service
+voice follows that exact item's visibility and lifecycle. Shop Update voice
+stops publicly after the existing 24-hour `occurred_at` window, but expiry is a
+visibility transition and does not erase the owner history or audio object.
+
+The exact sender may permanently delete a recording through two-step
+confirmation. Playback is revoked in the committed transaction, attribution
+and deletion time remain as an auditable tombstone, original filename is
+scrubbed, and the private object is queued for bounded reference-aware cleanup.
+Replacing a recording uses the same durable cleanup queue for the superseded
+object. Deleting a product removes its attached voice object with that exact
+product lifecycle. Community owners, recipients and platform admins do not
+inherit recording or deletion authority.
+
 ## Future-feature checklist
 
 Every new deletion or retention feature must define:

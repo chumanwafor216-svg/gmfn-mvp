@@ -16,6 +16,7 @@ from fastapi import HTTPException, UploadFile
 MAX_DEMAND_AUDIO_BYTES = 8 * 1024 * 1024
 MAX_DEMAND_AUDIO_SECONDS = 60.0
 PRIVATE_DEMAND_AUDIO_DIRECTORY = ".private-demandbox"
+PRIVATE_SHOP_VOICE_DIRECTORY = ".private-shop-voice"
 ALLOWED_AUDIO_TYPES = {
     "audio/aac": ".aac",
     "audio/m4a": ".m4a",
@@ -62,11 +63,25 @@ def demand_audio_directory() -> Path:
     return uploads_root / PRIVATE_DEMAND_AUDIO_DIRECTORY
 
 
+def shop_voice_directory() -> Path:
+    uploads_root = Path(
+        str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "uploads").strip()
+    ).expanduser()
+    return uploads_root / PRIVATE_SHOP_VOICE_DIRECTORY
+
+
 def demand_audio_path(storage_key: str) -> Path:
     safe_name = Path(str(storage_key or "")).name
     if not safe_name or safe_name != str(storage_key or ""):
         raise HTTPException(status_code=404, detail="Voice note not found")
     return demand_audio_directory() / safe_name
+
+
+def shop_voice_path(storage_key: str) -> Path:
+    safe_name = Path(str(storage_key or "")).name
+    if not safe_name or safe_name != str(storage_key or ""):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return shop_voice_directory() / safe_name
 
 
 def _verified_duration_seconds(path: Path, mime_type: str) -> float:
@@ -127,6 +142,18 @@ def _verified_duration_seconds(path: Path, mime_type: str) -> float:
 
 
 async def store_demand_audio(upload: UploadFile) -> StoredDemandAudio:
+    return await _store_audio(upload, directory=demand_audio_directory())
+
+
+async def store_shop_voice(upload: UploadFile) -> StoredDemandAudio:
+    return await _store_audio(upload, directory=shop_voice_directory())
+
+
+async def _store_audio(
+    upload: UploadFile,
+    *,
+    directory: Path,
+) -> StoredDemandAudio:
     mime_type = str(upload.content_type or "").split(";", 1)[0].strip().lower()
     suffix = ALLOWED_AUDIO_TYPES.get(mime_type)
     if not suffix:
@@ -144,7 +171,6 @@ async def store_demand_audio(upload: UploadFile) -> StoredDemandAudio:
             detail="Voice notes must be smaller than 8 MB.",
         )
 
-    directory = demand_audio_directory()
     directory.mkdir(parents=True, exist_ok=True)
     storage_key = f"{uuid4().hex}{suffix}"
     path = directory / storage_key
@@ -166,6 +192,10 @@ async def store_demand_audio(upload: UploadFile) -> StoredDemandAudio:
 
 def delete_demand_audio(storage_key: str) -> None:
     demand_audio_path(storage_key).unlink(missing_ok=True)
+
+
+def delete_shop_voice(storage_key: str) -> None:
+    shop_voice_path(storage_key).unlink(missing_ok=True)
 
 
 def clone_demand_audio(storage_key: str) -> str:

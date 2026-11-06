@@ -28,7 +28,7 @@ class ShopDiaryEntryCreateIn(BaseModel):
     clan_id: Optional[int] = None
     shop_id: int = Field(gt=0)
     activity_type: str = Field(default="other_update", min_length=3, max_length=40)
-    note: str = Field(min_length=2, max_length=4000)
+    note: str = Field(default="", max_length=4000)
     occurred_at: Optional[datetime] = None
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
@@ -88,6 +88,11 @@ class ShopDiaryEntryOut(BaseModel):
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    voice_attachment_id: Optional[int] = None
+    voice_duration_seconds: Optional[float] = None
+    voice_deleted_at: Optional[datetime] = None
+    voice_speaker_name: Optional[str] = None
+    voice_speaker_gmfn_id: Optional[str] = None
 
 
 class ShopDiaryEntryListOut(BaseModel):

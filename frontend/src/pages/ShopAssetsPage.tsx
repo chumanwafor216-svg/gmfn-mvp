@@ -12,6 +12,8 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import ShopVoiceNotePlayer from "../components/ShopVoiceNotePlayer";
+import VoiceNoteRecorder from "../components/VoiceNoteRecorder";
 import VideoSoundEditor from "../components/VideoSoundEditor";
 import {
   institutionalInnerCard,
@@ -35,6 +37,9 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getMyShopDiaryEntries,
   createShopDiaryEntry,
+  createShopDiaryVoiceEntry,
+  uploadProductVoice,
+  uploadShopWelcomeVoice,
   recordMarketplaceAttentionEvent,
   listProtectedTrades,
   getSelectedClanId,
@@ -96,6 +101,11 @@ type ShopRecord = {
   shop_product_slots_free?: number | null;
   shop_product_slots_extra?: number | null;
   shop_product_slots_total?: number | null;
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
 };
 
 type ProductRecord = {
@@ -121,6 +131,11 @@ type ProductRecord = {
   shop_product_slots_free?: number | null;
   shop_product_slots_extra?: number | null;
   shop_product_slots_total?: number | null;
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
 };
 
 type NoticeTone = "success" | "error" | "info";
@@ -1099,6 +1114,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [savingShop, setSavingShop] = useState(false);
   const [uploadingShopImage, setUploadingShopImage] = useState(false);
   const [preparingProfilePortrait, setPreparingProfilePortrait] = useState(false);
+  const [welcomeVoice, setWelcomeVoice] = useState<File | null>(null);
+  const [savingWelcomeVoice, setSavingWelcomeVoice] = useState(false);
 
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [productName, setProductName] = useState("");
@@ -1115,6 +1132,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [productVideoSound, setProductVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [productVideoDurationSeconds, setProductVideoDurationSeconds] = useState<number | null>(null);
   const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
+  const [productVoice, setProductVoice] = useState<File | null>(null);
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
   const productVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedPublicSlot, setSelectedPublicSlot] = useState(
@@ -1152,6 +1170,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     new Date().toISOString().slice(0, 10)
   );
   const [diaryNote, setDiaryNote] = useState("");
+  const [diaryVoice, setDiaryVoice] = useState<File | null>(null);
   const [diaryLinkedProductId, setDiaryLinkedProductId] = useState("");
   const [diaryLinkedTradeId, setDiaryLinkedTradeId] = useState("");
   const [diaryTradeOptions, setDiaryTradeOptions] = useState<ProtectedTradeRecord[]>([]);
@@ -1636,6 +1655,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     () => products.filter((item) => isPublicGalleryProduct(item)),
     [products]
   );
+  const editingProductRecord = useMemo(
+    () =>
+      editingProductId
+        ? products.find((item) => Number(item.id) === Number(editingProductId)) || null
+        : null,
+    [editingProductId, products]
+  );
 
   const selectedDiaryTrade = useMemo(
     () =>
@@ -1766,6 +1792,35 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setDiaryNote("");
     setDiaryLinkedProductId("");
     setDiaryLinkedTradeId("");
+    setDiaryVoice(null);
+  }
+
+  async function saveWelcomeVoice() {
+    if (!shop?.id || !welcomeVoice) {
+      setDiaryNotice({
+        tone: "error",
+        text: "Record the shop welcome voice before saving it.",
+      });
+      return;
+    }
+    setSavingWelcomeVoice(true);
+    setDiaryNotice(null);
+    try {
+      await uploadShopWelcomeVoice(Number(shop.id), welcomeVoice);
+      setWelcomeVoice(null);
+      await loadPage();
+      setDiaryNotice({
+        tone: "success",
+        text: "Shop welcome voice saved. Visitors can choose Listen in Products & Services.",
+      });
+    } catch (err: any) {
+      setDiaryNotice({
+        tone: "error",
+        text: shopAssetsRequestErrorMessage(err, "Shop welcome voice could not be saved."),
+      });
+    } finally {
+      setSavingWelcomeVoice(false);
+    }
   }
 
 
@@ -1778,8 +1833,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setDiaryNotice({ tone: "error", text: "Save your shop details before publishing an update." });
       return;
     }
-    if (!safeStr(diaryNote)) {
-      setDiaryNotice({ tone: "error", text: "Add a short update first." });
+    if (!safeStr(diaryNote) && !diaryVoice) {
+      setDiaryNotice({ tone: "error", text: "Add a short message or voice note first." });
       return;
     }
 
@@ -1791,19 +1846,24 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       const occurred = safeStr(diaryOccurredAt)
         ? new Date(`${diaryOccurredAt}T12:00:00`).toISOString()
         : new Date().toISOString();
-      const createdEntry = await createShopDiaryEntry({
+      const diaryPayload = {
         clan_id: diaryClanId,
         shop_id: Number(shop.id),
         activity_type: diaryActivityType,
         note: safeStr(diaryNote),
         occurred_at: occurred,
-        image_url: null,
-        video_url: null,
         product_id: Number(diaryLinkedProductId || 0) || null,
         protected_trade_id: selectedDiaryTrade ? Number(selectedDiaryTrade.id || 0) : null,
         evidence_class: selectedDiaryTrade ? "counterparty_confirmed" : "owner_update",
         is_public: true,
-      });
+      };
+      const createdEntry = diaryVoice
+        ? await createShopDiaryVoiceEntry(diaryPayload, diaryVoice)
+        : await createShopDiaryEntry({
+            ...diaryPayload,
+            image_url: null,
+            video_url: null,
+          });
       const diaryRes = await getMyShopDiaryEntries({ shop_id: Number(shop.id), limit: 30 }).catch(() => ({ items: [] }));
       setDiaryEntries(Array.isArray(diaryRes?.items) ? diaryRes.items : []);
       setRecentlyPublishedDiaryEntry(isLivePublicDiaryEntry(createdEntry) ? createdEntry : null);
@@ -2172,6 +2232,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductSelectedVideoFile(null);
     setProductVideoSound(null);
     setProductVideoDurationSeconds(null);
+    setProductVoice(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(productPreviewUrl);
@@ -2199,6 +2260,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setProductSelectedVideoFile(null);
     setProductVideoSound(null);
     setProductVideoDurationSeconds(null);
+    setProductVoice(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(productPreviewUrl);
@@ -2475,6 +2537,17 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           editingProductId ||
           0
       );
+      let productVoiceError = "";
+      if (savedId > 0 && productVoice) {
+        try {
+          await uploadProductVoice(savedId, productVoice);
+        } catch (err: any) {
+          productVoiceError = shopAssetsRequestErrorMessage(
+            err,
+            "The item was saved, but its voice note could not be attached."
+          );
+        }
+      }
       const refreshedProducts = await loadPage();
       if (!mountedRef.current) return;
       let hydratedProducts = refreshedProducts;
@@ -2520,6 +2593,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           wasEditingProduct ? "Private item updated." : "Private item posted.",
           selectedPublicSlot
         );
+      }
+      if (productVoiceError) {
+        setEditingProductId(savedId || editingProductId);
+        setProductFormNotice({ tone: "error", text: productVoiceError });
+        setProductEditorOpen(true);
+        setPublicBlocksOpen(true);
+        return;
       }
       resetProductForm();
       setProductEditorOpen(false);
@@ -3303,6 +3383,59 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           </div>
         ) : null}
 
+        <details
+          style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: isCompact ? 12 : 14 }}
+        >
+          <StableDisclosureSummary
+            debugId="shop-assets.welcome-voice.toggle"
+            stableHeight={46}
+            style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}
+          >
+            Shop welcome voice
+          </StableDisclosureSummary>
+          <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+            <div style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+              One current welcome recording introduces this shop. It stays until you replace or delete it.
+            </div>
+            {Number(shop?.voice_attachment_id || 0) > 0 || shop?.voice_deleted_at ? (
+              <ShopVoiceNotePlayer
+                attachmentId={Number(shop?.voice_attachment_id || 0)}
+                durationSeconds={shop?.voice_duration_seconds}
+                deletedAt={shop?.voice_deleted_at}
+                speakerName={shop?.voice_speaker_name || me?.display_name}
+                speakerGmfnId={shop?.voice_speaker_gmfn_id || me?.gmfn_id}
+                shopName={firstTruthy(shopName, shop?.name)}
+                canDelete={Number(shop?.voice_attachment_id || 0) > 0}
+                onDeleted={async () => {
+                  await loadPage();
+                }}
+                label="Current shop welcome"
+                debugId="shop-assets.welcome-voice.listen"
+              />
+            ) : null}
+            <VoiceNoteRecorder
+              value={welcomeVoice}
+              onChange={setWelcomeVoice}
+              maxSeconds={60}
+              disabled={savingWelcomeVoice}
+              debugPrefix="shop-assets.welcome-voice.record"
+              compact
+            />
+            <PrimaryButton
+              type="button"
+              onClick={() => void saveWelcomeVoice()}
+              disabled={!welcomeVoice || savingWelcomeVoice || !shop?.id}
+              busy={savingWelcomeVoice}
+              busyLabel="Saving welcome..."
+              fullWidth
+              stableHeight={50}
+              debugId="shop-assets.welcome-voice.save"
+            >
+              {shop?.voice_attachment_id ? "Replace welcome voice" : "Save welcome voice"}
+            </PrimaryButton>
+          </div>
+        </details>
+
         {recentlyPublishedDiaryEntry ? (
           <div
             style={{
@@ -3354,6 +3487,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <div style={sectionLabel()}>What should visitors know?</div>
                 <textarea value={diaryNote} onChange={(event) => setDiaryNote(event.target.value)} placeholder="For example: Available today. Message me to order." style={{ ...textAreaStyle(), marginTop: 8, minHeight: 96, fontSize: isCompact ? 16 : 15 }} />
               </div>
+              <VoiceNoteRecorder
+                value={diaryVoice}
+                onChange={setDiaryVoice}
+                maxSeconds={60}
+                disabled={savingDiaryEntry}
+                debugPrefix="shop-assets.diary.voice"
+                compact
+              />
               <details style={{ ...innerCard("#FFFFFF"), padding: isCompact ? 12 : 14 }}>
                 <StableDisclosureSummary debugId="shop-assets.diary.more-options" stableHeight={44} style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}>
                   More details (optional)
@@ -3412,6 +3553,24 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   </div>
                   <div style={{ marginTop: 6, color: "#526C84", fontSize: 12.5, lineHeight: 1.35 }}>{new Date(entry.occurred_at || entry.created_at || Date.now()).toLocaleDateString()}{entry.product_name ? ` - ${entry.product_name}` : ""}{entry.protected_trade_code ? ` - Trade Evidence ${entry.protected_trade_code}` : ""}</div>
                   <div style={{ marginTop: 6, color: "#07172C", fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{entry.note}</div>
+                  {Number(entry.voice_attachment_id || 0) > 0 || entry.voice_deleted_at ? (
+                    <div style={{ marginTop: 9 }}>
+                      <ShopVoiceNotePlayer
+                        attachmentId={Number(entry.voice_attachment_id || 0)}
+                        durationSeconds={entry.voice_duration_seconds}
+                        deletedAt={entry.voice_deleted_at}
+                        speakerName={entry.voice_speaker_name}
+                        speakerGmfnId={entry.voice_speaker_gmfn_id}
+                        shopName={firstTruthy(shopName, shop?.name)}
+                        canDelete={Number(entry.voice_attachment_id || 0) > 0}
+                        onDeleted={async () => {
+                          await loadPage();
+                        }}
+                        label="Shop Update voice"
+                        debugId={`shop-assets.diary.${entry.id}.voice.listen`}
+                      />
+                    </div>
+                  ) : null}
                   <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
                     {isLivePublicDiaryEntry(entry) ? (
                       <SocialTagShareButton
@@ -4236,6 +4395,41 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     onChange={(e) => setProductDescription(e.target.value)}
                     placeholder="Describe the item in simple words."
                     style={{ ...textAreaStyle(), marginTop: 8 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ ...innerCard("#F8FBFF"), padding: isCompact ? 12 : 14 }}>
+                <div style={sectionLabel()}>Item voice note</div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5 }}>
+                  Add a separate voice explanation. The item name, price, and visibility still apply.
+                </div>
+                {editingProductRecord ? (
+                  <div style={{ marginTop: 10 }}>
+                    <ShopVoiceNotePlayer
+                      attachmentId={Number(editingProductRecord.voice_attachment_id || 0)}
+                      durationSeconds={editingProductRecord.voice_duration_seconds}
+                      deletedAt={editingProductRecord.voice_deleted_at}
+                      speakerName={editingProductRecord.voice_speaker_name}
+                      speakerGmfnId={editingProductRecord.voice_speaker_gmfn_id}
+                      shopName={firstTruthy(shopName, shop?.name)}
+                      canDelete={Number(editingProductRecord.voice_attachment_id || 0) > 0}
+                      onDeleted={async () => {
+                        await loadPage();
+                      }}
+                      label="Current item voice"
+                      debugId={`shop-assets.product.${editingProductRecord.id}.voice.listen`}
+                    />
+                  </div>
+                ) : null}
+                <div style={{ marginTop: 10 }}>
+                  <VoiceNoteRecorder
+                    value={productVoice}
+                    onChange={setProductVoice}
+                    maxSeconds={60}
+                    disabled={savingProduct}
+                    debugPrefix="shop-assets.product.voice"
+                    compact
                   />
                 </div>
               </div>

@@ -166,6 +166,7 @@ class MarketplaceRequestResponseOut(BaseModel):
     author_user_id: int
     recipient_user_id: int
     author_display_name: str
+    author_gmfn_id: Optional[str] = None
     author_profile_image_url: Optional[str] = None
     text: Optional[str] = None
     audio_attachment_id: Optional[int] = None

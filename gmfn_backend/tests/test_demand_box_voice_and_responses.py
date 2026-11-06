@@ -316,6 +316,7 @@ def test_private_response_exchange_and_linked_repost(
     assert response_body["author_profile_image_url"] == (
         "/uploads/profile/users/responder.jpg"
     )
+    assert response_body["author_gmfn_id"] == "GSN-U-RESPONDER"
 
     duplicate_reply = client.post(
         f"/demand-box/requests/{request_id}/responses",
@@ -376,6 +377,7 @@ def test_private_response_exchange_and_linked_repost(
     )
     assert owner_reply.status_code == 200, owner_reply.text
     assert owner_reply.json()["recipient_user_id"] == 2
+    assert owner_reply.json()["author_gmfn_id"] == "GSN-U-OWNER"
     assert owner_reply.json()["author_profile_image_url"] is None
 
     with engine.begin() as conn:

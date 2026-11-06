@@ -35,7 +35,10 @@ from app.core.runtime_memory import (
     request_started,
     should_log_request,
 )
-from app.services.demand_audio_service import PRIVATE_DEMAND_AUDIO_DIRECTORY
+from app.services.demand_audio_service import (
+    PRIVATE_DEMAND_AUDIO_DIRECTORY,
+    PRIVATE_SHOP_VOICE_DIRECTORY,
+)
 from app.services.marketplace_media_cleanup_service import (
     process_marketplace_media_deletion_tasks,
 )
@@ -365,13 +368,14 @@ if _runtime_memory_logging_enabled():
 
 
 @app.middleware("http")
-async def block_private_demand_audio_static_access(request: Request, call_next):
+async def block_private_voice_audio_static_access(request: Request, call_next):
     normalized_path = request.url.path.lower().rstrip("/")
-    private_prefix = f"/uploads/{PRIVATE_DEMAND_AUDIO_DIRECTORY}".lower()
-    if normalized_path == private_prefix or normalized_path.startswith(
-        f"{private_prefix}/"
-    ):
-        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    for directory in (PRIVATE_DEMAND_AUDIO_DIRECTORY, PRIVATE_SHOP_VOICE_DIRECTORY):
+        private_prefix = f"/uploads/{directory}".lower()
+        if normalized_path == private_prefix or normalized_path.startswith(
+            f"{private_prefix}/"
+        ):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
     return await call_next(request)
 
 

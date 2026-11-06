@@ -69,7 +69,7 @@ assertNotContains(files.control, "source_diary_entry_id", "Phase 2 must not forc
 assertContains(files.gallery, "featuredDiaryEntry = liveShopDiaryEntries[0] || null", "Public Shop must keep one current live diary update as the featured entry.");
 const gallerySource = read(files.gallery);
 const publicDiarySection = gallerySource.match(
-  /<section\s+id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?<\/section>\s*<\/div>\s*<\/details>/
+  /<section\s+id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?<\/section>[\s\S]{0,100}?<\/details>/
 )?.[0];
 if (!publicDiarySection) {
   findings.push(`${path.relative(repo, files.gallery)}: Public Shop diary presentation boundary must remain auditable.`);

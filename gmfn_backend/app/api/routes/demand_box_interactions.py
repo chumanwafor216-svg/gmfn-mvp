@@ -139,6 +139,7 @@ def _response_out(
         author_user_id=int(row.author_user_id),
         recipient_user_id=int(row.recipient_user_id),
         author_display_name=_public_requester_display_name(author),
+        author_gmfn_id=getattr(author, "gmfn_id", None),
         author_profile_image_url=(
             getattr(author, "profile_image_url", None)
             if bool(getattr(row, "show_sender_photo", False))

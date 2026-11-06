@@ -3680,6 +3680,35 @@ class ShopDiaryEntry(Base):
         index=True,
     )
 
+
+class ShopVoiceAttachment(Base):
+    __tablename__ = "shop_voice_attachments"
+
+    __table_args__ = (
+        CheckConstraint(
+            "parent_kind IN ('shop_welcome', 'shop_update', 'product')",
+            name="ck_shop_voice_parent_kind_v1",
+        ),
+        UniqueConstraint("parent_kind", "parent_id", name="uq_shop_voice_parent_v1"),
+        UniqueConstraint("storage_key", name="uq_shop_voice_storage_key_v1"),
+        Index("ix_shop_voice_shop_kind", "shop_id", "parent_kind"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    parent_kind: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    parent_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    shop_id: Mapped[int] = mapped_column(ForeignKey("marketplace_shops.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    storage_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    mime_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_seconds: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    deleted_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), onupdate=utcnow, index=True)
+
 class SpotlightCampaign(Base):
     __tablename__ = "spotlight_campaigns"
 

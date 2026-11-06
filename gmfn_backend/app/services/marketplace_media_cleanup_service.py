@@ -15,11 +15,15 @@ from app.db.models import (
     MarketplaceProduct,
     MarketplaceShop,
     ShopDiaryEntry,
+    ShopVoiceAttachment,
     SpotlightContentVersion,
     User,
     VaultPrivateOffer,
 )
-from app.services.demand_audio_service import PRIVATE_DEMAND_AUDIO_DIRECTORY
+from app.services.demand_audio_service import (
+    PRIVATE_DEMAND_AUDIO_DIRECTORY,
+    PRIVATE_SHOP_VOICE_DIRECTORY,
+)
 from app.services.storage_service import (
     StorageServiceError,
     delete_r2_object,
@@ -70,11 +74,18 @@ def canonical_marketplace_media_target(media_url: object) -> Optional[dict[str, 
         if not segments or len(segments) < 4 or segments[:2] != ["", "uploads"]:
             return None
         namespace = segments[2]
-        if namespace not in {"marketplace", PRIVATE_DEMAND_AUDIO_DIRECTORY}:
+        if namespace not in {
+            "marketplace",
+            PRIVATE_DEMAND_AUDIO_DIRECTORY,
+            PRIVATE_SHOP_VOICE_DIRECTORY,
+        }:
             return None
         if any(not segment for segment in segments[3:]):
             return None
-        if namespace == PRIVATE_DEMAND_AUDIO_DIRECTORY and len(segments) != 4:
+        if namespace in {
+            PRIVATE_DEMAND_AUDIO_DIRECTORY,
+            PRIVATE_SHOP_VOICE_DIRECTORY,
+        } and len(segments) != 4:
             return None
         try:
             root = _uploads_root().resolve()
@@ -180,6 +191,27 @@ def marketplace_media_reference_keys(
                 continue
             candidate = canonical_marketplace_media_target(
                 f"/uploads/{PRIVATE_DEMAND_AUDIO_DIRECTORY}/{safe_key}"
+            )
+            if candidate is None:
+                continue
+            canonical_key = str(candidate["canonical_key"])
+            if canonical_key in target_keys:
+                referenced_keys.add(canonical_key)
+                if referenced_keys == target_keys:
+                    return referenced_keys
+    shop_voice_prefix = f"local:{PRIVATE_SHOP_VOICE_DIRECTORY}/"
+    if any(key.startswith(shop_voice_prefix) for key in target_keys - referenced_keys):
+        rows = (
+            db.query(ShopVoiceAttachment.storage_key)
+            .filter(ShopVoiceAttachment.deleted_at.is_(None))
+            .yield_per(500)
+        )
+        for (storage_key,) in rows:
+            safe_key = _safe_text(storage_key)
+            if not safe_key or Path(safe_key).name != safe_key:
+                continue
+            candidate = canonical_marketplace_media_target(
+                f"/uploads/{PRIVATE_SHOP_VOICE_DIRECTORY}/{safe_key}"
             )
             if candidate is None:
                 continue

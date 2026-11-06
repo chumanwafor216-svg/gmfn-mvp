@@ -196,6 +196,7 @@ export default function DemandResponsePanel({
                       {row.author_display_name}
                     </div>
                     <div style={{ color: "#64748B", fontSize: 11 }}>
+                      {row.author_gmfn_id ? `${row.author_gmfn_id} · ` : ""}
                       {new Date(row.created_at).toLocaleString()}
                     </div>
                   </div>

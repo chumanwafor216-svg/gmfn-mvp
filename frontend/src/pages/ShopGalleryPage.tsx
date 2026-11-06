@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
+import ShopVoiceNotePlayer from "../components/ShopVoiceNotePlayer";
 
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PublicShopPhotoHero from "../components/shop/PublicShopPhotoHero";
@@ -90,6 +91,11 @@ type ShopProfile = {
   telegram: string;
   followerCount: number;
   publicSlotsTotal?: number;
+  voiceAttachmentId?: number;
+  voiceDurationSeconds?: number;
+  voiceDeletedAt?: string;
+  voiceSpeakerName?: string;
+  voiceSpeakerGmfnId?: string;
 };
 
 type ShopFollowState = {
@@ -144,6 +150,11 @@ type ShopProduct = {
   originClanId: number;
   repostsUsed: number;
   distributionSlotsRemaining: number;
+  voiceAttachmentId?: number;
+  voiceDurationSeconds?: number;
+  voiceDeletedAt?: string;
+  voiceSpeakerName?: string;
+  voiceSpeakerGmfnId?: string;
 };
 
 type ShopBroadcast = {
@@ -1075,6 +1086,24 @@ function normalizeShop(
         src?.public_product_slots_total ||
         src?.publicSlotsTotal
     ),
+    voiceAttachmentId:
+      positiveNumber(src?.voice_attachment_id || src?.voiceAttachmentId) ||
+      undefined,
+    voiceDurationSeconds:
+      positiveNumber(src?.voice_duration_seconds || src?.voiceDurationSeconds) ||
+      undefined,
+    voiceDeletedAt: firstMeaningful(
+      src?.voice_deleted_at,
+      src?.voiceDeletedAt
+    ),
+    voiceSpeakerName: firstMeaningful(
+      src?.voice_speaker_name,
+      src?.voiceSpeakerName
+    ),
+    voiceSpeakerGmfnId: firstMeaningful(
+      src?.voice_speaker_gmfn_id,
+      src?.voiceSpeakerGmfnId
+    ),
   };
 }
 
@@ -1498,6 +1527,24 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     repostsUsed: positiveNumber(src?.reposts_used),
     distributionSlotsRemaining: positiveNumber(
       src?.distribution_slots_remaining || src?.remaining_distribution_slots
+    ),
+    voiceAttachmentId:
+      positiveNumber(src?.voice_attachment_id || src?.voiceAttachmentId) ||
+      undefined,
+    voiceDurationSeconds:
+      positiveNumber(src?.voice_duration_seconds || src?.voiceDurationSeconds) ||
+      undefined,
+    voiceDeletedAt: firstMeaningful(
+      src?.voice_deleted_at,
+      src?.voiceDeletedAt
+    ),
+    voiceSpeakerName: firstMeaningful(
+      src?.voice_speaker_name,
+      src?.voiceSpeakerName
+    ),
+    voiceSpeakerGmfnId: firstMeaningful(
+      src?.voice_speaker_gmfn_id,
+      src?.voiceSpeakerGmfnId
     ),
   };
 }
@@ -7743,6 +7790,19 @@ export default function ShopGalleryPage() {
                     {new Date(featuredDiaryEntry.occurred_at || featuredDiaryEntry.created_at || Date.now()).toLocaleDateString()}
                     {featuredDiaryEntry.product_name ? ` - Related to ${featuredDiaryEntry.product_name}` : ""}
                   </div>
+                  <div style={{ marginTop: 12 }}>
+                    <ShopVoiceNotePlayer
+                      attachmentId={featuredDiaryEntry.voice_attachment_id}
+                      durationSeconds={featuredDiaryEntry.voice_duration_seconds}
+                      deletedAt={featuredDiaryEntry.voice_deleted_at}
+                      speakerName={featuredDiaryEntry.voice_speaker_name}
+                      speakerGmfnId={featuredDiaryEntry.voice_speaker_gmfn_id}
+                      shopName={shopNameText}
+                      publicAccess
+                      debugId="shop-gallery.update-voice.listen"
+                      label="Shop update voice note"
+                    />
+                  </div>
                 </div>
               </article>
 
@@ -7819,6 +7879,22 @@ export default function ShopGalleryPage() {
                 : shopDiaryCounterText}
             </span>
           </div>
+
+          {effectiveShop?.voiceAttachmentId || effectiveShop?.voiceDeletedAt ? (
+            <div style={{ marginBottom: isCompact ? 10 : 12 }}>
+              <ShopVoiceNotePlayer
+                attachmentId={effectiveShop.voiceAttachmentId}
+                durationSeconds={effectiveShop.voiceDurationSeconds}
+                deletedAt={effectiveShop.voiceDeletedAt}
+                speakerName={effectiveShop.voiceSpeakerName}
+                speakerGmfnId={effectiveShop.voiceSpeakerGmfnId}
+                shopName={shopNameText}
+                publicAccess
+                debugId="shop-gallery.welcome-voice.listen"
+                label="Shop welcome"
+              />
+            </div>
+          ) : null}
 
           {loading ? (
             <div style={{ ...helperText(), padding: 16 }}>
@@ -8092,6 +8168,33 @@ export default function ShopGalleryPage() {
                         </div>
                       )}
                     </div>
+                    {isProductOpen &&
+                    (product.voiceAttachmentId || product.voiceDeletedAt) ? (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: isCompact ? 8 : 12,
+                          right: isCompact ? 8 : 12,
+                          bottom: diaryOpenDockHeight + (isCompact ? 8 : 12),
+                          zIndex: 4,
+                        }}
+                      >
+                        <ShopVoiceNotePlayer
+                          attachmentId={product.voiceAttachmentId}
+                          durationSeconds={product.voiceDurationSeconds}
+                          deletedAt={product.voiceDeletedAt}
+                          speakerName={product.voiceSpeakerName}
+                          speakerGmfnId={product.voiceSpeakerGmfnId}
+                          shopName={firstMeaningful(
+                            product.originShopName,
+                            shopNameText
+                          )}
+                          publicAccess
+                          debugId={`shop-gallery.product.${productOpenId}.voice.listen`}
+                          label="Product or service voice note"
+                        />
+                      </div>
+                    ) : null}
                     <div
                       style={{
                         position: "absolute",

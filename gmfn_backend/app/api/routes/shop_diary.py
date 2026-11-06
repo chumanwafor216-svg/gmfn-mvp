@@ -19,6 +19,7 @@ from app.db.models import (
 from app.schemas.shop_diary import ShopDiaryEntryCreateIn, ShopDiaryEntryListOut, ShopDiaryEntryOut
 from app.services.community_domain_feature_policy import require_domain_shop_diary_enabled
 from app.services.protected_trade_service import derive_protected_trade_outcome
+from app.services.shop_voice_service import SHOP_VOICE_UPDATE, shop_voice_payload
 from app.services.trust_events_services import log_trust_event
 
 
@@ -180,6 +181,11 @@ def _entry_out(db: Session, entry: ShopDiaryEntry) -> dict[str, Any]:
         "is_active": bool(entry.is_active),
         "created_at": entry.created_at,
         "updated_at": entry.updated_at,
+        **shop_voice_payload(
+            db,
+            parent_kind=SHOP_VOICE_UPDATE,
+            parent_id=int(entry.id),
+        ),
     }
 
 
@@ -241,6 +247,8 @@ def create_shop_diary_entry(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not _safe_str(payload.note):
+        raise HTTPException(status_code=400, detail="Add a shop update message")
     shop = _require_owner_shop(db, shop_id=int(payload.shop_id), current_user=current_user)
     clan_id = int(payload.clan_id or shop.clan_id or 0) or None
     if clan_id is not None and not _is_admin(current_user):

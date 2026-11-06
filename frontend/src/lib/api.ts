@@ -6907,6 +6907,19 @@ export type ShopDiaryEntryRecord = {
   is_active?: boolean;
   created_at?: string | null;
   updated_at?: string | null;
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
+};
+
+export type ShopVoiceMetadata = {
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
 };
 
 export async function getMyShopDiaryEntries(params: {
@@ -6952,6 +6965,102 @@ export async function createShopDiaryEntry(payload: {
   is_public?: boolean;
 }): Promise<ShopDiaryEntryRecord> {
   return httpJson("/shop-diaries", "POST", payload);
+}
+
+async function uploadShopVoice(
+  path: string,
+  audio: File
+): Promise<ShopVoiceMetadata> {
+  const form = new FormData();
+  form.append("audio", audio, audio.name || "voice-note.webm");
+  return httpMultipart(path, form);
+}
+
+export async function uploadShopWelcomeVoice(
+  shopId: number,
+  audio: File
+): Promise<ShopVoiceMetadata> {
+  return uploadShopVoice(
+    `/shop-voice/shops/${encodeURIComponent(String(shopId))}/welcome`,
+    audio
+  );
+}
+
+export async function uploadShopUpdateVoice(
+  entryId: number,
+  audio: File
+): Promise<ShopVoiceMetadata> {
+  return uploadShopVoice(
+    `/shop-voice/updates/${encodeURIComponent(String(entryId))}`,
+    audio
+  );
+}
+
+export async function uploadProductVoice(
+  productId: number,
+  audio: File
+): Promise<ShopVoiceMetadata> {
+  return uploadShopVoice(
+    `/shop-voice/products/${encodeURIComponent(String(productId))}`,
+    audio
+  );
+}
+
+export async function createShopDiaryVoiceEntry(
+  payload: {
+    clan_id?: number | null;
+    shop_id: number;
+    activity_type: ShopDiaryActivityType | string;
+    note?: string;
+    occurred_at?: string | null;
+    product_id?: number | null;
+    protected_trade_id?: number | null;
+    evidence_class?: ShopDiaryEvidenceClass | string;
+    is_public?: boolean;
+  },
+  audio: File
+): Promise<ShopDiaryEntryRecord> {
+  const form = new FormData();
+  form.append("payload_json", JSON.stringify(payload));
+  form.append("audio", audio, audio.name || "shop-update-voice.webm");
+  return httpMultipart("/shop-voice/updates", form);
+}
+
+export async function fetchShopVoiceBlob(
+  attachmentId: number,
+  publicAccess: boolean
+): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "audio/*" };
+  if (!publicAccess) {
+    const token = getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  const scope = publicAccess ? "public" : "protected";
+  const response = await fetchWithTimeout(
+    buildUrl(
+      `/shop-voice/${scope}/${encodeURIComponent(String(attachmentId))}`
+    ),
+    { method: "GET", headers },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
+  if (!response.ok) {
+    throw new HttpStatusError(response.status, await parseError(response));
+  }
+  return response.blob();
+}
+
+export async function deleteShopVoice(
+  attachmentId: number
+): Promise<{
+  attachment_id: number;
+  status: "deleted" | "already_deleted";
+  deleted_at: string;
+}> {
+  return httpJson(
+    `/shop-voice/${encodeURIComponent(String(attachmentId))}/delete`,
+    "POST",
+    { confirmation: "DELETE VOICE NOTE" }
+  );
 }
 
 export async function followMarketplaceShop(shopId: number): Promise<any> {
@@ -9395,6 +9504,7 @@ export type MarketplaceRequestResponseItem = {
   author_user_id: number;
   recipient_user_id: number;
   author_display_name: string;
+  author_gmfn_id?: string | null;
   author_profile_image_url?: string | null;
   text?: string | null;
   audio_attachment_id?: number | null;
