@@ -36,6 +36,7 @@ from app.core.runtime_memory import (
     should_log_request,
 )
 from app.services.demand_audio_service import (
+    PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
     PRIVATE_DEMAND_AUDIO_DIRECTORY,
     PRIVATE_SHOP_VOICE_DIRECTORY,
 )
@@ -370,7 +371,11 @@ if _runtime_memory_logging_enabled():
 @app.middleware("http")
 async def block_private_voice_audio_static_access(request: Request, call_next):
     normalized_path = request.url.path.lower().rstrip("/")
-    for directory in (PRIVATE_DEMAND_AUDIO_DIRECTORY, PRIVATE_SHOP_VOICE_DIRECTORY):
+    for directory in (
+        PRIVATE_DEMAND_AUDIO_DIRECTORY,
+        PRIVATE_SHOP_VOICE_DIRECTORY,
+        PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
+    ):
         private_prefix = f"/uploads/{directory}".lower()
         if normalized_path == private_prefix or normalized_path.startswith(
             f"{private_prefix}/"

@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
+import CommunityNoticeVoicePlayer from "../components/CommunityNoticeVoicePlayer";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import {
   acknowledgeCommunityNotice,
@@ -594,6 +595,17 @@ export default function CommunityNoticePage() {
                         {fullBody}
                       </p>
                     )
+                  ) : null}
+                  {Number(notice?.voice_attachment_id || 0) > 0 || notice?.voice_deleted_at ? (
+                    <CommunityNoticeVoicePlayer
+                      attachmentId={Number(notice?.voice_attachment_id || 0)}
+                      durationSeconds={notice?.voice_duration_seconds}
+                      deletedAt={notice?.voice_deleted_at}
+                      speakerName={notice?.voice_speaker_name}
+                      speakerGmfnId={notice?.voice_speaker_gmfn_id}
+                      publicAccess
+                      debugId="community-notice.voice.listen"
+                    />
                   ) : null}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge()}>GSN announcement</span>

@@ -17,6 +17,7 @@ MAX_DEMAND_AUDIO_BYTES = 8 * 1024 * 1024
 MAX_DEMAND_AUDIO_SECONDS = 60.0
 PRIVATE_DEMAND_AUDIO_DIRECTORY = ".private-demandbox"
 PRIVATE_SHOP_VOICE_DIRECTORY = ".private-shop-voice"
+PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY = ".private-community-notice-voice"
 ALLOWED_AUDIO_TYPES = {
     "audio/aac": ".aac",
     "audio/m4a": ".m4a",
@@ -73,6 +74,13 @@ def shop_voice_directory() -> Path:
     return uploads_root / PRIVATE_SHOP_VOICE_DIRECTORY
 
 
+def community_notice_voice_directory() -> Path:
+    uploads_root = Path(
+        str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "uploads").strip()
+    ).expanduser()
+    return uploads_root / PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY
+
+
 def demand_audio_path(storage_key: str) -> Path:
     safe_name = Path(str(storage_key or "")).name
     if not safe_name or safe_name != str(storage_key or ""):
@@ -85,6 +93,13 @@ def shop_voice_path(storage_key: str) -> Path:
     if not safe_name or safe_name != str(storage_key or ""):
         raise HTTPException(status_code=404, detail="Voice note not found")
     return shop_voice_directory() / safe_name
+
+
+def community_notice_voice_path(storage_key: str) -> Path:
+    safe_name = Path(str(storage_key or "")).name
+    if not safe_name or safe_name != str(storage_key or ""):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return community_notice_voice_directory() / safe_name
 
 
 def _verified_duration_seconds(path: Path, mime_type: str) -> float:
@@ -156,6 +171,10 @@ async def store_shop_voice(upload: UploadFile) -> StoredDemandAudio:
     return await _store_audio(upload, directory=shop_voice_directory())
 
 
+async def store_community_notice_voice(upload: UploadFile) -> StoredDemandAudio:
+    return await _store_audio(upload, directory=community_notice_voice_directory())
+
+
 async def _store_audio(
     upload: UploadFile,
     *,
@@ -203,6 +222,10 @@ def delete_demand_audio(storage_key: str) -> None:
 
 def delete_shop_voice(storage_key: str) -> None:
     shop_voice_path(storage_key).unlink(missing_ok=True)
+
+
+def delete_community_notice_voice(storage_key: str) -> None:
+    community_notice_voice_path(storage_key).unlink(missing_ok=True)
 
 
 def clone_demand_audio(storage_key: str) -> str:

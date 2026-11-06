@@ -83,6 +83,7 @@ Known current aliases:
 - AuthGatewayPage / SignUpChoicePage may currently be represented by entry or welcome pages.
 - OwnerShopControlPage may currently be represented by `ShopControlPage`.
 - Shop Diary is not a standalone registered screen in the current app. Its owner lane lives inside OwnerShopControlPage / `ShopControlPage`, and its visitor presentation lives inside ShopPage / `ShopGalleryPage`; this Shop Diary split is CLOSED/FROZEN as of 2026-10-08, with the exact live-update sharing bridge reviewed and re-frozen on 2026-10-15 and the bounded Shop Voice exception recorded on 2026-11-06. Voice does not create a new screen.
+- Community Bulletin voice does not create a new screen. Recording and authenticated playback stay inside CommunityHomePage; detached public playback stays inside the existing CommunityNoticePage.
 - TrustPassportPage may currently be represented by trust/identity pages.
 
 Alias notes are migration aids, not permission to invent new screens.

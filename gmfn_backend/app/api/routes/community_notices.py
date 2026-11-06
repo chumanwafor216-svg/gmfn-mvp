@@ -8,8 +8,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field, field_validator, model_validator
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -20,6 +21,7 @@ from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanMembership,
+    CommunityNoticeVoiceAttachment,
     CommunityDomain,
     CommunityDomainPolicy,
     CommunityNoticePublicPollResponse,
@@ -32,6 +34,15 @@ from app.db.notification_models import Notification
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
+from app.services.demand_audio_service import (
+    PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
+    community_notice_voice_path,
+    delete_community_notice_voice,
+    store_community_notice_voice,
+)
+from app.services.marketplace_media_cleanup_service import (
+    queue_marketplace_media_deletions,
+)
 from app.services.community_meeting_service import list_community_meetings
 from app.services.demand_box_access_service import (
     request_visibility_query_clause,
@@ -78,7 +89,7 @@ NOTICE_INTERNAL_MEDIA_ATTACHMENT_RE = re.compile(
 )
 NOTICE_PUBLIC_BOUNDARY = (
     "Public GSN announcement package only. It shows the public-safe notice, any "
-    "attachment selected by the poster, and a verified public WhatsApp contact "
+    "attachment or voice note selected by the poster, and a verified public WhatsApp contact "
     "only when the announcer chose to publish it. Acknowledgement and availability "
     "remain limited to signed-in active members. Poll voting is member-only unless "
     "the creator explicitly opens that poll to anyone with the announcement link. "
@@ -149,6 +160,8 @@ CENTRAL_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 CENTRAL_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 CENTRAL_DOMAIN_FEATURE_MODE_OFF = "off"
 CENTRAL_DOMAIN_OPERATION_BLOCKED_STATUSES = {"suspended", "closed"}
+COMMUNITY_NOTICE_VOICE_NOTICE = "notice"
+COMMUNITY_NOTICE_VOICE_SUBMISSION = "submission"
 
 
 def _safe_str(value: Any, fallback: str = "") -> str:
@@ -1120,6 +1133,59 @@ def _get_notice_for_acknowledgement(
             raise HTTPException(status_code=404, detail="Community notice not found")
     return notice_event
 
+
+def _community_notice_voice_attachment(
+    db: Session,
+    *,
+    event_id: int,
+) -> Optional[CommunityNoticeVoiceAttachment]:
+    return (
+        db.query(CommunityNoticeVoiceAttachment)
+        .filter(CommunityNoticeVoiceAttachment.event_id == int(event_id))
+        .first()
+    )
+
+
+def _community_notice_voice_payload(
+    db: Optional[Session],
+    *,
+    event_id: int,
+    viewer_user_id: int = 0,
+) -> dict[str, Any]:
+    empty_payload = {
+        "voice_attachment_id": None,
+        "voice_duration_seconds": None,
+        "voice_deleted_at": None,
+        "voice_speaker_name": None,
+        "voice_speaker_gmfn_id": None,
+        "voice_can_delete": False,
+    }
+    if db is None:
+        return empty_payload
+    attachment = _community_notice_voice_attachment(db, event_id=int(event_id))
+    if attachment is None:
+        return empty_payload
+    speaker = db.get(User, int(attachment.created_by_user_id))
+    speaker_name = _safe_str(getattr(speaker, "display_name", None))
+    speaker_gmfn_id = _safe_str(getattr(speaker, "gmfn_id", None))
+    if not speaker_name:
+        email = _safe_str(getattr(speaker, "email", None))
+        speaker_name = speaker_gmfn_id or (email.split("@", 1)[0] if email else "")
+    active = attachment.deleted_at is None
+    return {
+        "voice_attachment_id": int(attachment.id) if active else None,
+        "voice_duration_seconds": float(attachment.duration_seconds) if active else None,
+        "voice_deleted_at": _iso(attachment.deleted_at),
+        "voice_speaker_name": speaker_name or None,
+        "voice_speaker_gmfn_id": speaker_gmfn_id or None,
+        "voice_can_delete": bool(
+            active
+            and int(viewer_user_id or 0) > 0
+            and int(attachment.created_by_user_id) == int(viewer_user_id)
+        ),
+    }
+
+
 def _event_to_notice(
     event: TrustEvent,
     *,
@@ -1199,6 +1265,11 @@ def _event_to_notice(
         "word_count": _word_count(body),
         "full_body": full_body or None,
         "full_word_count": _word_count(full_body) if full_body else 0,
+        **_community_notice_voice_payload(
+            db,
+            event_id=int(event.id),
+            viewer_user_id=int(viewer_user_id or 0),
+        ),
         **_notice_attachment_payload(meta),
         "created_at": _iso(getattr(event, "created_at", None)),
         "expires_at": _iso(expires_at),
@@ -1262,7 +1333,12 @@ def _notice_review_decisions_by_submission(
     return decisions
 
 
-def _submission_to_review_item(event: TrustEvent) -> dict[str, Any]:
+def _submission_to_review_item(
+    event: TrustEvent,
+    *,
+    db: Optional[Session] = None,
+    viewer_user_id: int = 0,
+) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
     full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
@@ -1274,6 +1350,11 @@ def _submission_to_review_item(event: TrustEvent) -> dict[str, Any]:
         "word_count": _word_count(body),
         "full_body": full_body or None,
         "full_word_count": _word_count(full_body) if full_body else 0,
+        **_community_notice_voice_payload(
+            db,
+            event_id=int(event.id),
+            viewer_user_id=int(viewer_user_id or 0),
+        ),
         **_notice_attachment_payload(meta),
         "poll_question": _safe_str(meta.get("poll_question")) or None,
         "poll_options": _notice_poll_options(meta.get("poll_options")),
@@ -1768,6 +1849,10 @@ class CommunityNoticeSettingsIn(BaseModel):
     posting_policy: Literal["members", "admins"]
 
 
+class CommunityNoticeVoiceDeleteIn(BaseModel):
+    confirmation: str = Field(..., pattern="^DELETE VOICE NOTE$")
+
+
 class CommunityNoticeAvailabilityIn(BaseModel):
     clan_id: int = Field(..., ge=1)
     response: Literal["yes", "maybe", "no"]
@@ -2224,7 +2309,11 @@ def create_notice(
             "ok": True,
             "engine_ready": True,
             "submitted_for_review": True,
-            "submission": _submission_to_review_item(submission),
+            "submission": _submission_to_review_item(
+                submission,
+                db=db,
+                viewer_user_id=int(current_user.id),
+            ),
             "posting_policy": posting_policy,
             "community_records_policy": records_policy,
             "notification_kind": COMMUNITY_NOTICE_SUBMISSION_EVENT,
@@ -2311,6 +2400,192 @@ def create_notice(
             "domains, or public visitors. Expired notices leave the active board "
             "but remain in Community Memory."
         ),
+    }
+
+
+def _managed_community_notice_voice_url(storage_key: str) -> str:
+    return f"/uploads/{PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY}/{storage_key}"
+
+
+@router.post("/voice")
+async def create_notice_with_voice(
+    payload_json: str = Form(...),
+    audio: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        raw_payload = json.loads(payload_json)
+        if not isinstance(raw_payload, dict):
+            raise ValueError("payload_json must be an object")
+        if not _safe_str(raw_payload.get("body")):
+            raw_payload["body"] = "Voice announcement"
+        payload = CommunityNoticeIn.model_validate(raw_payload)
+    except (json.JSONDecodeError, TypeError, ValueError, ValidationError) as exc:
+        detail = exc.errors() if isinstance(exc, ValidationError) else str(exc)
+        raise HTTPException(status_code=422, detail=detail) from exc
+
+    stored = await store_community_notice_voice(audio)
+    try:
+        result = create_notice(payload, db=db, current_user=current_user)
+        submission = result.get("submission") if isinstance(result, dict) else None
+        notice = result.get("notice") if isinstance(result, dict) else None
+        if isinstance(submission, dict):
+            event_kind = COMMUNITY_NOTICE_VOICE_SUBMISSION
+            event_id = int(submission.get("submission_event_id") or 0)
+        else:
+            event_kind = COMMUNITY_NOTICE_VOICE_NOTICE
+            event_id = int((notice or {}).get("event_id") or 0)
+        event = db.get(TrustEvent, event_id) if event_id else None
+        if event is None:
+            raise RuntimeError("Community notice event was not created")
+        attachment = CommunityNoticeVoiceAttachment(
+            event_kind=event_kind,
+            event_id=int(event.id),
+            source_submission_event_id=(
+                int(event.id) if event_kind == COMMUNITY_NOTICE_VOICE_SUBMISSION else None
+            ),
+            clan_id=int(payload.clan_id),
+            created_by_user_id=int(current_user.id),
+            storage_key=stored.storage_key,
+            original_filename=stored.original_filename,
+            mime_type=stored.mime_type,
+            byte_size=stored.byte_size,
+            duration_seconds=stored.duration_seconds,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        db.add(attachment)
+        db.commit()
+        if event_kind == COMMUNITY_NOTICE_VOICE_SUBMISSION:
+            result["submission"] = _submission_to_review_item(
+                event,
+                db=db,
+                viewer_user_id=int(current_user.id),
+            )
+        else:
+            result["notice"] = _event_to_notice(
+                event,
+                db=db,
+                viewer_user_id=int(current_user.id),
+            )
+        return result
+    except Exception:
+        db.rollback()
+        delete_community_notice_voice(stored.storage_key)
+        raise
+
+
+def _community_notice_voice_event(
+    db: Session,
+    attachment: CommunityNoticeVoiceAttachment,
+) -> TrustEvent:
+    event = db.get(TrustEvent, int(attachment.event_id))
+    if event is None:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return event
+
+
+@router.get("/voice/public/{attachment_id}")
+def play_public_community_notice_voice(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+):
+    attachment = db.get(CommunityNoticeVoiceAttachment, int(attachment_id))
+    if (
+        attachment is None
+        or attachment.deleted_at is not None
+        or attachment.event_kind != COMMUNITY_NOTICE_VOICE_NOTICE
+    ):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    event = _community_notice_voice_event(db, attachment)
+    meta = _safe_meta(getattr(event, "meta_json", None))
+    if (
+        event.event_type != COMMUNITY_NOTICE_EVENT
+        or not bool(meta.get("public_qr_enabled"))
+        or not _safe_str(meta.get("public_code"))
+        or _notice_is_expired(meta, created_at=getattr(event, "created_at", None))
+    ):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    path = community_notice_voice_path(attachment.storage_key)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return FileResponse(
+        path,
+        media_type=attachment.mime_type,
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.get("/voice/protected/{attachment_id}")
+def play_protected_community_notice_voice(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attachment = db.get(CommunityNoticeVoiceAttachment, int(attachment_id))
+    if attachment is None or attachment.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    event = _community_notice_voice_event(db, attachment)
+    membership = _require_clan_member(
+        db,
+        clan_id=int(attachment.clan_id),
+        current_user=current_user,
+    )
+    if (
+        attachment.event_kind == COMMUNITY_NOTICE_VOICE_SUBMISSION
+        and int(attachment.created_by_user_id) != int(current_user.id)
+        and not _is_notice_officer(membership, current_user)
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the sender or a community officer can hear this submitted voice note",
+        )
+    if event.event_type not in {COMMUNITY_NOTICE_EVENT, COMMUNITY_NOTICE_SUBMISSION_EVENT}:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    path = community_notice_voice_path(attachment.storage_key)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return FileResponse(
+        path,
+        media_type=attachment.mime_type,
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@router.post("/voice/{attachment_id}/delete")
+def delete_community_notice_voice_attachment(
+    attachment_id: int,
+    _payload: CommunityNoticeVoiceDeleteIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    attachment = db.get(CommunityNoticeVoiceAttachment, int(attachment_id))
+    if attachment is None:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    if int(attachment.created_by_user_id) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the sender can delete this voice note")
+    if attachment.deleted_at is not None:
+        return {
+            "attachment_id": int(attachment.id),
+            "status": "already_deleted",
+            "deleted_at": attachment.deleted_at,
+        }
+    deleted_at = datetime.now(timezone.utc)
+    queue_marketplace_media_deletions(
+        db,
+        media_urls=[_managed_community_notice_voice_url(attachment.storage_key)],
+        source="community_notice_voice_sender_delete",
+    )
+    attachment.deleted_at = deleted_at
+    attachment.deleted_by_user_id = int(current_user.id)
+    attachment.original_filename = None
+    attachment.updated_at = deleted_at
+    db.commit()
+    return {
+        "attachment_id": int(attachment.id),
+        "status": "deleted",
+        "deleted_at": deleted_at,
     }
 
 
@@ -2580,7 +2855,14 @@ def list_notice_review_queue(
         "clan_id": int(clan_id),
         "community_records_policy": records_policy,
         "pending_review_count": len(rows),
-        "submissions": [_submission_to_review_item(row) for row in rows],
+        "submissions": [
+            _submission_to_review_item(
+                row,
+                db=db,
+                viewer_user_id=int(current_user.id),
+            )
+            for row in rows
+        ],
         "boundary": (
             "This queue contains member-submitted Community Records waiting for "
             "a community officer. Approval publishes a new official notice; "
@@ -2680,6 +2962,19 @@ def decide_notice_review_submission(
                 **poster_contact,
             },
         )
+        submission_voice = _community_notice_voice_attachment(
+            db,
+            event_id=int(submission_event_id),
+        )
+        if (
+            submission_voice is not None
+            and submission_voice.event_kind == COMMUNITY_NOTICE_VOICE_SUBMISSION
+        ):
+            submission_voice.source_submission_event_id = int(submission_event_id)
+            submission_voice.event_kind = COMMUNITY_NOTICE_VOICE_NOTICE
+            submission_voice.event_id = int(notice_event.id)
+            submission_voice.updated_at = datetime.now(timezone.utc)
+            db.commit()
         notifications_created = _create_notice_notifications(
             db,
             clan_id=int(payload.clan_id),

@@ -5,6 +5,30 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Community Bulletin voice announcements - 2026-11-06
+
+- Founder-approved Community Bulletin voice is implemented on the existing
+  Community Home and detached Community Notice surfaces. A member can post
+  text, one voice note of up to 60 seconds, or both; voice-only notices use the
+  truthful compact summary `Voice announcement`.
+- Voice follows the existing selected-community policy and Community Records
+  review path. Pending playback is limited to the exact sender and authorised
+  community officers. Approval moves the same attributed recording to the
+  published notice rather than copying it into a second media contract.
+- Authenticated community members deliberately tap `Listen`. Detached public
+  playback is available only when the existing public announcement link is
+  enabled and the notice is unexpired. There is no autoplay, transcription,
+  comment thread, cross-community discovery, or reuse of Shop/DemandBox voice.
+- The exact sender can permanently delete only the recording. Playback is
+  revoked immediately, while the notice, sender attribution, review event and
+  Community Memory remain. Dedicated private storage is protected from static
+  access and participates in bounded reference-aware cleanup.
+- Backend coverage lives in
+  `gmfn_backend/tests/test_community_notice_voice.py`; the pre-existing
+  Community Notice suite and frontend production build also pass. Final phone
+  microphone/playback review and pilot deployment verification remain part of
+  this handoff until the published commit is confirmed live.
+
 ## Playable Public Shop sharing - 2026-11-05
 
 - Founder-approved first step is implemented locally: Public Shop `Share`
@@ -3927,7 +3951,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Status: committed, pushed to the working branch and `main`, and deployed on
   the exact verified application commit recorded above.
 - The owner explicitly superseded the 2026-10-17 single-plus Public Shop
-  product-card rule. The existing card `+` / `ž` remains the open/close
+  product-card rule. The existing card `+` / `?` remains the open/close
   control. When that exact product card is open, the exact signed-in shop owner
   now receives a separate 48px `+` after Close, Share, and Repost.
 - The new inner `+` performs no product write and never opens or plays the

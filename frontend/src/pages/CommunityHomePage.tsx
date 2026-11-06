@@ -11,6 +11,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import SimpleCommunityInviteCard from "../components/SimpleCommunityInviteCard";
 import SocialTagShareButton from "../components/SocialTagShareButton";
+import CommunityNoticeVoicePlayer from "../components/CommunityNoticeVoicePlayer";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -28,6 +29,7 @@ import {
   getMe,
   getSelectedClanId,
   createCommunityNotice,
+  createCommunityNoticeVoice,
   decideCommunityNoticeReviewSubmission,
   acknowledgeCommunityNotice,
   listCommunityNoticeAcknowledgements,
@@ -164,6 +166,12 @@ type CommunityNoticeItem = {
   attachment_url?: string | null;
   attachment_label?: string | null;
   attachment_kind?: string | null;
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
+  voice_can_delete?: boolean;
   purpose?: string | null;
   scheduled_at?: string | null;
   status?: string | null;
@@ -295,6 +303,12 @@ type CommunityNoticeReviewSubmission = {
   poll_options?: string[] | null;
   poll_selection_mode?: "single" | "multiple" | string | null;
   poll_audience?: "members" | "public_link" | string | null;
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
+  voice_can_delete?: boolean;
 };
 type MeetingInterestResponse = "yes" | "maybe" | "no";
 
@@ -4140,6 +4154,18 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
 
+        {Number(noticeItem?.voice_attachment_id || 0) > 0 || noticeItem?.voice_deleted_at ? (
+          <CommunityNoticeVoicePlayer
+            attachmentId={Number(noticeItem?.voice_attachment_id || 0)}
+            durationSeconds={noticeItem?.voice_duration_seconds}
+            deletedAt={noticeItem?.voice_deleted_at}
+            speakerName={noticeItem?.voice_speaker_name}
+            speakerGmfnId={noticeItem?.voice_speaker_gmfn_id}
+            canDelete={Boolean(noticeItem?.voice_can_delete)}
+            debugId={`community-home.bulletin.voice.listen.${noticeKey}`}
+          />
+        ) : null}
+
 
         <StableButton
           type="button"
@@ -4338,7 +4364,9 @@ export default function CommunityHomePage() {
       poll_options?: string[] | null;
       poll_selection_mode?: "single" | "multiple";
       poll_audience?: "members" | "public_link";
-    }
+      notice_mode?: "notice" | "market_need_pulse";
+    },
+    voiceNote?: File | null
   ) {
     const clanId = getClanId(selectedClan);
     if (!clanId) {
@@ -4348,7 +4376,10 @@ export default function CommunityHomePage() {
 
     setNoticePosting(true);
     try {
-      const result = await createCommunityNotice({ clan_id: clanId, body, ...options });
+      const payload = { clan_id: clanId, body, ...options };
+      const result = voiceNote
+        ? await createCommunityNoticeVoice(payload, voiceNote)
+        : await createCommunityNotice(payload);
       const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
       const refreshedNotices: CommunityNoticeItem[] = Array.isArray(res?.notices)
@@ -5480,7 +5511,7 @@ export default function CommunityHomePage() {
                 {canOpenCommunityNoticeComposer ? (
                   <StableButton type="button" debugId="community-home.admin.notice.post" onClick={(event) => { consumeCommunityButtonEvent(event); setNoticeModalOpen(true); }} style={communityToolRowStyle()}>
                     <span style={communityActionIcon(true)}>{communityIconGlyph("megaphone", 30)}</span>
-                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>{communityNoticeSubmitMode === "review" ? "Send announcement for review" : "Post announcement"}</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Write an announcement for this community.</span></span>
+                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>{communityNoticeSubmitMode === "review" ? "Send announcement for review" : "Post announcement"}</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Write or record an announcement for this community.</span></span>
                     <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
                   </StableButton>
                 ) : null}
@@ -5511,6 +5542,20 @@ export default function CommunityHomePage() {
                               {firstTruthy(submission?.poll_question) ? (
                                 <div style={{ marginTop: 6, color: "#617085", fontSize: 11.5, fontWeight: 760, lineHeight: 1.4 }}>
                                   Poll: {firstTruthy(submission.poll_question)} · {Array.isArray(submission.poll_options) ? submission.poll_options.length : 0} choices · {submission.poll_selection_mode === "multiple" ? "multiple answers" : "one answer"} · {submission.poll_audience === "public_link" ? "anyone with the link" : "members only"}
+                                </div>
+                              ) : null}
+                              {Number(submission?.voice_attachment_id || 0) > 0 || submission?.voice_deleted_at ? (
+                                <div style={{ marginTop: 8 }}>
+                                  <CommunityNoticeVoicePlayer
+                                    attachmentId={Number(submission?.voice_attachment_id || 0)}
+                                    durationSeconds={submission?.voice_duration_seconds}
+                                    deletedAt={submission?.voice_deleted_at}
+                                    speakerName={submission?.voice_speaker_name}
+                                    speakerGmfnId={submission?.voice_speaker_gmfn_id}
+                                    canDelete={Boolean(submission?.voice_can_delete)}
+                                    debugId={`community-home.admin.review.voice.${submissionId}`}
+                                    label="Submitted voice announcement"
+                                  />
                                 </div>
                               ) : null}
                               <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>

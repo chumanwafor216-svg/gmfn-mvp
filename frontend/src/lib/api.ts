@@ -1509,6 +1509,78 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export type CommunityNoticeVoiceMetadata = {
+  voice_attachment_id?: number | null;
+  voice_duration_seconds?: number | null;
+  voice_deleted_at?: string | null;
+  voice_speaker_name?: string | null;
+  voice_speaker_gmfn_id?: string | null;
+  voice_can_delete?: boolean;
+};
+
+export async function createCommunityNoticeVoice(
+  payload: {
+    clan_id: number;
+    body?: string;
+    expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+    expires_at?: string;
+    availability_enabled?: boolean;
+    public_qr_enabled?: boolean;
+    full_body?: string | null;
+    attachment_url?: string | null;
+    attachment_label?: string | null;
+    attachment_kind?: "link" | "video" | "poster" | "document" | null;
+    poll_question?: string | null;
+    poll_options?: string[] | null;
+    poll_selection_mode?: "single" | "multiple";
+    poll_audience?: "members" | "public_link";
+    notice_mode?: "notice" | "market_need_pulse";
+  },
+  audio: File
+): Promise<any> {
+  const form = new FormData();
+  form.append("payload_json", JSON.stringify(payload));
+  form.append("audio", audio, audio.name || "community-announcement-voice.webm");
+  return httpMultipart("/community-notices/voice", form);
+}
+
+export async function fetchCommunityNoticeVoiceBlob(
+  attachmentId: number,
+  publicAccess: boolean
+): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "audio/*" };
+  if (!publicAccess) {
+    const token = getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  const scope = publicAccess ? "public" : "protected";
+  const response = await fetchWithTimeout(
+    buildUrl(
+      `/community-notices/voice/${scope}/${encodeURIComponent(String(attachmentId))}`
+    ),
+    { method: "GET", headers },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
+  if (!response.ok) {
+    throw new HttpStatusError(response.status, await parseError(response));
+  }
+  return response.blob();
+}
+
+export async function deleteCommunityNoticeVoice(
+  attachmentId: number
+): Promise<{
+  attachment_id: number;
+  status: "deleted" | "already_deleted";
+  deleted_at: string;
+}> {
+  return httpJson(
+    `/community-notices/voice/${encodeURIComponent(String(attachmentId))}/delete`,
+    "POST",
+    { confirmation: "DELETE VOICE NOTE" }
+  );
+}
+
 export async function listCommunityNoticeReviewQueue(params: {
   clan_id: number;
   limit?: number;

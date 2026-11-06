@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlparse
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    CommunityNoticeVoiceAttachment,
     DemandAudioAttachment,
     MarketplaceBroadcast,
     MarketplaceMediaDeletionTask,
@@ -21,6 +22,7 @@ from app.db.models import (
     VaultPrivateOffer,
 )
 from app.services.demand_audio_service import (
+    PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
     PRIVATE_DEMAND_AUDIO_DIRECTORY,
     PRIVATE_SHOP_VOICE_DIRECTORY,
 )
@@ -76,6 +78,7 @@ def canonical_marketplace_media_target(media_url: object) -> Optional[dict[str, 
         namespace = segments[2]
         if namespace not in {
             "marketplace",
+            PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
             PRIVATE_DEMAND_AUDIO_DIRECTORY,
             PRIVATE_SHOP_VOICE_DIRECTORY,
         }:
@@ -83,6 +86,7 @@ def canonical_marketplace_media_target(media_url: object) -> Optional[dict[str, 
         if any(not segment for segment in segments[3:]):
             return None
         if namespace in {
+            PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY,
             PRIVATE_DEMAND_AUDIO_DIRECTORY,
             PRIVATE_SHOP_VOICE_DIRECTORY,
         } and len(segments) != 4:
@@ -212,6 +216,27 @@ def marketplace_media_reference_keys(
                 continue
             candidate = canonical_marketplace_media_target(
                 f"/uploads/{PRIVATE_SHOP_VOICE_DIRECTORY}/{safe_key}"
+            )
+            if candidate is None:
+                continue
+            canonical_key = str(candidate["canonical_key"])
+            if canonical_key in target_keys:
+                referenced_keys.add(canonical_key)
+                if referenced_keys == target_keys:
+                    return referenced_keys
+    notice_voice_prefix = f"local:{PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY}/"
+    if any(key.startswith(notice_voice_prefix) for key in target_keys - referenced_keys):
+        rows = (
+            db.query(CommunityNoticeVoiceAttachment.storage_key)
+            .filter(CommunityNoticeVoiceAttachment.deleted_at.is_(None))
+            .yield_per(500)
+        )
+        for (storage_key,) in rows:
+            safe_key = _safe_text(storage_key)
+            if not safe_key or Path(safe_key).name != safe_key:
+                continue
+            candidate = canonical_marketplace_media_target(
+                f"/uploads/{PRIVATE_COMMUNITY_NOTICE_VOICE_DIRECTORY}/{safe_key}"
             )
             if candidate is None:
                 continue

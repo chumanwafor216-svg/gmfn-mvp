@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { StableButton } from "./StableButton";
 import VideoSoundEditor from "./VideoSoundEditor";
+import VoiceNoteRecorder from "./VoiceNoteRecorder";
 import {
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
@@ -47,7 +48,8 @@ type Props = {
       poll_selection_mode?: "single" | "multiple";
       poll_audience?: "members" | "public_link";
       notice_mode?: CommunityNoticeModalMode;
-    }
+    },
+    voiceNote?: File | null
   ) => Promise<void> | void;
 };
 
@@ -132,9 +134,13 @@ export default function CommunityNoticeModal({
   const [pendingVideoDuration, setPendingVideoDuration] = useState<number | null>(null);
   const [pendingVideoSound, setPendingVideoSound] = useState<MarketplaceVideoSoundOptions | null>(null);
   const [submitError, setSubmitError] = useState("");
+  const [voiceNote, setVoiceNote] = useState<File | null>(null);
+  const voiceEnabled = !isMarketNeedPulse;
   const words = useMemo(() => countWords(body), [body]);
   const bodyNeedsCompactPreview = words > 50;
-  const submittedBody = bodyNeedsCompactPreview ? firstWords(body, 50) : body.trim();
+  const submittedBody = (
+    bodyNeedsCompactPreview ? firstWords(body, 50) : body.trim()
+  ) || (voiceNote && voiceEnabled ? "Voice announcement" : "");
   const submittedFullBody = includeFullBody && fullBody.trim()
     ? fullBody.trim()
     : bodyNeedsCompactPreview
@@ -160,7 +166,7 @@ export default function CommunityNoticeModal({
   }, [isMarketNeedPulse, open]);
 
   const blocked =
-    !body.trim() ||
+    (!body.trim() && !(voiceNote && voiceEnabled)) ||
     submittedFullWords > 600 ||
     attachmentUrlInvalid ||
     Boolean(pendingVideoFile) ||
@@ -301,7 +307,7 @@ export default function CommunityNoticeModal({
         poll_options: pollEnabled ? cleanPollOptions : undefined,
         poll_selection_mode: pollEnabled ? pollSelectionMode : undefined,
         poll_audience: pollEnabled ? pollAudience : undefined,
-      });
+      }, voiceEnabled ? voiceNote : null);
     } catch (error: any) {
       setSubmitError(
         String(error?.detail?.message || error?.detail || error?.message || error)
@@ -322,6 +328,7 @@ export default function CommunityNoticeModal({
     setPollSelectionMode("single");
     setPollAudience("members");
     setAttachmentPanelOpen(false);
+    setVoiceNote(null);
     clearAttachmentState();
   }
 
@@ -344,7 +351,7 @@ export default function CommunityNoticeModal({
             ? "Ask one simple market-need question from the official board. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
             : isReviewSubmission
             ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
-            : "Write the announcement, then add only the actions readers need. GSN records who posted it and keeps expired notices in Community Memory."}
+            : "Write or record the announcement, then add only the actions readers need. Expired notices leave the active board but remain in Community Memory."}
         </p>
 
         <textarea
@@ -354,6 +361,23 @@ export default function CommunityNoticeModal({
           placeholder={isMarketNeedPulse ? "Do you need this service this month?" : "Meeting Saturday 4 pm."}
           style={textareaStyle}
         />
+
+        {voiceEnabled ? (
+          <div style={attachmentPanelStyle} data-debug-id="community-notice-modal.voice">
+            <div style={fieldLabelStyle}>Voice announcement</div>
+            <p style={{ ...attachmentHelpStyle, margin: 0 }}>
+              Record up to 60 seconds. You may use voice instead of typing the announcement.
+            </p>
+            <VoiceNoteRecorder
+              value={voiceNote}
+              onChange={setVoiceNote}
+              maxSeconds={60}
+              disabled={busy}
+              debugPrefix="community-notice-modal.voice.record"
+              compact
+            />
+          </div>
+        ) : null}
 
         {submitError ? <p style={submitErrorStyle}>{submitError}</p> : null}
 

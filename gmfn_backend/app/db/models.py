@@ -3709,6 +3709,36 @@ class ShopVoiceAttachment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), onupdate=utcnow, index=True)
 
+
+class CommunityNoticeVoiceAttachment(Base):
+    __tablename__ = "community_notice_voice_attachments"
+
+    __table_args__ = (
+        CheckConstraint(
+            "event_kind IN ('notice', 'submission')",
+            name="ck_community_notice_voice_event_kind_v1",
+        ),
+        UniqueConstraint("event_id", name="uq_community_notice_voice_event_v1"),
+        UniqueConstraint("storage_key", name="uq_community_notice_voice_storage_key_v1"),
+        Index("ix_community_notice_voice_clan_kind", "clan_id", "event_kind"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    event_kind: Mapped[str] = mapped_column(String(24), nullable=False, index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("trust_events.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_submission_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trust_events.id", ondelete="SET NULL"), nullable=True, index=True)
+    clan_id: Mapped[int] = mapped_column(ForeignKey("clans.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    storage_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    mime_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_seconds: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    deleted_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now(), onupdate=utcnow, index=True)
+
 class SpotlightCampaign(Base):
     __tablename__ = "spotlight_campaigns"
 
