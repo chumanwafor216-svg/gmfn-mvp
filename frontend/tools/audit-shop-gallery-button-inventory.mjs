@@ -32,8 +32,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 7,
   SecondaryButton: 12,
-  StableCtaLink: 8,
-  total: 27,
+  StableCtaLink: 7,
+  total: 26,
 };
 const expectedExistingWorkflowPlusShortcuts = 3;
 const expectedNativeFieldCount = 0;
@@ -193,7 +193,6 @@ for (const action of actions) {
 
 const expectedActionOrder = [
   "shop-gallery.return-marketplace",
-  "shop-gallery.open-shop",
   "shop-gallery.public-shop.sign-in-follow",
   "shop-gallery.public-shop.following",
   "shop-gallery.public-shop.unfollow",
@@ -247,19 +246,19 @@ for (const debugId of expectedActionOrder) {
   cursor = next;
 }
 
-assertContains(
-  /!signedInOwnsShop \? \([\s\S]*?data-public-shop-open-panel="true"/,
-  "The signed-in owner must not see the redundant external Open Shop panel inside their own Shop Diaries."
-);
-
-assertContains(
-  /<PublicShopPhotoHero[\s\S]*?data-public-shop-open-panel="true"[\s\S]*?to=\{`#\$\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}`\}[\s\S]*?debugId="shop-gallery\.open-shop"[\s\S]*?Open Shop[\s\S]*?id=\{PUBLIC_SHOP_PRODUCTS_ANCHOR\}/,
-  "External Public Shop sharing must keep one Open Shop HTML action immediately after the approved entrance."
-);
-
 assertNotContains(
-  /data-public-shop-open-panel-name|data-public-shop-open-panel="true"[\s\S]{0,1800}My GSN Shop/,
-  "The permanent Open Shop panel must not repeat the shop identity already visible on the entrance."
+  /data-public-shop-open-panel|shop-gallery\.open-shop/,
+  "Public Shop must not restore the redundant Open Shop panel after the visitor has already entered the shop."
+);
+
+assertContains(
+  /const marketplaceReturnCommunityId = positiveNumber\([\s\S]*?explicitRouteClanId \|\| routeClanId \|\| effectiveShop\?\.clanId[\s\S]*?const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?marketplaceReturnCommunityId/,
+  "Public Shop return navigation must preserve the originating marketplace community before falling back to shop or selected-community context."
+);
+
+assertContains(
+  /const showMarketplaceReturn = Boolean\([\s\S]*?ownerSessionPresent && effectiveShop && !loading && !signedInOwnsShop[\s\S]*?\{showMarketplaceReturn \? \([\s\S]*?stableHeight=\{isCompact \? 40 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?<span>Back to Marketplace<\/span>/,
+  "A signed-in visitor viewing another member's shop must receive one compact Back to Marketplace control, while the owner does not receive the duplicate row."
 );
 
 const memberSurfaceLinksBlock =
@@ -346,8 +345,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const publicShopTickerVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"[\s\S]*?\) : \([\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"/,
-  "Public Shop phones must share one compact Shop Update strip: visitors receive deliberate voice playback, owners receive the existing update/voice shortcut, and desktop retains Marketplace return."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const publicShopTickerVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{showMarketplaceReturn \? \([\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
+  "Public Shop phones must keep the compact Shop Update strip and add a separate visitor-only Marketplace return without replacing the update or exposing owner controls."
 );
 
 assertContains(
@@ -458,7 +457,7 @@ assertNotContains(
 assertFileContains(
   shopDiaryVisualSmokeFile,
   shopDiaryVisualSmokeSource,
-  /let activeAuthenticated = true[\s\S]*?if \(!activeAuthenticated\) \{[\s\S]*?json\(\{ detail: "Not authenticated" \}, 401\)[\s\S]*?preparePage\(browser, width, height = 844, authenticated = true\)[\s\S]*?localStorage\.removeItem\("access_token"\)[\s\S]*?14-public-shop-logged-out-open-product-390[\s\S]*?authenticated: false/,
+  /let activeAuthenticated = true[\s\S]*?if \(!activeAuthenticated\) \{[\s\S]*?json\(\{ detail: "Not authenticated" \}, 401\)[\s\S]*?async function preparePage\([\s\S]*?authenticated = true,[\s\S]*?viewerGmfnId = "GMFN-U-DIARY"[\s\S]*?localStorage\.removeItem\("access_token"\)[\s\S]*?14-public-shop-logged-out-open-product-390[\s\S]*?authenticated: false/,
   "Public Shop visual smoke must keep the logged-out opened-product screenshot without restoring duplicate product contact controls."
 );
 

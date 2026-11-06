@@ -244,6 +244,7 @@ let activeScenario = "image";
 let activeAuthenticated = true;
 let activeSpotlight = false;
 let activeShopName = shop.name;
+let activeViewerGmfnId = "GMFN-U-DIARY";
 
 function currentShop() {
   return { ...shop, name: activeShopName, shop_name: activeShopName };
@@ -302,7 +303,15 @@ async function installApiMocks(page) {
         await route.fulfill(json({ detail: "Not authenticated" }, 401));
         return;
       }
-      await route.fulfill(json({ id: 410, user_id: 410, email: "diary-owner@gsn.local", display_name: "Diary Owner", gmfn_id: "GMFN-U-DIARY", gsn_id: "GMFN-U-DIARY", role: "member" }));
+      await route.fulfill(json({
+        id: activeViewerGmfnId === "GMFN-U-DIARY" ? 410 : 411,
+        user_id: activeViewerGmfnId === "GMFN-U-DIARY" ? 410 : 411,
+        email: activeViewerGmfnId === "GMFN-U-DIARY" ? "diary-owner@gsn.local" : "shop-visitor@gsn.local",
+        display_name: activeViewerGmfnId === "GMFN-U-DIARY" ? "Diary Owner" : "Shop Visitor",
+        gmfn_id: activeViewerGmfnId,
+        gsn_id: activeViewerGmfnId,
+        role: "member",
+      }));
       return;
     }
     if (path === "/identity-risk/me") {
@@ -387,23 +396,32 @@ async function installApiMocks(page) {
   });
 }
 
-async function preparePage(browser, width, height = 844, authenticated = true) {
+async function preparePage(
+  browser,
+  width,
+  height = 844,
+  authenticated = true,
+  viewerGmfnId = "GMFN-U-DIARY"
+) {
   activeAuthenticated = authenticated;
+  activeViewerGmfnId = viewerGmfnId;
   const page = await browser.newPage({
     viewport: { width, height },
     deviceScaleFactor: width <= 520 ? 2 : 1,
     isMobile: width <= 520,
   });
   await installApiMocks(page);
-  await page.addInitScript((isAuthenticated) => {
+  await page.addInitScript(({ isAuthenticated, viewerGmfnId }) => {
     if (isAuthenticated) {
       localStorage.setItem("access_token", "shop-diary-visual-token");
       localStorage.setItem("gmfn_selected_clan_id", "12");
+      localStorage.setItem("gmfn_current_id", viewerGmfnId);
       return;
     }
     localStorage.removeItem("access_token");
     localStorage.removeItem("gmfn_selected_clan_id");
-  }, authenticated);
+    localStorage.removeItem("gmfn_current_id");
+  }, { isAuthenticated: authenticated, viewerGmfnId });
   return page;
 }
 
@@ -597,6 +615,10 @@ async function collectMetrics(page) {
       returnMarketplaceHeight: returnMarketplaceRect
         ? Math.round(returnMarketplaceRect.height)
         : null,
+      returnMarketplaceHref:
+        returnMarketplaceAction instanceof HTMLAnchorElement
+          ? returnMarketplaceAction.getAttribute("href")
+          : null,
       inlineWelcomeVoicePresent: Boolean(inlineWelcomeVoice),
       inlineWelcomeVoiceLabel:
         inlineWelcomeVoiceAction?.getAttribute("aria-label") || null,
@@ -691,6 +713,7 @@ async function run() {
       { name: "19-public-shop-alternate-owner-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, expect: "Ardent Ebony Uplift LTD", shopName: "Ardent Ebony Uplift LTD" },
       { name: "20-public-shop-desktop-1024", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 1024, height: 900, expect: "Shop Update", authenticated: false },
       { name: "21-public-shop-verify-compact-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Request TrustSlip", authenticated: false, openVerify: true },
+      { name: "22-public-shop-signed-in-visitor-return-390", scenario: "image", route: "/shop/GMFN-U-DIARY?clan_id=44#shop-diaries", width: 390, expect: "Back to Marketplace", viewerGmfnId: "GMFN-U-VISITOR" },
     ];
     const requestedCases = String(process.env.GSN_SHOP_VISUAL_CASES || "")
       .split(",")
@@ -708,7 +731,8 @@ async function run() {
         browser,
         item.width,
         item.height || 844,
-        item.authenticated !== false
+        item.authenticated !== false,
+        item.viewerGmfnId || "GMFN-U-DIARY"
       );
       await page.goto(`${baseUrl}${item.route}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
@@ -895,11 +919,11 @@ async function run() {
         );
       }
       const screenshot = await capture(page, item.name);
-      let openShopClickHash = null;
-      if (item.name === "05-public-shop-normal-visitor-430") {
-        await page.locator('a[data-cta-id="shop-gallery.open-shop"]').click();
-        await page.waitForTimeout(150);
-        openShopClickHash = await page.evaluate(() => window.location.hash);
+      let returnMarketplaceUrl = null;
+      if (item.name === "22-public-shop-signed-in-visitor-return-390") {
+        await page.locator('a[data-cta-id="shop-gallery.return-marketplace"]').click();
+        await page.waitForTimeout(800);
+        returnMarketplaceUrl = page.url();
       }
       await page.close();
       if (!metrics.body.includes(item.expect)) {
@@ -963,6 +987,9 @@ async function run() {
         if (item.width <= 520 && metrics.brandDisplay !== "none") {
           throw new Error(`${item.name} restored the duplicate Public Shop phone brand bar.`);
         }
+        if (metrics.openShopPanelTop !== null || metrics.openShopHref !== null) {
+          throw new Error(`${item.name} restored the redundant Open Shop panel.`);
+        }
         if (
           metrics.shopIdentityOverlayHeight === null ||
           metrics.shopIdentityOverlayHeight > maximumIdentityOverlayHeight ||
@@ -978,27 +1005,6 @@ async function run() {
         }
       }
       if (item.name === "05-public-shop-normal-visitor-430") {
-        if (
-          metrics.openShopPanelTop === null ||
-          metrics.shopEntranceBottom === null ||
-          metrics.openShopPanelTop < metrics.shopEntranceBottom ||
-          metrics.openShopPanelText !== "Open Shop" ||
-          metrics.openShopNamePresent ||
-          !metrics.openShopHref?.endsWith("#products-services") ||
-          openShopClickHash !== "#products-services"
-        ) {
-          throw new Error(
-            `${item.name} did not keep the permanent Open Shop panel immediately below the animation: ` +
-              JSON.stringify({
-                entranceBottom: metrics.shopEntranceBottom,
-                panelTop: metrics.openShopPanelTop,
-                panelText: metrics.openShopPanelText,
-                panelNamePresent: metrics.openShopNamePresent,
-                href: metrics.openShopHref,
-                clickHash: openShopClickHash,
-              })
-          );
-        }
         if (!metrics.moreOpen || metrics.optionsOpen) {
           throw new Error(`${item.name} did not keep Spotlight open and Shop options closed by default.`);
         }
@@ -1054,6 +1060,32 @@ async function run() {
           throw new Error(
             "Public Shop actions are not aligned: " +
               JSON.stringify({ tops: metrics.actionTops, heights: metrics.actionHeights })
+          );
+        }
+      }
+      if (item.name === "22-public-shop-signed-in-visitor-return-390") {
+        if (
+          !metrics.returnMarketplacePresent ||
+          metrics.returnMarketplaceHeight !== 40 ||
+          !String(metrics.returnMarketplaceHref || "").includes(
+            "/app/marketplace?community=44#marketplace-members-shops"
+          ) ||
+          !String(returnMarketplaceUrl || "").includes(
+            "/app/marketplace?community=44#marketplace-members-shops"
+          ) ||
+          !metrics.productUpdateTickerPresent ||
+          metrics.ownerShopUpdateShortcutPresent
+        ) {
+          throw new Error(
+            `${item.name} did not keep one visitor-only return to the originating Marketplace: ` +
+              JSON.stringify({
+                present: metrics.returnMarketplacePresent,
+                height: metrics.returnMarketplaceHeight,
+                href: metrics.returnMarketplaceHref,
+                navigatedTo: returnMarketplaceUrl,
+                ticker: metrics.productUpdateTickerPresent,
+                ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
+              })
           );
         }
       }

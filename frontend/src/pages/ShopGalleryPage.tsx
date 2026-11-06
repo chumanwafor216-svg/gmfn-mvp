@@ -4429,9 +4429,12 @@ export default function ShopGalleryPage() {
   const ownerSurfaceCommunityId = positiveNumber(
     effectiveShop?.clanId || getSelectedClanId()
   );
+  const marketplaceReturnCommunityId = positiveNumber(
+    explicitRouteClanId || routeClanId || effectiveShop?.clanId || getSelectedClanId()
+  );
   const marketplaceMemberShopsPath = routeWithCommunity(
     `${APP_ROUTES.MARKETPLACE}#marketplace-members-shops`,
-    ownerSurfaceCommunityId
+    marketplaceReturnCommunityId
   );
   const ownerShopAnalyticsPath = routeWithCommunity(
     `${APP_ROUTES.SHOP_ME}#${OWNER_SHOP_HASHES.summary}`,
@@ -4459,6 +4462,9 @@ export default function ShopGalleryPage() {
         (positiveNumber(effectiveShop?.id) > 0 &&
           shopFollowState.shopId === positiveNumber(effectiveShop?.id) &&
           shopFollowState.isOwner))
+  );
+  const showMarketplaceReturn = Boolean(
+    ownerSessionPresent && effectiveShop && !loading && !signedInOwnsShop
   );
   const shopOptionsOwner = signedInOwnsShop || shopFollowState.isOwner;
   const nextEmptyProductSlot = useMemo(() => {
@@ -5349,6 +5355,34 @@ export default function ShopGalleryPage() {
           </div>
         </div>
 
+        {showMarketplaceReturn ? (
+          <StableCtaLink
+            to={marketplaceMemberShopsPath}
+            fullWidth
+            stableHeight={isCompact ? 40 : 50}
+            debugId="shop-gallery.return-marketplace"
+            aria-label="Back to Marketplace member shops"
+            style={{
+              ...secondaryBtn(false),
+              order: -1,
+              minHeight: isCompact ? 40 : 50,
+              borderRadius: isCompact ? 13 : 18,
+              fontSize: isCompact ? 11.5 : 14,
+              padding: isCompact ? "5px 9px" : "9px 14px",
+              color: "#07172C",
+              border: "1px solid rgba(214,170,69,0.34)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
+              boxShadow:
+                "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+              gap: isCompact ? 6 : 8,
+            }}
+          >
+            {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
+            <span>Back to Marketplace</span>
+          </StableCtaLink>
+        ) : null}
+
         {isCompact ? (
           <div
             className="public-shop-product-update-ticker"
@@ -5395,33 +5429,7 @@ export default function ShopGalleryPage() {
               />
             ) : null}
           </div>
-        ) : (
-          <StableCtaLink
-            to={marketplaceMemberShopsPath}
-            fullWidth
-            stableHeight={isCompact ? 44 : 50}
-            debugId="shop-gallery.return-marketplace"
-            aria-label="Back to Marketplace member shops"
-            style={{
-              ...secondaryBtn(false),
-              order: isCompact ? 3 : 0,
-              minHeight: isCompact ? 44 : 50,
-              borderRadius: isCompact ? 14 : 18,
-              fontSize: isCompact ? 12 : 14,
-              padding: isCompact ? "6px 9px" : "9px 14px",
-              color: "#07172C",
-              border: "1px solid rgba(214,170,69,0.26)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
-              boxShadow:
-                "0 10px 22px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
-              gap: isCompact ? 6 : 8,
-            }}
-          >
-            {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
-            <span>{isCompact ? "Marketplace" : "Back to Marketplace"}</span>
-          </StableCtaLink>
-        )}
+        ) : null}
 
         <section
           className="public-shop-signboard"
@@ -5499,46 +5507,6 @@ export default function ShopGalleryPage() {
               }));
             }}
           />
-          {!signedInOwnsShop ? (
-          <section
-            data-public-shop-open-panel="true"
-            aria-label="Open this GSN shop"
-            style={{
-              position: "relative",
-              display: "block",
-              marginTop: isCompact ? 8 : 12,
-              padding: isCompact ? 8 : 10,
-              borderRadius: isCompact ? 16 : 22,
-              border: "1px solid rgba(214,170,69,0.34)",
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,250,235,0.98) 100%)",
-              boxShadow: "0 12px 28px rgba(8,38,67,0.10)",
-            }}
-          >
-            <StableCtaLink
-              to={`#${PUBLIC_SHOP_PRODUCTS_ANCHOR}`}
-              preserveSearch
-              stableHeight={isCompact ? 44 : 48}
-              debugId="shop-gallery.open-shop"
-              aria-label={`Open ${shopNameText} products and services`}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                padding: isCompact ? "8px 12px" : "10px 18px",
-                borderRadius: 999,
-                color: "#07172C",
-                border: "1px solid rgba(183,131,33,0.54)",
-                background: "linear-gradient(135deg, #FFE28A 0%, #D6AA45 100%)",
-                boxShadow: "0 10px 22px rgba(183,131,33,0.22)",
-                fontSize: isCompact ? 12 : 14,
-                fontWeight: 950,
-                boxSizing: "border-box",
-              }}
-            >
-              Open Shop
-            </StableCtaLink>
-          </section>
-          ) : null}
           <div
             style={{
               position: "relative",

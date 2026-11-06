@@ -7,6 +7,16 @@ This file is the compact current-state handoff required by `README.md` and
 
 ## Public Shop compact voice and update strip - 2026-11-06
 
+- Founder phone-video follow-up removes the obsolete HTML `Open Shop` panel
+  from every canonical Public Shop after entry. The label remains valid only
+  for outward share metadata/captions that lead into the shop; it is no longer
+  a second in-page action beneath the shop entrance.
+- A signed-in non-owner visiting another member's shop now receives one compact
+  40px `Back to Marketplace` row above the entrance. The return path prioritizes
+  the incoming shop link's community context, so a visit carrying `clan_id=44`
+  returns through the canonical `/app/marketplace?community=44` member-shop
+  section rather than the shop owner's default community. The exact owner and
+  logged-out public recipients do not receive this authenticated return row.
 - Founder-approved Public Shop phone correction combines the rotating `P&S
   Update` text and a deliberate welcome/latest-update voice `Listen` control in
   the existing 44px strip. Visitors can now see and operate playback without
@@ -32,11 +42,13 @@ This file is the compact current-state handoff required by `README.md` and
   own voice player; desktop retains the full card and Marketplace-return
   presentation. Product voice, the 24-hour update window, storage, permissions,
   Community Bulletin voice and backend contracts are unchanged.
-- Verification passes the production build; Shop Diary Phase 1, Public Shop
-  action-inventory and workflow-plus audits; and all 21 Shop Diary browser
-  scenarios across 360/390/430/1024px. The visitor scenario fetches and plays a
-  synthetic WAV, completes playback, verifies the voice pill collapses, and
-  confirms the rotating message remains running.
+- Verification passes the production build; Shop Diary Phase 1/2, Public Shop
+  action-inventory and workflow-plus audits; and all 22 Shop Diary browser
+  scenarios across 360/390/430/1024px. The voice visitor scenario fetches and
+  plays a synthetic WAV, completes playback, verifies the voice pill collapses,
+  and confirms the rotating message remains running. The signed-in non-owner
+  scenario verifies the 40px return row, absence of the retired `Open Shop`
+  panel and real navigation to the originating `community=44` Marketplace.
 - The broader protected-button freeze reaches and passes the Shop checks, then
   remains red on pre-existing unrelated entry/auth guards: typed existing-GSN
   invite submission, Member Activation identifier copy, and existing-community
