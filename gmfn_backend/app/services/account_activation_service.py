@@ -92,6 +92,38 @@ def authorize_join_activation_grant(
     return row
 
 
+def rotate_authorized_activation_token(
+    db: Session, *, grant: AccountActivationGrant
+) -> str:
+    row = (
+        db.query(AccountActivationGrant)
+        .filter(AccountActivationGrant.id == int(grant.id))
+        .with_for_update()
+        .first()
+    )
+    now = _now()
+    if (
+        row is None
+        or row.revoked_at is not None
+        or row.consumed_at is not None
+        or row.activation_authorized_at is None
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "activation_recovery_unavailable",
+                "message": "This approved activation can no longer be recovered. Sign in or ask the community administrator for help.",
+                "next_action": "account_recovery",
+            },
+        )
+
+    activation_token = _secret()
+    row.activation_token_digest = _digest(activation_token)
+    row.activation_expires_at = now + ACTIVATION_LIFETIME
+    db.add(row)
+    return activation_token
+
+
 def require_status_grant(
     db: Session, *, join_request_id: int, status_token: str
 ) -> AccountActivationGrant:

@@ -5,6 +5,48 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Cross-browser approved-member activation recovery - 2026-11-06
+
+- Root cause: the public Community QR remained valid, but the approved member's
+  one-hour activation proof lived only in the original browser session. Opening
+  the approval in WhatsApp, another tab or another phone could therefore leave
+  the member with a GSN ID and request number but no authority to set a password.
+- Same-browser recovery now uses the existing 30-day read-only status proof to
+  rotate a fresh one-hour activation proof through
+  `POST /clans/join-requests/{request_id}/activation-continuation`. The status
+  proof remains in the `X-Join-Status-Token` header and no activation secret is
+  placed in a QR code, query string or WhatsApp URL.
+- Cross-browser recovery now uses the phone recorded on the approved join
+  request. Start and confirm routes create an `EntryPhoneVerification` scoped
+  to the applicant and exact join request, then return a fresh one-hour
+  activation proof only after the one-time code is approved.
+- The existing Twilio Verify service supplies the abuse controls: 15-minute
+  challenge expiry, resend cooldown, per-session/per-phone send limits and a
+  five-check maximum. The local challenge is marked verified and consumed on
+  success, so it cannot be replayed. The applicant's phone is marked verified
+  because possession of the already-recorded number was proved.
+- `MemberActivationPage` first restores a saved status continuation
+  automatically. If that is unavailable, it shows a compact phone/code panel;
+  password fields and the Finish action remain hidden until protected approval
+  proof has been restored. Plain-language states cover mismatched application
+  details, invalid/expired codes and unavailable SMS delivery.
+- Migration `20261106_activation_phone` adds
+  `entry_phone_verifications.activation_join_request_id` with a foreign key and
+  index. Alembic reports this migration as the single head.
+- Production remains fail-closed. `render.yaml` still deliberately sets
+  `GMFN_ENTRY_PHONE_DELIVERY=registration-only` and
+  `GSN_PHONE_VERIFICATION_ENABLED=0`; therefore this release does **not** claim
+  live SMS delivery. Enabling cross-device codes requires confirmed Twilio
+  credentials/service SID, Pipeline Credit account and cost, payment-operations
+  switch, then `GMFN_ENTRY_PHONE_DELIVERY=sms`. Until those external settings
+  are verified, same-browser restoration works and the cross-browser panel
+  gives truthful administrator-help guidance instead of exposing a preview OTP.
+- Verification passes all 13 focused secure-activation tests, TypeScript build,
+  Vite production build and Alembic single-head inspection. The broader
+  `audit:entry-auth` reaches the new recovery assertions but remains red on its
+  pre-existing unrelated `JoinEntryPage` existing-GSN payload regex; that
+  unrelated contract was not changed in this fix.
+
 ## Non-expiring Community QR links - 2026-11-06
 
 - Customer-discovery workshop follow-up removes calendar expiry only from an

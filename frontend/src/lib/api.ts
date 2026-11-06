@@ -9308,6 +9308,49 @@ export async function getJoinApprovalStatus(
   );
 }
 
+export async function refreshJoinActivationContinuation(
+  requestId: number | string,
+  statusToken: string
+): Promise<any> {
+  const token = String(statusToken || "").trim();
+  if (!token) throw new Error("Protected approval status is required");
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(String(requestId))}/activation-continuation`,
+    "POST",
+    undefined,
+    { headers: { "X-Join-Status-Token": token }, quiet: true }
+  );
+}
+
+export async function startJoinActivationPhoneRecovery(
+  requestId: number | string,
+  payload: { gmfn_id: string; phone_e164: string }
+): Promise<any> {
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(String(requestId))}/activation-phone/start`,
+    "POST",
+    {
+      gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+      phone_e164: String(payload?.phone_e164 || "").trim(),
+    }
+  );
+}
+
+export async function confirmJoinActivationPhoneRecovery(
+  requestId: number | string,
+  payload: { gmfn_id: string; verification_id: number; code: string }
+): Promise<any> {
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(String(requestId))}/activation-phone/confirm`,
+    "POST",
+    {
+      gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+      verification_id: Number(payload?.verification_id || 0),
+      code: String(payload?.code || "").trim(),
+    }
+  );
+}
+
 export async function getCommunityJoinRequests(clanId: number): Promise<any> {
   return cachedStartupSectionRead(
     startupSectionCacheKey("getCommunityJoinRequests", { clan_id: clanId }),

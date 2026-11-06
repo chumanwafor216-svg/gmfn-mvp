@@ -2480,6 +2480,11 @@ class EntryPhoneVerification(Base):
     provider_response_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     provider_error_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     owner_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    activation_join_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clan_join_requests.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     provider_send_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     provider_check_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     pipeline_credit_ledger_entry_id: Mapped[Optional[int]] = mapped_column(

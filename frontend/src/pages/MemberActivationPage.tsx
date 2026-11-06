@@ -10,18 +10,22 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   activateApprovedMember,
   activateMembership,
+  confirmJoinActivationPhoneRecovery,
   getAccessToken,
   getMe,
   getMeWithToken,
   getSelectedClanId,
   markJoinRequestActivationOpened,
   observeIdentityRisk,
+  refreshJoinActivationContinuation,
+  startJoinActivationPhoneRecovery,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 import {
   clearActivationContinuation,
   readActivationContinuation,
+  saveActivationContinuation,
 } from "../lib/activationContinuation";
 
 function safeStr(x: any): string {
@@ -147,6 +151,46 @@ function friendlyActivationError(err: any): {
         title: "Activation is still pending",
         message:
           "This access request is not ready for password setup yet. Return to approval status and use the latest GSN ID or request ID shown there.",
+      },
+    };
+  }
+
+  if (code === "activation_sms_unavailable") {
+    return {
+      notice: {
+        tone: "warning",
+        title: "Phone code is not available yet",
+        message:
+          rawMessage ||
+          "Reopen the approval in the original browser, or ask the community administrator for activation help.",
+      },
+    };
+  }
+
+  if (
+    lowerMessage.includes("details do not match") ||
+    lowerMessage.includes("approved activation not found")
+  ) {
+    return {
+      notice: {
+        tone: "warning",
+        title: "Application details do not match",
+        message:
+          "Use the GSN ID, request ID, and phone number recorded on the approved application.",
+      },
+    };
+  }
+
+  if (
+    lowerMessage.includes("code is not correct") ||
+    lowerMessage.includes("code is expired") ||
+    code === "phone_code_invalid_or_expired"
+  ) {
+    return {
+      notice: {
+        tone: "warning",
+        title: "Code could not be confirmed",
+        message: "Check the code and try again, or request a new one.",
       },
     };
   }
@@ -677,6 +721,7 @@ export default function MemberActivationPage() {
       gmfn_id?: string;
       request_id?: string;
       activation_token?: string;
+      status_token?: string;
     }) || {};
 
   const initialGmfnId = safeStr(state.gmfn_id || searchParams.get("gmfn_id") || "");
@@ -687,8 +732,11 @@ export default function MemberActivationPage() {
     requestId: initialRequestId,
     gmfnId: initialGmfnId,
   });
-  const activationCredential = safeStr(
+  const initialActivationCredential = safeStr(
     state.activation_token || savedContinuation.activationToken
+  );
+  const statusCredential = safeStr(
+    state.status_token || savedContinuation.statusToken
   );
 
   const [form, setForm] = useState({
@@ -699,6 +747,14 @@ export default function MemberActivationPage() {
   });
 
   const [busy, setBusy] = useState(false);
+  const [activationCredential, setActivationCredential] = useState(
+    initialActivationCredential
+  );
+  const [continuationBusy, setContinuationBusy] = useState(false);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [verificationId, setVerificationId] = useState(0);
   const [notice, setNotice] = useState<ActivationNotice | null>(null);
   const [, setSuccess] = useState("");
   const [activated, setActivated] = useState(false);
@@ -709,6 +765,7 @@ export default function MemberActivationPage() {
   const noticeTimerRef = useRef<number | null>(null);
   const routeTimerRef = useRef<number | null>(null);
   const activationOpenedMarkerRef = useRef("");
+  const continuationRefreshMarkerRef = useRef("");
 
   const requestReady = useMemo(() => {
     return {
@@ -722,6 +779,32 @@ export default function MemberActivationPage() {
 
   const hasGsnId = Boolean(requestReady.gmfn_id);
   const hasRequestId = Boolean(requestReady.request_id);
+
+  useEffect(() => {
+    if (
+      requestReady.activation_token ||
+      !requestReady.request_id ||
+      !statusCredential
+    ) return;
+    const marker = `${requestReady.request_id}:${statusCredential}`;
+    if (continuationRefreshMarkerRef.current === marker) return;
+    continuationRefreshMarkerRef.current = marker;
+    setContinuationBusy(true);
+    refreshJoinActivationContinuation(requestReady.request_id, statusCredential)
+      .then((result) => {
+        const freshToken = safeStr(result?.activation_token);
+        if (!freshToken) return;
+        setActivationCredential(freshToken);
+        saveActivationContinuation({
+          requestId: requestReady.request_id,
+          gmfnId: safeStr(result?.gmfn_id || requestReady.gmfn_id),
+          statusToken: statusCredential,
+          activationToken: freshToken,
+        });
+      })
+      .catch(() => null)
+      .finally(() => setContinuationBusy(false));
+  }, [requestReady.activation_token, requestReady.gmfn_id, requestReady.request_id, statusCredential]);
 
   useEffect(() => {
     if (
@@ -781,6 +864,82 @@ export default function MemberActivationPage() {
           },
         });
       }, options.routeDelayMs ?? 1200);
+    }
+  }
+
+  async function handleSendRecoveryCode() {
+    clearScheduledActions();
+    setNotice(null);
+    if (!requestReady.gmfn_id || !requestReady.request_id || !safeStr(recoveryPhone)) {
+      showNotice({
+        tone: "warning",
+        title: "Enter your approved details",
+        message: "Enter the GSN ID, request ID, and phone number used for this application.",
+      });
+      return;
+    }
+    try {
+      setRecoveryBusy(true);
+      const result = await startJoinActivationPhoneRecovery(requestReady.request_id, {
+        gmfn_id: requestReady.gmfn_id,
+        phone_e164: recoveryPhone,
+      });
+      setVerificationId(Number(result?.verification_id || 0));
+      const previewCode = safeStr(result?.otp_preview);
+      if (previewCode) setRecoveryCode(previewCode);
+      showNotice({
+        tone: "success",
+        title: previewCode ? "Test code prepared" : "Code sent",
+        message: previewCode
+          ? `Development preview code: ${previewCode}`
+          : "Enter the one-time code sent to the phone on your approved request.",
+      });
+    } catch (error: any) {
+      showNotice(friendlyActivationError(error).notice);
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
+  async function handleConfirmRecoveryCode() {
+    clearScheduledActions();
+    setNotice(null);
+    if (!verificationId || !safeStr(recoveryCode)) {
+      showNotice({
+        tone: "warning",
+        title: "Enter the one-time code",
+        message: "Ask GSN to send a code first, then enter it here.",
+      });
+      return;
+    }
+    try {
+      setRecoveryBusy(true);
+      const result = await confirmJoinActivationPhoneRecovery(
+        requestReady.request_id,
+        {
+          gmfn_id: requestReady.gmfn_id,
+          verification_id: verificationId,
+          code: recoveryCode,
+        }
+      );
+      const freshToken = safeStr(result?.activation_token);
+      if (!freshToken) throw new Error("GSN could not restore this activation yet.");
+      setActivationCredential(freshToken);
+      saveActivationContinuation({
+        requestId: requestReady.request_id,
+        gmfnId: requestReady.gmfn_id,
+        statusToken: statusCredential,
+        activationToken: freshToken,
+      });
+      showNotice({
+        tone: "success",
+        title: "Phone confirmed",
+        message: "Create your password below to finish activation.",
+      });
+    } catch (error: any) {
+      showNotice(friendlyActivationError(error).notice);
+    } finally {
+      setRecoveryBusy(false);
     }
   }
 
@@ -1224,6 +1383,96 @@ export default function MemberActivationPage() {
                 </div>
               </div>
 
+              {!activationCredential ? (
+                <div
+                  style={{
+                    ...guidePanel(),
+                    marginBottom: 0,
+                    display: "grid",
+                    gap: 16,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "#F4D37C", fontWeight: 1000, fontSize: 20 }}>
+                      {continuationBusy
+                        ? "Restoring your secure approval..."
+                        : "Open this approval on any phone"}
+                    </div>
+                    <div style={{ color: "#C8D8EA", lineHeight: 1.55, marginTop: 6 }}>
+                      {continuationBusy
+                        ? "GSN is checking the protected approval saved in this browser."
+                        : "If this is a different browser, confirm the phone number used for the approved application. GSN will send a short one-time code."}
+                    </div>
+                  </div>
+
+                  {!continuationBusy ? (
+                    <>
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <label style={labelText()} htmlFor="member-activation-recovery-phone">
+                          Phone used for application
+                        </label>
+                        <div style={inputShell()}>
+                          <input
+                            id="member-activation-recovery-phone"
+                            value={recoveryPhone}
+                            onChange={(event) => setRecoveryPhone(event.target.value)}
+                            placeholder="Example: +2347060852000"
+                            autoComplete="tel"
+                            inputMode="tel"
+                            style={inputStyle(false)}
+                          />
+                        </div>
+                      </div>
+                      <SubtleButton
+                        type="button"
+                        onClick={handleSendRecoveryCode}
+                        disabled={recoveryBusy}
+                        stableHeight={56}
+                        fullWidth
+                        debugId="member-activation.recovery.send-code"
+                        style={{ borderRadius: 18, fontWeight: 1000 }}
+                      >
+                        {verificationId ? "Send a new code" : "Send one-time code"}
+                      </SubtleButton>
+
+                      {verificationId ? (
+                        <div style={{ display: "grid", gap: 12 }}>
+                          <label style={labelText()} htmlFor="member-activation-recovery-code">
+                            One-time code
+                          </label>
+                          <div style={inputShell()}>
+                            <input
+                              id="member-activation-recovery-code"
+                              value={recoveryCode}
+                              onChange={(event) => setRecoveryCode(event.target.value)}
+                              placeholder="Enter the code"
+                              autoComplete="one-time-code"
+                              inputMode="numeric"
+                              style={inputStyle(false)}
+                            />
+                          </div>
+                          <PrimaryButton
+                            type="button"
+                            onClick={handleConfirmRecoveryCode}
+                            disabled={recoveryBusy}
+                            busy={recoveryBusy}
+                            busyLabel="Checking code..."
+                            stableHeight={58}
+                            fullWidth
+                            debugId="member-activation.recovery.confirm-code"
+                            style={{ borderRadius: 18, fontWeight: 1000 }}
+                          >
+                            Confirm phone and continue
+                          </PrimaryButton>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {activationCredential ? (
+                <>
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-password">
                   <span style={labelIconStyle("lock")}>
@@ -1289,6 +1538,8 @@ export default function MemberActivationPage() {
                   </SubtleButton>
                 </div>
               </div>
+                </>
+              ) : null}
             </div>
 
             <div style={infoPanel()}>
@@ -1316,10 +1567,11 @@ export default function MemberActivationPage() {
               </div>
             </div>
 
+            {activationCredential ? (
             <div style={{ marginTop: 30 }}>
               <PrimaryButton
                 type="submit"
-                disabled={busy || activated}
+                disabled={busy || activated || !activationCredential}
                 busy={busy}
                 busyLabel="Finishing activation..."
                 stableHeight={isCompact ? 64 : 72}
@@ -1347,6 +1599,7 @@ export default function MemberActivationPage() {
                 Finish activation
               </PrimaryButton>
             </div>
+            ) : null}
           </div>
         </form>
 

@@ -12,6 +12,7 @@ from app.db.models import (
     ClanInvite,
     ClanJoinRequest,
     ClanMembership,
+    EntryPhoneVerification,
     User,
 )
 from app.services.account_activation_service import issue_activation_grant
@@ -146,6 +147,177 @@ def test_join_status_requires_separate_read_only_credential(client: TestClient):
     assert protected.status_code == 200, protected.text
     assert protected.json()["status"] == "approved"
     assert "activation_token" not in protected.json()
+
+
+def test_status_proof_rotates_a_fresh_activation_continuation(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    old_activation_token, status_token = _seed_pending_member(with_join_request=True)
+
+    refreshed = client.post(
+        "/clans/join-requests/1/activation-continuation",
+        headers={"X-Join-Status-Token": status_token},
+    )
+
+    assert refreshed.status_code == 200, refreshed.text
+    fresh_activation_token = refreshed.json()["activation_token"]
+    assert fresh_activation_token
+    assert fresh_activation_token != old_activation_token
+
+    old_attempt = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "request_id": "1",
+            "activation_token": old_activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert old_attempt.status_code == 403
+
+    activation = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "request_id": "1",
+            "activation_token": fresh_activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activation.status_code == 200, activation.text
+
+
+def test_invalid_status_proof_cannot_rotate_activation(client: TestClient):
+    _seed_pending_member(with_join_request=True)
+
+    response = client.post(
+        "/clans/join-requests/1/activation-continuation",
+        headers={"X-Join-Status-Token": "x" * 48},
+    )
+
+    assert response.status_code == 404
+
+
+def test_phone_code_recovers_activation_in_another_browser(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+    _seed_pending_member(with_join_request=True)
+
+    started = client.post(
+        "/clans/join-requests/1/activation-phone/start",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "phone_e164": "+2348000000002",
+        },
+    )
+    assert started.status_code == 201, started.text
+    started_body = started.json()
+    assert started_body["otp_preview"]
+
+    parallel = client.post(
+        "/clans/join-requests/1/activation-phone/start",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "phone_e164": "+2348000000002",
+        },
+    )
+    assert parallel.status_code == 201, parallel.text
+    parallel_body = parallel.json()
+
+    confirmed = client.post(
+        "/clans/join-requests/1/activation-phone/confirm",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "verification_id": started_body["verification_id"],
+            "code": started_body["otp_preview"],
+        },
+    )
+    assert confirmed.status_code == 200, confirmed.text
+    activation_token = confirmed.json()["activation_token"]
+    assert activation_token
+
+    replay = client.post(
+        "/clans/join-requests/1/activation-phone/confirm",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "verification_id": started_body["verification_id"],
+            "code": started_body["otp_preview"],
+        },
+    )
+    assert replay.status_code == 400
+
+    parallel_replay = client.post(
+        "/clans/join-requests/1/activation-phone/confirm",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "verification_id": parallel_body["verification_id"],
+            "code": parallel_body["otp_preview"],
+        },
+    )
+    assert parallel_replay.status_code == 400
+
+    activation = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "request_id": "1",
+            "activation_token": activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activation.status_code == 200, activation.text
+    assert activation.json()["phone_verified"] is True
+
+
+def test_phone_recovery_rejects_details_not_bound_to_request(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+    _seed_pending_member(with_join_request=True)
+
+    response = client.post(
+        "/clans/join-requests/1/activation-phone/start",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "phone_e164": "+2348000000999",
+        },
+    )
+
+    assert response.status_code == 404
+    with SessionLocal() as db:
+        assert db.query(EntryPhoneVerification).count() == 0
+
+
+def test_public_phone_recovery_fails_closed_when_live_sms_is_not_enabled(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "0")
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "registration-only")
+    _seed_pending_member(with_join_request=True)
+
+    response = client.post(
+        "/clans/join-requests/1/activation-phone/start",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "phone_e164": "+2348000000002",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "activation_sms_unavailable"
+    with SessionLocal() as db:
+        assert db.query(EntryPhoneVerification).count() == 0
 
 
 def test_activation_token_is_bound_to_account_and_request(client: TestClient):

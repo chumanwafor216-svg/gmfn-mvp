@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any, List, Optional
 from urllib.parse import quote, urlencode, urlparse
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
@@ -32,6 +32,7 @@ from app.core.trust_event_types import TrustEventType
 from app.db.database import get_db
 from app.db.notification_models import Notification
 from app.db.models import (
+    AccountActivationGrant,
     Clan,
     ClanInvite,
     ClanQrPreApproval,
@@ -44,6 +45,7 @@ from app.db.models import (
     CommunityDomainPolicy,
     CommunityMemberVerification,
     CommunityMemberVerificationRequest,
+    EntryPhoneVerification,
     MarketplaceProduct,
     MarketplaceShop,
     TrustEvent,
@@ -67,6 +69,14 @@ from app.services.account_activation_service import (
     issue_activation_grant,
     require_activation_grant,
     require_status_grant,
+    rotate_authorized_activation_token,
+)
+from app.services.phone_verification_service import (
+    PhoneVerificationServiceError,
+    begin_live_phone_verification,
+    confirm_live_phone_verification,
+    confirm_preview_code,
+    prepare_preview_code,
 )
 from app.services.feature_entitlements_service import get_active_feature_quantity_for_scope
 from app.services.community_integrity_service import _user_settings_table_exists
@@ -96,6 +106,7 @@ JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
 )
+ACTIVATION_RECOVERY_NOT_FOUND = "Approved activation details do not match"
 
 
 def _active_clan_member_count(db: Session, *, clan_id: int) -> int:
@@ -526,6 +537,32 @@ class ActivationOpenedIn(BaseModel):
         return _reject_non_text_body_value(value, info.field_name)
 
 
+class ActivationPhoneStartIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    phone_e164: str = Field(..., min_length=8, max_length=32)
+
+    @field_validator("gmfn_id", "phone_e164", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
+
+class ActivationPhoneConfirmIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    verification_id: int = Field(..., gt=0)
+    code: str = Field(..., min_length=4, max_length=12)
+
+    @field_validator("gmfn_id", "code", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_verification_id(cls, value: Any) -> Any:
+        return _reject_bool_float_body_identifier(value, "verification_id")
+
+
 _DEFAULT_VOTE_REASON_TEXT = {
     "approve": "I know this person well enough to support the request.",
     "reject": "I have a concern and cannot support the request.",
@@ -777,6 +814,26 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _normalize_activation_phone(value: Any) -> str:
+    compact = "".join(ch for ch in _safe_str(value) if ch.isdigit() or ch == "+")
+    if compact.startswith("00"):
+        compact = f"+{compact[2:]}"
+    elif compact and not compact.startswith("+"):
+        compact = f"+{compact}"
+    return compact
+
+
+def _activation_phone_delivery_mode() -> str:
+    configured = _safe_str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY")).lower()
+    if configured in {"sms", "live", "provider", "pending-sms"}:
+        return "live"
+    if _safe_str(os.getenv("GMFN_DEV_MODE")).lower() in {"1", "true", "yes", "on"}:
+        return "preview"
+    if os.getenv("PYTEST_CURRENT_TEST") and configured in {"preview", "pilot", "manual"}:
+        return "preview"
+    return "unavailable"
 
 
 def _normalized_admission_mode(value: Any) -> str:
@@ -6032,6 +6089,260 @@ def get_join_request_status(
         )
 
     return _join_request_status_payload(db, request, req)
+
+
+def _activation_recovery_context(
+    db: Session,
+    *,
+    join_request_id: int,
+    gmfn_id: str,
+) -> tuple[ClanJoinRequest, User, AccountActivationGrant]:
+    req = db.query(ClanJoinRequest).filter(ClanJoinRequest.id == int(join_request_id)).first()
+    if req is None or _safe_str(req.status).lower() != "approved":
+        raise HTTPException(status_code=404, detail=ACTIVATION_RECOVERY_NOT_FOUND)
+    applicant = db.query(User).filter(User.id == int(req.applicant_user_id)).first()
+    if applicant is None or not _gmfn_id_matches_user(gmfn_id, applicant):
+        raise HTTPException(status_code=404, detail=ACTIVATION_RECOVERY_NOT_FOUND)
+    grant = (
+        db.query(AccountActivationGrant)
+        .filter(
+            AccountActivationGrant.join_request_id == int(req.id),
+            AccountActivationGrant.user_id == int(applicant.id),
+            AccountActivationGrant.revoked_at.is_(None),
+            AccountActivationGrant.consumed_at.is_(None),
+        )
+        .first()
+    )
+    if grant is None or grant.activation_authorized_at is None:
+        raise HTTPException(status_code=404, detail=ACTIVATION_RECOVERY_NOT_FOUND)
+    if not is_user_activation_pending(applicant):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "account_already_activated",
+                "message": "This membership is already activated. Sign in or use verified account recovery.",
+                "next_action": "login",
+                "login_path": "/login?force=1",
+            },
+        )
+    return req, applicant, grant
+
+
+@router.post(
+    "/join-requests/{join_request_id}/activation-continuation",
+    response_model=dict[str, Any],
+)
+def refresh_join_activation_continuation(
+    join_request_id: int,
+    status_token: str = Header(
+        ...,
+        alias="X-Join-Status-Token",
+        min_length=32,
+        max_length=256,
+    ),
+    db: Session = Depends(get_db),
+):
+    grant = require_status_grant(
+        db,
+        join_request_id=int(join_request_id),
+        status_token=status_token,
+    )
+    req = db.get(ClanJoinRequest, int(join_request_id))
+    applicant = db.get(User, int(grant.user_id))
+    if (
+        req is None
+        or applicant is None
+        or int(req.applicant_user_id) != int(applicant.id)
+        or _safe_str(req.status).lower() != "approved"
+    ):
+        raise HTTPException(status_code=404, detail=ACTIVATION_RECOVERY_NOT_FOUND)
+    if not is_user_activation_pending(applicant):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "account_already_activated",
+                "message": "This membership is already activated. Sign in instead.",
+                "next_action": "login",
+                "login_path": "/login?force=1",
+            },
+        )
+    activation_token = rotate_authorized_activation_token(db, grant=grant)
+    db.commit()
+    return {
+        "ok": True,
+        "request_id": int(req.id),
+        "gmfn_id": _safe_str(applicant.gmfn_id),
+        "activation_token": activation_token,
+        "expires_in_seconds": 3600,
+    }
+
+
+@router.post(
+    "/join-requests/{join_request_id}/activation-phone/start",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_201_CREATED,
+)
+def start_join_activation_phone_recovery(
+    join_request_id: int,
+    payload: ActivationPhoneStartIn,
+    db: Session = Depends(get_db),
+):
+    req, applicant, _grant = _activation_recovery_context(
+        db,
+        join_request_id=join_request_id,
+        gmfn_id=payload.gmfn_id,
+    )
+    phone = _normalize_activation_phone(payload.phone_e164)
+    recorded_phone = _normalize_activation_phone(applicant.phone_e164)
+    if not phone or phone != recorded_phone:
+        raise HTTPException(status_code=404, detail=ACTIVATION_RECOVERY_NOT_FOUND)
+
+    delivery_mode = _activation_phone_delivery_mode()
+    if delivery_mode == "unavailable":
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "activation_sms_unavailable",
+                "message": "Phone-code recovery is not available yet. Reopen the original approval browser or ask the community administrator for activation help.",
+            },
+        )
+
+    verification = EntryPhoneVerification(
+        display_name=_safe_str(getattr(applicant, "display_name", None)) or "GSN member",
+        phone_e164=recorded_phone,
+        email=_safe_str(getattr(applicant, "email", None)) or None,
+        owner_user_id=int(applicant.id),
+        activation_join_request_id=int(req.id),
+        code=None,
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+        verified_at=None,
+        consumed_at=None,
+    )
+    db.add(verification)
+    db.flush()
+
+    preview_code = None
+    if delivery_mode == "preview":
+        preview_code = prepare_preview_code(db, verification, commit=False)
+        db.commit()
+        db.refresh(verification)
+        provider_context = {
+            "provider_key": None,
+            "provider_delivery_status": "preview_created",
+        }
+    else:
+        db.commit()
+        db.refresh(verification)
+        try:
+            provider_context = begin_live_phone_verification(
+                db,
+                verification,
+                user_id=int(applicant.id),
+                clan_id=int(req.clan_id),
+            )
+        except PhoneVerificationServiceError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail=exc.detail(),
+                headers=exc.response_headers(),
+            ) from exc
+
+    return {
+        "ok": True,
+        "verification_id": int(verification.id),
+        "expires_at": verification.expires_at.isoformat(),
+        "delivery_mode": delivery_mode,
+        "otp_preview": preview_code if delivery_mode == "preview" else None,
+        **provider_context,
+        "message": "A one-time activation code was prepared for the phone on this approved request.",
+    }
+
+
+@router.post(
+    "/join-requests/{join_request_id}/activation-phone/confirm",
+    response_model=dict[str, Any],
+)
+def confirm_join_activation_phone_recovery(
+    join_request_id: int,
+    payload: ActivationPhoneConfirmIn,
+    db: Session = Depends(get_db),
+):
+    req, applicant, grant = _activation_recovery_context(
+        db,
+        join_request_id=join_request_id,
+        gmfn_id=payload.gmfn_id,
+    )
+    verification = (
+        db.query(EntryPhoneVerification)
+        .filter(
+            EntryPhoneVerification.id == int(payload.verification_id),
+            EntryPhoneVerification.owner_user_id == int(applicant.id),
+            EntryPhoneVerification.activation_join_request_id == int(req.id),
+        )
+        .first()
+    )
+    now = datetime.now(timezone.utc)
+    expires_at = getattr(verification, "expires_at", None) if verification else None
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if (
+        verification is None
+        or verification.consumed_at is not None
+        or verification.verified_at is not None
+        or expires_at is None
+        or expires_at <= now
+    ):
+        raise HTTPException(status_code=400, detail="Activation code is expired or already used")
+    if _normalize_activation_phone(verification.phone_e164) != _normalize_activation_phone(
+        applicant.phone_e164
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="The approved phone changed. Request a new activation code.",
+        )
+    try:
+        approved = (
+            confirm_live_phone_verification(db, verification, payload.code)
+            if verification.provider_key
+            else confirm_preview_code(db, verification, payload.code)
+        )
+    except PhoneVerificationServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail(),
+            headers=exc.response_headers(),
+        ) from exc
+    if not approved:
+        raise HTTPException(status_code=400, detail="Activation code is not correct")
+
+    parallel_challenges = (
+        db.query(EntryPhoneVerification)
+        .filter(
+            EntryPhoneVerification.activation_join_request_id == int(req.id),
+            EntryPhoneVerification.consumed_at.is_(None),
+        )
+        .with_for_update()
+        .all()
+    )
+    for challenge in parallel_challenges:
+        challenge.consumed_at = now
+        db.add(challenge)
+    verification.verified_at = now
+    verification.code = None
+    verification.code_digest = None
+    applicant.phone_verified_at = now
+    activation_token = rotate_authorized_activation_token(db, grant=grant)
+    db.add(verification)
+    db.add(applicant)
+    db.commit()
+    return {
+        "ok": True,
+        "request_id": int(req.id),
+        "gmfn_id": _safe_str(applicant.gmfn_id),
+        "activation_token": activation_token,
+        "expires_in_seconds": 3600,
+        "message": "Phone confirmed. Create your password to finish activation.",
+    }
 
 
 @router.post("/join-requests/{join_request_id}/activation-opened", response_model=dict[str, Any])
