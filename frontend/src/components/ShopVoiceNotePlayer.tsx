@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { deleteShopVoice, fetchShopVoiceBlob } from "../lib/api";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import {
@@ -19,6 +19,7 @@ type ShopVoiceNotePlayerProps = {
   onDeleted?: () => void | Promise<void>;
   debugId: string;
   label: string;
+  compactInline?: boolean;
 };
 
 export default function ShopVoiceNotePlayer({
@@ -33,8 +34,12 @@ export default function ShopVoiceNotePlayer({
   onDeleted,
   debugId,
   label,
+  compactInline = false,
 }: ShopVoiceNotePlayerProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playAfterLoadRef = useRef(false);
   const [audioUrl, setAudioUrl] = useState("");
+  const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -44,9 +49,19 @@ export default function ShopVoiceNotePlayer({
 
   useEffect(() => {
     return () => {
+      audioRef.current?.pause();
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
   }, [audioUrl]);
+
+  useEffect(() => {
+    if (!compactInline || !audioUrl || !playAfterLoadRef.current) return;
+    playAfterLoadRef.current = false;
+    void audioRef.current?.play().catch(() => {
+      setPlaying(false);
+      setError("Tap Listen again to play this voice note.");
+    });
+  }, [audioUrl, compactInline]);
 
   async function loadAudio() {
     if (!attachmentId) return;
@@ -59,6 +74,27 @@ export default function ShopVoiceNotePlayer({
       setError(String(err?.message || "Voice note could not be opened."));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleCompactAudio() {
+    if (!audioUrl) {
+      playAfterLoadRef.current = true;
+      await loadAudio();
+      return;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      setError("");
+      try {
+        await audio.play();
+      } catch {
+        setPlaying(false);
+        setError("Tap Play again to hear this voice note.");
+      }
+    } else {
+      audio.pause();
     }
   }
 
@@ -101,6 +137,70 @@ export default function ShopVoiceNotePlayer({
   }
 
   if (!attachmentId) return null;
+
+  if (compactInline) {
+    const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
+    const durationLabel = Number(durationSeconds || 0) > 0
+      ? `${Math.ceil(Number(durationSeconds))}s`
+      : "";
+    const secondaryLabel = error
+      ? "Try again"
+      : [speakerGmfnId, durationLabel].filter(Boolean).join(" · ");
+    return (
+      <div
+        data-gsn-shop-voice-player="true"
+        data-gsn-shop-voice-inline="true"
+        className="public-shop-inline-voice"
+        title={[label, shopName, attribution, error].filter(Boolean).join(" · ")}
+      >
+        <audio
+          ref={audioRef}
+          preload="metadata"
+          src={audioUrl || undefined}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+          onError={() => {
+            setPlaying(false);
+            setError("This voice note could not be played.");
+          }}
+        />
+        <PrimaryButton
+          type="button"
+          onClick={() => void toggleCompactAudio()}
+          disabled={loading}
+          busy={loading}
+          busyLabel="Opening..."
+          stableHeight={42}
+          minWidth={0}
+          debugId={debugId}
+          aria-label={`${playing ? "Pause" : "Listen to"} ${label}${attribution ? ` from ${attribution}` : ""}`}
+          style={{
+            width: "100%",
+            minWidth: 0,
+            height: 42,
+            minHeight: 42,
+            padding: "4px 9px",
+            borderRadius: 12,
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr)",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 11,
+            lineHeight: 1.05,
+          }}
+        >
+          <GsnLegacyIcon name="speaker" size={19} />
+          <span style={{ minWidth: 0, display: "grid", textAlign: "left" }}>
+            <span style={{ fontWeight: 950 }}>{playing ? "Pause" : audioUrl ? "Play" : "Listen"}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 8.5, fontWeight: 800, opacity: 0.86 }}>
+              {secondaryLabel || "Voice note"}
+            </span>
+          </span>
+        </PrimaryButton>
+      </div>
+    );
+  }
 
   return (
     <div

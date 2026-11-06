@@ -1,4 +1,4 @@
-/* global console, process, localStorage, document, window, URL, getComputedStyle, HTMLDetailsElement */
+/* global console, process, localStorage, document, window, URL, getComputedStyle, HTMLDetailsElement, HTMLAudioElement, Buffer */
 
 import { chromium } from "@playwright/test";
 import { createReadStream, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
@@ -42,6 +42,33 @@ const portraitSvg = encodeURIComponent(`
 const imageDataUrl = `data:image/svg+xml;charset=utf-8,${imageSvg}`;
 const portraitDataUrl = `data:image/svg+xml;charset=utf-8,${portraitSvg}`;
 const videoDataUrl = "data:video/mp4;base64,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";
+
+function syntheticVoiceAudio(durationSeconds = 3) {
+  const sampleRate = 8_000;
+  const sampleCount = Math.round(sampleRate * durationSeconds);
+  const dataLength = sampleCount * 2;
+  const audio = Buffer.alloc(44 + dataLength);
+  audio.write("RIFF", 0, "ascii");
+  audio.writeUInt32LE(36 + dataLength, 4);
+  audio.write("WAVE", 8, "ascii");
+  audio.write("fmt ", 12, "ascii");
+  audio.writeUInt32LE(16, 16);
+  audio.writeUInt16LE(1, 20);
+  audio.writeUInt16LE(1, 22);
+  audio.writeUInt32LE(sampleRate, 24);
+  audio.writeUInt32LE(sampleRate * 2, 28);
+  audio.writeUInt16LE(2, 32);
+  audio.writeUInt16LE(16, 34);
+  audio.write("data", 36, "ascii");
+  audio.writeUInt32LE(dataLength, 40);
+  for (let index = 0; index < sampleCount; index += 1) {
+    const sample = Math.round(
+      Math.sin((2 * Math.PI * 220 * index) / sampleRate) * 900
+    );
+    audio.writeInt16LE(sample, 44 + index * 2);
+  }
+  return audio;
+}
 
 function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
@@ -119,6 +146,11 @@ const shop = {
   image_url: imageDataUrl,
   is_active: true,
   shop_product_slots_total: 11,
+  voice_attachment_id: 901,
+  voice_duration_seconds: 18,
+  voice_deleted_at: null,
+  voice_speaker_name: "Diary Owner",
+  voice_speaker_gmfn_id: "GMFN-U-DIARY",
 };
 function recentIso(hoursAgo) {
   return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
@@ -245,6 +277,14 @@ async function installApiMocks(page) {
         status: 200,
         contentType: "video/mp4",
         body: Buffer.from(videoDataUrl.split(",")[1], "base64"),
+      });
+      return;
+    }
+    if (path === "/shop-voice/public/901") {
+      await route.fulfill({
+        status: 200,
+        contentType: "audio/wav",
+        body: syntheticVoiceAudio(),
       });
       return;
     }
@@ -464,6 +504,15 @@ async function collectMetrics(page) {
       'a[data-cta-id="shop-gallery.return-marketplace"]'
     );
     const returnMarketplaceRect = returnMarketplaceAction?.getBoundingClientRect();
+    const inlineWelcomeVoice = document.querySelector(
+      '[data-gsn-shop-voice-inline="true"]'
+    );
+    const inlineWelcomeVoiceAction = inlineWelcomeVoice?.querySelector(
+      'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+    );
+    const ownerShopUpdateShortcut = document.querySelector(
+      'a[data-cta-id="shop-gallery.diary.owner-shortcut"]'
+    );
     return {
       href: window.location.href,
       body: (document.body.textContent || "").replace(/\s+/g, " ").slice(0, 5000),
@@ -537,6 +586,10 @@ async function collectMetrics(page) {
       returnMarketplaceHeight: returnMarketplaceRect
         ? Math.round(returnMarketplaceRect.height)
         : null,
+      inlineWelcomeVoicePresent: Boolean(inlineWelcomeVoice),
+      inlineWelcomeVoiceLabel:
+        inlineWelcomeVoiceAction?.getAttribute("aria-label") || null,
+      ownerShopUpdateShortcutPresent: Boolean(ownerShopUpdateShortcut),
       shopEntranceVideoPresent: shopEntranceVideo instanceof HTMLVideoElement,
       shopEntranceWidth: shopEntranceRect ? Math.round(shopEntranceRect.width) : null,
       shopEntranceHeight: shopEntranceRect ? Math.round(shopEntranceRect.height) : null,
@@ -707,6 +760,37 @@ async function run() {
           () => document.querySelector('[data-public-shop-more="secondary"]')?.open === true
         );
         await page.waitForTimeout(250);
+      }
+      if (item.name === "05-public-shop-normal-visitor-430") {
+        const welcomeVoiceAction = page.locator(
+          'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+        );
+        const welcomeVoiceAudio = page.locator(
+          '[data-gsn-shop-voice-inline="true"] audio'
+        );
+        await welcomeVoiceAction.click();
+        await page.waitForFunction(() => {
+          const audio = document.querySelector(
+            '[data-gsn-shop-voice-inline="true"] audio'
+          );
+          return audio instanceof HTMLAudioElement && audio.src.startsWith("blob:");
+        });
+        if (await welcomeVoiceAudio.evaluate((audio) => audio.paused)) {
+          await welcomeVoiceAction.click();
+        }
+        await page.waitForFunction(() => {
+          const audio = document.querySelector(
+            '[data-gsn-shop-voice-inline="true"] audio'
+          );
+          return audio instanceof HTMLAudioElement && !audio.paused;
+        });
+        await welcomeVoiceAction.click();
+        await page.waitForFunction(() => {
+          const audio = document.querySelector(
+            '[data-gsn-shop-voice-inline="true"] audio'
+          );
+          return audio instanceof HTMLAudioElement && audio.paused;
+        });
       }
       const metrics = await collectMetrics(page);
       let loopStability = null;
@@ -888,12 +972,25 @@ async function run() {
           throw new Error(`${item.name} did not keep Spotlight open and Shop options closed by default.`);
         }
         if (
-          metrics.productUpdateTickerPresent ||
-          !metrics.returnMarketplacePresent ||
-          metrics.returnMarketplaceHeight !== 44
+          !metrics.productUpdateTickerPresent ||
+          metrics.returnMarketplacePresent ||
+          metrics.productUpdateTickerHeight !== 44 ||
+          !metrics.inlineWelcomeVoicePresent ||
+          metrics.ownerShopUpdateShortcutPresent ||
+          !String(metrics.inlineWelcomeVoiceLabel || "").includes("Listen to Shop welcome voice") ||
+          metrics.diaryDisplay !== "none"
         ) {
           throw new Error(
-            `${item.name} did not preserve the compact Marketplace return for a public visitor.`
+            `${item.name} did not keep visitor Listen and the rotating update in one compact strip without the lower duplicate: ` +
+              JSON.stringify({
+                ticker: metrics.productUpdateTickerPresent,
+                marketplace: metrics.returnMarketplacePresent,
+                tickerHeight: metrics.productUpdateTickerHeight,
+                voice: metrics.inlineWelcomeVoicePresent,
+                voiceLabel: metrics.inlineWelcomeVoiceLabel,
+                ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
+                diaryDisplay: metrics.diaryDisplay,
+              })
           );
         }
         if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
@@ -1009,7 +1106,7 @@ async function run() {
         if (!metrics.moreOpen || metrics.liveSpotlight !== "true") {
           throw new Error("A resolved live Spotlight did not remain open until intentionally closed.");
         }
-        if (metrics.diaryDisplay !== null) {
+        if (metrics.diaryDisplay !== "none") {
           throw new Error("The owner Public Shop still rendered the retired lower Shop Update block.");
         }
         if (
@@ -1027,9 +1124,11 @@ async function run() {
           metrics.productUpdateTickerHeight !== 44 ||
           metrics.productUpdateTickerTop === null ||
           metrics.productUpdateTickerTop <= Math.max(...metrics.revealActionTops) ||
-          metrics.productUpdateTickerLabel !== "P&S Update" ||
+          !String(metrics.productUpdateTickerLabel || "").endsWith("P&S Update") ||
           !String(metrics.productUpdateTickerAriaLabel || "").includes("Delivered a weekend food tray") ||
-          metrics.productUpdateTickerAnimationName !== "public-shop-product-update-scroll"
+          metrics.productUpdateTickerAnimationName !== "public-shop-product-update-scroll" ||
+          !metrics.inlineWelcomeVoicePresent ||
+          !metrics.ownerShopUpdateShortcutPresent
         ) {
           throw new Error(
             "The owner duplicate Marketplace row did not become the compact rolling Products and Services Update: " +
@@ -1042,6 +1141,8 @@ async function run() {
                 label: metrics.productUpdateTickerLabel,
                 ariaLabel: metrics.productUpdateTickerAriaLabel,
                 animation: metrics.productUpdateTickerAnimationName,
+                voice: metrics.inlineWelcomeVoicePresent,
+                ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
               })
           );
         }

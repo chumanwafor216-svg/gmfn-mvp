@@ -1811,7 +1811,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       await loadPage();
       setDiaryNotice({
         tone: "success",
-        text: "Shop welcome voice saved. Visitors can choose Listen in Products & Services.",
+        text: "Shop welcome voice saved. Visitors can choose Listen in the compact Shop Update strip.",
       });
     } catch (err: any) {
       setDiaryNotice({

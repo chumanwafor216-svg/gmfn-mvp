@@ -3107,6 +3107,12 @@ export default function ShopGalleryPage() {
       telegram: firstMeaningful(shop?.telegram),
       followerCount: positiveNumber(shop?.followerCount),
       publicSlotsTotal: clampGallerySlotsTotal(shop?.publicSlotsTotal),
+      voiceAttachmentId: positiveNumber(shop?.voiceAttachmentId) || undefined,
+      voiceDurationSeconds:
+        positiveNumber(shop?.voiceDurationSeconds) || undefined,
+      voiceDeletedAt: firstMeaningful(shop?.voiceDeletedAt),
+      voiceSpeakerName: firstMeaningful(shop?.voiceSpeakerName),
+      voiceSpeakerGmfnId: firstMeaningful(shop?.voiceSpeakerGmfnId),
     };
   }, [shop, broadcast, gmfnId, currentClan]);
 
@@ -4701,6 +4707,25 @@ export default function ShopGalleryPage() {
     : publicBlockCount > 0
     ? `${shopDiaryCounterText} currently listed. Ask the owner about availability.`
     : "No products or services update right now.";
+  const publicShopTickerVoice = effectiveShop?.voiceAttachmentId
+    ? {
+        attachmentId: effectiveShop.voiceAttachmentId,
+        durationSeconds: effectiveShop.voiceDurationSeconds,
+        deletedAt: effectiveShop.voiceDeletedAt,
+        speakerName: effectiveShop.voiceSpeakerName,
+        speakerGmfnId: effectiveShop.voiceSpeakerGmfnId,
+        label: "Shop welcome voice",
+      }
+    : positiveNumber(featuredDiaryEntry?.voice_attachment_id)
+    ? {
+        attachmentId: positiveNumber(featuredDiaryEntry?.voice_attachment_id),
+        durationSeconds: featuredDiaryEntry?.voice_duration_seconds,
+        deletedAt: featuredDiaryEntry?.voice_deleted_at,
+        speakerName: featuredDiaryEntry?.voice_speaker_name,
+        speakerGmfnId: featuredDiaryEntry?.voice_speaker_gmfn_id,
+        label: "Latest Shop Update voice",
+      }
+    : null;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
@@ -5210,6 +5235,27 @@ export default function ShopGalleryPage() {
     );
   }
 
+  function renderShopDiaryShortcut(compact = false) {
+    return (
+      <ExistingWorkflowPlusLink
+        to={ownerShopDiaryPath}
+        label="Add Shop Update or voice note"
+        debugId="shop-gallery.diary.owner-shortcut"
+        shortcut="shop-diary"
+        style={compact ? {
+          width: 42,
+          height: 42,
+          minWidth: 42,
+          minHeight: 42,
+          maxWidth: 42,
+          maxHeight: 42,
+          borderRadius: 12,
+          boxShadow: "none",
+        } : undefined}
+      />
+    );
+  }
+
   return (
     <main
       className="public-shop-shell theme-public-shop public-shop-neon-environment"
@@ -5299,19 +5345,20 @@ export default function ShopGalleryPage() {
           </div>
         </div>
 
-        {isCompact && signedInOwnsShop ? (
+        {isCompact ? (
           <div
             className="public-shop-product-update-ticker"
             data-public-shop-product-update-ticker="true"
             role="note"
-            aria-label={`Products and Services Update: ${productsServicesUpdateText}`}
+            aria-label={`Shop Update: ${productsServicesUpdateText}${publicShopTickerVoice ? ". Voice note available." : ""}`}
             style={{ order: 3 }}
           >
             <span
               className="public-shop-product-update-label"
-              aria-hidden="true"
             >
-              {inlineShopIcon("cart", "#8C6829", 12)}
+              {signedInOwnsShop
+                ? renderShopDiaryShortcut(true)
+                : <span aria-hidden="true">{inlineShopIcon("cart", "#8C6829", 12)}</span>}
               <span>P&amp;S Update</span>
             </span>
             <span
@@ -5329,6 +5376,20 @@ export default function ShopGalleryPage() {
                 </span>
               </span>
             </span>
+            {publicShopTickerVoice ? (
+              <ShopVoiceNotePlayer
+                attachmentId={publicShopTickerVoice.attachmentId}
+                durationSeconds={publicShopTickerVoice.durationSeconds}
+                deletedAt={publicShopTickerVoice.deletedAt}
+                speakerName={publicShopTickerVoice.speakerName}
+                speakerGmfnId={publicShopTickerVoice.speakerGmfnId}
+                shopName={shopNameText}
+                publicAccess
+                compactInline
+                debugId="shop-gallery.welcome-voice.listen"
+                label={publicShopTickerVoice.label}
+              />
+            ) : null}
           </div>
         ) : (
           <StableCtaLink
@@ -7750,7 +7811,10 @@ export default function ShopGalleryPage() {
             id={PUBLIC_SHOP_DIARIES_ANCHOR}
             className="public-shop-section public-shop-diary"
             style={{
-              display: focusedBlockLinkActive ? "none" : "block",
+              display:
+                focusedBlockLinkActive || (isCompact && routeDiaryEntryId <= 0)
+                  ? "none"
+                  : "block",
               borderRadius: isCompact ? 24 : 28,
               padding: isCompact ? 10 : 18,
               border: "1px solid rgba(255,255,255,0.92)",
@@ -7765,14 +7829,7 @@ export default function ShopGalleryPage() {
               <div style={{ marginTop: 4, color: "#526C84", fontSize: isCompact ? 11.5 : 13, lineHeight: 1.3, fontWeight: 700 }}>Latest message from this shop.</div>
             </div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              {signedInOwnsShop ? (
-                <ExistingWorkflowPlusLink
-                  to={ownerShopDiaryPath}
-                  label="Add diary entry"
-                  debugId="shop-gallery.diary.owner-shortcut"
-                  shortcut="shop-diary"
-                />
-              ) : null}
+              {!isCompact && signedInOwnsShop ? renderShopDiaryShortcut() : null}
               <span style={badge(Boolean(featuredDiaryEntry))}>{featuredDiaryEntry ? "Live now" : "No live update"}</span>
             </span>
           </div>
@@ -7878,7 +7935,7 @@ export default function ShopGalleryPage() {
             </span>
           </div>
 
-          {effectiveShop?.voiceAttachmentId || effectiveShop?.voiceDeletedAt ? (
+          {!isCompact && (effectiveShop?.voiceAttachmentId || effectiveShop?.voiceDeletedAt) ? (
             <div style={{ marginBottom: isCompact ? 10 : 12 }}>
               <ShopVoiceNotePlayer
                 attachmentId={effectiveShop.voiceAttachmentId}

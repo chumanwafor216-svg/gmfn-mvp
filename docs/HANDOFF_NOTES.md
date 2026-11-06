@@ -5,6 +5,35 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Public Shop compact voice and update strip - 2026-11-06
+
+- Founder-approved Public Shop phone correction combines the rotating `P&S
+  Update` text and a deliberate welcome/latest-update voice `Listen` control in
+  the existing 44px strip. Visitors can now see and operate playback without
+  opening a hidden owner surface, and the strip does not increase page height.
+- The root playback defect was not the saved recording: Public Shop correctly
+  normalized the backend voice fields, but `effectiveShop` dropped them before
+  rendering. The effective public profile now preserves attachment, duration,
+  deletion and speaker metadata, so both owner and visitor views receive the
+  real saved welcome note.
+- The exact owner sees one compact `+` inside the same strip. It reuses
+  `/app/shop-control#shop-assets-diary` for Shop Update text and/or voice and
+  performs no write on open. Visitors never receive that owner shortcut.
+- The duplicate large lower Shop Update card is hidden on ordinary phone
+  visits. An exact shared `diary_entry_id` still opens the full update and its
+  own voice player; desktop retains the full card and Marketplace-return
+  presentation. Product voice, the 24-hour update window, storage, permissions,
+  Community Bulletin voice and backend contracts are unchanged.
+- Verification passes the production build; Shop Diary Phase 1, Public Shop
+  action-inventory and workflow-plus audits; and all 21 Shop Diary browser
+  scenarios across 360/390/430/1024px. The visitor scenario also fetches, plays
+  and pauses a synthetic WAV instead of checking only for a visible button.
+- The broader protected-button freeze reaches and passes the Shop checks, then
+  remains red on pre-existing unrelated entry/auth guards: typed existing-GSN
+  invite submission, Member Activation identifier copy, and existing-community
+  invite/QR-policy frontend-backend patterns. This Shop correction does not
+  touch those files or contracts.
+
 ## Community Bulletin voice announcements - 2026-11-06
 
 - Founder-approved Community Bulletin voice is implemented on the existing

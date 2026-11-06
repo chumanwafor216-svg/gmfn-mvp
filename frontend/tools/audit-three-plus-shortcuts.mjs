@@ -74,8 +74,8 @@ assertContains(
 );
 assertContains(
   'shop',
-  /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add diary entry["']/,
-  'Shop Diary shortcut must be owner-only and reach the existing diary anchor with community context.'
+  /ownerShopDiaryPath = routeWithCommunity\([\s\S]*?#shop-assets-diary[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?to=\{ownerShopDiaryPath\}[\s\S]*?label=["']Add Shop Update or voice note["'][\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)/,
+  'Shop Update shortcut must be owner-only inside the compact strip and reach the existing diary/voice anchor with community context.'
 );
 assertNotContains(
   'shop',

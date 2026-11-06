@@ -65,6 +65,11 @@ assertContains(files.gallery, "liveShopDiaryEntries", "Public Shop must filter t
 assertContains(files.gallery, 'debugId="shop-gallery.update-voice.listen"', "Public Shop must expose deliberate playback for live Shop Update voice.");
 assertContains(files.gallery, 'label="Voice message - tap Listen to hear it"', "Public Shop must tell visitors to tap Listen before Shop Update voice plays.");
 assertContains(files.gallery, 'debugId="shop-gallery.welcome-voice.listen"', "Public Shop must expose deliberate shop-welcome playback.");
+assertContains(files.gallery, /const effectiveShop = useMemo<ShopProfile \| null>[\s\S]*?voiceAttachmentId: positiveNumber\(shop\?\.voiceAttachmentId\)[\s\S]*?voiceSpeakerGmfnId: firstMeaningful\(shop\?\.voiceSpeakerGmfnId\)/, "Public Shop must preserve normalized shop voice metadata when it builds the effective public profile.");
+assertContains(files.gallery, /const effectiveShop = useMemo<ShopProfile \| null>[\s\S]*?voiceAttachmentId: positiveNumber\(shop\?\.voiceAttachmentId\)[\s\S]*?voiceSpeakerGmfnId: firstMeaningful\(shop\?\.voiceSpeakerGmfnId\)/, "Public Shop must preserve normalized shop voice metadata when it builds the effective public profile.");
+assertContains(files.gallery, /compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/, "Phone Public Shop must keep welcome playback inside the compact Shop Update strip.");
+assertContains(files.gallery, 'label="Add Shop Update or voice note"', "The exact owner must reach the existing Shop Update and welcome-voice workflow from the compact strip.");
+assertContains(files.gallery, /focusedBlockLinkActive \|\| \(isCompact && routeDiaryEntryId <= 0\)/, "Ordinary phone shops must not restore the duplicate lower Shop Update card; exact shared updates remain reachable.");
 assertContains(files.gallery, 'label="Product or service voice note"', "Opened products/services must expose deliberate item voice playback.");
 assertContains(files.gallery, "Latest message from this shop.", "Public Shop diary copy must speak to the visitor instead of explaining internal diary behavior.");
 assertNotContains(files.gallery, "recentDiaryEntries", "Public Shop diary must not render a recent-updates trail.");

@@ -346,15 +346,20 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?\{isCompact && signedInOwnsShop \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?Products and Services Update:[\s\S]*?\) : \([\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? "Marketplace" : "Back to Marketplace"\}/,
-  "Public Shop phone owners must use the duplicate Marketplace row for a compact Products and Services Update, while visitors retain the fixed-height Marketplace return action."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const publicShopTickerVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"[\s\S]*?\) : \([\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"/,
+  "Public Shop phones must share one compact Shop Update strip: visitors receive deliberate voice playback, owners receive the existing update/voice shortcut, and desktop retains Marketplace return."
+);
+
+assertContains(
+  /focusedBlockLinkActive \|\| \(isCompact && routeDiaryEntryId <= 0\)[\s\S]*?!isCompact && signedInOwnsShop \? renderShopDiaryShortcut\(\) : null/,
+  "Ordinary phone shops must hide the duplicate lower Shop Update card while an exact shared update and desktop retain the full card."
 );
 
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker \{[\s\S]*?height: 44px;[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
-  "The owner Products and Services Update must remain a 44px slow ticker and become stationary when reduced motion is requested."
+  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\) auto;[\s\S]*?height: 44px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(112px, 31vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
+  "The combined Shop Update text and voice strip must remain 44px high and become stationary when reduced motion is requested."
 );
 
 assertFileContains(
