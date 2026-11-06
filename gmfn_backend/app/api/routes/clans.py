@@ -66,7 +66,9 @@ from app.services.invites_service import (
 from app.services.global_identity_service import ensure_user_gmfn_id
 from app.services.account_activation_service import (
     authorize_join_activation_grant,
+    confirm_assisted_activation_challenge,
     issue_activation_grant,
+    issue_assisted_activation_challenge,
     require_activation_grant,
     require_status_grant,
     rotate_authorized_activation_token,
@@ -562,6 +564,32 @@ class ActivationPhoneConfirmIn(BaseModel):
     def _reject_malformed_verification_id(cls, value: Any) -> Any:
         return _reject_bool_float_body_identifier(value, "verification_id")
 
+
+class ActivationAssistanceIssueIn(BaseModel):
+    confirmed_identity: bool
+    verification_note: str = Field(..., min_length=8, max_length=240)
+
+    @field_validator("confirmed_identity", mode="before")
+    @classmethod
+    def _require_explicit_identity_confirmation(cls, value: Any) -> Any:
+        if value is not True:
+            raise ValueError("Confirm that you recognized the approved applicant.")
+        return value
+
+    @field_validator("verification_note", mode="before")
+    @classmethod
+    def _reject_non_text_note(cls, value: Any) -> Any:
+        return _reject_non_text_body_value(value, "verification_note")
+
+
+class ActivationAssistanceConfirmIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    code: str = Field(..., pattern=r"^\d{6}$")
+
+    @field_validator("gmfn_id", "code", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
 
 _DEFAULT_VOTE_REASON_TEXT = {
     "approve": "I know this person well enough to support the request.",
@@ -6039,6 +6067,104 @@ def pilot_approve_join_request(
     }
 
 
+@router.post(
+    "/{clan_id}/join-requests/{join_request_id}/activation-assistance",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_201_CREATED,
+)
+def issue_join_activation_assistance(
+    clan_id: int,
+    join_request_id: int,
+    payload: ActivationAssistanceIssueIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    req = (
+        db.query(ClanJoinRequest)
+        .filter(
+            ClanJoinRequest.id == int(join_request_id),
+            ClanJoinRequest.clan_id == int(clan_id),
+        )
+        .first()
+    )
+    if req is None or _safe_str(req.status).lower() != "approved":
+        raise HTTPException(status_code=404, detail="Approved join request not found")
+    applicant = db.get(User, int(req.applicant_user_id))
+    if applicant is None:
+        raise HTTPException(status_code=404, detail="Approved member identity not found")
+    if not is_user_activation_pending(applicant):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "account_already_activated",
+                "message": "This membership is already activated. The member should sign in instead.",
+                "next_action": "login",
+                "login_path": "/login?force=1",
+            },
+        )
+    grant = (
+        db.query(AccountActivationGrant)
+        .filter(
+            AccountActivationGrant.join_request_id == int(req.id),
+            AccountActivationGrant.user_id == int(applicant.id),
+            AccountActivationGrant.revoked_at.is_(None),
+            AccountActivationGrant.consumed_at.is_(None),
+        )
+        .first()
+    )
+    if grant is None or grant.activation_authorized_at is None:
+        raise HTTPException(status_code=409, detail="Activation assistance is not available")
+
+    issued = issue_assisted_activation_challenge(
+        db,
+        grant=grant,
+        clan_id=int(clan_id),
+        applicant_user_id=int(applicant.id),
+        issued_by_user_id=int(current_user.id),
+        verification_note=payload.verification_note,
+    )
+    log_trust_event(
+        db,
+        event_type="account_activation.assistance_issued",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(applicant.id),
+        meta={
+            "reason": "community_admin_activation_assistance_issued",
+            "join_request_id": int(req.id),
+            "challenge_id": int(issued.row.id),
+            "expires_at": issued.row.expires_at.isoformat(),
+            "phone_verified": False,
+        },
+        dedupe_key=f"activation-assistance-issued:{int(issued.row.id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(issued.row)
+    return {
+        "ok": True,
+        "request_id": int(req.id),
+        "community_id": int(clan_id),
+        "gmfn_id": _safe_str(applicant.gmfn_id),
+        "code": issued.code,
+        "expires_at": issued.row.expires_at.isoformat(),
+        "expires_in_seconds": 900,
+        "activation_link": _frontend_activation_link(
+            request, _safe_str(applicant.gmfn_id), int(req.id)
+        ),
+        "phone_verified": False,
+        "message": (
+            "Give this code only to the approved applicant in person or by a trusted private call. "
+            "Do not place it in a QR code, public group, or permanent notice."
+        ),
+    }
+
 @router.post("/join-requests/{join_request_id}/vote", response_model=dict[str, Any])
 def vote_join_request_compat(
     join_request_id: int,
@@ -6176,6 +6302,64 @@ def refresh_join_activation_continuation(
         "expires_in_seconds": 3600,
     }
 
+
+@router.post(
+    "/join-requests/{join_request_id}/activation-assistance/confirm",
+    response_model=dict[str, Any],
+)
+def confirm_join_activation_assistance(
+    join_request_id: int,
+    payload: ActivationAssistanceConfirmIn,
+    db: Session = Depends(get_db),
+):
+    req, applicant, grant = _activation_recovery_context(
+        db,
+        join_request_id=join_request_id,
+        gmfn_id=payload.gmfn_id,
+    )
+    result = confirm_assisted_activation_challenge(
+        db,
+        grant=grant,
+        applicant_user_id=int(applicant.id),
+        code=payload.code,
+    )
+    if not result.activation_token:
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "activation_assistance_invalid_or_expired",
+                "message": "This private activation code is incorrect, expired, or already used. Ask the community administrator for a new code.",
+            },
+        )
+
+    challenge = result.row
+    log_trust_event(
+        db,
+        event_type="account_activation.assistance_confirmed",
+        clan_id=int(req.clan_id),
+        actor_user_id=int(challenge.issued_by_user_id),
+        subject_user_id=int(applicant.id),
+        meta={
+            "reason": "approved_applicant_used_admin_assisted_code",
+            "join_request_id": int(req.id),
+            "challenge_id": int(challenge.id),
+            "phone_verified": False,
+        },
+        dedupe_key=f"activation-assistance-confirmed:{int(challenge.id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    return {
+        "ok": True,
+        "request_id": int(req.id),
+        "gmfn_id": _safe_str(applicant.gmfn_id),
+        "activation_token": result.activation_token,
+        "expires_in_seconds": 3600,
+        "phone_verified": False,
+        "message": "Private code accepted. Create your password to finish activation.",
+    }
 
 @router.post(
     "/join-requests/{join_request_id}/activation-phone/start",

@@ -14,6 +14,7 @@ import {
   getCommunityAdmissionPolicy,
   getCommunityJoinRequests,
   getJoinApprovalStatus,
+  issueJoinActivationAssistance,
   safeCopy,
   selectClan,
   updateCommunityAdmissionPolicy,
@@ -98,6 +99,19 @@ type ApprovalResult = {
     invite_id?: number | null;
     join_request_id?: number | null;
   } | null;
+};
+
+type ActivationAssistanceResult = {
+  ok?: boolean;
+  request_id?: number;
+  community_id?: number;
+  gmfn_id?: string | null;
+  code?: string | null;
+  expires_at?: string | null;
+  expires_in_seconds?: number;
+  activation_link?: string | null;
+  phone_verified?: boolean;
+  message?: string | null;
 };
 
 type VoteResponse = {
@@ -683,6 +697,13 @@ export default function CommunityJoinRequestsPage() {
   const [activationPackDetailsOpen, setActivationPackDetailsOpen] = useState(false);
   const [activationCopyStatus, setActivationCopyStatus] = useState("");
   const [activationHandoffBusyId, setActivationHandoffBusyId] = useState<number | null>(null);
+  const [assistanceRequestId, setAssistanceRequestId] = useState<number | null>(null);
+  const [assistanceNote, setAssistanceNote] = useState("");
+  const [assistanceConfirmed, setAssistanceConfirmed] = useState(false);
+  const [assistanceBusyId, setAssistanceBusyId] = useState<number | null>(null);
+  const [assistancePack, setAssistancePack] =
+    useState<ActivationAssistanceResult | null>(null);
+  const [assistanceCopyStatus, setAssistanceCopyStatus] = useState("");
   const activationPackRef = useRef<HTMLDivElement | null>(null);
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
@@ -698,6 +719,7 @@ export default function CommunityJoinRequestsPage() {
   const [showCompletedRequests, setShowCompletedRequests] = useState(false);
 
   const clanNum = Number(clanId || 0);
+  const reviewerIsAdmin = reviewerRole.toLowerCase() === "admin";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -997,6 +1019,59 @@ export default function CommunityJoinRequestsPage() {
     } finally {
       setActivationHandoffBusyId(null);
     }
+  }
+
+  function toggleActivationAssistance(item: JoinRequestItem) {
+    const nextRequestId = assistanceRequestId === item.id ? null : item.id;
+    setAssistanceRequestId(nextRequestId);
+    setAssistanceNote("");
+    setAssistanceConfirmed(false);
+    setAssistancePack(null);
+    setAssistanceCopyStatus("");
+    setError("");
+  }
+
+  async function handleIssueActivationAssistance(item: JoinRequestItem) {
+    const verificationNote = assistanceNote.trim();
+    if (!assistanceConfirmed) {
+      setError("Confirm that you personally recognized the approved applicant.");
+      return;
+    }
+    if (verificationNote.length < 8) {
+      setError("Add a short private note explaining how you recognized the applicant.");
+      return;
+    }
+
+    try {
+      setAssistanceBusyId(item.id);
+      setError("");
+      setSuccess("");
+      setAssistanceCopyStatus("");
+      const result = (await issueJoinActivationAssistance(clanNum, item.id, {
+        confirmed_identity: true,
+        verification_note: verificationNote,
+      })) as ActivationAssistanceResult;
+      setAssistancePack(result);
+      setSuccess(
+        "Private activation code created. Give it only to the approved applicant through a trusted private channel."
+      );
+    } catch (err: any) {
+      setError(err?.message || "The private activation code could not be created.");
+    } finally {
+      setAssistanceBusyId(null);
+    }
+  }
+
+  async function copyAssistanceText(text: string, successMessage: string) {
+    const value = safeStr(text);
+    if (!value) {
+      setAssistanceCopyStatus("Nothing is ready to copy yet.");
+      return;
+    }
+    const copied = await safeCopy(value);
+    setAssistanceCopyStatus(
+      copied ? successMessage : "Clipboard copy was blocked. Copy it manually."
+    );
   }
 
   async function saveAdmissionPolicy() {
@@ -2036,19 +2111,278 @@ export default function CommunityJoinRequestsPage() {
                     )}
                   </div>
                   {status === "approved" ? (
-                    <SecondaryButton
-                      type="button"
-                      onClick={() => void openApprovedHandoff(item)}
-                      disabled={activationHandoffBusyId === item.id}
-                      busy={activationHandoffBusyId === item.id}
-                      busyLabel="Opening..."
-                      stableHeight={54}
-                      fullWidth
-                      debugId="community-join-requests.open-approved-handoff"
-                      style={{ marginTop: 12 }}
-                    >
-                      {iconText("id", "Open GSN ID & approval message")}
-                    </SecondaryButton>
+                    <>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => void openApprovedHandoff(item)}
+                        disabled={activationHandoffBusyId === item.id}
+                        busy={activationHandoffBusyId === item.id}
+                        busyLabel="Opening..."
+                        stableHeight={54}
+                        fullWidth
+                        debugId="community-join-requests.open-approved-handoff"
+                        style={{ marginTop: 12 }}
+                      >
+                        {iconText("id", "Open GSN ID & approval message")}
+                      </SecondaryButton>
+
+                      {reviewerIsAdmin ? (
+                        <>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => toggleActivationAssistance(item)}
+                            stableHeight={54}
+                            fullWidth
+                            debugId="community-join-requests.open-activation-assistance"
+                            style={{ marginTop: 10 }}
+                          >
+                            {iconText(
+                              "approve",
+                              assistanceRequestId === item.id
+                                ? "Close private activation help"
+                                : "Create private activation code"
+                            )}
+                          </SecondaryButton>
+
+                          {assistanceRequestId === item.id ? (
+                            <div
+                              style={{
+                                marginTop: 12,
+                                padding: isCompact ? 14 : 18,
+                                borderRadius: 18,
+                                border: "1px solid rgba(201,161,54,0.38)",
+                                background: "#FFF8E3",
+                              }}
+                            >
+                              <div style={sectionLabel("#8A5A08")}>
+                                Supervised activation
+                              </div>
+                              <div
+                                style={{
+                                  marginTop: 8,
+                                  color: "#0B1F33",
+                                  fontWeight: 1000,
+                                  fontSize: 18,
+                                }}
+                              >
+                                Help {applicantLabel} activate safely
+                              </div>
+                              <div
+                                style={{
+                                  marginTop: 8,
+                                  color: "#5B4631",
+                                  fontSize: 14,
+                                  fontWeight: 750,
+                                  lineHeight: 1.6,
+                                }}
+                              >
+                                Use this only when you personally recognize the approved
+                                applicant. It restores account activation, but it does not
+                                verify ownership of their phone number.
+                              </div>
+
+                              {assistancePack?.request_id === item.id &&
+                              safeStr(assistancePack.code) ? (
+                                <div
+                                  style={{
+                                    marginTop: 14,
+                                    display: "grid",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      padding: 16,
+                                      borderRadius: 16,
+                                      background: "#FFFFFF",
+                                      border: "2px solid #C9A136",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    <div style={sectionLabel("#8A5A08")}>
+                                      Private 15-minute code
+                                    </div>
+                                    <div
+                                      style={{
+                                        marginTop: 8,
+                                        color: "#0B1F33",
+                                        fontWeight: 1000,
+                                        fontSize: isCompact ? 34 : 40,
+                                        letterSpacing: "0.18em",
+                                      }}
+                                    >
+                                      {safeStr(assistancePack.code)}
+                                    </div>
+                                    <div
+                                      style={{
+                                        marginTop: 8,
+                                        color: "#52667C",
+                                        fontSize: 13,
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      Expires {safeDateTime(assistancePack.expires_at)}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      padding: 12,
+                                      borderRadius: 14,
+                                      background: "#FEF2F2",
+                                      border: "1px solid #FECACA",
+                                      color: "#991B1B",
+                                      lineHeight: 1.55,
+                                      fontSize: 13,
+                                      fontWeight: 850,
+                                    }}
+                                  >
+                                    Give the code privately in person or during a trusted
+                                    call. Never put it in a QR code, public group, or
+                                    permanent notice.
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: isCompact
+                                        ? "minmax(0, 1fr)"
+                                        : "repeat(2, minmax(0, 1fr))",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <PrimaryButton
+                                      type="button"
+                                      onClick={() =>
+                                        void copyAssistanceText(
+                                          safeStr(assistancePack.code),
+                                          "Private code copied."
+                                        )
+                                      }
+                                      stableHeight={52}
+                                      fullWidth
+                                      debugId="community-join-requests.copy-assisted-code"
+                                    >
+                                      Copy private code
+                                    </PrimaryButton>
+                                    <SecondaryButton
+                                      type="button"
+                                      onClick={() =>
+                                        void copyAssistanceText(
+                                          safeStr(assistancePack.activation_link),
+                                          "Activation link copied separately."
+                                        )
+                                      }
+                                      stableHeight={52}
+                                      fullWidth
+                                      debugId="community-join-requests.copy-assisted-link"
+                                    >
+                                      Copy activation link
+                                    </SecondaryButton>
+                                  </div>
+                                  {assistanceCopyStatus ? (
+                                    <div
+                                      role="status"
+                                      style={{
+                                        color: "#334155",
+                                        fontSize: 13,
+                                        fontWeight: 850,
+                                        lineHeight: 1.45,
+                                      }}
+                                    >
+                                      {assistanceCopyStatus}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <div
+                                  style={{
+                                    marginTop: 14,
+                                    display: "grid",
+                                    gap: 12,
+                                  }}
+                                >
+                                  <label
+                                    style={{
+                                      display: "grid",
+                                      gap: 7,
+                                      color: "#0B1F33",
+                                      fontWeight: 900,
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    Private verification note
+                                    <textarea
+                                      value={assistanceNote}
+                                      onChange={(event) =>
+                                        setAssistanceNote(event.target.value)
+                                      }
+                                      maxLength={240}
+                                      rows={3}
+                                      placeholder="For example: Recognized in person at the CWCDW pilot desk."
+                                      style={{
+                                        width: "100%",
+                                        boxSizing: "border-box",
+                                        resize: "vertical",
+                                        border: "1px solid #CBD5E1",
+                                        borderRadius: 14,
+                                        padding: "12px 14px",
+                                        background: "#FFFFFF",
+                                        color: "#0B1F33",
+                                        font: "inherit",
+                                        lineHeight: 1.5,
+                                      }}
+                                    />
+                                  </label>
+                                  <label
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: "22px minmax(0, 1fr)",
+                                      gap: 10,
+                                      alignItems: "start",
+                                      color: "#334155",
+                                      fontWeight: 850,
+                                      lineHeight: 1.5,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={assistanceConfirmed}
+                                      onChange={(event) =>
+                                        setAssistanceConfirmed(event.target.checked)
+                                      }
+                                      style={{ width: 18, height: 18, marginTop: 2 }}
+                                    />
+                                    <span>
+                                      I personally confirmed this is the approved applicant.
+                                    </span>
+                                  </label>
+                                  <PrimaryButton
+                                    type="button"
+                                    onClick={() =>
+                                      void handleIssueActivationAssistance(item)
+                                    }
+                                    disabled={
+                                      assistanceBusyId === item.id ||
+                                      !assistanceConfirmed ||
+                                      assistanceNote.trim().length < 8
+                                    }
+                                    busy={assistanceBusyId === item.id}
+                                    busyLabel="Creating..."
+                                    stableHeight={54}
+                                    fullWidth
+                                    debugId="community-join-requests.issue-activation-assistance"
+                                  >
+                                    Create 15-minute private code
+                                  </PrimaryButton>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </>
                   ) : null}
                 </>
               ) : (

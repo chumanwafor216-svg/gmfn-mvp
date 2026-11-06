@@ -9322,6 +9322,40 @@ export async function refreshJoinActivationContinuation(
   );
 }
 
+export async function issueJoinActivationAssistance(
+  clanId: number | string,
+  requestId: number | string,
+  payload: { confirmed_identity: true; verification_note: string }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
+      String(requestId)
+    )}/activation-assistance`,
+    "POST",
+    {
+      confirmed_identity: payload?.confirmed_identity === true,
+      verification_note: String(payload?.verification_note || "").trim(),
+    },
+    { header_clan_id: Number(clanId) }
+  );
+}
+
+export async function confirmJoinActivationAssistance(
+  requestId: number | string,
+  payload: { gmfn_id: string; code: string }
+): Promise<any> {
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(
+      String(requestId)
+    )}/activation-assistance/confirm`,
+    "POST",
+    {
+      gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+      code: String(payload?.code || "").trim(),
+    }
+  );
+}
+
 export async function startJoinActivationPhoneRecovery(
   requestId: number | string,
   payload: { gmfn_id: string; phone_e164: string }

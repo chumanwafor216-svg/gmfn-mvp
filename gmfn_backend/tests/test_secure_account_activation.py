@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.core.security import verify_password
 from app.db.database import SessionLocal
 from app.db.models import (
+    AccountActivationAssistanceChallenge,
     AccountActivationGrant,
     Clan,
     ClanInvite,
@@ -449,3 +450,149 @@ def test_duplicate_submission_does_not_return_protected_continuation(client: Tes
     assert "request_id" not in detail
     assert "status_token" not in detail
     assert "activation_token" not in detail
+
+def test_admin_assisted_code_recovers_activation_without_verifying_phone(
+    client: TestClient,
+    override_clan_ctx_admin,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    _seed_pending_member(with_join_request=True)
+
+    issued = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={
+            "confirmed_identity": True,
+            "verification_note": "Recognized in person at the supervised pilot desk.",
+        },
+    )
+
+    assert issued.status_code == 201, issued.text
+    issued_body = issued.json()
+    code = issued_body["code"]
+    assert len(code) == 6
+    assert code.isdigit()
+    assert issued_body["phone_verified"] is False
+    assert code not in issued_body["activation_link"]
+
+    with SessionLocal() as db:
+        challenge = db.query(AccountActivationAssistanceChallenge).one()
+        applicant = db.get(User, 2)
+        assert challenge.code_digest != code
+        assert challenge.issued_by_user_id == 1
+        assert challenge.verification_note.startswith("Recognized in person")
+        assert applicant is not None
+        assert applicant.phone_verified_at is None
+
+    confirmed = client.post(
+        "/clans/join-requests/1/activation-assistance/confirm",
+        json={"gmfn_id": "GMFN-U-APPLICANT1", "code": code},
+    )
+    assert confirmed.status_code == 200, confirmed.text
+    activation_token = confirmed.json()["activation_token"]
+    assert confirmed.json()["phone_verified"] is False
+
+    replay = client.post(
+        "/clans/join-requests/1/activation-assistance/confirm",
+        json={"gmfn_id": "GMFN-U-APPLICANT1", "code": code},
+    )
+    assert replay.status_code == 400
+
+    activation = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "request_id": "1",
+            "activation_token": activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activation.status_code == 200, activation.text
+    assert activation.json()["phone_verified"] is False
+    with SessionLocal() as db:
+        applicant = db.get(User, 2)
+        challenge = db.query(AccountActivationAssistanceChallenge).one()
+        assert applicant is not None
+        assert applicant.phone_verified_at is None
+        assert challenge.confirmed_at is not None
+        assert challenge.consumed_at is not None
+
+
+def test_admin_assisted_code_requires_community_admin(
+    client: TestClient,
+    override_clan_ctx_member,
+):
+    _seed_pending_member(with_join_request=True)
+
+    response = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={
+            "confirmed_identity": True,
+            "verification_note": "Recognized during the supervised pilot.",
+        },
+    )
+
+    assert response.status_code == 403
+    with SessionLocal() as db:
+        assert db.query(AccountActivationAssistanceChallenge).count() == 0
+
+
+def test_admin_assisted_code_locks_after_five_wrong_attempts(
+    client: TestClient,
+    override_clan_ctx_admin,
+):
+    _seed_pending_member(with_join_request=True)
+    issued = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={
+            "confirmed_identity": True,
+            "verification_note": "Recognized during the supervised pilot.",
+        },
+    )
+    assert issued.status_code == 201, issued.text
+    correct_code = issued.json()["code"]
+
+    for _attempt in range(5):
+        wrong = client.post(
+            "/clans/join-requests/1/activation-assistance/confirm",
+            json={"gmfn_id": "GMFN-U-APPLICANT1", "code": "999999"},
+        )
+        assert wrong.status_code == 400
+
+    blocked = client.post(
+        "/clans/join-requests/1/activation-assistance/confirm",
+        json={"gmfn_id": "GMFN-U-APPLICANT1", "code": correct_code},
+    )
+    assert blocked.status_code == 400
+    with SessionLocal() as db:
+        challenge = db.query(AccountActivationAssistanceChallenge).one()
+        applicant = db.get(User, 2)
+        assert challenge.check_attempts == 5
+        assert challenge.revoked_at is not None
+        assert applicant is not None
+        assert applicant.phone_verified_at is None
+
+
+def test_admin_assistance_requires_explicit_recognition_record(
+    client: TestClient,
+    override_clan_ctx_admin,
+):
+    _seed_pending_member(with_join_request=True)
+
+    not_confirmed = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={
+            "confirmed_identity": False,
+            "verification_note": "Applicant identity was not confirmed.",
+        },
+    )
+    short_note = client.post(
+        "/clans/1/join-requests/1/activation-assistance",
+        json={"confirmed_identity": True, "verification_note": "Met"},
+    )
+
+    assert not_confirmed.status_code == 422
+    assert short_note.status_code == 422
+    with SessionLocal() as db:
+        assert db.query(AccountActivationAssistanceChallenge).count() == 0

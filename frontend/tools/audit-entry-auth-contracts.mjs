@@ -233,14 +233,20 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /status_token\?: string;[\s\S]*savedContinuation\.statusToken[\s\S]*refreshJoinActivationContinuation[\s\S]*startJoinActivationPhoneRecovery[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*!activationCredential[\s\S]*Send one-time code[\s\S]*activationCredential \? \([\s\S]*Create password/,
-  "Activation must restore same-browser approval proof and offer request-bound phone recovery before password setup in another browser."
+  /status_token\?: string;[\s\S]*savedContinuation\.statusToken[\s\S]*refreshJoinActivationContinuation[\s\S]*handleConfirmAssistedCode[\s\S]*!activationCredential[\s\S]*Use your private activation code[\s\S]*activationCredential \? \([\s\S]*Create password/,
+  "Activation must restore same-browser approval proof and offer a request-bound private administrator code before password setup in another browser."
+);
+
+assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /startJoinActivationPhoneRecovery[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*phoneRecoveryOpen[\s\S]*Phone SMS code \(when available\)[\s\S]*Try phone-code delivery/,
+  "Activation must retain request-bound phone recovery as a truthful collapsed option for an approved future provider."
 );
 
 assertContains(
   "src/lib/api.ts",
-  /refreshJoinActivationContinuation[\s\S]*X-Join-Status-Token[\s\S]*startJoinActivationPhoneRecovery[\s\S]*activation-phone\/start[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*activation-phone\/confirm/,
-  "Shared frontend API helpers must preserve the separate status-proof and one-time phone-code activation recovery contracts."
+  /refreshJoinActivationContinuation[\s\S]*X-Join-Status-Token[\s\S]*issueJoinActivationAssistance[\s\S]*activation-assistance[\s\S]*confirmJoinActivationAssistance[\s\S]*activation-assistance\/confirm[\s\S]*startJoinActivationPhoneRecovery[\s\S]*activation-phone\/start[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*activation-phone\/confirm/,
+  "Shared frontend API helpers must preserve separate status-proof, private assisted-code, and one-time phone-code activation recovery contracts."
 );
 
 assertContains(

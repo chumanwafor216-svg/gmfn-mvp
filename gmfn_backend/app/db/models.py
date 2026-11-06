@@ -1880,6 +1880,51 @@ class AccountActivationGrant(Base):
     )
 
 
+class AccountActivationAssistanceChallenge(Base):
+    __tablename__ = "account_activation_assistance_challenges"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    activation_grant_id: Mapped[int] = mapped_column(
+        ForeignKey("account_activation_grants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    join_request_id: Mapped[int] = mapped_column(
+        ForeignKey("clan_join_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    applicant_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    issued_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    code_digest: Mapped[str] = mapped_column(String(128), nullable=False)
+    verification_note: Mapped[str] = mapped_column(String(240), nullable=False)
+    check_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
 class ClanJoinVote(Base):
     __tablename__ = "clan_join_votes"
 

@@ -5,6 +5,49 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## No-cost supervised activation fallback - 2026-11-06
+
+- Pilot activation no longer depends on paid SMS. An authenticated community
+  administrator can open an approved join request, confirm that they personally
+  recognized the approved applicant, record a short private verification note,
+  and create a six-digit activation code through
+  `POST /clans/{clan_id}/join-requests/{request_id}/activation-assistance`.
+- The code is bound to the exact community, approved request, applicant and
+  authorized activation grant. It expires after 15 minutes, is single-use,
+  revokes an older open code when replaced, permits at most five checks, has a
+  one-minute issuance cooldown and allows at most five issues per request per
+  hour. Only its bcrypt hash is stored; the plaintext code is never placed in
+  the activation link, QR code, trust event or database.
+- The applicant enters the private code on `MemberActivationPage`. Successful
+  confirmation through
+  `POST /clans/join-requests/{request_id}/activation-assistance/confirm`
+  rotates a fresh one-hour password-creation proof. The code is consumed before
+  that proof is returned, so it cannot be replayed.
+- The administrator UI is compact and appears only inside an approved request.
+  It copies the private code and ordinary activation link separately and warns
+  the administrator to hand the code over in person or during a trusted private
+  call, never through a public group, printed QR or permanent notice.
+- This is deliberately **not** phone verification. Successful assisted
+  activation leaves `users.phone_verified_at` unchanged and all API responses
+  report `phone_verified: false`. Trust events record the issuing administrator,
+  applicant, request and challenge without recording the secret.
+- `MemberActivationPage` first restores a saved status continuation
+  automatically. If that is unavailable, it shows the supervised private-code
+  panel; the unfunded phone/SMS path remains collapsed for a future provider.
+  Password fields and the Finish action remain hidden until protected approval
+  proof has been restored.
+- Migration `20261106_assisted_activation` adds the dedicated
+  `account_activation_assistance_challenges` table and is the single Alembic
+  head. The production SMS switches remain disabled.
+- Verification passes the TypeScript and Vite production build, all 17 secure
+  activation tests, and 87 adjacent join-request/admin-boundary tests. The new
+  activation audit assertions pass; `audit:entry-auth` remains red only on its
+  pre-existing unrelated `JoinEntryPage` existing-GSN payload regex.
+- This is suitable only for a supervised pilot. It avoids SMS cost but creates
+  administrator workload and social-engineering risk, and it does not prove
+  possession of a phone number. A scalable rollout still requires an affordable
+  verified delivery channel or another independently verified recovery method.
+
 ## Cross-browser approved-member activation recovery - 2026-11-06
 
 - Root cause: the public Community QR remained valid, but the approved member's
@@ -26,10 +69,10 @@ This file is the compact current-state handoff required by `README.md` and
   success, so it cannot be replayed. The applicant's phone is marked verified
   because possession of the already-recorded number was proved.
 - `MemberActivationPage` first restores a saved status continuation
-  automatically. If that is unavailable, it shows a compact phone/code panel;
-  password fields and the Finish action remain hidden until protected approval
-  proof has been restored. Plain-language states cover mismatched application
-  details, invalid/expired codes and unavailable SMS delivery.
+  automatically. If that is unavailable, it shows the supervised private-code
+  panel first; the phone/SMS recovery panel remains collapsed until an approved
+  provider is funded and enabled. Password fields and the Finish action remain
+  hidden until protected approval proof has been restored.
 - Migration `20261106_activation_phone` adds
   `entry_phone_verifications.activation_join_request_id` with a foreign key and
   index. Alembic reports this migration as the single head.
@@ -41,11 +84,11 @@ This file is the compact current-state handoff required by `README.md` and
   switch, then `GMFN_ENTRY_PHONE_DELIVERY=sms`. Until those external settings
   are verified, same-browser restoration works and the cross-browser panel
   gives truthful administrator-help guidance instead of exposing a preview OTP.
-- Verification passes all 13 focused secure-activation tests, TypeScript build,
-  Vite production build and Alembic single-head inspection. The broader
-  `audit:entry-auth` reaches the new recovery assertions but remains red on its
-  pre-existing unrelated `JoinEntryPage` existing-GSN payload regex; that
-  unrelated contract was not changed in this fix.
+- Verification passes all 17 focused secure-activation tests, TypeScript build,
+  Vite production build and Alembic single-head inspection. The assisted-code
+  and retained phone-recovery assertions pass in `audit:entry-auth`; that audit
+  remains red only on its pre-existing unrelated `JoinEntryPage` existing-GSN
+  payload regex.
 
 ## Non-expiring Community QR links - 2026-11-06
 

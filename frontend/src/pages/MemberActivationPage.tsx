@@ -10,6 +10,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   activateApprovedMember,
   activateMembership,
+  confirmJoinActivationAssistance,
   confirmJoinActivationPhoneRecovery,
   getAccessToken,
   getMe,
@@ -155,6 +156,16 @@ function friendlyActivationError(err: any): {
     };
   }
 
+  if (code === "activation_assistance_invalid_or_expired") {
+    return {
+      notice: {
+        tone: "warning",
+        title: "Private code could not be confirmed",
+        message:
+          "Check the six-digit code, or ask the community administrator to create a new private code. Codes expire after 15 minutes and work once.",
+      },
+    };
+  }
   if (code === "activation_sms_unavailable") {
     return {
       notice: {
@@ -752,7 +763,9 @@ export default function MemberActivationPage() {
   );
   const [continuationBusy, setContinuationBusy] = useState(false);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [assistedCode, setAssistedCode] = useState("");
   const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [phoneRecoveryOpen, setPhoneRecoveryOpen] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState("");
   const [verificationId, setVerificationId] = useState(0);
   const [notice, setNotice] = useState<ActivationNotice | null>(null);
@@ -864,6 +877,46 @@ export default function MemberActivationPage() {
           },
         });
       }, options.routeDelayMs ?? 1200);
+    }
+  }
+
+  async function handleConfirmAssistedCode() {
+    clearScheduledActions();
+    setNotice(null);
+    if (!requestReady.gmfn_id || !requestReady.request_id || !/^\d{6}$/.test(assistedCode)) {
+      showNotice({
+        tone: "warning",
+        title: "Enter the private six-digit code",
+        message:
+          "Use the GSN ID and request ID from your approval, then enter the code given privately by your community administrator.",
+      });
+      return;
+    }
+    try {
+      setRecoveryBusy(true);
+      const result = await confirmJoinActivationAssistance(requestReady.request_id, {
+        gmfn_id: requestReady.gmfn_id,
+        code: assistedCode,
+      });
+      const freshToken = safeStr(result?.activation_token);
+      if (!freshToken) throw new Error("GSN could not restore this activation yet.");
+      setActivationCredential(freshToken);
+      saveActivationContinuation({
+        requestId: requestReady.request_id,
+        gmfnId: requestReady.gmfn_id,
+        statusToken: statusCredential,
+        activationToken: freshToken,
+      });
+      showNotice({
+        tone: "success",
+        title: "Private code accepted",
+        message:
+          "Create your password below. This assisted step restores your approved application but does not mark the phone as verified.",
+      });
+    } catch (error: any) {
+      showNotice(friendlyActivationError(error).notice);
+    } finally {
+      setRecoveryBusy(false);
     }
   }
 
@@ -1396,74 +1449,125 @@ export default function MemberActivationPage() {
                     <div style={{ color: "#F4D37C", fontWeight: 1000, fontSize: 20 }}>
                       {continuationBusy
                         ? "Restoring your secure approval..."
-                        : "Open this approval on any phone"}
+                        : "Use your private activation code"}
                     </div>
                     <div style={{ color: "#C8D8EA", lineHeight: 1.55, marginTop: 6 }}>
                       {continuationBusy
                         ? "GSN is checking the protected approval saved in this browser."
-                        : "If this is a different browser, confirm the phone number used for the approved application. GSN will send a short one-time code."}
+                        : "On a different phone or browser, ask your community administrator to recognize you and create a private six-digit code. The code lasts 15 minutes and works once."}
                     </div>
                   </div>
 
                   {!continuationBusy ? (
                     <>
                       <div style={{ display: "grid", gap: 10 }}>
-                        <label style={labelText()} htmlFor="member-activation-recovery-phone">
-                          Phone used for application
+                        <label style={labelText()} htmlFor="member-activation-assisted-code">
+                          Private activation code
                         </label>
                         <div style={inputShell()}>
                           <input
-                            id="member-activation-recovery-phone"
-                            value={recoveryPhone}
-                            onChange={(event) => setRecoveryPhone(event.target.value)}
-                            placeholder="Example: +2347060852000"
-                            autoComplete="tel"
-                            inputMode="tel"
+                            id="member-activation-assisted-code"
+                            value={assistedCode}
+                            onChange={(event) =>
+                              setAssistedCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                            }
+                            placeholder="Enter six-digit code"
+                            autoComplete="one-time-code"
+                            inputMode="numeric"
                             style={inputStyle(false)}
                           />
                         </div>
                       </div>
-                      <SubtleButton
+                      <PrimaryButton
                         type="button"
-                        onClick={handleSendRecoveryCode}
+                        onClick={handleConfirmAssistedCode}
                         disabled={recoveryBusy}
-                        stableHeight={56}
+                        busy={recoveryBusy}
+                        busyLabel="Checking code..."
+                        stableHeight={58}
                         fullWidth
-                        debugId="member-activation.recovery.send-code"
+                        debugId="member-activation.assistance.confirm-code"
                         style={{ borderRadius: 18, fontWeight: 1000 }}
                       >
-                        {verificationId ? "Send a new code" : "Send one-time code"}
+                        Use private code and continue
+                      </PrimaryButton>
+                      <div style={{ color: "#9FB3C9", fontSize: 13, lineHeight: 1.5, fontWeight: 750 }}>
+                        Keep this code private. It must not be placed in a community QR, public group, or permanent notice.
+                      </div>
+
+                      <SubtleButton
+                        type="button"
+                        onClick={() => setPhoneRecoveryOpen((value) => !value)}
+                        stableHeight={48}
+                        fullWidth
+                        debugId="member-activation.recovery.toggle-phone-code"
+                        style={{ borderRadius: 16, fontWeight: 900 }}
+                      >
+                        {phoneRecoveryOpen ? "Hide phone-code option" : "Phone SMS code (when available)"}
                       </SubtleButton>
 
-                      {verificationId ? (
+                      {phoneRecoveryOpen ? (
                         <div style={{ display: "grid", gap: 12 }}>
-                          <label style={labelText()} htmlFor="member-activation-recovery-code">
-                            One-time code
+                          <div style={{ color: "#C8D8EA", lineHeight: 1.5, fontSize: 13 }}>
+                            SMS delivery is not currently funded for this pilot. This option remains ready for a future approved provider.
+                          </div>
+                          <label style={labelText()} htmlFor="member-activation-recovery-phone">
+                            Phone used for application
                           </label>
                           <div style={inputShell()}>
                             <input
-                              id="member-activation-recovery-code"
-                              value={recoveryCode}
-                              onChange={(event) => setRecoveryCode(event.target.value)}
-                              placeholder="Enter the code"
-                              autoComplete="one-time-code"
-                              inputMode="numeric"
+                              id="member-activation-recovery-phone"
+                              value={recoveryPhone}
+                              onChange={(event) => setRecoveryPhone(event.target.value)}
+                              placeholder="Example: +2347060852000"
+                              autoComplete="tel"
+                              inputMode="tel"
                               style={inputStyle(false)}
                             />
                           </div>
-                          <PrimaryButton
+                          <SubtleButton
                             type="button"
-                            onClick={handleConfirmRecoveryCode}
+                            onClick={handleSendRecoveryCode}
                             disabled={recoveryBusy}
-                            busy={recoveryBusy}
-                            busyLabel="Checking code..."
-                            stableHeight={58}
+                            stableHeight={52}
                             fullWidth
-                            debugId="member-activation.recovery.confirm-code"
-                            style={{ borderRadius: 18, fontWeight: 1000 }}
+                            debugId="member-activation.recovery.send-code"
+                            style={{ borderRadius: 16, fontWeight: 1000 }}
                           >
-                            Confirm phone and continue
-                          </PrimaryButton>
+                            {verificationId ? "Send a new phone code" : "Try phone-code delivery"}
+                          </SubtleButton>
+
+                          {verificationId ? (
+                            <div style={{ display: "grid", gap: 12 }}>
+                              <label style={labelText()} htmlFor="member-activation-recovery-code">
+                                Phone code
+                              </label>
+                              <div style={inputShell()}>
+                                <input
+                                  id="member-activation-recovery-code"
+                                  value={recoveryCode}
+                                  onChange={(event) => setRecoveryCode(event.target.value)}
+                                  placeholder="Enter the phone code"
+                                  autoComplete="one-time-code"
+                                  inputMode="numeric"
+                                  style={inputStyle(false)}
+                                />
+                              </div>
+                              <PrimaryButton
+                                type="button"
+                                onClick={handleConfirmRecoveryCode}
+                                disabled={recoveryBusy}
+                                busy={recoveryBusy}
+                                busyLabel="Checking code..."
+                                stableHeight={56}
+                                fullWidth
+                                debugId="member-activation.recovery.confirm-code"
+                                style={{ borderRadius: 16, fontWeight: 1000 }}
+                              >
+                                Confirm phone and continue
+                              </PrimaryButton>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                     </>
