@@ -387,8 +387,8 @@ assertContains(
   "Trust Passport notifications must focus evidence or repair lanes instead of opening the broad passport top."
 );
 assertContains(
-  /async function handlePrimaryNoticeAction\(notice: GuidanceNotice\)[\s\S]*?const noticeId = safeStr\(normalizedNotice\.id\);[\s\S]*?if \(settings\.openActionsDirectly\) \{[\s\S]*?void markNotificationRead\(Number\(noticeId\)\)\.catch\(\(\) => null\);[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\);[\s\S]*?return;[\s\S]*?if \(noticeId\) \{[\s\S]*?void markAsRead\(noticeId\);/,
-  "Notifications primary action must navigate directly before local review-state repaint when direct-open mode is on."
+  /async function openNoticeDestination\(notice: GuidanceNotice\)[\s\S]*?normalizedNotice\.unread[\s\S]*?await markAsRead\(noticeId\);[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\);[\s\S]*?async function handlePrimaryNoticeAction\(notice: GuidanceNotice\)[\s\S]*?if \(settings\.openActionsDirectly\) \{[\s\S]*?await openNoticeDestination\(normalizedNotice\);/,
+  "Notifications must persist read state before any primary destination navigation."
 );
 
 assertContains(

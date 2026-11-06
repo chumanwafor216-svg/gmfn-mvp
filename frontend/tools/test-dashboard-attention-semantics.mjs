@@ -107,6 +107,22 @@ try {
     ),
     true
   );
+  assert.equal(
+    semantics.dashboardNotificationRequiresAttention(
+      { kind: "support_case.admin_reply", unread: false },
+      "actNow"
+    ),
+    false,
+    "A read guidance copy must not keep Dashboard attention active"
+  );
+  assert.equal(
+    semantics.dashboardNotificationRequiresAttention(
+      { kind: "support_case.admin_reply", is_read: true, attention_actionable: true },
+      "actNow"
+    ),
+    false,
+    "Live read state must override stale actionability"
+  );
 
   const nowMs = Date.UTC(2026, 9, 19, 12, 0, 0);
   const baseInput = {

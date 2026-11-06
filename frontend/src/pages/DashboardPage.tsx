@@ -4333,7 +4333,31 @@ export default function DashboardPage() {
       };
     }
 
-    for (const item of actionInbox?.actNow || []) {
+    const currentNotificationsById = new Map<number, NoticeItem>();
+    for (const notice of notices) {
+      const notificationId = positiveNumber(notice.id);
+      if (notificationId) {
+        currentNotificationsById.set(notificationId, notice);
+      }
+    }
+
+    function currentGuidanceNotice(item: any) {
+      const notificationId = dashboardNotificationId(item?.id);
+      const currentNotification = notificationId
+        ? currentNotificationsById.get(notificationId)
+        : undefined;
+      if (!currentNotification) return item;
+
+      return {
+        ...item,
+        unread: !currentNotification.is_read,
+        is_read: Boolean(currentNotification.is_read),
+        attention_actionable: currentNotification.attention_actionable,
+      };
+    }
+
+    for (const guidanceItem of actionInbox?.actNow || []) {
+      const item = currentGuidanceNotice(guidanceItem);
       const text = [item.title, item.detail, item.kind, item.ctaLabel].join(" ");
       const source = dashboardNoticeSource(text, item.ctaTo);
 
@@ -4357,7 +4381,8 @@ export default function DashboardPage() {
       );
     }
 
-    for (const item of actionInbox?.dueSoon || []) {
+    for (const guidanceItem of actionInbox?.dueSoon || []) {
+      const item = currentGuidanceNotice(guidanceItem);
       const text = [item.title, item.detail, item.kind, item.ctaLabel].join(" ");
       const source = dashboardNoticeSource(text, item.ctaTo);
 
@@ -4377,10 +4402,11 @@ export default function DashboardPage() {
       );
     }
 
-    for (const item of [
+    for (const guidanceItem of [
       ...(actionInbox?.watchAndWait || []),
       ...(actionInbox?.generalUpdates || []),
     ]) {
+      const item = currentGuidanceNotice(guidanceItem);
       const text = [item.title, item.detail, item.kind, item.ctaLabel].join(" ");
       const source = dashboardNoticeSource(text, item.ctaTo);
 

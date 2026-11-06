@@ -252,8 +252,8 @@ assertEngineContains(
 );
 
 assertContains(
-  /for \(const item of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
-  "Dashboard guidance duplicates must preserve informational notification semantics."
+  /const currentNotificationsById = new Map<number, NoticeItem>\(\);[\s\S]*?function currentGuidanceNotice\(item: any\)[\s\S]*?unread: !currentNotification\.is_read,[\s\S]*?attention_actionable: currentNotification\.attention_actionable,[\s\S]*?for \(const guidanceItem of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
+  "Dashboard must reconcile stale guidance copies against the current notification read state before opening Attention Guide."
 );
 
 assertContains(

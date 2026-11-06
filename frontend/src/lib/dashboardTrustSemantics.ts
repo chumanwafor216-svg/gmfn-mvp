@@ -104,10 +104,15 @@ export function isInformationalDashboardNotification(kind: unknown): boolean {
 export function dashboardNotificationRequiresAttention(
   notification: {
     kind?: unknown;
+    unread?: unknown;
+    is_read?: unknown;
     attention_actionable?: unknown;
   },
   bucket: "actNow" | "dueSoon" | "watch"
 ): boolean {
+  if (notification.unread === false || notification.is_read === true) {
+    return false;
+  }
   if (typeof notification.attention_actionable === "boolean") {
     return notification.attention_actionable;
   }

@@ -1321,6 +1321,17 @@ export default function NotificationsPage() {
     });
   }
 
+  async function openNoticeDestination(notice: GuidanceNotice) {
+    const normalizedNotice = normalizeGuidanceNotice(notice);
+    const noticeId = safeStr(normalizedNotice.id);
+
+    if (normalizedNotice.unread && /^\d+$/.test(noticeId)) {
+      await markAsRead(noticeId);
+    }
+
+    navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
+  }
+
   function markNoticeReviewedLocally(id: string, relayStatus?: string) {
     if (!id) return;
 
@@ -1415,11 +1426,7 @@ export default function NotificationsPage() {
     }
 
     if (settings.openActionsDirectly) {
-      if (/^\d+$/.test(noticeId)) {
-        void markNotificationRead(Number(noticeId)).catch(() => null);
-        void refreshGsnAppBadge({ force: true });
-      }
-      navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
+      await openNoticeDestination(normalizedNotice);
       return;
     }
 
@@ -1869,7 +1876,11 @@ export default function NotificationsPage() {
                   stableHeight={50}
                   debugId="notifications.focus.open-page"
                   onClick={(event) => {
-                    if (!isRelayOfferNotice(focusNotice)) return;
+                    if (!isRelayOfferNotice(focusNotice)) {
+                      event.preventDefault();
+                      void openNoticeDestination(focusNotice);
+                      return;
+                    }
                     event.preventDefault();
                     if (isActiveRelayOfferNotice(focusNotice)) {
                       void handleRelayOfferAction(focusNotice, "accept");
@@ -2119,7 +2130,11 @@ export default function NotificationsPage() {
                 stableHeight={52}
                 debugId="notifications.selected.open"
                 onClick={(event) => {
-                  if (!isActiveRelayOfferNotice(selectedNotice)) return;
+                  if (!isActiveRelayOfferNotice(selectedNotice)) {
+                    event.preventDefault();
+                    void openNoticeDestination(selectedNotice);
+                    return;
+                  }
                   event.preventDefault();
                   void handleRelayOfferAction(selectedNotice, "accept");
                 }}
@@ -2203,7 +2218,11 @@ export default function NotificationsPage() {
                       stableHeight={52}
                       debugId={`notifications.notice.${notice.id}.open-page`}
                       onClick={(event) => {
-                        if (!isRelayOfferNotice(notice)) return;
+                        if (!isRelayOfferNotice(notice)) {
+                          event.preventDefault();
+                          void openNoticeDestination(notice);
+                          return;
+                        }
                         event.preventDefault();
                         setSelectedNotice(notice as ActionableNotice);
                       }}
@@ -2337,9 +2356,8 @@ export default function NotificationsPage() {
                       setSelectedNotice(rawRowToGuidanceNotice(item));
                       return;
                     }
-                    if (item.unread && /^\d+$/.test(safeStr(item.id))) {
-                      void markAsRead(safeStr(item.id));
-                    }
+                    event.preventDefault();
+                    void openNoticeDestination(rawRowToGuidanceNotice(item));
                   }}
                   style={{
                     ...innerCard("#F8FBFF"),
