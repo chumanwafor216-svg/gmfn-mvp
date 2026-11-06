@@ -106,6 +106,7 @@ type DemandRow = {
   reposted_from_request_id?: number | null;
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
+  audio_deleted_at?: string | null;
 };
 
 type NoticeTone = "success" | "error";
@@ -2870,11 +2871,15 @@ export default function DemandBoxPage() {
           )}
 
           <div style={{ padding: isCompact ? "0 12px 12px" : undefined }}>
-          {positiveNumber(row?.audio_attachment_id) ? (
+          {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
             <div style={{ marginTop: 10 }}>
               <ProtectedVoiceNotePlayer
                 attachmentId={positiveNumber(row?.audio_attachment_id)}
                 durationSeconds={row?.audio_duration_seconds}
+                deletedAt={row?.audio_deleted_at}
+                canDelete={
+                  scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
+                }
                 debugId={`${debugBase}.listen`}
                 label="Request voice note"
               />

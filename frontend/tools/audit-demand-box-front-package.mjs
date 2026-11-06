@@ -7,8 +7,13 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pageFile = "src/pages/DemandBoxPage.tsx";
 const apiFile = "src/lib/api.ts";
+const protectedVoiceFile = "src/components/ProtectedVoiceNotePlayer.tsx";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
 const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
+const protectedVoiceSource = readFileSync(
+  join(frontendRoot, protectedVoiceFile),
+  "utf8"
+);
 const failures = [];
 
 function requirePattern(input, file, pattern, message) {
@@ -77,9 +82,21 @@ function forbidPattern(input, file, pattern, message) {
   [/offset\?: number/, "request listing must keep offset paging"],
   [/createMarketplaceVoiceRequest/, "the API client must keep protected voice request creation"],
   [/fetchDemandAudioBlob/, "the API client must keep authenticated audio retrieval"],
+  [/deleteDemandAudio/, "the API client must keep sender-controlled voice deletion"],
+  [/DELETE VOICE NOTE/, "permanent deletion must keep the explicit server confirmation phrase"],
   [/createMarketplaceRequestResponse/, "the API client must keep private replies"],
   [/repostMarketplaceRequest/, "the API client must keep linked reposting"],
 ].forEach(([pattern, message]) => requirePattern(apiSource, apiFile, pattern, message));
+
+[
+  [/data-gsn-demand-voice-delete-confirmation="true"/, "voice deletion must keep a distinct confirmation state"],
+  [/Delete this recording permanently[?][^]*?This cannot be undone[.]/, "voice deletion must explain its irreversible effect"],
+  [/GSN keeps the request or reply, sender, time, and deletion event/, "voice deletion must explain retained history"],
+  [/Delete permanently/, "voice deletion must require a second explicit action"],
+  [/data-gsn-demand-voice-deleted="true"/, "deleted voice notes must leave a truthful tombstone"],
+].forEach(([pattern, message]) =>
+  requirePattern(protectedVoiceSource, protectedVoiceFile, pattern, message)
+);
 
 [
   [/Current state/, "the repeated Current state card must not return"],

@@ -75,10 +75,12 @@ export default function DemandHistoryCard({
         <GsnLegacyIcon name="refresh" size={24} />
       </StableDisclosureSummary>
       <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-        {Number(row.audio_attachment_id || 0) > 0 ? (
+        {Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at ? (
           <ProtectedVoiceNotePlayer
             attachmentId={Number(row.audio_attachment_id)}
             durationSeconds={row.audio_duration_seconds}
+            deletedAt={row.audio_deleted_at}
+            canDelete={Number(row.audio_attachment_id || 0) > 0}
             label="Original voice note"
             debugId={`demand-box.history.${row.id}.listen`}
           />

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path as ApiPath, UploadFile
@@ -28,6 +29,8 @@ from app.db.models import (
 )
 from app.schemas.marketplace_requests import (
     MarketplaceRequestActivityOut,
+    DemandAudioDeleteCreate,
+    DemandAudioDeleteOut,
     MarketplaceRequestCreate,
     MarketplaceRequestHistoryOut,
     MarketplaceRequestOut,
@@ -36,12 +39,16 @@ from app.schemas.marketplace_requests import (
     MarketplaceRequestResponseOut,
 )
 from app.services.demand_audio_service import (
+    PRIVATE_DEMAND_AUDIO_DIRECTORY,
     clone_demand_audio,
     delete_demand_audio,
     demand_audio_path,
     store_demand_audio,
 )
 from app.services.demand_box_access_service import request_visible_to_user
+from app.services.marketplace_media_cleanup_service import (
+    queue_marketplace_media_deletions,
+)
 from app.services.notification_service import create_notification
 
 
@@ -93,24 +100,28 @@ def _request_audio(
     db: Session,
     *,
     request_id: int,
+    include_deleted: bool = True,
 ) -> DemandAudioAttachment | None:
-    return (
-        db.query(DemandAudioAttachment)
-        .filter(DemandAudioAttachment.marketplace_request_id == int(request_id))
-        .first()
+    query = db.query(DemandAudioAttachment).filter(
+        DemandAudioAttachment.marketplace_request_id == int(request_id)
     )
+    if not include_deleted:
+        query = query.filter(DemandAudioAttachment.deleted_at.is_(None))
+    return query.first()
 
 
 def _response_audio(
     db: Session,
     *,
     response_id: int,
+    include_deleted: bool = True,
 ) -> DemandAudioAttachment | None:
-    return (
-        db.query(DemandAudioAttachment)
-        .filter(DemandAudioAttachment.response_id == int(response_id))
-        .first()
+    query = db.query(DemandAudioAttachment).filter(
+        DemandAudioAttachment.response_id == int(response_id)
     )
+    if not include_deleted:
+        query = query.filter(DemandAudioAttachment.deleted_at.is_(None))
+    return query.first()
 
 
 def _response_out(
@@ -121,6 +132,7 @@ def _response_out(
 ) -> MarketplaceRequestResponseOut:
     author = db.get(User, int(row.author_user_id))
     audio = _response_audio(db, response_id=int(row.id))
+    active_audio = audio if audio and audio.deleted_at is None else None
     return MarketplaceRequestResponseOut(
         id=int(row.id),
         marketplace_request_id=int(row.marketplace_request_id),
@@ -133,8 +145,11 @@ def _response_out(
             else None
         ),
         text=str(row.text or "").strip() or None,
-        audio_attachment_id=int(audio.id) if audio else None,
-        audio_duration_seconds=float(audio.duration_seconds) if audio else None,
+        audio_attachment_id=int(active_audio.id) if active_audio else None,
+        audio_duration_seconds=(
+            float(active_audio.duration_seconds) if active_audio else None
+        ),
+        audio_deleted_at=audio.deleted_at if audio else None,
         created_at=row.created_at,
         is_mine=int(row.author_user_id) == int(current_user_id),
     )
@@ -389,7 +404,7 @@ def get_protected_voice_note(
     current_user: User = Depends(get_current_user),
 ):
     attachment = db.get(DemandAudioAttachment, int(attachment_id))
-    if not attachment:
+    if not attachment or attachment.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Voice note not found")
 
     if attachment.marketplace_request_id is not None:
@@ -420,6 +435,72 @@ def get_protected_voice_note(
             "Cache-Control": "no-store, private",
             "X-Content-Type-Options": "nosniff",
         },
+    )
+
+
+@router.post(
+    "/audio/{attachment_id}/delete",
+    response_model=DemandAudioDeleteOut,
+)
+def delete_own_voice_note(
+    payload: DemandAudioDeleteCreate,
+    attachment_id: int = ApiPath(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attachment = db.get(DemandAudioAttachment, int(attachment_id))
+    if not attachment or int(attachment.created_by_user_id) != int(current_user.id):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    if attachment.deleted_at is not None:
+        return DemandAudioDeleteOut(
+            attachment_id=int(attachment.id),
+            status="already_deleted",
+            deleted_at=attachment.deleted_at,
+        )
+
+    request_id = int(attachment.marketplace_request_id or 0)
+    if not request_id:
+        response = db.get(
+            MarketplaceRequestResponse,
+            int(attachment.response_id or 0),
+        )
+        request_id = int(response.marketplace_request_id) if response else 0
+    if request_id <= 0:
+        raise HTTPException(status_code=409, detail="Voice note parent is unavailable.")
+
+    deleted_at = datetime.now(timezone.utc)
+    storage_key = str(attachment.storage_key or "").strip()
+    queued = queue_marketplace_media_deletions(
+        db,
+        media_urls=[
+            f"/uploads/{PRIVATE_DEMAND_AUDIO_DIRECTORY}/{storage_key}"
+        ],
+        source="demand_audio_owner_delete",
+    )
+    if not queued["task_ids"]:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Voice note could not be queued for permanent deletion.",
+        )
+
+    attachment.deleted_at = deleted_at
+    attachment.deleted_by_user_id = int(current_user.id)
+    attachment.original_filename = None
+    db.add(attachment)
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=request_id,
+            actor_user_id=int(current_user.id),
+            event_type="voice_deleted",
+            detail="Voice note permanently deleted by its sender.",
+        )
+    )
+    db.commit()
+    return DemandAudioDeleteOut(
+        attachment_id=int(attachment.id),
+        status="deleted",
+        deleted_at=deleted_at,
     )
 
 
@@ -524,7 +605,11 @@ def repost_request(
     if not reposted:
         raise HTTPException(status_code=500, detail="Repost was not saved.")
     reposted.reposted_from_request_id = int(original.id)
-    original_audio = _request_audio(db, request_id=int(original.id))
+    original_audio = _request_audio(
+        db,
+        request_id=int(original.id),
+        include_deleted=False,
+    )
     cloned_storage_key: str | None = None
     try:
         if original_audio:

@@ -34,6 +34,11 @@ Date: 2026-11-06
 - The phone composer starts with six labelled subject pictograms and supports a
   local-language 60-second recording without required transcription. Text
   remains available.
+- The exact request/reply voice sender has a two-step permanent-delete action.
+  Confirmed deletion revokes playback immediately, records a voice_deleted
+  lifecycle event, leaves an attribution tombstone, scrubs the original
+  filename, and queues the protected file for bounded reference-aware cleanup.
+  Recipients, owners, admins, expiry, and closure do not gain that authority.
 
 ## Verification
 
@@ -43,6 +48,9 @@ Date: 2026-11-06
 - Focused audits: DemandBox front package, expanded search, and Marketplace
   DemandBox ownership passed.
 - Phone smoke: passed at `390x844` and `360x780`.
+- Sender-deletion lifecycle and durable-cleanup regression tests pass, including
+  unauthorised-recipient refusal, confirmation enforcement, idempotency,
+  tombstone output, playback revocation, and physical retry-queue removal.
 - Protected-button freeze: shared, Marketplace, Dashboard, Community, Shop,
   Notifications, admin, mobile, Trust, and route audits passed. The aggregate
   command then failed only pre-existing entry/invite contract checks in files

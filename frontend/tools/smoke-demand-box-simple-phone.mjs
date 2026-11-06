@@ -43,6 +43,8 @@ const requests = [
     clan_name: community.name,
     queue_keys: ["mine"],
     visibility_scope: "community_visible",
+    audio_attachment_id: 900,
+    audio_duration_seconds: 24,
     created_at: "2026-10-17T10:00:00Z",
   },
   {
@@ -101,6 +103,17 @@ async function installApiMocks(page) {
     }
     if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
       return route.fulfill(json([]));
+    }
+    if (/^\/demand-box\/audio\/\d+\/delete$/.test(path) && method === "POST") {
+      const body = request.postDataJSON();
+      if (body?.confirmation !== "DELETE VOICE NOTE") {
+        return route.fulfill(json({ detail: "Confirmation required." }, 422));
+      }
+      return route.fulfill(json({
+        attachment_id: 900,
+        status: "deleted",
+        deleted_at: "2026-11-06T10:00:00Z",
+      }));
     }
     if (path === "/marketplace/requests" && method === "GET") {
       const mineOnly = url.searchParams.get("mine_only") === "true";
@@ -203,6 +216,39 @@ async function verifyViewport(browser, baseURL, viewport) {
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
   assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy & terms did not open.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
+
+  const deleteVoiceButton = freezerCard.getByRole("button", {
+    name: "Delete voice note",
+    exact: true,
+  });
+  assert(await deleteVoiceButton.isVisible(), "The sender voice-delete action is missing.");
+  await deleteVoiceButton.click();
+  const deleteConfirmation = freezerCard.locator(
+    '[data-gsn-demand-voice-delete-confirmation="true"]'
+  );
+  assert(await deleteConfirmation.isVisible(), "Voice deletion did not require confirmation.");
+  assert(
+    await deleteConfirmation
+      .getByText("This cannot be undone.", { exact: false })
+      .isVisible(),
+    "The permanent deletion warning is missing."
+  );
+  await deleteConfirmation
+    .getByRole("button", { name: "Keep voice note", exact: true })
+    .click();
+  assert(
+    !(await deleteConfirmation.isVisible().catch(() => false)),
+    "Keeping the voice note did not close confirmation."
+  );
+  await deleteVoiceButton.click();
+  await deleteConfirmation
+    .getByRole("button", { name: "Delete permanently", exact: true })
+    .click();
+  await freezerCard.locator('[data-gsn-demand-voice-deleted="true"]').waitFor();
+  assert(
+    await freezerCard.locator('[data-gsn-demand-voice-deleted="true"]').isVisible(),
+    "Permanent deletion did not leave the retained-history tombstone."
+  );
 
   const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');
   assert(await expandedSearch.getByText("No match in this community yet", { exact: true }).isVisible(), "The compact no-match state is missing.");

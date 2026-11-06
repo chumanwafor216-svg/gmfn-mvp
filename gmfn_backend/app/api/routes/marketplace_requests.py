@@ -422,6 +422,7 @@ def _to_out(
         .filter(DemandAudioAttachment.marketplace_request_id == int(row.id))
         .first()
     )
+    active_audio = audio if audio and audio.deleted_at is None else None
     return MarketplaceRequestOut(
         id=row.id,
         clan_id=getattr(row, "clan_id", None),
@@ -482,8 +483,11 @@ def _to_out(
         visibility_scope=_request_visibility_scope(row),
         reposted_from_request_id=getattr(row, "reposted_from_request_id", None),
         client_request_id=getattr(row, "client_request_id", None) if is_mine else None,
-        audio_attachment_id=int(audio.id) if audio else None,
-        audio_duration_seconds=float(audio.duration_seconds) if audio else None,
+        audio_attachment_id=int(active_audio.id) if active_audio else None,
+        audio_duration_seconds=(
+            float(active_audio.duration_seconds) if active_audio else None
+        ),
+        audio_deleted_at=audio.deleted_at if audio else None,
     )
 
 def _as_aware_utc(value: datetime) -> datetime:

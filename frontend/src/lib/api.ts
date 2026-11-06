@@ -9272,6 +9272,7 @@ export type MarketplaceRequestItem = {
   client_request_id?: string | null;
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
+  audio_deleted_at?: string | null;
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -9398,6 +9399,7 @@ export type MarketplaceRequestResponseItem = {
   text?: string | null;
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
+  audio_deleted_at?: string | null;
   created_at: string;
   is_mine?: boolean;
 };
@@ -9478,6 +9480,24 @@ export async function fetchDemandAudioBlob(attachmentId: number): Promise<Blob> 
     throw new HttpStatusError(response.status, await parseError(response));
   }
   return response.blob();
+}
+
+export type DemandAudioDeleteResult = {
+  attachment_id: number;
+  status: "deleted" | "already_deleted";
+  deleted_at: string;
+};
+
+export async function deleteDemandAudio(
+  attachmentId: number
+): Promise<DemandAudioDeleteResult> {
+  const result = await httpJson(
+    "/demand-box/audio/" + encodeURIComponent(String(attachmentId)) + "/delete",
+    "POST",
+    { confirmation: "DELETE VOICE NOTE" }
+  );
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return result;
 }
 
 export type MarketplaceRelayPolicy = {

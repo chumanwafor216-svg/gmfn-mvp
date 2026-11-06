@@ -74,12 +74,18 @@ evidence that the member intended permanent deletion.
 The minimal request, reply, activity, audience, attribution, and repost-link
 rows are retained as history. `Post again` creates a separately referenced
 audio object for the linked new request so one request cannot silently depend
-on another request's file lifecycle. The current pilot exposes no permanent
-DemandBox deletion action and runs no expiry-based voice cleanup. Any future
-deletion feature must first add explicit owner wording, preserve required
-activity/attribution evidence, remove only attachments whose parent is being
-permanently removed, and verify that no surviving request or reply references
-the physical object.
+on another request's file lifecycle.
+
+The exact sender may permanently delete their own request or reply recording
+through a two-step confirmation. Playback is revoked in the committed database
+transaction, the attachment becomes an auditable tombstone, and the request or
+reply, sender, time, and deletion activity remain. The private file is queued
+in that same transaction for the existing bounded, reference-aware managed
+media worker, which deletes only after no active attachment references the
+canonical object and retains failed work for retry. Original filenames are
+scrubbed at deletion. Recipients, community owners, and admins cannot delete a
+recording they did not send. Expiry or closure never authorises deletion and
+there is no expiry-based voice cleanup.
 
 ## Future-feature checklist
 

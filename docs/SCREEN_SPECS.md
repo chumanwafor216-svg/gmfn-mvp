@@ -1150,6 +1150,15 @@ Rules:
   request. Request audio is available only to the requester and authorised
   request audience. Reply audio is available only to that reply's author and
   recipient.
+- Only the sender of a request or reply voice note may choose Delete voice
+  note. The first action opens a distinct warning; Delete permanently is the
+  required second action. The warning must say that listening stops
+  immediately, the recording cannot be restored, and GSN retains the request or
+  reply, sender, time, and deletion event. The database keeps an auditable
+  tombstone while the private file is removed through the existing durable,
+  bounded, reference-aware cleanup queue. Recipients, community owners, and
+  admins do not inherit the sender's irreversible authority. Expiry and closure
+  never trigger this deletion.
 - `Listen & reply` stays inside the opened request. Each responding member has
   a private exchange with the requester; unrelated community members cannot
   read or play that exchange. Replies may contain text, a voice note up to 60

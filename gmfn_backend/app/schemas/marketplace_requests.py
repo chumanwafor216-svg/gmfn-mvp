@@ -135,6 +135,7 @@ class MarketplaceRequestOut(BaseModel):
     client_request_id: Optional[str] = None
     audio_attachment_id: Optional[int] = None
     audio_duration_seconds: Optional[float] = None
+    audio_deleted_at: Optional[datetime] = None
 
 
 class MarketplaceRequestResponseCreate(BaseModel):
@@ -169,8 +170,24 @@ class MarketplaceRequestResponseOut(BaseModel):
     text: Optional[str] = None
     audio_attachment_id: Optional[int] = None
     audio_duration_seconds: Optional[float] = None
+    audio_deleted_at: Optional[datetime] = None
     created_at: datetime
     is_mine: bool = False
+
+
+class DemandAudioDeleteCreate(BaseModel):
+    confirmation: str = Field(..., pattern="^DELETE VOICE NOTE$")
+
+    @field_validator("confirmation", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
+class DemandAudioDeleteOut(BaseModel):
+    attachment_id: int
+    status: str
+    deleted_at: datetime
 
 
 class MarketplaceRequestActivityOut(BaseModel):

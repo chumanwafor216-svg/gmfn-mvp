@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 import wave
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import text
@@ -12,6 +13,9 @@ from app.db.database import engine
 from app.db.models import DemandAudioAttachment
 from app.db.database import SessionLocal
 from app.main import app
+from app.services.marketplace_media_cleanup_service import (
+    process_marketplace_media_deletion_tasks,
+)
 
 
 class Obj:
@@ -209,6 +213,59 @@ def test_voice_request_is_protected_and_photo_requires_explicit_consent(
     assert outsider_playback.status_code == 404
 
     acting_user(1)
+    missing_confirmation = client.post(
+        f"/demand-box/audio/{attachment_id}/delete",
+        json={"confirmation": "delete"},
+    )
+    assert missing_confirmation.status_code == 422
+
+    deleted = client.post(
+        f"/demand-box/audio/{attachment_id}/delete",
+        json={"confirmation": "DELETE VOICE NOTE"},
+    )
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["status"] == "deleted"
+    assert (tmp_path / ".private-demandbox" / storage_key).is_file()
+    assert client.get(f"/demand-box/audio/{attachment_id}").status_code == 404
+
+    listed = client.get(f"/marketplace/requests/{request_id}")
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["audio_attachment_id"] is None
+    assert listed.json()["audio_deleted_at"]
+
+    duplicate_after_delete = _post_voice_request(
+        client,
+        client_request_id="voice-request-0001",
+    )
+    assert duplicate_after_delete.status_code == 200, duplicate_after_delete.text
+    assert duplicate_after_delete.json()["id"] == request_id
+    assert duplicate_after_delete.json()["audio_attachment_id"] is None
+    assert duplicate_after_delete.json()["audio_deleted_at"]
+
+    with SessionLocal() as db:
+        cleanup_results = process_marketplace_media_deletion_tasks(db, limit=10)
+    assert cleanup_results == [
+        {
+            "media_url": f"/uploads/.private-demandbox/{storage_key}",
+            "status": "deleted",
+            "provider": "local",
+        }
+    ]
+    assert not (tmp_path / ".private-demandbox" / storage_key).exists()
+
+    deleted_again = client.post(
+        f"/demand-box/audio/{attachment_id}/delete",
+        json={"confirmation": "DELETE VOICE NOTE"},
+    )
+    assert deleted_again.status_code == 200
+    assert deleted_again.json()["status"] == "already_deleted"
+
+    history = client.get(f"/demand-box/requests/{request_id}/history")
+    assert history.status_code == 200
+    assert "voice_deleted" in {
+        activity["event_type"] for activity in history.json()["activities"]
+    }
+
     plain = client.post(
         "/marketplace/requests",
         json={
@@ -250,9 +307,12 @@ def test_private_response_exchange_and_linked_repost(
                 }
             )
         },
+        files={"audio": ("reply.wav", _wav_bytes(), "audio/wav")},
     )
     assert responder_reply.status_code == 200, responder_reply.text
     response_body = responder_reply.json()
+    response_attachment_id = response_body["audio_attachment_id"]
+    assert response_attachment_id
     assert response_body["author_profile_image_url"] == (
         "/uploads/profile/users/responder.jpg"
     )
@@ -280,9 +340,26 @@ def test_private_response_exchange_and_linked_repost(
     assert unrelated_thread.json() == []
 
     acting_user(1)
+    recipient_cannot_delete = client.post(
+        f"/demand-box/audio/{response_attachment_id}/delete",
+        json={"confirmation": "DELETE VOICE NOTE"},
+    )
+    assert recipient_cannot_delete.status_code == 404
+
+    acting_user(2)
+    response_deleted = client.post(
+        f"/demand-box/audio/{response_attachment_id}/delete",
+        json={"confirmation": "DELETE VOICE NOTE"},
+    )
+    assert response_deleted.status_code == 200, response_deleted.text
+    assert response_deleted.json()["status"] == "deleted"
+
+    acting_user(1)
     owner_thread = client.get(f"/demand-box/requests/{request_id}/responses")
     assert owner_thread.status_code == 200
     assert len(owner_thread.json()) == 1
+    assert owner_thread.json()[0]["audio_attachment_id"] is None
+    assert owner_thread.json()[0]["audio_deleted_at"]
 
     owner_reply = client.post(
         f"/demand-box/requests/{request_id}/responses",
@@ -385,3 +462,59 @@ def test_voice_request_rejects_unplayable_and_overlong_audio(
     )
     assert overlong.status_code == 400
     assert "60 seconds" in overlong.json()["detail"]
+
+
+def test_request_expiry_does_not_delete_or_queue_voice_audio(
+    client,
+    acting_user,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _seed_demand_community()
+    created = _post_voice_request(
+        client,
+        client_request_id="voice-request-expiry-0001",
+    )
+    assert created.status_code == 200, created.text
+    request_id = int(created.json()["id"])
+    attachment_id = int(created.json()["audio_attachment_id"])
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE marketplace_requests
+                SET expires_at = :expires_at
+                WHERE id = :request_id
+                """
+            ),
+            {
+                "expires_at": datetime.now(timezone.utc) - timedelta(hours=1),
+                "request_id": request_id,
+            },
+        )
+
+    listed = client.get(
+        "/marketplace/requests",
+        params={"clan_id": 1, "mine_only": True},
+    )
+    assert listed.status_code == 200, listed.text
+    assert client.get(f"/demand-box/audio/{attachment_id}").status_code == 200
+
+    with engine.begin() as conn:
+        attachment = conn.execute(
+            text(
+                """
+                SELECT deleted_at
+                FROM demand_audio_attachments
+                WHERE id = :attachment_id
+                """
+            ),
+            {"attachment_id": attachment_id},
+        ).one()
+        queued = conn.execute(
+            text("SELECT COUNT(*) FROM marketplace_media_deletion_tasks")
+        ).scalar_one()
+    assert attachment.deleted_at is None
+    assert queued == 0

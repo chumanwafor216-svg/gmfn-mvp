@@ -205,10 +205,13 @@ export default function DemandResponsePanel({
                     {row.text}
                   </div>
                 ) : null}
-                {Number(row.audio_attachment_id || 0) > 0 ? (
+                {Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at ? (
                   <ProtectedVoiceNotePlayer
                     attachmentId={Number(row.audio_attachment_id)}
                     durationSeconds={row.audio_duration_seconds}
+                    deletedAt={row.audio_deleted_at}
+                    canDelete={Boolean(row.is_mine)}
+                    onDeleted={load}
                     label="Reply voice note"
                     debugId={`demand-box.response.${row.id}.listen`}
                   />

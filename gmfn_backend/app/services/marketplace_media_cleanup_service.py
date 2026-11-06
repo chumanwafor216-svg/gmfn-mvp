@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlparse
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    DemandAudioAttachment,
     MarketplaceBroadcast,
     MarketplaceMediaDeletionTask,
     MarketplaceProduct,
@@ -18,6 +19,7 @@ from app.db.models import (
     User,
     VaultPrivateOffer,
 )
+from app.services.demand_audio_service import PRIVATE_DEMAND_AUDIO_DIRECTORY
 from app.services.storage_service import (
     StorageServiceError,
     delete_r2_object,
@@ -53,7 +55,7 @@ def _safe_path_segments(value: str) -> Optional[list[str]]:
 
 
 def canonical_marketplace_media_target(media_url: object) -> Optional[dict[str, Any]]:
-    """Resolve only media managed inside this instance's Marketplace namespace."""
+    """Resolve managed Marketplace media, including protected DemandBox audio."""
 
     value = _safe_text(media_url)
     if not value:
@@ -65,18 +67,20 @@ def canonical_marketplace_media_target(media_url: object) -> Optional[dict[str, 
 
     if not parsed.scheme and not parsed.netloc:
         segments = _safe_path_segments(parsed.path)
-        if (
-            not segments
-            or len(segments) < 4
-            or segments[:3] != ["", "uploads", "marketplace"]
-            or any(not segment for segment in segments[3:])
-        ):
+        if not segments or len(segments) < 4 or segments[:2] != ["", "uploads"]:
+            return None
+        namespace = segments[2]
+        if namespace not in {"marketplace", PRIVATE_DEMAND_AUDIO_DIRECTORY}:
+            return None
+        if any(not segment for segment in segments[3:]):
+            return None
+        if namespace == PRIVATE_DEMAND_AUDIO_DIRECTORY and len(segments) != 4:
             return None
         try:
             root = _uploads_root().resolve()
-            marketplace_root = (root / "marketplace").resolve()
+            namespace_root = (root / namespace).resolve()
             candidate = (root.joinpath(*segments[2:])).resolve()
-            candidate.relative_to(marketplace_root)
+            candidate.relative_to(namespace_root)
             relative = candidate.relative_to(root).as_posix()
         except (OSError, RuntimeError, ValueError):
             return None
@@ -162,6 +166,28 @@ def marketplace_media_reference_keys(
                     referenced_keys.add(canonical_key)
                     if referenced_keys == target_keys:
                         return referenced_keys
+
+    demand_prefix = f"local:{PRIVATE_DEMAND_AUDIO_DIRECTORY}/"
+    if any(key.startswith(demand_prefix) for key in target_keys - referenced_keys):
+        rows = (
+            db.query(DemandAudioAttachment.storage_key)
+            .filter(DemandAudioAttachment.deleted_at.is_(None))
+            .yield_per(500)
+        )
+        for (storage_key,) in rows:
+            safe_key = _safe_text(storage_key)
+            if not safe_key or Path(safe_key).name != safe_key:
+                continue
+            candidate = canonical_marketplace_media_target(
+                f"/uploads/{PRIVATE_DEMAND_AUDIO_DIRECTORY}/{safe_key}"
+            )
+            if candidate is None:
+                continue
+            canonical_key = str(candidate["canonical_key"])
+            if canonical_key in target_keys:
+                referenced_keys.add(canonical_key)
+                if referenced_keys == target_keys:
+                    return referenced_keys
     return referenced_keys
 
 
