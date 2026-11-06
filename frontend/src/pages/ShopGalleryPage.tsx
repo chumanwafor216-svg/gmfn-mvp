@@ -7796,19 +7796,19 @@ export default function ShopGalleryPage() {
               >
                 {labelWithShopIcon("cart", "Products & Services")}
               </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  color: "#526C84",
-                  fontSize: isCompact ? 11.5 : 13,
-                  lineHeight: 1.3,
-                  fontWeight: 700,
-                }}
-              >
-                {focusedBlockLinkActive
-                  ? "Shared item."
-                  : "Browse items. Ask the owner about availability."}
-              </div>
+              {focusedBlockLinkActive ? (
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "#526C84",
+                    fontSize: isCompact ? 11.5 : 13,
+                    lineHeight: 1.3,
+                    fontWeight: 700,
+                  }}
+                >
+                  Shared item.
+                </div>
+              ) : null}
 
             </div>
             <span style={badge(true)}>

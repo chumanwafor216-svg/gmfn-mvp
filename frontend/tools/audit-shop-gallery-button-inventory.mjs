@@ -385,9 +385,9 @@ assertContains(
   "Public Shop open product cards must tell visitors to ask about stock instead of implying fake checkout."
 );
 
-assertContains(
+assertNotContains(
   /Browse items\. Ask the owner about availability\./,
-  "Public Shop product shelf must keep plain, concise commerce guidance without placeholder process chips."
+  "Public Shop product shelf must keep the removed availability helper off the normal shelf heading."
 );
 
 assertContains(
