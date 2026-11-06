@@ -1733,7 +1733,7 @@ export default function DemandBoxPage() {
         "success",
         visibilityScope === DEMAND_VISIBILITY_PROTECTED
           ? "Private Ask Person request routed to the matched member."
-          : "Demand posted successfully."
+          : `Demand posted in ${currentCommunityName}. It appears in DemandBox, not the Community Bulletin.`
       );
     } catch (err: any) {
       const errorText = safeStr(err?.message) || "Demand could not be created.";

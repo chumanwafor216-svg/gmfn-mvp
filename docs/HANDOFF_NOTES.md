@@ -5,6 +5,24 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Community voice destination clarification - 2026-11-06
+
+- Live Render logs and a read-only production database check confirmed that the
+  healthy Community Bulletin voice attachment was posted to Blessed Satch
+  family (`GMFN-C-000013`), while the phone showing `No new announcement` was
+  using Homeland isa (`GMFN-C-000008`) through an admin account that is not a
+  Blessed Satch member. GSN correctly preserved the community boundary.
+- The later 18:35 voice upload was a successful DemandBox request, not a
+  Community Bulletin announcement. DemandBox requests remain separate and do
+  not silently become official Bulletin announcements.
+- Community Bulletin success feedback now names the exact destination
+  community and says only that community's members can see it. DemandBox
+  success feedback now names its community and explicitly says the request is
+  in DemandBox, not the Community Bulletin.
+- No recording, membership, visibility, posting, review, expiry, or playback
+  contract changed. The existing notice-board audit now protects the two clear
+  destination confirmations.
+
 ## Join Requests plain-language review - 2026-11-06
 
 - The Join Requests page now defaults to ordinary language for community

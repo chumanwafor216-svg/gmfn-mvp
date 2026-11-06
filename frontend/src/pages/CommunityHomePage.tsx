@@ -4418,8 +4418,8 @@ export default function CommunityHomePage() {
       showNotice(
         "success",
         result?.submitted_for_review
-          ? "Community record sent for admin review."
-          : "Community announcement posted."
+          ? `Announcement sent to ${selectedClanName} for admin approval.`
+          : `Announcement posted in ${selectedClanName}. Only members of this community can see it.`
       );
     } catch (error: any) {
       showNotice(

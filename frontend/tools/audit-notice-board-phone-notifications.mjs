@@ -101,6 +101,13 @@ const files = {
       "utf8"
     ),
   },
+  demandBoxPage: {
+    path: "frontend/src/pages/DemandBoxPage.tsx",
+    source: readFileSync(
+      join(frontendRoot, "src", "pages", "DemandBoxPage.tsx"),
+      "utf8"
+    ),
+  },
   marketplacePage: {
     path: "frontend/src/pages/MarketplacePage.tsx",
     source: readFileSync(
@@ -465,6 +472,18 @@ assertContains(
   files.communityPage,
   /communityPreviousAnnouncements[\s\S]*?previous_announcements[\s\S]*?communityPreviousAnnouncementItems[\s\S]*?Bulletin history \(\$\{communityPreviousAnnouncementItems\.length\}\)[\s\S]*?Previous announcements[\s\S]*?Last \{communityPreviousAnnouncementItems\.length\}\/10/,
   "Community Home must render expired board items in a compact previous-announcements trail capped at 10."
+);
+
+assertContains(
+  files.communityPage,
+  /Announcement sent to \$\{selectedClanName\} for admin approval\.[\s\S]*?Announcement posted in \$\{selectedClanName\}\. Only members of this community can see it\./,
+  "Community Bulletin posting must confirm the exact destination community and its member-only visibility boundary."
+);
+
+assertContains(
+  files.demandBoxPage,
+  /Demand posted in \$\{currentCommunityName\}\. It appears in DemandBox, not the Community Bulletin\./,
+  "DemandBox posting must not let a voice request look like a Community Bulletin announcement."
 );
 
 assertContains(

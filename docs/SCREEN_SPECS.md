@@ -708,6 +708,7 @@ Must show, in phone-first order:
   - sending opens the device share sheet; clipboard fallback copies the full personalised message
 - Community Bulletin immediately after the identity hero
   - one compact live announcement presentation
+  - after posting, confirm the exact destination community and say that only members of that community can see the announcement; DemandBox voice-request confirmation must explicitly say it appears in DemandBox, not the Community Bulletin
   - the existing announcement composer may add one optional voice note of no more than 60 seconds. A member may post text, voice, or both; when voice is used without typed text, the compact board summary truthfully says `Voice announcement`
   - voice uses the existing member-posting and officer-review rules. A pending member recording is available only to its sender and authorised community officers; approval moves that same attributed recording onto the published notice without changing its speaker
   - authenticated playback is deliberate through `Listen` for active members of that selected community. Public playback exists only when the creator enabled the existing public announcement link and only while that notice remains unexpired
