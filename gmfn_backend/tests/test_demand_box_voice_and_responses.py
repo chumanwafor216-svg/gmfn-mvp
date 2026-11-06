@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
 import wave
 from datetime import datetime, timedelta, timezone
 
 import pytest
+import imageio_ffmpeg
 from sqlalchemy import text
 
 from app.core.auth import get_current_user
@@ -32,6 +34,35 @@ def _wav_bytes(seconds: float = 0.25, sample_rate: int = 8000) -> bytes:
         audio.setframerate(sample_rate)
         audio.writeframes(b"\x00\x00" * frame_count)
     return output.getvalue()
+
+
+def _durationless_webm_bytes(tmp_path) -> bytes:
+    output_path = tmp_path / "android-live-voice.webm"
+    result = subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=880:duration=1.2",
+            "-c:a",
+            "libopus",
+            "-f",
+            "webm",
+            "-live",
+            "1",
+            str(output_path),
+        ],
+        capture_output=True,
+        timeout=20,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    return output_path.read_bytes()
 
 
 def _seed_demand_community() -> None:
@@ -278,6 +309,39 @@ def test_voice_request_is_protected_and_photo_requires_explicit_consent(
     )
     assert plain.status_code == 200, plain.text
     assert plain.json()["requester_profile_image_url"] is None
+
+
+def test_voice_request_accepts_durationless_android_webm(
+    client,
+    acting_user,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _seed_demand_community()
+    acting_user(1)
+    payload = {
+        "clan_id": 1,
+        "title": "Taxi needed",
+        "category": "Transport",
+        "client_request_id": "android-webm-voice-0001",
+    }
+
+    created = client.post(
+        "/demand-box/requests/voice",
+        data={"payload_json": json.dumps(payload)},
+        files={
+            "audio": (
+                "android-live-voice.webm",
+                _durationless_webm_bytes(tmp_path),
+                "audio/webm;codecs=opus",
+            )
+        },
+    )
+
+    assert created.status_code == 200, created.text
+    assert created.json()["audio_attachment_id"]
+    assert 1.0 <= created.json()["audio_duration_seconds"] <= 1.3
 
 
 def test_private_response_exchange_and_linked_repost(

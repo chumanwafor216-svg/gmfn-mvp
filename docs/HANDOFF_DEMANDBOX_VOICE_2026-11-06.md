@@ -85,3 +85,20 @@ Date: 2026-11-06
 - Recovery truth: the missing `Taxi needed` and `House.` recordings were never
   uploaded and cannot be reconstructed. After deployment, a new recording must
   be posted to verify the corrected physical-phone path.
+
+## Android Durationless WebM Compatibility
+
+- Physical-phone retest reached the protected voice endpoint at 13:31 UTC but
+  returned `400` with the playable-format message. This proves the submission
+  race repair worked and exposed a separate server validation incompatibility.
+- Reproduction confirmed that a valid live WebM/Opus recording can decode fully
+  while its container header reports `Duration: N/A`; FFmpeg reports the real
+  duration only in its final decoded `time=` progress. The former validator
+  rejected that valid mobile-browser shape because it required header duration.
+- Validation now accepts either trusted header duration or final decoded time,
+  while still requiring successful full-file decoding, matching declared and
+  detected containers, positive duration, the 60-second limit, and the 8 MB
+  size limit. Invalid bytes and MIME/container mismatches remain rejected.
+- The browser recorder now asks MediaRecorder for one complete final Blob on
+  Stop instead of requesting 250 ms fragments, reducing mobile container
+  fragmentation without changing the 60-second timer or user flow.

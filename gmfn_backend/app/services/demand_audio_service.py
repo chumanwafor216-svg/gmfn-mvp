@@ -32,6 +32,9 @@ ALLOWED_AUDIO_TYPES = {
 _DURATION_PATTERN = re.compile(
     r"Duration:\s*(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:\.\d+)?)"
 )
+_DECODED_TIME_PATTERN = re.compile(
+    r"time=\s*(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:\.\d+)?)"
+)
 _FORMAT_PATTERN = re.compile(r"Input #0,\s*(?P<formats>.+?),\s*from")
 _EXPECTED_FORMATS = {
     "audio/aac": {"aac"},
@@ -109,7 +112,10 @@ def _verified_duration_seconds(path: Path, mime_type: str) -> float:
         ) from exc
 
     output = f"{result.stdout}\n{result.stderr}"
-    match = _DURATION_PATTERN.search(output)
+    duration_matches = [
+        *_DURATION_PATTERN.finditer(output),
+        *_DECODED_TIME_PATTERN.finditer(output),
+    ]
     format_match = _FORMAT_PATTERN.search(output)
     actual_formats = {
         value.strip().lower()
@@ -119,17 +125,18 @@ def _verified_duration_seconds(path: Path, mime_type: str) -> float:
     expected_formats = _EXPECTED_FORMATS.get(mime_type, set())
     if (
         result.returncode != 0
-        or not match
+        or not duration_matches
         or not actual_formats.intersection(expected_formats)
     ):
         raise HTTPException(
             status_code=400,
             detail="Use a playable MP3, M4A, AAC, WAV, OGG, or WebM voice note.",
         )
-    duration = (
+    duration = max(
         int(match.group("hours")) * 3600
         + int(match.group("minutes")) * 60
         + float(match.group("seconds"))
+        for match in duration_matches
     )
     if duration <= 0:
         raise HTTPException(status_code=400, detail="The voice note is empty.")

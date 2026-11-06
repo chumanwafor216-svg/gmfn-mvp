@@ -1136,6 +1136,10 @@ Rules:
   note ready`. The finished file must reach the parent form before submission
   unlocks so a recording cannot silently become a text-only post. A request
   without an attached voice file says `Reply privately`, not `Listen & reply`.
+- Valid browser-recorded WebM voice notes remain acceptable when a mobile
+  recorder omits duration from the container header. The server must still
+  decode the complete file successfully, verify its declared container, derive
+  a positive decoded duration, and enforce the same 60-second and 8 MB limits.
 - The create form shows only category, voice/short heading, area, and
   Community/One person
   visibility first. The matched-person chooser appears only for One person.

@@ -122,7 +122,7 @@ export default function VoiceNoteRecorder({
         setRecording(false);
         onRecordingChange?.(false);
       };
-      recorder.start(250);
+      recorder.start();
       timerRef.current = window.setInterval(() => {
         setSeconds((current) => {
           const next = current + 1;
