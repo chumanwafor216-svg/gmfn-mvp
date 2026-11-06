@@ -5453,3 +5453,13 @@ under `docs/` or `docs/archive/`, then link that file here.
   production build. The broad link-contract audit still has unrelated
   pre-existing failures in `pwaInstall.ts` and `ShopGalleryPage.tsx`; this fix
   does not touch or conceal them.
+
+## 2026-11-06 - DemandBox create-form premium phone refinement
+
+- Owner trigger: enhance the authenticated DemandBox `Post a need` page toward the supplied premium phone reference while preserving the approved novice-first form and avoiding the reference image's duplicate navigation and excessive neon treatment.
+- Route affected: authenticated `/app/demand-box` when the existing create work surface is open, including the `?mode=create` entry contract. The DemandBox landing surface, queue, opened-request cards, app shell, Marketplace, Dashboard, backend routes, permissions, and selected-community behavior remain unchanged.
+- Presentation changed: the create surface now uses one compact navy/gold task hero, a clear selected-community Marketplace row, a calmer bounded white/blue form card, and a stronger single `Post need` action. The existing Need, Type, Area, Community/One person, and collapsed More options structure remains intact.
+- Selection changed: Community and One person now expose truthful `aria-pressed` state and use the same visible selected treatment, so the active privacy route is no longer ambiguous.
+- Preserved: request payloads, private matched-person requirement, optional explanation/contact/urgency/payment/proof/expiry/trust-credit/one-hop controls, relay consent, lifecycle, API contracts, and frozen Marketplace/Dashboard surfaces.
+- Verification passed: focused ESLint; DemandBox front-package and expanded-search audits; Marketplace DemandBox ownership; mocked Playwright checks at `390x844` and `360x780` covering create-card content, privacy-state switching, optional-field disclosure, and horizontal geometry; the 313-module production build; and the complete protected-button freeze.
+- Review truth: the collapsed create-card capture is `tmp/demand-box-create-enhanced.png`. Automated interaction and geometry passed, but the local image viewer could not open the capture because of the Windows sandbox wrapper, so physical-device visual approval remains an owner review step.

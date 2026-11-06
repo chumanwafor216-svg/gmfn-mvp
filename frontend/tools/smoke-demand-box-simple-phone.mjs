@@ -238,12 +238,21 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   await page.getByRole("button", { name: "Post a need", exact: true }).click();
   const form = page.locator('[data-gsn-demand-create-form="simple"]');
+  const createCard = page.locator('[data-gsn-demand-create-card="premium"]');
   await form.waitFor();
+  assert(await createCard.isVisible(), "The premium create card is missing.");
+  assert(await createCard.getByText("Share one clear need with the right people.", { exact: true }).isVisible(), "The create task guidance is missing.");
+  assert(await createCard.getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(), "The selected community context is missing.");
   assert(await page.getByLabel("What do you need?").isVisible(), "Need field is missing.");
   assert(await page.getByLabel("Type").isVisible(), "Type field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
+  assert((await page.getByRole("button", { name: "Community", exact: true }).getAttribute("aria-pressed")) === "true", "Community visibility is not visibly selected by default.");
+  const createScreenshotPath = process.env.GSN_DEMAND_BOX_CREATE_SCREENSHOT_PATH?.trim();
+  if (createScreenshotPath && viewport.width === 390) {
+    await createCard.screenshot({ path: createScreenshotPath });
+  }
   assert(!(await page.getByLabel("Short explanation").isVisible().catch(() => false)), "Optional fields opened before More options.");
   await page.locator('[data-cta-id="demand-box.more-options"]').click();
   assert(await page.getByLabel("Short explanation").isVisible(), "Short explanation is not reachable.");
@@ -253,7 +262,15 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByLabel("Proof needed").isVisible(), "Proof preference is not reachable.");
   assert(await page.getByLabel("Hours open").isVisible(), "Expiry is not reachable.");
   await page.getByRole("button", { name: "One person", exact: true }).click();
+  assert((await page.getByRole("button", { name: "One person", exact: true }).getAttribute("aria-pressed")) === "true", "One-person visibility did not become visibly selected.");
   assert(await page.getByLabel("Choose person").isVisible(), "The private person chooser did not appear.");
+
+  const createGeometry = await createCard.evaluate((card) => ({
+    noOverflow: card.scrollWidth <= card.clientWidth + 1,
+    width: Math.round(card.getBoundingClientRect().width),
+  }));
+  assert(createGeometry.noOverflow, "The premium create card overflows horizontally.");
+  assert(createGeometry.width <= viewport.width - 24, "The premium create card is too wide for the phone viewport.");
 
   const overflow = await page.locator("body").evaluate((node) => node.scrollWidth > node.clientWidth + 1);
   assert(!overflow, "DemandBox overflows at " + viewport.width + "x" + viewport.height + ".");
