@@ -5031,6 +5031,13 @@ class FeatureUsageEvent(Base):
 
 class MarketplaceRequest(Base):
     __tablename__ = "marketplace_requests"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "client_request_id",
+            name="uq_marketplace_request_user_client_id_v1",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
@@ -5043,6 +5050,21 @@ class MarketplaceRequest(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    reposted_from_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_requests.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    client_request_id: Mapped[Optional[str]] = mapped_column(
+        String(80),
+        nullable=True,
+    )
+    show_sender_photo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
     )
 
     title: Mapped[str] = mapped_column(String(180), nullable=False)
@@ -5088,6 +5110,121 @@ class MarketplaceRequest(Base):
 
     clan = relationship("Clan")
     user = relationship("User")
+
+
+class MarketplaceRequestResponse(Base):
+    __tablename__ = "marketplace_request_responses"
+    __table_args__ = (
+        UniqueConstraint(
+            "author_user_id",
+            "client_response_id",
+            name="uq_marketplace_response_author_client_id_v1",
+        ),
+        Index(
+            "ix_marketplace_response_request_pair_v1",
+            "marketplace_request_id",
+            "author_user_id",
+            "recipient_user_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    marketplace_request_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    recipient_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    client_response_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    show_sender_photo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class MarketplaceRequestActivity(Base):
+    __tablename__ = "marketplace_request_activities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    marketplace_request_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    actor_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    event_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    detail: Mapped[Optional[str]] = mapped_column(String(240), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class DemandAudioAttachment(Base):
+    __tablename__ = "demand_audio_attachments"
+    __table_args__ = (
+        CheckConstraint(
+            "(marketplace_request_id IS NOT NULL AND response_id IS NULL) OR "
+            "(marketplace_request_id IS NULL AND response_id IS NOT NULL)",
+            name="ck_demand_audio_exactly_one_parent_v1",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    marketplace_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_requests.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    response_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_request_responses.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    storage_key: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    mime_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_seconds: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
 
 
 class MarketplaceRelayPolicy(Base):

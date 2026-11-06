@@ -19,6 +19,7 @@ from app.api.routes.pool import router as pool_router
 from app.api.routes.loans_inbox import router as loans_inbox_router
 from app.api.routes.loan_hardening import router as loan_hardening_router
 from app.api.routes.marketplace_requests import router as marketplace_requests_router
+from app.api.routes.demand_box_interactions import router as demand_box_interactions_router
 from app.api.routes.opportunity_relays import router as opportunity_relays_router
 from app.api.routes.daily_insight import router as daily_insight_router
 from app.api.routes.member_credits import router as member_credits_router
@@ -144,6 +145,7 @@ api_router.include_router(borrower_preflight_router)
 api_router.include_router(pool_router)
 api_router.include_router(loans_inbox_router)
 api_router.include_router(marketplace_requests_router)
+api_router.include_router(demand_box_interactions_router)
 api_router.include_router(opportunity_relays_router)
 api_router.include_router(daily_insight_router)
 api_router.include_router(member_credits_router)

@@ -35,6 +35,7 @@ from app.core.runtime_memory import (
     request_started,
     should_log_request,
 )
+from app.services.demand_audio_service import PRIVATE_DEMAND_AUDIO_DIRECTORY
 from app.services.marketplace_media_cleanup_service import (
     process_marketplace_media_deletion_tasks,
 )
@@ -361,6 +362,18 @@ if _runtime_memory_logging_enabled():
                     active_requests=active_requests,
                     peak_requests=peak_requests,
                 )
+
+
+@app.middleware("http")
+async def block_private_demand_audio_static_access(request: Request, call_next):
+    normalized_path = request.url.path.lower().rstrip("/")
+    private_prefix = f"/uploads/{PRIVATE_DEMAND_AUDIO_DIRECTORY}".lower()
+    if normalized_path == private_prefix or normalized_path.startswith(
+        f"{private_prefix}/"
+    ):
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    return await call_next(request)
+
 
 # Media uploads/static serving
 uploads_dir.mkdir(parents=True, exist_ok=True)

@@ -61,7 +61,7 @@ Bottom navigation is allowed here.
 18. TrustSlipPage (includes the signed-in focus=community-confirmation simple starter variant)
 19. WhatsAppBridgePage
 20. CommitmentsPage
-21. DemandBoxPage (`/app/demand-box`; authenticated needs lifecycle owner, novice-first phone surface reviewed 2026-10-17)
+21. DemandBoxPage (`/app/demand-box`; authenticated needs lifecycle owner, novice-first phone surface reviewed 2026-10-17; protected voice/reply/history pilot reviewed 2026-11-06)
 22. AdminGsnHouseCampaignPage (`/app/command-center/gsn-campaigns`; platform-admin-only central GSN Spotlight publisher)
 23. AdminTrustEventsPage (`/app/command-center/trust-events`; admin-only recent Trust Event evidence review)
 24. AdminIncompleteLoansPage (`/app/command-center/incomplete-loans`; admin-only incomplete support attention queue)

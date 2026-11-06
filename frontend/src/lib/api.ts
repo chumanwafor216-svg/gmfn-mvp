@@ -9252,6 +9252,7 @@ export type MarketplaceRequestItem = {
   requester_nickname?: string | null;
   requester_gmfn_id?: string | null;
   requester_email?: string | null;
+  requester_profile_image_url?: string | null;
   requester_trust_score?: number | null;
   requester_trust_band?: string | null;
 
@@ -9267,6 +9268,10 @@ export type MarketplaceRequestItem = {
   routing_status?: string | null;
   routing_hint?: string | null;
   visibility_scope?: string | null;
+  reposted_from_request_id?: number | null;
+  client_request_id?: string | null;
+  audio_attachment_id?: number | null;
+  audio_duration_seconds?: number | null;
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -9333,6 +9338,8 @@ export async function createMarketplaceRequest(payload: {
   allow_trust_credit?: boolean;
   allow_one_hop_relay?: boolean;
   visibility_scope?: string;
+  client_request_id?: string;
+  show_sender_photo?: boolean;
   clan_id?: number | null;
 }): Promise<MarketplaceRequestItem> {
   const effectiveClanId =
@@ -9344,6 +9351,133 @@ export async function createMarketplaceRequest(payload: {
   });
   clearStartupSectionCacheByLabel("listMarketplaceRequests");
   return created;
+}
+
+export async function createMarketplaceVoiceRequest(
+  payload: {
+    title: string;
+    description?: string;
+    category?: string;
+    urgency?: string;
+    area?: string;
+    whatsapp_number?: string;
+    expires_in_hours?: number;
+    payment_mode?: string;
+    allow_trust_credit?: boolean;
+    allow_one_hop_relay?: boolean;
+    visibility_scope?: string;
+    client_request_id: string;
+    show_sender_photo?: boolean;
+    clan_id?: number | null;
+  },
+  audio: File
+): Promise<MarketplaceRequestItem> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+  const form = new FormData();
+  form.set(
+    "payload_json",
+    JSON.stringify({
+      ...payload,
+      clan_id: effectiveClanId ?? undefined,
+    })
+  );
+  form.set("audio", audio, audio.name || "demand-voice.webm");
+  const created = await httpMultipart("/demand-box/requests/voice", form);
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
+}
+
+export type MarketplaceRequestResponseItem = {
+  id: number;
+  marketplace_request_id: number;
+  author_user_id: number;
+  recipient_user_id: number;
+  author_display_name: string;
+  author_profile_image_url?: string | null;
+  text?: string | null;
+  audio_attachment_id?: number | null;
+  audio_duration_seconds?: number | null;
+  created_at: string;
+  is_mine?: boolean;
+};
+
+export async function listMarketplaceRequestResponses(
+  requestId: number
+): Promise<MarketplaceRequestResponseItem[]> {
+  return httpJson(
+    `/demand-box/requests/${encodeURIComponent(String(requestId))}/responses`,
+    "GET"
+  );
+}
+
+export async function createMarketplaceRequestResponse(
+  requestId: number,
+  payload: {
+    text?: string;
+    client_response_id: string;
+    recipient_user_id?: number;
+    show_sender_photo?: boolean;
+  },
+  audio?: File | null
+): Promise<MarketplaceRequestResponseItem> {
+  const form = new FormData();
+  form.set("payload_json", JSON.stringify(payload));
+  if (audio) {
+    form.set("audio", audio, audio.name || "demand-reply.webm");
+  }
+  return httpMultipart(
+    `/demand-box/requests/${encodeURIComponent(String(requestId))}/responses`,
+    form
+  );
+}
+
+export type MarketplaceRequestActivityItem = {
+  id: number;
+  event_type: string;
+  actor_user_id?: number | null;
+  detail?: string | null;
+  created_at: string;
+};
+
+export async function getMarketplaceRequestHistory(
+  requestId: number
+): Promise<{
+  request: MarketplaceRequestItem;
+  activities: MarketplaceRequestActivityItem[];
+}> {
+  return httpJson(
+    `/demand-box/requests/${encodeURIComponent(String(requestId))}/history`,
+    "GET"
+  );
+}
+
+export async function repostMarketplaceRequest(
+  requestId: number,
+  clientRequestId: string
+): Promise<MarketplaceRequestItem> {
+  const created = await httpJson(
+    `/demand-box/requests/${encodeURIComponent(String(requestId))}/repost`,
+    "POST",
+    { client_request_id: clientRequestId }
+  );
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
+}
+
+export async function fetchDemandAudioBlob(attachmentId: number): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "audio/*" };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetchWithTimeout(
+    buildUrl(`/demand-box/audio/${encodeURIComponent(String(attachmentId))}`),
+    { method: "GET", headers },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
+  if (!response.ok) {
+    throw new HttpStatusError(response.status, await parseError(response));
+  }
+  return response.blob();
 }
 
 export type MarketplaceRelayPolicy = {

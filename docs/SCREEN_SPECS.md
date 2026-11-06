@@ -1107,13 +1107,13 @@ Rules:
   request message. Opening another card closes the previous card. The open state must retain supply matches,
   contact/copy actions, fulfil/cancel controls, privacy and evidence details,
   and governed expanded search.
-- Approved 2026-11-03 open-request amendment: on phone, an opened request may
+- Approved 2026-11-03 open-request amendment, extended 2026-11-06 for the
+  voice pilot: on phone, an opened request may
   replace the plain record header with one compact navy/gold visual hero showing
-  only the real status, request title, area, and date. The hero must remain
-  category-neutral: do not use a mechanic, tradesperson, product, requester,
-  provider, or other category-specific person/photo because the demand may be
-  about anything. Use the shared request/community icon language instead, but
-  keep that icon in a supporting badge no larger than 44px so the request
+  the real status, request title, area, and date. One small category pictogram
+  may identify the subject, but it must not depict or imply an available
+  mechanic, tradesperson, product, requester, provider, vehicle, or service.
+  Keep that pictogram in a supporting badge no larger than 44px so the request
   message owns the hero.
 - The same open-request amendment places `Request details` and `Privacy & terms`
   in one compact two-choice control, keeps the successful zero-match state in
@@ -1124,11 +1124,41 @@ Rules:
 - A small DemandBox identity banner may reuse the approved generic DemandBox
   marketplace image after the action dock, but it must not be presented as the
   requester, provider, match, or evidence for this request.
-- The create form shows only need, type, area, and Community/One person
+- The voice pilot begins with six clear category pictograms (Transport,
+  Repairs, Food, Books, Housing, and Other), then offers one optional voice note
+  up to 60 seconds. A voice note may replace typed explanation, but the server
+  still records a category-derived short heading. Text remains available and
+  transcription is not required; members may speak in their local language.
+  Category pictures are subject cues only and are not supply, availability,
+  recommendation, or provider claims.
+- The create form shows only category, voice/short heading, area, and
+  Community/One person
   visibility first. The matched-person chooser appears only for One person.
   Explanation, WhatsApp override, urgency, payment, requested proof, expiry,
   trust-credit preference, and one-hop search consent remain behind one
   `More options` disclosure.
+- A request card may show a modest sender portrait beside display name and GSN
+  reference only when that sender explicitly opts in for that request. Replies
+  apply the same default-off consent separately. If no suitable shared portrait
+  is present, use initials without reducing access or treating the member as
+  suspicious. A portrait supports recognition only; it does not prove identity,
+  reliability, repayment, delivery, truthfulness, or endorsement. Do not turn a
+  private identity-check photo into a community portrait without the member's
+  explicit sharing choice.
+- Voice files are never served from the public uploads path. Playback uses an
+  authenticated protected endpoint and the same exact audience boundary as the
+  request. Request audio is available only to the requester and authorised
+  request audience. Reply audio is available only to that reply's author and
+  recipient.
+- `Listen & reply` stays inside the opened request. Each responding member has
+  a private exchange with the requester; unrelated community members cannot
+  read or play that exchange. Replies may contain text, a voice note up to 60
+  seconds, or both.
+- Closed and expired owner requests remain in one collapsed `Past requests`
+  history. `Post again` creates a new request linked to the original rather than
+  reopening or overwriting it. The new request requires fresh portrait and
+  one-hop relay consent; copied facts and audio remain attributable to the new
+  linked request.
 - A demand remains owned by the personal requester GSN ID. Community or
   Community Domain context does not become the requester.
 - `Expand search` must reuse the existing explicit per-request one-hop relay

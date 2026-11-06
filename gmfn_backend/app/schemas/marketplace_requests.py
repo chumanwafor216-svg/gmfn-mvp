@@ -43,6 +43,8 @@ class MarketplaceRequestCreate(BaseModel):
     allow_trust_credit: bool = False
     allow_one_hop_relay: bool = False
     visibility_scope: Optional[str] = Field(default="community_visible", max_length=40)
+    client_request_id: Optional[str] = Field(default=None, min_length=8, max_length=80)
+    show_sender_photo: bool = False
 
     @field_validator("clan_id", "expires_in_hours", mode="before")
     @classmethod
@@ -58,13 +60,19 @@ class MarketplaceRequestCreate(BaseModel):
         "whatsapp_number",
         "payment_mode",
         "visibility_scope",
+        "client_request_id",
         mode="before",
     )
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
-    @field_validator("allow_trust_credit", "allow_one_hop_relay", mode="before")
+    @field_validator(
+        "allow_trust_credit",
+        "allow_one_hop_relay",
+        "show_sender_photo",
+        mode="before",
+    )
     @classmethod
     def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_bool_value(value, info.field_name)
@@ -108,6 +116,7 @@ class MarketplaceRequestOut(BaseModel):
     requester_nickname: Optional[str] = None
     requester_gmfn_id: Optional[str] = None
     requester_email: Optional[str] = None
+    requester_profile_image_url: Optional[str] = None
     requester_trust_score: Optional[float] = None
     requester_trust_band: Optional[str] = None
     is_mine: bool = False
@@ -122,6 +131,68 @@ class MarketplaceRequestOut(BaseModel):
     routing_status: str = "community_queue"
     routing_hint: str = "Visible through the community queue."
     visibility_scope: str = "community_visible"
+    reposted_from_request_id: Optional[int] = None
+    client_request_id: Optional[str] = None
+    audio_attachment_id: Optional[int] = None
+    audio_duration_seconds: Optional[float] = None
+
+
+class MarketplaceRequestResponseCreate(BaseModel):
+    text: Optional[str] = Field(default=None, max_length=1500)
+    client_response_id: str = Field(..., min_length=8, max_length=80)
+    recipient_user_id: Optional[int] = Field(default=None, ge=1)
+    show_sender_photo: bool = False
+
+    @field_validator("text", "client_response_id", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("recipient_user_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("show_sender_photo", mode="before")
+    @classmethod
+    def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_bool_value(value, info.field_name)
+
+
+class MarketplaceRequestResponseOut(BaseModel):
+    id: int
+    marketplace_request_id: int
+    author_user_id: int
+    recipient_user_id: int
+    author_display_name: str
+    author_profile_image_url: Optional[str] = None
+    text: Optional[str] = None
+    audio_attachment_id: Optional[int] = None
+    audio_duration_seconds: Optional[float] = None
+    created_at: datetime
+    is_mine: bool = False
+
+
+class MarketplaceRequestActivityOut(BaseModel):
+    id: int
+    event_type: str
+    actor_user_id: Optional[int] = None
+    detail: Optional[str] = None
+    created_at: datetime
+
+
+class MarketplaceRequestHistoryOut(BaseModel):
+    request: MarketplaceRequestOut
+    activities: list[MarketplaceRequestActivityOut] = Field(default_factory=list)
+
+
+class MarketplaceRequestRepostCreate(BaseModel):
+    client_request_id: str = Field(..., min_length=8, max_length=80)
+
+    @field_validator("client_request_id", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
     model_config = ConfigDict(from_attributes=True)
 

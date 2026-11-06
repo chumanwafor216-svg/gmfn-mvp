@@ -1,6 +1,10 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import DemandResponsePanel from "../components/DemandResponsePanel";
+import DemandHistoryCard from "../components/DemandHistoryCard";
+import ProtectedVoiceNotePlayer from "../components/ProtectedVoiceNotePlayer";
+import VoiceNoteRecorder from "../components/VoiceNoteRecorder";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   PrimaryButton,
@@ -16,6 +20,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   createMarketplaceRequest,
+  createMarketplaceVoiceRequest,
   createMarketplaceRequestRelayRun,
   getDemandSupplyMatches,
   getMarketplaceRelayPolicy,
@@ -26,6 +31,7 @@ import {
   listMyClans,
   listMyCommunityDomains,
   listMarketplaceRequests,
+  repostMarketplaceRequest,
   recordMarketplaceAttentionEvent,
   listClanMembers,
   selectClan,
@@ -37,6 +43,7 @@ import {
   type MarketplaceRelayPolicy,
   type DemandSupplyMatchItem,
 } from "../lib/api";
+import { resolveProfileImageUrl } from "../lib/profileImage";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import {
@@ -79,6 +86,7 @@ type DemandRow = {
   requester_nickname?: string | null;
   requester_gmfn_id?: string | null;
   requester_email?: string | null;
+  requester_profile_image_url?: string | null;
   requester_trust_score?: number | null;
   requester_trust_band?: string | null;
   is_mine?: boolean;
@@ -95,6 +103,9 @@ type DemandRow = {
   routing_status?: string | null;
   routing_hint?: string | null;
   visibility_scope?: string | null;
+  reposted_from_request_id?: number | null;
+  audio_attachment_id?: number | null;
+  audio_duration_seconds?: number | null;
 };
 
 type NoticeTone = "success" | "error";
@@ -114,6 +125,41 @@ type DemandVisibilityScope = "community_visible" | "protected_target";
 const DEMAND_BOX_PAGE_SIZE = 200;
 const DEMAND_VISIBILITY_COMMUNITY: DemandVisibilityScope = "community_visible";
 const DEMAND_VISIBILITY_PROTECTED: DemandVisibilityScope = "protected_target";
+const DEMAND_CATEGORY_CHOICES: Array<{
+  value: string;
+  label: string;
+  title: string;
+  icon: GsnIconName;
+}> = [
+  { value: "Transport", label: "Transport", title: "Transport needed", icon: "navigation" },
+  { value: "Repairs", label: "Repairs", title: "Repair help needed", icon: "briefcase" },
+  { value: "Food", label: "Food", title: "Food needed", icon: "cart" },
+  { value: "Books", label: "Books", title: "Books needed", icon: "document" },
+  { value: "Housing", label: "Housing", title: "Housing needed", icon: "home" },
+  { value: "General", label: "Other", title: "Help needed", icon: "megaphone" },
+];
+
+function demandClientKey(prefix: string): string {
+  const random =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${prefix}-${random}`;
+}
+
+function demandCategoryChoice(value: unknown) {
+  const normalized = safeStr(value).toLowerCase();
+  return (
+    DEMAND_CATEGORY_CHOICES.find(
+      (choice) => choice.value.toLowerCase() === normalized
+    ) || DEMAND_CATEGORY_CHOICES[DEMAND_CATEGORY_CHOICES.length - 1]
+  );
+}
+
+function demandInitials(value: unknown): string {
+  const parts = safeStr(value).split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "M";
+}
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -930,6 +976,85 @@ function requesterName(row: DemandRow): string {
     ) || "Member"
   );
 }
+
+function DemandSenderIdentity({
+  row,
+  dark = false,
+}: {
+  row: DemandRow;
+  dark?: boolean;
+}) {
+  const name = requesterName(row);
+  const imageUrl = resolveProfileImageUrl(row?.requester_profile_image_url);
+  return (
+    <div
+      data-gsn-demand-sender-identity="true"
+      style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            objectFit: "cover",
+            border: dark
+              ? "2px solid rgba(255,255,255,0.78)"
+              : "2px solid rgba(13,95,168,0.16)",
+          }}
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            display: "grid",
+            placeItems: "center",
+            color: dark ? "#FFFFFF" : "#0B4FA8",
+            background: dark ? "rgba(255,255,255,0.18)" : "#DCEBFA",
+            border: dark
+              ? "1px solid rgba(255,255,255,0.34)"
+              : "1px solid rgba(13,95,168,0.12)",
+            fontSize: 12,
+            fontWeight: 950,
+          }}
+        >
+          {demandInitials(name)}
+        </span>
+      )}
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            color: dark ? "#FFFFFF" : "#0B1F33",
+            fontSize: 13,
+            fontWeight: 950,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {name}
+        </div>
+        {safeStr(row?.requester_gmfn_id) ? (
+          <div
+            style={{
+              marginTop: 2,
+              color: dark ? "rgba(255,255,255,0.78)" : "#64748B",
+              fontSize: 10,
+              fontWeight: 800,
+            }}
+          >
+            {safeStr(row?.requester_gmfn_id)}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 function isMineRow(row: DemandRow, me: any): boolean {
   if (row?.is_mine === true || row?.mine === true) return true;
 
@@ -1003,6 +1128,7 @@ export default function DemandBoxPage() {
   const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
     useState<any>(null);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
+  const [myClosedRows, setMyClosedRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
   const [visibleRowsRawLoaded, setVisibleRowsRawLoaded] = useState(0);
   const [hasMoreVisibleRows, setHasMoreVisibleRows] = useState(false);
@@ -1028,6 +1154,8 @@ export default function DemandBoxPage() {
   const [responseEvidence, setResponseEvidence] = useState("");
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
   const [allowOneHopRelay, setAllowOneHopRelay] = useState(false);
+  const [voiceFile, setVoiceFile] = useState<File | null>(null);
+  const [showSenderPhoto, setShowSenderPhoto] = useState(false);
   const [relayPolicy, setRelayPolicy] = useState<MarketplaceRelayPolicy | null>(null);
   const [savingRelayPolicy, setSavingRelayPolicy] = useState(false);
   const [updatingRelayRequestId, setUpdatingRelayRequestId] = useState(0);
@@ -1038,6 +1166,7 @@ export default function DemandBoxPage() {
   const [createPanelOpen, setCreatePanelOpen] = useState(false);
   const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
+  const [repostingDemandId, setRepostingDemandId] = useState<number>(0);
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
     useState(() => routeSelectedClanId > 0);
   const demandCreateRevealRef = useRef<number | null>(null);
@@ -1103,6 +1232,7 @@ export default function DemandBoxPage() {
         clansRes,
         domainsRes,
         myRes,
+        myClosedRes,
         visibleRes,
         visibleProbeRes,
         membersRes,
@@ -1116,6 +1246,13 @@ export default function DemandBoxPage() {
           mine_only: true,
           status: "open",
           limit: DEMAND_BOX_PAGE_SIZE,
+          offset: 0,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          clan_id: null,
+          mine_only: true,
+          status: "closed",
+          limit: 30,
           offset: 0,
         }).catch(() => []),
         listMarketplaceRequests({
@@ -1145,6 +1282,7 @@ export default function DemandBoxPage() {
           (row) => Number(row?.id || row?.clan_id || 0) === effectiveClanId
         ) || currentClanRes || null;
       const myRows = rowsOf<DemandRow>(myRes);
+      const myClosed = rowsOf<DemandRow>(myClosedRes);
       const visibleAll = rowsOf<DemandRow>(visibleRes);
       const visibleProbeRows = rowsOf<DemandRow>(visibleProbeRes);
       const availableTagMembers = rowsOf<any>(membersRes)
@@ -1162,6 +1300,7 @@ export default function DemandBoxPage() {
       setCommunities(communityRows);
       setCommunityDomainPolicyPayload(domainsRes);
       setMyOpenRows(myRows);
+      setMyClosedRows(myClosed);
       setVisibleRows(filteredVisible);
       setVisibleRowsRawLoaded(visibleAll.length);
       setHasMoreVisibleRows(visibleProbeRows.length > 0);
@@ -1514,8 +1653,14 @@ export default function DemandBoxPage() {
       return;
     }
 
-    if (!safeStr(title)) {
-      showNotice("error", "Add what you need first.");
+    const selectedCategory = demandCategoryChoice(category);
+    if (!safeStr(category)) {
+      showNotice("error", "Choose the picture that best describes what you need.");
+      return;
+    }
+
+    if (!safeStr(title) && !voiceFile) {
+      showNotice("error", "Record a voice note or add a short heading.");
       return;
     }
 
@@ -1530,10 +1675,10 @@ export default function DemandBoxPage() {
     setCreating(true);
 
     try {
-      const created = await createMarketplaceRequest({
-        title: safeStr(title),
+      const payload = {
+        title: safeStr(title) || selectedCategory.title,
         description: buildDemandDescription(description, responseEvidence, targetHandle),
-        category: safeStr(category) || undefined,
+        category: selectedCategory.value,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
         whatsapp_number: safeStr(whatsappNumber) || undefined,
@@ -1543,8 +1688,13 @@ export default function DemandBoxPage() {
         allow_one_hop_relay:
           visibilityScope === DEMAND_VISIBILITY_COMMUNITY && allowOneHopRelay,
         visibility_scope: visibilityScope,
+        client_request_id: demandClientKey("demand-request"),
+        show_sender_photo: Boolean(showSenderPhoto && safeStr(me?.profile_image_url)),
         clan_id: selectedClanId,
-      });
+      };
+      const created = voiceFile
+        ? await createMarketplaceVoiceRequest(payload, voiceFile)
+        : await createMarketplaceRequest(payload);
 
       setActiveQueueLane("mine");
       setMyOpenRows((currentRows) => uniqueDemandRows([created, ...currentRows]));
@@ -1562,6 +1712,8 @@ export default function DemandBoxPage() {
       setResponseEvidence("");
       setAllowTrustCredit(false);
       setAllowOneHopRelay(false);
+      setVoiceFile(null);
+      setShowSenderPhoto(false);
 
       await loadPage();
       setCreatePanelOpen(false);
@@ -1585,6 +1737,28 @@ export default function DemandBoxPage() {
       }
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleRepostDemand(row: DemandRow) {
+    const demandId = positiveNumber(row?.id);
+    if (!demandId) return;
+    setRepostingDemandId(demandId);
+    try {
+      await repostMarketplaceRequest(
+        demandId,
+        demandClientKey("demand-repost")
+      );
+      await loadPage();
+      setActiveQueueLane("mine");
+      showNotice(
+        "success",
+        "Request posted again. Photo sharing and wider-search consent were reset."
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Request could not be posted again.");
+    } finally {
+      setRepostingDemandId(0);
     }
   }
 
@@ -2268,11 +2442,19 @@ export default function DemandBoxPage() {
                   }}
                 >
                   <GsnLegacyIcon
-                    name={fromAskCommunity ? "community" : "megaphone"}
+                    name={
+                      fromAskCommunity
+                        ? "community"
+                        : demandCategoryChoice(row?.category).icon
+                    }
                     size={27}
                   />
                 </span>
               </div>
+
+              {scope === "community" ? (
+                <DemandSenderIdentity row={row} dark />
+              ) : null}
 
               <div
                 style={{
@@ -2333,6 +2515,11 @@ export default function DemandBoxPage() {
               minWidth: 0,
             }}
           >
+            {scope === "community" ? (
+              <div style={{ marginBottom: 9 }}>
+                <DemandSenderIdentity row={row} />
+              </div>
+            ) : null}
             {isCompact ? (
               <div
                 style={{
@@ -2683,6 +2870,47 @@ export default function DemandBoxPage() {
           )}
 
           <div style={{ padding: isCompact ? "0 12px 12px" : undefined }}>
+          {positiveNumber(row?.audio_attachment_id) ? (
+            <div style={{ marginTop: 10 }}>
+              <ProtectedVoiceNotePlayer
+                attachmentId={positiveNumber(row?.audio_attachment_id)}
+                durationSeconds={row?.audio_duration_seconds}
+                debugId={`${debugBase}.listen`}
+                label="Request voice note"
+              />
+            </div>
+          ) : null}
+
+          {!isCompact && rowId ? (
+            <div style={{ marginTop: 10 }}>
+              <SecondaryButton
+                type="button"
+                onClick={() =>
+                  setOpenDemandDetailTab(
+                    activeDetailTab === "replies" ? "" : `${detailTabPrefix}replies`
+                  )
+                }
+                fullWidth
+                stableHeight={50}
+                debugId={`${debugBase}.private-replies`}
+              >
+                {demandIconText("audio", "Listen & reply", 20)}
+              </SecondaryButton>
+            </div>
+          ) : null}
+
+          {rowId && (isCompact || activeDetailTab === "replies") ? (
+            <div style={{ marginTop: 10 }}>
+              <DemandResponsePanel
+                requestId={rowId}
+                ownerUserId={positiveNumber(row?.user_id)}
+                currentUser={me}
+                isOwner={scope === "owner"}
+                compact={isCompact}
+              />
+            </div>
+          ) : null}
+
           {renderDemandMatchPanel(row, matchState, debugBase)}
           {renderExpandedSearchPanel(row, matchState, debugBase)}
 
@@ -3724,32 +3952,85 @@ export default function DemandBoxPage() {
               }}
             >
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
+                <div>{demandCreateFieldLabel("image", "What kind of help is this?")}</div>
+                <div
+                  data-gsn-demand-category-pictures="true"
+                  style={{
+                    marginTop: 8,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "repeat(3, minmax(0, 1fr))"
+                      : "repeat(6, minmax(0, 1fr))",
+                    gap: 9,
+                  }}
+                >
+                  {DEMAND_CATEGORY_CHOICES.map((choice) => {
+                    const active = category === choice.value;
+                    return (
+                      <SecondaryButton
+                        key={choice.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setCategory(choice.value)}
+                        stableHeight={76}
+                        debugId={`demand-box.category-choice.${choice.value.toLowerCase()}`}
+                        style={{
+                          borderRadius: 16,
+                          padding: "8px 5px",
+                          display: "grid",
+                          placeItems: "center",
+                          gap: 3,
+                          color: active ? "#FFFFFF" : "#0B1F33",
+                          background: active
+                            ? "linear-gradient(180deg, #116DDA 0%, #0755B5 100%)"
+                            : "#FFFFFF",
+                          border: active
+                            ? "2px solid rgba(242,199,102,0.92)"
+                            : "1px solid rgba(13,95,168,0.16)",
+                          fontSize: 11,
+                        }}
+                      >
+                        <GsnLegacyIcon name={choice.icon} size={28} />
+                        <span>{choice.label}</span>
+                      </SecondaryButton>
+                    );
+                  })}
+                </div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
+                  The picture describes the subject only. It is not a provider or availability claim.
+                </div>
+              </div>
+
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 2 }}>
+                <VoiceNoteRecorder
+                  value={voiceFile}
+                  onChange={setVoiceFile}
+                  maxSeconds={60}
+                  disabled={creating}
+                  debugPrefix="demand-box.request.voice"
+                  compact={isCompact}
+                />
+              </div>
+
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
                 <label htmlFor="demand-box-title">
-                  {demandCreateFieldLabel("megaphone", "What do you need?")}
+                  {demandCreateFieldLabel("megaphone", "Short heading")}
                 </label>
                 <input
                   id="demand-box-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Example: Need 5 bags of rice this week"
-                  style={{ ...demandCreateInputStyle(), marginTop: 8 }}
-                />
-              </div>
-              <div style={{ order: 2 }}>
-                <label htmlFor="demand-box-type">
-                  {demandCreateFieldLabel("tag", "Type")}
-                </label>
-                <input
-                  id="demand-box-type"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Food, vacancy, repair, transport"
+                  placeholder={
+                    voiceFile
+                      ? "Optional when your voice note explains the need"
+                      : "Example: Need a taxi to the clinic"
+                  }
                   style={{ ...demandCreateInputStyle(), marginTop: 8 }}
                 />
               </div>
 
               {visibilityScope === DEMAND_VISIBILITY_PROTECTED ? (
-              <div style={{ order: 5 }}>
+              <div style={{ order: 6 }}>
                 <label htmlFor="demand-box-person" style={sectionLabel()}>Choose person</label>
                 <input
                   id="demand-box-person"
@@ -3800,7 +4081,7 @@ export default function DemandBoxPage() {
                 ) : null}
               </div>
               ) : null}
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 4 }}>
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 5 }}>
                 <div>
                   {demandCreateFieldLabel("community", "Who can see it?")}
                 </div>
@@ -3844,7 +4125,7 @@ export default function DemandBoxPage() {
                     : "Members in this community can see it."}
                 </div>
               </div>
-              <div style={{ order: 3 }}>
+              <div style={{ order: 4 }}>
                 <label htmlFor="demand-box-area">
                   {demandCreateFieldLabel("navigation", "Area")}
                 </label>
@@ -3861,7 +4142,7 @@ export default function DemandBoxPage() {
                 style={{
                   ...detailsShell(),
                   gridColumn: isCompact ? "auto" : "1 / span 2",
-                  order: 6,
+                  order: 7,
                   borderRadius: 20,
                   border: "1px solid rgba(79,139,211,0.20)",
                   boxShadow: "0 12px 24px rgba(22,76,132,0.10)",
@@ -4004,6 +4285,47 @@ export default function DemandBoxPage() {
                   Trust credit may be discussed
                 </label>
               </div>
+
+              {safeStr(me?.profile_image_url) ? (
+                <div
+                  data-gsn-demand-photo-consent="true"
+                  style={{ ...innerCard("#F8FBFF"), gridColumn: isCompact ? "auto" : "1 / span 2" }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      color: "#0B1F33",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showSenderPhoto}
+                      onChange={(e) => setShowSenderPhoto(e.target.checked)}
+                    />
+                    <img
+                      src={resolveProfileImageUrl(me?.profile_image_url)}
+                      alt=""
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 999,
+                        objectFit: "cover",
+                        border: "1px solid rgba(13,95,168,0.16)",
+                      }}
+                    />
+                    <span>
+                      Show my current profile photo beside this request.
+                      <span style={{ display: "block", marginTop: 5, color: "#587087", fontSize: 12, fontWeight: 700 }}>
+                        Optional. It may help people recognise you, but it does not prove reliability.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              ) : null}
 
               <div style={{ ...innerCard("#F8FBFF"), gridColumn: isCompact ? "auto" : "1 / span 2" }}>
                 <label
@@ -4311,6 +4633,38 @@ export default function DemandBoxPage() {
               </div>
             </div>
           ) : null}
+        </section>
+      ) : null}
+
+      {myClosedRows.length > 0 ? (
+        <section
+          data-gsn-demand-past-requests="true"
+          style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 12 : 18 }}
+        >
+          <details style={detailsShell()}>
+            <StableDisclosureSummary
+              style={detailsSummary()}
+              stableHeight={56}
+              debugId="demand-box.history.open"
+            >
+              <span>Past requests</span>
+              <span style={{ color: "#64748B", fontSize: 12 }}>
+                {myClosedRows.length} saved
+              </span>
+            </StableDisclosureSummary>
+            <div style={{ padding: "0 12px 12px", display: "grid", gap: 10 }}>
+              {myClosedRows.slice(0, 12).map((row) =>
+                positiveNumber(row?.id) ? (
+                  <DemandHistoryCard
+                    key={positiveNumber(row?.id)}
+                    row={row as any}
+                    busy={repostingDemandId === positiveNumber(row?.id)}
+                    onRepost={() => void handleRepostDemand(row)}
+                  />
+                ) : null
+              )}
+            </div>
+          </details>
         </section>
       ) : null}
     </div>

@@ -79,6 +79,7 @@ async function installApiMocks(page) {
         user_id: 216,
         display_name: "Ada Example",
         gmfn_id: "GSN-U-216",
+        profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
         role: "member",
       }));
     }
@@ -97,6 +98,9 @@ async function installApiMocks(page) {
     }
     if (/^\/marketplace\/requests\/\d+\/supply-matches$/.test(path)) {
       return route.fulfill(json({ count: 0, matches: [] }));
+    }
+    if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
+      return route.fulfill(json([]));
     }
     if (path === "/marketplace/requests" && method === "GET") {
       const mineOnly = url.searchParams.get("mine_only") === "true";
@@ -261,8 +265,14 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(createVisuals.shellBackground.includes("radial-gradient"), "The approved blue-purple DemandBox background is missing.");
   assert(createVisuals.cardBackground.includes("linear-gradient"), "The approved light DemandBox card is missing.");
   assert(createVisuals.cardShadow !== "none", "The approved DemandBox card glow is missing.");
-  assert(await page.getByLabel("What do you need?").isVisible(), "Need field is missing.");
-  assert(await page.getByLabel("Type").isVisible(), "Type field is missing.");
+  for (const label of ["Transport", "Repairs", "Food", "Books", "Housing", "Other"]) {
+    assert(
+      await form.getByRole("button", { name: label, exact: true }).isVisible(),
+      "Category picture choice is missing: " + label
+    );
+  }
+  assert(await page.getByRole("button", { name: "Record", exact: true }).isVisible(), "Voice recorder is missing.");
+  assert(await page.getByLabel("Short heading").isVisible(), "Short heading field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
@@ -279,6 +289,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByLabel("Payment").isVisible(), "Payment preference is not reachable.");
   assert(await page.getByLabel("Proof needed").isVisible(), "Proof preference is not reachable.");
   assert(await page.getByLabel("Hours open").isVisible(), "Expiry is not reachable.");
+  assert(await page.getByText("Show my current profile photo beside this request.", { exact: false }).isVisible(), "Optional sender-photo consent is not reachable.");
   await page.getByRole("button", { name: "One person", exact: true }).click();
   assert((await page.getByRole("button", { name: "One person", exact: true }).getAttribute("aria-pressed")) === "true", "One-person visibility did not become visibly selected.");
   assert(await page.getByLabel("Choose person").isVisible(), "The private person chooser did not appear.");

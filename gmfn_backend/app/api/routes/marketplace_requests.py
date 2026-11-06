@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -12,7 +11,17 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import Clan, ClanMembership, MarketplaceProduct, MarketplaceRequest, MarketplaceShop, User, UserSettings
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    DemandAudioAttachment,
+    MarketplaceProduct,
+    MarketplaceRequest,
+    MarketplaceRequestActivity,
+    MarketplaceShop,
+    User,
+    UserSettings,
+)
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.community_domain_feature_policy import require_domain_demand_box_enabled
 from app.services.demand_supply_intelligence_service import (
@@ -21,6 +30,19 @@ from app.services.demand_supply_intelligence_service import (
     find_demands_for_supply,
     find_supply_for_demand,
     resolve_demand_supply_trade_handoff,
+)
+from app.services.demand_box_access_service import (
+    VISIBILITY_SCOPE_COMMUNITY,
+    VISIBILITY_SCOPE_PROTECTED_TARGET,
+    is_protected_target_request as _is_protected_target_request,
+    mentioned_handles as _mentioned_handles,
+    mentioned_member_ids as _mentioned_member_ids,
+    normalize_visibility_scope as _normalize_visibility_scope,
+    public_description as _public_description,
+    request_visibility_query_clause,
+    request_visibility_scope as _request_visibility_scope,
+    request_visible_to_user as _row_visible_to_user,
+    stored_description as _stored_description,
 )
 from app.services.marketplace_relay_governance_service import (
     latest_relay_consent,
@@ -41,9 +63,6 @@ router = APIRouter(prefix="/marketplace/requests", tags=["marketplace-requests"]
 MAX_REQUESTS_PER_USER_24H = 5
 REQUEST_QUOTA_WINDOW_HOURS = 24
 DEFAULT_EXPIRY_HOURS = 48
-VISIBILITY_SCOPE_COMMUNITY = "community_visible"
-VISIBILITY_SCOPE_PROTECTED_TARGET = "protected_target"
-PROTECTED_TARGET_MARKER = "[GSN_VISIBILITY_SCOPE:protected_target]"
 
 
 def _now_utc() -> datetime:
@@ -71,6 +90,14 @@ def _cleanup_expired_requests(db: Session) -> None:
     changed = False
     for row in rows:
         row.status = "expired"
+        db.add(
+            MarketplaceRequestActivity(
+                marketplace_request_id=int(row.id),
+                actor_user_id=None,
+                event_type="expired",
+                detail="Request expired automatically.",
+            )
+        )
         changed = True
     if changed:
         db.commit()
@@ -238,9 +265,6 @@ def _visible_user_ids_for_marketplace_requests(
     return visible_ids
 
 
-_HANDLE_PATTERN = re.compile(r"@([A-Za-z0-9][A-Za-z0-9_.-]{2,63})")
-
-
 def _safe_text(value: object) -> str:
     return str(value or "").strip()
 
@@ -273,66 +297,6 @@ def _public_trust_posture(user: User | None) -> tuple[float | None, str | None]:
     band = _safe_text(getattr(user, "trust_band", None)) or None
     return (float(score) if score is not None else None), band
 
-def _normalize_visibility_scope(value: str | None) -> str:
-    raw = _safe_text(value).lower().replace("-", "_").replace(" ", "_")
-    if raw in {
-        "protected_target",
-        "private_target",
-        "targeted_private",
-        "ask_person",
-        "ask_leader",
-        "ask_pastor",
-        "person_only",
-    }:
-        return VISIBILITY_SCOPE_PROTECTED_TARGET
-    return VISIBILITY_SCOPE_COMMUNITY
-
-
-def _stored_description(description: str | None, visibility_scope: str) -> str | None:
-    body = _safe_text(description)
-    if visibility_scope != VISIBILITY_SCOPE_PROTECTED_TARGET:
-        return body or None
-    parts = [PROTECTED_TARGET_MARKER]
-    if body:
-        parts.append(body)
-    return "\n\n".join(parts)
-
-
-def _public_description(row: MarketplaceRequest) -> str | None:
-    description = _safe_text(getattr(row, "description", None))
-    if not description:
-        return None
-    cleaned = "\n".join(
-        line
-        for line in description.splitlines()
-        if line.strip() != PROTECTED_TARGET_MARKER
-    ).strip()
-    return cleaned or None
-
-
-def _request_visibility_scope(row: MarketplaceRequest) -> str:
-    description = _safe_text(getattr(row, "description", None))
-    if PROTECTED_TARGET_MARKER in description:
-        return VISIBILITY_SCOPE_PROTECTED_TARGET
-    return VISIBILITY_SCOPE_COMMUNITY
-
-
-def _is_protected_target_request(row: MarketplaceRequest) -> bool:
-    return _request_visibility_scope(row) == VISIBILITY_SCOPE_PROTECTED_TARGET
-
-def _request_text(row: MarketplaceRequest) -> str:
-    return " ".join(
-        part
-        for part in [
-            _safe_text(getattr(row, "title", None)),
-            _safe_text(_public_description(row)),
-            _safe_text(getattr(row, "category", None)),
-            _safe_text(getattr(row, "area", None)),
-        ]
-        if part
-    )
-
-
 def _is_ask_community_request(row: MarketplaceRequest) -> bool:
     category = _safe_text(getattr(row, "category", None)).lower()
     description = _safe_text(getattr(row, "description", None)).lower()
@@ -361,52 +325,6 @@ def _request_need_type(row: MarketplaceRequest) -> str:
         or _safe_text(getattr(row, "area", None))
         or "General"
     )
-
-
-def _mentioned_handles(row: MarketplaceRequest) -> list[str]:
-    found: list[str] = []
-    seen: set[str] = set()
-    for match in _HANDLE_PATTERN.finditer(_request_text(row)):
-        token = match.group(1).strip(".,;:!?)]}")
-        if not token:
-            continue
-        handle = f"@{token}"
-        key = handle.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        found.append(handle)
-        if len(found) >= 8:
-            break
-    return found
-
-
-def _handle_key(value: str) -> str:
-    return _safe_text(value).lstrip("@").lower()
-
-
-def _mentioned_member_ids(db: Session, row: MarketplaceRequest) -> set[int]:
-    handle_keys = {_handle_key(handle) for handle in _mentioned_handles(row)}
-    handle_keys.discard("")
-    clan_id = getattr(row, "clan_id", None)
-    if not handle_keys or not clan_id:
-        return set()
-
-    rows = (
-        db.query(User.id, User.gmfn_id)
-        .join(ClanMembership, ClanMembership.user_id == User.id)
-        .filter(
-            ClanMembership.clan_id == int(clan_id),
-            ClanMembership.left_at.is_(None),
-            User.gmfn_id.isnot(None),
-        )
-        .all()
-    )
-    return {
-        int(user_id)
-        for user_id, gmfn_id in rows
-        if _handle_key(str(gmfn_id)) in handle_keys
-    }
 
 
 def _request_queue_keys(
@@ -499,6 +417,11 @@ def _to_out(
         current_user_id is not None and int(current_user_id) in mentioned_member_ids
     )
     requester_trust_score, requester_trust_band = _public_trust_posture(owner)
+    audio = (
+        db.query(DemandAudioAttachment)
+        .filter(DemandAudioAttachment.marketplace_request_id == int(row.id))
+        .first()
+    )
     return MarketplaceRequestOut(
         id=row.id,
         clan_id=getattr(row, "clan_id", None),
@@ -528,6 +451,11 @@ def _to_out(
         requester_nickname=None,
         requester_gmfn_id=getattr(owner, "gmfn_id", None),
         requester_email=None,
+        requester_profile_image_url=(
+            getattr(owner, "profile_image_url", None)
+            if bool(getattr(row, "show_sender_photo", False))
+            else None
+        ),
         requester_trust_score=requester_trust_score,
         requester_trust_band=requester_trust_band,
         is_mine=is_mine,
@@ -552,20 +480,11 @@ def _to_out(
             mentioned_member_ids=mentioned_member_ids,
         ),
         visibility_scope=_request_visibility_scope(row),
+        reposted_from_request_id=getattr(row, "reposted_from_request_id", None),
+        client_request_id=getattr(row, "client_request_id", None) if is_mine else None,
+        audio_attachment_id=int(audio.id) if audio else None,
+        audio_duration_seconds=float(audio.duration_seconds) if audio else None,
     )
-
-def _row_visible_to_user(
-    db: Session,
-    row: MarketplaceRequest,
-    *,
-    current_user_id: int,
-) -> bool:
-    if int(row.user_id) == int(current_user_id):
-        return True
-    if not _is_protected_target_request(row):
-        return True
-    return int(current_user_id) in _mentioned_member_ids(db, row)
-
 
 def _as_aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
@@ -673,6 +592,24 @@ def create_marketplace_request(
 
     _cleanup_expired_requests(db)
 
+    client_request_id = _safe_text(payload.client_request_id) or None
+    if client_request_id:
+        existing = (
+            db.query(MarketplaceRequest)
+            .filter(
+                MarketplaceRequest.user_id == int(current_user.id),
+                MarketplaceRequest.client_request_id == client_request_id,
+            )
+            .first()
+        )
+        if existing:
+            return _to_out(
+                db,
+                existing,
+                current_user,
+                current_user_id=int(current_user.id),
+            )
+
     recent_open_count = _recent_open_request_count(db, current_user.id)
     if recent_open_count >= MAX_REQUESTS_PER_USER_24H:
         raise HTTPException(
@@ -696,6 +633,8 @@ def create_marketplace_request(
     row = MarketplaceRequest(
         clan_id=request_clan_id,
         user_id=current_user.id,
+        client_request_id=client_request_id,
+        show_sender_photo=bool(payload.show_sender_photo),
         title=payload.title.strip(),
         description=_stored_description(payload.description, visibility_scope),
         category=(payload.category or "").strip() or None,
@@ -719,6 +658,14 @@ def create_marketplace_request(
         )
     db.add(row)
     db.flush()
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=int(row.id),
+            actor_user_id=int(current_user.id),
+            event_type="created",
+            detail="Request posted.",
+        )
+    )
     if payload.allow_one_hop_relay:
         record_relay_consent(
             db,
@@ -755,7 +702,7 @@ def create_marketplace_request(
                 if tagged_for_recipient
                 else "New request near you"
             ),
-            message=f"{current_user.email} needs: {payload.title}",
+            message=f"{_public_requester_display_name(current_user)} needs: {payload.title}",
             action_url=_request_action_url(
                 row,
                 "tagged" if tagged_for_recipient else None,
@@ -853,6 +800,8 @@ def list_marketplace_requests(
 
     if area:
         q = q.filter(MarketplaceRequest.area.ilike(f"%{area.strip()}%"))
+
+    q = q.filter(request_visibility_query_clause(current_user=current_user))
 
     offset_value = offset if isinstance(offset, int) else 0
 
@@ -1041,6 +990,14 @@ def update_marketplace_request_status(
         raise HTTPException(status_code=400, detail="Invalid status")
 
     row.status = new_status
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=int(row.id),
+            actor_user_id=int(current_user.id),
+            event_type=new_status,
+            detail=f"Request marked {new_status}.",
+        )
+    )
     db.commit()
     db.refresh(row)
     return _to_out(db, row, current_user, current_user_id=int(current_user.id))

@@ -63,6 +63,24 @@ Compaction changes no rotation, qualification, payment, or expiry clock. The
 hourly production pass also retries pending managed-media deletion tasks and
 logs both successful work and failures.
 
+## Current DemandBox voice behavior
+
+DemandBox request and reply voice notes are private user-authored communication
+payload. They are stored below a non-public uploads namespace and can be read
+only through authenticated audience checks. Request expiry or closure does not
+delete the voice note or its lifecycle record; expiry is a state transition, not
+evidence that the member intended permanent deletion.
+
+The minimal request, reply, activity, audience, attribution, and repost-link
+rows are retained as history. `Post again` creates a separately referenced
+audio object for the linked new request so one request cannot silently depend
+on another request's file lifecycle. The current pilot exposes no permanent
+DemandBox deletion action and runs no expiry-based voice cleanup. Any future
+deletion feature must first add explicit owner wording, preserve required
+activity/attribution evidence, remove only attachments whose parent is being
+permanently removed, and verify that no surviving request or reply references
+the physical object.
+
 ## Future-feature checklist
 
 Every new deletion or retention feature must define:

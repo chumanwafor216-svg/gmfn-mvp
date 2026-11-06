@@ -946,6 +946,61 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
         assert notifications == []
 
 
+def test_community_notice_board_excludes_private_demand_for_non_target_member(
+    client, override_current_user
+):
+    _seed_notice_community()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        private_target = db.get(User, 3)
+        private_target.gmfn_id = "GSN-U-PRIVATE-TARGET"
+        db.add(
+            ClanMembership(
+                clan_id=1,
+                user_id=3,
+                role="member",
+                personal_pool_balance=0,
+            )
+        )
+        db.add_all(
+            [
+                MarketplaceRequest(
+                    id=1,
+                    clan_id=1,
+                    user_id=2,
+                    title="Private help for @GSN-U-PRIVATE-TARGET",
+                    description=(
+                        "[GSN_VISIBILITY_SCOPE:protected_target]\n\n"
+                        "Only the intended person should see this."
+                    ),
+                    category="Private help",
+                    status="open",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+                MarketplaceRequest(
+                    id=2,
+                    clan_id=1,
+                    user_id=2,
+                    title="Community-visible help",
+                    category="General",
+                    status="open",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+            ]
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    body = list_res.json()
+
+    assert body["demand_signal_count"] == 1
+    assert [signal["request_id"] for signal in body["demand_signals"]] == [2]
+
+
 def test_community_notice_board_can_read_across_active_member_communities(
     client, override_current_user
 ):

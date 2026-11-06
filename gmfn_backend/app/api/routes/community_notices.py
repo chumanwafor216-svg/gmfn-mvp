@@ -33,6 +33,10 @@ from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.community_meeting_service import list_community_meetings
+from app.services.demand_box_access_service import (
+    request_visibility_query_clause,
+    request_visible_to_user,
+)
 from app.services.trust_events_services import log_trust_event
 
 
@@ -1602,6 +1606,7 @@ def _notice_board_demand_signals(
     db: Session,
     *,
     clan_id: int,
+    current_user: User,
     limit: int = NOTICE_BOARD_DEMAND_SIGNAL_LIMIT,
 ) -> tuple[list[dict[str, Any]], int]:
     now = datetime.now(timezone.utc)
@@ -1612,14 +1617,25 @@ def _notice_board_demand_signals(
             (MarketplaceRequest.expires_at.is_(None))
             | (MarketplaceRequest.expires_at > now)
         ),
+        request_visibility_query_clause(current_user=current_user),
     )
-    active_count = active_query.count()
-    rows = (
+    candidate_rows = (
         active_query.order_by(MarketplaceRequest.created_at.desc())
-        .limit(max(1, int(limit)))
         .all()
     )
-    return [_request_to_demand_signal(db, row) for row in rows], int(active_count)
+    visible_rows = [
+        row
+        for row in candidate_rows
+        if request_visible_to_user(
+            db,
+            row,
+            current_user_id=int(current_user.id),
+        )
+    ]
+    return (
+        [_request_to_demand_signal(db, row) for row in visible_rows[: max(1, int(limit))]],
+        len(visible_rows),
+    )
 
 
 class CommunityNoticeIn(BaseModel):
@@ -2059,7 +2075,11 @@ def list_notices(
         previous_announcements.sort(key=_notice_sort_time, reverse=True)
 
     demand_signals, demand_signal_count = (
-        _notice_board_demand_signals(db, clan_id=control_clan_id)
+        _notice_board_demand_signals(
+            db,
+            clan_id=control_clan_id,
+            current_user=current_user,
+        )
         if control_clan_id
         else ([], 0)
     )
