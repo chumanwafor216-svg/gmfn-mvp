@@ -57,3 +57,31 @@ Date: 2026-11-06
   untouched by this batch: `JoinEntryPage.tsx`, `MemberActivationPage.tsx`,
   `gmfn_backend/app/api/routes/clans.py`, and
   `gmfn_backend/tests/test_join_requests.py`.
+
+## Voice Submission Race Repair
+
+- Owner evidence: the supplied phone screenshots and WhatsApp video show the
+  broken current state, not an approved target. `Taxi needed` and `House.` open
+  a `Listen & reply` area but contain no playable original request recording.
+- Production root cause confirmed: both requests have no audio attachment. The
+  newer `House.` submission called the text-only marketplace request endpoint
+  and never called the protected voice endpoint. Storage, playback permission,
+  and protected download were therefore not the cause.
+- Request and private-reply forms now receive active recorder state. Post/Send
+  remains locked and says `Stop recording first` until Stop finishes, creates
+  the `File`, and reports `Voice note ready`. The file reaches the parent form
+  before submission unlocks, preventing silent text-only fallback while a
+  recording is active.
+- Requests with attached audio keep `Listen & reply`; requests without attached
+  audio now say `Reply privately` instead of promising unavailable playback.
+- Existing request/reply APIs, protected-audio access boundaries, sender-only
+  permanent deletion, audience rules, selected-community behavior, and backend
+  storage contracts remain unchanged.
+- Verification passed: DemandBox front-package audit; phone browser journeys at
+  `390x844` and `360x780` proving Record locks Post, Stop finalizes the file,
+  and submission uses `/demand-box/requests/voice` without text-only fallback;
+  the production frontend build; and all four focused protected-voice and
+  private-response backend tests.
+- Recovery truth: the missing `Taxi needed` and `House.` recordings were never
+  uploaded and cannot be reconstructed. After deployment, a new recording must
+  be posted to verify the corrected physical-phone path.

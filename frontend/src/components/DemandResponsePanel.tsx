@@ -43,6 +43,7 @@ export default function DemandResponsePanel({
   const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [voice, setVoice] = useState<File | null>(null);
+  const [voiceRecording, setVoiceRecording] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [recipientUserId, setRecipientUserId] = useState(0);
   const [error, setError] = useState("");
@@ -94,6 +95,10 @@ export default function DemandResponsePanel({
   }, [isOwner, participants, recipientUserId]);
 
   async function send() {
+    if (voiceRecording) {
+      setError("Tap Stop and wait for Voice note ready before sending your reply.");
+      return;
+    }
     if (!text.trim() && !voice) {
       setError("Add a short message or voice note.");
       return;
@@ -270,8 +275,9 @@ export default function DemandResponsePanel({
           <VoiceNoteRecorder
             value={voice}
             onChange={setVoice}
+            onRecordingChange={setVoiceRecording}
             maxSeconds={60}
-            disabled={sending}
+            disabled={sending || voiceRecording}
             debugPrefix={`demand-box.response.${requestId}.voice`}
             compact
           />
@@ -310,9 +316,14 @@ export default function DemandResponsePanel({
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <GsnLegacyIcon name="audio" size={21} />
-              Send private reply
+              {voiceRecording ? "Stop recording first" : "Send private reply"}
             </span>
           </PrimaryButton>
+          {voiceRecording ? (
+            <div style={{ color: "#587087", fontSize: 12, textAlign: "center" }}>
+              Tap Stop above. Sending unlocks when your voice note is ready.
+            </div>
+          ) : null}
         </div>
       )}
 

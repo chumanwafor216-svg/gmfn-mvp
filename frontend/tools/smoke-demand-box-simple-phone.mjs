@@ -70,7 +70,7 @@ const requests = [
   },
 ];
 
-async function installApiMocks(page) {
+async function installApiMocks(page, apiCalls) {
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -124,8 +124,22 @@ async function installApiMocks(page) {
       return route.fulfill(json(mineOnly ? requests.filter((row) => row.is_mine) : requests));
     }
     if (path === "/marketplace/requests" && method === "POST") {
+      apiCalls.textRequestPosts += 1;
       const body = request.postDataJSON();
       return route.fulfill(json({ id: 74, user_id: 216, status: "open", is_mine: true, ...body }));
+    }
+    if (path === "/demand-box/requests/voice" && method === "POST") {
+      apiCalls.voiceRequestPosts += 1;
+      return route.fulfill(json({
+        id: 74,
+        user_id: 216,
+        title: "Need a taxi",
+        category: "Transport",
+        status: "open",
+        is_mine: true,
+        audio_attachment_id: 901,
+        audio_duration_seconds: 1,
+      }));
     }
     if (url.pathname.startsWith("/api/") || url.origin === "http://127.0.0.1:8012") {
       return route.fulfill(json({ items: [], results: [], status: "ok" }));
@@ -136,15 +150,47 @@ async function installApiMocks(page) {
 
 async function verifyViewport(browser, baseURL, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true });
+  const apiCalls = { textRequestPosts: 0, voiceRequestPosts: 0 };
   page.setDefaultTimeout(45000);
   page.on("pageerror", (error) => console.error("Browser page error:", error));
   page.on("console", (message) => {
     if (message.type() === "error") console.error("Browser console error:", message.text());
   });
-  await installApiMocks(page);
+  await installApiMocks(page, apiCalls);
   await page.addInitScript(() => {
     localStorage.setItem("access_token", "local-demand-box-token");
     localStorage.setItem("gmfn_selected_clan_id", "8");
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: async () => ({
+          getTracks: () => [{ stop() {} }],
+        }),
+      },
+    });
+    class FakeMediaRecorder {
+      static isTypeSupported() {
+        return true;
+      }
+
+      constructor(stream, options = {}) {
+        this.stream = stream;
+        this.mimeType = options.mimeType || "audio/webm";
+        this.state = "inactive";
+      }
+
+      start() {
+        this.state = "recording";
+      }
+
+      stop() {
+        this.state = "inactive";
+        const data = new Blob(["recorded voice"], { type: this.mimeType });
+        this.ondataavailable?.({ data });
+        queueMicrotask(() => this.onstop?.());
+      }
+    }
+    window.MediaRecorder = FakeMediaRecorder;
   });
 
   await page.goto(baseURL + "/app/demand-box", { waitUntil: "domcontentloaded", timeout: 180000 });
@@ -191,6 +237,10 @@ async function verifyViewport(browser, baseURL, viewport) {
     .evaluate((element) => element.click());
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "Opened request detail is missing.");
   assert(await page.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
+  assert(
+    await transportCard.getByRole("button", { name: "Reply privately", exact: true }).isVisible(),
+    "A request without audio still promises that members can listen."
+  );
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
@@ -364,6 +414,24 @@ async function verifyViewport(browser, baseURL, viewport) {
   }));
   assert(createGeometry.noOverflow, "The premium create card overflows horizontally.");
   assert(createGeometry.width <= viewport.width - 24, "The premium create card is too wide for the phone viewport.");
+
+  await page.getByRole("button", { name: "Community", exact: true }).click();
+  await form.getByRole("button", { name: "Transport", exact: true }).click();
+  await page.getByLabel("Short heading").fill("Need a taxi");
+  await page.getByRole("button", { name: "Record", exact: true }).click();
+  const postButton = page.locator('[data-cta-id="demand-box.post"]');
+  assert(await postButton.isDisabled(), "Post need stayed enabled while voice recording was active.");
+  assert(
+    await postButton.getByText("Stop recording first", { exact: true }).isVisible(),
+    "The active recording did not explain why posting was locked."
+  );
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await page.getByText("Voice note ready", { exact: true }).waitFor();
+  assert(!(await postButton.isDisabled()), "Post need did not unlock after the voice file became ready.");
+  await postButton.click();
+  await page.waitForFunction(() => !document.querySelector('[data-gsn-demand-create-form="simple"]'));
+  assert(apiCalls.voiceRequestPosts === 1, "The ready recording did not use the protected voice request endpoint.");
+  assert(apiCalls.textRequestPosts === 0, "The recorded request silently fell back to the text-only endpoint.");
 
   const overflow = await page.locator("body").evaluate((node) => node.scrollWidth > node.clientWidth + 1);
   assert(!overflow, "DemandBox overflows at " + viewport.width + "x" + viewport.height + ".");

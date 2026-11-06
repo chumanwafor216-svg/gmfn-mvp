@@ -8,12 +8,16 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pageFile = "src/pages/DemandBoxPage.tsx";
 const apiFile = "src/lib/api.ts";
 const protectedVoiceFile = "src/components/ProtectedVoiceNotePlayer.tsx";
+const recorderFile = "src/components/VoiceNoteRecorder.tsx";
+const responsePanelFile = "src/components/DemandResponsePanel.tsx";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
 const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
 const protectedVoiceSource = readFileSync(
   join(frontendRoot, protectedVoiceFile),
   "utf8"
 );
+const recorderSource = readFileSync(join(frontendRoot, recorderFile), "utf8");
+const responsePanelSource = readFileSync(join(frontendRoot, responsePanelFile), "utf8");
 const failures = [];
 
 function requirePattern(input, file, pattern, message) {
@@ -41,7 +45,9 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-privacy-route="true"[\s\S]*?demand-box\.visibility\.community[\s\S]*?Community[\s\S]*?demand-box\.visibility\.protected-target[\s\S]*?One person/, "the main form must keep an explicit community or one-person choice"],
   [/visibilityScope === DEMAND_VISIBILITY_PROTECTED[\s\S]*?htmlFor="demand-box-person"[\s\S]*?Choose person[\s\S]*?demand-box-gsn-member-handles/, "the person chooser must appear only for the private route"],
   [/debugId="demand-box\.more-options"[\s\S]*?Short explanation[\s\S]*?WhatsApp number[\s\S]*?Urgency[\s\S]*?Payment[\s\S]*?Proof needed[\s\S]*?Hours open[\s\S]*?Trust credit may be discussed[\s\S]*?Search one more community if needed/, "all optional create controls must remain reachable behind one disclosure"],
-  [/debugId="demand-box\.post"[\s\S]*?Post need/, "the post action must remain stable and plain"],
+  [/onRecordingChange=\{setVoiceRecording\}/, "the request form must receive the recorder's active state"],
+  [/if \(voiceRecording\)[\s\S]*?Tap Stop and wait for Voice note ready before posting/, "request submission must reject an unfinished recording"],
+  [/disabled=\{creating \|\| voiceRecording\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?Stop recording first[\s\S]*?Post need/, "the post action must stay locked until recorded audio is ready"],
   [/visibilityScope === DEMAND_VISIBILITY_PROTECTED && !selectedTagMember[\s\S]*?Choose a matched GSN handle/, "private posting must still require a matched community member"],
   [/visibility_scope: visibilityScope/, "the selected privacy scope must still reach the API payload"],
   [/buildDemandDescription\(description, responseEvidence, targetHandle\)/, "optional explanation, proof, and member tag must still reach the request"],
@@ -62,7 +68,7 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-past-requests="true"[\s\S]*?Past requests[\s\S]*?<DemandHistoryCard/, "closed requests must remain reachable in collapsed history"],
   [/const \[showSenderPhoto, setShowSenderPhoto\] = useState\(true\)/, "request portraits must begin included when a saved profile photo exists"],
   [/data-gsn-demand-photo-consent="true"[\s\S]*?Include my current profile photo[\s\S]*?Turn this off before posting/, "request portraits must remain visibly disableable before posting"],
-  [/debugId=\{[^\n]*private-replies[^\n]*\}[\s\S]*?Listen & reply[\s\S]*?Replies are private/, "the opened request must keep one clear private listen-and-reply action"],
+  [/debugId=\{[^\n]*private-replies[^\n]*\}[\s\S]*?audio_attachment_id[\s\S]*?Listen & reply[\s\S]*?Reply privately[\s\S]*?Replies are private/, "the opened request must promise listening only when request audio exists"],
   [/data-gsn-demand-detail-tabs="compact"[\s\S]*?\.request-details[\s\S]*?\.privacy-terms[\s\S]*?data-gsn-demand-detail-panel="request"[\s\S]*?data-gsn-demand-detail-panel="privacy"/, "phone metadata must stay behind the compact Request details and Privacy & terms tabs"],
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search in one other community[\s\S]*?Stop expanded search[\s\S]*?One-hop community search only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
   [/data-gsn-demand-action-dock=\{isCompact \? "compact" : "standard"\}[\s\S]*?demandDockStyle\(canClose \? 3 : 1\)[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep the calm three-action lifecycle dock"],
@@ -100,6 +106,19 @@ function forbidPattern(input, file, pattern, message) {
 ].forEach(([pattern, message]) =>
   requirePattern(protectedVoiceSource, protectedVoiceFile, pattern, message)
 );
+
+[
+  [/onRecordingChange\?: \(recording: boolean\) => void/, "the recorder must expose active recording state"],
+  [/onChange\([\s\S]*?new File[\s\S]*?onRecordingChange\?\.\(false\)/, "the recorder must deliver the file before unlocking submission"],
+  [/No voice was captured\. Record again before sending\./, "empty recordings must fail visibly"],
+  [/data-gsn-voice-recording=\{recording \? "true" : "false"\}/, "the recorder must expose its runtime state for regression checks"],
+].forEach(([pattern, message]) => requirePattern(recorderSource, recorderFile, pattern, message));
+
+[
+  [/onRecordingChange=\{setVoiceRecording\}/, "private replies must receive the recorder's active state"],
+  [/if \(voiceRecording\)[\s\S]*?Tap Stop and wait for Voice note ready before sending/, "private reply submission must reject an unfinished recording"],
+  [/disabled=\{sending \|\| voiceRecording\}[\s\S]*?Stop recording first[\s\S]*?Send private reply/, "private reply sending must stay locked until recorded audio is ready"],
+].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
 
 [
   [/Current state/, "the repeated Current state card must not return"],

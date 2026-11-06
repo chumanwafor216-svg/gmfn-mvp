@@ -1159,6 +1159,7 @@ export default function DemandBoxPage() {
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
   const [allowOneHopRelay, setAllowOneHopRelay] = useState(false);
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
+  const [voiceRecording, setVoiceRecording] = useState(false);
   const [showSenderPhoto, setShowSenderPhoto] = useState(true);
   const [relayPolicy, setRelayPolicy] = useState<MarketplaceRelayPolicy | null>(null);
   const [savingRelayPolicy, setSavingRelayPolicy] = useState(false);
@@ -1647,6 +1648,13 @@ export default function DemandBoxPage() {
   }
 
   async function handleCreateDemand() {
+    if (voiceRecording) {
+      showNotice(
+        "error",
+        "Tap Stop and wait for Voice note ready before posting your need."
+      );
+      return;
+    }
     if (!selectedClanId) {
       showNotice("error", "Select a community first before creating a demand.");
       return;
@@ -2912,7 +2920,13 @@ export default function DemandBoxPage() {
                   fontSize: 16,
                 }}
               >
-                {demandIconText("audio", "Listen & reply", 20)}
+                {demandIconText(
+                  "audio",
+                  positiveNumber(row?.audio_attachment_id) > 0
+                    ? "Listen & reply"
+                    : "Reply privately",
+                  20
+                )}
               </PrimaryButton>
               <div
                 style={{
@@ -4025,6 +4039,7 @@ export default function DemandBoxPage() {
                 <VoiceNoteRecorder
                   value={voiceFile}
                   onChange={setVoiceFile}
+                  onRecordingChange={setVoiceRecording}
                   maxSeconds={60}
                   disabled={creating}
                   debugPrefix="demand-box.request.voice"
@@ -4380,7 +4395,7 @@ export default function DemandBoxPage() {
             <div style={demandActionRowStyle(isCompact, 64, 180, 16)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
-                disabled={creating}
+                disabled={creating || voiceRecording}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
@@ -4397,9 +4412,18 @@ export default function DemandBoxPage() {
                   fontSize: 18,
                 }}
               >
-                {demandIconText("megaphone", "Post need", 24)}
+                {demandIconText(
+                  "megaphone",
+                  voiceRecording ? "Stop recording first" : "Post need",
+                  24
+                )}
               </PrimaryButton>
             </div>
+            {voiceRecording ? (
+              <div style={{ ...helperText(), fontSize: 12, textAlign: "center" }}>
+                Tap Stop above. Post need unlocks when your voice note is ready.
+              </div>
+            ) : null}
           </div>
         </div>
       </section>

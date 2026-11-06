@@ -5,6 +5,7 @@ import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 type VoiceNoteRecorderProps = {
   value: File | null;
   onChange: (file: File | null) => void;
+  onRecordingChange?: (recording: boolean) => void;
   maxSeconds?: number;
   disabled?: boolean;
   debugPrefix: string;
@@ -31,6 +32,7 @@ function extensionForMime(mimeType: string): string {
 export default function VoiceNoteRecorder({
   value,
   onChange,
+  onRecordingChange,
   maxSeconds = 60,
   disabled = false,
   debugPrefix,
@@ -89,6 +91,7 @@ export default function VoiceNoteRecorder({
       recorderRef.current = recorder;
       setSeconds(0);
       setRecording(true);
+      onRecordingChange?.(true);
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);
@@ -101,7 +104,6 @@ export default function VoiceNoteRecorder({
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         recorderRef.current = null;
-        setRecording(false);
         const resolvedMimeType =
           recorder.mimeType || mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: resolvedMimeType });
@@ -114,7 +116,11 @@ export default function VoiceNoteRecorder({
               { type: resolvedMimeType }
             )
           );
+        } else {
+          setError("No voice was captured. Record again before sending.");
         }
+        setRecording(false);
+        onRecordingChange?.(false);
       };
       recorder.start(250);
       timerRef.current = window.setInterval(() => {
@@ -129,12 +135,14 @@ export default function VoiceNoteRecorder({
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setRecording(false);
+      onRecordingChange?.(false);
     }
   }
 
   return (
     <div
       data-gsn-voice-note-recorder="true"
+      data-gsn-voice-recording={recording ? "true" : "false"}
       style={{
         padding: compact ? 12 : 14,
         borderRadius: 18,

@@ -1131,6 +1131,11 @@ Rules:
   transcription is not required; members may speak in their local language.
   Category pictures are subject cues only and are not supply, availability,
   recommendation, or provider claims.
+- While a request or private-reply recorder is active, its Post or Send action
+  remains locked until the member taps Stop and the recorder confirms `Voice
+  note ready`. The finished file must reach the parent form before submission
+  unlocks so a recording cannot silently become a text-only post. A request
+  without an attached voice file says `Reply privately`, not `Listen & reply`.
 - The create form shows only category, voice/short heading, area, and
   Community/One person
   visibility first. The matched-person chooser appears only for One person.
