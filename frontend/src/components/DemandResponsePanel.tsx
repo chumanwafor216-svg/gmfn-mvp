@@ -131,22 +131,22 @@ export default function DemandResponsePanel({
     <div
       data-gsn-demand-private-replies="true"
       style={{
-        padding: compact ? 12 : 14,
-        borderRadius: 18,
-        border: "1px solid rgba(13,95,168,0.16)",
-        background: "#FFFFFF",
+        padding: compact ? 0 : 14,
+        borderRadius: compact ? 0 : 18,
+        border: compact ? "none" : "1px solid rgba(13,95,168,0.16)",
+        background: compact ? "transparent" : "#FFFFFF",
         display: "grid",
         gap: 12,
       }}
     >
-      <div>
+      {!compact ? <div>
         <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
           Listen & reply
         </div>
         <div style={{ marginTop: 3, color: "#587087", fontSize: 12, lineHeight: 1.45 }}>
           Replies stay private between the requester and each responding member.
         </div>
-      </div>
+      </div> : null}
 
       {loading ? (
         <div style={{ color: "#587087", fontSize: 13 }}>Loading private replies...</div>

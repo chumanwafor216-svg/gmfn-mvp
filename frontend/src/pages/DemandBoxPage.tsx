@@ -58,7 +58,7 @@ import {
   normalizeWhatsAppRecipient,
 } from "../lib/whatsappLinks";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
-import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
+import demandBoxOpportunityHero from "../assets/dashboard/demand-box-opportunity-hero-v2.webp";
 
 const CommunityNoticeModal = lazy(
   () => import("../components/CommunityNoticeModal")
@@ -327,9 +327,9 @@ function demandHumanHeroShell(isCompact: boolean): React.CSSProperties {
     display: "flex",
     alignItems: "flex-end",
     backgroundImage: isCompact
-      ? `linear-gradient(90deg, rgba(3,17,31,0.96) 0%, rgba(3,17,31,0.82) 52%, rgba(3,17,31,0.24) 100%), linear-gradient(0deg, rgba(3,17,31,0.82) 0%, rgba(3,17,31,0.04) 70%), url("${dashboardDemandMarket}")`
-      : `linear-gradient(90deg, rgba(3,17,31,0.97) 0%, rgba(3,17,31,0.82) 44%, rgba(3,17,31,0.12) 78%), url("${dashboardDemandMarket}")`,
-    backgroundPosition: isCompact ? "center" : "center right",
+      ? `linear-gradient(90deg, rgba(3,17,31,0.96) 0%, rgba(3,17,31,0.78) 52%, rgba(3,17,31,0.10) 100%), linear-gradient(0deg, rgba(3,17,31,0.74) 0%, rgba(3,17,31,0.02) 72%), url("${demandBoxOpportunityHero}")`
+      : `linear-gradient(90deg, rgba(3,17,31,0.97) 0%, rgba(3,17,31,0.78) 44%, rgba(3,17,31,0.08) 78%), url("${demandBoxOpportunityHero}")`,
+    backgroundPosition: isCompact ? "58% center" : "center right",
     backgroundSize: "cover",
     backgroundRepeat: "no-repeat",
   };
@@ -981,12 +981,15 @@ function requesterName(row: DemandRow): string {
 function DemandSenderIdentity({
   row,
   dark = false,
+  prominent = false,
 }: {
   row: DemandRow;
   dark?: boolean;
+  prominent?: boolean;
 }) {
   const name = requesterName(row);
   const imageUrl = resolveProfileImageUrl(row?.requester_profile_image_url);
+  const portraitSize = prominent ? 54 : 38;
   return (
     <div
       data-gsn-demand-sender-identity="true"
@@ -997,8 +1000,8 @@ function DemandSenderIdentity({
           src={imageUrl}
           alt=""
           style={{
-            width: 38,
-            height: 38,
+            width: portraitSize,
+            height: portraitSize,
             borderRadius: 999,
             objectFit: "cover",
             border: dark
@@ -1010,8 +1013,8 @@ function DemandSenderIdentity({
         <span
           aria-hidden="true"
           style={{
-            width: 38,
-            height: 38,
+            width: portraitSize,
+            height: portraitSize,
             borderRadius: 999,
             display: "grid",
             placeItems: "center",
@@ -1020,7 +1023,7 @@ function DemandSenderIdentity({
             border: dark
               ? "1px solid rgba(255,255,255,0.34)"
               : "1px solid rgba(13,95,168,0.12)",
-            fontSize: 12,
+            fontSize: prominent ? 15 : 12,
             fontWeight: 950,
           }}
         >
@@ -1031,7 +1034,7 @@ function DemandSenderIdentity({
         <div
           style={{
             color: dark ? "#FFFFFF" : "#0B1F33",
-            fontSize: 13,
+            fontSize: prominent ? 14 : 13,
             fontWeight: 950,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -1156,7 +1159,7 @@ export default function DemandBoxPage() {
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
   const [allowOneHopRelay, setAllowOneHopRelay] = useState(false);
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
-  const [showSenderPhoto, setShowSenderPhoto] = useState(false);
+  const [showSenderPhoto, setShowSenderPhoto] = useState(true);
   const [relayPolicy, setRelayPolicy] = useState<MarketplaceRelayPolicy | null>(null);
   const [savingRelayPolicy, setSavingRelayPolicy] = useState(false);
   const [updatingRelayRequestId, setUpdatingRelayRequestId] = useState(0);
@@ -1714,7 +1717,7 @@ export default function DemandBoxPage() {
       setAllowTrustCredit(false);
       setAllowOneHopRelay(false);
       setVoiceFile(null);
-      setShowSenderPhoto(false);
+      setShowSenderPhoto(true);
 
       await loadPage();
       setCreatePanelOpen(false);
@@ -1984,27 +1987,33 @@ export default function DemandBoxPage() {
     }
   }
 
-  function demandContactActions(row: DemandRow, debugBase: string) {
+  function demandContactActions(
+    row: DemandRow,
+    debugBase: string,
+    inCompactPanel = false
+  ) {
     const hasContact = demandHasReadyWhatsApp(row);
+    const useDockStyle = isCompact && !inCompactPanel;
+    const actionHeight = useDockStyle ? 82 : 52;
     return (
       <>
         <SecondaryButton
           onClick={() => openDemandWhatsAppChat(row)}
           debugId={`${debugBase}.whatsapp-chat`}
-          stableHeight={isCompact ? 82 : 54}
-          style={isCompact ? demandDockButtonStyle() : demandActionStyle(54)}
+          stableHeight={actionHeight}
+          style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
         >
-          {isCompact
+          {useDockStyle
             ? demandDockIconText("phone", hasContact ? "WhatsApp Chat" : "Chat not ready")
             : demandIconText("phone", hasContact ? "WhatsApp Chat" : "WhatsApp not ready", 20)}
         </SecondaryButton>
         <SubtleButton
           onClick={() => openDemandWhatsAppCall(row)}
           debugId={`${debugBase}.whatsapp-call`}
-          stableHeight={isCompact ? 82 : 54}
-          style={isCompact ? demandDockButtonStyle() : demandActionStyle(54)}
+          stableHeight={actionHeight}
+          style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
         >
-          {isCompact
+          {useDockStyle
             ? demandDockIconText("phone", hasContact ? "WhatsApp Call" : "Call not ready")
             : demandIconText("phone", hasContact ? "WhatsApp Call" : "Call not ready", 20)}
         </SubtleButton>
@@ -2205,18 +2214,19 @@ export default function DemandBoxPage() {
       <div
         data-gsn-demand-expand-search="true"
         style={{
-          marginTop: isCompact ? 10 : 12,
-          ...innerCard(isCompact ? "#FFFFFF" : "#F8FBFF"),
+          marginTop: isCompact ? 16 : 12,
+          ...innerCard(isCompact ? "transparent" : "#F8FBFF"),
           border: isCompact
-            ? "1px solid rgba(13,95,168,0.10)"
+            ? "none"
             : "1px solid rgba(13,95,168,0.16)",
+          borderTop: isCompact
+            ? "1px solid rgba(148,163,184,0.34)"
+            : undefined,
           display: "grid",
           gap: isCompact ? 9 : 10,
-          padding: isCompact ? 12 : undefined,
-          borderRadius: isCompact ? 22 : undefined,
-          boxShadow: isCompact
-            ? "0 12px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.90)"
-            : undefined,
+          padding: isCompact ? "18px 0 0" : undefined,
+          borderRadius: isCompact ? 0 : undefined,
+          boxShadow: isCompact ? "none" : undefined,
         }}
       >
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -2230,18 +2240,18 @@ export default function DemandBoxPage() {
                 lineHeight: 1.18,
               }}
             >
-              No match in this community yet
+              No matches here yet
             </div>
             <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
               {isCompact
-                ? "Let GSN check one other permitted community for a suitable provider."
+                ? "Let GSN check one other permitted community for a possible match."
                 : "Allow GSN to check one other permitted community for this request. Candidate communities and provider identities stay hidden until an authorised bridge accepts."}
             </div>
           </div>
         </div>
 
         <div style={demandActionRowStyle(isCompact, 50, 164, 0)}>
-          <PrimaryButton
+          <SecondaryButton
             onClick={() => void handleExpandSearch(row)}
             disabled={busy}
             busy={busy}
@@ -2258,7 +2268,7 @@ export default function DemandBoxPage() {
                   : "Expand search",
               18
             )}
-          </PrimaryButton>
+          </SecondaryButton>
           {consentActive ? (
             <SubtleButton
               onClick={() => void handleRelayConsent(row, false)}
@@ -2351,16 +2361,17 @@ export default function DemandBoxPage() {
           <div
             data-gsn-demand-request-hero="request"
             style={{
-              minHeight: 176,
+              minHeight: 184,
               position: "relative",
               display: "flex",
               alignItems: "stretch",
-              color: "#FFFFFF",
+              color: "#0B1F33",
               backgroundImage:
-                "radial-gradient(circle at 17% 34%, rgba(247,184,1,0.34) 0%, rgba(247,184,1,0.05) 28%, transparent 29%), radial-gradient(circle at 4% 108%, rgba(26,126,226,0.62) 0%, rgba(26,126,226,0.04) 38%, transparent 39%), linear-gradient(135deg, #123F75 0%, #0A2D57 46%, #07182C 100%)",
+                "radial-gradient(circle at 92% 2%, rgba(29,120,217,0.12) 0%, rgba(29,120,217,0.00) 34%), linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
               backgroundPosition: "center",
               backgroundSize: "cover",
               backgroundRepeat: "no-repeat",
+              borderBottom: "1px solid rgba(13,95,168,0.10)",
             }}
           >
             <SecondaryButton
@@ -2372,7 +2383,7 @@ export default function DemandBoxPage() {
               style={{
                 position: "absolute",
                 top: 10,
-                left: 10,
+                right: 10,
                 zIndex: 2,
                 width: 36,
                 minWidth: 36,
@@ -2400,7 +2411,7 @@ export default function DemandBoxPage() {
               <div
                 style={{
                   minHeight: 40,
-                  paddingLeft: 44,
+                  paddingRight: 44,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -2437,9 +2448,9 @@ export default function DemandBoxPage() {
                     borderRadius: 14,
                     display: "grid",
                     placeItems: "center",
-                    background: "rgba(255,255,255,0.94)",
-                    border: "1px solid rgba(255,255,255,0.72)",
-                    boxShadow: "0 8px 18px rgba(2,12,27,0.20)",
+                    background: "#EAF3FC",
+                    border: "1px solid rgba(13,95,168,0.12)",
+                    boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
                   }}
                 >
                   <GsnLegacyIcon
@@ -2453,13 +2464,12 @@ export default function DemandBoxPage() {
                 </span>
               </div>
 
-              {scope === "community" ? (
-                <DemandSenderIdentity row={row} dark />
-              ) : null}
+              <DemandSenderIdentity row={row} prominent />
 
               <div
                 style={{
-                  fontSize: 23,
+                  color: "#0B1F33",
+                  fontSize: 27,
                   fontWeight: 950,
                   lineHeight: 1.08,
                   letterSpacing: "-0.02em",
@@ -2467,7 +2477,6 @@ export default function DemandBoxPage() {
                   WebkitBoxOrient: "vertical",
                   WebkitLineClamp: 3,
                   overflow: "hidden",
-                  textShadow: "0 2px 12px rgba(0,0,0,0.36)",
                 }}
               >
                 {demandDisplayTitle(row)}
@@ -2479,8 +2488,8 @@ export default function DemandBoxPage() {
                   alignItems: "center",
                   gap: 8,
                   flexWrap: "wrap",
-                  color: "rgba(255,255,255,0.90)",
-                  fontSize: 11,
+                  color: "#536A81",
+                  fontSize: 12,
                   fontWeight: 800,
                   lineHeight: 1.2,
                 }}
@@ -2774,6 +2783,17 @@ export default function DemandBoxPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 12, lineHeight: 1.45 }}>
                     GSN records the request and contact path. It does not guarantee a provider, price, payment, or fulfilment.
                   </div>
+                  <div
+                    data-gsn-demand-contact-actions="private"
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {demandContactActions(row, debugBase + ".contact", true)}
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -2871,24 +2891,9 @@ export default function DemandBoxPage() {
           )}
 
           <div style={{ padding: isCompact ? "0 12px 12px" : undefined }}>
-          {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
+          {rowId ? (
             <div style={{ marginTop: 10 }}>
-              <ProtectedVoiceNotePlayer
-                attachmentId={positiveNumber(row?.audio_attachment_id)}
-                durationSeconds={row?.audio_duration_seconds}
-                deletedAt={row?.audio_deleted_at}
-                canDelete={
-                  scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
-                }
-                debugId={`${debugBase}.listen`}
-                label="Request voice note"
-              />
-            </div>
-          ) : null}
-
-          {!isCompact && rowId ? (
-            <div style={{ marginTop: 10 }}>
-              <SecondaryButton
+              <PrimaryButton
                 type="button"
                 onClick={() =>
                   setOpenDemandDetailTab(
@@ -2896,16 +2901,53 @@ export default function DemandBoxPage() {
                   )
                 }
                 fullWidth
-                stableHeight={50}
+                stableHeight={56}
                 debugId={`${debugBase}.private-replies`}
+                aria-expanded={activeDetailTab === "replies"}
+                style={{
+                  ...demandActionStyle(56),
+                  borderRadius: 18,
+                  background: "linear-gradient(180deg, #126FD8 0%, #0755B5 100%)",
+                  boxShadow: "0 12px 24px rgba(7,85,181,0.24)",
+                  fontSize: 16,
+                }}
               >
                 {demandIconText("audio", "Listen & reply", 20)}
-              </SecondaryButton>
+              </PrimaryButton>
+              <div
+                style={{
+                  marginTop: 7,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 6,
+                  color: "#64748B",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                <GsnLegacyIcon name="lock" size={16} />
+                Replies are private
+              </div>
             </div>
           ) : null}
 
-          {rowId && (isCompact || activeDetailTab === "replies") ? (
+          {rowId && activeDetailTab === "replies" ? (
             <div style={{ marginTop: 10 }}>
+              {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
+                <div style={{ marginBottom: 10 }}>
+                  <ProtectedVoiceNotePlayer
+                    attachmentId={positiveNumber(row?.audio_attachment_id)}
+                    durationSeconds={row?.audio_duration_seconds}
+                    deletedAt={row?.audio_deleted_at}
+                    canDelete={
+                      scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
+                    }
+                    debugId={`${debugBase}.listen`}
+                    label="Request voice note"
+                  />
+                </div>
+              ) : null}
               <DemandResponsePanel
                 requestId={rowId}
                 ownerUserId={positiveNumber(row?.user_id)}
@@ -2923,7 +2965,7 @@ export default function DemandBoxPage() {
             data-gsn-demand-action-dock={isCompact ? "compact" : "standard"}
             style={
               isCompact
-                ? { ...demandDockStyle(canClose ? 5 : 3), marginTop: 10 }
+                ? { ...demandDockStyle(canClose ? 3 : 1), marginTop: 14 }
                 : demandActionRowStyle(false, 54, 156, 12)
             }
           >
@@ -2961,36 +3003,9 @@ export default function DemandBoxPage() {
           ) : null}
 
           {demandPaperAction(row, scope, copyDebugId)}
-          {demandContactActions(row, `${debugBase}.contact`)}
+          {!isCompact ? demandContactActions(row, debugBase + ".contact") : null}
           </div>
           </div>
-
-          {isCompact ? (
-            <div
-              data-gsn-demand-brand-banner="true"
-              style={{
-                minHeight: 72,
-                margin: "0 12px 12px",
-                padding: "12px 132px 12px 14px",
-                borderRadius: 18,
-                display: "grid",
-                alignContent: "center",
-                position: "relative",
-                overflow: "hidden",
-                color: "#FFFFFF",
-                backgroundImage: `linear-gradient(90deg, #0B3B72 0%, #0755B5 56%, rgba(7,85,181,0.20) 100%), url("${dashboardDemandMarket}")`,
-                backgroundPosition: "center, right center",
-                backgroundSize: "cover, 48% auto",
-                backgroundRepeat: "no-repeat",
-                boxShadow: "0 10px 22px rgba(7,58,119,0.18)",
-              }}
-            >
-              <div style={{ fontSize: 15, fontWeight: 950, lineHeight: 1.1 }}>GSN DemandBox</div>
-              <div style={{ marginTop: 4, fontSize: 10, fontWeight: 750, lineHeight: 1.25 }}>
-                Turn your need into a trusted connection.
-              </div>
-            </div>
-          ) : null}
         </>
         ) : null}
       </div>
@@ -3643,7 +3658,7 @@ export default function DemandBoxPage() {
                 stableHeight={isCompact ? 52 : 54}
                 style={demandActionStyle(isCompact ? 52 : 54)}
               >
-                {demandIconText("community", "Ask a question", 20)}
+                {demandIconText("community", "Ask community", 20)}
               </StableCtaLink>
             </div>
 
@@ -3664,7 +3679,7 @@ export default function DemandBoxPage() {
                   border: "1px solid rgba(255,255,255,0.18)",
                 }}
               >
-                {currentCommunityName} · Yours {myOpenRows.length} · For you {visibleRows.length}
+                Yours {myOpenRows.length} · For you {visibleRows.length}
               </span>
             </div>
           </div>
@@ -4323,9 +4338,9 @@ export default function DemandBoxPage() {
                       }}
                     />
                     <span>
-                      Show my current profile photo beside this request.
+                      Include my current profile photo beside this request.
                       <span style={{ display: "block", marginTop: 5, color: "#587087", fontSize: 12, fontWeight: 700 }}>
-                        Optional. It may help people recognise you, but it does not prove reliability.
+                        Included by default. Turn this off before posting if you do not want to share it. A photo helps recognition but does not prove reliability.
                       </span>
                     </span>
                   </label>
@@ -4420,6 +4435,27 @@ export default function DemandBoxPage() {
                   Can you help?
                 </div>
               </div>
+            </div>
+          ) : null}
+
+          {isCompact ? (
+            <div
+              data-gsn-demand-community-strip="selected"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 54,
+                padding: "0 4px 12px",
+                color: "#0B1F33",
+                fontSize: 15,
+                fontWeight: 950,
+              }}
+            >
+              <GsnLegacyIcon name="community" size={30} />
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {currentMarketplaceName}
+              </span>
             </div>
           ) : null}
 

@@ -1137,9 +1137,17 @@ Rules:
   Explanation, WhatsApp override, urgency, payment, requested proof, expiry,
   trust-credit preference, and one-hop search consent remain behind one
   `More options` disclosure.
-- A request card may show a modest sender portrait beside display name and GSN
-  reference only when that sender explicitly opts in for that request. Replies
-  apply the same default-off consent separately. If no suitable shared portrait
+- An opened phone request is one cohesive white request paper: truthful status,
+  sender portrait or initials with display name and GSN reference, request
+  title, area, date, one primary `Listen & reply` disclosure, then requested
+  details, matches/search and lifecycle actions. Do not restore the separate
+  dark request hero or trailing DemandBox brand banner. Fulfilled, Cancel and
+  Copy request form the compact owner action row; WhatsApp Chat and Call remain
+  reachable under `Privacy & terms`.
+- A new `Post a need` request includes the member's already saved shared
+  profile portrait by default when one exists, with a plainly visible control
+  to turn it off before posting. Replies and linked reposts apply fresh,
+  separate default-off choices and never inherit the request setting. If no suitable shared portrait
   is present, use initials without reducing access or treating the member as
   suspicious. A portrait supports recognition only; it does not prove identity,
   reliability, repayment, delivery, truthfulness, or endorsement. Do not turn a
@@ -1161,7 +1169,8 @@ Rules:
   never trigger this deletion.
 - `Listen & reply` stays inside the opened request. Each responding member has
   a private exchange with the requester; unrelated community members cannot
-  read or play that exchange. Replies may contain text, a voice note up to 60
+  read or play that exchange. On phone it is the single primary disclosure and
+  the reply composer stays closed until the member opens it. Replies may contain text, a voice note up to 60
   seconds, or both.
 - Closed and expired owner requests remain in one collapsed `Past requests`
   history. `Post again` creates a new request linked to the original rather than

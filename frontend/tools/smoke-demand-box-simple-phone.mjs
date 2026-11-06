@@ -40,6 +40,7 @@ const requests = [
     payment_mode: "Agree directly",
     requester_display_name: "Ada Example",
     requester_gmfn_id: "GSN-U-216",
+    requester_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
     clan_name: community.name,
     queue_keys: ["mine"],
     visibility_scope: "community_visible",
@@ -58,6 +59,7 @@ const requests = [
     status: "open",
     requester_display_name: "Chidi Member",
     requester_gmfn_id: "GSN-U-309",
+    requester_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
     clan_name: community.name,
     queue_keys: ["urgent", "tagged_for_me"],
     is_tagged_for_me: true,
@@ -152,7 +154,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByText("Find what you need", { exact: true }).isVisible(), "The human-first DemandBox title is missing.");
   assert(await page.getByText("Ask, request or get help from people in Blessed Satch family Marketplace.", { exact: true }).isVisible(), "The plain DemandBox explanation is missing.");
   assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
-  assert(await page.getByRole("link", { name: "Ask a question", exact: true }).isVisible(), "Ask a question is missing.");
+  assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community is missing.");
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
   assert((await frontDoor.getByRole("link").count()) === 1, "The first surface has extra links.");
   assert(!(await page.getByText("Current state", { exact: true }).isVisible().catch(() => false)), "The repeated Current state card returned.");
@@ -161,6 +163,10 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   const queue = page.locator('[data-gsn-demand-queue="simple"]');
   await queue.waitFor();
+  assert(
+    await queue.locator('[data-gsn-demand-community-strip="selected"]').getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(),
+    "The selected marketplace identity strip is missing."
+  );
   for (const label of ["All 2", "For you 1", "Yours 1"]) {
     assert(await queue.getByRole("button", { name: label, exact: true }).isVisible(), "Missing primary filter: " + label);
   }
@@ -197,6 +203,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await ownerHero.waitFor();
   assert(await freezerCard.getByText("Open request", { exact: true }).isVisible(), "The truthful request status is missing from the visual hero.");
   assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "The real request title is missing from the visual hero.");
+  assert(await ownerHero.locator('[data-gsn-demand-sender-identity="true"] img').isVisible(), "The opted-in sender portrait is missing from the opened request.");
   const compactRequestIcon = ownerHero.locator('[data-gsn-demand-request-icon="compact"]');
   assert(await compactRequestIcon.isVisible(), "The compact generic request icon is missing.");
   const compactIconGeometry = await compactRequestIcon.evaluate((node) => {
@@ -215,7 +222,15 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
   assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy & terms did not open.");
+  const contactActions = freezerCard.locator('[data-gsn-demand-contact-actions="private"]');
+  assert((await contactActions.getByRole("button").count()) === 2, "Private contact options are incomplete.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
+
+  const listenReplyButton = freezerCard.getByRole("button", { name: "Listen & reply", exact: true });
+  assert(await listenReplyButton.isVisible(), "The primary listen-and-reply action is missing.");
+  assert(!(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible().catch(() => false)), "Private replies opened before the member asked.");
+  await listenReplyButton.click();
+  assert(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies did not open.");
 
   const deleteVoiceButton = freezerCard.getByRole("button", {
     name: "Delete voice note",
@@ -251,16 +266,15 @@ async function verifyViewport(browser, baseURL, viewport) {
   );
 
   const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');
-  assert(await expandedSearch.getByText("No match in this community yet", { exact: true }).isVisible(), "The compact no-match state is missing.");
+  assert(await expandedSearch.getByText("No matches here yet", { exact: true }).isVisible(), "The compact no-match state is missing.");
   assert(await expandedSearch.getByRole("button", { name: "Search in one other community", exact: true }).isVisible(), "The compact one-hop search action is missing.");
   assert(await expandedSearch.getByRole("button", { name: "Stop expanded search", exact: true }).isVisible(), "Withdrawable relay consent is missing.");
 
   const actionDock = freezerCard.locator('[data-gsn-demand-action-dock="compact"]');
-  assert((await actionDock.getByRole("button").count()) === 5, "The owner action dock must contain five actions.");
-  for (const label of ["Fulfilled", "Cancel", "Copy request", "WhatsApp Chat", "WhatsApp Call"]) {
+  assert((await actionDock.getByRole("button").count()) === 3, "The owner action dock must contain three calm lifecycle actions.");
+  for (const label of ["Fulfilled", "Cancel", "Copy request"]) {
     assert(await actionDock.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact owner action: " + label);
   }
-  assert(await freezerCard.locator('[data-gsn-demand-brand-banner="true"]').isVisible(), "The compact DemandBox identity banner is missing.");
 
   const focusGeometry = await freezerCard.evaluate((card) => {
     const hero = card.querySelector('[data-gsn-demand-request-hero="request"]');
@@ -273,8 +287,11 @@ async function verifyViewport(browser, baseURL, viewport) {
       noOverflow: card.scrollWidth <= card.clientWidth + 1,
     };
   });
-  assert(focusGeometry.heroHeight >= 170 && focusGeometry.heroHeight <= 195, "The request hero is outside the message-first compact height boundary.");
-  assert(focusGeometry.actionCount === 5 && focusGeometry.oneActionRow, "The five owner actions did not remain in one compact row.");
+  assert(
+    focusGeometry.heroHeight >= 180 && focusGeometry.heroHeight <= 280,
+    "The cohesive request header is outside the sender-identity phone boundary: " + focusGeometry.heroHeight
+  );
+  assert(focusGeometry.actionCount === 3 && focusGeometry.oneActionRow, "The three owner actions did not remain in one compact row.");
   assert(focusGeometry.noOverflow, "The opened request card overflows horizontally.");
 
   const screenshotPath = process.env.GSN_DEMAND_BOX_SCREENSHOT_PATH?.trim();
@@ -335,7 +352,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByLabel("Payment").isVisible(), "Payment preference is not reachable.");
   assert(await page.getByLabel("Proof needed").isVisible(), "Proof preference is not reachable.");
   assert(await page.getByLabel("Hours open").isVisible(), "Expiry is not reachable.");
-  assert(await page.getByText("Show my current profile photo beside this request.", { exact: false }).isVisible(), "Optional sender-photo consent is not reachable.");
+  assert(await page.getByText("Include my current profile photo beside this request.", { exact: false }).isVisible(), "Sender-photo control is not reachable.");
+  assert(await page.locator('[data-gsn-demand-photo-consent="true"] input[type="checkbox"]').isChecked(), "A saved request portrait is not included by default.");
   await page.getByRole("button", { name: "One person", exact: true }).click();
   assert((await page.getByRole("button", { name: "One person", exact: true }).getAttribute("aria-pressed")) === "true", "One-person visibility did not become visibly selected.");
   assert(await page.getByLabel("Choose person").isVisible(), "The private person chooser did not appear.");
