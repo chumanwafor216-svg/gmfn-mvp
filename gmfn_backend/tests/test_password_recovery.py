@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import User
+from app.db.models import AccountActivationGrant, User
+from app.services.account_activation_service import issue_activation_grant
 from app.services.identity_service import upsert_identity_recovery_profile
 
 os.environ["SECRET_KEY"] = "pytest-password-recovery-secret"
@@ -23,12 +24,17 @@ def _seed_recovery_user(
     configured: bool = True,
     phone_verified: bool = True,
     gmfn_id: str = "GSN-U-B7AC7BC0",
+    pending_activation: bool = False,
 ) -> None:
     with SessionLocal() as db:
         user = User(
             id=77,
             email="recovery-user@example.com",
-            hashed_password=get_password_hash("old-secret"),
+            hashed_password=(
+                "PENDING_APPROVAL"
+                if pending_activation
+                else get_password_hash("old-secret")
+            ),
             role="user",
             gmfn_id=gmfn_id,
             phone_e164="+447700900123",
@@ -43,6 +49,14 @@ def _seed_recovery_user(
                 user_id=int(user.id),
                 prompts_and_answers=RECOVERY_QUESTIONS,
             )
+        if pending_activation:
+            issue_activation_grant(
+                db,
+                user_id=int(user.id),
+                source_type="legacy-recovery-test",
+                authorize_activation=True,
+            )
+            db.commit()
 
 
 def test_password_recovery_resets_active_account_after_private_answers(client):
@@ -83,6 +97,39 @@ def test_password_recovery_resets_active_account_after_private_answers(client):
     )
     assert new_login.status_code == 200, new_login.text
     assert new_login.json()["gmfn_id"] == "GSN-U-B7AC7BC0"
+
+
+def test_verified_recovery_activates_legacy_pending_account_and_revokes_grants(client):
+    _seed_recovery_user(pending_activation=True)
+
+    start = client.post(
+        "/auth/password-recovery/start",
+        json={"gmfn_id": "GSN-U-B7AC7BC0", "phone_e164": "+447700900123"},
+    )
+    assert start.status_code == 200, start.text
+
+    reset = client.post(
+        "/auth/password-recovery/reset",
+        json={
+            "gmfn_id": "GSN-U-B7AC7BC0",
+            "phone_e164": "+447700900123",
+            "answers": [item["answer"] for item in RECOVERY_QUESTIONS],
+            "new_password": "recovered-secret",
+            "confirm_password": "recovered-secret",
+        },
+    )
+    assert reset.status_code == 200, reset.text
+
+    with SessionLocal() as db:
+        grant = db.query(AccountActivationGrant).filter_by(user_id=77).one()
+        assert grant.revoked_at is not None
+        assert grant.consumed_at is None
+
+    login = client.post(
+        "/auth/login",
+        data={"username": "GSN-U-B7AC7BC0", "password": "recovered-secret"},
+    )
+    assert login.status_code == 200, login.text
 
 
 def test_login_and_recovery_accept_gsn_gmfn_alias_for_gmfn_account(client):

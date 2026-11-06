@@ -19,10 +19,16 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 from app.db.database import get_db
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.services.global_identity_service import ensure_user_gmfn_id
+from app.services.account_activation_service import (
+    consume_account_activation_grants,
+    require_activation_grant,
+    revoke_account_activation_grants,
+)
 from app.services.identity_service import (
     get_identity_recovery_summary,
     verify_identity_recovery_profile,
 )
+from app.services.trust_events_services import log_trust_event
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -136,6 +142,7 @@ class FounderSignupWithInviteOut(BaseModel):
 class ActivateApprovedMemberIn(BaseModel):
     gmfn_id: Optional[str] = Field(default=None, min_length=6, max_length=64)
     request_id: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    activation_token: str = Field(..., min_length=32, max_length=256)
     password: str = Field(..., min_length=6)
     confirm_password: Optional[str] = Field(default=None, min_length=6)
 
@@ -160,6 +167,7 @@ class ActivateApprovedMemberOut(BaseModel):
 
 class ActivateMembershipIn(BaseModel):
     gmfn_id: str = Field(..., min_length=6, max_length=64)
+    activation_token: str = Field(..., min_length=32, max_length=256)
     password: str = Field(..., min_length=6)
     confirm_password: str = Field(..., min_length=6)
     request_id: Optional[str] = None
@@ -729,6 +737,8 @@ def _join_evidence_display_name_for_user(db: Session, user: User) -> Optional[st
 def _recover_missing_display_name_from_join_evidence(
     db: Session,
     user: User,
+    *,
+    commit: bool = True,
 ) -> User:
     current = str(getattr(user, "display_name", "") or "").strip()
     if current:
@@ -744,8 +754,9 @@ def _recover_missing_display_name_from_join_evidence(
 
     user.display_name = recovered
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    if commit:
+        db.commit()
+        db.refresh(user)
     return user
 
 
@@ -798,77 +809,118 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/activate-approved-member", response_model=ActivateApprovedMemberOut)
-def activate_approved_member(
-    payload: ActivateApprovedMemberIn,
-    db: Session = Depends(get_db),
-):
-    gmfn_id = str(payload.gmfn_id or "").strip().upper()
-    request_id = str(payload.request_id or "").strip()
-    confirm_password = str(payload.confirm_password or "").strip()
-
-    if not gmfn_id and not request_id:
-        raise HTTPException(status_code=400, detail="GSN ID or request ID is required")
-
-    if confirm_password and confirm_password != payload.password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
-
-    user: Optional[User] = None
-
-    if gmfn_id:
-        user = _find_user_by_gsn_id(db, gmfn_id)
-
-    if user is None and request_id:
-        try:
-            request_id_int = int(request_id)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail="Request ID is invalid") from exc
-
-        join_request = (
-            db.query(ClanJoinRequest)
-            .filter(ClanJoinRequest.id == request_id_int)
-            .first()
-        )
-        if not join_request:
-            raise HTTPException(status_code=404, detail="Approved join request not found")
-
-        applicant_user_id = int(getattr(join_request, "applicant_user_id", 0) or 0)
-        if not applicant_user_id:
-            raise HTTPException(status_code=404, detail="Approved member identity not found")
-
-        user = db.get(User, applicant_user_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="Approved member identity not found")
+def _complete_account_activation(
+    db: Session,
+    *,
+    activation_token: str,
+    password: str,
+    gmfn_id: str = "",
+    request_id: str = "",
+) -> tuple[User, Optional[Clan]]:
+    grant, user = require_activation_grant(db, activation_token=activation_token)
+    safe_gmfn_id = str(gmfn_id or "").strip().upper()
+    safe_request_id = str(request_id or "").strip()
 
     if (
-        gmfn_id
+        safe_gmfn_id
         and str(getattr(user, "gmfn_id", "") or "").strip().upper()
-        not in set(_gsn_id_candidates(gmfn_id))
+        not in set(_gsn_id_candidates(safe_gmfn_id))
     ):
-        raise HTTPException(
-            status_code=409,
-            detail="Request ID does not match the supplied GSN ID",
-        )
+        raise HTTPException(status_code=404, detail="Approved member identity not found")
+    if safe_request_id:
+        if not safe_request_id.isdigit() or grant.join_request_id != int(safe_request_id):
+            raise HTTPException(status_code=404, detail="Approved join request not found")
 
     if not _is_user_approved_somewhere(db, user):
         raise HTTPException(
             status_code=403,
             detail="This identity has not been admitted to an active community",
         )
-
     if not is_user_activation_pending(user):
         raise HTTPException(
             status_code=409,
-            detail="This approved identity has already been activated",
+            detail={
+                "code": "account_already_activated",
+                "message": "This membership is already activated. Sign in or use verified account recovery.",
+                "next_action": "login",
+                "login_path": "/login?force=1",
+            },
         )
 
-    user = _recover_missing_display_name_from_join_evidence(db, user)
-    user.hashed_password = get_password_hash(payload.password)
+    destination_membership = None
+    if grant.join_request_id is not None:
+        join_request = db.get(ClanJoinRequest, int(grant.join_request_id))
+        if (
+            join_request is None
+            or int(join_request.applicant_user_id) != int(user.id)
+            or str(join_request.status).lower() != "approved"
+        ):
+            raise HTTPException(status_code=403, detail="This activation is not approved")
+        destination_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == int(join_request.clan_id),
+                ClanMembership.user_id == int(user.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .first()
+        )
+    if destination_membership is None:
+        destination_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == int(user.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .order_by(ClanMembership.created_at.desc(), ClanMembership.id.desc())
+            .first()
+        )
+    destination_clan = (
+        db.get(Clan, int(destination_membership.clan_id))
+        if destination_membership is not None
+        else None
+    )
+
+    user = _recover_missing_display_name_from_join_evidence(db, user, commit=False)
+    user.hashed_password = get_password_hash(password)
     db.add(user)
+    consume_account_activation_grants(db, successful_grant=grant)
+    log_trust_event(
+        db,
+        event_type="identity.account_activated",
+        clan_id=(int(destination_clan.id) if destination_clan is not None else None),
+        actor_user_id=int(user.id),
+        subject_user_id=int(user.id),
+        meta={
+            "activation_grant_id": int(grant.id),
+            "join_request_id": int(grant.join_request_id) if grant.join_request_id else None,
+            "source_type": grant.source_type,
+        },
+        dedupe_key=f"account-activation:{int(user.id)}",
+        commit=False,
+        refresh=False,
+    )
     db.commit()
     db.refresh(user)
+    return user, destination_clan
 
+
+@router.post("/activate-approved-member", response_model=ActivateApprovedMemberOut)
+def activate_approved_member(
+    payload: ActivateApprovedMemberIn,
+    db: Session = Depends(get_db),
+):
+    confirm_password = str(payload.confirm_password or "").strip()
+    if confirm_password and confirm_password != payload.password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user, _destination_clan = _complete_account_activation(
+        db,
+        activation_token=payload.activation_token,
+        password=payload.password,
+        gmfn_id=str(payload.gmfn_id or ""),
+        request_id=str(payload.request_id or ""),
+    )
     access_token = create_access_token(data={"sub": user.email})
     return {
         "ok": True,
@@ -904,75 +956,14 @@ def activate_membership(
     if password != confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    user = _find_user_by_gsn_id(db, gmfn_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Invalid GSN ID")
-
-    if not _is_user_approved_somewhere(db, user):
-        raise HTTPException(
-            status_code=403,
-            detail="This identity has not been admitted to an active community",
-        )
-
-    if not is_user_activation_pending(user):
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "account_already_activated",
-                "message": (
-                    "This membership is already activated. Sign in with the existing "
-                    "password or use the account recovery path."
-                ),
-                "next_action": "login",
-                "next_action_label": "Sign in",
-                "login_path": "/login?force=1",
-                "gmfn_id": gmfn_id,
-            },
-        )
-
-    destination_membership = None
     request_id = str(payload.request_id or "").strip()
-    if request_id.isdigit():
-        join_request = (
-            db.query(ClanJoinRequest)
-            .filter(
-                ClanJoinRequest.id == int(request_id),
-                ClanJoinRequest.applicant_user_id == int(user.id),
-                ClanJoinRequest.status == "approved",
-            )
-            .first()
-        )
-        if join_request is not None:
-            destination_membership = (
-                db.query(ClanMembership)
-                .filter(
-                    ClanMembership.clan_id == int(join_request.clan_id),
-                    ClanMembership.user_id == int(user.id),
-                    ClanMembership.left_at.is_(None),
-                )
-                .first()
-            )
-    if destination_membership is None:
-        destination_membership = (
-            db.query(ClanMembership)
-            .filter(
-                ClanMembership.user_id == int(user.id),
-                ClanMembership.left_at.is_(None),
-            )
-            .order_by(ClanMembership.created_at.desc(), ClanMembership.id.desc())
-            .first()
-        )
-    destination_clan = (
-        db.get(Clan, int(destination_membership.clan_id))
-        if destination_membership is not None
-        else None
+    user, destination_clan = _complete_account_activation(
+        db,
+        activation_token=payload.activation_token,
+        password=password,
+        gmfn_id=gmfn_id,
+        request_id=request_id,
     )
-
-    user = _recover_missing_display_name_from_join_evidence(db, user)
-    user.hashed_password = get_password_hash(password)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
 
     access_token = create_access_token(data={"sub": user.email})
 
@@ -1002,17 +993,6 @@ def start_password_recovery(
     )
     if not user:
         raise _password_recovery_unavailable()
-
-    if is_user_activation_pending(user):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "account_activation_pending",
-                "message": "This GSN ID is not active yet. Activate membership before using password recovery.",
-                "next_action": "activate_membership",
-                "activation_path": f"/activate-membership?gmfn_id={str(user.gmfn_id or '').strip().upper()}",
-            },
-        )
 
     if not getattr(user, "phone_verified_at", None):
         raise _password_recovery_unavailable(
@@ -1071,17 +1051,6 @@ def reset_password_with_recovery(
     if not user:
         raise _password_recovery_unavailable()
 
-    if is_user_activation_pending(user):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "account_activation_pending",
-                "message": "This GSN ID is not active yet. Activate membership before using password recovery.",
-                "next_action": "activate_membership",
-                "activation_path": f"/activate-membership?gmfn_id={str(user.gmfn_id or '').strip().upper()}",
-            },
-        )
-
     if not getattr(user, "phone_verified_at", None):
         raise _password_recovery_unavailable(
             "Self-service recovery needs a verified phone on this account. Ask the community owner or GSN support to review the account."
@@ -1130,8 +1099,25 @@ def reset_password_with_recovery(
             },
         )
 
+    was_activation_pending = is_user_activation_pending(user)
     user.hashed_password = get_password_hash(payload.new_password)
     db.add(user)
+    if was_activation_pending:
+        revoke_account_activation_grants(db, user_id=int(user.id))
+        log_trust_event(
+            db,
+            event_type="identity.account_activated_via_recovery",
+            clan_id=None,
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta={
+                "reason": "verified_identity_recovery",
+                "activation_channel": "private_recovery_answers",
+            },
+            dedupe_key=f"identity-account-recovered:{int(user.id)}",
+            commit=False,
+            refresh=False,
+        )
     db.commit()
     db.refresh(user)
 
@@ -1153,30 +1139,6 @@ def login(
 
     user = authenticate_user_by_identity(db, identity=identity, password=password)
     if not user:
-        pending_user = _find_user_by_identity(db, identity)
-        if pending_user and is_user_activation_pending(pending_user):
-            gmfn_id = str(getattr(pending_user, "gmfn_id", "") or "").strip().upper()
-            approved = _is_user_approved_somewhere(db, pending_user)
-            if approved:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={
-                        "code": "account_activation_pending",
-                        "message": (
-                            "This identity exists, but membership activation is not finished yet. "
-                            "Activate membership first, then sign in with the password you create there."
-                        ),
-                        "next_action": "activate_membership",
-                        "next_action_label": "Activate membership",
-                        "activation_path": (
-                            f"/activate-membership?gmfn_id={gmfn_id}"
-                            if gmfn_id
-                            else "/activate-membership"
-                        ),
-                        "gmfn_id": gmfn_id or None,
-                    },
-                )
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials or account not yet activated",
@@ -1320,35 +1282,13 @@ def get_approved_member_activation_status(
     gmfn_id: str,
     db: Session = Depends(get_db),
 ):
-    safe_gmfn_id = str(gmfn_id or "").strip().upper()
-    if not safe_gmfn_id:
-        raise HTTPException(status_code=400, detail="GSN ID is required")
-
-    user = _find_user_by_gsn_id(db, safe_gmfn_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Approved member identity not found")
-
-    approved = _is_user_approved_somewhere(db, user)
-    activated = not is_user_activation_pending(user)
-
-    latest_join_request = (
-        db.query(ClanJoinRequest)
-        .filter(ClanJoinRequest.applicant_user_id == int(user.id))
-        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
-        .first()
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail={
+            "code": "public_activation_status_retired",
+            "message": "Public account status lookup by GSN ID has been retired. Use the protected application continuation or sign in.",
+        },
     )
-
-    return {
-        "ok": True,
-        "gmfn_id": str(getattr(user, "gmfn_id", None) or safe_gmfn_id),
-        "approved": approved,
-        "activated": activated,
-        "status": (latest_join_request.status if latest_join_request else None),
-        "user_id": int(user.id),
-        "email": user.email,
-        "display_name": getattr(user, "display_name", None),
-        "nickname": getattr(user, "display_name", None),
-    }
 
 
 @router.post(

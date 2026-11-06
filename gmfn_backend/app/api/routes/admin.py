@@ -3209,28 +3209,15 @@ def activate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Admin-only compatibility activation path.
-
-    Normal member activation must continue through /auth/activate-membership.
-    This endpoint exists only for governed admin repair/support cases.
-    """
     _require_platform_admin(current_user)
-
-    gmfn_id = _safe_str(payload.gmfn_id).upper()
-    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="Invalid GSN ID")
-
-    user.hashed_password = get_password_hash(payload.password)
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "status": "activated",
-        "gmfn_id": user.gmfn_id,
-        "activated_by_user_id": int(current_user.id),
-    }
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "admin_password_replacement_retired",
+            "message": (
+                "Direct administrator password replacement has been retired. "
+                "The member must use protected activation or verified account recovery."
+            ),
+            "next_action": "member_owned_recovery",
+        },
+    )

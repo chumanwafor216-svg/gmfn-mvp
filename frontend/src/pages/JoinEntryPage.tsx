@@ -21,7 +21,6 @@ import {
 import {
   getJoinApprovalStatus,
   getJoinInvitePreview,
-  getJoinInviteRequestStatus,
   getMe,
   getStoredGmfnId,
   isAuthenticated,
@@ -49,6 +48,10 @@ import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { publicApiUrl } from "../lib/publicLinks";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { structuredErrorDetail } from "../lib/structuredErrors";
+import {
+  readActivationContinuation,
+  saveActivationContinuation,
+} from "../lib/activationContinuation";
 
 type JoinPathChoice = "existing" | "new" | null;
 
@@ -2068,6 +2071,13 @@ export default function JoinEntryPage() {
       const community = cleanText(
         result?.community_name || resolvedCommunityName
       );
+      const savedContinuation = readActivationContinuation({ requestId });
+      const statusToken = cleanText(
+        result?.status_token || savedContinuation.statusToken
+      );
+      const activationToken = cleanText(
+        result?.activation_token || savedContinuation.activationToken
+      );
 
       if (!requestId) return false;
 
@@ -2093,6 +2103,7 @@ export default function JoinEntryPage() {
               clan_name: community,
               status,
               gmfn_id: cleanText(result?.gmfn_id || ""),
+              status_token: statusToken || undefined,
             },
           });
           return true;
@@ -2106,6 +2117,8 @@ export default function JoinEntryPage() {
           state: {
             gmfn_id: cleanText(result?.gmfn_id || ""),
             request_id: requestId,
+            activation_token: activationToken || undefined,
+            status_token: statusToken || undefined,
           },
         });
         return true;
@@ -2125,6 +2138,7 @@ export default function JoinEntryPage() {
             community_name: community,
             clan_name: community,
             status,
+            status_token: statusToken || undefined,
           },
         });
         return true;
@@ -2145,6 +2159,7 @@ export default function JoinEntryPage() {
           clan_name: community,
           status,
           submitted_at: cleanText(result?.submitted_at || ""),
+          status_token: statusToken || undefined,
         },
       });
       return true;
@@ -2158,6 +2173,13 @@ export default function JoinEntryPage() {
 
       const requestId = cleanText(result?.request_id || "");
       if (!requestId) return;
+
+      saveActivationContinuation({
+        requestId,
+        gmfnId: cleanText(result?.gmfn_id || ""),
+        statusToken: cleanText(result?.status_token || ""),
+        activationToken: cleanText(result?.activation_token || ""),
+      });
 
       writeStorage(
         joinRequestKey,
@@ -2175,6 +2197,7 @@ export default function JoinEntryPage() {
           result_path: cleanText(result?.result_path || ""),
           result_channel: cleanText(result?.result_channel || ""),
           activation_required: result?.activation_required !== false,
+          status_token: cleanText(result?.status_token || ""),
           community_id: cleanText(result?.community_id || ""),
           updatedAt: Date.now(),
         })
@@ -2242,52 +2265,6 @@ export default function JoinEntryPage() {
     surname,
     workCategory,
     workDetail,
-  ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const safeInviteCode = cleanText(effectiveInviteCode);
-    const safePhone = cleanText(phone);
-    const digits = phoneDigits(safePhone);
-
-    if (!inviteReady) return;
-    if (inviteBlocked || inviteChecking || busy || success) return;
-    if (!safeInviteCode || digits.length < 8) return;
-
-    let alive = true;
-    const timeoutId = window.setTimeout(() => {
-      getJoinInviteRequestStatus(safeInviteCode, safePhone, {
-        community_code: communityCode || undefined,
-        qr_policy: effectiveQrPolicyKey || undefined,
-      })
-        .then((out) => {
-          if (!alive) return;
-          if (!out?.found) return;
-          storeExistingRequest(out);
-          continueExistingRequest(out);
-        })
-        .catch(() => {
-          // Ignore lookup misses here. The normal join submit path stays available.
-        });
-    }, 450);
-
-    return () => {
-      alive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [
-    busy,
-    communityCode,
-    continueExistingRequest,
-    effectiveInviteCode,
-    effectiveQrPolicyKey,
-    inviteBlocked,
-    inviteChecking,
-    inviteReady,
-    phone,
-    storeExistingRequest,
-    success,
   ]);
 
   const selectedDialCode = useMemo(() => {
@@ -2511,6 +2488,8 @@ export default function JoinEntryPage() {
                 new Date().toISOString()
             ),
             pending_status_path: res?.pending_status_path || "",
+            status_token: res?.status_token || "",
+            activation_token: res?.activation_token || "",
           }
         );
 
@@ -2526,6 +2505,7 @@ export default function JoinEntryPage() {
             community_name: nextCommunityName,
             clan_name: nextCommunityName,
             status: cleanText(res?.request?.status || res?.status || "pending"),
+            status_token: res?.status_token || undefined,
             submitted_at: cleanText(
               res?.request?.created_at ||
                 res?.submitted_at ||
@@ -2630,6 +2610,8 @@ export default function JoinEntryPage() {
                 new Date().toISOString()
             ),
             pending_status_path: res?.pending_status_path || "",
+            status_token: res?.status_token || "",
+            activation_token: res?.activation_token || "",
           }
         );
 
@@ -2646,6 +2628,7 @@ export default function JoinEntryPage() {
             clan_name: nextCommunityName,
             status: cleanText(res?.request?.status || res?.status || "pending"),
             gmfn_id: cleanText(res?.gmfn_id || currentGmfnId),
+            status_token: res?.status_token || undefined,
           },
         });
       }
@@ -2657,6 +2640,10 @@ export default function JoinEntryPage() {
   }
 
   async function requestJoinWithExistingGsnId() {
+    if (!isAuthenticated()) {
+      navigate(signInInvitePath);
+      return;
+    }
     setBusy(true);
     setErr(null);
     setSuccess(null);
@@ -2706,7 +2693,7 @@ export default function JoinEntryPage() {
             ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
             : undefined,
         },
-        { includeAuth: false }
+        { includeAuth: true }
       );
 
       const routedResult = joinResultForRouting(res);
@@ -2759,6 +2746,8 @@ export default function JoinEntryPage() {
                 new Date().toISOString()
             ),
             pending_status_path: res?.pending_status_path || "",
+            status_token: res?.status_token || "",
+            activation_token: res?.activation_token || "",
           }
         );
 
@@ -2775,6 +2764,7 @@ export default function JoinEntryPage() {
             clan_name: nextCommunityName,
             status: cleanText(res?.request?.status || res?.status || "pending"),
             gmfn_id: cleanText(res?.gmfn_id || safeExistingGsnId),
+            status_token: res?.status_token || undefined,
           },
         });
       }
@@ -2793,7 +2783,11 @@ export default function JoinEntryPage() {
     setErr(null);
 
     try {
-      const live = await getJoinApprovalStatus(requestId);
+      const continuation = readActivationContinuation({ requestId });
+      const live = await getJoinApprovalStatus(
+        requestId,
+        cleanText(storedRequest?.status_token || continuation.statusToken)
+      );
       const merged = {
         ...storedRequest,
         ...live,

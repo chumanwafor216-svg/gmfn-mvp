@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any, List, Optional
 from urllib.parse import quote, urlencode, urlparse
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
@@ -62,6 +62,12 @@ from app.services.invites_service import (
     create_clan_invite,
 )
 from app.services.global_identity_service import ensure_user_gmfn_id
+from app.services.account_activation_service import (
+    authorize_join_activation_grant,
+    issue_activation_grant,
+    require_activation_grant,
+    require_status_grant,
+)
 from app.services.feature_entitlements_service import get_active_feature_quantity_for_scope
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.trust_events_services import log_trust_event
@@ -512,8 +518,9 @@ class VoteJoinRequestIn(BaseModel):
 
 class ActivationOpenedIn(BaseModel):
     gmfn_id: Optional[str] = Field(default=None, min_length=6, max_length=64)
+    activation_token: str = Field(..., min_length=32, max_length=256)
 
-    @field_validator("gmfn_id", mode="before")
+    @field_validator("gmfn_id", "activation_token", mode="before")
     @classmethod
     def _reject_non_text_gmfn_id(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_body_value(value, info.field_name)
@@ -2898,8 +2905,8 @@ def _existing_join_request_conflict_detail(
     request: Request,
     *,
     req: ClanJoinRequest,
+    authorized_applicant: bool = False,
 ) -> dict[str, Any]:
-    payload = _join_request_status_payload(db, request, req)
     safe_status = _safe_str(getattr(req, "status", None)).lower()
     message = (
         "A pending join request already exists"
@@ -2909,14 +2916,18 @@ def _existing_join_request_conflict_detail(
         else "This join request already has a final decision"
     )
 
-    return {
+    detail = {
         "code": f"{safe_status or 'existing'}_request_exists",
-        "message": message,
-        "submitted_at": (
-            req.created_at.isoformat() if getattr(req, "created_at", None) else None
+        "message": (
+            f"{message}. Reopen the protected continuation saved by the original "
+            "application browser, or use verified account recovery."
         ),
-        **payload,
+        "protected_continuation_required": True,
     }
+    if authorized_applicant:
+        detail.update(_join_request_status_payload(db, request, req))
+        detail["protected_continuation_required"] = False
+    return detail
 
 
 def _mark_activation_opened_if_needed(
@@ -3188,18 +3199,15 @@ def _build_activation_package(
             "Important: your approval is not the final step. You still need to activate this GSN ID before normal sign-in will work.",
             "",
             "Next step:",
-            "1. Open the activation link below.",
-            "2. Enter your GSN ID exactly as shown above.",
+            "1. Return to the protected application browser where you sent this request.",
+            "2. Open the approval status and continue to activation.",
             "3. Create your own new password. Do not ask anyone else to choose or send a password for you.",
             "4. After activation, use your GSN ID and the password you created to sign in.",
             "",
-            "Activation link:",
+            "This link identifies the activation screen but does not prove account ownership:",
             activation_link,
             "",
-            "If the link does not open, go to https://gmfn-frontend.onrender.com/activate-membership and enter this GSN ID:",
-            gmfn_id,
-            "",
-            "You can now activate your GSN account. Once activation is completed, you will be able to enter your workspace properly.",
+            "If the protected continuation is no longer available, use verified account recovery. A GSN ID or request ID alone cannot activate an account.",
             "",
             "- Sent via GSN",
         ]
@@ -3273,7 +3281,7 @@ def _approve_join_request(
     if not applicant:
         raise HTTPException(status_code=404, detail="Applicant user missing")
 
-    applicant = _ensure_user_gmfn_id(db, applicant)
+    applicant = ensure_user_gmfn_id(db, applicant, commit=False, refresh=False)
 
     clan = db.get(Clan, int(join_request.clan_id))
     if not clan:
@@ -3282,8 +3290,6 @@ def _approve_join_request(
     if not _safe_str(getattr(clan, "community_code", None)):
         clan.community_code = f"GMFN-C-{int(clan.id):06d}"
         db.add(clan)
-        db.commit()
-        db.refresh(clan)
 
     inviter = (
         db.get(User, int(join_request.invited_by_user_id))
@@ -3303,7 +3309,14 @@ def _approve_join_request(
     if active_membership is None:
         _assert_community_member_capacity_available(db, clan_id=int(clan.id))
 
-    membership = ensure_membership(db=db, clan=clan, user=applicant, role="user")
+    membership = ensure_membership(
+        db=db,
+        clan=clan,
+        user=applicant,
+        role="user",
+        commit=False,
+        refresh=False,
+    )
 
     existing_identity = (
         _safe_str(getattr(join_request, "activation_delivery_status", None)).lower()
@@ -3317,12 +3330,20 @@ def _approve_join_request(
         join_request_id=int(join_request.id),
     )
 
+    activation_grant = None
+    if not existing_identity:
+        activation_grant = authorize_join_activation_grant(
+            db,
+            join_request_id=int(join_request.id),
+            user_id=int(applicant.id),
+        )
+
     if existing_identity:
         join_request.activation_link = None
         join_request.activation_message = None
         join_request.activation_generated_at = None
         join_request.activation_delivery_status = "not_required"
-    else:
+    elif activation_grant is not None:
         activation = _build_activation_package(
             request=request,
             clan=clan,
@@ -3334,10 +3355,23 @@ def _approve_join_request(
         join_request.activation_message = activation.get("activation_message")
         join_request.activation_generated_at = datetime.now(timezone.utc)
         join_request.activation_delivery_status = "pending"
+    else:
+        activation = {
+            "gmfn_id": applicant.gmfn_id,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": clan.name,
+            "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)) or None,
+            "activation_path": None,
+            "activation_link": None,
+            "activation_message": None,
+        }
+        join_request.activation_link = None
+        join_request.activation_message = None
+        join_request.activation_generated_at = None
+        join_request.activation_delivery_status = "recovery_required"
 
     db.add(join_request)
-    db.commit()
-    db.refresh(join_request)
 
     if existing_identity:
         create_notification(
@@ -3351,6 +3385,8 @@ def _approve_join_request(
             ),
             action_url=f"/app/marketplace?community={int(clan.id)}",
             action_label="Open community",
+            commit=False,
+            refresh=False,
         )
         activation = {
             "gmfn_id": applicant.gmfn_id,
@@ -3379,9 +3415,19 @@ def _approve_join_request(
             user_id=int(applicant.id),
             kind="approval_success",
             title="You were approved",
-            message="You can now activate your GSN account.",
-            action_url=_safe_str(activation.get("activation_path"), "/activate-membership"),
-            action_label="Activate now",
+            message=(
+                "Return to the protected application browser to activate your GSN account."
+                if activation_grant is not None
+                else "This older application requires verified account recovery before activation."
+            ),
+            action_url=(
+                _safe_str(activation.get("activation_path"), "/activate-membership")
+                if activation_grant is not None
+                else "/login?force=1"
+            ),
+            action_label=("Activate now" if activation_grant is not None else "Open recovery"),
+            commit=False,
+            refresh=False,
         )
     
     create_notification(
@@ -3392,6 +3438,8 @@ def _approve_join_request(
         message="Your approval has updated your trust standing.",
         action_url="/app/trust",
         action_label="View Trust",
+        commit=False,
+        refresh=False,
     )
 
     log_trust_event(
@@ -3415,7 +3463,13 @@ def _approve_join_request(
             "identity_reused": existing_identity,
         },
         dedupe_key=f"join-request-approved:{int(join_request.id)}",
+        commit=False,
+        refresh=False,
     )
+
+    db.commit()
+    db.refresh(join_request)
+    db.refresh(membership)
 
     return {
         "ok": True,
@@ -3426,6 +3480,9 @@ def _approve_join_request(
         "existing_identity": existing_identity,
         "identity_reused": existing_identity,
         "activation_required": not existing_identity,
+        "legacy_recovery_required": bool(
+            not existing_identity and activation_grant is None
+        ),
         "message": (
             "Applicant approved with existing GSN ID."
             if existing_identity
@@ -4501,79 +4558,13 @@ def get_join_invite_request_status(
     entry_policy: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    invite_code = _safe_str(code)
-    phone = _safe_str(phone_e164)
-
-    if not invite_code or not phone:
-        return {"ok": True, "found": False}
-
-    clan, _invite_row = _resolve_public_join_clan(
-        db,
-        invite_code=invite_code,
-        community_code=community_code,
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "public_join_status_lookup_retired",
+            "message": "Phone and invite details no longer reveal application status. Reopen the protected continuation saved by the original browser.",
+        },
     )
-    request_qr_policy_key = (
-        _safe_str(getattr(_invite_row, "qr_policy_key", None))
-        if _invite_row
-        else (_public_qr_policy_hint(qr_policy, entry_policy) or "")
-    )
-    request_qr_policy = {
-        "qr_policy_key": request_qr_policy_key or None,
-        "qr_policy_label": _qr_policy_label(request_qr_policy_key)
-        if request_qr_policy_key
-        else None,
-    }
-    if clan is None:
-        return {"ok": True, "found": False, **request_qr_policy}
-
-    pending_email = _pending_applicant_email(phone)
-    applicant = (
-        db.query(User)
-        .filter(
-            or_(
-                User.phone_e164 == phone,
-                User.email == pending_email,
-            )
-        )
-        .order_by(User.id.desc())
-        .first()
-    )
-    if applicant is None:
-        return {
-            "ok": True,
-            "found": False,
-            "community_id": int(clan.id),
-            "community_code": _community_code(clan.id, clan=clan),
-            "community_name": getattr(clan, "name", None),
-            "marketplace_name": getattr(clan, "marketplace_name", None),
-            **request_qr_policy,
-        }
-
-    join_request = (
-        db.query(ClanJoinRequest)
-        .filter(
-            ClanJoinRequest.clan_id == int(clan.id),
-            ClanJoinRequest.applicant_user_id == int(applicant.id),
-        )
-        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
-        .first()
-    )
-    if join_request is None:
-        return {
-            "ok": True,
-            "found": False,
-            "community_id": int(clan.id),
-            "community_code": _community_code(clan.id, clan=clan),
-            "community_name": getattr(clan, "name", None),
-            "marketplace_name": getattr(clan, "marketplace_name", None),
-            **request_qr_policy,
-        }
-
-    return {
-        "ok": True,
-        "found": True,
-        **_join_request_status_payload(db, request, join_request),
-    }
 
 
 @router.get("/join", response_class=HTMLResponse)
@@ -4775,30 +4766,31 @@ def create_join_request(
     submitted_existing_gmfn_id = _safe_str(payload.existing_gmfn_id).upper()
     claimed_existing_identity_user = None
     if submitted_existing_gmfn_id:
-        claimed_existing_identity_user = (
-            db.query(User)
-            .filter(User.gmfn_id == submitted_existing_gmfn_id)
-            .first()
-        )
-        if claimed_existing_identity_user is None or is_user_activation_pending(
-            claimed_existing_identity_user
-        ):
+        if current_user is None:
             raise HTTPException(
-                status_code=404,
+                status_code=401,
                 detail={
-                    "code": "existing_gsn_id_not_found",
+                    "code": "existing_gsn_sign_in_required",
                     "message": (
-                        "We could not find an active GSN identity with that number. "
-                        "Check the number, or continue as new."
+                        "Sign in as the existing GSN member before using an existing identity "
+                        "for a new community request."
                     ),
-                    "gmfn_id": submitted_existing_gmfn_id,
-                    "invite_code": invite_code,
-                    "community_id": int(clan.id),
-                    "community_code": _community_code(clan.id, clan=clan),
-                    "community_name": clan.name,
-                    "marketplace_name": getattr(clan, "marketplace_name", None),
+                    "next_action": "login",
+                    "login_path": "/login?force=1",
                 },
             )
+        current_gmfn_id = _safe_str(getattr(current_user, "gmfn_id", None)).upper()
+        if current_gmfn_id != submitted_existing_gmfn_id:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "existing_gsn_identity_mismatch",
+                    "message": "The signed-in account does not match the supplied GSN ID.",
+                },
+            )
+        if is_user_activation_pending(current_user):
+            raise HTTPException(status_code=403, detail="Active sign-in is required")
+        claimed_existing_identity_user = current_user
 
     existing_identity_join = bool(
         (
@@ -4810,28 +4802,6 @@ def create_join_request(
 
     submitted_phone = _safe_str(payload.phone_e164)
     join_identity_profile_payload: dict[str, Any] | None = None
-    if claimed_existing_identity_user is not None:
-        missing_existing_fields = [
-            label
-            for label, value in (
-                ("first_name", payload.first_name),
-                ("surname", payload.surname),
-                ("phone_e164", payload.phone_e164),
-            )
-            if not _safe_str(value)
-        ]
-        if missing_existing_fields:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "existing_gsn_applicant_details_required",
-                    "message": (
-                        "Add the applicant name and phone number with the GSN ID "
-                        "so the community can recognize who is asking to join."
-                    ),
-                    "missing_fields": missing_existing_fields,
-                },
-            )
     if existing_identity_join:
         applicant_user = (
             claimed_existing_identity_user
@@ -4891,9 +4861,10 @@ def create_join_request(
                     "code": "existing_gsn_id_required",
                     "message": (
                         "This phone number is already tied to an existing GSN identity. "
-                        "Enter that GSN ID on this invite so the community request "
-                        "can reuse one identity."
+                        "Sign in as that member before sending a community request."
                     ),
+                    "next_action": "login",
+                    "login_path": "/login?force=1",
                     "invite_code": invite_code,
                     "community_id": int(clan.id),
                     "community_code": _community_code(clan.id, clan=clan),
@@ -4932,6 +4903,8 @@ def create_join_request(
 
     applicant_phone_updated = False
     if (
+        not existing_identity_join
+        and
         submitted_phone
         and not _safe_str(getattr(applicant_user, "phone_e164", None))
     ):
@@ -4992,6 +4965,10 @@ def create_join_request(
                 db,
                 request,
                 req=existing_request,
+                authorized_applicant=bool(
+                    current_user is not None
+                    and int(current_user.id) == int(existing_request.applicant_user_id)
+                ),
             ),
         )
 
@@ -5007,6 +4984,17 @@ def create_join_request(
         created_at=datetime.now(timezone.utc),
     )
     db.add(join_request)
+    db.flush()
+
+    issued_activation_grant = None
+    if not existing_identity_join:
+        issued_activation_grant = issue_activation_grant(
+            db,
+            user_id=int(applicant_user.id),
+            source_type="join_request",
+            join_request_id=int(join_request.id),
+            authorize_activation=False,
+        )
 
     if invite_row:
         invite_row.uses = invite_uses + 1
@@ -5101,6 +5089,8 @@ def create_join_request(
                 "activation_message": status_payload.get("activation_message"),
                 "activation_required": status_payload.get("activation_required"),
                 "activation_delivery_status": status_payload.get("activation_delivery_status"),
+                "status_token": issued_activation_grant.status_token if issued_activation_grant else None,
+                "activation_token": issued_activation_grant.activation_token if issued_activation_grant else None,
                 "user_id": int(applicant_user.id),
                 "gmfn_id": status_payload.get("gmfn_id") or _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
                 "existing_identity": status_payload.get("existing_identity", existing_identity_join),
@@ -5185,6 +5175,8 @@ def create_join_request(
                 existing_identity_join,
             ),
             "approval_result": approval_result,
+            "status_token": issued_activation_grant.status_token if issued_activation_grant else None,
+            "activation_token": issued_activation_grant.activation_token if issued_activation_grant else None,
             "request": _join_request_out(db, join_request),
             "membership_truth_boundary": admission_policy["membership_truth_boundary"],
         }
@@ -5281,6 +5273,8 @@ def create_join_request(
         "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
         "existing_identity": existing_identity_join,
         "identity_reused": existing_identity_join,
+        "status_token": issued_activation_grant.status_token if issued_activation_grant else None,
+        "activation_token": issued_activation_grant.activation_token if issued_activation_grant else None,
         "request": _join_request_out(db, join_request),
         "applicant_profile": {
             "first_name": _safe_str(payload.first_name) or None,
@@ -6003,11 +5997,29 @@ def vote_join_request_compat(
 def get_join_request_status(
     join_request_id: int,
     request: Request,
+    status_token: Optional[str] = Header(
+        default=None,
+        alias="X-Join-Status-Token",
+        min_length=32,
+        max_length=256,
+    ),
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(_optional_current_user),
 ):
     req = db.query(ClanJoinRequest).filter(ClanJoinRequest.id == int(join_request_id)).first()
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
+
+    is_applicant = bool(
+        current_user is not None
+        and int(current_user.id) == int(req.applicant_user_id)
+    )
+    if not is_applicant:
+        require_status_grant(
+            db,
+            join_request_id=int(req.id),
+            status_token=str(status_token or ""),
+        )
 
     return _join_request_status_payload(db, request, req)
 
@@ -6022,8 +6034,15 @@ def mark_join_request_activation_opened(
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
 
-    applicant = db.get(User, int(req.applicant_user_id))
-    if not _gmfn_id_matches_user(payload.gmfn_id, applicant):
+    grant, applicant = require_activation_grant(
+        db,
+        activation_token=payload.activation_token,
+    )
+    if (
+        grant.join_request_id != int(req.id)
+        or int(grant.user_id) != int(req.applicant_user_id)
+        or not _gmfn_id_matches_user(payload.gmfn_id, applicant)
+    ):
         raise HTTPException(status_code=404, detail="Join request not found")
 
     req = _mark_activation_opened_if_needed(db, req=req)

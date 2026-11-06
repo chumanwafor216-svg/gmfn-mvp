@@ -935,10 +935,12 @@ export async function removeMyProfileImage(): Promise<any> {
 export async function activateApprovedMember(payload: {
   gmfn_id?: string | null;
   request_id?: string | number | null;
+  activation_token: string;
   password: string;
   confirm_password?: string | null;
 }): Promise<any> {
   const cleaned: Record<string, any> = {
+    activation_token: String(payload?.activation_token || ""),
     password: String(payload?.password || ""),
   };
 
@@ -963,6 +965,7 @@ export async function activateApprovedMember(payload: {
 
 export async function activateMembership(payload: {
   gmfn_id: string;
+  activation_token: string;
   password: string;
   confirm_password: string;
   request_id?: string | number | null;
@@ -971,6 +974,7 @@ export async function activateMembership(payload: {
     payload?.request_id == null ? "" : String(payload.request_id).trim();
   const cleaned = {
     gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+    activation_token: String(payload?.activation_token || ""),
     password: String(payload?.password || ""),
     confirm_password: String(payload?.confirm_password || ""),
     ...(requestId ? { request_id: requestId } : {}),
@@ -989,19 +993,21 @@ export async function activateMembership(payload: {
 }
 
 export async function markJoinRequestActivationOpened(
-  requestId: string | number,
-  gmfnId: string
+    requestId: string | number,
+  gmfnId: string,
+  activationToken: string
 ): Promise<any> {
   const cleanedRequestId = String(requestId || "").trim();
   const cleanedGmfnId = String(gmfnId || "").trim().toUpperCase();
-  if (!cleanedRequestId || !cleanedGmfnId) {
+  const cleanedActivationToken = String(activationToken || "").trim();
+  if (!cleanedRequestId || !cleanedGmfnId || !cleanedActivationToken) {
     return { ok: false, skipped: true };
   }
 
   return httpJson(
     `/clans/join-requests/${encodeURIComponent(cleanedRequestId)}/activation-opened`,
     "POST",
-    { gmfn_id: cleanedGmfnId },
+    { gmfn_id: cleanedGmfnId, activation_token: cleanedActivationToken },
     { quiet: true }
   );
 }
@@ -9106,10 +9112,18 @@ export async function removeCommunityProfileImage(arg1?: any): Promise<any> {
   throw new Error("Community profile image could not be removed.");
 }
 
-export async function getJoinApprovalStatus(requestId: number | string) {
+export async function getJoinApprovalStatus(
+  requestId: number | string,
+  statusToken?: string | null
+) {
+  const token = String(statusToken || "").trim();
   return httpJson(
     `/clans/join-requests/${encodeURIComponent(String(requestId))}/status`,
-    "GET"
+    "GET",
+    undefined,
+    {
+      headers: token ? { "X-Join-Status-Token": token } : undefined,
+    }
   );
 }
 

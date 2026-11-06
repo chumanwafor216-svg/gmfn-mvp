@@ -1841,6 +1841,45 @@ class ClanJoinRequest(Base):
     )
 
 
+class AccountActivationGrant(Base):
+    __tablename__ = "account_activation_grants"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    join_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clan_join_requests.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,
+    )
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    status_token_digest: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True, unique=True
+    )
+    activation_token_digest: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True
+    )
+    status_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    activation_authorized_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    activation_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ClanJoinVote(Base):
     __tablename__ = "clan_join_votes"
 

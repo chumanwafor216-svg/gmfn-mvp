@@ -41,6 +41,7 @@ from app.services.phone_verification_service import (
 )
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.trust_score_service import apply_trust_score
+from app.services.account_activation_service import issue_activation_grant
 
 router = APIRouter(prefix="/entry", tags=["entry"])
 
@@ -508,6 +509,7 @@ class CreateEntryOut(BaseModel):
     membership_role: str
     next_step: str
     governance_profile: dict[str, Any]
+    activation_token: Optional[str] = None
     access_token: Optional[str] = None
     token_type: Optional[str] = None
 
@@ -528,25 +530,20 @@ def _entry_duplicate_identity_error(
     user: User,
     field_label: str,
 ) -> HTTPException:
-    gmfn_id = _clean_text(getattr(user, "gmfn_id", ""), upper=True)
     approved = _is_user_approved_somewhere(db, user)
 
     if is_user_activation_pending(user) and approved:
-        activation_path = (
-            f"/activate-membership?gmfn_id={gmfn_id}" if gmfn_id else "/activate-membership"
-        )
         return HTTPException(
             status_code=409,
             detail={
                 "code": "entry_activation_pending",
                 "message": (
                     f"This {field_label} is already attached to an unfinished GSN entry. "
-                    "The community was created, but the account still needs membership activation before sign-in will work."
+                    "Reopen the original protected browser continuation or use verified account recovery."
                 ),
-                "next_action": "activate_membership",
-                "next_action_label": "Activate membership",
-                "activation_path": activation_path,
-                "gmfn_id": gmfn_id or None,
+                "next_action": "account_recovery",
+                "next_action_label": "Open account recovery",
+                "recovery_path": "/login?force=1",
             },
         )
 
@@ -561,7 +558,6 @@ def _entry_duplicate_identity_error(
                 ),
                 "next_action": "admin_review",
                 "next_action_label": "Ask community helper to review",
-                "gmfn_id": gmfn_id or None,
             },
         )
 
@@ -1247,7 +1243,6 @@ def _entry_identity_match_error(
     signal: str,
     evidence_label: str,
 ) -> HTTPException:
-    gmfn_id = _clean_text(getattr(user, "gmfn_id", ""), upper=True)
     return HTTPException(
         status_code=409,
         detail={
@@ -1259,7 +1254,6 @@ def _entry_identity_match_error(
             "signal": signal,
             "next_action": "sign_in_or_identity_review",
             "next_action_label": "Sign in or review identity",
-            "gmfn_id": gmfn_id or None,
         },
     )
 
@@ -2555,6 +2549,15 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         )
 
     access_token = create_access_token(data={"sub": user.email}) if has_entry_password else None
+    activation_grant = None
+    if access_token is None:
+        activation_grant = issue_activation_grant(
+            db,
+            user_id=int(user.id),
+            source_type="entry_create",
+            authorize_activation=True,
+        )
+        db.commit()
 
     return {
         "ok": True,
@@ -2568,6 +2571,9 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         "clan_name": clan.name,
         "membership_role": membership_role,
         "next_step": "build-first-circle" if access_token else "activate-membership",
+        "activation_token": (
+            activation_grant.activation_token if activation_grant is not None else None
+        ),
         "governance_profile": governance_profile,
         "access_token": access_token,
         "token_type": "bearer" if access_token else None,

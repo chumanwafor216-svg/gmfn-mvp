@@ -7,6 +7,7 @@ import { getJoinApprovalStatus } from "../lib/api";
 import { communityQrPolicyByKey, isCommunityQrPolicyKey } from "../lib/communityQrPolicies";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
+import { readActivationContinuation } from "../lib/activationContinuation";
 
 type ReviewerLine = {
   display: string;
@@ -408,6 +409,8 @@ export default function JoinRequestPendingPage() {
         clan_name?: string;
         status?: string;
         submitted_at?: string;
+        status_token?: string;
+        activation_token?: string;
       }) || {}),
     [location.state]
   );
@@ -415,6 +418,14 @@ export default function JoinRequestPendingPage() {
   const requestId = useMemo(
     () => safeStr(state.request_id || searchParams.get("request_id") || ""),
     [state, searchParams]
+  );
+  const continuation = useMemo(
+    () => readActivationContinuation({ requestId }),
+    [requestId]
+  );
+  const statusToken = safeStr(state.status_token || continuation.statusToken);
+  const activationToken = safeStr(
+    state.activation_token || continuation.activationToken
   );
 
   useEffect(() => {
@@ -427,7 +438,7 @@ export default function JoinRequestPendingPage() {
       }
 
       try {
-        const res = await getJoinApprovalStatus(requestId);
+        const res = await getJoinApprovalStatus(requestId, statusToken);
         if (!alive) return;
         setLiveStatus(res || null);
       } catch {
@@ -445,7 +456,7 @@ export default function JoinRequestPendingPage() {
       alive = false;
       window.clearInterval(intervalId);
     };
-  }, [requestId]);
+  }, [requestId, statusToken]);
 
   const communityName = useMemo(
     () =>
@@ -632,6 +643,8 @@ export default function JoinRequestPendingPage() {
         state: {
           gmfn_id: safeStr(liveStatus?.gmfn_id || ""),
           request_id: requestId,
+          status_token: statusToken || undefined,
+          activation_token: activationToken || undefined,
           community_name: communityName,
           status: lowerStatus,
         },
@@ -656,6 +669,8 @@ export default function JoinRequestPendingPage() {
     location.search,
     navigate,
     requestId,
+    statusToken,
+    activationToken,
   ]);
 
   const factRows = useMemo<FactRow[]>(

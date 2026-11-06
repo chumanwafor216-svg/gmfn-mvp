@@ -327,7 +327,7 @@ def test_entry_create_blocks_second_identity_with_existing_bank_destination(clie
     detail = create_res.json()["detail"]
     assert detail["code"] == "entry_identity_match_review_required"
     assert detail["signal"] == "bank_destination_exact_match"
-    assert detail["gmfn_id"] == "GMFN-U-BANKMATCH"
+    assert "gmfn_id" not in detail
 
     with SessionLocal() as db:
         assert db.query(User).filter(User.phone_e164 == "+2348011113031").first() is None
@@ -412,7 +412,7 @@ def test_entry_create_blocks_second_identity_with_existing_official_id(client):
     detail = create_res.json()["detail"]
     assert detail["code"] == "entry_identity_match_review_required"
     assert detail["signal"] == "official_id_exact_match"
-    assert detail["gmfn_id"] == "GMFN-U-IDMATCH"
+    assert "gmfn_id" not in detail
 
     with SessionLocal() as db:
         assert db.query(User).filter(User.phone_e164 == "+2348011113041").first() is None
@@ -507,7 +507,7 @@ def test_entry_create_blocks_second_identity_with_same_name_dob_profile(client):
     detail = create_res.json()["detail"]
     assert detail["code"] == "entry_identity_match_review_required"
     assert detail["signal"] == "profile_composite_match"
-    assert detail["gmfn_id"] == "GMFN-U-PROFILEMATCH"
+    assert "gmfn_id" not in detail
 
     with SessionLocal() as db:
         assert db.query(User).filter(User.phone_e164 == "+2348011113051").first() is None
@@ -657,7 +657,7 @@ def test_entry_create_blocks_second_identity_with_same_device_and_dob(client):
     detail = create_res.json()["detail"]
     assert detail["code"] == "entry_identity_match_review_required"
     assert detail["signal"] == "device_profile_dob_match"
-    assert detail["gmfn_id"] == "GMFN-U-DEVICEMATCH"
+    assert "gmfn_id" not in detail
 
     with SessionLocal() as db:
         assert db.query(User).filter(User.phone_e164 == "+2348011113061").first() is None
@@ -1143,6 +1143,7 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert create_body["phone_e164"] == "+2348012345678"
     assert create_body["next_step"] == "activate-membership"
     assert create_body["email"].endswith("@founder-entry.gsnmail.app")
+    assert create_body["activation_token"]
 
     pending_login_res = client.post(
         "/auth/login",
@@ -1153,9 +1154,7 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     )
     assert pending_login_res.status_code == 401, pending_login_res.text
     pending_login_body = pending_login_res.json()
-    assert pending_login_body["detail"]["code"] == "account_activation_pending"
-    assert pending_login_body["detail"]["gmfn_id"] == create_body["gmfn_id"]
-    assert "activate-membership" in pending_login_body["detail"]["activation_path"]
+    assert pending_login_body["detail"] == "Invalid credentials or account not yet activated"
 
     blocked_restart_res = client.post(
         "/entry/phone/start",
@@ -1168,13 +1167,15 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert blocked_restart_res.status_code == 409, blocked_restart_res.text
     blocked_restart_body = blocked_restart_res.json()
     assert blocked_restart_body["detail"]["code"] == "entry_activation_pending"
-    assert blocked_restart_body["detail"]["gmfn_id"] == create_body["gmfn_id"]
-    assert "activate-membership" in blocked_restart_body["detail"]["activation_path"]
+    assert "gmfn_id" not in blocked_restart_body["detail"]
+    assert "activation_path" not in blocked_restart_body["detail"]
+    assert blocked_restart_body["detail"]["next_action"] == "account_recovery"
 
     activate_res = client.post(
         "/auth/activate-membership",
         json={
             "gmfn_id": create_body["gmfn_id"],
+            "activation_token": create_body["activation_token"],
             "password": "secret123",
             "confirm_password": "secret123",
         },
@@ -1325,12 +1326,13 @@ def test_activate_membership_cannot_reset_already_activated_account(client):
         "/auth/activate-membership",
         json={
             "gmfn_id": "GMFN-U-ACTIVE1",
+            "activation_token": "invalid-activation-token-0000000000",
             "password": "new-secret",
             "confirm_password": "new-secret",
         },
     )
-    assert reset_res.status_code == 409, reset_res.text
-    assert reset_res.json()["detail"]["code"] == "account_already_activated"
+    assert reset_res.status_code == 403, reset_res.text
+    assert reset_res.json()["detail"]["code"] == "activation_proof_invalid"
 
     old_login_res = client.post(
         "/auth/login",
@@ -2681,6 +2683,7 @@ def test_entry_cross_region_mismatch_can_be_recorded_with_explanation(client):
         "/auth/activate-membership",
         json={
             "gmfn_id": create_body["gmfn_id"],
+            "activation_token": create_body["activation_token"],
             "password": "secret123",
             "confirm_password": "secret123",
         },
@@ -2765,6 +2768,7 @@ def test_identity_risk_observation_moves_to_watch_on_new_device(client):
         "/auth/activate-membership",
         json={
             "gmfn_id": create_body["gmfn_id"],
+            "activation_token": create_body["activation_token"],
             "password": "secret123",
             "confirm_password": "secret123",
         },
@@ -2863,6 +2867,7 @@ def test_identity_recovery_challenge_can_restore_continuity_review(client):
         "/auth/activate-membership",
         json={
             "gmfn_id": create_body["gmfn_id"],
+            "activation_token": create_body["activation_token"],
             "password": "secret123",
             "confirm_password": "secret123",
         },

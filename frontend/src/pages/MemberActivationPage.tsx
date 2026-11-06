@@ -19,6 +19,10 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { structuredErrorDetail } from "../lib/structuredErrors";
+import {
+  clearActivationContinuation,
+  readActivationContinuation,
+} from "../lib/activationContinuation";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -672,11 +676,19 @@ export default function MemberActivationPage() {
     (location.state as {
       gmfn_id?: string;
       request_id?: string;
+      activation_token?: string;
     }) || {};
 
   const initialGmfnId = safeStr(state.gmfn_id || searchParams.get("gmfn_id") || "");
   const initialRequestId = safeStr(
     state.request_id || searchParams.get("request_id") || ""
+  );
+  const savedContinuation = readActivationContinuation({
+    requestId: initialRequestId,
+    gmfnId: initialGmfnId,
+  });
+  const activationCredential = safeStr(
+    state.activation_token || savedContinuation.activationToken
   );
 
   const [form, setForm] = useState({
@@ -702,24 +714,30 @@ export default function MemberActivationPage() {
     return {
       gmfn_id: safeStr(form.gmfn_id).toUpperCase(),
       request_id: safeStr(form.request_id),
+      activation_token: activationCredential,
       password: form.password,
       confirm_password: form.confirm_password,
     };
-  }, [form]);
+  }, [activationCredential, form]);
 
   const hasGsnId = Boolean(requestReady.gmfn_id);
   const hasRequestId = Boolean(requestReady.request_id);
 
   useEffect(() => {
-    if (!requestReady.gmfn_id || !requestReady.request_id) return;
+    if (
+      !requestReady.gmfn_id ||
+      !requestReady.request_id ||
+      !requestReady.activation_token
+    ) return;
     const marker = `${requestReady.request_id}:${requestReady.gmfn_id}`;
     if (activationOpenedMarkerRef.current === marker) return;
     activationOpenedMarkerRef.current = marker;
     markJoinRequestActivationOpened(
       requestReady.request_id,
-      requestReady.gmfn_id
+      requestReady.gmfn_id,
+      requestReady.activation_token
     ).catch(() => null);
-  }, [requestReady.gmfn_id, requestReady.request_id]);
+  }, [requestReady.activation_token, requestReady.gmfn_id, requestReady.request_id]);
 
   useEffect(() => {
     return () => {
@@ -773,18 +791,20 @@ export default function MemberActivationPage() {
     setNotice(null);
     setSuccess("");
 
-    if (!requestReady.gmfn_id && !requestReady.request_id) {
+    if (!requestReady.activation_token) {
       showNotice(
         {
           tone: "warning",
-          title: "Add approved GSN ID or request ID",
+          title: "Protected continuation required",
           message:
-            "Enter either the GSN ID shown after approval or the request ID from approval status. You do not need both if one of them is already filled in.",
+            "A GSN ID or request number alone cannot activate an account. Reopen this screen from the original application browser, or use verified account recovery.",
         },
         { dismissMs: 4200 }
       );
       return;
     }
+
+    if (!requestReady.gmfn_id && !requestReady.request_id) return;
 
     if (!requestReady.password || requestReady.password.length < 6) {
       showNotice(
@@ -817,13 +837,16 @@ export default function MemberActivationPage() {
       if (requestReady.gmfn_id) {
         activationResult = await activateMembership({
           gmfn_id: requestReady.gmfn_id,
+          activation_token: requestReady.activation_token,
           password: requestReady.password,
           confirm_password: requestReady.confirm_password,
+          request_id: requestReady.request_id || null,
         });
       } else {
         activationResult = await activateApprovedMember({
           gmfn_id: null,
           request_id: requestReady.request_id || null,
+          activation_token: requestReady.activation_token,
           password: requestReady.password,
           confirm_password: requestReady.confirm_password,
         });
@@ -866,6 +889,10 @@ export default function MemberActivationPage() {
       }
 
       await observeIdentityRisk().catch(() => null);
+      clearActivationContinuation({
+        requestId: requestReady.request_id,
+        gmfnId: requestReady.gmfn_id,
+      });
 
       const phoneVerified = Boolean(
         activationResult?.phone_verified ||

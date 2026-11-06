@@ -16,6 +16,7 @@ import {
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
+import { readActivationContinuation } from "../lib/activationContinuation";
 
 type ApprovalStatus = {
   request_id?: number | string;
@@ -274,6 +275,16 @@ export default function JoinApprovalPage() {
   const { requestId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const routeState =
+    (location.state as {
+      status_token?: string;
+      activation_token?: string;
+    }) || {};
+  const continuation = readActivationContinuation({ requestId });
+  const statusToken = safeStr(routeState.status_token || continuation.statusToken);
+  const activationToken = safeStr(
+    routeState.activation_token || continuation.activationToken
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -313,7 +324,7 @@ export default function JoinApprovalPage() {
           throw new Error("Join request ID is missing.");
         }
 
-        const res = await getJoinApprovalStatus(requestId);
+        const res = await getJoinApprovalStatus(requestId, statusToken);
         setData(res || null);
       } catch (err: any) {
         setError(err?.message || "Could not load approval status.");
@@ -324,7 +335,7 @@ export default function JoinApprovalPage() {
     }
 
     void load();
-  }, [requestId]);
+  }, [requestId, statusToken]);
 
   function goBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -861,6 +872,8 @@ export default function JoinApprovalPage() {
                           state: {
                             gmfn_id: gmfnId,
                             request_id: requestId || "",
+                            status_token: statusToken || undefined,
+                            activation_token: activationToken || undefined,
                           },
                         }
                       )

@@ -12,7 +12,13 @@ def generate_gmfn_id() -> str:
     return "GMFN-U-" + secrets.token_hex(4).upper()
 
 
-def ensure_user_gmfn_id(db: Session, user: User) -> User:
+def ensure_user_gmfn_id(
+    db: Session,
+    user: User,
+    *,
+    commit: bool = True,
+    refresh: bool = True,
+) -> User:
     if object_session(user) is not db:
         user = db.merge(user)
 
@@ -26,8 +32,12 @@ def ensure_user_gmfn_id(db: Session, user: User) -> User:
         if not exists:
             user.gmfn_id = candidate
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            if commit:
+                db.commit()
+                if refresh:
+                    db.refresh(user)
+            else:
+                db.flush()
             return user
 
     raise HTTPException(status_code=500, detail="Could not generate unique GSN ID")

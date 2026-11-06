@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.core import auth as auth_core
-from app.core.security import verify_password
 from app.db.database import SessionLocal
 from app.db.models import User
 
@@ -42,7 +41,7 @@ def test_admin_activate_membership_rejects_ordinary_user(
         assert user.hashed_password == "PENDING_APPROVAL"
 
 
-def test_admin_activate_membership_hashes_password_for_platform_admin(
+def test_admin_activate_membership_is_retired_for_platform_admin(
     client: TestClient,
     override_current_user,
 ):
@@ -53,17 +52,14 @@ def test_admin_activate_membership_hashes_password_for_platform_admin(
         json={"gmfn_id": "gsn-u-pending", "password": "newpass123"},
     )
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["status"] == "activated"
-    assert body["gmfn_id"] == "GSN-U-PENDING"
-    assert body["activated_by_user_id"] == 1
+    assert response.status_code == 410, response.text
+    body = response.json()["detail"]
+    assert body["code"] == "admin_password_replacement_retired"
 
     with SessionLocal() as db:
         user = db.query(User).filter(User.gmfn_id == "GSN-U-PENDING").first()
         assert user is not None
-        assert user.hashed_password != "newpass123"
-        assert verify_password("newpass123", user.hashed_password)
+        assert user.hashed_password == "PENDING_APPROVAL"
 
 
 def test_pending_applicant_password_check_is_cached_by_password_hash(monkeypatch):

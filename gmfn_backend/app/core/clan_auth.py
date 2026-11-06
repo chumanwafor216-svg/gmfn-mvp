@@ -41,7 +41,15 @@ def list_visible_user_clans(*, db: Session, user: User) -> list[Clan]:
     return real_clans
 
 
-def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user") -> ClanMembership:
+def ensure_membership(
+    *,
+    db: Session,
+    clan: Clan,
+    user: User,
+    role: str = "user",
+    commit: bool = True,
+    refresh: bool = True,
+) -> ClanMembership:
     """
     Ensures user is a member of the clan. If already a member, returns existing row.
     """
@@ -58,8 +66,11 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
         # If upgrading role, allow it
         if role == "admin" and (m.role or "").lower() != "admin":
             m.role = "admin"
-            db.commit()
-            db.refresh(m)
+            db.add(m)
+            if commit:
+                db.commit()
+                if refresh:
+                    db.refresh(m)
         return m
 
     archived = (
@@ -76,8 +87,11 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
         archived.left_at = None
         if role == "admin" or (archived.role or "").lower() != "admin":
             archived.role = role
-        db.commit()
-        db.refresh(archived)
+        db.add(archived)
+        if commit:
+            db.commit()
+            if refresh:
+                db.refresh(archived)
         return archived
 
     m = ClanMembership(
@@ -87,8 +101,12 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
         personal_pool_balance=Decimal("0"),
     )
     db.add(m)
-    db.commit()
-    db.refresh(m)
+    if commit:
+        db.commit()
+        if refresh:
+            db.refresh(m)
+    else:
+        db.flush()
     return m
 
 

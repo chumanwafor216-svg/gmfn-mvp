@@ -53,6 +53,7 @@ import {
 } from "../lib/identityEvidenceRequirements";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { saveActivationContinuation } from "../lib/activationContinuation";
 
 type FeedbackTarget =
   | "global"
@@ -71,6 +72,7 @@ type CreateCommunityOutcome = {
   out?: any;
   gmfnId?: string;
   requestId?: string;
+  activationToken?: string;
 };
 
 type OptionalEvidenceStep =
@@ -2993,24 +2995,14 @@ export default function CreateEntryPage() {
     const detail = structuredErrorDetail(err);
     if (
       detail?.code !== "entry_activation_pending" &&
-      detail?.next_action !== "activate_membership"
+      detail?.next_action !== "account_recovery"
     ) {
       return false;
     }
 
-    const gmfnId = safeStr(detail?.gmfn_id).toUpperCase();
-    const activationPath =
-      safeStr(detail?.activation_path) ||
-      (gmfnId ? `/activate-membership?gmfn_id=${encodeURIComponent(gmfnId)}` : "");
-
-    if (!activationPath) return false;
-
     clearPublicEntryState();
-    nav(activationPath, {
+    nav(safeStr(detail?.recovery_path) || "/login?force=1", {
       replace: true,
-      state: {
-        gmfn_id: gmfnId || undefined,
-      },
     });
     return true;
   }
@@ -3484,6 +3476,7 @@ export default function CreateEntryPage() {
     const nextStep = safeStr(out?.next_step).toLowerCase();
     const issuedGmfnId = resolveIssuedGmfnId(out, me);
     const requestId = resolveActivationRequestId(out);
+    const activationToken = safeStr(out?.activation_token);
     const authenticatedNow = isAuthenticated();
 
     if (nextStep === "build-first-circle" && authenticatedNow) {
@@ -3505,6 +3498,17 @@ export default function CreateEntryPage() {
           "GSN created the community but did not return the activation reference. Please retry this step or ask the community helper to review the intake record."
         );
       }
+      if (!activationToken) {
+        throw new Error(
+          "GSN created the community but did not return the protected activation continuation. Use verified account recovery; a GSN ID alone cannot activate this account."
+        );
+      }
+
+      saveActivationContinuation({
+        requestId,
+        gmfnId: issuedGmfnId,
+        activationToken,
+      });
 
       const next = new URLSearchParams();
       if (issuedGmfnId) next.set("gmfn_id", issuedGmfnId);
@@ -3523,6 +3527,7 @@ export default function CreateEntryPage() {
         out,
         gmfnId: issuedGmfnId || undefined,
         requestId: requestId || undefined,
+        activationToken,
       };
     }
 
@@ -3648,6 +3653,7 @@ export default function CreateEntryPage() {
         state: {
           gmfn_id: outcome.gmfnId || undefined,
           request_id: outcome.requestId || undefined,
+          activation_token: outcome.activationToken || undefined,
         },
       });
     } catch (err: any) {
@@ -3684,6 +3690,7 @@ export default function CreateEntryPage() {
             state: {
               gmfn_id: outcome.gmfnId || undefined,
               request_id: outcome.requestId || undefined,
+              activation_token: outcome.activationToken || undefined,
             },
           });
         } catch (retryErr: any) {
@@ -3778,6 +3785,7 @@ export default function CreateEntryPage() {
       state: {
         gmfn_id: createOutcome.gmfnId || undefined,
         request_id: createOutcome.requestId || undefined,
+        activation_token: createOutcome.activationToken || undefined,
       },
     });
   }

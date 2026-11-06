@@ -12,6 +12,10 @@ import {
   setStoredGmfnId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import {
+  clearActivationContinuation,
+  readActivationContinuation,
+} from "../lib/activationContinuation";
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
@@ -279,7 +283,11 @@ export default function ActivateMembershipPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const state = (location.state as { gmfn_id?: string; request_id?: string | number } | null) || null;
+  const state = (location.state as {
+    gmfn_id?: string;
+    request_id?: string | number;
+    activation_token?: string;
+  } | null) || null;
 
   const initialGmfnId = useMemo(() => {
     return cleanGmfnId(
@@ -295,6 +303,13 @@ export default function ActivateMembershipPage() {
   const requestId = useMemo(() => {
     return String(state?.request_id || searchParams.get("request_id") || "").trim();
   }, [state, searchParams]);
+  const continuation = readActivationContinuation({
+    requestId,
+    gmfnId: initialGmfnId,
+  });
+  const activationToken = String(
+    state?.activation_token || continuation.activationToken || ""
+  ).trim();
 
   const [gmfnId, setGmfnId] = useState(initialGmfnId);
   const [password, setPassword] = useState("");
@@ -327,19 +342,24 @@ export default function ActivateMembershipPage() {
   useEffect(() => {
     const safeGmfnId = cleanGmfnId(initialGmfnId || gmfnId);
     const safeRequestId = String(requestId || "").trim();
-    if (!safeGmfnId || !safeRequestId) return;
+    if (!safeGmfnId || !safeRequestId || !activationToken) return;
 
     const markerKey = `${safeRequestId}:${safeGmfnId}`;
     if (activationOpenedKeyRef.current === markerKey) return;
     activationOpenedKeyRef.current = markerKey;
 
-    void markJoinRequestActivationOpened(safeRequestId, safeGmfnId).catch(() => {
+    void markJoinRequestActivationOpened(
+      safeRequestId,
+      safeGmfnId,
+      activationToken
+    ).catch(() => {
       // Activation can continue even if telemetry cannot be recorded.
     });
-  }, [gmfnId, initialGmfnId, requestId]);
+  }, [activationToken, gmfnId, initialGmfnId, requestId]);
 
   const canSubmit = Boolean(
     cleanGmfnId(gmfnId) &&
+      activationToken &&
       password &&
       confirm &&
       password === confirm &&
@@ -360,6 +380,11 @@ export default function ActivateMembershipPage() {
       const safeConfirm = String(confirm || "");
 
       if (!safeGmfnId) throw new Error("Enter your GSN ID.");
+      if (!activationToken) {
+        throw new Error(
+          "Protected continuation required. Reopen activation from the original application browser, or use verified account recovery."
+        );
+      }
       if (!safePassword) throw new Error("Enter your password.");
       if (safePassword.length < 6) {
         throw new Error("Password must be at least 6 characters.");
@@ -370,6 +395,7 @@ export default function ActivateMembershipPage() {
 
       const res = await activateMembership({
         gmfn_id: safeGmfnId,
+        activation_token: activationToken,
         password: safePassword,
         confirm_password: safeConfirm,
         request_id: requestId || null,
@@ -393,6 +419,8 @@ export default function ActivateMembershipPage() {
             "Activation completed, but your signed-in session did not start. Please sign in again."
         );
       }
+
+      clearActivationContinuation({ requestId, gmfnId: safeGmfnId });
 
       setMsg("You’re in. Opening your community...");
       navigate(routeTarget("communityHome", clanId, "activate-membership.route.community"), {

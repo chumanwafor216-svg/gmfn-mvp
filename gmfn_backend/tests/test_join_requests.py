@@ -27,6 +27,7 @@ from app.db.models import (
 from app.db.notification_models import Notification
 from app.db.verification_models import IdentityVerificationCheck
 from app.main import app
+from app.services.account_activation_service import issue_activation_grant
 
 
 def _seed_join_context(*, invite_code: str = "legacy-code") -> None:
@@ -423,7 +424,8 @@ def test_public_join_request_accepts_clan_invite_record_code(client, override_cl
     assert list_res.json()["items"][0]["qr_policy_key"] == "strict_entry"
 
     approval_status_res = client.get(
-        f"/clans/join-requests/{data['request']['id']}/status"
+        f"/clans/join-requests/{data['request']['id']}/status",
+        headers={"X-Join-Status-Token": data["status_token"]},
     )
     assert approval_status_res.status_code == 200, approval_status_res.text
     approval_status = approval_status_res.json()
@@ -436,11 +438,8 @@ def test_public_join_request_accepts_clan_invite_record_code(client, override_cl
         "/clans/join-invite/request-status"
         "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
     )
-    assert phone_status_res.status_code == 200, phone_status_res.text
-    phone_status = phone_status_res.json()
-    assert phone_status["found"] is True
-    assert phone_status["qr_policy_key"] == "strict_entry"
-    assert phone_status["qr_policy_label"] == "Strict school / professional body"
+    assert phone_status_res.status_code == 410, phone_status_res.text
+    assert phone_status_res.json()["detail"]["code"] == "public_join_status_lookup_retired"
 
     with SessionLocal() as db:
         invite = db.get(ClanInvite, 1)
@@ -548,8 +547,10 @@ def test_public_join_request_exposes_governance_profile_to_review_surfaces(
     assert listed_profile["governance_weight"] == "light"
     assert listed_profile["preset_key"] == "light_migrant_support_network"
 
+    create_body = create_res.json()
     status_res = client.get(
-        "/clans/join-invite/request-status?code=package-code&phone_e164=%2B2349071733533"
+        f"/clans/join-requests/{create_body['request']['id']}/status",
+        headers={"X-Join-Status-Token": create_body["status_token"]},
     )
 
     assert status_res.status_code == 200, status_res.text
@@ -977,13 +978,8 @@ def test_public_join_invite_request_status_uses_qr_policy_hint_without_invite_ro
         "&qr_policy=strict_entry"
     )
 
-    assert res.status_code == 200, res.text
-    data = res.json()
-    assert data["ok"] is True
-    assert data["found"] is False
-    assert data["community_id"] == 1
-    assert data["qr_policy_key"] == "strict_entry"
-    assert data["qr_policy_label"] == "Strict school / professional body"
+    assert res.status_code == 410, res.text
+    assert res.json()["detail"]["code"] == "public_join_status_lookup_retired"
 
 
 def test_shareable_join_invite_max_uses_defaults_to_reusable_value():
@@ -1435,7 +1431,7 @@ def test_public_join_request_existing_phone_requires_gsn_id_instead_of_duplicate
         assert db.query(ClanJoinRequest).count() == 0
 
 
-def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
+def test_public_join_request_existing_gmfn_id_requires_sign_in(client):
     _seed_join_context()
 
     with SessionLocal() as db:
@@ -1464,63 +1460,19 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
         )
         db.commit()
 
-    missing_phone_res = client.post(
-        "/clans/join-requests",
-        json={
-            "invite_code": "package-code",
-            "existing_gmfn_id": "GMFN-U-EXISTING123",
-            "first_name": "Chika",
-            "surname": "Okafor",
-        },
-    )
-    assert missing_phone_res.status_code == 422, missing_phone_res.text
-    assert missing_phone_res.json()["detail"]["code"] == (
-        "existing_gsn_applicant_details_required"
-    )
-    assert "phone_e164" in missing_phone_res.json()["detail"]["missing_fields"]
-
     res = client.post(
         "/clans/join-requests",
         json={
             "invite_code": "package-code",
             "existing_gmfn_id": "GMFN-U-EXISTING123",
-            "first_name": "Chika",
-            "surname": "Okafor",
-            "phone_e164": "+2348012345678",
-            "business_name": "Marketplace trader",
-            "note": "Known by the inviter.",
         },
     )
-
-    assert res.status_code == 201, res.text
-    data = res.json()
-    assert data["existing_identity"] is True
-    assert data["identity_reused"] is True
-    assert data["user_id"] == 2
-    assert data["gmfn_id"] == "GMFN-U-EXISTING123"
-    assert data["request"]["applicant_user_id"] == 2
-    assert data["request"]["applicant_gmfn_id"] == "GMFN-U-EXISTING123"
+    assert res.status_code == 401, res.text
+    assert res.json()["detail"]["code"] == "existing_gsn_sign_in_required"
 
     with SessionLocal() as db:
         assert db.query(User).count() == 2
-        assert db.query(ClanJoinRequest).count() == 1
-        join_request = db.query(ClanJoinRequest).first()
-        assert join_request is not None
-        assert join_request.applicant_user_id == 2
-        assert join_request.activation_delivery_status == "not_required"
-        event = (
-            db.query(TrustEvent)
-            .filter(TrustEvent.event_type == "invite_accepted")
-            .order_by(TrustEvent.id.desc())
-            .first()
-        )
-        assert event is not None
-        meta = json.loads(event.meta_json or "{}")
-        assert meta["identity_reused"] is True
-        assert meta["applicant_profile"]["first_name"] == "Chika"
-        assert meta["applicant_profile"]["surname"] == "Okafor"
-        assert meta["applicant_profile"]["phone_e164"] == "+2348012345678"
-        assert meta["applicant_profile"]["business_name"] == "Marketplace trader"
+        assert db.query(ClanJoinRequest).count() == 0
 
 
 def test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity(client):
@@ -1550,10 +1502,9 @@ def test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity(c
         },
     )
 
-    assert res.status_code == 404, res.text
+    assert res.status_code == 401, res.text
     detail = res.json()["detail"]
-    assert detail["code"] == "existing_gsn_id_not_found"
-    assert detail["gmfn_id"] == "GMFN-U-NOTFOUND"
+    assert detail["code"] == "existing_gsn_sign_in_required"
 
     with SessionLocal() as db:
         assert db.query(User).count() == 1
@@ -2685,15 +2636,10 @@ def test_public_join_request_returns_pending_request_lineage_when_duplicate(clie
     detail = payload.get("detail") or {}
 
     assert detail["code"] == "pending_request_exists"
-    assert detail["request_id"] == created["request"]["id"]
-    assert detail["status"] == "pending"
-    assert detail["community_name"] == "Aberdeen City ICA"
-    assert detail["marketplace_name"] == "Aberdeen city marketplace"
-    assert detail["community_code"] == "GMFN-C-000001"
-    assert detail["pending_status_path"].endswith(
-        f"request_id={created['request']['id']}"
-    )
-    assert detail["approval_path"].endswith(f"/{created['request']['id']}")
+    assert detail["protected_continuation_required"] is True
+    assert "request_id" not in detail
+    assert "status_token" not in detail
+    assert "activation_token" not in detail
 
 
 def test_public_join_request_returns_approved_request_lineage_when_duplicate(client):
@@ -2743,16 +2689,8 @@ def test_public_join_request_returns_approved_request_lineage_when_duplicate(cli
     detail = payload.get("detail") or {}
 
     assert detail["code"] == "approved_request_exists"
-    assert detail["request_id"] == 1
-    assert detail["status"] == "approved"
-    assert detail["community_name"] == "Aberdeen City ICA"
-    assert detail["marketplace_name"] == "Aberdeen city marketplace"
-    assert detail["community_code"] == "GMFN-C-000001"
-    assert detail["result_channel"] == "activation-ready"
-    assert "activate-membership" in str(detail.get("result_path") or "")
-    assert "activate-membership" in str(detail.get("activation_path") or "")
-    assert detail["activation_delivery_status"] is None
-    assert detail["activation_delivered_at"] is None
+    assert detail["protected_continuation_required"] is True
+    assert "request_id" not in detail
 
 
 def test_public_join_request_returns_rejected_request_lineage_when_duplicate(client):
@@ -2801,14 +2739,8 @@ def test_public_join_request_returns_rejected_request_lineage_when_duplicate(cli
     detail = payload.get("detail") or {}
 
     assert detail["code"] == "rejected_request_exists"
-    assert detail["request_id"] == 1
-    assert detail["status"] == "rejected"
-    assert detail["community_name"] == "Aberdeen City ICA"
-    assert detail["marketplace_name"] == "Aberdeen city marketplace"
-    assert detail["community_code"] == "GMFN-C-000001"
-    assert detail["result_channel"] == "request-rejected"
-    assert detail["result_path"] == "/join-approval/1"
-    assert detail["approval_path"] == "/join-approval/1"
+    assert detail["protected_continuation_required"] is True
+    assert "request_id" not in detail
 
 
 def test_public_join_invite_request_status_finds_existing_request_by_phone(client):
@@ -2840,17 +2772,8 @@ def test_public_join_invite_request_status_finds_existing_request_by_phone(clien
         "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
     )
 
-    assert status.status_code == 200, status.text
-    data = status.json()
-    assert data["ok"] is True
-    assert data["found"] is True
-    assert data["request_id"] == request_id
-    assert data["status"] == "pending"
-    assert data["community_code"] == "GMFN-C-000001"
-    assert data["community_name"] == "Aberdeen City ICA"
-    assert data["marketplace_name"] == "Aberdeen city marketplace"
-    assert data["result_channel"] == "pending-review"
-    assert data["result_path"].endswith(f"request_id={request_id}")
+    assert status.status_code == 410, status.text
+    assert status.json()["detail"]["code"] == "public_join_status_lookup_retired"
 
 
 def test_public_join_invite_request_status_returns_activation_lineage_when_approved(client):
@@ -2898,17 +2821,8 @@ def test_public_join_invite_request_status_returns_activation_lineage_when_appro
         "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
     )
 
-    assert status.status_code == 200, status.text
-    data = status.json()
-    assert data["ok"] is True
-    assert data["found"] is True
-    assert data["status"] == "approved"
-    assert data["gmfn_id"] == "GMFN-U-TEST0001"
-    assert data["result_channel"] == "activation-ready"
-    assert "activate-membership" in str(data.get("result_path") or "")
-    assert "activate-membership" in str(data.get("activation_path") or "")
-    assert data["activation_delivery_status"] is None
-    assert data["activation_delivered_at"] is None
+    assert status.status_code == 410, status.text
+    assert status.json()["detail"]["code"] == "public_join_status_lookup_retired"
 
     with SessionLocal() as db:
         refreshed = db.get(ClanJoinRequest, 1)
@@ -2930,20 +2844,30 @@ def test_direct_join_request_status_does_not_mark_activation_opened_when_approve
         )
         db.add(applicant)
         db.flush()
-        db.add(
-            ClanJoinRequest(
-                id=1,
-                clan_id=1,
-                applicant_user_id=2,
-                invited_by_user_id=1,
-                status="approved",
-                activation_delivery_status="pending",
-                created_at=datetime.now(timezone.utc),
-            )
+        join_request = ClanJoinRequest(
+            id=1,
+            clan_id=1,
+            applicant_user_id=2,
+            invited_by_user_id=1,
+            status="approved",
+            activation_delivery_status="pending",
+            created_at=datetime.now(timezone.utc),
         )
+        db.add(join_request)
+        db.flush()
+        issued = issue_activation_grant(
+            db,
+            user_id=2,
+            source_type="join_request",
+            join_request_id=1,
+        )
+        status_token = issued.status_token
         db.commit()
 
-    res = client.get("/clans/join-requests/1/status")
+    res = client.get(
+        "/clans/join-requests/1/status",
+        headers={"X-Join-Status-Token": status_token},
+    )
 
     assert res.status_code == 200, res.text
     data = res.json()
@@ -2971,28 +2895,42 @@ def test_activation_opened_marker_requires_matching_gsn_id(client):
         )
         db.add(applicant)
         db.flush()
-        db.add(
-            ClanJoinRequest(
-                id=1,
-                clan_id=1,
-                applicant_user_id=2,
-                invited_by_user_id=1,
-                status="approved",
-                activation_delivery_status="pending",
-                created_at=datetime.now(timezone.utc),
-            )
+        join_request = ClanJoinRequest(
+            id=1,
+            clan_id=1,
+            applicant_user_id=2,
+            invited_by_user_id=1,
+            status="approved",
+            activation_delivery_status="pending",
+            created_at=datetime.now(timezone.utc),
         )
+        db.add(join_request)
+        db.flush()
+        issued = issue_activation_grant(
+            db,
+            user_id=2,
+            source_type="join_request",
+            join_request_id=1,
+            authorize_activation=True,
+        )
+        activation_token = issued.activation_token
         db.commit()
 
     wrong = client.post(
         "/clans/join-requests/1/activation-opened",
-        json={"gmfn_id": "GMFN-U-WRONG001"},
+        json={
+            "gmfn_id": "GMFN-U-WRONG001",
+            "activation_token": activation_token,
+        },
     )
     assert wrong.status_code == 404, wrong.text
 
     res = client.post(
         "/clans/join-requests/1/activation-opened",
-        json={"gmfn_id": "GSN-U-APPROVED1"},
+        json={
+            "gmfn_id": "GSN-U-APPROVED1",
+            "activation_token": activation_token,
+        },
     )
 
     assert res.status_code == 200, res.text
@@ -3035,6 +2973,14 @@ def test_join_request_status_reports_live_review_counts_and_activated_reviewers(
         )
         db.add_all([pending_applicant, active_reviewer, pending_placeholder])
         db.flush()
+        join_request = ClanJoinRequest(
+            id=1,
+            clan_id=1,
+            applicant_user_id=2,
+            invited_by_user_id=1,
+            status="pending",
+            created_at=datetime.now(timezone.utc),
+        )
         db.add_all(
             [
                 ClanMembership(
@@ -3051,19 +2997,23 @@ def test_join_request_status_reports_live_review_counts_and_activated_reviewers(
                     role="user",
                     personal_pool_balance=0,
                 ),
-                ClanJoinRequest(
-                    id=1,
-                    clan_id=1,
-                    applicant_user_id=2,
-                    invited_by_user_id=1,
-                    status="pending",
-                    created_at=datetime.now(timezone.utc),
-                ),
+                join_request,
             ]
         )
+        db.flush()
+        issued = issue_activation_grant(
+            db,
+            user_id=2,
+            source_type="join_request",
+            join_request_id=1,
+        )
+        status_token = issued.status_token
         db.commit()
 
-    res = client.get("/clans/join-requests/1/status")
+    res = client.get(
+        "/clans/join-requests/1/status",
+        headers={"X-Join-Status-Token": status_token},
+    )
 
     assert res.status_code == 200, res.text
     data = res.json()
@@ -3229,6 +3179,8 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
     assert data["approved_now"] is True
     assert data["approval_result"]["status"] == "approved"
     assert data["approval_result"]["gmfn_id"].startswith("GMFN-U-")
+    assert data["approval_result"]["legacy_recovery_required"] is True
+    assert data["approval_result"]["activation_delivery_status"] == "recovery_required"
 
     with SessionLocal() as db:
         req = db.get(ClanJoinRequest, 1)
@@ -3267,7 +3219,7 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
         )
 
         assert approval_notice is not None
-        assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
+        assert approval_notice.action_url == "/login?force=1"
 
 
 def test_strict_qr_policy_requires_multi_reviewer_due_process(
@@ -3553,13 +3505,7 @@ def test_approving_existing_member_join_request_does_not_create_activation(
     assert approval["activation_delivery_status"] == "not_required"
 
     status_res = client.get("/clans/join-requests/1/status")
-    assert status_res.status_code == 200, status_res.text
-    status = status_res.json()
-    assert status["status"] == "approved"
-    assert status["result_channel"] == "approved-existing-member"
-    assert status["next_step"] == "open-community"
-    assert status["activation_required"] is False
-    assert status["gmfn_id"] == "GMFN-U-APPROVED-EXISTING"
+    assert status_res.status_code == 404, status_res.text
 
     with SessionLocal() as db:
         applicant = db.get(User, 2)
@@ -3691,7 +3637,7 @@ def test_pilot_approve_completed_join_request_does_not_record_new_vote(
         assert votes == []
 
 
-def test_activate_approved_member_accepts_request_id_path(
+def test_activate_approved_member_rejects_historical_request_without_credential(
     client,
     override_clan_ctx_admin,
     override_current_user,
@@ -3750,68 +3696,15 @@ def test_activate_approved_member_accepts_request_id_path(
             "confirm_password": "secret123",
         },
     )
-    assert activate_res.status_code == 200, activate_res.text
-    activate_body = activate_res.json()
-
-    assert activate_body["ok"] is True
-    assert activate_body["gmfn_id"].startswith("GMFN-U-")
-    assert activate_body["access_token"]
-    assert activate_body["phone_e164"] == "+2348012345678"
-    assert activate_body["phone_verified"] is False
-    assert activate_body["phone_verified_at"] is None
-    assert activate_body["phone_verification_required"] is True
-    assert activate_body["next_action"] == "verify_phone"
-    assert activate_body["next_action_path"] == "/app/identity?task=phone&mode=complete"
-
-    # The pilot approve call above runs under an admin override. Drop it before
-    # checking the activated member's own signed-in identity path.
-    app.dependency_overrides.pop(auth.get_current_user, None)
-
-    member_headers = {"Authorization": f"Bearer {activate_body['access_token']}"}
-    phone_start_res = client.post(
-        "/entry/signed-in/phone/start",
-        json={"phone_e164": "+2348012345678", "country": "Nigeria"},
-        headers=member_headers,
-    )
-    assert phone_start_res.status_code == 201, phone_start_res.text
-    phone_start_body = phone_start_res.json()
-    assert phone_start_body["phone_e164"] == "+2348012345678"
-    assert phone_start_body["otp_preview"]
-
-    phone_confirm_res = client.post(
-        "/entry/signed-in/phone/confirm",
-        json={
-            "verification_id": phone_start_body["verification_id"],
-            "code": phone_start_body["otp_preview"],
-        },
-        headers=member_headers,
-    )
-    assert phone_confirm_res.status_code == 200, phone_confirm_res.text
-    phone_confirm_body = phone_confirm_res.json()
-    assert phone_confirm_body["verified"] is True
-    assert phone_confirm_body["phone_verified_at"] is not None
-
-    me_res = client.get("/auth/me", headers=member_headers)
-    assert me_res.status_code == 200, me_res.text
-    me_body = me_res.json()
-    assert me_body["phone_verified"] is True
-    assert me_body["phone_verified_at"] is not None
-
-    trust_slip_res = client.get("/trust-slips/me", headers=member_headers)
-    assert trust_slip_res.status_code == 200, trust_slip_res.text
-    trust_slip_body = trust_slip_res.json()
-    assert trust_slip_body["active"] is True
-    assert trust_slip_body["phone_verified"] is True
-    assert trust_slip_body["code"]
-    assert trust_slip_body["public_verify_url"].endswith(
-        f"/t/{trust_slip_body['code']}"
-    )
+    assert activate_res.status_code == 422, activate_res.text
 
     with SessionLocal() as db:
         applicant = db.get(User, 2)
+        join_request = db.get(ClanJoinRequest, 1)
         assert applicant is not None
-        assert applicant.gmfn_id == activate_body["gmfn_id"]
-        assert applicant.hashed_password != "PENDING_APPROVAL"
+        assert applicant.hashed_password == "PENDING_APPROVAL"
+        assert join_request is not None
+        assert join_request.activation_delivery_status == "recovery_required"
 
 
 def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_applicant(
@@ -3891,12 +3784,7 @@ def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_appl
         assert rejection_notice.action_url == "/join-approval/1"
 
     status_res = client.get("/clans/join-requests/1/status")
-    assert status_res.status_code == 200, status_res.text
-    status_data = status_res.json()
-    assert status_data["status"] == "rejected"
-    assert status_data["result_channel"] == "request-rejected"
-    assert status_data["result_path"] == "/join-approval/1"
-    assert status_data["next_step"] == "review-decision"
+    assert status_res.status_code == 404, status_res.text
 
 
 def test_activated_reviewer_neutral_vote_records_reason_without_final_decision(

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.security import create_access_token
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanMembership, TrustEvent, User
+from app.services.account_activation_service import issue_activation_grant
 
 
 def _seed_profile_user() -> str:
@@ -187,12 +188,20 @@ def test_activate_membership_recovers_display_name_from_join_evidence(client):
             },
         }
         db.add(event)
+        issued = issue_activation_grant(
+            db,
+            user_id=1,
+            source_type="profile-recovery-test",
+            authorize_activation=True,
+        )
+        activation_token = issued.activation_token
         db.commit()
 
     response = client.post(
         "/auth/activate-membership",
         json={
             "gmfn_id": "GSN-GMFN-U-JOINRECOVER",
+            "activation_token": activation_token,
             "password": "secret123",
             "confirm_password": "secret123",
         },
@@ -209,7 +218,4 @@ def test_activate_membership_recovers_display_name_from_join_evidence(client):
         assert user.display_name == "Ada Ebony"
 
     status_response = client.get("/auth/approved-member/GSN-GMFN-U-JOINRECOVER")
-    assert status_response.status_code == 200, status_response.text
-    status_body = status_response.json()
-    assert status_body["display_name"] == "Ada Ebony"
-    assert status_body["nickname"] == "Ada Ebony"
+    assert status_response.status_code == 410, status_response.text
