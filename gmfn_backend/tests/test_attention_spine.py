@@ -18,6 +18,29 @@ def test_attention_spine_summarizes_server_owned_attention(
         conn.execute(
             text(
                 """
+                INSERT INTO users (id, email, hashed_password, role)
+                VALUES (3, 'attention-applicant@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_join_requests (
+                    id,
+                    clan_id,
+                    applicant_user_id,
+                    status,
+                    created_at
+                )
+                VALUES (7, 1, 3, 'pending', :created_at)
+                """
+            ),
+            {"created_at": now},
+        )
+        conn.execute(
+            text(
+                """
                 INSERT INTO notifications (
                     user_id,
                     kind,
