@@ -414,6 +414,9 @@ def test_public_join_request_accepts_clan_invite_record_code(client, override_cl
     assert data["community_name"] == "Aberdeen City ICA"
     assert data["request"]["invite_id"] == 1
     assert data["request"]["qr_policy_key"] == "strict_entry"
+    assert data["request"]["applicant_name"] == "Arinze Nnamani"
+    assert data["request"]["applicant_phone_e164"] == "+2349071733533"
+    assert data["request"]["applicant_email"] is None
     assert data["qr_policy_key"] == "strict_entry"
     assert data["lineage"]["invite_id"] == 1
     assert data["lineage"]["qr_policy_key"] == "strict_entry"
@@ -421,7 +424,11 @@ def test_public_join_request_accepts_clan_invite_record_code(client, override_cl
 
     list_res = client.get("/clans/1/join-requests")
     assert list_res.status_code == 200, list_res.text
-    assert list_res.json()["items"][0]["qr_policy_key"] == "strict_entry"
+    listed_request = list_res.json()["items"][0]
+    assert listed_request["qr_policy_key"] == "strict_entry"
+    assert listed_request["applicant_name"] == "Arinze Nnamani"
+    assert listed_request["applicant_phone_e164"] == "+2349071733533"
+    assert listed_request["applicant_email"] is None
 
     approval_status_res = client.get(
         f"/clans/join-requests/{data['request']['id']}/status",

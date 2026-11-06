@@ -2600,6 +2600,9 @@ def _join_request_out(
         if clan is not None
         else None
     )
+    applicant_email = _safe_str(getattr(applicant, "email", None))
+    if applicant_email.lower().endswith("@pending.gmfn.local"):
+        applicant_email = ""
 
     return {
         "id": int(req.id),
@@ -2611,7 +2614,13 @@ def _join_request_out(
         "applicant_user_id": (
             int(req.applicant_user_id) if req.applicant_user_id is not None else None
         ),
-        "applicant_email": (applicant.email if applicant else None),
+        "applicant_name": (
+            _safe_str(getattr(applicant, "display_name", None)) or None
+        ),
+        "applicant_phone_e164": (
+            _safe_str(getattr(applicant, "phone_e164", None)) or None
+        ),
+        "applicant_email": applicant_email or None,
         "applicant_gmfn_id": (getattr(applicant, "gmfn_id", None) if applicant else None),
         "invite_id": (int(req.invite_id) if req.invite_id is not None else None),
         "invite_code": (invite.code if invite else None),

@@ -37,6 +37,7 @@ type JoinRequestItem = {
   applicant_user_id?: number | null;
   applicant_name?: string | null;
   applicant_nickname?: string | null;
+  applicant_phone_e164?: string | null;
   applicant_email?: string | null;
   applicant_gmfn_id?: string | null;
   invite_id?: number | null;
@@ -541,6 +542,11 @@ function StatusMark({ status }: { status: string }) {
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
+}
+
+function publicApplicantEmail(value: any): string {
+  const email = safeStr(value);
+  return email.toLowerCase().endsWith("@pending.gmfn.local") ? "" : email;
 }
 
 function ctaPath(target: CtaTarget): string {
@@ -1824,10 +1830,16 @@ export default function CommunityJoinRequestsPage() {
           const canAdminApproveNow =
             canAdminApproveRequest && !pilotOverrideBlocked;
           const isBusy = busyId === item.id;
+          const applicantName = safeStr(
+            item.applicant_name || item.applicant_nickname
+          );
+          const applicantPhone = safeStr(item.applicant_phone_e164);
+          const applicantEmail = publicApplicantEmail(item.applicant_email);
           const applicantLabel = safeStr(
-            item.applicant_name ||
-              item.applicant_nickname ||
-              item.applicant_email ||
+            applicantName ||
+              applicantPhone ||
+              applicantEmail ||
+              item.applicant_gmfn_id ||
               "Applicant"
           );
           const isActive = activeRequestId === item.id;
@@ -1878,6 +1890,19 @@ export default function CommunityJoinRequestsPage() {
                   >
                     {applicantLabel}
                   </div>
+                  {applicantPhone && applicantPhone !== applicantLabel ? (
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#334155",
+                        fontSize: 12,
+                        fontWeight: 850,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {applicantPhone}
+                    </div>
+                  ) : null}
                   {qrPolicyContext ? (
                     <div
                       style={{
@@ -1944,8 +1969,41 @@ export default function CommunityJoinRequestsPage() {
                   >
                     Request #{item.id}
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "#334155", fontWeight: 700 }}>
-                    <strong>{applicantLabel}</strong> invited by{" "}
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      lineHeight: 1.35,
+                      fontWeight: 1000,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {applicantLabel}
+                  </div>
+                  {applicantPhone && applicantPhone !== applicantLabel ? (
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#1D4ED8",
+                        fontSize: 14,
+                        lineHeight: 1.4,
+                        fontWeight: 900,
+                      }}
+                    >
+                      Phone: {applicantPhone}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      color: "#334155",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Invited by{" "}
                     <strong>
                       {safeStr(
                         item.invited_by_display ||
@@ -1995,7 +2053,7 @@ export default function CommunityJoinRequestsPage() {
                     ["Neutral", String(Number(item.neutrals || 0))],
                     ["Rejects", String(Number(item.rejects || 0))],
                     ["Active", String(Number(item.active_member_count || 0))],
-                    ["Applicant", safeStr(item.applicant_gmfn_id || "Not issued yet")],
+                    ["GSN ID", safeStr(item.applicant_gmfn_id || "Not issued yet")],
                   ].map(([label, value]) => (
                     <div key={`${item.id}-${label}`} style={requestFactTile()}>
                       <div style={requestFactLabel()}>{label}</div>

@@ -155,6 +155,27 @@ assertNotContains(
   "Join Requests must not use vague not-available copy for missing Community IDs."
 );
 
+assertContains(
+  /applicant_phone_e164\?: string \| null/,
+  "Join Requests must include the submitted applicant phone in its response type."
+);
+assertContains(
+  /function publicApplicantEmail[\s\S]*?@pending\.gmfn\.local/,
+  "Join Requests must hide internal pending-email identifiers."
+);
+assertContains(
+  /const applicantName[\s\S]*?const applicantPhone[\s\S]*?Phone: \{applicantPhone\}/,
+  "Join Requests must show the submitted applicant name and phone."
+);
+assertContains(
+  /\["GSN ID", safeStr\(item\.applicant_gmfn_id/,
+  "Join Requests must label the applicant's public identifier as GSN ID."
+);
+
+assertNotContains(
+  /item\.applicant_name \|\|[\s\S]{0,180}item\.applicant_email \|\|/g,
+  "Join Requests must not fall back directly from a missing name to the internal pending-email identifier."
+);
 if (findings.length > 0) {
   console.error("Community Join Requests layout audit failed:");
   for (const finding of findings) {

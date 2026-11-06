@@ -5,6 +5,23 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Join-request applicant identity display - 2026-11-06
+
+- The Join Requests review response now includes the stored applicant display
+  name and E.164 phone number. The generated `@pending.gmfn.local` address is
+  an internal placeholder and is no longer returned as a public applicant email.
+- The review card shows the applicant's real name and phone prominently and
+  labels the technical member identifier as `GSN ID`. The compact card also
+  keeps the phone visible without adding another long page section.
+- Existing requests benefit immediately because the name and phone were already
+  stored on the pending user record; affected applicants do not need to submit
+  another request. For request #26 this means the review can display the saved
+  member name and `+2347060852000` instead of
+  `2347060852000@pending.gmfn.local`.
+- Verification passes all 84 join-request backend tests, the dedicated Join
+  Requests layout audit, Python compilation, TypeScript compilation and the
+  Vite production build.
+
 ## No-cost supervised activation fallback - 2026-11-06
 
 - Pilot activation no longer depends on paid SMS. An authenticated community
