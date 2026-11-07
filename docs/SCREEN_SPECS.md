@@ -1102,7 +1102,7 @@ same-community supply has no plausible match.
 
 Must show:
 - the selected community context;
-- one clear `Post a need` action and one secondary `Ask a question` action;
+- one clear `Post a need` action and one secondary `Ask community` action;
 - governed queue lanes and the member's own open requests;
 - current same-community supply matches when available;
 - on the requester's own open community-visible request, one compact
@@ -1112,16 +1112,22 @@ Must show:
 - relay policy controls only for authorised community owners/admins.
 
 Rules:
-- On phone, the first surface asks only `What do you need?`, then shows
-  `Post a need`, `Ask a question`, the `Yours` and `For you` counts, and the
-  selected community. Do not repeat route buttons, state cards, technical
-  relay explanations, or implementation status on that first surface.
+- Founder-approved 2026-11-07 phone-front refinement: the authenticated shell
+  uses the visible title `Demand Box`, restrained static cyan/magenta neon on
+  the header actions and selected Marketplace bottom tab, and keeps the full
+  five-tab authenticated bottom rail visible. The first surface shows the
+  selected marketplace in one gold-accented row, the approved generic human
+  market photograph with the GSN `People helping people` promise, then only
+  `Post a need` and `Ask community`. The photograph is identity scenery only,
+  never a requester, provider, match, availability, recommendation, or
+  evidence claim. Do not add animation, flashing, a new navigation system, or
+  a global companion card inside this focused route.
 - The queue exposes only `All`, `For you`, and `Yours` first. `Tagged`,
   `Questions`, `Urgent`, and `Need types` remain reachable behind one
   `More filters` disclosure. All direct `?queue=` routes remain supported.
-- Phone request cards start closed as message-first previews with truthful
-  status, requester/owner context, up to three title lines, area, date, and one
-  `Details` action. Decorative icon tiles must not squeeze or dominate the
+- Phone request cards start closed as neon-rimmed white message-first previews
+  with truthful status, requester/owner context, up to three title lines,
+  area, date, and one full-width `View request` action. Decorative icon tiles must not squeeze or dominate the
   request message. Opening another card closes the previous card. The open state must retain supply matches,
   contact/copy actions, fulfil/cancel controls, privacy and evidence details,
   and governed expanded search.
@@ -1227,9 +1233,11 @@ Rules:
 - Exact location, GPS, postcode-distance matching, 10/20-mile radius, pricing,
   refunds, and no-match charging remain outside this screen until backend
   contracts and provider consent exist.
-- Hide community relay policy administration from ordinary members. Keep it
-  collapsed as `Community search settings` for authorised owners/admins, and
-  keep expanded search attached to the relevant personal request rather than
+- Hide community relay policy administration from ordinary members. Keep its
+  phone controls inside the compact `Filters` disclosure for authorised
+  owners/admins; desktop may keep `Community search settings`. The compact
+  filter summary truthfully reports Community search as On or Off. Keep
+  expanded search attached to the relevant personal request rather than
   exposing it as a competing page-level tool.
 
 ## FinancePage

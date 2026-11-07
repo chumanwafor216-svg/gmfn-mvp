@@ -10,6 +10,8 @@ const apiFile = "src/lib/api.ts";
 const protectedVoiceFile = "src/components/ProtectedVoiceNotePlayer.tsx";
 const recorderFile = "src/components/VoiceNoteRecorder.tsx";
 const responsePanelFile = "src/components/DemandResponsePanel.tsx";
+const appLayoutFile = "src/layout/AppLayout.tsx";
+const companionBridgeFile = "src/components/WorkspaceCompanionBridge.tsx";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
 const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
 const protectedVoiceSource = readFileSync(
@@ -18,6 +20,8 @@ const protectedVoiceSource = readFileSync(
 );
 const recorderSource = readFileSync(join(frontendRoot, recorderFile), "utf8");
 const responsePanelSource = readFileSync(join(frontendRoot, responsePanelFile), "utf8");
+const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
+const companionBridgeSource = readFileSync(join(frontendRoot, companionBridgeFile), "utf8");
 const failures = [];
 
 function requirePattern(input, file, pattern, message) {
@@ -34,7 +38,8 @@ function forbidPattern(input, file, pattern, message) {
   [/debugId="demand-box\.create"[\s\S]*?Post a need/, "the first surface must keep one clear Post a need action"],
   [/debugId="demand-box\.ask-community"[\s\S]*?Ask community/, "the first surface must keep the direct Ask community action"],
   [/data-gsn-demand-facts="compact"[\s\S]*?Yours \{myOpenRows\.length\}[\s\S]*?For you \{visibleRows\.length\}/, "the first surface must keep the two useful counts"],
-  [/data-gsn-demand-community-strip="selected"[\s\S]*?\{currentMarketplaceName\}/, "the queue must keep the selected marketplace identity directly above its filters"],
+  [/debugId="demand-box\.community-selector"[\s\S]*?\{currentMarketplaceName\}/, "the compact front door must keep the selected marketplace identity above the human market image"],
+  [/data-gsn-demand-human-hero="market"[\s\S]*?demandBoxOpportunityHero[\s\S]*?People helping people/, "the compact front door must keep the approved human marketplace image and GSN promise"],
   [/!showCreateWorkSurface && selectedClanId && canManageRelayPolicy/, "community search policy controls must stay hidden from ordinary members"],
   [/<span>Community search settings<\/span>/, "admin relay controls need a plain collapsed label"],
   [/data-gsn-demand-create-form="simple"/, "the create form must expose the simple-form contract"],
@@ -59,7 +64,7 @@ function forbidPattern(input, file, pattern, message) {
   [/return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/, "direct queue links must remain supported"],
   [/data-gsn-demand-record=\{recordOpen \? "open" : "closed"\}/, "request cards must expose their compact open state"],
   [/openDemandRecordKey === rowKey[\s\S]*?setOpenDemandRecordKey\(recordOpen \? "" : rowKey\)/, "phone cards must use a single shared open key"],
-  [/data-gsn-demand-request-preview=\{!recordOpen && isCompact \? "message-first" : undefined\}[\s\S]*?WebkitLineClamp: isCompact \? 3[\s\S]*?>\s*Details\s*</, "closed phone cards must lead with the request message and a plain Details action"],
+  [/data-gsn-demand-request-preview=\{!recordOpen && isCompact \? "message-first" : undefined\}[\s\S]*?data-gsn-demand-preview-style=\{!recordOpen && isCompact \? "neon-paper" : undefined\}[\s\S]*?WebkitLineClamp: isCompact \? 3[\s\S]*?>\s*View request →\s*</, "closed phone cards must lead with the request message and the approved full-width View request action"],
   [/debugId=\{debugBase \+ "\.request-details"\}[\s\S]*?Request details[\s\S]*?Privacy and terms/, "technical request metadata must remain behind a plain disclosure"],
   [/data-gsn-demand-request-hero="request"[\s\S]*?data-gsn-demand-request-icon="compact"[\s\S]*?demandCategoryChoice\(row\?\.category\)\.icon/, "opened phone requests must keep the bounded subject pictogram compact so the request remains dominant"],
   [/requester_profile_image_url[\s\S]*?data-gsn-demand-sender-identity="true"/, "request cards must keep the optional portrait-or-initials identity row"],
@@ -123,6 +128,20 @@ function forbidPattern(input, file, pattern, message) {
   [/const visibleRows = useMemo[\s\S]*?authorId === ownerUserId && recipientId === recipientUserId[\s\S]*?authorId === recipientUserId && recipientId === ownerUserId/, "request owners must see one private participant exchange at a time"],
   [/Private exchange\. Only the requester and this member can read or play it\./, "the chat trail must retain its private-audience boundary"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
+
+[
+  [/data-gsn-demand-box-shell=\{isDemandBoxRoute \? "neon" : undefined\}/, "the Demand Box neon shell must stay route-scoped"],
+  [/pathname === "\/app\/marketplace" \|\| pathname === "\/app\/demand-box"/, "Demand Box must keep Marketplace active in the authenticated bottom rail"],
+  [/function shouldKeepBottomRailInTaskMode[\s\S]*?pathname === "\/app\/demand-box"/, "Demand Box must keep the authenticated bottom rail visible"],
+  [/if \(pathname === "\/app\/demand-box"\)[\s\S]*?page: "Demand Box"[\s\S]*?data-gmfn-mobile-top-title="true"/, "the compact shell must keep the approved Demand Box title"],
+].forEach(([pattern, message]) => requirePattern(appLayoutSource, appLayoutFile, pattern, message));
+
+requirePattern(
+  companionBridgeSource,
+  companionBridgeFile,
+  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?"\/app\/demand-box"/,
+  "the focused Demand Box route must not be interrupted by a global companion card"
+);
 
 [
   [/Current state/, "the repeated Current state card must not return"],

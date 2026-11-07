@@ -235,22 +235,31 @@ async function verifyViewport(browser, baseURL, viewport) {
   const frontDoor = page.locator('[data-gsn-demand-front-door="simple"]');
   await frontDoor.waitFor();
 
-  assert(await page.getByText("Find what you need", { exact: true }).isVisible(), "The human-first DemandBox title is missing.");
-  assert(await page.getByText("Ask, request or get help from people in Blessed Satch family Marketplace.", { exact: true }).isVisible(), "The plain DemandBox explanation is missing.");
+  assert(await page.locator('[data-gsn-demand-box-shell="neon"]').isVisible(), "The route-scoped Demand Box neon shell is missing.");
+  const bottomRail = page.locator('[data-gmfn-bottom-nav="true"]');
+  assert(await bottomRail.isVisible(), "The authenticated bottom navigation is missing from Demand Box.");
+  assert(
+    (await bottomRail.getByRole("link", { name: "Marketplace", exact: true }).getAttribute("data-bottom-nav-active")) === "true",
+    "Marketplace is not active in the Demand Box bottom navigation."
+  );
+  assert(await frontDoor.locator('[data-gsn-demand-human-hero="market"]').isVisible(), "The human market image is missing.");
+  assert(await frontDoor.getByText("People helping people", { exact: true }).isVisible(), "The GSN human-market promise is missing.");
+  assert(await frontDoor.getByRole("link", { name: /Blessed Satch family Marketplace/ }).isVisible(), "The selected marketplace identity is missing.");
   assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
   assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community is missing.");
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
-  assert((await frontDoor.getByRole("link").count()) === 1, "The first surface has extra links.");
+  assert((await frontDoor.getByRole("link").count()) === 2, "The first surface must contain only the marketplace selector and Ask community links.");
   assert(!(await page.getByText("Current state", { exact: true }).isVisible().catch(() => false)), "The repeated Current state card returned.");
   assert(!(await page.getByText("Routing readiness", { exact: true }).isVisible().catch(() => false)), "Technical routing copy leaked onto the member surface.");
+  assert(!(await page.getByText("Needs attention", { exact: true }).isVisible().catch(() => false)), "The global companion card interrupted the focused Demand Box route.");
   assert((await page.locator('[data-cta-id="demand-box.relay-policy.summary"]').count()) === 0, "Admin relay settings leaked to a member.");
 
   const queue = page.locator('[data-gsn-demand-queue="simple"]');
   await queue.waitFor();
-  assert(
-    await queue.locator('[data-gsn-demand-community-strip="selected"]').getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(),
-    "The selected marketplace identity strip is missing."
-  );
+  const frontScreenshotPath = process.env.GSN_DEMAND_BOX_FRONT_SCREENSHOT_PATH?.trim();
+  if (frontScreenshotPath && viewport.width === 390) {
+    await page.screenshot({ path: frontScreenshotPath, fullPage: true });
+  }
   for (const label of ["All 2", "For you 1", "Yours 1"]) {
     assert(await queue.getByRole("button", { name: label, exact: true }).isVisible(), "Missing primary filter: " + label);
   }
@@ -263,9 +272,10 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   const transportCard = cards.filter({ hasText: "Need school transport" });
   assert((await transportCard.getAttribute("data-gsn-demand-request-preview")) === "message-first", "The closed request is not using the message-first preview.");
+  assert((await transportCard.getAttribute("data-gsn-demand-preview-style")) === "neon-paper", "The approved neon request-paper preview is missing.");
   assert(await transportCard.getByText("Open request", { exact: true }).isVisible(), "The request status is missing from the closed preview.");
   assert(await transportCard.getByText("Need school transport", { exact: true }).isVisible(), "The request message is missing from the closed preview.");
-  await transportCard.getByRole("button", { name: "Details", exact: true }).click();
+  await transportCard.getByRole("button", { name: "View request →", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked before the user asked.");
@@ -283,7 +293,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
   const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
-  await freezerCard.getByRole("button", { name: "Details", exact: true }).click();
+  await freezerCard.getByRole("button", { name: "View request →", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
 

@@ -8,6 +8,7 @@ import {
 import { subscribeWorkspaceDataChanged } from "../lib/workspaceEvents";
 
 const COMPANION_BLOCKED_PATH_PREFIXES = [
+  "/app/demand-box",
   "/app/finance",
   "/app/marketplace",
   "/app/my-gmfn-and-i",

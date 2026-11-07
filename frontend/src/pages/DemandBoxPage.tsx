@@ -2358,11 +2358,22 @@ export default function DemandBoxPage() {
         key={rowKey}
         data-gsn-demand-record={recordOpen ? "open" : "closed"}
         data-gsn-demand-request-preview={!recordOpen && isCompact ? "message-first" : undefined}
+        data-gsn-demand-preview-style={!recordOpen && isCompact ? "neon-paper" : undefined}
         data-gsn-demand-open-presentation={isCompact && recordOpen ? "visual-focus" : "standard"}
         style={{
           ...recordCard(),
-          padding: isCompact && recordOpen ? 0 : isCompact ? 12 : 18,
+          padding: isCompact && recordOpen ? 0 : isCompact ? 16 : 18,
           overflow: isCompact && recordOpen ? "hidden" : undefined,
+          ...(isCompact && !recordOpen
+            ? {
+                borderRadius: 26,
+                border: "2px solid #67E8FF",
+                background:
+                  "radial-gradient(circle at 96% 8%, rgba(255,214,119,0.18) 0%, rgba(255,214,119,0) 34%), linear-gradient(180deg, #FFFFFF 0%, #FFF9EE 100%)",
+                boxShadow:
+                  "0 0 0 2px rgba(255,255,255,0.70) inset, -3px 0 13px rgba(0,224,255,0.86), 3px 0 15px rgba(221,43,255,0.78), 0 0 28px rgba(98,69,255,0.42), 0 22px 42px rgba(0,0,0,0.28)",
+              }
+            : {}),
         }}
       >
         {isCompact && recordOpen ? (
@@ -2522,9 +2533,9 @@ export default function DemandBoxPage() {
           style={{
             display: "grid",
             gridTemplateColumns: isCompact
-              ? "minmax(0, 1fr) 76px"
+              ? "minmax(0, 1fr)"
               : "minmax(0, 1fr) auto",
-            gap: isCompact ? 12 : 10,
+            gap: isCompact ? 14 : 10,
             alignItems: "center",
           }}
         >
@@ -2544,9 +2555,9 @@ export default function DemandBoxPage() {
                   display: "flex",
                   alignItems: "center",
                   gap: 7,
-                  marginBottom: 6,
-                  color: "#426078",
-                  fontSize: 11,
+                  marginBottom: 12,
+                  color: "#15803D",
+                  fontSize: 12,
                   fontWeight: 900,
                   lineHeight: 1.1,
                 }}
@@ -2564,8 +2575,9 @@ export default function DemandBoxPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: 17,
-                lineHeight: isCompact ? 1.2 : 1.28,
+                fontSize: isCompact ? 31 : 17,
+                lineHeight: isCompact ? 1.02 : 1.28,
+                letterSpacing: isCompact ? "-0.035em" : undefined,
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
                 WebkitLineClamp: isCompact ? 3 : recordOpen ? 3 : 2,
@@ -2576,8 +2588,8 @@ export default function DemandBoxPage() {
             </div>
             <div
               style={{
-                marginTop: isCompact ? 7 : 5,
-                display: "flex",
+                marginTop: isCompact ? 14 : 5,
+                display: isCompact ? "grid" : "flex",
                 gap: isCompact ? 10 : 7,
                 flexWrap: "wrap",
                 color: "#587087",
@@ -2605,9 +2617,9 @@ export default function DemandBoxPage() {
           <div
             style={{
               display: "grid",
-              justifyItems: "end",
+              justifyItems: isCompact ? "stretch" : "end",
               gap: 7,
-              minWidth: isCompact ? 76 : 0,
+              minWidth: 0,
             }}
           >
             {isUrgentDemand(row) ? (
@@ -2620,21 +2632,23 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>General evidence: {trustPosture}</span>
             ) : null}
             {isCompact ? (
-              <SecondaryButton
+              <PrimaryButton
                 type="button"
                 onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
                 debugId={debugBase + ".open"}
                 stableHeight={54}
                 style={{
                   ...demandActionStyle(54),
-                  minWidth: 76,
-                  padding: "0 8px",
-                  borderRadius: 16,
-                  fontSize: 12,
+                  padding: "0 16px",
+                  borderRadius: 18,
+                  fontSize: 18,
+                  border: "1px solid #55E8FF",
+                  boxShadow:
+                    "0 0 9px rgba(0,224,255,0.74), 0 0 16px rgba(221,43,255,0.48), inset 0 1px 0 rgba(255,255,255,0.24)",
                 }}
               >
-                Details
-              </SecondaryButton>
+                View request →
+              </PrimaryButton>
             ) : null}
           </div>
         </div>
@@ -3561,35 +3575,42 @@ export default function DemandBoxPage() {
   return (
     <div
       data-gsn-demand-create-shell={showCreateWorkSurface ? "reference" : undefined}
+      data-gsn-demand-landing={isCompact && !showCreateWorkSurface ? "neon" : undefined}
       style={
         showCreateWorkSurface
           ? demandCreateShellStyle(isCompact)
           : {
               maxWidth: 1180,
-              margin: "0 auto",
-              paddingBottom: 40,
+              margin: isCompact ? "0 -16px -16px" : "0 auto",
+              padding: isCompact ? "10px 16px 24px" : undefined,
+              paddingBottom: isCompact ? 24 : 40,
               display: "grid",
-              gap: 18,
+              gap: isCompact ? 12 : 18,
+              background: isCompact
+                ? "radial-gradient(circle at 0% 30%, rgba(0,219,255,0.10) 0%, rgba(0,219,255,0) 34%), radial-gradient(circle at 100% 58%, rgba(220,38,255,0.12) 0%, rgba(220,38,255,0) 36%), #02182B"
+                : undefined,
             }
       }
     >
-      <PageTopNav
-        sectionLabel="DemandBox"
-        title={
-          isCreateMode
-            ? `${currentMarketplaceName} DemandBox`
-            : "DemandBox"
-        }
-        subtitle={
-          isCreateMode
-            ? `You are posting from ${currentMarketplaceName}.`
-            : "Ask for what you need, from the right community, with trust attached."
-        }
-        homeTo={routes.dashboard}
-        homeLabel="Dashboard"
-        backTo={demandReturnTo}
-        backLabel={demandReturnLabel}
-      />
+      {showCreateWorkSurface || !isCompact ? (
+        <PageTopNav
+          sectionLabel="DemandBox"
+          title={
+            isCreateMode
+              ? `${currentMarketplaceName} DemandBox`
+              : "DemandBox"
+          }
+          subtitle={
+            isCreateMode
+              ? `You are posting from ${currentMarketplaceName}.`
+              : "Ask for what you need, from the right community, with trust attached."
+          }
+          homeTo={routes.dashboard}
+          homeLabel="Dashboard"
+          backTo={demandReturnTo}
+          backLabel={demandReturnLabel}
+        />
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
@@ -3611,8 +3632,73 @@ export default function DemandBoxPage() {
       {!showCreateWorkSurface ? (
       <section
         data-gsn-demand-front-door="simple"
-        style={demandHumanHeroShell(isCompact)}
+        style={isCompact ? { display: "grid", gap: 12 } : demandHumanHeroShell(false)}
       >
+        {isCompact ? (
+          <>
+            <StableCtaLink
+              to={routes.community}
+              kind="soft"
+              debugId="demand-box.community-selector"
+              stableHeight={52}
+              style={{
+                width: "100%",
+                minHeight: 52,
+                padding: "0 14px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                borderRadius: 17,
+                color: "#F8FBFF",
+                background: "linear-gradient(180deg, rgba(6,45,77,0.96) 0%, rgba(3,29,51,0.98) 100%)",
+                border: "1px solid #FFD36E",
+                boxShadow:
+                  "0 0 0 1px rgba(255,255,255,0.10) inset, 0 0 10px rgba(255,201,76,0.72), 0 0 20px rgba(255,184,44,0.28)",
+                fontSize: 16,
+                fontWeight: 900,
+              }}
+            >
+              <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 9 }}>
+                <GsnLegacyIcon name="community" size={27} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {currentMarketplaceName}
+                </span>
+              </span>
+              <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>⌄</span>
+            </StableCtaLink>
+
+            <div
+              data-gsn-demand-human-hero="market"
+              style={{
+                minHeight: 154,
+                position: "relative",
+                overflow: "hidden",
+                backgroundImage: `linear-gradient(90deg, rgba(2,18,32,0.60) 0%, rgba(2,18,32,0.12) 72%), url("${demandBoxOpportunityHero}")`,
+                backgroundPosition: "center 42%",
+                backgroundSize: "cover",
+                boxShadow: "0 14px 30px rgba(0,0,0,0.26)",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: 20,
+                  bottom: 20,
+                  color: "#FFFFFF",
+                  textShadow: "0 3px 12px rgba(0,0,0,0.70)",
+                }}
+              >
+                <div style={{ fontSize: 30, fontWeight: 950, fontStyle: "italic", letterSpacing: "-0.05em" }}>
+                  GSN
+                </div>
+                <div style={{ marginTop: -2, fontSize: 13, fontWeight: 900 }}>
+                  People helping people
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
         <div
           style={{
             display: "grid",
@@ -3620,17 +3706,18 @@ export default function DemandBoxPage() {
             gap: 12,
             alignItems: "start",
             width: "100%",
-            maxWidth: isCompact ? 430 : 650,
+            maxWidth: isCompact ? "none" : 650,
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#F1C96A" }}>
+            <div style={{ ...sectionLabel(), color: "#F1C96A", display: isCompact ? "none" : undefined }}>
               DemandBox
             </div>
 
             <div
               style={{
                 marginTop: 8,
+                display: isCompact ? "none" : undefined,
                 color: "#F8FBFF",
                 fontWeight: 900,
                 fontSize: isCompact ? 29 : 38,
@@ -3644,6 +3731,7 @@ export default function DemandBoxPage() {
             <div
               style={{
                 marginTop: 8,
+                display: isCompact ? "none" : undefined,
                 maxWidth: 520,
                 color: "#E6EEF7",
                 fontSize: isCompact ? 14 : 16,
@@ -3662,15 +3750,57 @@ export default function DemandBoxPage() {
                 }}
                 debugId="demand-box.create"
                 stableHeight={isCompact ? 52 : 54}
-                style={demandHeroPrimaryActionStyle(isCompact)}
+                style={{
+                  ...demandHeroPrimaryActionStyle(isCompact),
+                  ...(isCompact
+                    ? {
+                        borderRadius: 20,
+                        border: "1px solid #55E8FF",
+                        boxShadow:
+                          "0 0 9px rgba(0,224,255,0.82), 0 0 18px rgba(221,43,255,0.50), inset 0 1px 0 rgba(255,255,255,0.26)",
+                      }
+                    : {}),
+                }}
               >
-                {demandIconText("document", "Post a need", 20)}
+                {isCompact ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="8" y="3" width="8" height="12" rx="4" />
+                      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7" />
+                    </svg>
+                    <span>Post a need</span>
+                  </span>
+                ) : (
+                  demandIconText("document", "Post a need", 20)
+                )}
               </PrimaryButton>
               <StableCtaLink
                 to={routes.askCommunity}
                 debugId="demand-box.ask-community"
                 stableHeight={isCompact ? 52 : 54}
-                style={demandActionStyle(isCompact ? 52 : 54)}
+                style={{
+                  ...demandActionStyle(isCompact ? 52 : 54),
+                  ...(isCompact
+                    ? {
+                        borderRadius: 20,
+                        color: "#18304B",
+                        background: "linear-gradient(180deg, #FFFFFF 0%, #F7F1E7 100%)",
+                        border: "1px solid #F4D67D",
+                        boxShadow:
+                          "0 0 9px rgba(0,224,255,0.68), 0 0 18px rgba(221,43,255,0.54), inset 0 1px 0 rgba(255,255,255,0.92)",
+                      }
+                    : {}),
+                }}
               >
                 {demandIconText("community", "Ask community", 20)}
               </StableCtaLink>
@@ -3679,7 +3809,7 @@ export default function DemandBoxPage() {
             <div
               style={{
                 marginTop: 10,
-                display: "flex",
+                display: isCompact ? "none" : "flex",
                 gap: 8,
                 flexWrap: "wrap",
               }}
@@ -3701,7 +3831,7 @@ export default function DemandBoxPage() {
       </section>
       ) : null}
 
-      {!showCreateWorkSurface && selectedClanId && canManageRelayPolicy ? (
+      {!showCreateWorkSurface && selectedClanId && canManageRelayPolicy && !isCompact ? (
         <details style={detailsShell()}>
           <StableDisclosureSummary
             style={detailsSummary()}
@@ -4433,7 +4563,11 @@ export default function DemandBoxPage() {
         <section
           id="demand-box-queue-board"
           data-gsn-demand-queue="simple"
-          style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 12 : 20 }}
+          style={
+            isCompact
+              ? { padding: 0, background: "transparent" }
+              : { ...pageCard("#FFFFFF"), padding: 20 }
+          }
         >
           {!isCompact ? (
             <div
@@ -4462,34 +4596,20 @@ export default function DemandBoxPage() {
             </div>
           ) : null}
 
-          {isCompact ? (
-            <div
-              data-gsn-demand-community-strip="selected"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                minHeight: 54,
-                padding: "0 4px 12px",
-                color: "#0B1F33",
-                fontSize: 15,
-                fontWeight: 950,
-              }}
-            >
-              <GsnLegacyIcon name="community" size={30} />
-              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
-                {currentMarketplaceName}
-              </span>
-            </div>
-          ) : null}
-
           <div
             data-gsn-demand-queue-lanes="true"
             style={{
               marginTop: isCompact ? 0 : 14,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: isCompact ? 7 : 10,
+              gap: isCompact ? 0 : 10,
+              padding: isCompact ? 3 : undefined,
+              borderRadius: isCompact ? 19 : undefined,
+              background: isCompact ? "rgba(2,28,50,0.90)" : undefined,
+              border: isCompact ? "1px solid rgba(94,217,255,0.72)" : undefined,
+              boxShadow: isCompact
+                ? "0 0 9px rgba(0,224,255,0.52), 0 0 17px rgba(221,43,255,0.34)"
+                : undefined,
             }}
           >
             {queueLanes.filter((lane) => ["open", "for_me", "mine"].includes(lane.key)).map((lane) => {
@@ -4517,6 +4637,18 @@ export default function DemandBoxPage() {
                     lineHeight: 1.2,
                     borderRadius: 999,
                     fontSize: isCompact ? 12 : undefined,
+                    ...(isCompact
+                      ? {
+                          color: active ? "#FFFFFF" : "#E4EEF7",
+                          background: active
+                            ? "linear-gradient(135deg, #0B6CE3 0%, #1C49D5 100%)"
+                            : "transparent",
+                          border: active ? "1px solid #5CEAFF" : "1px solid transparent",
+                          boxShadow: active
+                            ? "0 0 9px rgba(0,224,255,0.62), 0 0 15px rgba(221,43,255,0.38)"
+                            : "none",
+                        }
+                      : {}),
                   }}
                 >
                   {!isCompact ? <GsnLegacyIcon name={lane.icon} size={22} /> : null}
@@ -4528,20 +4660,40 @@ export default function DemandBoxPage() {
 
           <details
             data-gsn-demand-more-filters="true"
-            style={{ ...detailsShell(), marginTop: isCompact ? 10 : 14 }}
+            style={{
+              ...detailsShell(),
+              marginTop: isCompact ? 10 : 14,
+              ...(isCompact
+                ? {
+                    color: "#F8FBFF",
+                    background: "transparent",
+                    border: "none",
+                    boxShadow: "none",
+                  }
+                : {}),
+            }}
           >
             <StableDisclosureSummary
               style={{
                 ...detailsSummary(),
                 padding: isCompact ? "11px 14px" : "16px 18px",
                 fontSize: isCompact ? 13 : 16,
+                ...(isCompact
+                  ? {
+                      color: "#F8FBFF",
+                      background: "rgba(2,28,50,0.76)",
+                      borderBottom: "1px solid rgba(99,211,255,0.22)",
+                    }
+                  : {}),
               }}
               stableHeight={isCompact ? 46 : 54}
               debugId="demand-box.more-filters"
             >
-              <span>More filters</span>
-              <span style={{ color: "#64748B", fontSize: 13 }}>
-                {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "All"}
+              <span>{isCompact ? "Filters" : "More filters"}</span>
+              <span style={{ color: isCompact ? "#E6F0F8" : "#64748B", fontSize: 13 }}>
+                {isCompact
+                  ? `Community search: ${relayPolicy?.outbound_enabled || relayPolicy?.inbound_enabled ? "On" : "Off"}`
+                  : queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "All"}
               </span>
             </StableDisclosureSummary>
             <div
@@ -4571,6 +4723,48 @@ export default function DemandBoxPage() {
                   </Button>
                 );
               })}
+              {isCompact && selectedClanId && canManageRelayPolicy ? (
+                <div
+                  data-gsn-demand-relay-controls="compact"
+                  style={{ gridColumn: "1 / -1", display: "grid", gap: 10 }}
+                >
+                  <div style={{ ...helperText(), color: "#DCEAF5", fontSize: 12 }}>
+                    Community search is one hop only. The requester must opt in, and private Ask Person requests are never relayed.
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <SecondaryButton
+                      onClick={() =>
+                        void handleSaveRelayPolicy(
+                          !relayPolicy?.outbound_enabled,
+                          Boolean(relayPolicy?.inbound_enabled)
+                        )
+                      }
+                      disabled={savingRelayPolicy}
+                      busy={savingRelayPolicy}
+                      busyLabel="Saving..."
+                      debugId="demand-box.relay-policy.outbound"
+                      stableHeight={48}
+                    >
+                      {relayPolicy?.outbound_enabled ? "Outbound off" : "Allow outbound"}
+                    </SecondaryButton>
+                    <SecondaryButton
+                      onClick={() =>
+                        void handleSaveRelayPolicy(
+                          Boolean(relayPolicy?.outbound_enabled),
+                          !relayPolicy?.inbound_enabled
+                        )
+                      }
+                      disabled={savingRelayPolicy}
+                      busy={savingRelayPolicy}
+                      busyLabel="Saving..."
+                      debugId="demand-box.relay-policy.inbound"
+                      stableHeight={48}
+                    >
+                      {relayPolicy?.inbound_enabled ? "Inbound off" : "Allow inbound"}
+                    </SecondaryButton>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </details>
 
@@ -4704,11 +4898,41 @@ export default function DemandBoxPage() {
       {myClosedRows.length > 0 ? (
         <section
           data-gsn-demand-past-requests="true"
-          style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 12 : 18 }}
+          style={
+            isCompact
+              ? {
+                  padding: 0,
+                  color: "#F8FBFF",
+                  background: "rgba(3,31,54,0.94)",
+                  borderRadius: 18,
+                  border: "1px solid rgba(98,211,255,0.34)",
+                }
+              : { ...pageCard("#FFFFFF"), padding: 18 }
+          }
         >
-          <details style={detailsShell()}>
+          <details
+            style={{
+              ...detailsShell(),
+              ...(isCompact
+                ? {
+                    color: "#F8FBFF",
+                    background: "transparent",
+                    border: "none",
+                    boxShadow: "none",
+                  }
+                : {}),
+            }}
+          >
             <StableDisclosureSummary
-              style={detailsSummary()}
+              style={{
+                ...detailsSummary(),
+                ...(isCompact
+                  ? {
+                      color: "#F8FBFF",
+                      background: "transparent",
+                    }
+                  : {}),
+              }}
               stableHeight={56}
               debugId="demand-box.history.open"
             >

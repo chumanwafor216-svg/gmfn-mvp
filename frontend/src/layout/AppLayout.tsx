@@ -258,7 +258,8 @@ function makeMarketplaceItem(): NavLinkItem {
   return {
     label: "Marketplace",
     to: "/app/marketplace",
-    match: (pathname) => pathname === "/app/marketplace",
+    match: (pathname) =>
+      pathname === "/app/marketplace" || pathname === "/app/demand-box",
   };
 }
 
@@ -477,7 +478,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
   if (pathname === "/app/demand-box") {
     return {
-      title: "DemandBox",
+      title: "Demand Box",
       hint:
         "Post or finish this need first. You can return to Marketplace when you are done.",
       actions: [
@@ -629,6 +630,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
 function shouldKeepBottomRailInTaskMode(pathname: string): boolean {
   return (
+    pathname === "/app/demand-box" ||
     pathname === "/app/shop-control" ||
     pathname === "/app/loans" ||
     pathname === "/app/loan-readiness" ||
@@ -720,7 +722,7 @@ function getSpecialRouteMeta(
   if (pathname === "/app/demand-box") {
     return {
       section: "Focused task",
-      page: "DemandBox",
+      page: "Demand Box",
     };
   }
 
@@ -2262,6 +2264,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const showMobileBottomRail =
     isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname));
+  const isDemandBoxRoute = isMobile && location.pathname === "/app/demand-box";
 
   async function shareSelectedTrustSlipPurpose() {
     setTrustSlipShareNotice(
@@ -2274,7 +2277,16 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   return (
     <div
       data-gmfn-shell-mode={isMobile ? "compact" : "desktop"}
-      style={isMobile ? mobileShell() : desktopShell()}
+      data-gsn-demand-box-shell={isDemandBoxRoute ? "neon" : undefined}
+      style={{
+        ...(isMobile ? mobileShell() : desktopShell()),
+        ...(isDemandBoxRoute
+          ? {
+              background:
+                "radial-gradient(circle at 8% 24%, rgba(0,219,255,0.14) 0%, rgba(0,219,255,0) 30%), radial-gradient(circle at 92% 54%, rgba(220,38,255,0.14) 0%, rgba(220,38,255,0) 32%), #02182B",
+            }
+          : {}),
+      }}
     >
       {!isMobile ? (
         <aside style={sidebar()}>
@@ -2398,21 +2410,66 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
         </aside>
       ) : (
         <>
-          <header style={mobileTopBar()}>
+          <header
+            style={{
+              ...mobileTopBar(),
+              ...(isDemandBoxRoute
+                ? {
+                    padding: "12px 14px 10px",
+                    background: "rgba(2,24,43,0.98)",
+                    borderBottom: "1px solid rgba(0,220,255,0.18)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.24)",
+                  }
+                : {}),
+            }}
+          >
             <StableButton
               onClick={openDrawer}
               aria-label="Open navigation"
               kind="secondary"
               debugId="app-layout.mobile.open-navigation"
-              style={mobileIconButton()}
+              style={{
+                ...mobileIconButton(),
+                ...(isDemandBoxRoute
+                  ? {
+                      color: "#F8FBFF",
+                      background: "rgba(4,39,68,0.92)",
+                      border: "1px solid #55E8FF",
+                      boxShadow:
+                        "0 0 0 1px rgba(255,255,255,0.18) inset, 0 0 10px rgba(0,224,255,0.82), 0 0 18px rgba(221,43,255,0.50)",
+                    }
+                  : {}),
+              }}
             >
               <MobileTopIcon name="menu" />
               Menu
             </StableButton>
 
             <div style={mobileTopMeta()}>
-              <div style={mobileTopEyebrow()}>{routeMeta.section}</div>
-              <div style={mobileTopTitle()}>{routeMeta.page}</div>
+              <div
+                data-gmfn-mobile-top-eyebrow="true"
+                style={{
+                  ...mobileTopEyebrow(),
+                  ...(isDemandBoxRoute ? { display: "none" } : {}),
+                }}
+              >
+                {routeMeta.section}
+              </div>
+              <div
+                data-gmfn-mobile-top-title="true"
+                style={{
+                  ...mobileTopTitle(),
+                  ...(isDemandBoxRoute
+                    ? {
+                        color: "#FFFFFF",
+                        fontSize: 25,
+                        textShadow: "0 0 14px rgba(111,224,255,0.26)",
+                      }
+                    : {}),
+                }}
+              >
+                {routeMeta.page}
+              </div>
             </div>
 
             <StableButton
@@ -2420,7 +2477,18 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
               aria-label="Open page actions"
               kind="secondary"
               debugId="app-layout.mobile.open-tools"
-              style={mobileIconButton()}
+              style={{
+                ...mobileIconButton(),
+                ...(isDemandBoxRoute
+                  ? {
+                      color: "#F8FBFF",
+                      background: "rgba(4,39,68,0.92)",
+                      border: "1px solid #55E8FF",
+                      boxShadow:
+                        "0 0 0 1px rgba(255,255,255,0.18) inset, 0 0 10px rgba(0,224,255,0.82), 0 0 18px rgba(221,43,255,0.50)",
+                    }
+                  : {}),
+              }}
             >
               <MobileTopIcon name="tools" />
               Tools
@@ -2796,7 +2864,15 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
       <main
         data-gmfn-mobile-scroll-root={isMobile ? "true" : undefined}
-        style={mainContent(isMobile, !!taskMode)}
+        style={{
+          ...mainContent(isMobile, !!taskMode),
+          ...(isDemandBoxRoute
+            ? {
+                padding: "0 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+                background: "transparent",
+              }
+            : {}),
+        }}
       >
         {originPath && originMeta ? (
           <section
@@ -2830,7 +2906,20 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       </main>
 
       {showMobileBottomRail ? (
-        <nav data-gmfn-bottom-nav="true" style={bottomNav()}>
+        <nav
+          data-gmfn-bottom-nav="true"
+          style={{
+            ...bottomNav(),
+            ...(isDemandBoxRoute
+              ? {
+                  paddingTop: 8,
+                  background: "rgba(2,24,43,0.99)",
+                  borderTop: "1px solid rgba(60,218,255,0.22)",
+                  boxShadow: "0 -12px 30px rgba(0,0,0,0.22)",
+                }
+              : {}),
+          }}
+        >
           {mobileBottomItems.map((item) => (
             <StableCtaLink
               key={`bottom-${item.label}-${item.to}`}
@@ -2847,10 +2936,30 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                   : "false"
               }
               debugId={`app-layout.bottom-nav.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-              style={bottomNavItem(
-                isItemActive(item, location.pathname, location.search),
-                !!item.disabled
-              )}
+              style={{
+                ...bottomNavItem(
+                  isItemActive(item, location.pathname, location.search),
+                  !!item.disabled
+                ),
+                ...(isDemandBoxRoute
+                  ? {
+                      color: item.disabled
+                        ? "#70869A"
+                        : isItemActive(item, location.pathname, location.search)
+                          ? "#FFFFFF"
+                          : "#E6F0F8",
+                      background: isItemActive(item, location.pathname, location.search)
+                        ? "linear-gradient(145deg, rgba(12,80,145,0.96) 0%, rgba(47,37,139,0.96) 100%)"
+                        : "transparent",
+                      border: isItemActive(item, location.pathname, location.search)
+                        ? "1px solid #55E8FF"
+                        : "1px solid transparent",
+                      boxShadow: isItemActive(item, location.pathname, location.search)
+                        ? "0 0 9px rgba(0,224,255,0.78), 0 0 17px rgba(221,43,255,0.52), inset 0 1px 0 rgba(255,255,255,0.18)"
+                        : "none",
+                    }
+                  : {}),
+              }}
             >
               <span
                 aria-hidden="true"

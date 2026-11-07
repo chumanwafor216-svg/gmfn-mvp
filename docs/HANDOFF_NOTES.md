@@ -5,6 +5,15 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Demand Box neon phone front - 2026-11-07
+
+- `/app/demand-box` now follows the founder-approved phone reference: dark navy shell, restrained static cyan/magenta neon, visible `Demand Box` title, gold selected-marketplace row, approved human market image with `People helping people`, direct `Post a need` and `Ask community`, three primary queue lanes, compact Filters/Community-search status, one neon white request paper, collapsed history, and Marketplace-active five-tab bottom navigation.
+- The closed phone request remains truthful and data-driven. It shows real status, requester/owner context, sender portrait or initials for community requests, title, area and date, then uses one full-width `View request` action. Opening still uses the same single-card key and does not write business data.
+- Authorised owner/admin relay controls moved into the compact Filters disclosure rather than disappearing; desktop retains its existing Community search settings disclosure. The global companion card is suppressed only on this focused route so it cannot interrupt the request paper.
+- The opened request branch was not redesigned. Protected voice, sender identity, one-responder-at-a-time private conversation, left/right chat bubbles, time, portrait/initials fallback, request/privacy details, matches, one-hop search, Fulfilled, Cancel, Copy request, WhatsApp contact, Past requests and Post again remain reachable.
+- No backend, API payload, permission, lifecycle, privacy, matching, relay, voice, contact or desktop contract changed. Production build passes; focused front-package, expanded-search, Marketplace ownership and surface-ownership audits pass; the phone browser smoke passes at 390x844 and 360x780 and verifies the bottom rail, sender portrait, participant isolation and alternating private chat trail.
+- This work is verified locally in an isolated worktree. It has not been pushed or deployed because the current freeze policy requires the product owner to explicitly declare the batch ready to publish.
+
 ## Visitor public shop message card - 2026-11-07
 
 - The exact owner's progressive `+` block remains untouched and receives no audio player. The owner's existing persistent shop-message recorder/playback stays in the current Shop Update area.
