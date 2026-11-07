@@ -1,4 +1,5 @@
 import React from "react";
+import MarketplaceCommunityMembers from "./MarketplaceCommunityMembers";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { StableDisclosureSummary } from "../../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
@@ -13,6 +14,8 @@ type MarketplaceMemberRow = {
   name: string;
   gmfnId?: string;
   userId?: number | string;
+  membershipRole?: string;
+  profileImageUrl?: string;
   shopTo?: string;
   shopName?: string;
   ownerName?: string;
@@ -51,6 +54,8 @@ type MarketplaceCommunityDomainRow = {
 type Props = {
   isCompact: boolean;
   activeCommunityId: number;
+  activeCommunityName: string;
+  canManageCommunityConfirmation: boolean;
   memberRows: MarketplaceMemberRow[];
   visibleTradeMemberRows: MarketplaceMemberRow[];
   hiddenTradeMemberRows: MarketplaceMemberRow[];
@@ -740,6 +745,9 @@ function directoryItemToMemberRow(
 export default function MarketplaceMembersSection({
   isCompact,
   activeCommunityId,
+  activeCommunityName,
+  canManageCommunityConfirmation,
+  memberRows,
   visibleTradeShopCount,
   marketplaceCommunityDomainRows,
   marketplaceSurfaceTouchProps,
@@ -898,6 +906,16 @@ export default function MarketplaceMembersSection({
           <span style={stableStatusPillStyle(false)}>Preview data refreshing</span>
         ) : null}
       </div>
+
+      <MarketplaceCommunityMembers
+        isCompact={isCompact}
+        activeCommunityId={activeCommunityId}
+        activeCommunityName={activeCommunityName}
+        canManageCommunityConfirmation={canManageCommunityConfirmation}
+        memberRows={memberRows}
+        marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
+        marketplaceFieldTouchProps={marketplaceFieldTouchProps}
+      />
 
       {marketplaceCommunityDomainRows.length ? (
         <div style={{ marginTop: 12, display: "grid", gap: 8 }}>

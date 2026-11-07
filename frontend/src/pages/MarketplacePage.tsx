@@ -230,6 +230,12 @@ type ClanMember = {
   surname?: string | null;
   email?: string | null;
   phone_e164?: string | null;
+  profile_image_url?: string | null;
+  profile_photo_url?: string | null;
+  avatar_url?: string | null;
+  photo_url?: string | null;
+  membership_role?: string | null;
+  member_role?: string | null;
 };
 
 type ShopVisibilityMode = "community_visible" | "vault_private";
@@ -7196,6 +7202,17 @@ export default function MarketplacePage() {
         name: memberDisplayName,
         gmfnId: gmfn,
         userId,
+        membershipRole: firstTruthy(
+          member?.role,
+          member?.membership_role,
+          member?.member_role
+        ),
+        profileImageUrl: firstTruthy(
+          member?.profile_image_url,
+          member?.profile_photo_url,
+          member?.avatar_url,
+          member?.photo_url
+        ),
         supportKey,
         ownerName,
         description,
@@ -10792,6 +10809,8 @@ export default function MarketplacePage() {
           <MarketplaceMembersSection
             isCompact={isCompact}
             activeCommunityId={activeCommunityId}
+            activeCommunityName={activeCommunityName}
+            canManageCommunityConfirmation={isMarketplaceNoticeOfficer}
             memberRows={memberRows}
             visibleTradeMemberRows={visibleTradeMemberRows}
             hiddenTradeMemberRows={hiddenTradeMemberRows}

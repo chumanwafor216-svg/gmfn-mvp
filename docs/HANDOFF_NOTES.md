@@ -5,6 +5,24 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Marketplace community member row - 2026-11-07
+
+- The opened Marketplace Shops & Services lane now leads with a compact
+  selected-community member roster while preserving the complete existing
+  Shops & Services Directory beneath it.
+- The roster searches the already loaded member payload by name or GSN ID,
+  shows ten rows per page, uses a saved member portrait or initials, and labels
+  only real role/shop state. It intentionally does not show `Receiving` or
+  `Paused` because confirmation availability belongs to manager-protected
+  policy data rather than the ordinary member contract.
+- Tapping one row opens one neon-framed detail panel. Its actions hand off to
+  the existing member-witness record/request flow with the selected person
+  prefilled, open the existing Public Shop when available, and expose
+  confirmation settings only to authorised managers.
+- No shop-directory search, cursor, neutral ordering, listing review, route,
+  permission, evidence, API, or backend contract changed. The focused member
+  row audit and TypeScript/Vite production build pass.
+
 ## Permanent authenticated phone tab rail - 2026-11-07
 
 - The owner-approved dark rail from Demand Box is now the permanent shared

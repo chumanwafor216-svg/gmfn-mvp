@@ -934,7 +934,13 @@ function CommunityConfirmationPolicyPage() {
   const [externalRegisteredName, setExternalRegisteredName] = useState("");
   const [externalIssuingBody, setExternalIssuingBody] = useState("Corporate Affairs Commission");
   const [externalRegistrationNote, setExternalRegistrationNote] = useState("");
-  const [selectedSubjectUserId, setSelectedSubjectUserId] = useState("");
+  const [selectedSubjectUserId, setSelectedSubjectUserId] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return firstTruthy(
+      params.get("member_witness_subject"),
+      params.get("subject_user_id")
+    );
+  });
   const [memberWitnessSummary, setMemberWitnessSummary] =
     useState<MemberWitnessSummary | null>(null);
   const [memberWitnessClaim, setMemberWitnessClaim] = useState("");
@@ -959,9 +965,27 @@ function CommunityConfirmationPolicyPage() {
   const memberWitnessRequestToken = useMemo(() => {
     return firstTruthy(new URLSearchParams(location.search).get("member_witness_request"));
   }, [location.search]);
+  const memberWitnessAction = useMemo(() => {
+    return safeStr(
+      new URLSearchParams(location.search).get("member_witness_action")
+    ).toLowerCase();
+  }, [location.search]);
+  const memberWitnessRouteTargeted = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return Boolean(
+      location.hash === "#member-witness" ||
+        memberWitnessRequestToken ||
+        params.get("member_witness_subject") ||
+        params.get("subject_user_id")
+    );
+  }, [location.hash, location.search, memberWitnessRequestToken]);
   const memberWitnessFocus = useMemo(() => {
-    return location.hash === "#member-witness" || Boolean(memberWitnessRequestToken);
-  }, [location.hash, memberWitnessRequestToken]);
+    return (
+      Boolean(memberWitnessRequestToken) ||
+      memberWitnessAction === "request" ||
+      (location.hash === "#member-witness" && memberWitnessAction !== "record")
+    );
+  }, [location.hash, memberWitnessAction, memberWitnessRequestToken]);
 
   const verificationRequestFocus = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -1355,7 +1379,7 @@ function CommunityConfirmationPolicyPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (location.hash !== "#member-witness" && !memberWitnessRequestToken) return;
+    if (!memberWitnessRouteTargeted) return;
 
     const timer = window.setTimeout(() => {
       const targetId = memberWitnessRequestToken
@@ -1377,6 +1401,7 @@ function CommunityConfirmationPolicyPage() {
     location.hash,
     memberWitnessRequestLoading,
     memberWitnessRequestToken,
+    memberWitnessRouteTargeted,
     members.length,
   ]);
 

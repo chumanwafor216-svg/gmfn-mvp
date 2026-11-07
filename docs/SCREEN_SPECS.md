@@ -1044,6 +1044,19 @@ Rules:
   words or clip controls. Desktop may retain the fuller workbench, but
   foldable/open phone states must use the same compact contract as closed phone
   states.
+- Owner-approved 2026-11-07 Marketplace member-row refinement: the opened
+  Shops & Services directory may lead with one compact selected-community
+  member roster. Search is limited to the already loaded community-member
+  payload, rows use the saved profile portrait or initials, and ten rows appear
+  per page. Tapping one row opens one focused member panel rather than exposing
+  every action inline. The panel may hand off to the existing member-witness
+  record/request flow with that member preselected, open the member's existing
+  Public Shop, and show confirmation settings only to an authorised community
+  manager. Marketplace must not invent or expose manager-protected
+  confirmation availability such as Receiving/Paused. The existing bounded
+  server-side Shops & Services directory, neutral ordering, filters, routes,
+  permissions, evidence rules, and backend contracts remain unchanged. Static
+  cyan-violet neon may frame this roster; flashing or global neon is forbidden.
 - Marketplace shop discovery must remain bounded at scale. The first surface
   shows no more than two shop previews; See all shops opens a search-first
   selected-community directory that requests at most 20 compact rows at a time.
