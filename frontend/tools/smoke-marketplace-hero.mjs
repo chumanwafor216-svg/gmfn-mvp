@@ -775,10 +775,14 @@ async function run() {
 
     await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click();
     await page.waitForFunction(
-      () =>
-        (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
-          "Pillar of Hope"
-        ),
+      () => {
+        const text =
+          document.getElementById("marketplace-members-shops")?.textContent || "";
+        return (
+          text.includes("Pillar of Hope") &&
+          text.includes("No public shops are visible in this marketplace yet.")
+        );
+      },
       null,
       { timeout: 30000 }
     );

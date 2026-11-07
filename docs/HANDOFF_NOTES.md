@@ -1,5 +1,14 @@
 # Active Handoff Notes
 
+## Authenticated core-page static neon - 2026-11-07
+
+- `/app/dashboard`, `/app/community`, and `/app/marketplace` now share one deep-navy compact stage and one restrained static cyan-violet-gold presentation token. Dashboard lights its existing identity, My Pulse, DemandBox, Focus, Market Wisdom outer frame, and TrustSlip; Community Home lights only identity and Bulletin; Marketplace lights only identity, Needs, Shops & Services, Matches, and suggested next step. Desktop retains the existing light page treatments with softer frames.
+- No control, route, card/lane order, disclosure, action geometry, data read, permission, ranking meaning, or backend contract changed. Dashboard Market Wisdom internals, Community Home facts/Bulletin behavior, Marketplace discovery/matching boundaries, and the existing Marketplace member row remain untouched.
+- The shared static token lives in `frontend/src/design/authenticatedNeon.ts` and contains no animation or transition. `frontend/tools/audit-authenticated-neon-presentation.mjs` cages the approved surfaces and static-only boundary alongside each route's existing frozen audits.
+- Verification passed the shared neon guard; Dashboard action, inventory, phone and Market Wisdom audits; Community Home action, phone and billboard audits; Marketplace front, action and member-row audits; the Marketplace 390x844/457x915 browser smoke; and the 324-module production build. The Marketplace smoke was hardened to await the asynchronous directory result instead of asserting while it still said `Searching...`.
+- The Community Home phone smoke still times out waiting for its pre-existing Bulletin reactions selector. The same timeout reproduces on untouched deployed base `6a8c853c`, so it is inherited test/product-fixture debt rather than a neon regression. Generated screenshots exist, but the split-worktree Windows sandbox prevented direct image-tool inspection in this session; do not claim a completed human visual review.
+- The broad Marketplace button-inventory audit also remains red with the same 99-versus-94 action baseline and moved-directory source expectations on untouched `6a8c853c`. Focused Marketplace front/action/member-row audits and the corrected browser smoke pass; this visual slice does not recage unrelated inventory debt.
+
 This file is the compact current-state handoff required by `README.md` and
 `docs/PROJECT_PROTOCOL.md`. The fully repaired historical record through
 2026-10-17 is preserved in

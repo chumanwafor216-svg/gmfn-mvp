@@ -5,6 +5,7 @@ import PictureFrameToolsControl from "../PictureFrameToolsControl";
 import { StableButton, StableDisclosureSummary } from "../StableButton";
 import { colors, radius } from "../../design/tokens";
 import dashboardNetworkGlobe from "../../assets/dashboard/dashboard-network-globe.jpg";
+import { authenticatedStaticNeonFrame } from "../../design/authenticatedNeon";
 
 export type DashboardCompactIdentityReading = {
   label: string;
@@ -72,6 +73,7 @@ export default function DashboardCompactIdentityHero({
     <section
       data-dashboard-passport-reference="gsn-trust-card"
       data-dashboard-compact-identity="true"
+      data-dashboard-neon-surface="identity"
       style={{
         gridColumn: "1 / -1",
         order,
@@ -90,6 +92,7 @@ export default function DashboardCompactIdentityHero({
         overflow: "visible",
         position: "relative",
         zIndex: 20,
+        ...authenticatedStaticNeonFrame("cyanViolet"),
       }}
     >
       <div

@@ -4,6 +4,10 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
 import DashboardCompactIdentityHero from "../components/dashboard/DashboardCompactIdentityHero";
 import DashboardCommerceAnalyticsCard from "../components/dashboard/DashboardCommerceAnalyticsCard";
+import {
+  AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonFrame,
+} from "../design/authenticatedNeon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
 import dashboardFocusGrowth from "../assets/dashboard/dashboard-focus-growth.jpg";
@@ -7187,7 +7191,9 @@ export default function DashboardPage() {
         minHeight: isPhone ? "auto" : "100%",
         margin: "0 -16px",
         padding: isPhone ? "18px 16px 12px" : "18px 16px 40px",
-        background: DASHBOARD_BRAND.pageWash,
+        background: isPhone
+          ? AUTHENTICATED_STATIC_NEON_STAGE
+          : DASHBOARD_BRAND.pageWash,
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",
         textRendering: "geometricPrecision",
@@ -7654,6 +7660,7 @@ export default function DashboardPage() {
         ) : (
         <section
           data-dashboard-passport-reference="gsn-trust-card"
+          data-dashboard-neon-surface="identity"
           style={{
             ...pageCard(
               "radial-gradient(circle at 18% 0%, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0) 34%), linear-gradient(180deg, #F4FAFF 0%, #EAF3FF 100%)"
@@ -7669,6 +7676,7 @@ export default function DashboardPage() {
             boxShadow: dashboardIdentityCompact
               ? "0 12px 28px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.94)"
               : "0 24px 54px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+            ...authenticatedStaticNeonFrame("cyanViolet", "soft"),
           }}
         >
           <div
@@ -9557,6 +9565,7 @@ export default function DashboardPage() {
       </section>
 
       <section
+        data-dashboard-neon-surface="trustslip"
         style={{
           ...pageCard(
             "linear-gradient(180deg, #FFFDF6 0%, #F8FBFF 48%, #EEF6FF 100%)"
@@ -9569,6 +9578,10 @@ export default function DashboardPage() {
           padding: isPhone ? 9 : 18,
           boxShadow:
             "0 16px 34px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+          ...authenticatedStaticNeonFrame(
+            "goldViolet",
+            isPhone ? "standard" : "soft"
+          ),
         }}
       >
         <StableButton
@@ -9697,6 +9710,7 @@ export default function DashboardPage() {
         ) : null}
       </section>
       <section
+        data-dashboard-neon-surface="demandbox"
         style={{
           ...pageCard(demandSurfaceChrome.shellBg),
           order: 50,
@@ -9706,6 +9720,10 @@ export default function DashboardPage() {
           boxShadow: isPhone
             ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
             : undefined,
+          ...authenticatedStaticNeonFrame(
+            "cyanViolet",
+            isPhone ? "standard" : "soft"
+          ),
         }}
       >
         <div
@@ -10495,6 +10513,7 @@ export default function DashboardPage() {
       </section>
 
       <section
+        data-dashboard-neon-surface="pulse"
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
           gridColumn: isPhone ? "1 / -1" : undefined,
@@ -10515,6 +10534,10 @@ export default function DashboardPage() {
           boxShadow: dashboardHasActionableAttention
             ? "0 18px 38px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.90)"
             : undefined,
+          ...authenticatedStaticNeonFrame(
+            "cyanGold",
+            isPhone ? "standard" : "soft"
+          ),
         }}
       >
         <div
@@ -10876,12 +10899,17 @@ export default function DashboardPage() {
         ) : null}
       </section>
       <section
+        data-dashboard-neon-surface="market-wisdom"
         style={{
           ...pageCard(
             "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
           ),
           gridColumn: isPhone ? "1 / -1" : undefined,
           order: 80,
+          ...authenticatedStaticNeonFrame(
+            "cyanGold",
+            isPhone ? "standard" : "soft"
+          ),
         }}
       >
         <div
@@ -11233,6 +11261,7 @@ export default function DashboardPage() {
       </section>
 
       <section
+        data-dashboard-neon-surface="focus"
         style={{
           gridColumn:
             isPhone && uiState.trustExpanded ? "1 / -1" : undefined,
@@ -11246,6 +11275,10 @@ export default function DashboardPage() {
           boxShadow: isPhone
             ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
             : undefined,
+          ...authenticatedStaticNeonFrame(
+            "cyanViolet",
+            isPhone ? "standard" : "soft"
+          ),
         }}
       >
           <div

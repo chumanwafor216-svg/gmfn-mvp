@@ -182,6 +182,12 @@ Rules:
 
 ## DashboardPage
 
+### Founder-approved static lighting refinement - 2026-11-07
+- On authenticated phones, the existing Dashboard content sits on one deep-navy route-local stage.
+- Use restrained static cyan, violet, and gold edge lighting only on the existing identity, My Pulse, DemandBox, Focus, Market Wisdom outer card, and TrustSlip surfaces.
+- Keep nested controls calm and readable. Do not flash, pulse, animate, or spread this treatment to unrelated routes.
+- Preserve every existing action, route, card order, disclosure, phone geometry, and data source. Market Wisdom internals and interaction remain unchanged.
+
 Purpose:
 Personal summary page across trust, attention, commitments, events, and next actions.
 
@@ -691,6 +697,11 @@ After submission:
 
 ## CommunityHomePage
 
+### Founder-approved static lighting refinement - 2026-11-07
+- On authenticated phones, keep one shared deep-navy stage and restrained static lighting on the existing selected-community identity hero and Bulletin only.
+- Keep secondary actions, switcher, attention, and authority-gated administration calm and unchanged.
+- Preserve selected-community facts, Bulletin behavior, section order, disclosures, action geometry, routes, permissions, and data.
+
 Purpose:
 Member view inside one selected community.
 
@@ -994,6 +1005,11 @@ Follow the guided setup path first; use More setup tools only when you need one 
 ```
 
 ## MarketplacePage
+
+### Founder-approved static lighting refinement - 2026-11-07
+- On authenticated phones, keep one shared deep-navy stage and restrained static lighting on the existing community identity hero, Needs, Shops & Services, Matches, and suggested-next-step cards.
+- Keep deeper money, support, links, trade, ROSCA, and administration surfaces calm and unchanged.
+- Preserve lane order, neutral discovery, matching boundaries, action geometry, routes, permissions, and data.
 
 Purpose:
 Operate one selected community/marketplace.

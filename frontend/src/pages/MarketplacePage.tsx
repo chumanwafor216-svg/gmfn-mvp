@@ -129,6 +129,10 @@ import {
 } from "../lib/marketWisdom";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+import {
+  AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonFrame,
+} from "../design/authenticatedNeon";
 const MarketplaceBoardSection = lazy(
   () => import("./marketplace/MarketplaceBoardSection")
 );
@@ -2589,7 +2593,7 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     borderRadius: isCompact ? "var(--radius-lg)" : "var(--radius-xl)",
     border: "1px solid var(--gsn-border-strong)",
     isolation: "isolate",
-    background: "var(--page-bg)",
+    background: isCompact ? AUTHENTICATED_STATIC_NEON_STAGE : "var(--page-bg)",
     boxShadow: "var(--shadow-card)",
     overflow: "hidden",
   };
@@ -2682,7 +2686,7 @@ function MarketplaceShell({
 }) {
   return (
     <main className="gsn-page theme-marketplace">
-      <div style={marketplaceShellStyle(isCompact)}>
+      <div style={marketplaceShellStyle(isCompact)} data-gsn-neon-page="marketplace">
         <MarketplaceShellLayers isCompact={isCompact} />
         <div style={marketplaceContentStyle(isCompact)}>{children}</div>
       </div>
@@ -3588,9 +3592,12 @@ function intentChoiceStyle(
 
 function marketplaceOsSectionStyle(isCompact: boolean): React.CSSProperties {
   return {
-    ...pageCard("#FFFFFF"),
+    ...pageCard(isCompact ? "rgba(3,20,38,0.78)" : "#FFFFFF"),
     order: 2,
     padding: isCompact ? "20px 14px 14px" : 18,
+    border: isCompact
+      ? "1px solid rgba(91,226,255,0.16)"
+      : "1px solid var(--gsn-border)",
   };
 }
 
@@ -3741,6 +3748,14 @@ function marketplaceLiveMarketCardStyle(tone: "needs" | "shops" | "matches", isC
     padding: isCompact ? 12 : 14,
     boxShadow: "0 14px 28px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
     overflow: "hidden",
+    ...authenticatedStaticNeonFrame(
+      tone === "needs"
+        ? "cyanViolet"
+        : tone === "shops"
+        ? "goldViolet"
+        : "cyanGold",
+      isCompact ? "standard" : "soft"
+    ),
     overflowAnchor: "none",
     minWidth: 0,
   };
@@ -3797,6 +3812,10 @@ function marketplaceHeroShellStyle(isCompact: boolean): React.CSSProperties {
     boxShadow:
       "0 20px 42px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
     overflow: "hidden",
+    ...authenticatedStaticNeonFrame(
+      "cyanViolet",
+      isCompact ? "standard" : "soft"
+    ),
     overflowAnchor: "none",
   };
 }
@@ -9192,6 +9211,7 @@ export default function MarketplacePage() {
       <section style={marketplaceOsSectionStyle(isCompact)}>
         <div
           data-gmfn-debug-id="marketplace.identity"
+          data-gsn-neon-surface="identity"
           style={{
             ...marketplaceHeroShellStyle(isCompact),
             ...(isCompact
@@ -10139,6 +10159,7 @@ export default function MarketplacePage() {
 
         <div
           data-marketplace-wisdom-lens="true"
+          data-gsn-neon-surface="wisdom-lens"
           data-gmfn-debug-id="marketplace.front.suggested-next-step"
           style={{
             marginTop: 10,
@@ -10154,6 +10175,10 @@ export default function MarketplacePage() {
             boxShadow:
               "0 8px 18px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
             overflow: "hidden",
+            ...authenticatedStaticNeonFrame(
+              "cyanGold",
+              isCompact ? "standard" : "soft"
+            ),
             overflowAnchor: "none",
           }}
         >

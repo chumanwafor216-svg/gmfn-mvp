@@ -13,6 +13,10 @@ import SimpleCommunityInviteCard from "../components/SimpleCommunityInviteCard";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import CommunityNoticeVoicePlayer from "../components/CommunityNoticeVoicePlayer";
 import { brandClampLines } from "../styles/gmfnBrand";
+import {
+  AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonFrame,
+} from "../design/authenticatedNeon";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
@@ -627,8 +631,9 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
     borderRadius: isCompact ? 24 : 34,
     border: "1px solid rgba(8,35,58,0.12)",
     isolation: "isolate",
-    background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 42%, #EEF5FB 100%)",
+    background: isCompact
+      ? AUTHENTICATED_STATIC_NEON_STAGE
+      : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 42%, #EEF5FB 100%)",
     boxShadow:
       "0 20px 44px rgba(6,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
     overflow: "hidden",
@@ -724,6 +729,7 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
       boxShadow:
         "0 18px 40px rgba(6,24,39,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
       overflow: "hidden",
+      ...authenticatedStaticNeonFrame("cyanViolet"),
     };
   }
 
@@ -736,6 +742,7 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
     boxShadow:
       "0 18px 34px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
     overflow: "hidden",
+    ...authenticatedStaticNeonFrame("cyanViolet", "soft"),
   };
 }
 
@@ -1256,6 +1263,10 @@ function announcementBoardShellStyle(isCompact: boolean): React.CSSProperties {
     boxShadow: isCompact
       ? "0 14px 30px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.94)"
       : "0 18px 42px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+    ...authenticatedStaticNeonFrame(
+      "cyanGold",
+      isCompact ? "standard" : "soft"
+    ),
   };
 }
 
@@ -5010,7 +5021,7 @@ export default function CommunityHomePage() {
           </section>
         ) : null}
 
-        <section style={communityHeroStyle(isCompact)} data-debug-id="community-home.identity-card">
+        <section style={communityHeroStyle(isCompact)} data-debug-id="community-home.identity-card" data-gsn-neon-surface="identity">
           {isCompact ? (
             <>
               <div style={communityHeroPhotoStyle(selectedCommunityImageUrl)} aria-hidden="true" />
@@ -5194,7 +5205,7 @@ export default function CommunityHomePage() {
           )}
         </section>
 
-        <section id="community-home-bulletin" style={announcementBoardShellStyle(isCompact)} data-debug-id="community-home.bulletin">
+        <section id="community-home-bulletin" style={announcementBoardShellStyle(isCompact)} data-debug-id="community-home.bulletin" data-gsn-neon-surface="bulletin">
           <div style={announcementBoardHeaderStyle(isCompact)} aria-label="Community announcements">
             <div style={announcementBoardTitleRowStyle()}>
               <span
