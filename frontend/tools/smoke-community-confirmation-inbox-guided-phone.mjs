@@ -1,6 +1,7 @@
 /* global console, process, URL, localStorage, document, window */
 
 import { chromium } from "playwright";
+import { mkdir } from "node:fs/promises";
 import { createServer } from "vite";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -198,6 +199,8 @@ async function run() {
     await server.listen();
     const port = server.httpServer.address().port;
     const routeUrl = "http://127.0.0.1:" + port + "/app/community-confirmations";
+    const screenshotDir = process.env.GSN_COMMUNITY_CONFIRMATION_SCREENSHOT_DIR || "";
+    if (screenshotDir) await mkdir(screenshotDir, { recursive: true });
 
     browser = await chromium.launch({ headless: true });
     const page = await createPhonePage(browser);
@@ -310,6 +313,13 @@ async function run() {
     });
     await emptyPage.goto(routeUrl, { waitUntil: "networkidle" });
     await emptyPage.getByText("You're up to date", { exact: true }).waitFor();
+    await emptyPage.getByText("No requests to answer", { exact: true }).waitFor();
+    await emptyPage.locator('[data-gsn-community-confirmation-neon-frame="phone"]').waitFor();
+    await emptyPage.getByRole("button", { name: /How confirmation works/ }).waitFor();
+    await emptyPage.getByRole("button", { name: /Community settings/ }).waitFor();
+    if (screenshotDir) {
+      await emptyPage.screenshot({ path: join(screenshotDir, "community-confirmation-inbox-empty-390.png"), fullPage: true });
+    }
     assert(
       await emptyPage.getByRole("button", { name: "Check again", exact: true }).count() === 1,
       "Empty inbox must show one quiet Check again action."
@@ -370,8 +380,58 @@ async function run() {
       "An explicit case_id deep link must open the focused reviewer disclosure."
     );
 
+    await reviewPage.close();
+
+    const managerPage = await createPhonePage(browser, {
+      rows: [],
+      token: "local-community-confirmation-manager-token",
+    });
+    await managerPage.goto(routeUrl + "/policy", { waitUntil: "networkidle" });
+    const managerFront = managerPage.locator('[data-gsn-community-confirmation-manager-front="true"]');
+    await managerFront.waitFor();
+    await managerPage.getByText("For community managers", { exact: true }).waitFor();
+    for (const label of [
+      "People who can answer",
+      "Request settings",
+      "Cases to review",
+      "Privacy & sharing",
+      "Back to my requests",
+    ]) {
+      assert(
+        await managerPage.getByRole("button", { name: new RegExp(label) }).count() === 1,
+        "Manager front must retain one " + label + " action."
+      );
+    }
+    assert(
+      await managerPage.locator('[data-gsn-community-confirmation-neon-frame="phone"]').count() === 1,
+      "Manager settings must use the shared phone neon frame."
+    );
+    assert(
+      await managerPage.getByText("Who can answer for this community?", { exact: true }).isHidden(),
+      "The old generic policy hero must stay below the compact manager front on phone."
+    );
+    const managerOverflow = await managerFront.evaluate(() =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+    );
+    assert(!managerOverflow, "Community Confirmation manager settings overflows horizontally at 390x844.");
+    if (screenshotDir) {
+      await managerPage.screenshot({ path: join(screenshotDir, "community-confirmation-manager-390.png"), fullPage: true });
+    }
+    await managerPage.getByRole("button", { name: /Cases to review/ }).click();
+    await managerPage.waitForURL((url) =>
+      url.pathname === "/app/community-confirmations" &&
+      url.searchParams.get("status") === "open" &&
+      url.searchParams.get("scope") === "all_visible" &&
+      url.searchParams.get("sort") === "urgency"
+    );
+    assert(
+      await detailsIsOpen(managerPage.locator('[data-gsn-community-confirmation-review-cases="true"]')),
+      "Cases to review must open the existing protected reviewer disclosure."
+    );
+    await managerPage.close();
+
     console.log(
-      "Community Confirmation Inbox guided phone smoke passed: task-first visual order, three simple answers, preserved specialist inventory, selection-before-record safety, compact empty state, focused request, focused review case, and 390x844 overflow."
+      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved answer inventory, focused request/review behavior, compact manager settings, existing reviewer handoff, and 390x844 overflow."
     );
   } finally {
     await browser?.close();

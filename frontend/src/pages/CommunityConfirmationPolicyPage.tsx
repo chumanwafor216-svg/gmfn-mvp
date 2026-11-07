@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CommunityProofPanel from "../components/CommunityProofPanel";
+import {
+  CommunityConfirmationFrontCard,
+  CommunityConfirmationFrontRow,
+  CommunityConfirmationModeTabs,
+  CommunityConfirmationNeonFrame,
+} from "../components/CommunityConfirmationNeonFrame";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
@@ -1676,6 +1682,18 @@ function CommunityConfirmationPolicyPage() {
       text: "Start here: confirm request routing is on and at least one trusted responder can answer.",
     });
   }, []);
+
+  const scrollToSection = useCallback((targetId: string, reason: string) => {
+    if (typeof document === "undefined") return;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    revealElementWithoutJump(target, {
+      surface: "community-confirmation-policy",
+      targetId,
+      reason,
+    });
+  }, []);
+
   async function copyMemberCredentialLink() {
     if (!selectedMember?.gsnId) {
       setNotice({
@@ -1823,7 +1841,10 @@ function CommunityConfirmationPolicyPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 36 : 56 }}>
+    <CommunityConfirmationNeonFrame
+      compact={isCompact}
+      style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 150 : 56 }}
+    >
       <PageTopNav
         sectionLabel={memberWitnessFocus || verificationRequestFocus ? "GSN evidence" : "Community confirmation"}
         title={memberWitnessFocus ? "Member Witness" : verificationRequestFocus ? "Verification Request" : "Instant Confirmation Policy"}
@@ -1832,13 +1853,23 @@ function CommunityConfirmationPolicyPage() {
             ? ""
             : verificationRequestFocus
               ? "Review responder readiness before this public request continues."
-              : "Choose who may answer live community confirmation requests."
+              : "Choose who receives requests and how replies are handled."
         }
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
         backTo={memberWitnessFocus ? APP_ROUTES.OPEN_TRUST : APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}
         backLabel={memberWitnessFocus ? "Trust Passport" : "Inbox"}
       />
+      {isCompact && !memberWitnessFocus && !verificationRequestFocus ? (
+        <CommunityConfirmationModeTabs
+          current="manager"
+          managerAvailable
+          onInbox={() =>
+            navigateWithOrigin(navigate, APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX, location)
+          }
+          onManager={() => scrollToSection("community-confirmation-manager-front", "manager-tab")}
+        />
+      ) : null}
 
       {verificationRequestFocus && !memberWitnessFocus ? (
         <section
@@ -1912,7 +1943,7 @@ function CommunityConfirmationPolicyPage() {
           why="This page controls who can answer and how many answers are enough."
           next="Admins set routing. The result still comes from member responses."
           tone="blue"
-          style={{ marginTop: 16 }}
+          style={{ marginTop: 16, display: isCompact ? "none" : undefined }}
         />
       ) : null}
 
@@ -1929,9 +1960,89 @@ function CommunityConfirmationPolicyPage() {
         </div>
       ) : null}
 
+      {isCompact && !memberWitnessFocus && !verificationRequestFocus ? (
+        <section
+          id="community-confirmation-manager-front"
+          data-gsn-community-confirmation-manager-front="true"
+          style={{ marginTop: 16, display: "grid", gap: 12 }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                borderRadius: 999,
+                padding: "8px 12px",
+                color: "#7A4A00",
+                background: "#FFF1C7",
+                fontSize: 12,
+                fontWeight: 1000,
+              }}
+            >
+              <GsnLegacyIcon name="community" size={24} />
+              For community managers
+            </div>
+            <p style={{ margin: "10px 12px 0", color: "#D7E2EF", fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>
+              Choose who receives requests and how replies are handled.
+            </p>
+          </div>
+          <CommunityConfirmationFrontCard style={{ display: "grid", gap: 8 }}>
+            <CommunityConfirmationFrontRow
+              title="People who can answer"
+              detail="Manage members who receive requests."
+              icon={<GsnLegacyIcon name="community" size={28} />}
+              debugId="community-confirmation-policy.front.people"
+              onClick={() => scrollToSection("community-confirmation-eligible-response-pool", "manager-front-people")}
+              accent="gold"
+            />
+            <CommunityConfirmationFrontRow
+              title="Request settings"
+              detail="Receiving requests, reply rules and deadlines."
+              icon={<GsnLegacyIcon name="chart" size={28} />}
+              debugId="community-confirmation-policy.front.request-settings"
+              onClick={scrollToPolicySwitches}
+              accent="cyan"
+            />
+            <CommunityConfirmationFrontRow
+              title="Cases to review"
+              detail="Open protected reviewer work."
+              icon={<GsnLegacyIcon name="document" size={28} />}
+              debugId="community-confirmation-policy.front.review-cases"
+              onClick={() =>
+                navigateWithOrigin(
+                  navigate,
+                  APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX + "?status=open&scope=all_visible&sort=urgency",
+                  location
+                )
+              }
+              accent="violet"
+            />
+          </CommunityConfirmationFrontCard>
+          <CommunityConfirmationFrontRow
+            title="Privacy & sharing"
+            detail="See what stays protected and what may be shared."
+            icon={<GsnLegacyIcon name="lock" size={28} />}
+            debugId="community-confirmation-policy.front.privacy"
+            onClick={() => scrollToSection("community-confirmation-privacy-rule", "manager-front-privacy")}
+            accent="gold"
+          />
+          <PrimaryButton
+            type="button"
+            onClick={() => navigateWithOrigin(navigate, APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX, location)}
+            fullWidth
+            stableHeight={52}
+            debugId="community-confirmation-policy.front.back-to-requests"
+          >
+            {labelWithIcon("navigation", "Back to my requests", "navy")}
+          </PrimaryButton>
+        </section>
+      ) : null}
+
       {!memberWitnessFocus && !verificationRequestFocus ? (
       <section
         style={{
+          display: isCompact ? "none" : undefined,
           marginTop: 16,
           ...pageCard("#FFFFFF"),
           background:
@@ -3460,6 +3571,7 @@ function CommunityConfirmationPolicyPage() {
       </section>
 
       <section
+        id="community-confirmation-eligible-response-pool"
         style={{
           display: memberWitnessFocus ? "none" : undefined,
           marginTop: 14,
@@ -3590,6 +3702,7 @@ function CommunityConfirmationPolicyPage() {
       </section>
 
       <section
+        id="community-confirmation-privacy-rule"
         style={{
           display: memberWitnessFocus ? "none" : undefined,
           marginTop: 14,
@@ -3614,7 +3727,7 @@ function CommunityConfirmationPolicyPage() {
           {labelWithIcon("navigation", "Open responder inbox", "navy")}
         </PrimaryButton>
       </section>
-    </div>
+    </CommunityConfirmationNeonFrame>
   );
 }
 

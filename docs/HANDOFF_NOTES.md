@@ -304,6 +304,38 @@ This file is the compact current-state handoff required by `README.md` and
   microphone/playback review and pilot deployment verification remain part of
   this handoff until the published commit is confirmed live.
 
+## Community Confirmation neon phone fronts - 2026-11-07
+
+- Founder-approved presentation enhancement is implemented locally for
+  `/app/community-confirmations` and
+  `/app/community-confirmations/policy`. Both routes share one static
+  cyan-violet-gold phone frame, local `Community confirmation` title and
+  permission-aware `Your inbox` / `Manager settings` switch.
+- The empty inbox now leads with one off-white neon paper, envelope identity,
+  `No requests to answer`, the existing truthful `You're up to date`
+  reading and one `Check again` action. Live requests still precede tools,
+  retain all three immediate and six specialist answers, and mutate only through
+  the existing explicit `Record my answer` action.
+- The default manager phone front now leads with `People who can answer`,
+  `Request settings`, `Cases to review`, `Privacy & sharing`, and
+  `Back to my requests`. These rows reveal or navigate to the existing policy,
+  responder-pool, reviewer and privacy controls; no second workflow or backend
+  contract was created. Focused verification and witness routes remain direct.
+- The global companion is blocked only on the Community Confirmation route
+  family so it cannot cover the focused phone task. It remains unchanged on
+  other routes. Desktop presentation, permissions, APIs, reviewer evidence,
+  relay preferences, witness records, TrustSlip boundaries and public privacy
+  remain unchanged.
+- Verification passed: 322-module production build; Community Confirmation
+  outcome-boundary audit; phone-simplicity audit; expanded 390x844 browser smoke
+  covering the live responder task, empty state, all nine response types,
+  focused request/review behavior, manager menu, manager-to-reviewer handoff and
+  horizontal overflow. Temporary visual captures were reviewed for the empty
+  inbox and manager settings. The broad protected-button freeze remains red on
+  unrelated pre-existing main-branch AppLayout, Demand Box, Shop, entry and
+  analytics expectations; this slice does not change those contracts.
+- This Community Confirmation slice is approved for release on `codex/community-confirmation-neon`; promote the exact verified commit to `main` and confirm the matching Render deployment before calling it live.
+
 ## Playable Public Shop sharing - 2026-11-05
 
 - Founder-approved first step is implemented locally: Public Shop `Share`

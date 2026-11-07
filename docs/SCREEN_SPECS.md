@@ -1436,9 +1436,10 @@ contact preferences available without turning the first surface into an
 operations dashboard.
 
 Must show:
+- one local phone identity and mode switch: `Community confirmation`, `Your inbox`, and an authorised `Manager settings` path; ordinary responders must not receive manager access from presentation alone
 - one compact state-aware summary: `What needs your answer?` when requests are
   waiting, `You're up to date` when empty, and a clear closed-request state
-  for an expired or completed notification
+  for an expired or completed notification; the phone empty card may lead with `No requests to answer` while retaining the `You're up to date` truth
 - compact waiting, instant-pulse, and relay-request chips only when at least
   one request is waiting; do not show three zero-count boxes in the empty state
 - one state-aware first action: `Review first request`,
@@ -1468,6 +1469,8 @@ Must show:
 - one clear empty state without a duplicate empty request card
 - enough phone bottom clearance that the fixed authenticated navigation does
   not cover the final disclosure or action
+- one route-scoped static cyan-violet-gold neon frame on phone, with off-white task cards and no flashing or animated glow
+- no global companion overlay on the Community Confirmation route family while the focused phone task is open
 
 Rules:
 - Preserve `request_id` notification focus and `case_id` reviewer focus.
@@ -1516,6 +1519,8 @@ and manage parent-domain affiliation acknowledgement for the selected community.
 It also supports limited member-witness records for active members.
 
 Must show:
+- on the default phone route, one compact manager-first front with `People who can answer`, `Request settings`, `Cases to review`, `Privacy & sharing`, and `Back to my requests`; every row must reveal or navigate to the existing canonical control rather than create a second workflow
+- the shared `Community confirmation` phone identity and `Your inbox` / `Manager settings` switch
 - selected community identity
 - policy switches for controlled confirmation requests
 - compact Community ID Domain affiliation lane
@@ -1583,6 +1588,8 @@ Rules:
   assisted field-agent capture, annual renewal prompts, weighted verifier
   scoring, or dispute logic until those contracts exist in backend and tests.
 - Keep Community Home free from this deeper admin workload.
+- Keep focused public-verification and member-witness landings direct. The default manager front may hide the generic policy hero on phone only; desktop and all deeper controls remain present.
+- Use static route-scoped neon illumination only. Do not add flashing, autoplay, a second permission system, or duplicate policy/reviewer state.
 
 ## CommunityConfirmationOutcomePage
 

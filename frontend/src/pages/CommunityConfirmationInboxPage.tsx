@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CommunityProofPanel from "../components/CommunityProofPanel";
+import {
+  CommunityConfirmationFrontCard,
+  CommunityConfirmationFrontRow,
+  CommunityConfirmationModeTabs,
+  CommunityConfirmationNeonFrame,
+  communityConfirmationPaperStyle,
+} from "../components/CommunityConfirmationNeonFrame";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -758,6 +765,7 @@ function CommunityConfirmationInboxPage() {
   const [busyKey, setBusyKey] = useState("");
   const [responseNotes, setResponseNotes] = useState<Record<number, string>>({});
   const [selectedResponseTypes, setSelectedResponseTypes] = useState<Record<number, string>>({});
+  const [showHowConfirmationWorks, setShowHowConfirmationWorks] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewEvidence, setReviewEvidence] = useState<Record<number, ReviewEvidenceRow[]>>({});
@@ -781,7 +789,7 @@ function CommunityConfirmationInboxPage() {
   const instantCount = rows.filter((row) => row.mode === "instant_pulse").length;
   const relayCount = rows.filter((row) => row.mode !== "instant_pulse").length;
   const isRequestFocusMode = Boolean(focusedRequestId);
-  const isReviewCaseFocusMode = Boolean(focusedReviewCaseId);
+  const isReviewCaseFocusMode = Boolean(focusedReviewCaseId || hasReviewQuery);
   const focusedRows = useMemo(() => {
     if (!focusedRequestId) return rows;
     return rows.filter((row) => row.id === focusedRequestId);
@@ -1620,7 +1628,8 @@ function CommunityConfirmationInboxPage() {
     );
   }
   return (
-    <div
+    <CommunityConfirmationNeonFrame
+      compact={isCompact}
       style={{
         width: "100%",
         maxWidth: 1120,
@@ -1633,13 +1642,23 @@ function CommunityConfirmationInboxPage() {
     >
       <PageTopNav
         sectionLabel="Community confirmation"
-        title="Confirmation Inbox"
-        subtitle="Answer only what you truly know."
+        title="Your requests"
+        subtitle="Answer only what you personally know."
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
         backTo={APP_ROUTES.TRUST_SLIP}
         backLabel="TrustSlip"
       />
+      {isCompact && !isRequestFocusMode ? (
+        <CommunityConfirmationModeTabs
+          current="inbox"
+          managerAvailable={canManageRelayPolicy}
+          onInbox={() => void loadInbox()}
+          onManager={() =>
+            navigateWithOrigin(navigate, APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY, location)
+          }
+        />
+      ) : null}
 
       {notice ? (
         <div
@@ -1661,9 +1680,11 @@ function CommunityConfirmationInboxPage() {
           marginTop: 16,
           ...pageCard("#FFFFFF"),
           padding: isCompact ? 18 : 24,
-          background:
-            "linear-gradient(135deg, rgba(7,23,44,0.98) 0%, rgba(16,52,84,0.95) 100%)",
-          color: "#FFFFFF",
+          background: isCompact
+            ? undefined
+            : "linear-gradient(135deg, rgba(7,23,44,0.98) 0%, rgba(16,52,84,0.95) 100%)",
+          color: isCompact ? "#07172C" : "#FFFFFF",
+          ...communityConfirmationPaperStyle(isCompact),
         }}
       >
         <div
@@ -1674,27 +1695,64 @@ function CommunityConfirmationInboxPage() {
             alignItems: "center",
           }}
         >
-          <div>
+          <div style={{ textAlign: isCompact ? "center" : "left" }}>
             <div
               style={{
-                color: "#F2C766",
+                color: isCompact ? "#15708A" : "#F2C766",
                 fontSize: 12,
                 fontWeight: 1000,
                 textTransform: "uppercase",
               }}
             >
-              {sectionLabelWithIcon("shield", "Community confirmation")}
-            </div>
-            <h1 style={{ margin: "8px 0 0", fontSize: isCompact ? 28 : 40, lineHeight: 1.05, fontWeight: 1000 }}>
+                {sectionLabelWithIcon("shield", "Community confirmation")}
+              </div>
+              {isCompact && !loading && pendingCount === 0 && !focusedRequestMissing ? (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 76,
+                    height: 66,
+                    margin: "18px auto 4px",
+                    borderRadius: 22,
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#A56C00",
+                    background: "linear-gradient(145deg, #FFF7D6, #FFD98A)",
+                    border: "2px solid rgba(214,170,69,0.62)",
+                    boxShadow: "0 0 18px rgba(214,170,69,0.28)",
+                  }}
+                >
+                  <GsnLegacyIcon name="document" size={42} />
+                </div>
+              ) : null}
+              <h1 style={{ margin: "8px 0 0", fontSize: isCompact ? 28 : 40, lineHeight: 1.05, fontWeight: 1000 }}>
               {loading
                 ? "Checking your inbox"
                 : focusedRequestMissing
                   ? "This request is closed"
                   : pendingCount > 0
                     ? "What needs your answer?"
-                    : "You're up to date"}
-            </h1>
-            <p style={{ margin: "12px 0 0", color: "#D7E2EF", fontSize: 16, fontWeight: 800, lineHeight: 1.5 }}>
+                    : isCompact
+                      ? "No requests to answer"
+                      : "You're up to date"}
+              </h1>
+              {isCompact && !loading && pendingCount === 0 && !focusedRequestMissing ? (
+                <div
+                  style={{
+                    margin: "10px auto 0",
+                    width: "fit-content",
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    color: "#166534",
+                    background: "#E9F9EF",
+                    fontSize: 12,
+                    fontWeight: 1000,
+                  }}
+                >
+                  You're up to date
+                </div>
+              ) : null}
+              <p style={{ margin: "12px 0 0", color: isCompact ? "#526174" : "#D7E2EF", fontSize: 16, fontWeight: 800, lineHeight: 1.5 }}>
               {loading
                 ? "Looking for requests that need your personal knowledge."
                 : focusedRequestMissing
@@ -1703,7 +1761,9 @@ function CommunityConfirmationInboxPage() {
                     ? "One request is ready for your honest answer."
                     : pendingCount > 0
                       ? `${pendingCount} request${pendingCount === 1 ? "" : "s"} waiting. Answer only what you personally know.`
-                      : "New requests will appear here when someone needs your personal knowledge."}
+                      : isCompact
+                        ? "Requests sent to you will appear here."
+                        : "New requests will appear here when someone needs your personal knowledge."}
             </p>
             {pendingCount > 0 ? (
               <p style={{ margin: "8px 0 0", color: "#B9C7D8", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
@@ -1712,7 +1772,7 @@ function CommunityConfirmationInboxPage() {
             ) : null}
             <div
               data-gsn-community-confirmation-priority="true"
-              style={{ marginTop: 16, maxWidth: isCompact ? 260 : 280 }}
+              style={{ marginTop: 16, maxWidth: isCompact ? "100%" : 280 }}
             >
               <PrimaryButton
                 type="button"
@@ -1769,6 +1829,50 @@ function CommunityConfirmationInboxPage() {
           ) : null}
         </div>
       </section>
+      {!isRequestFocusMode ? (
+        <section
+          data-gsn-community-confirmation-phone-shortcuts="true"
+          style={{
+            order: pendingCount === 0 ? 2 : 7,
+            marginTop: 16,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <CommunityConfirmationFrontRow
+            title="How confirmation works"
+            detail="Personal answers become protected community evidence."
+            icon={<GsnLegacyIcon name="shield" size={28} />}
+            debugId="community-confirmation-inbox.how-it-works"
+            onClick={() => setShowHowConfirmationWorks((current) => !current)}
+            trailing={showHowConfirmationWorks ? "−" : "+"}
+            accent="gold"
+          />
+          {showHowConfirmationWorks ? (
+            <CommunityConfirmationFrontCard style={{ boxShadow: "none" }}>
+              <p style={{ margin: 0, color: "#526174", fontSize: 13, fontWeight: 800, lineHeight: 1.5 }}>
+                Answer only from your own knowledge. Your contact details and private note stay protected, and one answer never becomes a whole-community guarantee.
+              </p>
+            </CommunityConfirmationFrontCard>
+          ) : null}
+          {canManageRelayPolicy ? (
+            <CommunityConfirmationFrontRow
+              title="Community settings"
+              detail="Managers only"
+              icon={<GsnLegacyIcon name="community" size={28} />}
+              debugId="community-confirmation-inbox.open-manager-settings"
+              onClick={() =>
+                navigateWithOrigin(
+                  navigate,
+                  APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY,
+                  location
+                )
+              }
+              accent="cyan"
+            />
+          ) : null}
+        </section>
+      ) : null}
       <details
         data-gsn-community-confirmation-tools="true"
         style={{ order: 4, marginTop: 14, ...softCard("#F8FBFF") }}
@@ -3322,7 +3426,7 @@ function CommunityConfirmationInboxPage() {
           </>
         )}
       </section>
-    </div>
+    </CommunityConfirmationNeonFrame>
   );
 }
 
