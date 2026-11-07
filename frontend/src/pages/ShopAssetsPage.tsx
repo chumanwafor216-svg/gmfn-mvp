@@ -1815,7 +1815,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       await loadPage();
       setDiaryNotice({
         tone: "success",
-        text: "Shop welcome voice saved. Visitors can choose Listen in the compact Shop Update strip.",
+        text: "Public shop message saved. Visitors can play it from the coming-soon shop space.",
       });
     } catch (err: any) {
       setDiaryNotice({
@@ -3474,11 +3474,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             stableHeight={46}
             style={{ color: "#0B1F33", fontWeight: 950, fontSize: 14 }}
           >
-            Shop welcome voice
+            Public shop message
           </StableDisclosureSummary>
           <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
             <div style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-              One current welcome recording introduces this shop. It stays until you replace or delete it.
+              Record one public message for visitors. Use it for a welcome, product news, or another important announcement. It stays until you replace or delete it.
             </div>
             {Number(shop?.voice_attachment_id || 0) > 0 || shop?.voice_deleted_at ? (
               <ShopVoiceNotePlayer
@@ -3514,7 +3514,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               stableHeight={50}
               debugId="shop-assets.welcome-voice.save"
             >
-              {shop?.voice_attachment_id ? "Replace welcome voice" : "Save welcome voice"}
+              {shop?.voice_attachment_id ? "Replace shop message" : "Save shop message"}
             </PrimaryButton>
           </div>
         </details>

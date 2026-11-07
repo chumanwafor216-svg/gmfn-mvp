@@ -20,6 +20,7 @@ type ShopVoiceNotePlayerProps = {
   debugId: string;
   label: string;
   compactInline?: boolean;
+  symbolOnly?: boolean;
 };
 
 export default function ShopVoiceNotePlayer({
@@ -35,6 +36,7 @@ export default function ShopVoiceNotePlayer({
   debugId,
   label,
   compactInline = false,
+  symbolOnly = false,
 }: ShopVoiceNotePlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playAfterLoadRef = useRef(false);
@@ -56,13 +58,13 @@ export default function ShopVoiceNotePlayer({
   }, [audioUrl]);
 
   useEffect(() => {
-    if (!compactInline || !audioUrl || !playAfterLoadRef.current) return;
+    if ((!compactInline && !symbolOnly) || !audioUrl || !playAfterLoadRef.current) return;
     playAfterLoadRef.current = false;
     void audioRef.current?.play().catch(() => {
       setPlaying(false);
       setError("Tap Listen again to play this voice note.");
     });
-  }, [audioUrl, compactInline]);
+  }, [audioUrl, compactInline, symbolOnly]);
 
   useEffect(() => {
     setCompleted(false);
@@ -144,6 +146,116 @@ export default function ShopVoiceNotePlayer({
   if (!attachmentId) return null;
 
   if (compactInline && completed) return null;
+
+  if (symbolOnly) {
+    const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
+    const actionLabel = loading
+      ? "Opening"
+      : playing
+      ? "Pause"
+      : "Play";
+    return (
+      <div
+        data-gsn-shop-voice-player="true"
+        data-gsn-shop-voice-symbol="true"
+        title={[label, shopName, attribution, error].filter(Boolean).join(" - ")}
+        style={{ display: "grid", placeItems: "center", position: "relative" }}
+      >
+        <audio
+          ref={audioRef}
+          preload="metadata"
+          src={audioUrl || undefined}
+          onPlay={() => {
+            setCompleted(false);
+            setPlaying(true);
+          }}
+          onPause={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setCompleted(false);
+            if (audioRef.current) audioRef.current.currentTime = 0;
+          }}
+          onError={() => {
+            setPlaying(false);
+            setError("This shop message could not be played.");
+          }}
+        />
+        <SecondaryButton
+          type="button"
+          onClick={() => void toggleCompactAudio()}
+          disabled={loading}
+          stableHeight={84}
+          minWidth={84}
+          debugId={debugId}
+          aria-label={`${actionLabel} ${label}${attribution ? ` from ${attribution}` : ""}`}
+          style={{
+            width: 84,
+            minWidth: 84,
+            height: 84,
+            minHeight: 84,
+            padding: 0,
+            borderRadius: 999,
+            display: "grid",
+            placeItems: "center",
+            position: "relative",
+            color: "#0B4EA2",
+            background: "rgba(255,255,255,0.96)",
+            border: "2px solid rgba(244,213,124,0.82)",
+            boxShadow:
+              "0 14px 28px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.98)",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+              opacity: loading ? 0.58 : 1,
+            }}
+          >
+            <GsnLegacyIcon name="speaker" size={30} />
+            {playing ? (
+              <span style={{ display: "flex", gap: 4 }}>
+                <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
+                <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
+              </span>
+            ) : (
+              <span
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderTop: "11px solid transparent",
+                  borderBottom: "11px solid transparent",
+                  borderLeft: "17px solid #0B4EA2",
+                  filter: "drop-shadow(0 3px 5px rgba(11,78,162,0.24))",
+                }}
+              />
+            )}
+          </span>
+        </SecondaryButton>
+        {error ? (
+          <span
+            role="alert"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+          >
+            {error}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   if (compactInline) {
     const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");

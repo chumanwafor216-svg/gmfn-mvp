@@ -345,8 +345,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const publicShopTickerVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{showMarketplaceReturn \? \([\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
-  "Public Shop phones must keep the compact Shop Update strip and add a separate visitor-only Marketplace return without replacing the update or exposing owner controls."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const shopWelcomeVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?const latestShopUpdateVoice = positiveNumber\(featuredDiaryEntry\?\.voice_attachment_id\)[\s\S]*?const publicShopTickerVoice = signedInOwnsShop[\s\S]*?shopWelcomeVoice \|\| latestShopUpdateVoice[\s\S]*?: latestShopUpdateVoice[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{showMarketplaceReturn \? \([\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
+  "Public Shop phones must preserve the owner's compact message/update strip while visitors receive only a genuine live Shop Update voice there."
 );
 
 assertContains(
@@ -410,8 +410,20 @@ assertContains(
 );
 
 assertContains(
-  /visitorOpeningSoonSlot[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?<GSNBrandMark[\s\S]*?Product coming soon[\s\S]*?The owner is preparing this space\.[\s\S]*?ownerEmptyProductSlots\.map/,
-  "Visitors must receive one passive GSN product-coming-soon poster in the next empty space while owner creation remains a separate control."
+  /const visitorOpeningSoonVoice =[\s\S]*?!signedInOwnsShop[\s\S]*?visitorOpeningSoonSlot[\s\S]*?shopWelcomeVoice[\s\S]*?!shopWelcomeVoice\.deletedAt[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?gridTemplateRows: visitorOpeningSoonVoice \? "1fr 1fr" : "1fr"[\s\S]*?data-visitor-opening-soon-message="true"[\s\S]*?Product coming soon[\s\S]*?data-visitor-opening-soon-audio="true"[\s\S]*?symbolOnly[\s\S]*?debugId="shop-gallery\.visitor-shop-message\.play"[\s\S]*?ownerEmptyProductSlots\.map/,
+  "A visitor with a live public shop message must receive a two-half coming-soon card with symbol-only playback, while owner creation remains a separate untouched control."
+);
+
+assertContains(
+  /className="visitor-opening-soon-card"[\s\S]*?data-public-shop-neon-card="visitor-message"[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}/,
+  "The approved visitor message neon finish must remain scoped to the visitor coming-soon card."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-neon-environment \.visitor-opening-soon-card \{[\s\S]*?outline: 1px solid rgba\(72, 183, 255, 0\.88\);[\s\S]*?\.visitor-opening-soon-card::after \{[\s\S]*?pointer-events: none;[\s\S]*?rgba\(83, 189, 255, 0\.76\)[\s\S]*?rgba\(142, 72, 255, 0\.22\)/,
+  "The visitor coming-soon card must keep the approved restrained blue-violet neon finish without blocking its audio action."
 );
 
 assertContains(

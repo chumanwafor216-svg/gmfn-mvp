@@ -4720,7 +4720,7 @@ export default function ShopGalleryPage() {
     : publicBlockCount > 0
     ? `${shopDiaryCounterText} currently listed. Ask the owner about availability.`
     : "No products or services update right now.";
-  const publicShopTickerVoice = effectiveShop?.voiceAttachmentId
+  const shopWelcomeVoice = effectiveShop?.voiceAttachmentId
     ? {
         attachmentId: effectiveShop.voiceAttachmentId,
         durationSeconds: effectiveShop.voiceDurationSeconds,
@@ -4729,7 +4729,8 @@ export default function ShopGalleryPage() {
         speakerGmfnId: effectiveShop.voiceSpeakerGmfnId,
         label: "Shop welcome voice",
       }
-    : positiveNumber(featuredDiaryEntry?.voice_attachment_id)
+    : null;
+  const latestShopUpdateVoice = positiveNumber(featuredDiaryEntry?.voice_attachment_id)
     ? {
         attachmentId: positiveNumber(featuredDiaryEntry?.voice_attachment_id),
         durationSeconds: featuredDiaryEntry?.voice_duration_seconds,
@@ -4739,6 +4740,16 @@ export default function ShopGalleryPage() {
         label: "Latest Shop Update voice",
       }
     : null;
+  const publicShopTickerVoice = signedInOwnsShop
+    ? shopWelcomeVoice || latestShopUpdateVoice
+    : latestShopUpdateVoice;
+  const visitorOpeningSoonVoice =
+    !signedInOwnsShop &&
+    visitorOpeningSoonSlot &&
+    shopWelcomeVoice &&
+    !shopWelcomeVoice.deletedAt
+      ? shopWelcomeVoice
+      : null;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
@@ -7914,7 +7925,9 @@ export default function ShopGalleryPage() {
             </span>
           </div>
 
-          {!isCompact && (effectiveShop?.voiceAttachmentId || effectiveShop?.voiceDeletedAt) ? (
+          {!isCompact &&
+          signedInOwnsShop &&
+          (effectiveShop?.voiceAttachmentId || effectiveShop?.voiceDeletedAt) ? (
             <div style={{ marginBottom: isCompact ? 10 : 12 }}>
               <ShopVoiceNotePlayer
                 attachmentId={effectiveShop.voiceAttachmentId}
@@ -8527,6 +8540,8 @@ export default function ShopGalleryPage() {
                   aria-label={
                     "GSN product coming soon, shop space " + visitorOpeningSoonSlot
                   }
+                  className="visitor-opening-soon-card"
+                  data-public-shop-neon-card="visitor-message"
                   data-visitor-opening-soon-space={visitorOpeningSoonSlot}
                   style={{
                     order: visitorOpeningSoonSlot,
@@ -8542,12 +8557,9 @@ export default function ShopGalleryPage() {
                         ? "0.72 / 1"
                         : "1.22 / 1",
                     borderRadius: isCompact ? 18 : 20,
-                    padding: isCompact ? 14 : 18,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: isCompact ? 8 : 10,
+                    padding: 0,
+                    display: "grid",
+                    gridTemplateRows: visitorOpeningSoonVoice ? "1fr 1fr" : "1fr",
                     textAlign: "center",
                     color: "#FFFFFF",
                     background:
@@ -8560,52 +8572,114 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   <div
-                    aria-hidden="true"
+                    data-visitor-opening-soon-message="true"
                     style={{
-                      width: isCompact ? 74 : 86,
-                      height: isCompact ? 82 : 96,
-                      display: "grid",
-                      placeItems: "center",
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.08)",
-                      border: "1px solid rgba(245,211,119,0.34)",
+                      minHeight: 0,
+                      padding: isCompact ? 12 : 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: isCompact ? 7 : 9,
+                      boxSizing: "border-box",
                     }}
                   >
-                    <GSNBrandMark
-                      width={isCompact ? 48 : 56}
-                      height={isCompact ? 64 : 74}
-                    />
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        width: visitorOpeningSoonVoice
+                          ? isCompact
+                            ? 48
+                            : 58
+                          : isCompact
+                          ? 74
+                          : 86,
+                        height: visitorOpeningSoonVoice
+                          ? isCompact
+                            ? 54
+                            : 64
+                          : isCompact
+                          ? 82
+                          : 96,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,0.08)",
+                        border: "1px solid rgba(245,211,119,0.34)",
+                      }}
+                    >
+                      <GSNBrandMark
+                        width={visitorOpeningSoonVoice ? (isCompact ? 34 : 40) : isCompact ? 48 : 56}
+                        height={visitorOpeningSoonVoice ? (isCompact ? 44 : 52) : isCompact ? 64 : 74}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        color: "#F4D57C",
+                        fontSize: isCompact ? 11 : 12,
+                        fontWeight: 950,
+                        letterSpacing: "0.16em",
+                      }}
+                    >
+                      GSN
+                    </span>
+                    <strong
+                      style={{
+                        fontSize: visitorOpeningSoonVoice
+                          ? isCompact
+                            ? 15
+                            : 18
+                          : isCompact
+                          ? 17
+                          : 20,
+                        fontWeight: 950,
+                        lineHeight: 1.12,
+                      }}
+                    >
+                      Product coming soon
+                    </strong>
+                    {!visitorOpeningSoonVoice ? (
+                      <span
+                        style={{
+                          maxWidth: 170,
+                          color: "rgba(237,245,255,0.82)",
+                          fontSize: isCompact ? 11 : 12,
+                          fontWeight: 750,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        The owner is preparing this space.
+                      </span>
+                    ) : null}
                   </div>
-                  <span
-                    style={{
-                      color: "#F4D57C",
-                      fontSize: isCompact ? 11 : 12,
-                      fontWeight: 950,
-                      letterSpacing: "0.16em",
-                    }}
-                  >
-                    GSN
-                  </span>
-                  <strong
-                    style={{
-                      fontSize: isCompact ? 17 : 20,
-                      fontWeight: 950,
-                      lineHeight: 1.12,
-                    }}
-                  >
-                    Product coming soon
-                  </strong>
-                  <span
-                    style={{
-                      maxWidth: 170,
-                      color: "rgba(237,245,255,0.82)",
-                      fontSize: isCompact ? 11 : 12,
-                      fontWeight: 750,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    The owner is preparing this space.
-                  </span>
+                  {visitorOpeningSoonVoice ? (
+                    <div
+                      data-visitor-opening-soon-audio="true"
+                      aria-label="Public shop audio message"
+                      style={{
+                        minHeight: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        padding: isCompact ? 10 : 14,
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 100%)",
+                        borderTop: "1px solid rgba(245,211,119,0.42)",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <ShopVoiceNotePlayer
+                        attachmentId={visitorOpeningSoonVoice.attachmentId}
+                        durationSeconds={visitorOpeningSoonVoice.durationSeconds}
+                        speakerName={visitorOpeningSoonVoice.speakerName}
+                        speakerGmfnId={visitorOpeningSoonVoice.speakerGmfnId}
+                        shopName={shopNameText}
+                        publicAccess
+                        symbolOnly
+                        debugId="shop-gallery.visitor-shop-message.play"
+                        label="public shop message"
+                      />
+                    </div>
+                  ) : null}
                 </article>
               ) : null}
               {ownerEmptyProductSlots.map((slotNumber, index) => {

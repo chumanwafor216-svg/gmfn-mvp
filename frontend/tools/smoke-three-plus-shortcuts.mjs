@@ -113,7 +113,7 @@ function isApi(urlText) {
   const url = new URL(urlText);
   return url.port === '8000' || [
     '/api/', '/auth/', '/clans/', '/community-domains', '/marketplace',
-    '/shop-diaries', '/trust', '/dashboard', '/notifications', '/attention-spine',
+    '/shop-diaries', '/shop-voice', '/trust', '/dashboard', '/notifications', '/attention-spine',
     '/loans', '/pool', '/protected-trades', '/payment-instructions',
   ].some((prefix) => url.pathname.startsWith(prefix));
 }
@@ -153,6 +153,14 @@ async function installMocks(page, scenario) {
     const scenarioShop = {
       ...shop,
       shop_product_slots_total: Number(scenario.shopProductSlotsTotal ?? 2),
+      ...(scenario.shopVoice
+        ? {
+            voice_attachment_id: 901,
+            voice_duration_seconds: 18,
+            voice_speaker_name: 'Shortcut Owner',
+            voice_speaker_gmfn_id: ownerId,
+          }
+        : {}),
     };
 
     if (path === '/auth/me' || path === '/users/me') {
@@ -181,6 +189,14 @@ async function installMocks(page, scenario) {
             }]
           : [],
       }));
+    }
+    if (path === '/shop-voice/public/901') {
+      scenario.voiceReads?.push(path);
+      return route.fulfill({
+        status: 200,
+        contentType: 'audio/wav',
+        body: Buffer.from('UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=', 'base64'),
+      });
     }
     if (path === `/marketplace/public/shop/${ownerId}`) {
       const publicProducts = Array.isArray(scenario.publicProducts)
@@ -661,6 +677,8 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     memberOfCommunity: true,
     emptyShop: true,
     shopProductSlotsTotal: 1,
+    shopVoice: true,
+    voiceReads: [],
     mutations: [],
   };
   const { context, page } = await newPhonePage(browser, scenario);
@@ -681,6 +699,12 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   if (await page.locator('[data-visitor-opening-soon-space]').count()) {
     throw new Error('Empty owner shop received the visitor-only opening-soon poster.');
   }
+  if (await page.locator('[data-visitor-opening-soon-audio]').count()) {
+    throw new Error('Empty owner shop received the visitor-only audio half inside its plus block.');
+  }
+  await page
+    .locator('button[data-cta-id="shop-gallery.welcome-voice.listen"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1
   );
@@ -755,6 +779,37 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     state: 'visible',
     timeout: 20_000,
   });
+  const visitorMessageHalf = visitor.page.locator('[data-visitor-opening-soon-message="true"]');
+  const visitorAudioHalf = visitor.page.locator('[data-visitor-opening-soon-audio="true"]');
+  await visitorAudioHalf.waitFor({ state: 'visible', timeout: 20_000 });
+  const visitorMessageHalfBox = await visitorMessageHalf.boundingBox();
+  const visitorAudioHalfBox = await visitorAudioHalf.boundingBox();
+  if (
+    !visitorMessageHalfBox ||
+    !visitorAudioHalfBox ||
+    Math.abs(visitorMessageHalfBox.height - visitorAudioHalfBox.height) > 4
+  ) {
+    throw new Error('Visitor coming-soon message and audio areas were not equal halves.');
+  }
+  const visitorShopMessage = visitor.page.locator(
+    'button[data-cta-id="shop-gallery.visitor-shop-message.play"]'
+  );
+  await visitorShopMessage.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!/^Play public shop message/.test(await visitorShopMessage.getAttribute('aria-label') || '')) {
+    throw new Error('Visitor shop message did not expose an accessible Play action.');
+  }
+  if (await visitor.page.locator('button[data-cta-id="shop-gallery.welcome-voice.listen"]').count()) {
+    throw new Error('Visitor shop message was duplicated in the compact Shop Update strip.');
+  }
+  const publicShopMessageRequest = visitor.page.waitForRequest(
+    (request) => apiPath(request.url()) === '/shop-voice/public/901',
+    { timeout: 5_000 },
+  );
+  await visitorShopMessage.click();
+  await publicShopMessageRequest;
+  if (!visitorScenario.voiceReads.includes('/shop-voice/public/901')) {
+    throw new Error('Visitor shop-message symbol did not request the public recording.');
+  }
   const emptyVisitorGridBox = await visitor.page.locator('.shop-diaries-grid').boundingBox();
   const emptyVisitorPosterBox = await visitor.page
     .locator('[data-visitor-opening-soon-space="1"]')
@@ -781,6 +836,7 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     ...visitorScenario,
     emptyShop: false,
     shopProductSlotsTotal: 1,
+    shopVoice: false,
     publicProducts: [{
       ...product,
       public_block_number: 1,
@@ -796,6 +852,9 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   await oneItemVisitor.page
     .locator('[data-visitor-opening-soon-space="2"]')
     .waitFor({ state: 'visible', timeout: 20_000 });
+  if (await oneItemVisitor.page.locator('[data-visitor-opening-soon-audio]').count()) {
+    throw new Error('Visitor without a public shop message received an inactive audio half.');
+  }
   const firstProductBox = await oneItemVisitor.page.locator('#shop-block-1').boundingBox();
   const pairedPosterBox = await oneItemVisitor.page
     .locator('[data-visitor-opening-soon-space="2"]')
@@ -1645,6 +1704,7 @@ try {
       'an early deleted owner space returns inside the first six positions',
       'an eight-item visitor sees the ninth-space poster only after Show 3 more',
       'a full twelve-item shop exposes no thirteenth prompt and opening a plus performs no write',
+      'the owner plus stays unchanged while the visitor coming-soon card uses equal message/audio halves only when a public shop message exists',
     ] : [
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
