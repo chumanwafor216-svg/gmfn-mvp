@@ -3652,9 +3652,11 @@ export default function ShopGalleryPage() {
 
   const visibleProducts = useMemo(() => {
     if (focusedBlockLinkActive) return focusedBlockProduct ? [focusedBlockProduct] : [];
-    return showAllProducts
-      ? products
-      : products.slice(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT);
+    if (showAllProducts) return products;
+    return products.filter((product, index) => {
+      const shelfSlot = positiveNumber(product.slotNumber) || index + 1;
+      return shelfSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT;
+    });
   }, [focusedBlockLinkActive, focusedBlockProduct, products, showAllProducts]);
 
   const liveShopDiaryEntries = useMemo(() => {
@@ -4483,30 +4485,29 @@ export default function ShopGalleryPage() {
   }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
   const progressiveEmptySlotVisible = Boolean(
     nextEmptyProductSlot &&
-      (signedInOwnsShop ||
-        showAllProducts ||
-        products.length < GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
+      (showAllProducts || nextEmptyProductSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
   );
   const ownerEmptyProductSlots =
     signedInOwnsShop && progressiveEmptySlotVisible ? [nextEmptyProductSlot] : [];
   const visitorOpeningSoonSlot =
     !signedInOwnsShop && progressiveEmptySlotVisible ? nextEmptyProductSlot : 0;
   const progressiveSlotSpansPair = visibleProducts.length % 2 === 0;
+  const hiddenProductCount = focusedBlockLinkActive
+    ? 0
+    : products.filter((product, index) => {
+        const shelfSlot = positiveNumber(product.slotNumber) || index + 1;
+        return shelfSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT;
+      }).length;
   const hiddenShelfEntryCount = focusedBlockLinkActive
     ? 0
-    : Math.max(0, products.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT) +
-      (!signedInOwnsShop &&
-      nextEmptyProductSlot &&
-      products.length >= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT
-        ? 1
-        : 0);
+    : hiddenProductCount +
+      (nextEmptyProductSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT ? 1 : 0);
 
   useEffect(() => {
-    const totalShelfEntries = products.length + (nextEmptyProductSlot ? 1 : 0);
-    if (totalShelfEntries <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT && showAllProducts) {
+    if (hiddenShelfEntryCount === 0 && showAllProducts) {
       setShowAllProducts(false);
     }
-  }, [nextEmptyProductSlot, products.length, showAllProducts]);
+  }, [hiddenShelfEntryCount, showAllProducts]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
@@ -8068,6 +8069,7 @@ export default function ShopGalleryPage() {
                       setOpenProductId(productOpenId);
                     }}
                     style={{
+                      order: positiveNumber(product.slotNumber) || index + 1,
                       position: "relative",
                       borderRadius: isCompact ? 18 : 20,
                       border: "1px solid rgba(255,255,255,0.92)",
@@ -8527,6 +8529,7 @@ export default function ShopGalleryPage() {
                   }
                   data-visitor-opening-soon-space={visitorOpeningSoonSlot}
                   style={{
+                    order: visitorOpeningSoonSlot,
                     gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                     width: "100%",
                     minWidth: 0,
@@ -8623,6 +8626,7 @@ export default function ShopGalleryPage() {
                     data-owner-empty-shop-space={slotNumber}
                     data-owner-empty-shop-primary={isFirstShopStep ? "true" : "false"}
                     style={{
+                      order: slotNumber,
                       gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                       width: "100%",
                       minWidth: 0,

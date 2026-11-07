@@ -823,28 +823,91 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await eightItemOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
+  await eightItemOwner.page.getByRole('button', { name: 'Show 3 more', exact: true }).waitFor({
     state: 'visible',
     timeout: 20_000,
   });
   const ninthSpace = eightItemOwner.page.locator('[data-owner-empty-shop-space="9"]');
-  await ninthSpace.waitFor({ state: 'visible', timeout: 20_000 });
-  if (await eightItemOwner.page.locator('[data-owner-empty-shop-space]').count() !== 1) {
-    throw new Error('Eight-item owner shop did not expose exactly one next empty space.');
+  if (await eightItemOwner.page.locator('[data-owner-empty-shop-space]').count() !== 0) {
+    throw new Error('Eight-item owner shop exposed its ninth-space plus before Show more.');
   }
   if (await eightItemOwner.page.locator('[id^="shop-block-"]').count() !== 6) {
-    throw new Error('Eight-item owner shop did not keep older products behind Show 2 more.');
+    throw new Error('Eight-item owner shop did not keep later products behind Show 3 more.');
   }
-  await eightItemOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
+  await eightItemOwner.page.getByRole('button', { name: 'Show 3 more', exact: true }).click();
   await eightItemOwner.page.locator('#shop-block-8').waitFor({
     state: 'visible',
     timeout: 20_000,
   });
   await ninthSpace.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await eightItemOwner.page.locator('[data-owner-empty-shop-space]').count() !== 1) {
+    throw new Error('Eight-item owner shop did not expose exactly one next empty space after Show more.');
+  }
   if (businessWrites(eightItemOwnerScenario.mutations).length !== 0) {
     throw new Error('Viewing the ninth owner plus issued a business write.');
   }
   await eightItemOwner.context.close();
+
+  const earlyGapOwnerScenario = {
+    ...eightItemOwnerScenario,
+    publicProducts: [1, 2, 4, 5, 6, 7, 8].map((slotNumber, index) => ({
+      ...product,
+      id: 750 + index,
+      name: `Owner shop item ${slotNumber}`,
+      description: `[BLOCK:${slotNumber}] Owner public shop item ${slotNumber}.`,
+      public_block_number: slotNumber,
+    })),
+    mutations: [],
+  };
+  const earlyGapOwner = await newPhonePage(browser, earlyGapOwnerScenario);
+  await earlyGapOwner.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await earlyGapOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  const thirdSpace = earlyGapOwner.page.locator('[data-owner-empty-shop-space="3"]');
+  await thirdSpace.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await earlyGapOwner.page.locator('[id^="shop-block-"]').count() !== 5) {
+    throw new Error('An early deleted owner space did not keep exactly spaces 1-6 open.');
+  }
+  if (await earlyGapOwner.page.locator('#shop-block-7, #shop-block-8').count()) {
+    throw new Error('Products after space 6 escaped Show more when an early owner space was empty.');
+  }
+  const thirdSpaceBox = await thirdSpace.boundingBox();
+  const fourthProductBox = await earlyGapOwner.page.locator('#shop-block-4').boundingBox();
+  if (!thirdSpaceBox || !fourthProductBox || thirdSpaceBox.y > fourthProductBox.y + 4) {
+    throw new Error('The reopened third owner space was not restored before shop space 4.');
+  }
+  await earlyGapOwner.context.close();
+
+  const eightItemVisitorScenario = {
+    ...eightItemOwnerScenario,
+    identity: visitorId,
+    mutations: [],
+  };
+  const eightItemVisitor = await newPhonePage(browser, eightItemVisitorScenario);
+  await eightItemVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await eightItemVisitor.page.getByRole('button', { name: 'Show 3 more', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await eightItemVisitor.page.locator('[data-visitor-opening-soon-space="9"]').count()) {
+    throw new Error('Eight-item visitor shop exposed its ninth-space poster before Show more.');
+  }
+  await eightItemVisitor.page.getByRole('button', { name: 'Show 3 more', exact: true }).click();
+  await eightItemVisitor.page
+    .locator('[data-visitor-opening-soon-space="9"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  if (await eightItemVisitor.page.locator('[data-owner-empty-shop-space]').count()) {
+    throw new Error('Eight-item visitor received the owner creation control after Show more.');
+  }
+  await eightItemVisitor.context.close();
 
   const twelveItemVisitorScenario = {
     ...visitorScenario,
@@ -1514,7 +1577,9 @@ try {
     environment: 'local Vite + mocked synthetic API at 390x844',
     checks: progressiveOnly ? [
       'every shop normalizes to all twelve included product spaces',
-      'an eight-item owner sees exactly one ninth-space plus before and after Show 2 more',
+      'an eight-item owner sees the ninth-space plus only after Show 3 more',
+      'an early deleted owner space returns inside the first six positions',
+      'an eight-item visitor sees the ninth-space poster only after Show 3 more',
       'a full twelve-item shop exposes no thirteenth prompt and opening a plus performs no write',
     ] : [
       'owner live Spotlight uses manage handoff',
@@ -1522,7 +1587,8 @@ try {
       'visitor owner shortcuts hidden',
       'Public Shop includes all twelve spaces and advances the single owner/visitor next-space presentation',
       'an empty next-space card spans both columns while one product and its included next space form one paired row',
-      'an eight-item owner sees the ninth-space plus before expanding Show 2 more, while a full shop exposes no thirteenth prompt',
+      'an eight-item owner sees the ninth-space plus only after expanding Show 3 more, while a full shop exposes no thirteenth prompt',
+      'an early deleted owner space returns before space 4, while the visitor ninth-space poster follows the same Show more boundary',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
