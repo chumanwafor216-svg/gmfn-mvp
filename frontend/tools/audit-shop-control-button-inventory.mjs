@@ -35,12 +35,12 @@ const ownerShopHandlesSource = readFileSync(
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 15,
+  PrimaryButton: 14,
   SecondaryButton: 24,
   SubtleButton: 3,
   StableButton: 7,
-  StableCtaLink: 14,
-  total: 63,
+  StableCtaLink: 13,
+  total: 61,
 };
 const expectedNativeFieldCount = 33;
 const expectedFileInputActionRoots = 4;
@@ -259,7 +259,6 @@ const expectedActionOrder = [
   "shop-control.verify.public",
   "shop-control.subscription.open",
   "shop-control.subscription.publisher",
-  "shop-control.package.extra-shop-block",
   "shop-control.package.extra-members",
   "shop-control.package.rosca-cycle",
   "shop-control.package.meeting-pack",
@@ -403,8 +402,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /const paidServiceCatalog = \[[\s\S]*?label: "Paid Spotlight"[\s\S]*?label: "Private Vault"[\s\S]*?label: "Merchant verification"[\s\S]*?label: "Promote in another community"[\s\S]*?label: "Extra shop space"[\s\S]*?label: "Community Domain"[\s\S]*?status: "Pilot: no payment now"[\s\S]*?label: "Additional trade records"[\s\S]*?status: "Paid upgrade planned"[\s\S]*?label: "Advanced Shop Analytics & AI"[\s\S]*?data-paid-services-catalog="true"[\s\S]*?debugId=\{`shop-control\.paid-services\.\$\{service\.key\}`\}/,
-  "Paid services must consolidate live payment options while marking Community Domain pilot billing and unbuilt paid upgrades truthfully."
+  /const paidServiceCatalog = \[[\s\S]*?label: "Paid Spotlight"[\s\S]*?label: "Private Vault"[\s\S]*?label: "Merchant verification"[\s\S]*?label: "Promote in another community"[\s\S]*?label: "Community Domain"[\s\S]*?status: "Pilot: no payment now"[\s\S]*?label: "Additional trade records"[\s\S]*?status: "Paid upgrade planned"[\s\S]*?label: "Advanced Shop Analytics & AI"[\s\S]*?data-paid-services-catalog="true"[\s\S]*?debugId=\{`shop-control\.paid-services\.\$\{service\.key\}`\}/,
+  "Paid services must omit retired shop-space payments while keeping live options and planned upgrades truthful."
 );
 
 assertShopDoesNotContain(
@@ -428,8 +427,8 @@ assertShopDoesNotContain(
 );
 
 assertOwnerShopHandlesContains(
-  /id: "community-package"[\s\S]*?label: "Marketplace Capacity"[\s\S]*?detail: "Extra member places, shop blocks, ROSCA, and meeting pack"[\s\S]*?SHOP_CONTROL_SHORTCUTS[\s\S]*?id: "community-package"[\s\S]*?label: "Marketplace capacity"/,
-  "Shared owner-shop handles must expose the capacity lane as Marketplace Capacity while keeping the legacy community-package id."
+  /id: "community-package"[\s\S]*?label: "Community Services"[\s\S]*?detail: "Extra member places, ROSCA, and meeting support"[\s\S]*?SHOP_CONTROL_SHORTCUTS[\s\S]*?id: "community-package"[\s\S]*?label: "Community services"/,
+  "Shared owner-shop handles must present current Community Services while keeping the legacy community-package id and route contract."
 );
 
 assertOwnerShopHandlesContains(
@@ -741,8 +740,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused[\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?open=\{isCompact \? undefined : true\}[\s\S]*?debugId="shop-control\.gallery\.other-tasks\.toggle"[\s\S]*?Other shop tasks[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?Write shop update[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Add more selling space/,
-  "Shop items must lead with the item task and keep the picture, update, and capacity routes behind one phone-closed disclosure."
+  /id="shop-control-gallery-tools"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused[\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?open=\{isCompact \? undefined : true\}[\s\S]*?debugId="shop-control\.gallery\.other-tasks\.toggle"[\s\S]*?Other shop tasks[\s\S]*?All 12 shop spaces are included[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?debugId="shop-control\.gallery\.write-diary"[\s\S]*?Write shop update/,
+  "Shop items must lead with the item task and keep picture and update routes behind one phone-closed disclosure while stating that all 12 spaces are included."
 );
 
 if (
@@ -760,8 +759,8 @@ if (
 }
 
 assertShopContains(
-  /data-shop-space-first-view="true"[\s\S]*?More shop & community space[\s\S]*?Choose what you need\.[\s\S]*?bank-transfer reference[\s\S]*?Other choices: GBP 1 each[\s\S]*?data-shop-space-status="true"[\s\S]*?What you already have[\s\S]*?Latest payment reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?data-shop-space-service-tools="true"[\s\S]*?Use purchased services[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
-  "Shop Control must lead with paid-space choices, keep current entitlements reachable, and preserve ROSCA purchase/cycle/payout controls behind the phone disclosure."
+  /data-shop-space-first-view="true"[\s\S]*?Community services[\s\S]*?Your 12 shop spaces are included\.[\s\S]*?do not need to pay for product spaces[\s\S]*?bank-transfer reference[\s\S]*?data-shop-space-status="true"[\s\S]*?What you already have[\s\S]*?Latest payment reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?data-shop-space-service-tools="true"[\s\S]*?Use purchased services[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
+  "Shop Control must state that all 12 product spaces are included while preserving current community-service status and ROSCA controls."
 );
 
 assertShopContains(

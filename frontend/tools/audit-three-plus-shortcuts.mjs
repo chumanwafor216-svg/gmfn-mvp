@@ -104,8 +104,8 @@ assertContains(
 );
 assertContains(
   'control',
-  /activeOwnerLayer === "products"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused \? \([\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?Other shop tasks[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?Write shop update[\s\S]*?Add more selling space/,
-  'Ordinary Shop items must lead with its requested task and retain secondary shortcuts behind one disclosure, while exact-product, picture, and update handoffs expose only their requested task.'
+  /activeOwnerLayer === "products"[\s\S]*?<ShopAssetsPage[\s\S]*?embeddedSection=\{shopPictureTaskFocused \? "picture" : shopDiaryTaskFocused \? "diary" : "products"\}[\s\S]*?focusedProductReturnPath=\{ownerProductManageReturnPath \|\| null\}[\s\S]*?!ownerProductManageFocusRequested && !shopDiaryTaskFocused && !shopPictureTaskFocused \? \([\s\S]*?data-shop-items-other-tasks="true"[\s\S]*?Other shop tasks[\s\S]*?All 12 shop spaces are included[\s\S]*?to=\{routes\.shopPicture\}[\s\S]*?Change shop picture[\s\S]*?Write shop update/,
+  'Ordinary Shop items must lead with its requested task and retain the picture and update shortcuts behind one disclosure, while exact-product, picture, and update handoffs expose only their requested task.'
 );
 assertContains(
   'assets',

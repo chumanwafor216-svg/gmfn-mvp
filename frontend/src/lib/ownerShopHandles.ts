@@ -75,8 +75,8 @@ export const OWNER_SHOP_HANDLES: OwnerShopHandle[] = [
   },
   {
     id: "community-package",
-    label: "Marketplace Capacity",
-    detail: "Extra member places, shop blocks, ROSCA, and meeting pack",
+    label: "Community Services",
+    detail: "Extra member places, ROSCA, and meeting support",
     route: "shop",
     hash: OWNER_SHOP_HASHES.communityPackage,
   },
@@ -109,7 +109,7 @@ export const SHOP_CONTROL_SHORTCUTS: ShopControlShortcut[] = [
   },
   {
     id: "shop-diaries",
-    label: "6 product blocks",
+    label: "Shop items",
     hash: OWNER_SHOP_HASHES.diaries,
   },
   {
@@ -119,7 +119,7 @@ export const SHOP_CONTROL_SHORTCUTS: ShopControlShortcut[] = [
   },
   {
     id: "community-package",
-    label: "Marketplace capacity",
+    label: "Community services",
     hash: OWNER_SHOP_HASHES.communityPackage,
   },
 ];

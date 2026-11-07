@@ -5,6 +5,14 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Public Shop next-empty product space - 2026-11-07
+
+- Owner-approved frozen-area exception: every Public Shop now includes all 12 product/service spaces. The exact signed-in owner always sees one large central `+` for the first empty space, including when older products remain collapsed behind `Show more`.
+- The existing exact-space Shop Control handoff remains authoritative. Saving advances the prompt, filling all 12 removes it, and deleting a product makes the first empty space available again. Visitors retain a passive coming-soon poster and never receive the owner creation link.
+- Backend capacity is fixed at 12 and still rejects space 13. New `extra_shop_blocks` payment instructions and credit use return a truthful retired-package conflict; historical payment and entitlement records remain readable but no longer alter capacity.
+- Shop Control and Shop Assets no longer advertise paid selling space. Other community-service packages, product review, media, permissions, Shop Diary, Vault, Spotlight, Dashboard Market Wisdom, and Community Home are unchanged.
+- Verification passed: 19 focused backend package/Public Gallery tests, Python compilation, Public Shop/Shop Assets/Shop Control/workflow-plus audits, the focused 390x844 browser smoke for the eight-item owner and ninth-space plus, and the 321-module production build. The broad protected-button suite reached this change's Shop Control guard successfully but remains red on pre-existing untouched entry/activation/invite assertions and Windows-sandbox browser process spawning; do not misreport that broad suite as green.
+
 ## Instant-join legacy activation continuity - 2026-11-06
 
 - Production inspection confirmed that current `instant_invite` entry works as designed: submission creates active membership and a GSN ID, then sends the new member directly to protected password creation before sign-in and Community Home. Recent requests #25 and #26 have activation grants; #25 completed activation successfully.

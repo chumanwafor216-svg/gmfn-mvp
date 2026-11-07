@@ -159,8 +159,8 @@ type ShopAssetsPageProps = {
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
-const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 1;
-const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 11;
+const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 12;
+const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 0;
 const PUBLIC_SHOP_MAX_SLOT_COUNT =
   PUBLIC_SHOP_STANDARD_SLOT_COUNT + PUBLIC_SHOP_EXTRA_SLOT_LIMIT;
 const PUBLIC_GALLERY_VISIBILITY_MODES = new Set([
@@ -2347,7 +2347,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setPublicBlocksOpen(true);
     showGalleryActionNotice(
       "error",
-      "All your shop spaces are filled. Remove an item or choose Add more selling space.",
+      "All 12 shop spaces are filled. Remove or replace an item before adding another.",
       selectedPublicSlot
     );
     revealSelectedPublicBlock();
@@ -2406,7 +2406,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     ) {
       showProductFormNotice(
         "error",
-        "Your public shop has no open spaces. Remove an item or choose Add more selling space."
+        "All 12 public shop spaces are filled. Remove or replace an item before adding another."
       );
       return;
     }

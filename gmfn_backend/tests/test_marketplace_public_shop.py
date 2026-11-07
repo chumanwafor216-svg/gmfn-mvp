@@ -3267,35 +3267,35 @@ def test_public_shop_name_is_not_downgraded_by_default_fallback(
     assert public_res.json()["item"]["name"] == "Ardent Ebony Uplift LTD"
 
 
-def test_public_gallery_capacity_requires_entitlement_for_higher_numbered_space():
+def test_public_gallery_capacity_allows_twelve_spaces_without_entitlement():
     assert marketplace_routes._public_product_capacity_allows_write(
         active_product_count=0,
         replaceable_product_count=0,
-        public_product_slots_total=1,
+        public_product_slots_total=12,
         public_block_number=1,
     )
-    assert not marketplace_routes._public_product_capacity_allows_write(
-        active_product_count=0,
+    assert marketplace_routes._public_product_capacity_allows_write(
+        active_product_count=11,
         replaceable_product_count=0,
-        public_product_slots_total=1,
-        public_block_number=2,
+        public_product_slots_total=12,
+        public_block_number=12,
     )
     assert marketplace_routes._public_product_capacity_allows_write(
-        active_product_count=5,
+        active_product_count=12,
         replaceable_product_count=0,
-        public_product_slots_total=1,
+        public_product_slots_total=12,
         public_block_number=4,
         existing_product_keeps_slot=True,
     )
     assert not marketplace_routes._public_product_capacity_allows_write(
-        active_product_count=5,
+        active_product_count=12,
         replaceable_product_count=0,
-        public_product_slots_total=1,
-        public_block_number=5,
+        public_product_slots_total=12,
+        public_block_number=13,
     )
 
 
-def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
+def test_public_gallery_twelve_space_limit_counts_legacy_visibility_aliases(
     client,
     override_current_user_user,
 ):
@@ -3340,7 +3340,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
                 """
             )
         )
-        for slot in range(1, 2):
+        for slot in range(1, 13):
             conn.execute(
                 text(
                     """
@@ -3365,8 +3365,8 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Second block",
-            "description": "[BLOCK:2] Should require paid space",
+            "name": "Thirteenth block",
+            "description": "[BLOCK:13] Beyond the included shop ceiling",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -3374,7 +3374,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         },
     )
     assert create_res.status_code == 400, create_res.text
-    assert "Maximum of 1 community-visible products" in create_res.json()["detail"]
+    assert "Maximum of 12 community-visible products" in create_res.json()["detail"]
 
 
 def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
@@ -3899,7 +3899,7 @@ def test_public_gallery_reads_hide_older_duplicate_active_numbered_blocks(
     ]
 
 
-def test_public_gallery_extra_shop_block_entitlement_clamps_at_twelve(
+def test_public_gallery_historical_extra_entitlement_does_not_change_twelve_space_limit(
     client,
     override_current_user_user,
 ):
@@ -3992,7 +3992,7 @@ def test_public_gallery_extra_shop_block_entitlement_clamps_at_twelve(
             "clan_id": 1,
             "shop_id": 1,
             "name": "Twelfth block",
-            "description": "[BLOCK:12] Paid extra slot",
+            "description": "[BLOCK:12] Included final slot",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -4002,8 +4002,8 @@ def test_public_gallery_extra_shop_block_entitlement_clamps_at_twelve(
     assert create_res.status_code == 200, create_res.text
     item = create_res.json()["item"]
     assert item["public_block_number"] == 12
-    assert item["shop_product_slots_free"] == 1
-    assert item["shop_product_slots_extra"] == 11
+    assert item["shop_product_slots_free"] == 12
+    assert item["shop_product_slots_extra"] == 0
     assert item["shop_product_slots_total"] == 12
 
     over_limit_res = client.post(

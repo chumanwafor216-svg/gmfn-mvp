@@ -563,8 +563,8 @@ type NoticeTone = "success" | "error" | "info";
 
 type SpotlightFeedbackState = ShopControlSpotlightFeedback;
 
-const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 1;
-const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 11;
+const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 12;
+const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 0;
 const PUBLIC_SHOP_MAX_SLOT_COUNT =
   PUBLIC_SHOP_STANDARD_SLOT_COUNT + PUBLIC_SHOP_EXTRA_SLOT_LIMIT;
 
@@ -4569,7 +4569,7 @@ export default function ShopControlPage() {
 
   const publicProductSlotsTotal = useMemo(() => {
     const fromShop = safePositiveNumber(shop?.shop_product_slots_total, 0);
-    if (fromShop > 0) return fromShop;
+    if (fromShop > 0) return Math.min(PUBLIC_SHOP_MAX_SLOT_COUNT, Math.max(PUBLIC_SHOP_STANDARD_SLOT_COUNT, fromShop));
 
     const fromProducts = products
       .map((item) => safePositiveNumber(item?.shop_product_slots_total, 0))
@@ -5200,16 +5200,6 @@ export default function ShopControlPage() {
       to: routes.paidRepost,
     },
     {
-      key: "extra-space",
-      icon: "shop" as GsnIconName,
-      label: "Extra shop space",
-      detail: "Buy additional shop-item capacity through the existing community package rail.",
-      status: "Payment available",
-      state: "available",
-      action: "Open extra space",
-      to: routes.communityPackages,
-    },
-    {
       key: "community-domain",
       icon: "globe" as GsnIconName,
       label: "Community Domain",
@@ -5676,7 +5666,6 @@ export default function ShopControlPage() {
 
   const communityPackageStatusText = useMemo(() => {
     const packageLabels: Array<[string, string]> = [
-      ["extra_shop_blocks", "Shop spaces"],
       ["extra_members", "Member places"],
       ["rosca_cycle", "ROSCA service"],
       ["community_meeting_pack", "Meeting support"],
@@ -5689,7 +5678,7 @@ export default function ShopControlPage() {
         return `${label}: ${remaining > 0 ? "yearly service active" : "yearly service inactive"}`;
       }
       if (remaining <= 0) return `${label}: none ready`;
-      if (code === "extra_shop_blocks" || code === "extra_members") {
+      if (code === "extra_members") {
         return `${label}: ${remaining} ready`;
       }
       return `${label}: ${remaining} ready${item?.engine_ready === false ? ", records only" : ""}`;
@@ -6165,10 +6154,6 @@ export default function ShopControlPage() {
     }
     if (options.needsShop && !shop?.id) {
       showNotice("error", "Shop record is not available.");
-      return;
-    }
-    if (packageCode === "extra_shop_blocks" && marketplaceShopsFeatureOff) {
-      showNotice("error", marketplaceShopsFeatureOffText);
       return;
     }
     if (packageCode === "rosca_cycle" && roscaCyclesFeatureOff) {
@@ -7635,7 +7620,7 @@ export default function ShopControlPage() {
               : shopPictureTaskFocused
                 ? "Change shop picture"
                 : communityPackageTaskFocused
-                  ? "Add more selling space"
+                  ? "Community services"
                   : paidServicesHubFocused
                     ? "Paid services"
               : "Shop Control"
@@ -7650,7 +7635,7 @@ export default function ShopControlPage() {
               : shopPictureTaskFocused
                 ? "Choose the picture people should recognise as your shop."
                 : communityPackageTaskFocused
-                  ? "Choose the extra shop or community service you need."
+                  ? "All 12 shop spaces are included. Choose another community service if needed."
                   : paidServicesHubFocused
                     ? "Subscriptions, paid options, and planned upgrades in one truthful list."
               : ""
@@ -7925,7 +7910,7 @@ export default function ShopControlPage() {
               </StableDisclosureSummary>
               <div style={{ marginTop: 10 }}>
                 <div style={{ ...helperText(), fontSize: 13 }}>
-                  Change your shop picture, write an update, or add more selling space.
+                  Change your shop picture or write an update. All 12 shop spaces are included.
                 </div>
                 <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
                   <StableCtaLink
@@ -7943,14 +7928,6 @@ export default function ShopControlPage() {
                     debugId="shop-control.gallery.write-diary"
                   >
                     Write shop update
-                  </StableCtaLink>
-                  <StableCtaLink
-                    to={routes.communityPackages}
-                    kind="secondary"
-                    fullWidth
-                    debugId="shop-control.gallery.community-package"
-                  >
-                    Add more selling space
                   </StableCtaLink>
                 </div>
               </div>
@@ -8495,13 +8472,13 @@ export default function ShopControlPage() {
             data-shop-space-first-view="true"
             style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #FFF8DE 100%)")}
           >
-            <div style={sectionLabel()}>More shop & community space</div>
+            <div style={sectionLabel()}>Community services</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Choose what you need.
+              Your 12 shop spaces are included.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Choose one option and GSN will create a bank-transfer reference. The new
-              space or service becomes available after the payment is confirmed.
+              You do not need to pay for product spaces. Choose another community service
+              only when you need it, and GSN will create a bank-transfer reference.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(false)}>ROSCA service: GBP 60 a year</span>
@@ -8636,24 +8613,6 @@ export default function ShopControlPage() {
               </div>
             ) : null}
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
-              <PrimaryButton
-                onClick={() =>
-                  createCommunityPackageInstruction("extra_shop_blocks", "Shop space", {
-                    needsShop: true,
-                  })
-                }
-                disabled={
-                  shopActionsLocked ||
-                  Boolean(creatingCommunityPackageCode) ||
-                  marketplaceShopsFeatureOff
-                }
-                busy={creatingCommunityPackageCode === "extra_shop_blocks"}
-                busyLabel="Preparing..."
-                fullWidth
-                debugId="shop-control.package.extra-shop-block"
-              >
-                One more shop space
-              </PrimaryButton>
               <SecondaryButton
                 onClick={() =>
                   createCommunityPackageInstruction("extra_members", "Member place")

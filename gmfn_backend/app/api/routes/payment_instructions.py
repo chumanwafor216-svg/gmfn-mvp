@@ -70,6 +70,7 @@ from app.services.vault_domain_service import (
 router = APIRouter(prefix="/payment-instructions", tags=["payment-instructions"])
 
 PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024
+RETIRED_COMMUNITY_PACKAGE_CODES = {"extra_shop_blocks"}
 PAYMENT_PROOF_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
 PAYMENT_PROOF_CONTENT_TYPES = {
     "image/jpeg",
@@ -812,6 +813,17 @@ def _latest_package_payment(
     return None
 
 
+def _require_current_community_package(package_code: str) -> None:
+    if package_code in RETIRED_COMMUNITY_PACKAGE_CODES:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Every public shop now includes all 12 product spaces. "
+                "Extra shop-space payments are no longer available."
+            ),
+        )
+
+
 def _package_scope(
     *,
     package_code: str,
@@ -830,8 +842,9 @@ def _package_engine_status(package_code: str) -> Dict[str, Any]:
     if package_code == "extra_shop_blocks":
         return {
             "consumer": "public_gallery_capacity",
-            "engine_ready": True,
-            "message": "Extra public shop blocks are applied to this shop after payment is matched.",
+            "engine_ready": False,
+            "retired": True,
+            "message": "All 12 public shop spaces are now included without an extra payment.",
         }
     if package_code == "extra_members":
         return {
@@ -975,6 +988,7 @@ def use_community_package_unit(
     package_code = str(payload.package_code or "").strip().lower()
     if package_code not in COMMUNITY_PACKAGE_CATALOG:
         raise HTTPException(status_code=400, detail="Unsupported community package code")
+    _require_current_community_package(package_code)
     if package_code == "rosca_cycle":
         raise HTTPException(
             status_code=400,
@@ -1078,6 +1092,7 @@ def create_community_package_payment_instruction(
     package_code = str(payload.package_code or "").strip().lower()
     if package_code not in COMMUNITY_PACKAGE_CATALOG:
         raise HTTPException(status_code=400, detail="Unsupported community package code")
+    _require_current_community_package(package_code)
 
     package = COMMUNITY_PACKAGE_CATALOG[package_code]
     package_needs_shop = package_code in {"extra_shop_blocks"}
@@ -1253,6 +1268,7 @@ def my_instruction_config(
                     else str(calc_community_package_amount(6)),
                 }
                 for code, cfg in COMMUNITY_PACKAGE_CATALOG.items()
+                if code not in RETIRED_COMMUNITY_PACKAGE_CODES
             ],
         },
         "pipeline_credit_config": {

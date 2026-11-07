@@ -2451,15 +2451,15 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /async function createCommunityPackageInstruction[\s\S]*extra_shop_blocks[\s\S]*marketplaceShopsFeatureOff[\s\S]*marketplaceShopsFeatureOffText[\s\S]*rosca_cycle[\s\S]*roscaCyclesFeatureOff[\s\S]*roscaCyclesFeatureOffText[\s\S]*\/api\/payment-instructions\/community-package/,
-  "Shop Control package payment-code handler must explain disabled extra shop block and ROSCA policies before calling the package payment route.",
+  /async function createCommunityPackageInstruction[\s\S]*rosca_cycle[\s\S]*roscaCyclesFeatureOff[\s\S]*roscaCyclesFeatureOffText[\s\S]*\/api\/payment-instructions\/community-package/,
+  "Shop Control package payment-code handler must explain disabled ROSCA policy before calling the current community-service package route.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /vaultFeatureOffText[\s\S]*disabled=\{[\s\S]*vaultFeatureOff[\s\S]*debugId="shop-control\.vault\.pay-1-slot"[\s\S]*marketplaceShopsFeatureOffText[\s\S]*disabled=\{[\s\S]*marketplaceShopsFeatureOff[\s\S]*debugId="shop-control\.verify\.pay"[\s\S]*roscaCyclesFeatureOffText[\s\S]*disabled=\{[\s\S]*marketplaceShopsFeatureOff[\s\S]*debugId="shop-control\.package\.extra-shop-block"[\s\S]*disabled=\{[\s\S]*roscaCyclesFeatureOff[\s\S]*debugId="shop-control\.package\.rosca-cycle"/,
-  "Shop Control paid-service buttons must show policy warnings and disable blocked Vault, Merchant Verify, extra shop block, and ROSCA actions.",
+  /vaultFeatureOffText[\s\S]*disabled=\{[\s\S]*vaultFeatureOff[\s\S]*debugId="shop-control\.vault\.pay-1-slot"[\s\S]*marketplaceShopsFeatureOffText[\s\S]*disabled=\{[\s\S]*marketplaceShopsFeatureOff[\s\S]*debugId="shop-control\.verify\.pay"[\s\S]*roscaCyclesFeatureOffText[\s\S]*disabled=\{[\s\S]*roscaCyclesFeatureOff[\s\S]*debugId="shop-control\.package\.rosca-cycle"/,
+  "Shop Control paid-service buttons must show policy warnings and disable blocked Vault, Merchant Verify, and ROSCA actions without restoring retired shop-space payments.",
   { frontend: true }
 );
 

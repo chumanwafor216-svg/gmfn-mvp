@@ -264,8 +264,8 @@ type ShopIconName = LegacyShopIconName | Gsn3DIconKey;
 
 type NoticeTone = "success" | "error";
 
-const GALLERY_STANDARD_SLOTS_TOTAL = 1;
-const GALLERY_EXTRA_SLOTS_LIMIT = 11;
+const GALLERY_STANDARD_SLOTS_TOTAL = 12;
+const GALLERY_EXTRA_SLOTS_LIMIT = 0;
 const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
 const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
@@ -4483,7 +4483,9 @@ export default function ShopGalleryPage() {
   }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
   const progressiveEmptySlotVisible = Boolean(
     nextEmptyProductSlot &&
-      (showAllProducts || products.length < GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
+      (signedInOwnsShop ||
+        showAllProducts ||
+        products.length < GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
   );
   const ownerEmptyProductSlots =
     signedInOwnsShop && progressiveEmptySlotVisible ? [nextEmptyProductSlot] : [];
@@ -4493,7 +4495,11 @@ export default function ShopGalleryPage() {
   const hiddenShelfEntryCount = focusedBlockLinkActive
     ? 0
     : Math.max(0, products.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT) +
-      (nextEmptyProductSlot && products.length >= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT ? 1 : 0);
+      (!signedInOwnsShop &&
+      nextEmptyProductSlot &&
+      products.length >= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT
+        ? 1
+        : 0);
 
   useEffect(() => {
     const totalShelfEntries = products.length + (nextEmptyProductSlot ? 1 : 0);

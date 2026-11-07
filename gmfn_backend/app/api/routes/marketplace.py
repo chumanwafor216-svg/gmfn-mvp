@@ -25,7 +25,6 @@ from app.db.models import (
     ClanMembership,
     CommunityDomain,
     CommunityDomainPolicy,
-    FeatureEntitlement,
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
@@ -137,8 +136,8 @@ MARKETPLACE_LISTING_REVIEW_EVENT = "marketplace.listing.review_decided"
 MARKETPLACE_LISTING_REVIEW_PANEL_HASH = "marketplace-listing-review-panel"
 
 
-FREE_COMMUNITY_PRODUCT_SLOTS = 1
-MAX_EXTRA_PUBLIC_SHOP_BLOCKS = 11
+FREE_COMMUNITY_PRODUCT_SLOTS = 12
+MAX_EXTRA_PUBLIC_SHOP_BLOCKS = 0
 
 TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
@@ -154,7 +153,6 @@ SPOTLIGHT_PAID_ROTATION_WEIGHT = 3
 
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
-FEATURE_EXTRA_SHOP_BLOCK = "extra_shop_block"
 
 # Historical test-week capacity override. It is kept only so older status
 # payloads can report whether that date-limited bypass is active; current free
@@ -4079,45 +4077,7 @@ def _shop_public_product_slots_total(
     *,
     shop: Optional[MarketplaceShop],
 ) -> int:
-    if shop is None:
-        return FREE_COMMUNITY_PRODUCT_SLOTS
-
-    now = _now_utc()
-    shop_scoped_extra_slots = (
-        db.query(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (
-                            FeatureEntitlement.quantity_total > FeatureEntitlement.quantity_used,
-                            FeatureEntitlement.quantity_total - FeatureEntitlement.quantity_used,
-                        ),
-                        else_=0,
-                    )
-                ),
-                0,
-            )
-        )
-        .filter(
-            FeatureEntitlement.shop_id == int(shop.id),
-            FeatureEntitlement.feature_code == FEATURE_EXTRA_SHOP_BLOCK,
-            FeatureEntitlement.status == "active",
-            FeatureEntitlement.revoked_at.is_(None),
-            FeatureEntitlement.starts_at <= now,
-            (FeatureEntitlement.expires_at.is_(None) | (FeatureEntitlement.expires_at >= now)),
-        )
-        .scalar()
-    )
-    if int(shop_scoped_extra_slots or 0) > 0:
-        return FREE_COMMUNITY_PRODUCT_SLOTS + min(MAX_EXTRA_PUBLIC_SHOP_BLOCKS, int(shop_scoped_extra_slots or 0))
-
-    extra_slots = get_active_feature_quantity(
-        db,
-        owner_user_id=int(shop.owner_user_id),
-        feature_code=FEATURE_EXTRA_SHOP_BLOCK,
-        shop_id=int(shop.id),
-    )
-    return FREE_COMMUNITY_PRODUCT_SLOTS + min(MAX_EXTRA_PUBLIC_SHOP_BLOCKS, max(0, int(extra_slots or 0)))
+    return FREE_COMMUNITY_PRODUCT_SLOTS
 
 
 def _public_product_capacity_allows_write(
@@ -4149,7 +4109,7 @@ def _public_product_capacity_allows_write(
 def _public_product_capacity_detail(limit: int) -> str:
     return (
         f"Maximum of {int(limit)} community-visible products allowed per shop. "
-        "Buy extra shop blocks from Shop Control to add more."
+        "Remove or replace an existing item before adding another."
     )
 
 

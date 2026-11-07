@@ -395,8 +395,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;[\s\S]*?products\.slice\(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT\)[\s\S]*?const nextEmptyProductSlot = useMemo\([\s\S]*?focusedBlockLinkActive[\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const progressiveEmptySlotVisible =[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\][\s\S]*?const visitorOpeningSoonSlot =/,
-  "Public Shop must derive one progressive next-empty space from the existing authoritative slot capacity for either owner or visitor presentation."
+  /const GALLERY_STANDARD_SLOTS_TOTAL = 12;[\s\S]*?const GALLERY_EXTRA_SLOTS_LIMIT = 0;[\s\S]*?const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;[\s\S]*?products\.slice\(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT\)[\s\S]*?const nextEmptyProductSlot = useMemo\([\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const progressiveEmptySlotVisible = Boolean\([\s\S]*?signedInOwnsShop[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\][\s\S]*?const visitorOpeningSoonSlot =/,
+  "Public Shop must include all 12 spaces and keep the exact owner's single next-empty plus visible even while older products remain collapsed."
 );
 
 assertContains(
@@ -415,8 +415,8 @@ assertContains(
 );
 
 assertContains(
-  /const hiddenShelfEntryCount =[\s\S]*?products\.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?nextEmptyProductSlot[\s\S]*?hiddenShelfEntryCount > 0 \|\| showAllProducts[\s\S]*?`Show \$\{hiddenShelfEntryCount\} more`/,
-  "Public Shop must show at most six shelf entries before one truthful Show more control, including a hidden progressive next space in its count."
+  /const hiddenShelfEntryCount =[\s\S]*?products\.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?!signedInOwnsShop[\s\S]*?nextEmptyProductSlot[\s\S]*?hiddenShelfEntryCount > 0 \|\| showAllProducts[\s\S]*?`Show \$\{hiddenShelfEntryCount\} more`/,
+  "Public Shop must count only hidden products for the owner while a visitor's hidden passive next-space poster remains included in Show more."
 );
 
 assertNotContains(

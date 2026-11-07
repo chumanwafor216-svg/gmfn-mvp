@@ -770,9 +770,10 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   }
   await visitor.context.close();
 
-  const freeFullVisitorScenario = {
+  const oneItemVisitorScenario = {
     ...visitorScenario,
     emptyShop: false,
+    shopProductSlotsTotal: 1,
     publicProducts: [{
       ...product,
       public_block_number: 1,
@@ -780,37 +781,19 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     }],
     mutations: [],
   };
-  const freeFullVisitor = await newPhonePage(browser, freeFullVisitorScenario);
-  await freeFullVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+  const oneItemVisitor = await newPhonePage(browser, oneItemVisitorScenario);
+  await oneItemVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await freeFullVisitor.page.locator('#shop-block-1').waitFor({
-    state: 'visible',
-    timeout: 20_000,
-  });
-  if (await freeFullVisitor.page.locator('[data-visitor-opening-soon-space]').count()) {
-    throw new Error('A full one-free-space shop exposed an unentitled second-space poster.');
-  }
-  await freeFullVisitor.context.close();
-
-  const progressingVisitorScenario = {
-    ...freeFullVisitorScenario,
-    shopProductSlotsTotal: 2,
-  };
-  const progressingVisitor = await newPhonePage(browser, progressingVisitorScenario);
-  await progressingVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 60_000,
-  });
-  await progressingVisitor.page
+  await oneItemVisitor.page
     .locator('[data-visitor-opening-soon-space="2"]')
     .waitFor({ state: 'visible', timeout: 20_000 });
-  const firstProductBox = await progressingVisitor.page.locator('#shop-block-1').boundingBox();
-  const pairedPosterBox = await progressingVisitor.page
+  const firstProductBox = await oneItemVisitor.page.locator('#shop-block-1').boundingBox();
+  const pairedPosterBox = await oneItemVisitor.page
     .locator('[data-visitor-opening-soon-space="2"]')
     .boundingBox();
-  const progressingGridBox = await progressingVisitor.page.locator('.shop-diaries-grid').boundingBox();
+  const progressingGridBox = await oneItemVisitor.page.locator('.shop-diaries-grid').boundingBox();
   if (
     !firstProductBox ||
     !pairedPosterBox ||
@@ -818,12 +801,50 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     pairedPosterBox.width > progressingGridBox.width * 0.6 ||
     Math.abs(firstProductBox.y - pairedPosterBox.y) > 4
   ) {
-    throw new Error('One product and its next coming-soon space did not form one paired row.');
+    throw new Error('One product and its included next coming-soon space did not form one paired row.');
   }
-  if (await progressingVisitor.page.locator('[data-visitor-opening-soon-space="1"]').count()) {
-    throw new Error('Visitor opening-soon poster did not advance after shop space 1 was filled.');
+  await oneItemVisitor.context.close();
+
+  const eightItemOwnerScenario = {
+    ...scenario,
+    emptyShop: false,
+    shopProductSlotsTotal: 8,
+    publicProducts: Array.from({ length: 8 }, (_, index) => ({
+      ...product,
+      id: 700 + index,
+      name: `Owner shop item ${index + 1}`,
+      description: `[BLOCK:${index + 1}] Owner public shop item ${index + 1}.`,
+      public_block_number: index + 1,
+    })),
+    mutations: [],
+  };
+  const eightItemOwner = await newPhonePage(browser, eightItemOwnerScenario);
+  await eightItemOwner.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await eightItemOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  const ninthSpace = eightItemOwner.page.locator('[data-owner-empty-shop-space="9"]');
+  await ninthSpace.waitFor({ state: 'visible', timeout: 20_000 });
+  if (await eightItemOwner.page.locator('[data-owner-empty-shop-space]').count() !== 1) {
+    throw new Error('Eight-item owner shop did not expose exactly one next empty space.');
   }
-  await progressingVisitor.context.close();
+  if (await eightItemOwner.page.locator('[id^="shop-block-"]').count() !== 6) {
+    throw new Error('Eight-item owner shop did not keep older products behind Show 2 more.');
+  }
+  await eightItemOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
+  await eightItemOwner.page.locator('#shop-block-8').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await ninthSpace.waitFor({ state: 'visible', timeout: 20_000 });
+  if (businessWrites(eightItemOwnerScenario.mutations).length !== 0) {
+    throw new Error('Viewing the ninth owner plus issued a business write.');
+  }
+  await eightItemOwner.context.close();
 
   const twelveItemVisitorScenario = {
     ...visitorScenario,
@@ -1471,9 +1492,11 @@ const server = await createServer({
 await server.listen();
 const baseUrl = server.resolvedUrls.local[0].replace(/\/+$/, '');
 const browser = await chromium.launch({ headless: true });
+const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
 
 try {
   await testOwnerEmptyShopSpaces(browser, baseUrl);
+  if (!progressiveOnly) {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
   await testOwnerShopShortcuts(browser, baseUrl, 'none');
   await testOwnerProductMediaShortcut(browser, baseUrl);
@@ -1485,16 +1508,21 @@ try {
   await testDemandShortcut(browser, baseUrl, { memberOfCommunity: false });
   await testPrivateOffersGuidance(browser, baseUrl);
   await testPaidPromotionGuidance(browser, baseUrl);
+  }
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: [
+    checks: progressiveOnly ? [
+      'every shop normalizes to all twelve included product spaces',
+      'an eight-item owner sees exactly one ninth-space plus before and after Show 2 more',
+      'a full twelve-item shop exposes no thirteenth prompt and opening a plus performs no write',
+    ] : [
       'owner live Spotlight uses manage handoff',
       'owner absent Spotlight uses create handoff',
       'visitor owner shortcuts hidden',
-      'Public Shop exposes one free progressive space, no unentitled second-space prompt, and space 2 only when paid capacity is reported',
-      'an empty next-space card spans both columns while one product and its next space form one paired row',
-      'the Public Shop shows six cards first, reveals all twelve through Show 6 more, and exposes no thirteenth prompt',
+      'Public Shop includes all twelve spaces and advances the single owner/visitor next-space presentation',
+      'an empty next-space card spans both columns while one product and its included next space form one paired row',
+      'an eight-item owner sees the ninth-space plus before expanding Show 2 more, while a full shop exposes no thirteenth prompt',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',

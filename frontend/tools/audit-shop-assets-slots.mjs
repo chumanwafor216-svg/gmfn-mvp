@@ -150,22 +150,22 @@ assertContains(
   assertContains(
     file,
     new RegExp(
-      `const ${freeConstant} = 1;[\\s\\S]*?const ${paidConstant} = 11;`
+      `const ${freeConstant} = 12;[\\s\\S]*?const ${paidConstant} = 0;`
     ),
-    `${file} must keep one free public shop space and up to eleven paid spaces within the twelve-space ceiling.`
+    `${file} must include all twelve public shop spaces without paid extra-space capacity.`
   );
 });
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /function normalizeShop\([\s\S]*?publicSlotsTotal: clampGallerySlotsTotal\([\s\S]*?src\?\.shop_product_slots_total[\s\S]*?src\?\.public_product_slots_total[\s\S]*?src\?\.publicSlotsTotal[\s\S]*?const gallerySlotsTotal = clampGallerySlotsTotal\(shop\?\.publicSlotsTotal\)/,
-  "Public Shop must read its authoritative paid-space capacity before deriving the progressive next empty space."
+  "Public Shop must normalize the included twelve-space capacity before deriving the progressive next empty space."
 );
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
   /const publicProductSlotsTotal = useMemo\([\s\S]*?PUBLIC_SHOP_STANDARD_SLOT_COUNT[\s\S]*?const publicProductSlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicProductSlotCount = useMemo\([\s\S]*?publicProductSlots\.filter\(Boolean\)\.length/,
-  "Shop Control summary must derive public capacity from slot entitlements and count occupied arranged slots."
+  "Shop Control summary must normalize the included twelve-space capacity and count occupied arranged slots."
 );
 
 assertContains(
@@ -198,8 +198,8 @@ if (/publicProducts\.length/.test(shopAssetsSource)) {
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= publicProductSlotsTotal[\s\S]*?Your public shop has no open spaces/,
-  "Shop Assets add guard must use visible occupied slots, not raw public product rows."
+  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= publicProductSlotsTotal[\s\S]*?All 12 public shop spaces are filled/,
+  "Shop Assets add guard must use visible occupied slots, enforce the included twelve-space ceiling, and avoid raw public product row counts."
 );
 
 assertContains(

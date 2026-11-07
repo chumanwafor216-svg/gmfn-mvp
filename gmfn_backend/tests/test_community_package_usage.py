@@ -202,6 +202,41 @@ def test_community_package_status_reports_meeting_engine_ready(
     assert meeting["engine_ready"] is True
 
 
+def test_extra_shop_space_package_is_retired_because_all_twelve_spaces_are_included(
+    client, override_current_user, seed_clan_admin_membership
+):
+    status_res = client.get("/payment-instructions/community-package/status?clan_id=1")
+
+    assert status_res.status_code == 200
+    extra_space = next(
+        item
+        for item in status_res.json()["packages"]
+        if item["package_code"] == "extra_shop_blocks"
+    )
+    assert extra_space["engine_ready"] is False
+    assert extra_space["retired"] is True
+    assert "all 12" in extra_space["message"].lower()
+
+    create_res = client.post(
+        "/payment-instructions/community-package",
+        json={
+            "clan_id": 1,
+            "package_code": "extra_shop_blocks",
+            "quantity_total": 1,
+            "currency": "GBP",
+        },
+    )
+    assert create_res.status_code == 409
+    assert "all 12" in create_res.json()["detail"].lower()
+
+    use_res = client.post(
+        "/payment-instructions/community-package/use",
+        json={"clan_id": 1, "package_code": "extra_shop_blocks", "units": 1},
+    )
+    assert use_res.status_code == 409
+    assert "all 12" in use_res.json()["detail"].lower()
+
+
 def test_rosca_package_instruction_is_sixty_pounds_yearly(
     client, override_current_user, seed_clan_admin_membership
 ):
