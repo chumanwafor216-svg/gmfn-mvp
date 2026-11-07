@@ -104,7 +104,45 @@ async function installApiMocks(page, apiCalls) {
       return route.fulfill(json({ count: 0, matches: [] }));
     }
     if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
-      return route.fulfill(json([]));
+      const requestId = Number(path.split("/")[3] || 0);
+      return route.fulfill(json(requestId === 72 ? [
+        {
+          id: 501,
+          marketplace_request_id: 72,
+          author_user_id: 309,
+          recipient_user_id: 216,
+          author_display_name: "Chidi Member",
+          author_gmfn_id: "GSN-U-309",
+          author_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
+          text: "I can inspect the freezer after 4pm.",
+          created_at: "2026-11-07T15:42:00Z",
+          is_mine: false,
+        },
+        {
+          id: 502,
+          marketplace_request_id: 72,
+          author_user_id: 216,
+          recipient_user_id: 309,
+          author_display_name: "Ada Example",
+          author_gmfn_id: "GSN-U-216",
+          author_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
+          text: "Thank you. Please message me when you are nearby.",
+          created_at: "2026-11-07T15:45:00Z",
+          is_mine: true,
+        },
+        {
+          id: 503,
+          marketplace_request_id: 72,
+          author_user_id: 410,
+          recipient_user_id: 216,
+          author_display_name: "Ngozi Member",
+          author_gmfn_id: "GSN-U-410",
+          author_profile_image_url: null,
+          text: "I can also inspect it tomorrow morning.",
+          created_at: "2026-11-07T15:49:00Z",
+          is_mine: false,
+        },
+      ] : []));
     }
     if (/^\/demand-box\/audio\/\d+\/delete$/.test(path) && method === "POST") {
       const body = request.postDataJSON();
@@ -281,6 +319,46 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible().catch(() => false)), "Private replies opened before the member asked.");
   await listenReplyButton.click();
   assert(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies did not open.");
+  const participantPicker = freezerCard.locator('[data-gsn-demand-conversation-participant="true"] select');
+  await participantPicker.waitFor();
+  assert((await participantPicker.locator("option").count()) === 2, "Separate private responders are not selectable.");
+  const conversation = freezerCard.locator('[data-gsn-demand-conversation="whatsapp-like"]');
+  await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
+  assert((await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).count()) === 0, "Another responder's private exchange leaked into the selected conversation.");
+  await participantPicker.selectOption({ label: "Conversation with Ngozi Member" });
+  await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).waitFor();
+  assert(await conversation.locator('[data-gsn-demand-message-avatar="initials"]').isVisible(), "The privacy-safe initials avatar is missing when no portrait was shared.");
+  assert((await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).count()) === 0, "The first responder's exchange remained visible after switching conversations.");
+  await participantPicker.selectOption({ label: "Conversation with Chidi Member" });
+  await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
+  assert(await conversation.locator('[data-gsn-demand-message-direction="incoming"]').isVisible(), "The incoming reply bubble is missing.");
+  assert(await conversation.locator('[data-gsn-demand-message-direction="outgoing"]').isVisible(), "The outgoing reply bubble is missing.");
+  assert((await conversation.locator('[data-gsn-demand-message-avatar="portrait"]').count()) === 2, "Consented sender portraits are missing from the conversation trail.");
+  const conversationGeometry = await conversation.evaluate((node) => {
+    const incoming = node.querySelector('[data-gsn-demand-message-direction="incoming"]');
+    const outgoing = node.querySelector('[data-gsn-demand-message-direction="outgoing"]');
+    const incomingAvatar = incoming?.firstElementChild?.getBoundingClientRect();
+    const incomingBubble = incoming?.lastElementChild?.getBoundingClientRect();
+    const outgoingAvatar = outgoing?.firstElementChild?.getBoundingClientRect();
+    const outgoingBubble = outgoing?.lastElementChild?.getBoundingClientRect();
+    return {
+      alternating: Boolean(
+        incomingAvatar &&
+        incomingBubble &&
+        outgoingAvatar &&
+        outgoingBubble &&
+        incomingAvatar.right < incomingBubble.left &&
+        outgoingAvatar.left > outgoingBubble.right
+      ),
+      noOverflow: node.scrollWidth <= node.clientWidth + 1,
+    };
+  });
+  assert(conversationGeometry.alternating, "The reply trail does not alternate like a familiar chat conversation.");
+  assert(conversationGeometry.noOverflow, "The reply trail overflows horizontally.");
+  assert(
+    await conversation.getByText("Only the requester and this member can read or play it.", { exact: false }).isVisible(),
+    "The private conversation boundary is missing."
+  );
 
   const deleteVoiceButton = freezerCard.getByRole("button", {
     name: "Delete voice note",

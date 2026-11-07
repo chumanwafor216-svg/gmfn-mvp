@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createMarketplaceRequestResponse,
   listMarketplaceRequestResponses,
@@ -31,6 +31,29 @@ function initials(value: string): string {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "M";
 }
 
+function messageTime(value: string): string {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? ""
+    : parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function messageDay(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Earlier";
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const key = parsed.toDateString();
+  if (key === today.toDateString()) return "Today";
+  if (key === yesterday.toDateString()) return "Yesterday";
+  return parsed.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+    year: parsed.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  });
+}
+
 export default function DemandResponsePanel({
   requestId,
   ownerUserId,
@@ -47,6 +70,7 @@ export default function DemandResponsePanel({
   const [showPhoto, setShowPhoto] = useState(false);
   const [recipientUserId, setRecipientUserId] = useState(0);
   const [error, setError] = useState("");
+  const threadRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = Number(currentUser?.id || currentUser?.user_id || 0);
   const canSharePhoto = Boolean(String(currentUser?.profile_image_url || "").trim());
 
@@ -83,16 +107,53 @@ export default function DemandResponsePanel({
         row.recipient_user_id !== ownerUserId &&
         row.recipient_user_id !== currentUserId
       ) {
-        names.set(row.recipient_user_id, `Member ${row.recipient_user_id}`);
+        if (!names.has(row.recipient_user_id)) {
+          names.set(row.recipient_user_id, `Member ${row.recipient_user_id}`);
+        }
       }
     });
     return Array.from(names.entries()).map(([id, name]) => ({ id, name }));
   }, [currentUserId, ownerUserId, rows]);
 
   useEffect(() => {
-    if (!isOwner || recipientUserId || participants.length === 0) return;
+    if (!isOwner) return;
+    if (participants.length === 0) {
+      if (recipientUserId) setRecipientUserId(0);
+      return;
+    }
+    if (participants.some((participant) => participant.id === recipientUserId)) {
+      return;
+    }
     setRecipientUserId(participants[0].id);
   }, [isOwner, participants, recipientUserId]);
+
+  const selectedParticipant = useMemo(
+    () => participants.find((participant) => participant.id === recipientUserId) || null,
+    [participants, recipientUserId]
+  );
+
+  const visibleRows = useMemo(() => {
+    if (!isOwner) return rows;
+    if (!recipientUserId) return [];
+    return rows.filter((row) => {
+      const authorId = Number(row.author_user_id || 0);
+      const recipientId = Number(row.recipient_user_id || 0);
+      return (
+        (authorId === ownerUserId && recipientId === recipientUserId) ||
+        (authorId === recipientUserId && recipientId === ownerUserId)
+      );
+    });
+  }, [isOwner, ownerUserId, recipientUserId, rows]);
+
+  useEffect(() => {
+    if (loading || !threadRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (threadRef.current) {
+        threadRef.current.scrollTop = threadRef.current.scrollHeight;
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, recipientUserId, visibleRows.length]);
 
   async function send() {
     if (voiceRecording) {
@@ -153,110 +214,253 @@ export default function DemandResponsePanel({
         </div>
       </div> : null}
 
+      {isOwner && participants.length > 1 ? (
+        <label
+          data-gsn-demand-conversation-participant="true"
+          style={{ display: "grid", gap: 6, color: "#29445E", fontSize: 12, fontWeight: 850 }}
+        >
+          <span>Private conversation</span>
+          <select
+            value={recipientUserId}
+            onChange={(event) => setRecipientUserId(Number(event.target.value || 0))}
+            style={{
+              minHeight: 46,
+              borderRadius: 14,
+              border: "1px solid rgba(13,95,168,0.18)",
+              padding: "0 12px",
+              background: "#FFFFFF",
+              color: "#0B1F33",
+              font: "inherit",
+              fontWeight: 800,
+            }}
+          >
+            {participants.map((participant) => (
+              <option key={participant.id} value={participant.id}>
+                Conversation with {participant.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
       {loading ? (
         <div style={{ color: "#587087", fontSize: 13 }}>Loading private replies...</div>
-      ) : rows.length ? (
-        <div style={{ display: "grid", gap: 10 }}>
-          {rows.map((row) => {
+      ) : visibleRows.length ? (
+        <div
+          ref={threadRef}
+          data-gsn-demand-conversation="whatsapp-like"
+          aria-label={
+            selectedParticipant
+              ? `Private conversation with ${selectedParticipant.name}`
+              : "Private conversation"
+          }
+          style={{
+            maxHeight: compact ? 420 : 520,
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            padding: compact ? "14px 10px" : 14,
+            borderRadius: 18,
+            border: "1px solid rgba(42,91,68,0.15)",
+            backgroundColor: "#EAF2EB",
+            backgroundImage:
+              "radial-gradient(circle at 18px 18px, rgba(11,79,168,0.035) 0 2px, transparent 2.5px), radial-gradient(circle at 38px 40px, rgba(172,125,29,0.045) 0 2px, transparent 2.5px)",
+            backgroundSize: "56px 56px",
+            display: "grid",
+            gap: 7,
+            scrollbarGutter: "stable",
+          }}
+        >
+          <div
+            style={{
+              justifySelf: "center",
+              maxWidth: "92%",
+              padding: "6px 10px",
+              borderRadius: 10,
+              background: "#FFF7D6",
+              color: "#5F4A16",
+              boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
+              fontSize: 10,
+              fontWeight: 800,
+              lineHeight: 1.35,
+              textAlign: "center",
+            }}
+          >
+            Private exchange. Only the requester and this member can read or play it.
+          </div>
+          {visibleRows.map((row, index) => {
             const photoUrl = resolveProfileImageUrl(row.author_profile_image_url);
+            const mine = Boolean(row.is_mine);
+            const day = messageDay(row.created_at);
+            const priorDay = index > 0 ? messageDay(visibleRows[index - 1].created_at) : "";
             return (
-              <div
-                key={row.id}
-                style={{
-                  padding: 11,
-                  borderRadius: 15,
-                  background: row.is_mine ? "#EFF7FF" : "#F8FBFF",
-                  border: "1px solid rgba(13,95,168,0.12)",
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <React.Fragment key={row.id}>
+                {day !== priorDay ? (
+                  <div
+                    data-gsn-demand-conversation-day="true"
+                    style={{
+                      justifySelf: "center",
+                      margin: "3px 0",
+                      padding: "4px 9px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.88)",
+                      color: "#536A81",
+                      boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
+                      fontSize: 10,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {day}
+                  </div>
+                ) : null}
+                <div
+                  data-gsn-demand-message-direction={mine ? "outgoing" : "incoming"}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: mine ? "row-reverse" : "row",
+                    alignItems: "flex-end",
+                    gap: 7,
+                  }}
+                >
                   {photoUrl ? (
                     <img
                       src={photoUrl}
-                      alt=""
-                      style={{ width: 36, height: 36, borderRadius: 999, objectFit: "cover" }}
+                      alt={`${row.author_display_name} profile`}
+                      data-gsn-demand-message-avatar="portrait"
+                      style={{
+                        width: 34,
+                        height: 34,
+                        flex: "0 0 34px",
+                        borderRadius: 999,
+                        objectFit: "cover",
+                        border: "2px solid rgba(255,255,255,0.96)",
+                        boxShadow: "0 2px 7px rgba(15,23,42,0.16)",
+                      }}
                     />
                   ) : (
                     <span
                       aria-hidden="true"
+                      data-gsn-demand-message-avatar="initials"
                       style={{
-                        width: 36,
-                        height: 36,
+                        width: 34,
+                        height: 34,
+                        flex: "0 0 34px",
                         borderRadius: 999,
                         display: "grid",
                         placeItems: "center",
-                        background: "#DCEBFA",
-                        color: "#0B4FA8",
-                        fontSize: 12,
+                        background: mine ? "#0B4FA8" : "#FFFFFF",
+                        color: mine ? "#FFFFFF" : "#0B4FA8",
+                        border: "2px solid rgba(255,255,255,0.96)",
+                        boxShadow: "0 2px 7px rgba(15,23,42,0.14)",
+                        fontSize: 11,
                         fontWeight: 950,
                       }}
                     >
                       {initials(row.author_display_name)}
                     </span>
                   )}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                  <div
+                    style={{
+                      minWidth: 0,
+                      maxWidth: "calc(88% - 41px)",
+                      padding: "9px 10px 7px",
+                      borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      background: mine ? "#DDF5E5" : "#FFFFFF",
+                      border: mine
+                        ? "1px solid rgba(45,133,85,0.14)"
+                        : "1px solid rgba(148,163,184,0.16)",
+                      boxShadow: "0 1px 3px rgba(15,23,42,0.10)",
+                      display: "grid",
+                      gap: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: mine ? "#17663D" : "#0B4FA8",
+                        fontSize: 11,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
                       {row.author_display_name}
                     </div>
-                    <div style={{ color: "#64748B", fontSize: 11 }}>
-                      {row.author_gmfn_id ? `${row.author_gmfn_id} · ` : ""}
-                      {new Date(row.created_at).toLocaleString()}
+                    {row.text ? (
+                      <div
+                        style={{
+                          color: "#17324A",
+                          fontSize: 13,
+                          lineHeight: 1.48,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.text}
+                      </div>
+                    ) : null}
+                    {Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at ? (
+                      <ProtectedVoiceNotePlayer
+                        attachmentId={Number(row.audio_attachment_id)}
+                        durationSeconds={row.audio_duration_seconds}
+                        deletedAt={row.audio_deleted_at}
+                        canDelete={mine}
+                        onDeleted={load}
+                        label="Reply voice note"
+                        debugId={`demand-box.response.${row.id}.listen`}
+                      />
+                    ) : null}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 5,
+                        color: "#6B7F90",
+                        fontSize: 9,
+                        fontWeight: 800,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {row.author_gmfn_id ? <span>{row.author_gmfn_id}</span> : null}
+                      <time dateTime={row.created_at}>{messageTime(row.created_at)}</time>
                     </div>
                   </div>
                 </div>
-                {row.text ? (
-                  <div style={{ color: "#29445E", fontSize: 13, lineHeight: 1.55 }}>
-                    {row.text}
-                  </div>
-                ) : null}
-                {Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at ? (
-                  <ProtectedVoiceNotePlayer
-                    attachmentId={Number(row.audio_attachment_id)}
-                    durationSeconds={row.audio_duration_seconds}
-                    deletedAt={row.audio_deleted_at}
-                    canDelete={Boolean(row.is_mine)}
-                    onDeleted={load}
-                    label="Reply voice note"
-                    debugId={`demand-box.response.${row.id}.listen`}
-                  />
-                ) : null}
-              </div>
+              </React.Fragment>
             );
           })}
         </div>
       ) : (
-        <div style={{ color: "#587087", fontSize: 13 }}>
-          No private replies yet.
+        <div
+          data-gsn-demand-conversation="whatsapp-like"
+          style={{
+            padding: "18px 14px",
+            borderRadius: 18,
+            border: "1px solid rgba(42,91,68,0.15)",
+            background: "#EAF2EB",
+            color: "#536A81",
+            fontSize: 12,
+            lineHeight: 1.45,
+            textAlign: "center",
+          }}
+        >
+          No private replies yet. Start the conversation below.
         </div>
       )}
-
       {isOwner && participants.length === 0 ? (
         <div style={{ color: "#587087", fontSize: 12 }}>
           When someone replies, you can answer them here.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 10 }}>
-          {isOwner && participants.length > 1 ? (
-            <select
-              value={recipientUserId}
-              onChange={(event) => setRecipientUserId(Number(event.target.value || 0))}
-              style={{
-                minHeight: 46,
-                borderRadius: 14,
-                border: "1px solid rgba(13,95,168,0.18)",
-                padding: "0 12px",
-                background: "#FFFFFF",
-              }}
-            >
-              {participants.map((participant) => (
-                <option key={participant.id} value={participant.id}>
-                  Reply to {participant.name}
-                </option>
-              ))}
-            </select>
-          ) : null}
+        <div
+          data-gsn-demand-reply-composer="true"
+          style={{
+            padding: compact ? "12px 10px 2px" : 12,
+            borderRadius: 18,
+            border: "1px solid rgba(13,95,168,0.12)",
+            background: "#F8FBFF",
+            display: "grid",
+            gap: 10,
+          }}
+        >
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}

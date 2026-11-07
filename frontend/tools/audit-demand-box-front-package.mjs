@@ -118,6 +118,10 @@ function forbidPattern(input, file, pattern, message) {
   [/onRecordingChange=\{setVoiceRecording\}/, "private replies must receive the recorder's active state"],
   [/if \(voiceRecording\)[\s\S]*?Tap Stop and wait for Voice note ready before sending/, "private reply submission must reject an unfinished recording"],
   [/disabled=\{sending \|\| voiceRecording\}[\s\S]*?Stop recording first[\s\S]*?Send private reply/, "private reply sending must stay locked until recorded audio is ready"],
+  [/data-gsn-demand-conversation="whatsapp-like"[\s\S]*?data-gsn-demand-message-direction=\{mine \? "outgoing" : "incoming"\}/, "private replies must keep the familiar alternating chat trail"],
+  [/data-gsn-demand-message-avatar="portrait"[\s\S]*?data-gsn-demand-message-avatar="initials"/, "every reply must show the consented portrait or the privacy-safe initials fallback"],
+  [/const visibleRows = useMemo[\s\S]*?authorId === ownerUserId && recipientId === recipientUserId[\s\S]*?authorId === recipientUserId && recipientId === ownerUserId/, "request owners must see one private participant exchange at a time"],
+  [/Private exchange\. Only the requester and this member can read or play it\./, "the chat trail must retain its private-audience boundary"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
 
 [

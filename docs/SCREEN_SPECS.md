@@ -1199,6 +1199,11 @@ Rules:
   read or play that exchange. On phone it is the single primary disclosure and
   the reply composer stays closed until the member opens it. Replies may contain text, a voice note up to 60
   seconds, or both.
+- The opened private exchange should use a familiar phone-chat trail: incoming
+  messages sit left, the signed-in member's messages sit right, each message
+  keeps its consented sender portrait or initials fallback, and time remains
+  visible. Request owners view one responder exchange at a time. Do not invent
+  delivery/read receipts, online status, typing status, or WhatsApp branding.
 - Closed and expired owner requests remain in one collapsed `Past requests`
   history. `Post again` creates a new request linked to the original rather than
   reopening or overwriting it. The new request requires fresh portrait and

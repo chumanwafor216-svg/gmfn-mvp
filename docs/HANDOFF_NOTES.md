@@ -5,6 +5,15 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## DemandBox sender identity and conversation trail - 2026-11-07
+
+- The existing `/app/demand-box` opened request keeps its real sender portrait when that request explicitly shares it, with initials as the privacy-safe fallback. No identity-check photo is exposed and a portrait remains recognition rather than reliability evidence.
+- The private reply exchange now reads as a familiar phone conversation: incoming messages sit left, the signed-in member's messages sit right, each bubble keeps the sender portrait or initials, and message time remains visible. No delivery, read, online, or typing status is invented.
+- Request owners now view one responder exchange at a time instead of visually mixing separate private conversations. Backend audience rules, voice notes and sender deletion remain unchanged.
+- Request details, privacy and WhatsApp contact, supply matches, one-hop search, Fulfilled, Cancel, Copy request, collapsed Past requests, and Post again all remain present and unchanged.
+- Verification passed the focused DemandBox front-package and expanded-search audits, the participant-isolation browser smoke at 390x844 and 360x780, and the 321-module TypeScript/Vite production build.
+- The complete protected-button sweep passes the DemandBox-adjacent and other frozen guards it reaches, including browser-backed Dashboard and Trust checks, but remains red on untouched Shop Analytics fixture expectations and pre-existing entry/activation/invite contract assertions. This DemandBox package does not modify those files or weaken those guards.
+
 ## Public Shop next-empty product space - 2026-11-07
 
 - Owner-approved frozen-area exception: every Public Shop now includes all 12 product/service spaces. The exact signed-in owner always sees one large central `+` for the first empty space, including when older products remain collapsed behind `Show more`.
