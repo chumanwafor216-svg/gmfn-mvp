@@ -14,13 +14,20 @@ This file is the compact current-state handoff required by `README.md` and
 - No backend, API payload, permission, lifecycle, privacy, matching, relay, voice, contact or desktop contract changed. Production build passes; focused front-package, expanded-search, Marketplace ownership and surface-ownership audits pass; the phone browser smoke passes at 390x844 and 360x780 and verifies the bottom rail, sender portrait, participant isolation and alternating private chat trail.
 - This work is verified locally in an isolated worktree. It has not been pushed or deployed because the current freeze policy requires the product owner to explicitly declare the batch ready to publish.
 
+## Visitor Public Shop audio persistence correction - 2026-11-07
+
+- Phone evidence showed the visitor compact voice control disappeared after one natural playback and the `Product coming soon` card ignored a current live Shop Update voice unless a separate persistent welcome recording existed. Both behaviours contradicted the latest owner instruction.
+- The visitor compact strip and coming-soon card now select the same current public message: persistent shop recording first, then the current live Shop Update voice. Natural completion resets the visitor strip control for replay instead of hiding it.
+- The exact owner's recorder, compact completion behaviour and progressive `+` remain unchanged. No backend, API, storage, deletion, attribution, 24-hour Shop Update lifecycle, product voice, shelf reveal or capacity contract changes.
+- Verification passes the Shop Diary audit, Public Shop action inventory, workflow-plus audit, focused 390x844 owner/visitor browser smoke and 322-module production build. The smoke proves visitor replay survives natural completion and a current live Shop Update voice appears in both the visitor strip and coming-soon card.
+
 ## Visitor public shop message card - 2026-11-07
 
 - The exact owner's progressive `+` block remains untouched and receives no audio player. The owner's existing persistent shop-message recorder/playback stays in the current Shop Update area.
 - A visitor's progressive `Product coming soon` card divides into equal upper/lower halves only when the owner has a current persistent shop-level recording. The upper half keeps the coming-soon identity; the lower half contains a familiar speaker plus play/pause symbol with an accessible action name and no long exposed explanation.
 - The visitor card has the approved restrained static blue-violet-gold neon finish. Its play action reuses the existing slow Public Shop neon action rim and existing reduced-motion stop; no flashing or new animation system was introduced.
 - The visitor recording is deliberate tap-to-play and remains replayable. It does not autoplay and exposes no recorder, replacement, deletion, item-add or owner controls. Without a recording, the visitor sees the existing full coming-soon poster and no misleading inactive audio symbol.
-- The persistent shop recording no longer duplicates inside the visitor's compact update strip. A genuine live Shop Update voice remains separate and keeps its existing 24-hour lifecycle. Product voice, ownership, storage, APIs, the six-position reveal boundary, `Show more`, twelve-space capacity and backend contracts are unchanged.
+- Superseded presentation detail: the visitor compact strip and coming-soon card now intentionally share the same selected public message so visitors can replay it in either location. Persistent shop recording remains preferred; the current live Shop Update voice is the fallback and keeps its existing 24-hour lifecycle. Product voice, ownership, storage, APIs, the six-position reveal boundary, `Show more`, twelve-space capacity and backend contracts are unchanged.
 - Verification passes the Public Shop action inventory, Shop Diary and workflow-plus audits, the focused 390x844 owner/visitor browser smoke, `git diff --check`, and the 321-module TypeScript/Vite production build. The smoke verifies the owner `+` remains unchanged, the visitor message/audio areas are equal halves, the public recording request is issued, the persistent voice is not duplicated in the visitor ticker, and a shop without a recording exposes no inactive audio control.
 
 ## Guided Shop item creation - 2026-11-07

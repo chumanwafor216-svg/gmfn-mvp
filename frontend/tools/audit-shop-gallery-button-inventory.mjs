@@ -345,8 +345,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const shopWelcomeVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?const latestShopUpdateVoice = positiveNumber\(featuredDiaryEntry\?\.voice_attachment_id\)[\s\S]*?const publicShopTickerVoice = signedInOwnsShop[\s\S]*?shopWelcomeVoice \|\| latestShopUpdateVoice[\s\S]*?: latestShopUpdateVoice[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?\{showMarketplaceReturn \? \([\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?\{isCompact \? \([\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?signedInOwnsShop[\s\S]*?renderShopDiaryShortcut\(true\)[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
-  "Public Shop phones must preserve the owner's compact message/update strip while visitors receive only a genuine live Shop Update voice there."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const shopWelcomeVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?const latestShopUpdateVoice = positiveNumber\(featuredDiaryEntry\?\.voice_attachment_id\)[\s\S]*?const visitorPublicShopVoice = !signedInOwnsShop[\s\S]*?activeShopWelcomeVoice \|\| activeLatestShopUpdateVoice[\s\S]*?const publicShopTickerVoice = signedInOwnsShop[\s\S]*?: visitorPublicShopVoice[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?compactInline[\s\S]*?keepVisibleAfterPlayback=\{!signedInOwnsShop\}[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
+  "Public Shop phones must preserve the owner's compact message/update behavior while visitors receive one replayable public message shared with the coming-soon card."
 );
 
 assertContains(
@@ -410,8 +410,8 @@ assertContains(
 );
 
 assertContains(
-  /const visitorOpeningSoonVoice =[\s\S]*?!signedInOwnsShop[\s\S]*?visitorOpeningSoonSlot[\s\S]*?shopWelcomeVoice[\s\S]*?!shopWelcomeVoice\.deletedAt[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?gridTemplateRows: visitorOpeningSoonVoice \? "1fr 1fr" : "1fr"[\s\S]*?data-visitor-opening-soon-message="true"[\s\S]*?Product coming soon[\s\S]*?data-visitor-opening-soon-audio="true"[\s\S]*?symbolOnly[\s\S]*?debugId="shop-gallery\.visitor-shop-message\.play"[\s\S]*?ownerEmptyProductSlots\.map/,
-  "A visitor with a live public shop message must receive a two-half coming-soon card with symbol-only playback, while owner creation remains a separate untouched control."
+  /const visitorPublicShopVoice = !signedInOwnsShop[\s\S]*?activeShopWelcomeVoice \|\| activeLatestShopUpdateVoice[\s\S]*?const visitorOpeningSoonVoice =[\s\S]*?visitorOpeningSoonSlot && visitorPublicShopVoice[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?gridTemplateRows: visitorOpeningSoonVoice \? "1fr 1fr" : "1fr"[\s\S]*?data-visitor-opening-soon-message="true"[\s\S]*?Product coming soon[\s\S]*?data-visitor-opening-soon-audio="true"[\s\S]*?symbolOnly[\s\S]*?debugId="shop-gallery\.visitor-shop-message\.play"[\s\S]*?ownerEmptyProductSlots\.map/,
+  "A visitor with a current persistent or live-update shop message must receive the same replayable message in the two-half coming-soon card, while owner creation remains a separate untouched control."
 );
 
 assertContains(

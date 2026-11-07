@@ -190,7 +190,19 @@ async function installMocks(page, scenario) {
           : [],
       }));
     }
-    if (path === '/shop-voice/public/901') {
+    const scenarioDiary = {
+      ...diary,
+      ...(scenario.diaryVoice
+        ? {
+            voice_attachment_id: 902,
+            voice_duration_seconds: 14,
+            voice_speaker_name: 'Shortcut Owner',
+            voice_speaker_gmfn_id: ownerId,
+          }
+        : {}),
+    };
+
+    if (path === '/shop-voice/public/901' || path === '/shop-voice/public/902') {
       scenario.voiceReads?.push(path);
       return route.fulfill({
         status: 200,
@@ -215,7 +227,7 @@ async function installMocks(page, scenario) {
       }));
     }
     if (path.startsWith(`/shop-diaries/public/${ownerId}`)) {
-      return route.fulfill(json({ items: [diary], total: 1 }));
+      return route.fulfill(json({ items: [scenarioDiary], total: 1 }));
     }
     if (path === '/marketplace/shops/101/spotlight-status') {
       if (scenario.paidPromotionStage) {
@@ -798,8 +810,26 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   if (!/^Play public shop message/.test(await visitorShopMessage.getAttribute('aria-label') || '')) {
     throw new Error('Visitor shop message did not expose an accessible Play action.');
   }
-  if (await visitor.page.locator('button[data-cta-id="shop-gallery.welcome-voice.listen"]').count()) {
-    throw new Error('Visitor shop message was duplicated in the compact Shop Update strip.');
+  const visitorTickerMessage = visitor.page.locator(
+    'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+  );
+  await visitorTickerMessage.waitFor({ state: 'visible', timeout: 20_000 });
+  const visitorTickerRequest = visitor.page.waitForRequest(
+    (request) => apiPath(request.url()) === '/shop-voice/public/901',
+    { timeout: 5_000 },
+  );
+  await visitorTickerMessage.click();
+  await visitorTickerRequest;
+  await visitor.page.locator('.public-shop-inline-voice audio').dispatchEvent('ended');
+  await visitorTickerMessage.waitFor({ state: 'visible', timeout: 5_000 });
+  await visitor.page.waitForFunction(() => {
+    const action = document.querySelector(
+      'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+    );
+    return /^(Play|Listen to) Shop welcome voice/.test(action?.getAttribute('aria-label') || '');
+  }, { timeout: 5_000 });
+  if (!/^(Play|Listen to) Shop welcome voice/.test(await visitorTickerMessage.getAttribute('aria-label') || '')) {
+    throw new Error('Visitor compact shop message did not remain replayable after playback ended.');
   }
   const publicShopMessageRequest = visitor.page.waitForRequest(
     (request) => apiPath(request.url()) === '/shop-voice/public/901',
@@ -831,6 +861,41 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     throw new Error('Visitor opening-soon shelf restored the unrelated Vault empty-state action.');
   }
   await visitor.context.close();
+
+  const updateVoiceVisitorScenario = {
+    ...scenario,
+    identity: visitorId,
+    shopVoice: false,
+    diaryVoice: true,
+    voiceReads: [],
+    mutations: [],
+  };
+  const updateVoiceVisitor = await newPhonePage(browser, updateVoiceVisitorScenario);
+  await updateVoiceVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await updateVoiceVisitor.page
+    .locator('[data-visitor-opening-soon-audio="true"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  const updateVoiceCardAction = updateVoiceVisitor.page.locator(
+    'button[data-cta-id="shop-gallery.visitor-shop-message.play"]'
+  );
+  const updateVoiceTickerAction = updateVoiceVisitor.page.locator(
+    'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+  );
+  await updateVoiceCardAction.waitFor({ state: 'visible', timeout: 20_000 });
+  await updateVoiceTickerAction.waitFor({ state: 'visible', timeout: 20_000 });
+  const updateVoiceRequest = updateVoiceVisitor.page.waitForRequest(
+    (request) => apiPath(request.url()) === '/shop-voice/public/902',
+    { timeout: 5_000 },
+  );
+  await updateVoiceCardAction.click();
+  await updateVoiceRequest;
+  if (!updateVoiceVisitorScenario.voiceReads.includes('/shop-voice/public/902')) {
+    throw new Error('The coming-soon card did not reuse the current public Shop Update voice.');
+  }
+  await updateVoiceVisitor.context.close();
 
   const oneItemVisitorScenario = {
     ...visitorScenario,

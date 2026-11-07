@@ -4740,15 +4740,21 @@ export default function ShopGalleryPage() {
         label: "Latest Shop Update voice",
       }
     : null;
+  const activeShopWelcomeVoice =
+    shopWelcomeVoice && !shopWelcomeVoice.deletedAt ? shopWelcomeVoice : null;
+  const activeLatestShopUpdateVoice =
+    latestShopUpdateVoice && !latestShopUpdateVoice.deletedAt
+      ? latestShopUpdateVoice
+      : null;
+  const visitorPublicShopVoice = !signedInOwnsShop
+    ? activeShopWelcomeVoice || activeLatestShopUpdateVoice
+    : null;
   const publicShopTickerVoice = signedInOwnsShop
-    ? shopWelcomeVoice || latestShopUpdateVoice
-    : latestShopUpdateVoice;
+    ? activeShopWelcomeVoice || activeLatestShopUpdateVoice
+    : visitorPublicShopVoice;
   const visitorOpeningSoonVoice =
-    !signedInOwnsShop &&
-    visitorOpeningSoonSlot &&
-    shopWelcomeVoice &&
-    !shopWelcomeVoice.deletedAt
-      ? shopWelcomeVoice
+    visitorOpeningSoonSlot && visitorPublicShopVoice
+      ? visitorPublicShopVoice
       : null;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
@@ -5442,6 +5448,7 @@ export default function ShopGalleryPage() {
                 shopName={shopNameText}
                 publicAccess
                 compactInline
+                keepVisibleAfterPlayback={!signedInOwnsShop}
                 debugId="shop-gallery.welcome-voice.listen"
                 label={publicShopTickerVoice.label}
               />

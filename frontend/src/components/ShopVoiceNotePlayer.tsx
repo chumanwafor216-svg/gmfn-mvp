@@ -21,6 +21,7 @@ type ShopVoiceNotePlayerProps = {
   label: string;
   compactInline?: boolean;
   symbolOnly?: boolean;
+  keepVisibleAfterPlayback?: boolean;
 };
 
 export default function ShopVoiceNotePlayer({
@@ -37,6 +38,7 @@ export default function ShopVoiceNotePlayer({
   label,
   compactInline = false,
   symbolOnly = false,
+  keepVisibleAfterPlayback = false,
 }: ShopVoiceNotePlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playAfterLoadRef = useRef(false);
@@ -283,6 +285,11 @@ export default function ShopVoiceNotePlayer({
           onPause={() => setPlaying(false)}
           onEnded={() => {
             setPlaying(false);
+            if (keepVisibleAfterPlayback) {
+              setCompleted(false);
+              if (audioRef.current) audioRef.current.currentTime = 0;
+              return;
+            }
             setCompleted(true);
             setAudioUrl("");
           }}
