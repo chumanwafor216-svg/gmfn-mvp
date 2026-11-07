@@ -205,13 +205,13 @@ assertContains(
 
 assertContains(
   "layout",
-  /function bottomNavItem[\s\S]*?height: 58[\s\S]*?padding: "5px 2px 6px"[\s\S]*?fontSize: 9\.5/,
-  "Authenticated bottom rail tab labels must keep the compact phone-safe font and padding."
+  /function bottomNavItem[\s\S]*?height: 76[\s\S]*?padding: "4px 2px 5px"[\s\S]*?fontSize: 10\.5/,
+  "Authenticated bottom rail tabs must keep the permanent readable 76px geometry and phone-safe padding."
 );
 
 assertContains(
   "layout",
-  /function bottomNavLabel\(\)[\s\S]*?lineHeight: 1[\s\S]*?maxHeight: 24[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"/,
+  /function bottomNavLabel\(\)[\s\S]*?lineHeight: 1\.05[\s\S]*?maxHeight: 24[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"/,
   "Authenticated bottom rail labels must keep fixed-height non-fragmenting text behavior."
 );
 

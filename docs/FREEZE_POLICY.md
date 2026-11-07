@@ -87,6 +87,16 @@ Current explicit frozen paths:
   tab. Do not restore Dashboard-first ordering, hide the rail on Shop Control,
   or point the primary Shop tab back to Shop Control without another intentional
   navigation review and matching audit updates.
+  - Founder-approved 2026-11-07 permanent visual standard: every authenticated
+    phone route using `AppLayout` shares one integrated deep-navy five-tab rail
+    with premium realistic 3D icon tiles and one restrained static cyan-violet
+    frame around the active destination. Stable tab height is `76px`; route
+    order, destinations, active matching, safe-area handling, normal-flow
+    placement and pre-auth exclusion remain unchanged. Do not restore the
+    former light rail, make this a DemandBox-only exception, add flashing neon,
+    or introduce route-local tab variants. This is caged by
+    `frontend/tools/audit-authenticated-mobile-tab-rail.mjs` and the existing
+    shell, tap-stability, route-ownership and entry-flow audits.
   - Approved 2026-10-29 source-return compactness correction: when an authenticated phone route carries a valid origin, the shared source-return navigator shows one 44px `Back to {source}` row instead of stacking `Return path`, `Back to {source}`, and a second `Back` button. Desktop keeps the fuller source label plus Back action. The exact origin path, `preserveOrigin={false}` behavior, route metadata, header, drawer, Tools and bottom-navigation contracts remain unchanged. This correction is caged by `frontend/tools/audit-inner-navigation-origin.mjs` and the protected Dashboard/app-shell audits.
 - `frontend/src/pages/CommitmentsPage.tsx` phone two-lane/focused-Shared presentation is reviewed as of 2026-10-15 and caged by `frontend/tools/audit-commitments-surface.mjs`, `frontend/tools/audit-action-surface-contracts.mjs`, and the mobile visual sweep; do not restore the duplicate phone heading, simultaneous lane chooser/workspace stack, raw action controls, or multi-column phone forms without intentional review.
 - `frontend/src/pages/DashboardPage.tsx` dashboard Market Wisdom presentation and interaction model only; other dashboard edits still require normal impact review.

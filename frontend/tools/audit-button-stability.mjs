@@ -197,14 +197,14 @@ assertContains(
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
+  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{\{[\s\S]*?\.\.\.mainContent\(isMobile, !!taskMode\),[\s\S]*?\{showMobileBottomRail \?/,
   "AppLayout must not double-reserve mobile bottom rail height while the rail remains visible in normal layout flow."
 );
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?background: "rgba\(244,248,255,0\.99\)"[\s\S]*?boxShadow: "inset 0 1px 0 rgba\(255,255,255,0\.76\)"[\s\S]*?function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?boxShadow: active[\s\S]*?\? "inset 0 0 0 1px rgba\(29,95,212,0\.08\)"[\s\S]*?: "none"/,
-  "AppLayout mobile bottom rail must remain visually integrated with the app shell instead of using floating slab shadows."
+  /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?background:[\s\S]*?linear-gradient\(180deg, rgba\(2,28,48,0\.995\)[\s\S]*?boxShadow:[\s\S]*?inset 0 1px 0 rgba\(255,255,255,0\.10\)[\s\S]*?function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?boxShadow: active[\s\S]*?rgba\(0,224,255,0\.78\)[\s\S]*?rgba\(221,43,255,0\.52\)[\s\S]*?: "none"/,
+  "AppLayout mobile bottom rail must keep the integrated deep-navy shell and restrained cyan-violet active frame without becoming a floating slab."
 );
 
 assertNotContains(

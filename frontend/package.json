@@ -23,6 +23,7 @@
     "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",
     "audit:route-fallthrough": "node tools/audit-route-fallthrough.mjs",
     "audit:surface-ownership": "node tools/audit-surface-ownership-contract.mjs",
+    "audit:authenticated-mobile-tab-rail": "node tools/audit-authenticated-mobile-tab-rail.mjs",
     "audit:commitments-surface": "node tools/audit-commitments-surface.mjs",
     "audit:spotlight-controls": "node tools/audit-spotlight-controls.mjs",
     "audit:media-quality-gate": "node tools/audit-media-quality-gate.mjs",

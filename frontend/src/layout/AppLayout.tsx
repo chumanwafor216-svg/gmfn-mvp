@@ -1594,9 +1594,11 @@ function bottomNav(): React.CSSProperties {
     overflowX: "hidden",
     overflowY: "hidden",
     padding: "7px 7px calc(9px + env(safe-area-inset-bottom, 0px))",
-    background: "rgba(244,248,255,0.99)",
-    borderTop: "1px solid rgba(29,95,212,0.12)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
+    background:
+      "linear-gradient(180deg, rgba(2,28,48,0.995) 0%, rgba(1,22,39,0.998) 100%)",
+    borderTop: "1px solid rgba(85,232,255,0.34)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 10px 24px rgba(8,67,105,0.12)",
     overscrollBehaviorX: "none",
     overscrollBehaviorY: "none",
     touchAction: "manipulation",
@@ -1614,51 +1616,54 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    height: 58,
-    minHeight: 58,
-    maxHeight: 58,
-    padding: "5px 2px 6px",
-    borderRadius: 14,
+    gap: 4,
+    height: 76,
+    minHeight: 76,
+    maxHeight: 76,
+    padding: "4px 2px 5px",
+    borderRadius: 18,
     textDecoration: "none",
     textAlign: "center",
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: active ? 900 : 800,
-    color: disabled ? "#94A3B8" : active ? "#0A4FB5" : "#27435F",
+    color: disabled ? "#70869A" : active ? "#FFFFFF" : "#E6F0F8",
     background: active
-      ? "linear-gradient(180deg, rgba(233,244,255,0.96) 0%, rgba(212,229,255,0.98) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.98) 100%)",
-    border: active
-      ? "1px solid rgba(29,95,212,0.24)"
-      : "1px solid rgba(76,111,146,0.18)",
+      ? "linear-gradient(145deg, rgba(10,79,145,0.96) 0%, rgba(49,38,145,0.96) 100%)"
+      : "transparent",
+    border: active ? "1px solid #55E8FF" : "1px solid transparent",
     whiteSpace: "normal",
     overflow: "hidden",
     pointerEvents: "auto",
     touchAction: "manipulation",
     cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: active
-      ? "inset 0 0 0 1px rgba(29,95,212,0.08)"
+      ? "0 0 9px rgba(0,224,255,0.78), 0 0 17px rgba(221,43,255,0.52), inset 0 1px 0 rgba(255,255,255,0.18)"
       : "none",
+    textShadow: active ? "0 1px 8px rgba(0,0,0,0.36)" : "none",
     opacity: disabled ? 0.7 : 1,
   };
 }
 
 function bottomNavIcon(active = false, disabled = false): React.CSSProperties {
   return {
-    width: 25,
-    height: 25,
-    minWidth: 25,
-    minHeight: 25,
-    maxWidth: 25,
-    maxHeight: 25,
+    width: 40,
+    height: 40,
+    minWidth: 40,
+    minHeight: 40,
+    maxWidth: 40,
+    maxHeight: 40,
     display: "grid",
     placeItems: "center",
-    borderRadius: 10,
-    background: active ? "#FFFFFF" : "rgba(255,255,255,0.72)",
+    borderRadius: 15,
+    background: active
+      ? "linear-gradient(180deg, #FFFDF7 0%, #F7EBCB 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(222,230,237,0.94) 100%)",
     border: active
-      ? "1px solid rgba(214,170,69,0.48)"
-      : "1px solid rgba(76,111,146,0.13)",
-    boxShadow: active ? "0 5px 12px rgba(10,79,181,0.12)" : "none",
+      ? "1px solid rgba(214,170,69,0.72)"
+      : "1px solid rgba(255,255,255,0.62)",
+    boxShadow: active
+      ? "0 5px 14px rgba(0,0,0,0.28), 0 0 11px rgba(85,232,255,0.26)"
+      : "0 4px 10px rgba(0,0,0,0.24)",
     opacity: disabled ? 0.62 : 1,
     overflow: "hidden",
     flexShrink: 0,
@@ -1669,7 +1674,7 @@ function bottomNavLabel(): React.CSSProperties {
   return {
     width: "100%",
     minWidth: 0,
-    lineHeight: 1,
+    lineHeight: 1.05,
     maxHeight: 24,
     display: "flex",
     alignItems: "center",
@@ -2908,75 +2913,45 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       {showMobileBottomRail ? (
         <nav
           data-gmfn-bottom-nav="true"
-          style={{
-            ...bottomNav(),
-            ...(isDemandBoxRoute
-              ? {
-                  paddingTop: 8,
-                  background: "rgba(2,24,43,0.99)",
-                  borderTop: "1px solid rgba(60,218,255,0.22)",
-                  boxShadow: "0 -12px 30px rgba(0,0,0,0.22)",
-                }
-              : {}),
-          }}
+          data-gsn-authenticated-tab-standard="realistic-3d-neon-v1"
+          aria-label="Primary navigation"
+          style={bottomNav()}
         >
-          {mobileBottomItems.map((item) => (
-            <StableCtaLink
-              key={`bottom-${item.label}-${item.to}`}
-              to={contextualizeAppNavTarget(item.to, activeCommunityId)}
-              kind="soft"
-              disabled={!!item.disabled}
-              onFocus={() => warmRouteBeforeNavigation(item.to)}
-              onPointerDown={() => warmRouteBeforeNavigation(item.to)}
-              onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
-              data-gmfn-bottom-nav-item="true"
-              data-bottom-nav-active={
-                isItemActive(item, location.pathname, location.search)
-                  ? "true"
-                  : "false"
-              }
-              debugId={`app-layout.bottom-nav.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-              style={{
-                ...bottomNavItem(
-                  isItemActive(item, location.pathname, location.search),
-                  !!item.disabled
-                ),
-                ...(isDemandBoxRoute
-                  ? {
-                      color: item.disabled
-                        ? "#70869A"
-                        : isItemActive(item, location.pathname, location.search)
-                          ? "#FFFFFF"
-                          : "#E6F0F8",
-                      background: isItemActive(item, location.pathname, location.search)
-                        ? "linear-gradient(145deg, rgba(12,80,145,0.96) 0%, rgba(47,37,139,0.96) 100%)"
-                        : "transparent",
-                      border: isItemActive(item, location.pathname, location.search)
-                        ? "1px solid #55E8FF"
-                        : "1px solid transparent",
-                      boxShadow: isItemActive(item, location.pathname, location.search)
-                        ? "0 0 9px rgba(0,224,255,0.78), 0 0 17px rgba(221,43,255,0.52), inset 0 1px 0 rgba(255,255,255,0.18)"
-                        : "none",
-                    }
-                  : {}),
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={bottomNavIcon(
-                  isItemActive(item, location.pathname, location.search),
-                  !!item.disabled
-                )}
+          {mobileBottomItems.map((item) => {
+            const active = isItemActive(
+              item,
+              location.pathname,
+              location.search
+            );
+            return (
+              <StableCtaLink
+                key={`bottom-${item.label}-${item.to}`}
+                to={contextualizeAppNavTarget(item.to, activeCommunityId)}
+                kind="soft"
+                disabled={!!item.disabled}
+                aria-current={active ? "page" : undefined}
+                onFocus={() => warmRouteBeforeNavigation(item.to)}
+                onPointerDown={() => warmRouteBeforeNavigation(item.to)}
+                onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
+                data-gmfn-bottom-nav-item="true"
+                data-bottom-nav-active={active ? "true" : "false"}
+                debugId={`app-layout.bottom-nav.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                style={bottomNavItem(active, !!item.disabled)}
               >
-                <GsnRealisticIcon
-                  name={navIconForLabel(item.label)}
-                  size={22}
-                  decorative
-                />
-              </span>
-              <span style={bottomNavLabel()}>{item.label}</span>
-            </StableCtaLink>
-          ))}
+                <span
+                  aria-hidden="true"
+                  style={bottomNavIcon(active, !!item.disabled)}
+                >
+                  <GsnRealisticIcon
+                    name={navIconForLabel(item.label)}
+                    size={36}
+                    decorative
+                  />
+                </span>
+                <span style={bottomNavLabel()}>{item.label}</span>
+              </StableCtaLink>
+            );
+          })}
         </nav>
       ) : null}
     </div>

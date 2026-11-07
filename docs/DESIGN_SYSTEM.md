@@ -284,6 +284,23 @@ Final rule:
 - Raw URLs, logs, repeated explanation, policy text, and admin-only controls
   stay hidden until the user opens advanced details.
 
+## Authenticated Phone Navigation Standard
+
+- The permanent phone rail uses exactly five equal anchors in this order:
+  `Shop`, `Community Home`, `Marketplace`, `Dashboard`, `Profile`.
+- Use the shared premium realistic 3D icon family in stable light 40px tiles.
+- Mount the rail on one integrated deep-navy surface. The active destination
+  alone receives the static cyan-violet rounded frame; inactive tabs remain
+  quiet and readable. Do not flash, pulse, or animate the neon.
+- Keep each tab at a stable 76px height, retain whole-label wrapping, preserve
+  safe-area padding, and keep the rail in normal layout flow rather than
+  floating over page actions.
+- Every authenticated phone page that uses `AppLayout` inherits this same
+  treatment. Route-local pages must not recolour, resize, reorder, replace, or
+  hide individual anchors.
+- Pre-authentication and public pages remain outside this rail. Shop Control
+  keeps the escape rail but does not claim the Shop tab as active.
+
 ## One-Screen Snapshot Protocol
 
 Some surfaces are meant to communicate one complete record in one screenshot,

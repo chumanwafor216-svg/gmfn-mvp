@@ -5,6 +5,27 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Permanent authenticated phone tab rail - 2026-11-07
+
+- The owner-approved dark rail from Demand Box is now the permanent shared
+  authenticated-phone standard rather than a route-local exception. Every
+  `AppLayout` phone surface uses the same deep navy rail, premium realistic 3D
+  icon tiles, and one restrained static cyan-violet active frame.
+- The five anchors remain `Shop`, `Community Home`, `Marketplace`, `Dashboard`,
+  and `Profile` in that exact order. Destinations, active matching, Shop Control
+  escape behavior, safe-area handling, normal-flow placement, pre-auth/public
+  exclusion, route warming and stable tap protection are unchanged.
+- Shared tab geometry is intentionally 76px so the approved 40px icon tiles and
+  two-line `Community Home` label remain legible on narrow phones. The new
+  `audit:authenticated-mobile-tab-rail` guard prevents route-local visual
+  variants and protects the permanent standard.
+- Verification passes the dedicated rail guard, surface-ownership, entry-flow,
+  Trust/Admin overflow, Dashboard inventory and tap-stability audits, the
+  322-module production build, and the production app-tab browser audit. The
+  broad button audit still reports unrelated pre-existing Demand Box and Shop
+  matcher failures; Marketplace inventory remains red on its existing action
+  baseline drift. Neither failing suite identifies a new rail regression.
+
 ## Demand Box neon phone front - 2026-11-07
 
 - `/app/demand-box` now follows the founder-approved phone reference: dark navy shell, restrained static cyan/magenta neon, visible `Demand Box` title, gold selected-marketplace row, approved human market image with `People helping people`, direct `Post a need` and `Ask community`, three primary queue lanes, compact Filters/Community-search status, one neon white request paper, collapsed history, and Marketplace-active five-tab bottom navigation.

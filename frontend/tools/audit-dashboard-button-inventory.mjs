@@ -587,12 +587,12 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 58,[\s\S]*?minHeight: 58,[\s\S]*?maxHeight: 58[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
-  "Dashboard mobile bottom navigator buttons must keep fixed 58px geometry and active pointer targets."
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 76,[\s\S]*?minHeight: 76,[\s\S]*?maxHeight: 76[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Dashboard mobile bottom navigator buttons must keep fixed 76px geometry and active pointer targets."
 );
 
 assertLayoutContains(
-  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
+  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{\{[\s\S]*?\.\.\.mainContent\(isMobile, !!taskMode\),[\s\S]*?\{showMobileBottomRail \?/,
   "Dashboard mobile content must not double-reserve the bottom rail while the rail remains visible in normal layout flow."
 );
 

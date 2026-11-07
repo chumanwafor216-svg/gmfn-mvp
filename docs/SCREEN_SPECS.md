@@ -193,6 +193,10 @@ Authenticated-entry rule:
   Menu, the Public Shop owner shortcuts, and contextual management handoffs.
 - The five-anchor mobile primary navigation remains visible on Shop Control as
   an escape path, but Shop Control is not the active Shop-tab destination.
+- The authenticated phone rail permanently uses the shared deep-navy surface,
+  realistic 3D icon tiles, and one static cyan-violet active frame across
+  `Shop`, `Community Home`, `Marketplace`, `Dashboard`, and `Profile`. Pages
+  must not introduce route-local tab treatments or change the shared order.
 - Dashboard remains directly available from the primary phone navigation.
 - Explicit deep links, task returns, publish recovery, invite continuation, and
   session-expiry return targets must not be overwritten by the Public Shop
