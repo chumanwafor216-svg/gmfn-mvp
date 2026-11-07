@@ -300,6 +300,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /type ProductJourneyStep = 1 \| 2 \| 3;[\s\S]*?const guidedProductCreate = embedded && isCompact && !editingProductId;[\s\S]*?function continueProductJourneyToDetails\(\)[\s\S]*?Add a picture or video before continuing\.[\s\S]*?openProductJourneyStep\(2\)[\s\S]*?function previewProductJourney\(\)[\s\S]*?Add the item name first\.[\s\S]*?Add the item price first\.[\s\S]*?openProductJourneyStep\(3\)[\s\S]*?function renderProductSubmitButton\(\)[\s\S]*?debugId="shop-assets\.product\.submit"[\s\S]*?data-product-create-journey=\{guidedProductCreate \? "true" : undefined\}[\s\S]*?data-product-journey-step=\{guidedProductCreate \? productJourneyStep : undefined\}[\s\S]*?Picture or video[\s\S]*?Describe your item[\s\S]*?Ready to post\?[\s\S]*?debugId="shop-assets\.product\.journey\.continue"[\s\S]*?debugId="shop-assets\.product\.journey\.preview"[\s\S]*?Not posted yet[\s\S]*?debugId="shop-assets\.product\.journey\.edit-details"/,
+  "Embedded phone item creation must keep the approved Picture/video, Details, and Review journey while editing and the standalone workbench retain their existing presentation."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /function openAddForPublicSlot[\s\S]*?marketplaceShopsFeatureOff[\s\S]*?function openEditForPublicSlot[\s\S]*?marketplaceShopsFeatureOff[\s\S]*?async function submitProduct[\s\S]*?marketplaceShopsFeatureOff/,
   "Product add, edit, and save must obey Marketplace Shops policy rather than Shop Diary policy."
 );

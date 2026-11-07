@@ -1911,6 +1911,15 @@ Owner-approved 2026-10-26 first-view correction, amended 2026-10-27:
   task on phone: the `Shop items` heading, current filled-space count, and one
   `+ Add item` primary action. Keep the numbered `Your shop items` shelf closed
   until the owner requests it.
+- Creating a new Shop item from the embedded phone task uses three deliberate
+  stages: `Picture or video`, `Details`, then `Review`. Continue requires a
+  picture or video, Preview requires the item name and price, and no business
+  write occurs before the owner taps `Post item` on Review. Back and `Edit
+  details` must preserve entered media, text, price, optional voice and other
+  existing fields. Successful posting keeps the existing exact numbered-space
+  return and Public Shop continuation. Editing an existing item and the
+  standalone Pictures & Products workbench retain their complete established
+  presentation and behavior.
 - Move the shop-picture, shop-update, and extra-selling-space shortcuts after
   the item task and keep them behind one closed `Other shop tasks` disclosure
   on phone. Desktop may keep that disclosure open. Preserve all numbered

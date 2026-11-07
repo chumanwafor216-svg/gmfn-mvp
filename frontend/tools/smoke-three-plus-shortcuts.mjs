@@ -723,6 +723,13 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     state: 'visible',
     timeout: 20_000,
   });
+  await page
+    .locator('#shop-assets-product-editor[data-product-create-journey="true"][data-product-journey-step="1"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  await page.getByText('Picture or video', { exact: true }).last().waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
 
   const writes = businessWrites(scenario.mutations);
   if (writes.length !== 0) {
@@ -1018,12 +1025,60 @@ async function testOrdinaryGalleryTaskSeparation(browser, baseUrl) {
   await addProduct.click();
   const editor = page.locator('#shop-assets-product-editor');
   await editor.waitFor({ state: 'visible', timeout: 20_000 });
-  await editor.locator('input[placeholder="Item name"]').fill('Phone smoke item');
-  await editor.locator('input[placeholder="Price"]').fill('2500');
+  await editor
+    .locator('[data-product-journey-progress="true"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  if (await editor.getAttribute('data-product-journey-step') !== '1') {
+    throw new Error('New shop item journey did not start at Picture/video.');
+  }
   await editor.getByText('More media options', { exact: true }).click();
   await editor.locator('input[placeholder="Paste item image URL"]').fill(
     'data:image/gif;base64,R0lGODlhAQABAAAAACw='
   );
+  if (businessWrites(scenario.mutations).length !== 0) {
+    throw new Error('Choosing first-step product media issued a business write.');
+  }
+  await editor.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="2"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await editor.locator('input[placeholder="Item name"]').fill('Phone smoke item');
+  await editor.locator('input[placeholder="Price"]').fill('2500');
+  await page.waitForTimeout(150);
+  await editor.getByRole('button', { name: 'Preview item', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="3"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await editor.getByText('Not posted yet', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await editor.getByText('Phone smoke item', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (businessWrites(scenario.mutations).length !== 0) {
+    throw new Error('Previewing a new shop item issued a business write before Post item.');
+  }
+  await editor.getByRole('button', { name: 'Edit details', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="2"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await editor.locator('input[placeholder="Item name"]').inputValue() !== 'Phone smoke item') {
+    throw new Error('Returning from Review lost the entered item name.');
+  }
+  if (await editor.locator('input[placeholder="Price"]').inputValue() !== '2500') {
+    throw new Error('Returning from Review lost the entered item price.');
+  }
+  await page.waitForTimeout(150);
+  await editor.getByRole('button', { name: 'Preview item', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="3"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
   await editor.getByRole('button', { name: 'Post item', exact: true }).click();
   const ordinaryBlockResult = page.locator('#shop-assets-selected-public-block');
   const ordinarySaveResult = ordinaryBlockResult.getByText(
@@ -1556,8 +1611,12 @@ await server.listen();
 const baseUrl = server.resolvedUrls.local[0].replace(/\/+$/, '');
 const browser = await chromium.launch({ headless: true });
 const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
+const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1';
 
 try {
+  if (shopItemJourneyOnly) {
+    await testOrdinaryGalleryTaskSeparation(browser, baseUrl);
+  } else {
   await testOwnerEmptyShopSpaces(browser, baseUrl);
   if (!progressiveOnly) {
   await testOwnerShopShortcuts(browser, baseUrl, 'live');
@@ -1572,10 +1631,15 @@ try {
   await testPrivateOffersGuidance(browser, baseUrl);
   await testPaidPromotionGuidance(browser, baseUrl);
   }
+  }
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: progressiveOnly ? [
+    checks: shopItemJourneyOnly ? [
+      'ordinary phone Shop items leads with Add item and keeps secondary shop tasks closed',
+      'new phone shop items follow Picture/video, Details, and Review without writing before Post item or losing entered details',
+      'successful Post item reopens and focuses the exact numbered space with its Public Shop continuation',
+    ] : progressiveOnly ? [
       'every shop normalizes to all twelve included product spaces',
       'an eight-item owner sees the ninth-space plus only after Show 3 more',
       'an early deleted owner space returns inside the first six positions',
@@ -1594,6 +1658,7 @@ try {
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
       'owner product-media shortcut selects the exact block, hides unrelated tools, exposes Change/Delete first, and returns cleanly after Save/Delete',
       'ordinary phone Shop items leads with Add item, keeps secondary shop tasks closed, and preserves the separate Diary handoff',
+      'new phone shop items follow Picture/video, Details, and Review without writing before Post item or losing entered details',
       'focused phone Shop picture fixes the broken handoff, exposes Save picture, and keeps the optional pasted-link field closed',
       'Public Shop uses eligible product media as a full-width business hero, preserves owner edit, and does not silently inherit the mocked profile portrait',
       'focused Shop Picture keeps portrait consent closed, then prepares the explicit owner choice through the ordinary file-preview path',

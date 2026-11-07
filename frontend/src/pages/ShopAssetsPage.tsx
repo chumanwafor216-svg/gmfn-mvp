@@ -139,6 +139,7 @@ type ProductRecord = {
 };
 
 type NoticeTone = "success" | "error" | "info";
+type ProductJourneyStep = 1 | 2 | 3;
 type CollapseState = {
   guidance: boolean;
   signboard: boolean;
@@ -1141,6 +1142,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const selectedPublicSlotRef = useRef(selectedPublicSlot);
   selectedPublicSlotRef.current = selectedPublicSlot;
   const [productEditorOpen, setProductEditorOpen] = useState(false);
+  const [productJourneyStep, setProductJourneyStep] =
+    useState<ProductJourneyStep>(1);
+  const guidedProductCreate = embedded && isCompact && !editingProductId;
   const [productFormNotice, setProductFormNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -2219,6 +2223,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function resetProductForm() {
+    setProductJourneyStep(1);
     setEditingProductId(null);
     setProductName("");
     setProductLabel("");
@@ -2356,6 +2361,84 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   function closeProductEditor() {
     resetProductForm();
     setProductEditorOpen(false);
+  }
+
+  function openProductJourneyStep(step: ProductJourneyStep) {
+    setProductFormNotice(null);
+    setProductJourneyStep(step);
+    revealProductEditor();
+  }
+
+  function continueProductJourneyToDetails() {
+    if (preparingProductImage || preparingProductVideo) {
+      showProductFormNotice(
+        "info",
+        "Please wait while GSN prepares your picture or video."
+      );
+      return;
+    }
+
+    if (
+      !productSelectedFile &&
+      !productSelectedVideoFile &&
+      !safeStr(productImageUrlInput) &&
+      !safeStr(productVideoUrlInput)
+    ) {
+      showProductFormNotice("error", "Add a picture or video before continuing.");
+      return;
+    }
+
+    if (productVideoSound && !productVideoSound.rightsConfirmed) {
+      showProductFormNotice(
+        "error",
+        "Confirm that you created the added sound or have permission to use it."
+      );
+      return;
+    }
+
+    openProductJourneyStep(2);
+  }
+
+  function previewProductJourney() {
+    if (!safeStr(productName)) {
+      showProductFormNotice("error", "Add the item name first.");
+      return;
+    }
+
+    if (!safeStr(productPrice)) {
+      showProductFormNotice("error", "Add the item price first.");
+      return;
+    }
+
+    openProductJourneyStep(3);
+  }
+
+  function renderProductSubmitButton() {
+    return (
+      <PrimaryButton
+        onClick={() => void submitProduct()}
+        disabled={
+          marketplaceShopsFeatureOff ||
+          savingProduct ||
+          preparingProductImage ||
+          preparingProductVideo ||
+          Boolean(productVideoSound && !productVideoSound.rightsConfirmed)
+        }
+        busy={savingProduct || preparingProductImage || preparingProductVideo}
+        busyLabel={
+          preparingProductImage || preparingProductVideo
+            ? "Preparing media..."
+            : editingProductId
+            ? "Updating..."
+            : "Posting..."
+        }
+        fullWidth
+        stableHeight={isCompact ? 56 : 48}
+        debugId="shop-assets.product.submit"
+      >
+        {editingProductId ? "Save changes" : "Post item"}
+      </PrimaryButton>
+    );
   }
 
   async function submitProduct() {
@@ -4143,6 +4226,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       {(!embedded || productEditorOpen) ? (
       <section
         id="shop-assets-product-editor"
+        data-product-create-journey={guidedProductCreate ? "true" : undefined}
+        data-product-journey-step={guidedProductCreate ? productJourneyStep : undefined}
         tabIndex={-1}
         style={{ ...pageCard("#FFFFFF"), scrollMarginTop: embedded ? 118 : 24 }}
       >
@@ -4157,10 +4242,26 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         >
           <div>
             <div style={sectionLabel()}>
-              {editingProductId ? "Edit shop item" : embedded ? "Add shop item" : "Add shop or Vault item"}
+              {guidedProductCreate
+                ? productJourneyStep === 1
+                  ? "Picture or video"
+                  : productJourneyStep === 2
+                  ? "Describe your item"
+                  : "Ready to post?"
+                : editingProductId
+                ? "Edit shop item"
+                : embedded
+                ? "Add shop item"
+                : "Add shop or Vault item"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              {embedded
+              {guidedProductCreate
+                ? productJourneyStep === 1
+                  ? "Add a picture, a short video, or both."
+                  : productJourneyStep === 2
+                  ? "Add the name and price. Voice and more details are optional."
+                  : "Check what customers will see, then post the item."
+                : embedded
                 ? "Add a picture or short video, the item name, and its price."
                 : "Add one item at a time. Choose whether everyone can see it or only approved Vault visitors."}
             </div>
@@ -4180,19 +4281,114 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           </SubtleButton>
         </div>
 
+        {guidedProductCreate ? (
+          <div
+            data-product-journey-progress="true"
+            aria-label={`Step ${productJourneyStep} of 3`}
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "auto 1fr auto 1fr auto",
+              alignItems: "start",
+              gap: 8,
+            }}
+          >
+            {([1, 2, 3] as ProductJourneyStep[]).map((step, index) => {
+              const complete = productJourneyStep > step;
+              const active = productJourneyStep === step;
+              const labels = ["Picture/video", "Details", "Review"];
+              return (
+                <React.Fragment key={step}>
+                  {index > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        height: 3,
+                        marginTop: 17,
+                        borderRadius: 999,
+                        background: complete || active ? "#0B63D1" : "#D7E3F1",
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    style={{
+                      minWidth: 62,
+                      display: "grid",
+                      justifyItems: "center",
+                      gap: 6,
+                      color: active || complete ? "#0B1F33" : "#6A7F93",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 999,
+                        display: "inline-grid",
+                        placeItems: "center",
+                        color: active || complete ? "#FFFFFF" : "#60758A",
+                        background: complete
+                          ? "#2E9B62"
+                          : active
+                          ? "linear-gradient(180deg, #146CDD 0%, #0B4EA2 100%)"
+                          : "#EDF3FA",
+                        border: active
+                          ? "2px solid rgba(214,170,69,0.82)"
+                          : "1px solid rgba(20,52,83,0.14)",
+                        boxShadow: active
+                          ? "0 9px 20px rgba(11,78,162,0.22)"
+                          : "none",
+                      }}
+                    >
+                      {complete ? "✓" : step}
+                    </span>
+                    <span>{labels[index]}</span>
+                  </span>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {guidedProductCreate && productJourneyStep === 3 && productFormNotice ? (
+          <div style={{ marginTop: 12, ...noticeCard(productFormNotice.tone) }}>
+            {productFormNotice.text}
+          </div>
+        ) : null}
+
         {(!collapsed.products || embedded) ? (
         <div
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 340px",
+            gridTemplateColumns: guidedProductCreate
+              ? "1fr"
+              : isCompact
+              ? "1fr"
+              : "minmax(0, 1fr) 340px",
             gap: 18,
             alignItems: "start",
           }}
         >
-          <div style={innerCard("#FCFEFF")}>
+          <div
+            style={{
+              ...innerCard("#FCFEFF"),
+              display:
+                guidedProductCreate && productJourneyStep === 3
+                  ? "none"
+                  : undefined,
+            }}
+          >
             <div style={sectionLabel()}>
-              {embedded
+              {guidedProductCreate
+                ? productJourneyStep === 1
+                  ? "Picture or video"
+                  : "Details"
+                : embedded
                 ? editingProductId
                   ? `Change shop item ${selectedPublicSlot}`
                   : `Add item to shop space ${selectedPublicSlot}`
@@ -4202,7 +4398,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              {editingProductId
+              {guidedProductCreate
+                ? productJourneyStep === 1
+                  ? "Choose what customers will see first."
+                  : "Tell customers what the item is and how much it costs."
+                : editingProductId
                 ? ownerProductManageFocusRequested
                   ? "Change only what you need, then tap Save changes."
                   : "Choose a new picture or video only when you want to replace the current one. Then save the item."
@@ -4220,7 +4420,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             ) : null}
 
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"), padding: isCompact ? 12 : 14 }}>
+              <div
+                style={{
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"),
+                  padding: isCompact ? 12 : 14,
+                  display:
+                    guidedProductCreate && productJourneyStep !== 1
+                      ? "none"
+                      : undefined,
+                }}
+              >
                 <div style={sectionLabel()}>{labelWithIcon("image", "Picture / video")}</div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
                   Add the item picture, short video, or both. GSN prepares heavy media quietly when needed.
@@ -4328,7 +4537,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
               <div
                 style={{
-                  display: "grid",
+                  display:
+                    guidedProductCreate && productJourneyStep !== 2
+                      ? "none"
+                      : "grid",
                   gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
@@ -4399,7 +4611,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </div>
               </div>
 
-              <div style={{ ...innerCard("#F8FBFF"), padding: isCompact ? 12 : 14 }}>
+              <div
+                style={{
+                  ...innerCard("#F8FBFF"),
+                  padding: isCompact ? 12 : 14,
+                  display:
+                    guidedProductCreate && productJourneyStep !== 2
+                      ? "none"
+                      : undefined,
+                }}
+              >
                 <div style={sectionLabel()}>Item voice note</div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5 }}>
                   Add a separate voice explanation. The item name, price, and visibility still apply.
@@ -4434,61 +4655,89 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </div>
               </div>
 
-              <div
-                style={{
-                  ...ownerActionGrid(isCompact),
-                }}
-              >
-                <PrimaryButton
-                  onClick={() => void submitProduct()}
-                  disabled={
-                    marketplaceShopsFeatureOff ||
-                    savingProduct ||
-                    preparingProductImage ||
-                    preparingProductVideo ||
-                    Boolean(productVideoSound && !productVideoSound.rightsConfirmed)
-                  }
-                  busy={savingProduct || preparingProductImage || preparingProductVideo}
-                  busyLabel={
-                    preparingProductImage || preparingProductVideo
-                      ? "Preparing media..."
-                      : editingProductId
-                      ? "Updating..."
-                      : "Posting..."
-                  }
-                  fullWidth
-                  stableHeight={isCompact ? 56 : 48}
-                  debugId="shop-assets.product.submit"
-                >
-                  {editingProductId ? "Save changes" : "Post item"}
-                </PrimaryButton>
+              {guidedProductCreate ? (
+                productJourneyStep === 1 ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <PrimaryButton
+                      onClick={continueProductJourneyToDetails}
+                      busy={preparingProductImage || preparingProductVideo}
+                      busyLabel="Preparing media..."
+                      fullWidth
+                      stableHeight={56}
+                      debugId="shop-assets.product.journey.continue"
+                    >
+                      Continue
+                    </PrimaryButton>
+                    <SubtleButton
+                      onClick={closeProductEditor}
+                      fullWidth
+                      stableHeight={52}
+                      debugId="shop-assets.product.journey.close-media"
+                    >
+                      Close
+                    </SubtleButton>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <PrimaryButton
+                      onClick={previewProductJourney}
+                      fullWidth
+                      stableHeight={56}
+                      debugId="shop-assets.product.journey.preview"
+                    >
+                      Preview item
+                    </PrimaryButton>
+                    <div style={workbenchActionGrid(true)}>
+                      <SecondaryButton
+                        onClick={() => openProductJourneyStep(1)}
+                        fullWidth
+                        stableHeight={52}
+                        debugId="shop-assets.product.journey.back-media"
+                      >
+                        Back
+                      </SecondaryButton>
+                      <SubtleButton
+                        onClick={closeProductEditor}
+                        fullWidth
+                        stableHeight={52}
+                        debugId="shop-assets.product.journey.close-details"
+                      >
+                        Close
+                      </SubtleButton>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div style={ownerActionGrid(isCompact)}>
+                  {renderProductSubmitButton()}
 
-                <SecondaryButton
-                  onClick={embedded ? closeProductEditor : resetProductForm}
-                  fullWidth
-                  stableHeight={isCompact ? 56 : 48}
-                  debugId="shop-assets.product.clear-or-close"
-                >
-                  {embedded ? "Close form" : "Clear form"}
-                </SecondaryButton>
+                  <SecondaryButton
+                    onClick={embedded ? closeProductEditor : resetProductForm}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.product.clear-or-close"
+                  >
+                    {embedded ? "Close form" : "Clear form"}
+                  </SecondaryButton>
 
-                {!ownerProductManageFocusRequested ? (
-                  <SubtleButton
-                  onClick={() =>
-                    copyText(
-                      buildPublicShopMessage(shopLink),
-                      "Shop link and message copied.",
-                      "Public shop link is not ready yet. Refresh the shop identity, then try again."
-                    )
-                  }
-                  fullWidth
-                  stableHeight={isCompact ? 56 : 48}
-                  debugId="shop-assets.product.copy-shop-link"
-                >
-                  Copy shop link
-                </SubtleButton>
-                ) : null}
-              </div>
+                  {!ownerProductManageFocusRequested ? (
+                    <SubtleButton
+                      onClick={() =>
+                        copyText(
+                          buildPublicShopMessage(shopLink),
+                          "Shop link and message copied.",
+                          "Public shop link is not ready yet. Refresh the shop identity, then try again."
+                        )
+                      }
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId="shop-assets.product.copy-shop-link"
+                    >
+                      Copy shop link
+                    </SubtleButton>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
 
@@ -4497,9 +4746,43 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               ...innerCard("rgba(255,255,255,0.98)"),
               border: "1px solid rgba(212,175,55,0.12)",
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
+              display:
+                guidedProductCreate && productJourneyStep !== 3
+                  ? "none"
+                  : undefined,
             }}
           >
-            <div style={sectionLabel()}>Preview before saving</div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={sectionLabel()}>
+                {guidedProductCreate ? "Ready to post?" : "Preview before saving"}
+              </div>
+              {guidedProductCreate ? (
+                <span
+                  style={{
+                    minHeight: 28,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    borderRadius: 999,
+                    padding: "4px 9px",
+                    color: "#526C84",
+                    background: "#F1F5F9",
+                    border: "1px solid rgba(20,52,83,0.12)",
+                    fontSize: 11,
+                    fontWeight: 900,
+                  }}
+                >
+                  Not posted yet
+                </span>
+              ) : null}
+            </div>
 
             <div
               style={{
@@ -4636,6 +4919,49 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </div>
               </div>
             </div>
+
+            {guidedProductCreate ? (
+              <div
+                data-product-journey-review="true"
+                style={{ marginTop: 12, display: "grid", gap: 12 }}
+              >
+                {productVoice ? (
+                  <div style={{ ...innerCard("#F8FBFF"), padding: 10 }}>
+                    <div style={{ marginBottom: 8, ...sectionLabel() }}>
+                      Voice message
+                    </div>
+                    <VoiceNoteRecorder
+                      value={productVoice}
+                      onChange={setProductVoice}
+                      maxSeconds={60}
+                      disabled={savingProduct}
+                      debugPrefix="shop-assets.product.review-voice"
+                      compact
+                    />
+                  </div>
+                ) : null}
+
+                <div style={ownerActionGrid(true)}>
+                  {renderProductSubmitButton()}
+                  <SecondaryButton
+                    onClick={() => openProductJourneyStep(2)}
+                    fullWidth
+                    stableHeight={56}
+                    debugId="shop-assets.product.journey.edit-details"
+                  >
+                    Edit details
+                  </SecondaryButton>
+                  <SubtleButton
+                    onClick={closeProductEditor}
+                    fullWidth
+                    stableHeight={52}
+                    debugId="shop-assets.product.journey.close-review"
+                  >
+                    Close
+                  </SubtleButton>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
         ) : null}

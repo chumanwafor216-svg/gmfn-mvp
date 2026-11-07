@@ -5,6 +5,14 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Guided Shop item creation - 2026-11-07
+
+- The embedded phone Shop item task now guides a new owner through three clear stages: `Picture or video`, `Details`, and `Review`. The approved existing media picker, product fields, optional voice recorder and final product preview are reused rather than replaced.
+- Continue requires picture/video media, Preview requires the item name and price, and neither action writes business data. The existing submit path runs only when the owner taps `Post item` from Review.
+- Back and `Edit details` preserve entered media, text, price and optional voice. Successful save still reopens and focuses the exact numbered shop space and keeps the existing Public Shop continuation.
+- Existing-item editing, standalone Pictures & Products, media preparation, sound rights, product visibility, review policy, permissions, API payloads and backend contracts remain unchanged.
+-- Verification passes the Shop Assets slot audit, Shop Control button inventory, workflow-plus audit, the isolated 390x844 phone browser journey, and the 321-module TypeScript/Vite production build. The broader multi-scenario shortcut smoke still stops earlier on an untouched universal-shop-hero fixture timeout, before this journey runs; the new focused mode proves this workflow independently and that broader failure must not be reported as caused by or fixed by this package.
+
 ## DemandBox sender identity and conversation trail - 2026-11-07
 
 - The existing `/app/demand-box` opened request keeps its real sender portrait when that request explicitly shares it, with initials as the privacy-safe fallback. No identity-check photo is exposed and a portrait remains recognition rather than reliability evidence.
