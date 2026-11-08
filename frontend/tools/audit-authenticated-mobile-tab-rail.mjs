@@ -26,13 +26,18 @@ assertContains(
 );
 
 assertContains(
-  /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?gridTemplateColumns: "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?linear-gradient\(180deg, rgba\(2,28,48,0\.995\)[\s\S]*?borderTop: "1px solid rgba\(85,232,255,0\.34\)"/,
+  /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?gridTemplateColumns: "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?linear-gradient\(180deg, rgba\(2,28,48,0\.995\)[\s\S]*?borderTop: "1px solid rgba\(85,232,255,0\.58\)"/,
   "The shared rail must stay in normal flow with five equal columns and its permanent deep-navy finish."
 );
 
 assertContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?height: 76,[\s\S]*?minHeight: 76,[\s\S]*?maxHeight: 76[\s\S]*?borderRadius: 18[\s\S]*?border: active \? "1px solid #55E8FF"[\s\S]*?pointerEvents: "auto"[\s\S]*?rgba\(0,224,255,0\.78\)[\s\S]*?rgba\(221,43,255,0\.52\)/,
-  "Each tab must keep stable 76px tap geometry and the restrained cyan-violet active frame."
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?height: 76,[\s\S]*?minHeight: 76,[\s\S]*?maxHeight: 76[\s\S]*?borderRadius: 18[\s\S]*?pointerEvents: "auto"[\s\S]*?authenticatedStaticNeonAction\([\s\S]*?"cyanViolet",[\s\S]*?active \? "strong" : "quiet"/,
+  "Each tab must keep stable 76px tap geometry, a visible inactive edge, and the strongest active frame."
+);
+
+assertContains(
+  /function mobileIconButton\(\): React\.CSSProperties \{[\s\S]*?height: 44,[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)/,
+  "Authenticated phone Menu and Tools buttons must keep their visible static edge."
 );
 
 assertContains(

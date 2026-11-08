@@ -6,6 +6,7 @@ import DashboardCompactIdentityHero from "../components/dashboard/DashboardCompa
 import DashboardCommerceAnalyticsCard from "../components/dashboard/DashboardCommerceAnalyticsCard";
 import {
   AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonAction,
   authenticatedStaticNeonFrame,
 } from "../design/authenticatedNeon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
@@ -6954,6 +6955,7 @@ export default function DashboardPage() {
         touchAction: "manipulation",
         boxShadow:
           "0 10px 20px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
+        ...(isPhone ? authenticatedStaticNeonAction("cyanViolet") : {}),
       },
       overrides
     );
@@ -6977,6 +6979,7 @@ export default function DashboardPage() {
         touchAction: "manipulation",
         boxShadow:
           "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.88)",
+        ...(isPhone ? authenticatedStaticNeonAction("cyanViolet") : {}),
       },
       overrides
     );
@@ -7011,6 +7014,7 @@ export default function DashboardPage() {
       color: DASHBOARD_BRAND.ink,
       boxShadow:
         "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.94)",
+      ...(isPhone ? authenticatedStaticNeonAction("cyanViolet") : {}),
       cursor: "pointer",
       textAlign: "left",
       fontFamily: "inherit",
@@ -9580,7 +9584,7 @@ export default function DashboardPage() {
             "0 16px 34px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
           ...authenticatedStaticNeonFrame(
             "goldViolet",
-            isPhone ? "standard" : "soft"
+            isPhone ? "vivid" : "soft"
           ),
         }}
       >
@@ -9619,6 +9623,9 @@ export default function DashboardPage() {
             border: "1px solid rgba(242,207,119,0.42)",
             boxShadow:
               "0 16px 30px rgba(3,16,31,0.16), inset 0 1px 0 rgba(255,255,255,0.14)",
+            ...(isPhone
+              ? authenticatedStaticNeonAction("cyanGold", "strong")
+              : {}),
           }}
         >
           <span
@@ -9722,7 +9729,7 @@ export default function DashboardPage() {
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanViolet",
-            isPhone ? "standard" : "soft"
+            isPhone ? "vivid" : "soft"
           ),
         }}
       >
@@ -10536,7 +10543,7 @@ export default function DashboardPage() {
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanGold",
-            isPhone ? "standard" : "soft"
+            isPhone ? "vivid" : "soft"
           ),
         }}
       >
@@ -10726,7 +10733,9 @@ export default function DashboardPage() {
                 minWidth: isPhone ? 0 : 136,
                 width: "100%",
                 padding: "8px 11px",
-                boxShadow: "none",
+                ...(isPhone
+                  ? authenticatedStaticNeonAction("cyanViolet")
+                  : { boxShadow: "none" }),
               }}
             >
               {dashboardPulsePrimaryLabel}
@@ -10743,7 +10752,9 @@ export default function DashboardPage() {
                   minWidth: isPhone ? 0 : 118,
                   width: isPhone ? "100%" : undefined,
                   padding: "8px 11px",
-                  boxShadow: "none",
+                  ...(isPhone
+                    ? authenticatedStaticNeonAction("cyanViolet")
+                    : { boxShadow: "none" }),
                 }}
               >
                 {dashboardPulseSecondaryLabel}
@@ -10908,7 +10919,7 @@ export default function DashboardPage() {
           order: 80,
           ...authenticatedStaticNeonFrame(
             "cyanGold",
-            isPhone ? "standard" : "soft"
+            isPhone ? "vivid" : "soft"
           ),
         }}
       >
@@ -11277,7 +11288,7 @@ export default function DashboardPage() {
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanViolet",
-            isPhone ? "standard" : "soft"
+            isPhone ? "vivid" : "soft"
           ),
         }}
       >

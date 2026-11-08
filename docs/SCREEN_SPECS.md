@@ -200,9 +200,10 @@ Authenticated-entry rule:
 - The five-anchor mobile primary navigation remains visible on Shop Control as
   an escape path, but Shop Control is not the active Shop-tab destination.
 - The authenticated phone rail permanently uses the shared deep-navy surface,
-  realistic 3D icon tiles, and one static cyan-violet active frame across
-  `Shop`, `Community Home`, `Marketplace`, `Dashboard`, and `Profile`. Pages
-  must not introduce route-local tab treatments or change the shared order.
+  realistic 3D icon tiles, a visible quiet edge on inactive tabs, and the
+  strongest static cyan-violet frame on the active tab across `Shop`,
+  `Community Home`, `Marketplace`, `Dashboard`, and `Profile`. Pages must not
+  introduce route-local tab treatments or change the shared order.
 - Dashboard remains directly available from the primary phone navigation.
 - Explicit deep links, task returns, publish recovery, invite continuation, and
   session-expiry return targets must not be overwritten by the Public Shop
@@ -221,6 +222,14 @@ Frozen:
 - Market Wisdom presentation and interaction model
 
 Rules:
+- Owner-approved visual correction (2026-11-08): on phone, the existing
+  authenticated `Menu`, `Tools`, five bottom tabs, compact identity card,
+  My Pulse actions, DemandBox/Focus cards, TrustSlip tools banner, and outer
+  Market Wisdom card use readable static edging. Inactive shell buttons remain
+  quieter than the current tab. Do not add motion or alter a route, label,
+  order, action count, hitbox, card height, Market Wisdom reading, Shop
+  Analytics handoff, permission, API or data contract as part of this visual
+  treatment.
 - Owner-approved exception (2026-10-27): the existing four-part
   `Market -> GSN -> Guide -> Now` presentation may consume one optional,
   server-owned commerce signal and show one compact contextual handoff beneath

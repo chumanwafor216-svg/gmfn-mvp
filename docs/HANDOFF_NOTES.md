@@ -1,5 +1,34 @@
 # Active Handoff Notes
 
+## Dashboard neon legibility correction - 2026-11-08
+
+- Owner evidence: the supplied phone screenshot showed the approved Dashboard
+  neon frames reading too faint and the existing shell/card buttons reading as
+  if they had no light treatment.
+- Repair: `authenticatedNeon.ts` now keeps the restrained shared tier and adds
+  a Dashboard-only readable frame tier plus one reusable static action-edge
+  helper. Dashboard identity, My Pulse, DemandBox, Focus, TrustSlip and the
+  Market Wisdom outer frame use the readable phone tier. Existing Dashboard
+  actions use a subordinate edge instead of `boxShadow: none`.
+- Shared phone shell: `Menu` and `Tools` now have a visible static edge. All
+  five bottom tabs have a quiet inactive edge while the current destination
+  remains clearly strongest. Tab order, routes, labels, 76px geometry, active
+  matching, safe-area behavior and pre-auth exclusion are unchanged.
+- Preserved: Market Wisdom internals, four readings, timing, copy, Shop
+  Analytics handoff, routes, action counts, hitboxes, permissions, APIs and
+  backend data contracts did not change. Community and Marketplace retain the
+  prior restrained outer-frame tier.
+- Verification passed the authenticated-neon, mobile-tab-rail, Dashboard
+  action, inventory, phone-button and Market Wisdom guards; the 390px Chromium
+  Dashboard hitbox/route audit; a visually inspected phone screenshot; and the
+  324-module production build.
+- The broad protected-button freeze reaches and passes every changed Dashboard
+  assertion, then remains red on inherited entry/auth copy and existing-invite
+  expectations. Its unrelated browser subprocesses also hit sandbox `EPERM`;
+  the changed Dashboard browser audit was rerun separately with permission and
+  passed. `npm ci` reports 17 dependency vulnerabilities (1 low, 3 moderate,
+  13 high); they were not altered as part of this visual correction.
+
 ## Marketplace focused member confirmation repair - 2026-11-07
 
 - Owner evidence: the supplied 14.5-second phone recording showed Confirm I know this member landing inside the full GSN Workspace manager-policy surface instead of a focused member task. The previous done claim was therefore incomplete even though the Marketplace roster itself was present.

@@ -51,6 +51,12 @@ requirePattern(
   /export function authenticatedStaticNeonFrame\(/,
   "Authenticated lighting must keep one reusable static frame helper."
 );
+requirePattern(
+  presentationFile,
+  presentation,
+  /const VIVID_STATIC_NEON_TONES[\s\S]*?rgba\(91,226,255,0\.82\)[\s\S]*?export function authenticatedStaticNeonAction\(/,
+  "Authenticated lighting must keep the approved readable frame tier and reusable action-edge helper."
+);
 forbidPattern(
   presentationFile,
   presentation,
@@ -69,8 +75,14 @@ for (const surface of ["trustslip", "demandbox", "pulse", "market-wisdom", "focu
 requirePattern(
   identityFile,
   identity,
-  /data-dashboard-neon-surface="identity"[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet"\)/,
-  "Dashboard identity must keep its restrained static cyan-violet frame."
+  /data-dashboard-neon-surface="identity"[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet", "vivid"\)/,
+  "Dashboard identity must keep its readable static cyan-violet frame."
+);
+requirePattern(
+  dashboardFile,
+  dashboard,
+  /authenticatedStaticNeonFrame\([\s\S]{0,80}?isPhone \? "vivid" : "soft"/,
+  "Dashboard primary phone surfaces must use the readable frame tier without changing desktop restraint."
 );
 requirePattern(
   dashboardFile,

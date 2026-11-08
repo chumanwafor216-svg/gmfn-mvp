@@ -8,6 +8,8 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
 const dashboardCompactIdentityFile =
   "src/components/dashboard/DashboardCompactIdentityHero.tsx";
+const appLayoutFile = "src/layout/AppLayout.tsx";
+const authenticatedNeonFile = "src/design/authenticatedNeon.ts";
 const dashboardSectionFiles = [
   dashboardCompactIdentityFile,
   "src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
@@ -24,6 +26,15 @@ const dashboardActionSources = [
   })),
 ];
 const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8");
+const compactIdentitySource = readFileSync(
+  join(frontendRoot, dashboardCompactIdentityFile),
+  "utf8"
+);
+const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
+const authenticatedNeonSource = readFileSync(
+  join(frontendRoot, authenticatedNeonFile),
+  "utf8"
+);
 const findings = [];
 
 function lineAt(source, index) {
@@ -150,6 +161,51 @@ for (const check of requiredDashboardPatterns) {
     line: 1,
     message: check.message,
     text: "Expected Dashboard phone button stability pattern was not found.",
+  });
+}
+
+const requiredNeonAffordancePatterns = [
+  {
+    file: authenticatedNeonFile,
+    source: authenticatedNeonSource,
+    pattern:
+      /const VIVID_STATIC_NEON_TONES[\s\S]*?export function authenticatedStaticNeonAction\([\s\S]*?strength: "quiet" \| "strong"/,
+    message:
+      "Dashboard neon must keep reusable readable frame and button-edge levels.",
+  },
+  {
+    file: dashboardFile,
+    source: dashboardSource,
+    pattern:
+      /authenticatedStaticNeonAction\("cyanViolet"\)[\s\S]*?authenticatedStaticNeonAction\("cyanGold", "strong"\)[\s\S]*?isPhone \? "vivid" : "soft"/,
+    message:
+      "Dashboard phone cards and action rows must keep their approved readable static edges.",
+  },
+  {
+    file: dashboardCompactIdentityFile,
+    source: compactIdentitySource,
+    pattern:
+      /data-dashboard-neon-surface="identity"[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet", "vivid"\)[\s\S]*?debugId="dashboard\.passport-gsn-id-card"[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)/,
+    message:
+      "Dashboard compact identity and its covered actions must keep readable neon affordances.",
+  },
+  {
+    file: appLayoutFile,
+    source: appLayoutSource,
+    pattern:
+      /function mobileIconButton\(\)[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)[\s\S]*?function bottomNavItem\([\s\S]*?active \? "strong" : "quiet"/,
+    message:
+      "Authenticated Menu, Tools, and bottom tabs must keep visible inactive and active edges.",
+  },
+];
+
+for (const check of requiredNeonAffordancePatterns) {
+  if (check.pattern.test(check.source)) continue;
+  findings.push({
+    file: check.file,
+    line: 1,
+    message: check.message,
+    text: "Expected approved dashboard neon affordance pattern was not found.",
   });
 }
 

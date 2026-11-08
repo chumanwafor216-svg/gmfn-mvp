@@ -16,6 +16,7 @@ import { publicShopPath } from "../lib/publicLinks";
 import { preloadCoreAppRoutes, preloadRouteForPath } from "../lib/routePreload";
 import { gmfnBrand } from "../styles/gmfnBrand";
 import { isCompactAppViewport } from "../lib/responsiveLayout";
+import { authenticatedStaticNeonAction } from "../design/authenticatedNeon";
 
 type NavLinkItem = {
   label: string;
@@ -1305,6 +1306,7 @@ function mobileIconButton(): React.CSSProperties {
     overflow: "hidden",
     whiteSpace: "nowrap",
     textOverflow: "ellipsis",
+    ...authenticatedStaticNeonAction("cyanViolet"),
   };
 }
 
@@ -1596,9 +1598,9 @@ function bottomNav(): React.CSSProperties {
     padding: "7px 7px calc(9px + env(safe-area-inset-bottom, 0px))",
     background:
       "linear-gradient(180deg, rgba(2,28,48,0.995) 0%, rgba(1,22,39,0.998) 100%)",
-    borderTop: "1px solid rgba(85,232,255,0.34)",
+    borderTop: "1px solid rgba(85,232,255,0.58)",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 10px 24px rgba(8,67,105,0.12)",
+      "0 -8px 24px rgba(31,203,255,0.18), 0 -12px 32px rgba(117,73,255,0.10), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 10px 24px rgba(8,67,105,0.14)",
     overscrollBehaviorX: "none",
     overscrollBehaviorY: "none",
     touchAction: "manipulation",
@@ -1630,17 +1632,17 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     background: active
       ? "linear-gradient(145deg, rgba(10,79,145,0.96) 0%, rgba(49,38,145,0.96) 100%)"
       : "transparent",
-    border: active ? "1px solid #55E8FF" : "1px solid transparent",
     whiteSpace: "normal",
     overflow: "hidden",
     pointerEvents: "auto",
     touchAction: "manipulation",
     cursor: disabled ? "not-allowed" : "pointer",
-    boxShadow: active
-      ? "0 0 9px rgba(0,224,255,0.78), 0 0 17px rgba(221,43,255,0.52), inset 0 1px 0 rgba(255,255,255,0.18)"
-      : "none",
     textShadow: active ? "0 1px 8px rgba(0,0,0,0.36)" : "none",
     opacity: disabled ? 0.7 : 1,
+    ...authenticatedStaticNeonAction(
+      "cyanViolet",
+      active ? "strong" : "quiet"
+    ),
   };
 }
 
@@ -1662,8 +1664,8 @@ function bottomNavIcon(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(214,170,69,0.72)"
       : "1px solid rgba(255,255,255,0.62)",
     boxShadow: active
-      ? "0 5px 14px rgba(0,0,0,0.28), 0 0 11px rgba(85,232,255,0.26)"
-      : "0 4px 10px rgba(0,0,0,0.24)",
+      ? "0 5px 14px rgba(0,0,0,0.28), 0 0 13px rgba(85,232,255,0.40)"
+      : "0 4px 10px rgba(0,0,0,0.24), 0 0 8px rgba(85,232,255,0.18)",
     opacity: disabled ? 0.62 : 1,
     overflow: "hidden",
     flexShrink: 0,

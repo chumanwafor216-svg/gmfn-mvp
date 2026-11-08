@@ -5,7 +5,10 @@ import PictureFrameToolsControl from "../PictureFrameToolsControl";
 import { StableButton, StableDisclosureSummary } from "../StableButton";
 import { colors, radius } from "../../design/tokens";
 import dashboardNetworkGlobe from "../../assets/dashboard/dashboard-network-globe.jpg";
-import { authenticatedStaticNeonFrame } from "../../design/authenticatedNeon";
+import {
+  authenticatedStaticNeonAction,
+  authenticatedStaticNeonFrame,
+} from "../../design/authenticatedNeon";
 
 export type DashboardCompactIdentityReading = {
   label: string;
@@ -92,7 +95,7 @@ export default function DashboardCompactIdentityHero({
         overflow: "visible",
         position: "relative",
         zIndex: 20,
-        ...authenticatedStaticNeonFrame("cyanViolet"),
+        ...authenticatedStaticNeonFrame("cyanViolet", "vivid"),
       }}
     >
       <div
@@ -281,7 +284,7 @@ export default function DashboardCompactIdentityHero({
               color: colors.white,
               fontSize: 10.5,
               fontWeight: 900,
-              boxShadow: "none",
+              ...authenticatedStaticNeonAction("cyanViolet"),
             }}
             railGap={7}
             railColumns="repeat(3, minmax(0, 1fr))"
@@ -369,7 +372,7 @@ export default function DashboardCompactIdentityHero({
             background: "transparent",
             color: colors.white,
             textAlign: "left",
-            boxShadow: "none",
+            ...authenticatedStaticNeonAction("cyanViolet"),
           }}
         >
           <GsnLegacyIcon name="id" size={24} decorative />
@@ -420,6 +423,7 @@ export default function DashboardCompactIdentityHero({
               lineHeight: 1.15,
               textAlign: "center",
               listStyle: "none",
+              ...authenticatedStaticNeonAction("cyanViolet"),
             }}
           >
             Identity &amp; trust
@@ -461,7 +465,7 @@ export default function DashboardCompactIdentityHero({
                   background: "rgba(255,255,255,0.90)",
                   color: "#07172C",
                   textAlign: "left",
-                  boxShadow: "none",
+                  ...authenticatedStaticNeonAction("cyanViolet"),
                 }}
               >
                 <span
