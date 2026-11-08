@@ -282,6 +282,13 @@ Rules:
 
 Status: CLOSED/FROZEN as of 2026-11-03 after the approved premium phone-profile enhancement.
 
+### Owner-approved static lighting extension - 2026-11-08
+- On the default authenticated phone member home, use the readable static frame
+  tier only on the existing identity hero and selected-community card.
+- Give the single existing state-aware primary action the quiet static edge.
+- Keep More profile details, Settings, Guide, attention, credits, Shop, trust,
+  official links and activity calm and structurally unchanged.
+
 Purpose:
 Member home for `me across the whole GSN network`.
 
@@ -707,8 +714,8 @@ After submission:
 ## CommunityHomePage
 
 ### Founder-approved static lighting refinement - 2026-11-07
-- On authenticated phones, keep one shared deep-navy stage and restrained static lighting on the existing selected-community identity hero and Bulletin only.
-- Keep secondary actions, switcher, attention, and authority-gated administration calm and unchanged.
+- On authenticated phones, keep one shared deep-navy stage and readable static lighting on the existing selected-community identity hero and Bulletin only.
+- Give only Invite, Share, and Open notice a quiet static action edge. Keep secondary actions, switcher, attention, and authority-gated administration calm and unchanged.
 - Preserve selected-community facts, Bulletin behavior, section order, disclosures, action geometry, routes, permissions, and data.
 
 Purpose:
@@ -1016,7 +1023,8 @@ Follow the guided setup path first; use More setup tools only when you need one 
 ## MarketplacePage
 
 ### Founder-approved static lighting refinement - 2026-11-07
-- On authenticated phones, keep one shared deep-navy stage and restrained static lighting on the existing community identity hero, Needs, Shops & Services, Matches, and suggested-next-step cards.
+- On authenticated phones, keep one shared deep-navy stage and readable static lighting on the existing community identity hero, Needs, Shops & Services, Matches, and suggested-next-step cards.
+- Give only the existing front-door invite, need, directory, matched-shop, and suggested-next-step actions a quiet static edge.
 - Keep deeper money, support, links, trade, ROSCA, and administration surfaces calm and unchanged.
 - Preserve lane order, neutral discovery, matching boundaries, action geometry, routes, permissions, and data.
 

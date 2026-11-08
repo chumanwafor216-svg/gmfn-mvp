@@ -15,6 +15,7 @@ import CommunityNoticeVoicePlayer from "../components/CommunityNoticeVoicePlayer
 import { brandClampLines } from "../styles/gmfnBrand";
 import {
   AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonAction,
   authenticatedStaticNeonFrame,
 } from "../design/authenticatedNeon";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
@@ -729,7 +730,7 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
       boxShadow:
         "0 18px 40px rgba(6,24,39,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
       overflow: "hidden",
-      ...authenticatedStaticNeonFrame("cyanViolet"),
+      ...authenticatedStaticNeonFrame("cyanViolet", "vivid"),
     };
   }
 
@@ -1265,7 +1266,7 @@ function announcementBoardShellStyle(isCompact: boolean): React.CSSProperties {
       : "0 18px 42px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
     ...authenticatedStaticNeonFrame(
       "cyanGold",
-      isCompact ? "standard" : "soft"
+      isCompact ? "vivid" : "soft"
     ),
   };
 }
@@ -4203,6 +4204,9 @@ export default function CommunityHomePage() {
             fontSize: 13,
             textTransform: "none",
             boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
+            ...(isCompact
+              ? authenticatedStaticNeonAction("cyanViolet")
+              : {}),
           }}
         >
           {isCompact ? (phoneNoticeOpen ? "Close notice" : "Open notice") : "Details"}
@@ -5092,6 +5096,7 @@ export default function CommunityHomePage() {
                   compact
                   hero
                   heroPresentation="identity"
+                  heroActionStyle={authenticatedStaticNeonAction("cyanViolet")}
                   heroSecondaryAction={
                     <SocialTagShareButton
                       target={{
@@ -5105,7 +5110,11 @@ export default function CommunityHomePage() {
                       debugId="community-home.identity.share-community"
                       stableHeight={46}
                       fullWidth
-                      style={{ borderRadius: 14, fontSize: 13.5 }}
+                      style={{
+                        borderRadius: 14,
+                        fontSize: 13.5,
+                        ...authenticatedStaticNeonAction("cyanViolet"),
+                      }}
                       onResult={(tone, text) => showNotice(tone, text)}
                     />
                   }

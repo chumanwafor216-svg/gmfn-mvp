@@ -38,6 +38,10 @@ import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompleti
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { resolveSharedProfileImage } from "../lib/profileImage";
 import { isIosManualInstallTarget } from "../lib/pwaInstall";
+import {
+  authenticatedStaticNeonAction,
+  authenticatedStaticNeonFrame,
+} from "../design/authenticatedNeon";
 import * as api from "../lib/api";
 
 const CompanionSettingsPanel = lazy(
@@ -2882,10 +2886,17 @@ export default function MyGMFNAndIPage() {
                           minWidth: 0,
                           overflow: "hidden",
                           boxSizing: "border-box",
+                          ...authenticatedStaticNeonFrame(
+                            "cyanViolet",
+                            "vivid"
+                          ),
                         }
                       : memberHomeSectionShell(true)
                   }
                   data-my-gsn-identity-first="true"
+                  data-gsn-neon-surface={
+                    isCompact ? "profile-identity" : undefined
+                  }
                 >
                   {isCompact ? (
                     <>
@@ -3067,6 +3078,7 @@ export default function MyGMFNAndIPage() {
                             background: "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)",
                             borderColor: "rgba(255,255,255,0.30)",
                             boxShadow: "0 14px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.24)",
+                            ...authenticatedStaticNeonAction("cyanViolet"),
                           }}
                         >
                           {profilePrimaryAction.label}
@@ -3123,10 +3135,17 @@ export default function MyGMFNAndIPage() {
                           padding: 14,
                           boxShadow:
                             "0 18px 36px rgba(7,28,49,0.15), inset 0 1px 0 rgba(255,255,255,0.98)",
+                          ...authenticatedStaticNeonFrame(
+                            "cyanGold",
+                            "vivid"
+                          ),
                         }
                       : {}),
                   }}
                   data-my-gsn-community-portfolio="true"
+                  data-gsn-neon-surface={
+                    isCompact ? "profile-community" : undefined
+                  }
                 >
                   {isCompact ? (
                     <>
@@ -3215,6 +3234,7 @@ export default function MyGMFNAndIPage() {
                             background: "linear-gradient(180deg, #0B63D1 0%, #064C9E 100%)",
                             boxShadow:
                               "0 14px 28px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)",
+                            ...authenticatedStaticNeonAction("cyanViolet"),
                           }}
                         >
                           <GsnLegacyIcon name="community" size={21} decorative />

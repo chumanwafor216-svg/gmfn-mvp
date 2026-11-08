@@ -1,5 +1,31 @@
 # Active Handoff Notes
 
+## Core member-tab neon legibility extension - 2026-11-08
+
+- Owner-approved scope extends the readable static phone treatment from
+  Dashboard to the existing Community Home, Marketplace and My GSN/Profile
+  hierarchy. It does not introduce new cards, controls, navigation or content.
+- Community Home now uses the readable frame tier only on the selected-community
+  identity hero and Bulletin. Only Invite, Share and Open notice receive the
+  quiet action edge; switcher, attention, secondary tools and admin stay calm.
+- Marketplace now uses the readable frame tier only on identity, Needs, Shops &
+  Services, Matches and suggested next step. Only Invite someone, Add need,
+  Open directory, matched-shop and suggested-next-step handoffs receive the
+  quiet edge; money, support, links, trade, ROSCA and admin remain unchanged.
+- My GSN/Profile now uses the readable frame tier only on the compact identity
+  hero and selected-community card. Its single existing state-aware primary
+  action receives the quiet edge; More, attention, credits, Shop, trust,
+  Settings, Guide and official links remain unchanged.
+- Verification passes the authenticated-neon, Community Home action/phone/
+  billboard, Marketplace front/member-row, surface-ownership, member-entry,
+  capability-mirror and Pipeline Credit audits; the Profile first-paint browser
+  audit; the Marketplace 390x844/457x915 browser smoke; `git diff --check`; and
+  the 324-module production build. Profile and Marketplace phone captures were
+  visually inspected and show the stronger static outer edge.
+- The Community Home phone smoke still stops at its inherited pre-screenshot
+  Bulletin reactions selector timeout. This exact debt was already reproduced
+  on the untouched base and remains unrelated to the frame/action styling; the
+  focused Community Home audits pass. No production deployment is implied.
 ## Dashboard neon legibility correction - 2026-11-08
 
 - Owner evidence: the supplied phone screenshot showed the approved Dashboard

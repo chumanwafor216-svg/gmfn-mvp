@@ -24,6 +24,7 @@ type SimpleCommunityInviteCardProps = {
   hero?: boolean;
   heroPresentation?: "pill" | "identity";
   heroSecondaryAction?: React.ReactNode;
+  heroActionStyle?: React.CSSProperties;
   inviterName?: string;
   communityCode?: string;
 };
@@ -51,6 +52,7 @@ export default function SimpleCommunityInviteCard({
   hero = false,
   heroPresentation = "pill",
   heroSecondaryAction,
+  heroActionStyle,
   inviterName = "",
   communityCode = "",
 }: SimpleCommunityInviteCardProps) {
@@ -360,6 +362,7 @@ export default function SimpleCommunityInviteCard({
             boxShadow: identityPresentation
               ? "0 10px 20px rgba(11,79,134,0.18)"
               : undefined,
+            ...(identityPresentation ? heroActionStyle : {}),
           }}
         >
           <GsnLegacyIcon name="community" size={21} />

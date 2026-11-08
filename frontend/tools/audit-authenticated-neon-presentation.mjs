@@ -26,12 +26,17 @@ const presentationFile = "frontend/src/design/authenticatedNeon.ts";
 const dashboardFile = "frontend/src/pages/DashboardPage.tsx";
 const identityFile = "frontend/src/components/dashboard/DashboardCompactIdentityHero.tsx";
 const communityFile = "frontend/src/pages/CommunityHomePage.tsx";
+const communityInviteFile =
+  "frontend/src/components/SimpleCommunityInviteCard.tsx";
 const marketplaceFile = "frontend/src/pages/MarketplacePage.tsx";
+const profileFile = "frontend/src/pages/MyGMFNAndIPage.tsx";
 const presentation = readRepo(presentationFile);
 const dashboard = readRepo(dashboardFile);
 const identity = readRepo(identityFile);
 const community = readRepo(communityFile);
+const communityInvite = readRepo(communityInviteFile);
 const marketplace = readRepo(marketplaceFile);
+const profile = readRepo(profileFile);
 
 requirePattern(
   presentationFile,
@@ -100,14 +105,32 @@ requirePattern(
 requirePattern(
   communityFile,
   community,
-  /data-gsn-neon-surface="identity"/,
-  "Community Home must keep the static frame on its existing identity hero."
+  /function communityHeroStyle[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet", "vivid"\)/,
+  "Community Home must keep the readable frame on its existing phone identity hero."
 );
 requirePattern(
   communityFile,
   community,
-  /data-gsn-neon-surface="bulletin"/,
-  "Community Home must keep the static frame on its existing Bulletin."
+  /function announcementBoardShellStyle[\s\S]*?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold",[\s\S]{0,80}?isCompact \? "vivid" : "soft"/,
+  "Community Home must keep a readable phone Bulletin frame and softer desktop frame."
+);
+requirePattern(
+  communityFile,
+  community,
+  /heroActionStyle=\{authenticatedStaticNeonAction\("cyanViolet"\)\}[\s\S]*?community-home\.identity\.share-community[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)/,
+  "Community Home must light its existing Invite and Share front-door actions."
+);
+requirePattern(
+  communityFile,
+  community,
+  /community-home\.bulletin\.reactions[\s\S]{0,1800}?authenticatedStaticNeonAction\("cyanViolet"\)/,
+  "Community Home must light its existing Open notice front-door action."
+);
+requirePattern(
+  communityInviteFile,
+  communityInvite,
+  /heroActionStyle\?: React\.CSSProperties[\s\S]*?identityPresentation \? heroActionStyle : \{\}/,
+  "The shared invite card must expose an optional identity-trigger edge without changing other invite surfaces."
 );
 
 requirePattern(
@@ -119,20 +142,45 @@ requirePattern(
 requirePattern(
   marketplaceFile,
   marketplace,
-  /data-gsn-neon-surface="identity"/,
-  "Marketplace must keep the static frame on its existing community identity hero."
+  /function marketplaceHeroShellStyle[\s\S]*?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanViolet",[\s\S]{0,80}?isCompact \? "vivid" : "soft"/,
+  "Marketplace must keep the readable phone frame on its existing community identity hero."
 );
 requirePattern(
   marketplaceFile,
   marketplace,
-  /function marketplaceLiveMarketCardStyle[\s\S]*?authenticatedStaticNeonFrame\([\s\S]*?tone === "needs"[\s\S]*?tone === "shops"/,
-  "Marketplace must keep restrained tone-aware static frames on its three primary market lanes."
+  /function marketplaceLiveMarketCardStyle[\s\S]*?tone === "needs"[\s\S]*?tone === "shops"[\s\S]*?isCompact \? "vivid" : "soft"/,
+  "Marketplace must keep readable tone-aware phone frames on its three primary market lanes."
 );
 requirePattern(
   marketplaceFile,
   marketplace,
-  /data-gsn-neon-surface="wisdom-lens"[\s\S]{0,1200}?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold"/,
-  "Marketplace wisdom must keep only its approved static outer frame."
+  /data-gsn-neon-surface="wisdom-lens"[\s\S]{0,1200}?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold",[\s\S]{0,80}?isCompact \? "vivid" : "soft"/,
+  "Marketplace wisdom must keep only its approved readable phone outer frame."
+);
+requirePattern(
+  marketplaceFile,
+  marketplace,
+  /marketplace\.front\.invite-someone[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)[\s\S]*?marketplace\.job\.add-need-shortcut[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)[\s\S]*?marketplace\.job\.find-people-services[\s\S]*?authenticatedStaticNeonAction\("cyanGold"\)[\s\S]*?marketplace\.row\.wisdom-action[\s\S]*?authenticatedStaticNeonAction\("cyanGold"\)/,
+  "Marketplace must light only its existing front-door invite, need, shop, match, and wisdom actions."
+);
+
+requirePattern(
+  profileFile,
+  profile,
+  /authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanViolet",[\s\S]{0,80}?"vivid"[\s\S]{0,300}?data-gsn-neon-surface=\{[\s\S]{0,80}?"profile-identity"/,
+  "My GSN must keep the readable frame on its existing compact identity hero."
+);
+requirePattern(
+  profileFile,
+  profile,
+  /authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold",[\s\S]{0,80}?"vivid"[\s\S]{0,300}?data-gsn-neon-surface=\{[\s\S]{0,80}?"profile-community"/,
+  "My GSN must keep the readable frame on its existing selected-community card."
+);
+requirePattern(
+  profileFile,
+  profile,
+  /debugId="my-gmfn\.profile\.primary-action"[\s\S]{0,900}?authenticatedStaticNeonAction\("cyanViolet"\)/,
+  "My GSN must light only its existing state-aware phone primary action."
 );
 
 if (findings.length > 0) {

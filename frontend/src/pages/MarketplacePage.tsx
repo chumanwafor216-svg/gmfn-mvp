@@ -131,6 +131,7 @@ import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 import {
   AUTHENTICATED_STATIC_NEON_STAGE,
+  authenticatedStaticNeonAction,
   authenticatedStaticNeonFrame,
 } from "../design/authenticatedNeon";
 const MarketplaceBoardSection = lazy(
@@ -3754,7 +3755,7 @@ function marketplaceLiveMarketCardStyle(tone: "needs" | "shops" | "matches", isC
         : tone === "shops"
         ? "goldViolet"
         : "cyanGold",
-      isCompact ? "standard" : "soft"
+      isCompact ? "vivid" : "soft"
     ),
     overflowAnchor: "none",
     minWidth: 0,
@@ -3814,7 +3815,7 @@ function marketplaceHeroShellStyle(isCompact: boolean): React.CSSProperties {
     overflow: "hidden",
     ...authenticatedStaticNeonFrame(
       "cyanViolet",
-      isCompact ? "standard" : "soft"
+      isCompact ? "vivid" : "soft"
     ),
     overflowAnchor: "none",
   };
@@ -8984,6 +8985,9 @@ export default function MarketplacePage() {
           style={{
             ...marketplaceInlineActionStyle("secondary", false, isCompact),
             minWidth: isCompact ? "100%" : 118,
+            ...(isCompact
+              ? authenticatedStaticNeonAction("cyanGold")
+              : {}),
           }}
         >
           Open shop
@@ -9400,6 +9404,9 @@ export default function MarketplacePage() {
                   boxShadow: "0 10px 22px rgba(6,42,73,0.18)",
                 }
               : {}),
+            ...(isCompact
+              ? authenticatedStaticNeonAction("cyanViolet")
+              : {}),
           }}
         >
           <span
@@ -9490,6 +9497,7 @@ export default function MarketplacePage() {
                       color: "#0B4EA2",
                       background: "#F3F8FF",
                       fontSize: 11.5,
+                      ...authenticatedStaticNeonAction("cyanViolet"),
                     }}
                   >
                     <span aria-hidden="true" style={{ marginRight: 5, fontSize: 19, lineHeight: 1 }}>
@@ -9814,6 +9822,9 @@ export default function MarketplacePage() {
                   fontSize: isCompact ? 11.5 : undefined,
                   color: isCompact ? "#0B6B3B" : undefined,
                   background: isCompact ? "#F2FAF4" : undefined,
+                  ...(isCompact
+                    ? authenticatedStaticNeonAction("cyanGold")
+                    : {}),
                 }}
               >
                 Open directory &rarr;
@@ -10177,7 +10188,7 @@ export default function MarketplacePage() {
             overflow: "hidden",
             ...authenticatedStaticNeonFrame(
               "cyanGold",
-              isCompact ? "standard" : "soft"
+              isCompact ? "vivid" : "soft"
             ),
             overflowAnchor: "none",
           }}
@@ -10269,6 +10280,9 @@ export default function MarketplacePage() {
               minWidth: 0,
               padding: isCompact ? "9px 8px" : undefined,
               fontSize: isCompact ? 11.5 : undefined,
+              ...(isCompact
+                ? authenticatedStaticNeonAction("cyanGold")
+                : {}),
             }}
           >
             <span
