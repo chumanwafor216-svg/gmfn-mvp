@@ -178,8 +178,10 @@ Current explicit frozen paths:
     above the existing shop directory, with local name/GSN-ID search, ten-row
     paging, saved portrait or initials, truthful role/shop labels, and one
     focused member panel. Existing member-witness actions may be deep-linked
-    with the selected member prefilled; confirmation settings remain
-    manager-only. Do not expose private contact fields or fabricate
+    with the selected member prefilled; the record handoff must remain a focused
+    selected-member task and must not fall through to the full manager policy
+    workspace. Confirmation settings remain manager-only. Do not expose private
+    contact fields or fabricate
     Receiving/Paused confirmation status. The server-paged neutral shop
     directory, ranking, permissions, actions, routes, APIs, and backend remain
     frozen. This exception is caged by

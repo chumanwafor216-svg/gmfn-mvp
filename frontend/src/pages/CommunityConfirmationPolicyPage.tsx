@@ -979,13 +979,17 @@ function CommunityConfirmationPolicyPage() {
         params.get("subject_user_id")
     );
   }, [location.hash, location.search, memberWitnessRequestToken]);
-  const memberWitnessFocus = useMemo(() => {
+  const memberWitnessRequestFocus = useMemo(() => {
     return (
       Boolean(memberWitnessRequestToken) ||
       memberWitnessAction === "request" ||
       (location.hash === "#member-witness" && memberWitnessAction !== "record")
     );
   }, [location.hash, memberWitnessAction, memberWitnessRequestToken]);
+  const memberWitnessRecordFocus = useMemo(() => {
+    return memberWitnessRouteTargeted && memberWitnessAction === "record";
+  }, [memberWitnessAction, memberWitnessRouteTargeted]);
+  const memberWitnessFocus = memberWitnessRequestFocus || memberWitnessRecordFocus;
 
   const verificationRequestFocus = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -1872,7 +1876,15 @@ function CommunityConfirmationPolicyPage() {
     >
       <PageTopNav
         sectionLabel={memberWitnessFocus || verificationRequestFocus ? "GSN evidence" : "Community confirmation"}
-        title={memberWitnessFocus ? "Member Witness" : verificationRequestFocus ? "Verification Request" : "Instant Confirmation Policy"}
+        title={
+          memberWitnessRecordFocus
+            ? "Member Confirmation"
+            : memberWitnessRequestFocus
+              ? "Member Witness"
+              : verificationRequestFocus
+                ? "Verification Request"
+                : "Instant Confirmation Policy"
+        }
         subtitle={
           memberWitnessFocus
             ? ""
@@ -1882,8 +1894,22 @@ function CommunityConfirmationPolicyPage() {
         }
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
-        backTo={memberWitnessFocus ? APP_ROUTES.OPEN_TRUST : APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}
-        backLabel={memberWitnessFocus ? "Trust Passport" : "Inbox"}
+        backTo={
+          memberWitnessRecordFocus
+            ? communityId
+              ? `${APP_ROUTES.MARKETPLACE}?community_id=${encodeURIComponent(String(communityId))}`
+              : APP_ROUTES.MARKETPLACE
+            : memberWitnessRequestFocus
+              ? APP_ROUTES.OPEN_TRUST
+              : APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX
+        }
+        backLabel={
+          memberWitnessRecordFocus
+            ? "Marketplace"
+            : memberWitnessRequestFocus
+              ? "Trust Passport"
+              : "Inbox"
+        }
       />
       {isCompact && !memberWitnessFocus && !verificationRequestFocus ? (
         <CommunityConfirmationModeTabs
@@ -3130,20 +3156,30 @@ function CommunityConfirmationPolicyPage() {
           <div>
             {sectionLabelWithIcon(
               "shield",
-              memberWitnessFocus ? "Member witness request" : "Member witness records",
+              memberWitnessRecordFocus
+                ? "Member confirmation"
+                : memberWitnessRequestFocus
+                  ? "Member witness request"
+                  : "Member witness records",
               "green"
             )}
             <h2 style={{ margin: "6px 0 0", color: "#07172C", fontSize: 24, fontWeight: 1000 }}>
-              {memberWitnessFocus
-                ? memberWitnessRequest && canShareMemberWitnessRequest
-                  ? "One-time code for member"
-                  : "Ask a known member to stand for you"
-                : "Stand for a known member"}
+              {memberWitnessRecordFocus
+                ? selectedMember
+                  ? `Confirm you know ${selectedMember.displayLabel}`
+                  : "Confirm a community member"
+                : memberWitnessRequestFocus
+                  ? memberWitnessRequest && canShareMemberWitnessRequest
+                    ? "One-time code for member"
+                    : "Ask a known member to stand for you"
+                  : "Stand for a known member"}
             </h2>
             <p style={{ margin: "8px 0 0", ...helperText() }}>
-              {memberWitnessFocus
-                ? "Create one request, share one code, then wait for the member response. GSN records nothing until they answer."
-                : "This records that the signed-in verifier knows this person inside the selected community. It is human trust, digitally recorded."}
+              {memberWitnessRecordFocus
+                ? "Confirm only what you personally know. This records one member-backed event inside this community, not a guarantee about every claim."
+                : memberWitnessRequestFocus
+                  ? "Create one request, share one code, then wait for the member response. GSN records nothing until they answer."
+                  : "This records that the signed-in verifier knows this person inside the selected community. It is human trust, digitally recorded."}
             </p>
           </div>
           {!memberWitnessFocus ? (
@@ -3203,7 +3239,7 @@ function CommunityConfirmationPolicyPage() {
           </div>
 
           <div style={{ ...innerCard("#FFFFFF"), order: memberWitnessFocus ? 1 : 0 }}>
-            {memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest ? (
+            {memberWitnessRequestFocus && memberWitnessRequest && canShareMemberWitnessRequest ? (
               <WitnessCodePackage
                 request={memberWitnessRequest}
                 approvalUrl={memberWitnessApprovalUrl}
@@ -3218,35 +3254,62 @@ function CommunityConfirmationPolicyPage() {
             <div style={{ color: "#07172C", fontWeight: 1000 }}>
               {labelWithIcon(
                 "user",
-                memberWitnessFocus ? "Choose witness" : "Choose member",
+                memberWitnessRecordFocus
+                  ? "Selected member"
+                  : memberWitnessRequestFocus
+                    ? "Choose witness"
+                    : "Choose member",
                 "green"
               )}
             </div>
             <p style={{ margin: "8px 0 10px", ...helperText(), fontSize: 13 }}>
-              {memberWitnessFocus
-                ? "Pick an active member who knows you inside this community, then ask them to stand for you with a one-time response."
-                : "Pick an active member. You can stand for them directly, or ask that same member to stand for you with a one-time response."}
+              {memberWitnessRecordFocus
+                ? "Review the selected person, then confirm only if you personally know them inside this community."
+                : memberWitnessRequestFocus
+                  ? "Pick an active member who knows you inside this community, then ask them to stand for you with a one-time response."
+                  : "Pick an active member. You can stand for them directly, or ask that same member to stand for you with a one-time response."}
             </p>
-            <select
-              value={selectedSubjectUserId}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                setSelectedSubjectUserId(nextValue);
-                setMemberWitnessSummary(null);
-                if (nextValue) void loadMemberWitnessSummary(nextValue);
-              }}
-              style={fieldStyle()}
-              aria-label="Member for witness"
-              data-field-id="community-confirmation-policy.member-witness.subject"
-            >
-              <option value="">Choose active member</option>
-              {members.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.displayLabel}
-                  {member.gsnId ? ` - ${member.gsnId}` : ""}
-                </option>
-              ))}
-            </select>
+            {memberWitnessRecordFocus && selectedMember ? (
+              <div
+                data-gsn-member-confirmation-selected="true"
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(37,78,119,0.18)",
+                  background: "linear-gradient(135deg, #F8FBFF 0%, #FFF8E6 100%)",
+                  padding: 13,
+                  display: "grid",
+                  gap: 4,
+                }}
+              >
+                <strong style={{ color: "#07172C", fontSize: 18 }}>
+                  {selectedMember.displayLabel}
+                </strong>
+                <span style={{ color: "#5D7389", fontSize: 13, fontWeight: 800 }}>
+                  {selectedMember.gsnId || "GSN ID pending"} / {firstTruthy(selectedMember.role, "Community member")}
+                </span>
+              </div>
+            ) : (
+              <select
+                value={selectedSubjectUserId}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setSelectedSubjectUserId(nextValue);
+                  setMemberWitnessSummary(null);
+                  if (nextValue) void loadMemberWitnessSummary(nextValue);
+                }}
+                style={fieldStyle()}
+                aria-label="Member for witness"
+                data-field-id="community-confirmation-policy.member-witness.subject"
+              >
+                <option value="">Choose active member</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.displayLabel}
+                    {member.gsnId ? ` - ${member.gsnId}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <div
               style={{
@@ -3269,7 +3332,19 @@ function CommunityConfirmationPolicyPage() {
                   {labelWithIcon("shield", "Check strength", "blue")}
                 </SecondaryButton>
               ) : null}
-              {memberWitnessFocus ? (
+              {memberWitnessRecordFocus ? (
+                <PrimaryButton
+                  type="button"
+                  onClick={() => void recordMemberWitness()}
+                  disabled={!selectedSubjectUserId || Boolean(busyKey)}
+                  busy={busyKey === "member-witness-record"}
+                  busyLabel="Recording..."
+                  stableHeight={52}
+                  debugId="community-confirmation-policy.member-witness.record-focused"
+                >
+                  {labelWithIcon("check", "Confirm I know this member", "navy")}
+                </PrimaryButton>
+              ) : memberWitnessRequestFocus ? (
                 <PrimaryButton
                   type="button"
                   onClick={() => void createMemberWitnessRequest()}
@@ -3320,7 +3395,32 @@ function CommunityConfirmationPolicyPage() {
               ) : null}
             </div>
 
-            {!memberWitnessFocus ? (
+            {memberWitnessRecordFocus ? (
+              <details
+                data-gsn-member-confirmation-note="true"
+                style={{ marginTop: 10, ...innerCard("#F8FBFF") }}
+              >
+                <summary style={{ cursor: "pointer", color: "#173750", fontWeight: 950 }}>
+                  Add a short note (optional)
+                </summary>
+                <input
+                  value={memberWitnessClaim}
+                  onChange={(event) => setMemberWitnessClaim(event.target.value)}
+                  placeholder="How you know this member"
+                  style={{ ...fieldStyle(), marginTop: 10 }}
+                  aria-label="Member witness claim"
+                  data-field-id="community-confirmation-policy.member-witness.claim"
+                />
+                <textarea
+                  value={memberWitnessNote}
+                  onChange={(event) => setMemberWitnessNote(event.target.value)}
+                  placeholder="Keep the note short and factual."
+                  style={{ ...fieldStyle(), marginTop: 10, minHeight: 84, resize: "none" }}
+                  aria-label="Member witness note"
+                  data-field-id="community-confirmation-policy.member-witness.note"
+                />
+              </details>
+            ) : !memberWitnessFocus ? (
               <>
                 <input
                   value={memberWitnessClaim}
@@ -3464,7 +3564,7 @@ function CommunityConfirmationPolicyPage() {
           </div>
 
           <div style={{ ...innerCard("#FFFFFF"), order: memberWitnessFocus ? 2 : 0 }}>
-            {memberWitnessFocus ? (
+            {memberWitnessRequestFocus ? (
               <WitnessAfterResponseCard
                 onOpenInbox={() =>
                   navigateWithOrigin(navigate, APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX, location)

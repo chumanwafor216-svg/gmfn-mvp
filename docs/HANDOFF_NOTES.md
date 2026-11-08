@@ -1,5 +1,14 @@
 # Active Handoff Notes
 
+## Marketplace focused member confirmation repair - 2026-11-07
+
+- Owner evidence: the supplied 14.5-second phone recording showed Confirm I know this member landing inside the full GSN Workspace manager-policy surface instead of a focused member task. The previous done claim was therefore incomplete even though the Marketplace roster itself was present.
+- Root cause: CommunityConfirmationPolicyPage treated request as focused but explicitly excluded member_witness_action=record. Record deep links loaded and exposed the manager workspace before reaching the witness section.
+- Repair: record and request are now separate focused modes. Record mode keeps the selected member prefilled, shows one Confirm I know this member action, collapses the optional factual note, returns to Marketplace, and excludes manager-front, policy, affiliation, registration, responder and privacy workload from the focused journey.
+- Preserved: the existing record API, signed-in verifier identity, selected-community scope, active-member checks, evidence meaning, permissions, request mode, manager settings, backend contracts and Marketplace directory remain unchanged.
+- Verification passed: focused Marketplace member-row and Notifications inventory audits, Community Confirmation outcome boundary, phone-surface simplicity, targeted ESLint, a 324-module production build, and an exact 390x844 browser smoke proving the selected member, first-viewport action, manager-front exclusion, horizontal fit and record payload.
+- The complete protected-button freeze reaches and passes the changed confirmation/Marketplace assertions, but remains red on inherited Shop Analytics row/count expectations and stale entry/security assertions. Those failures are outside this route-local repair and were not hidden or broadened into this fix.
+
 ## Authenticated core-page static neon - 2026-11-07
 
 - `/app/dashboard`, `/app/community`, and `/app/marketplace` now share one deep-navy compact stage and one restrained static cyan-violet-gold presentation token. Dashboard lights its existing identity, My Pulse, DemandBox, Focus, Market Wisdom outer frame, and TrustSlip; Community Home lights only identity and Bulletin; Marketplace lights only identity, Needs, Shops & Services, Matches, and suggested next step. Desktop retains the existing light page treatments with softer frames.

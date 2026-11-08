@@ -61,8 +61,23 @@ requirePattern(
 );
 requirePattern(
   "policy",
-  /member_witness_subject[\s\S]*?memberWitnessAction[\s\S]*?memberWitnessRouteTargeted[\s\S]*?memberWitnessAction !== "record"/,
-  "The policy page must preselect and focus Marketplace member handoffs without changing record into request mode."
+  /memberWitnessRequestFocus = useMemo[\s\S]*?memberWitnessRecordFocus = useMemo[\s\S]*?memberWitnessAction === "record"[\s\S]*?memberWitnessFocus = memberWitnessRequestFocus \|\| memberWitnessRecordFocus/,
+  "Record and request handoffs must both enter focused member-witness mode without changing one action into the other."
+);
+requirePattern(
+  "policy",
+  /memberWitnessRecordFocus[\s\S]*?Member Confirmation[\s\S]*?backLabel=\{[\s\S]*?Marketplace/,
+  "A focused record handoff must identify the member-confirmation task and return to Marketplace instead of the manager workspace."
+);
+requirePattern(
+  "policy",
+  /data-gsn-member-confirmation-selected="true"[\s\S]*?Confirm I know this member[\s\S]*?data-gsn-member-confirmation-note="true"/,
+  "Focused record mode must show the selected member, one explicit confirmation action, and keep the optional note collapsed."
+);
+requirePattern(
+  "policy",
+  /isCompact && !memberWitnessFocus && !verificationRequestFocus[\s\S]*?community-confirmation-manager-front/,
+  "The manager front must remain excluded from focused member confirmation landings."
 );
 requirePattern(
   "page",

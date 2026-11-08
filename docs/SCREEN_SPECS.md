@@ -1069,8 +1069,11 @@ Rules:
   record/request flow with that member preselected, open the member's existing
   Public Shop, and show confirmation settings only to an authorised community
   manager. Marketplace must not invent or expose manager-protected
-  confirmation availability such as Receiving/Paused. The existing bounded
-  server-side Shops & Services directory, neutral ordering, filters, routes,
+  confirmation availability such as Receiving/Paused. A direct Confirm I know
+  this member handoff must open a focused selected-member task with one record
+  action and a Marketplace return; it must not expose the full manager settings
+  workspace. The existing bounded server-side Shops & Services directory,
+  neutral ordering, filters, routes,
   permissions, evidence rules, and backend contracts remain unchanged. Static
   cyan-violet neon may frame this roster; flashing or global neon is forbidden.
 - Marketplace shop discovery must remain bounded at scale. The first surface
