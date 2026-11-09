@@ -984,10 +984,6 @@ function friendlyJoinError(value: any): string {
   );
 }
 
-function phoneDigits(value: string): string {
-  return cleanText(value).replace(/\D/g, "");
-}
-
 function approvalRouteFor(result: any): string {
   const resultPath = cleanText(result?.result_path || "");
   const resultChannel = cleanText(result?.result_channel || "").toLowerCase();
@@ -1996,21 +1992,7 @@ export default function JoinEntryPage() {
     !showDraftRecovery;
   const applicantFullName = fullNameFromParts(firstName, surname);
   const applicantNameParts = splitFullNameForSubmit(applicantFullName);
-  const applicantNameReady = Boolean(
-    cleanText(applicantNameParts.firstName) && cleanText(applicantNameParts.surname)
-  );
-
-  const canSubmit =
-    !!effectiveInviteCode &&
-    !inviteBlocked &&
-    !inviteChecking &&
-    inviteAcknowledged &&
-    (!joinRequiresRulesAcceptance || rulesAccepted) &&
-    !hasExistingGsnClaim &&
-    applicantNameReady &&
-    !!cleanText(phone) &&
-    !!cleanText(country) &&
-    !busy;
+  const applicantNameReady = Boolean(cleanText(applicantNameParts.firstName));
   const canSubmitExistingGsn =
     !!effectiveInviteCode &&
     !inviteBlocked &&
@@ -2417,7 +2399,7 @@ export default function JoinEntryPage() {
       if (inviteChecking) {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
-      if (!safeFirstName || !safeSurname) {
+      if (!safeFirstName) {
         throw new Error("Enter full name.");
       }
       if (!safePhone) {
@@ -2430,7 +2412,7 @@ export default function JoinEntryPage() {
         {
           invite_code: safeInviteCode,
           first_name: safeFirstName,
-          surname: safeSurname,
+          surname: safeSurname || undefined,
           phone_e164: safePhone,
           country: safeCountry,
           date_of_birth: safeDateOfBirth,
@@ -2688,7 +2670,7 @@ export default function JoinEntryPage() {
       const safePhone = cleanText(phone);
       const safeBusinessName = buildWorkSummary(workCategory, workDetail);
 
-      if (!safeFirstName || !safeSurname || !safePhone) {
+      if (!safeFirstName || !safePhone) {
         throw new Error(
           "Add your full name and phone number with the GSN ID before sending the request."
         );
@@ -2699,7 +2681,7 @@ export default function JoinEntryPage() {
           invite_code: safeInviteCode,
           existing_gmfn_id: safeExistingGsnId,
           first_name: safeFirstName,
-          surname: safeSurname,
+          surname: safeSurname || undefined,
           phone_e164: safePhone,
           business_name: safeBusinessName || undefined,
           note: cleanText(note) || undefined,
@@ -3960,7 +3942,7 @@ export default function JoinEntryPage() {
                   autoComplete="name"
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
-                {applicantFullName && !applicantNameReady ? (
+                {applicantFullName && !cleanText(applicantNameParts.surname) ? (
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Add the name people know you by, including family name where possible.
                   </div>
@@ -4169,7 +4151,7 @@ export default function JoinEntryPage() {
               >
                 <PrimaryButton
                   type="submit"
-                  disabled={!canSubmit}
+                  disabled={busy}
                   debugId="join-entry.submit-new-request"
                   busy={busy}
                   busyLabel="Submitting Request..."

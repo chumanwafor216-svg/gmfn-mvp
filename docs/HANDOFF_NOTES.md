@@ -1,5 +1,22 @@
 # Active Handoff Notes
 
+## Join Community one-part-name repair - 2026-11-09
+
+- Owner evidence showed a Homeland ISA invite recipient entering the one-part
+  name `Naomi`, phone, and country while `Join Community` appeared inert.
+- Root cause: frontend readiness and backend validation required a surname even
+  though the screen described family name as conditional. The disabled submit
+  action gave no visible explanation.
+- Join Entry now accepts legitimate one-part names, keeps surname optional in
+  both new and existing-identity payloads, and leaves the primary action
+  tappable outside active submission so missing required information is shown.
+- Instant invite behavior remains unchanged: membership and GSN ID are issued,
+  then the protected activation handoff opens password setup. Reviewed invite
+  modes remain pending and existing GSN identity claims still require sign-in.
+- A focused backend regression covers one-part-name instant admission and the
+  activation handoff. Frontend contract audits and production build are part of
+  the release verification.
+
 ## Core member-tab neon legibility extension - 2026-11-08
 
 - Owner-approved scope extends the readable static phone treatment from

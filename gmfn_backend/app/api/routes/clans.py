@@ -4942,7 +4942,6 @@ def create_join_request(
             label
             for label, value in (
                 ("first_name", payload.first_name),
-                ("surname", payload.surname),
                 ("phone_e164", payload.phone_e164),
                 ("country", payload.country),
             )

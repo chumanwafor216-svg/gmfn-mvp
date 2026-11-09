@@ -683,6 +683,12 @@ Phone-first rule:
   requester fields. Tapping it must visibly open and move to the Full name,
   Phone number, and Country fields; it must not appear to do nothing while the
   form sits off-screen.
+- Full name requires the name the person is known by. A family name should be
+  added where possible, but a legitimate one-part name must not leave the main
+  action disabled or block submission.
+- If any required field is still missing, tapping the main action must explain
+  the missing information in the visible form area; it must not behave like a
+  dead button.
 - Resume the form automatically only when the phone holds real requester input, not merely because the invite link was opened before.
 - Keep the full invite note collapsed. Hide promotional invite artwork, repeated evidence chips, and the official footer from the first phone surface.
 

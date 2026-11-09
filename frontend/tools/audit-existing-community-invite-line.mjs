@@ -219,8 +219,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /async function requestJoinWithExistingIdentity\([\s\S]*?submitJoinRequest\(\{[\s\S]*?invite_code: safeInviteCode[\s\S]*?async function requestJoinWithExistingGsnId\([\s\S]*?existing_gmfn_id: safeExistingGsnId[\s\S]*?first_name: safeFirstName[\s\S]*?surname: safeSurname[\s\S]*?phone_e164: safePhone[\s\S]*?\{ includeAuth: false \}/,
-  "Public Join Entry must submit a typed existing GSN ID without stale auth, while verified in-app existing identity joins still use the authenticated path."
+  /async function requestJoinWithExistingIdentity\([\s\S]*?submitJoinRequest\(\{[\s\S]*?invite_code: safeInviteCode[\s\S]*?async function requestJoinWithExistingGsnId\([\s\S]*?if \(!isAuthenticated\(\)\)[\s\S]*?navigate\(signInInvitePath\)[\s\S]*?existing_gmfn_id: safeExistingGsnId[\s\S]*?first_name: safeFirstName[\s\S]*?surname: safeSurname \|\| undefined[\s\S]*?phone_e164: safePhone[\s\S]*?\{ includeAuth: true \}/,
+  "Existing-GSN Join Entry must require authenticated identity ownership while preserving the invite return and verified in-app join path."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const applicantNameReady = Boolean\(cleanText\(applicantNameParts\.firstName\)\);[\s\S]*?if \(!safeFirstName\)[\s\S]*?surname: safeSurname \|\| undefined[\s\S]*?applicantFullName && !cleanText\(applicantNameParts\.surname\)[\s\S]*?family name where possible[\s\S]*?disabled=\{busy\}[\s\S]*?debugId="join-entry\.submit-new-request"/,
+  "Join Entry must accept a legitimate one-part name, keep family name optional, and leave the submit action tappable so missing fields answer visibly."
 );
 
 assertContains(
@@ -303,14 +309,14 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",
-  /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?claimed_existing_identity_user[\s\S]*?existing_identity_join = bool\([\s\S]*?claimed_existing_identity_user is not None[\s\S]*?existing_gsn_id_required[\s\S]*?Enter that GSN ID/,
-  "Backend join-request creation must reuse typed existing GSN IDs and block duplicate-phone creation without requiring the invite recipient to sign in."
+  /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?if current_user is None:[\s\S]*?existing_gsn_sign_in_required[\s\S]*?current_gmfn_id != submitted_existing_gmfn_id[\s\S]*?existing_gsn_identity_mismatch[\s\S]*?existing_gsn_id_required[\s\S]*?Sign in as that member/,
+  "Backend join-request creation must require signed-in ownership before reusing an existing GSN ID and must block duplicate-phone identity creation."
 );
 
 assertContains(
   "gmfn_backend/tests/test_join_requests.py",
-  /test_public_join_request_existing_gmfn_id_reuses_global_identity[\s\S]*?existing_gmfn_id[\s\S]*?identity_reused[\s\S]*?test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity[\s\S]*?existing_gsn_id_not_found/,
-  "Backend tests must keep coverage for public typed-GSN-ID reuse and unknown-GSN-ID rejection."
+  /test_public_join_request_existing_gmfn_id_requires_sign_in[\s\S]*?existing_gmfn_id[\s\S]*?existing_gsn_sign_in_required[\s\S]*?test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity[\s\S]*?existing_gsn_sign_in_required/,
+  "Backend tests must keep coverage that anonymous known or unknown GSN-ID claims require sign-in and create no identity."
 );
 
 assertContains(
@@ -321,14 +327,14 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const qrPolicyKey = useMemo\([\s\S]*?searchParams\.get\("qr_policy"\) \|\| searchParams\.get\("entry_policy"\)[\s\S]*?getJoinInvitePreview\(inviteCode, \{[\s\S]*?community_code: communityCode \|\| undefined,[\s\S]*?qr_policy: qrPolicyKey \|\| undefined,[\s\S]*?\}, \[inviteCode, communityCode, qrPolicyKey\]\);[\s\S]*?getJoinInviteRequestStatus\(safeInviteCode, safePhone, \{[\s\S]*?community_code: communityCode \|\| undefined,[\s\S]*?qr_policy: effectiveQrPolicyKey \|\| undefined,[\s\S]*?effectiveQrPolicyKey,/,
-  "Join Entry must pass QR policy context into preview and status checks so retired QR recovery keeps the intended onboarding mode."
+  /const qrPolicyKey = useMemo\([\s\S]*?searchParams\.get\("qr_policy"\) \|\| searchParams\.get\("entry_policy"\)[\s\S]*?getJoinInvitePreview\(inviteCode, \{[\s\S]*?community_code: communityCode \|\| undefined,[\s\S]*?qr_policy: qrPolicyKey \|\| undefined,[\s\S]*?\}\)[\s\S]*?\}, \[inviteCode, communityCode, qrPolicyKey\]\);/,
+  "Join Entry must pass QR policy context into invite preview while avoiding retired anonymous phone-and-invite status lookup."
 );
 
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",
-  /def preview_join_invite\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?desired_qr_policy_key = _public_qr_policy_hint\(qr_policy, entry_policy\)[\s\S]*?def get_join_invite_request_status\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?_public_qr_policy_hint\(qr_policy, entry_policy\)/,
-  "Backend preview and request-status routes must accept QR policy as a non-authoritative recovery hint."
+  /def preview_join_invite\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?desired_qr_policy_key = _public_qr_policy_hint\(qr_policy, entry_policy\)[\s\S]*?def get_join_invite_request_status\([\s\S]*?status_code=410[\s\S]*?public_join_status_lookup_retired/,
+  "Backend invite preview may accept QR policy as a non-authoritative hint, while anonymous phone-and-invite status lookup stays retired."
 );
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",
@@ -351,5 +357,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Existing-community invite line audit passed: create-community and join-existing-community stay separate, ready invite forms stay visible, stale auth is bypassed for public submit, and backend duplicate-ID protection remains caged."
+  "Existing-community invite line audit passed: ready invite forms stay visible, one-part names can continue, existing-ID reuse requires sign-in, and instant activation handoff remains caged."
 );

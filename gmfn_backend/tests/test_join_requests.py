@@ -4594,6 +4594,40 @@ def test_instant_invite_acceptance_creates_membership_and_closes_single_use_link
     assert preview_old["invite_code"] == invite["invite_code"]
 
 
+def test_instant_invite_accepts_one_part_name_and_returns_activation_handoff(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    with SessionLocal() as db:
+        clan = db.get(Clan, 1)
+        clan.admission_mode = "instant_invite"
+        clan.voting_admin_override = False
+        db.commit()
+
+    invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
+    assert invite_res.status_code == 200, invite_res.text
+
+    payload = _join_payload(invite_res.json()["invite_code"])
+    payload["first_name"] = "Naomi"
+    payload.pop("surname")
+
+    join_res = client.post("/clans/join-requests", json=payload)
+    assert join_res.status_code == 201, join_res.text
+    joined = join_res.json()
+    assert joined["result_status"] == "instant_invite_accepted"
+    assert joined["status"] == "approved"
+    assert joined["gmfn_id"]
+    assert joined["activation_required"] is True
+    assert joined["activation_path"].startswith("/activate-membership?")
+    assert joined["activation_token"]
+
+    with SessionLocal() as db:
+        applicant = db.get(User, int(joined["user_id"]))
+        assert applicant is not None
+        assert applicant.display_name == "Naomi"
+
+
 def test_instant_community_qr_is_reusable_and_routes_each_member_to_activation(
     client,
     override_clan_ctx_admin,

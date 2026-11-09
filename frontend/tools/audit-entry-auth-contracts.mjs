@@ -263,8 +263,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /async function requestJoinWithExistingGsnId\(\)[\s\S]*?const safePhone = cleanText\(phone\)[\s\S]*?first_name: safeFirstName[\s\S]*?surname: safeSurname[\s\S]*?phone_e164: safePhone[\s\S]*?\{ includeAuth: false \}/,
-  "Typed existing-GSN invite submission must send first name, surname, and phone with the GSN ID for community recognition."
+  /async function requestJoinWithExistingGsnId\(\)[\s\S]*?if \(!isAuthenticated\(\)\)[\s\S]*?navigate\(signInInvitePath\)[\s\S]*?const safePhone = cleanText\(phone\)[\s\S]*?first_name: safeFirstName[\s\S]*?surname: safeSurname \|\| undefined[\s\S]*?phone_e164: safePhone[\s\S]*?\{ includeAuth: true \}/,
+  "Existing-GSN invite reuse must require sign-in, preserve the invite return, and send the signed-in member name and phone for community recognition."
 );
 
 assertContains(
