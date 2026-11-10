@@ -11,7 +11,10 @@
 - Verification passed: identity opportunity gateway, public TrustSlip first
   viewport, public TrustSlip privacy boundary, and the 326-module production
   frontend build.
-- Commit and deployment are pending.
+- Initial compactness fix published in commit `bbf04752`; deployment workflow
+  `42873330256` was triggered for that exact commit.
+- Owner follow-up in progress: remove profile-route navigation and acknowledge
+  known linked communities as `Linked privately` without names, counts, or roles.
 
 ## Market Wisdom static-neon presentation polish - 2026-11-10
 

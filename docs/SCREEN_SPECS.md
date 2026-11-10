@@ -1856,6 +1856,10 @@ Rules:
 - The stable shareable GSN ID route is `/id/:gmfnId`; it must remain available
   when TrustSlip is pending, expired, unavailable, or later reissued. The card
   QR and Share action must not use a TrustSlip code as the identity route key.
+- The stable card may acknowledge known linked-community evidence as
+  `Linked privately`, but must not expose community names, counts, roles, or
+  administrative status. When no linked-community evidence is known, it must
+  read `Not shown` rather than imply a relationship.
 - The stable card may provide only three identity-owned next steps: check a
   TrustSlip when a public code exists (including its privacy-preserving scoped
   community-confirmation evidence), open the holder's explicitly published
@@ -1872,7 +1876,9 @@ Rules:
   professional headline and short summary. It must not show phone, email,
   verification indicators, exact location, community names/counts/roles,
   private Trust Passport evidence, Shop entitlement, or unpublished fields.
-  Direct visits fail closed when the holder has not opted in.
+  Direct visits fail closed when the holder has not opted in. The public
+  professional-profile variants are standalone share surfaces and must not add
+  a `Back to GSN ID` or other account-navigation button.
 - Existing `/t/:code/card` and `/t/:code/profile` links remain valid legacy
   aliases, but newly generated QR/share/profile links must use the stable GSN ID
   routes.

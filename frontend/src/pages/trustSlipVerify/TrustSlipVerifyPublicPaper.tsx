@@ -2618,8 +2618,6 @@ export default function TrustSlipVerifyPublicPaper({
     "Future behaviour or guaranteed performance",
   ];
   if (isProfile) {
-    const cardPath = publicIdentityPath ||
-      (resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}/card` : verifyPath || "/verify/trust-slip");
     if (!publicProfessionalProfileEnabled || !professionalHeadline) {
       return (
         <section
@@ -2645,14 +2643,6 @@ export default function TrustSlipVerifyPublicPaper({
           <p style={{ margin: 0, color: "#526579", fontSize: compact ? 13.5 : 15, fontWeight: 760, lineHeight: 1.5 }}>
             This member has not chosen to publish professional details from this GSN ID.
           </p>
-          <StableCtaLink
-            to={cardPath}
-            stableHeight={compact ? 50 : 54}
-            debugId="trust-slip-verify.profile.unavailable.back-to-card"
-            style={{ justifyContent: "center", borderRadius: 16 }}
-          >
-            Back to GSN ID
-          </StableCtaLink>
         </section>
       );
     }
@@ -2723,14 +2713,6 @@ export default function TrustSlipVerifyPublicPaper({
           <div style={{ color: "#617085", fontSize: compact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.35 }}>
             Only details this member chose to publish are shown. Phone, email, named communities, private evidence, and exact location stay hidden.
           </div>
-          <StableCtaLink
-            to={cardPath}
-            stableHeight={compact ? 50 : 54}
-            debugId="trust-slip-verify.profile.back-to-card"
-            style={{ justifyContent: "center", borderRadius: 16 }}
-          >
-            Back to GSN ID
-          </StableCtaLink>
         </div>
       </section>
     );
@@ -2745,7 +2727,9 @@ export default function TrustSlipVerifyPublicPaper({
     const publicVerifyDisplay = publicVerifyUrl
       ? publicVerifyUrl.replace(/^https?:\/\//i, "")
       : verifyPath || "Live card link not available";
-    const linkedCommunityFootprint = "Not shown";
+    const linkedCommunityFootprint = activeCommunityContexts > 0
+      ? "Linked privately"
+      : "Not shown";
     const phoneEvidence = identityEvidenceLabel({
       verified: firstKnownBoolean(identityContext?.phone_verified, phoneVerified),
       recorded: firstKnownBoolean(identityContext?.phone_recorded, identityContext?.phone_verified, phoneVerified),
@@ -2774,7 +2758,12 @@ export default function TrustSlipVerifyPublicPaper({
       { label: "ID document", value: idEvidence, icon: "certificate-seal", good: idEvidence !== "Not shown" },
       { label: "Photo", value: photoEvidence, icon: "identity-card", good: photoEvidence !== "Not shown" },
       { label: "Bank / wallet", value: bankEvidence, icon: "finance-bank-building", good: bankEvidence !== "Not shown" },
-      { label: "Linked communities", value: linkedCommunityFootprint, icon: "public-globe", good: false },
+      {
+        label: "Linked communities",
+        value: linkedCommunityFootprint,
+        icon: "public-globe",
+        good: activeCommunityContexts > 0,
+      },
     ];
     const publicOpportunityActions: IdentityOpportunityAction[] = [
       ...(resolvedCode

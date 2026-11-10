@@ -240,8 +240,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /const linkedCommunityFootprint = "Not shown"[\s\S]*?label: "Linked communities"[\s\S]*?value: linkedCommunityFootprint/,
-  "The card-only public identity surface must keep community totals and roles private."
+  /const linkedCommunityFootprint = activeCommunityContexts > 0[\s\S]*?"Linked privately"[\s\S]*?: "Not shown"[\s\S]*?label: "Linked communities"[\s\S]*?value: linkedCommunityFootprint/,
+  "The card-only public identity surface must acknowledge a known community link without exposing names, totals, or roles."
 );
 
 assertNotContains(

@@ -85,6 +85,11 @@ forbidPattern(
 );
 forbidPattern(
   "publicPaper",
+  /trust-slip-verify\.profile(?:\.unavailable)?\.back-to-card|Back to GSN ID/,
+  "The standalone public professional profile must not add account or card navigation controls."
+);
+forbidPattern(
+  "publicPaper",
   /roleMixLabel|Membership \$\{|Membership \d|Admin \$\{|Admin \d/,
   "Public identity surfaces must not turn confirmation options into membership or admin totals."
 );
