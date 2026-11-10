@@ -88,6 +88,7 @@
     "audit:trust-passport-front-package": "node tools/audit-trust-passport-front-package.mjs",
     "audit:trust-admin-mobile-overflow": "node tools/audit-trust-admin-mobile-overflow.mjs",
     "audit:identity-integrity-front-package": "node tools/audit-identity-integrity-front-package.mjs",
+    "audit:identity-opportunity-gateway": "node tools/audit-identity-opportunity-gateway.mjs",
     "audit:trust-passport-lane-map": "node tools/audit-trust-passport-lane-map.mjs",
     "audit:trust-passport-repair-lane": "node tools/audit-trust-passport-repair-lane.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",

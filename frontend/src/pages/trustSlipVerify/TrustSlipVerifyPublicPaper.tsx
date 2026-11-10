@@ -4,6 +4,9 @@ import CommunityProofPanel from "../../components/CommunityProofPanel";
 import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink, SubtleButton } from "../../components/StableButton";
+import IdentityOpportunityGateway, {
+  type IdentityOpportunityAction,
+} from "../../components/IdentityOpportunityGateway";
 import TrustSlipQuickDecisionPaper from "./TrustSlipQuickDecisionPaper";
 import { revealElementWithoutJump } from "../../lib/mobileRevealStability";
 import {
@@ -143,6 +146,7 @@ type TrustSlipVerifyPublicPaperProps = {
   canRequestCommunityPulse: boolean;
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
+  publicOpportunityShopPath?: string;
   decisionPackProfile: {
     accessPurpose: string;
     recipientQuestion: string;
@@ -1795,6 +1799,7 @@ export default function TrustSlipVerifyPublicPaper({
   canRequestCommunityPulse,
   onRequestCommunityPulse,
   publicActions,
+  publicOpportunityShopPath = "",
   decisionPackProfile,
   recipientAccessRecord,
   variant = "full",
@@ -2679,6 +2684,31 @@ export default function TrustSlipVerifyPublicPaper({
       { label: "Bank / wallet", value: bankEvidence, icon: "finance-bank-building", good: bankEvidence !== "Not shown" },
       { label: "Linked communities", value: linkedCommunityFootprint, icon: "public-globe", good: activeCommunityContexts > 0 || Boolean(roleMix) },
     ];
+    const publicOpportunityActions: IdentityOpportunityAction[] = [
+      ...(resolvedCode
+        ? [
+            {
+              key: "trust-slip",
+              label: "Check this TrustSlip",
+              to: `/t/${encodeURIComponent(resolvedCode)}/lite`,
+              debugId: "trust-slip-verify.card.opportunity.trust-slip",
+              icon: "trust-shield" as const,
+              kind: "primary" as const,
+            },
+          ]
+        : []),
+      ...(publicOpportunityShopPath
+        ? [
+            {
+              key: "public-shop",
+              label: "Visit public shop",
+              to: publicOpportunityShopPath,
+              debugId: "trust-slip-verify.card.opportunity.public-shop",
+              icon: "shop-storefront" as const,
+            },
+          ]
+        : []),
+    ];
 
     return (
       <section
@@ -2880,6 +2910,15 @@ export default function TrustSlipVerifyPublicPaper({
           <div style={{ color: "#617085", fontSize: compact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.25 }}>
             Public GSN identity card only. Not government ID, credit approval, payment guarantee, or future behaviour proof.
           </div>
+
+          <IdentityOpportunityGateway
+            audience="public"
+            compact={compact}
+            title="What can this GSN ID help you do?"
+            description="Check permitted evidence and continue only through options this member has made public."
+            actions={publicOpportunityActions}
+            emptyMessage="No public opportunity is available from this card yet."
+          />
         </div>
       </section>
     );

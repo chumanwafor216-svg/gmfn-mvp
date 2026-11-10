@@ -58,6 +58,9 @@ import {
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import IdentityOpportunityGateway, {
+  type IdentityOpportunityAction,
+} from "../components/IdentityOpportunityGateway";
 import gsnConnectedGlobeMark from "../assets/identity/gsn-connected-globe-mark.jpg";
 
 const LazyQRCodeSVG = React.lazy(async () => {
@@ -1994,6 +1997,22 @@ export default function IdentityIntegrityPage() {
       identity: routeTarget("cci", selectedClanId, "identity-integrity.route.identity"),
       trust: routeTarget("trust", selectedClanId, "identity-integrity.route.trust"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "identity-integrity.route.trust-slip"),
+      shop: routeTarget("shop", selectedClanId, "identity-integrity.route.shop"),
+      marketplace: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "identity-integrity.route.marketplace"
+      ),
+      demandBox: routeTarget(
+        "demandBox",
+        selectedClanId,
+        "identity-integrity.route.demand-box"
+      ),
+      community: routeTarget(
+        "communityHome",
+        selectedClanId,
+        "identity-integrity.route.community"
+      ),
       payoutDetails: routeTarget(
         "payoutDetails",
         selectedClanId,
@@ -2716,6 +2735,47 @@ export default function IdentityIntegrityPage() {
     trustSlip?.community_code,
     trustSlip?.community_global_id,
     trustSlip?.community_id
+  );
+  const ownerOpportunityActions = useMemo<IdentityOpportunityAction[]>(
+    () => [
+      {
+        key: "shop",
+        label: "Manage my shop",
+        to: routes.shop,
+        debugId: "identity-integrity.opportunity.shop",
+        icon: "shop-storefront",
+        kind: "primary",
+      },
+      {
+        key: "marketplace",
+        label: "Explore my community marketplace",
+        to: routes.marketplace,
+        debugId: "identity-integrity.opportunity.marketplace",
+        icon: "market-stall",
+      },
+      {
+        key: "demand-box",
+        label: "Ask my community",
+        to: routes.demandBox,
+        debugId: "identity-integrity.opportunity.demand-box",
+        icon: "shopping-cart",
+      },
+      {
+        key: "trust-slip",
+        label: "View my TrustSlip",
+        to: routes.trustSlip,
+        debugId: "identity-integrity.opportunity.trust-slip",
+        icon: "trust-shield",
+      },
+      {
+        key: "communities",
+        label: "My communities",
+        to: routes.community,
+        debugId: "identity-integrity.opportunity.communities",
+        icon: "community-building",
+      },
+    ],
+    [routes]
   );
   const memberCredentialPath = publicCommunityMemberCredentialPath({
     communityKey: selectedCommunityKey,
@@ -5239,7 +5299,20 @@ export default function IdentityIntegrityPage() {
       </section>
       ) : null}
 
-      {cardOnlyMode ? landscapeIdentityCard : null}
+      {cardOnlyMode ? (
+        <>
+          {landscapeIdentityCard}
+          <IdentityOpportunityGateway
+            audience="owner"
+            compact={isCompact}
+            title="What can your GSN ID help you do?"
+            description="Show your business, ask your community, explore opportunities, and share the evidence you choose."
+            actions={ownerOpportunityActions}
+            collapseSecondary
+            secondaryLabel="More ways to use my GSN ID"
+          />
+        </>
+      ) : null}
       {!cardOnlyMode ? (
       <details
         data-identity-integrity-details="covered"

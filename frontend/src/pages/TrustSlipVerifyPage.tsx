@@ -16,6 +16,7 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
+import { publicShopPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
@@ -320,6 +321,7 @@ export default function TrustSlipVerifyPage() {
   const [selectedConfirmationCommunityId, setSelectedConfirmationCommunityId] = useState("");
   const [privateEvidenceOpen, setPrivateEvidenceOpen] = useState(false);
   const [recipientEnvelopeOpened, setRecipientEnvelopeOpened] = useState(false);
+  const [publicOpportunityShopPath, setPublicOpportunityShopPath] = useState("");
 
   const isAppRoute = location.pathname.startsWith("/app/");
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
@@ -786,6 +788,37 @@ export default function TrustSlipVerifyPage() {
     return firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null);
   }, [record, me, isAppRoute]);
   const gmfnId = gmfnIdValue || "Not issued yet";
+
+  useEffect(() => {
+    let active = true;
+
+    if (!isCardRoute || !gmfnIdValue) {
+      setPublicOpportunityShopPath("");
+      return () => {
+        active = false;
+      };
+    }
+
+    setPublicOpportunityShopPath("");
+    void api
+      .getPublicMarketplaceShopByGmfnId(gmfnIdValue, {
+        product_limit: 1,
+        broadcast_limit: 1,
+      })
+      .then((response) => {
+        if (!active) return;
+        setPublicOpportunityShopPath(
+          response?.is_public_shop_face === true ? publicShopPath(gmfnIdValue) : ""
+        );
+      })
+      .catch(() => {
+        if (active) setPublicOpportunityShopPath("");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [gmfnIdValue, isCardRoute]);
 
   const holderName = useMemo(() => {
     const candidate = firstTruthy(
@@ -1721,6 +1754,7 @@ export default function TrustSlipVerifyPage() {
               void requestCommunityPulse(draft);
             }}
             publicActions={publicTrustSlipActions}
+            publicOpportunityShopPath={publicOpportunityShopPath}
             decisionPackProfile={decisionPackProfile}
             recipientAccessRecord={recipientAccessRecord}
             variant={isCardRoute ? "card" : isLiteRoute ? "lite" : "full"}
