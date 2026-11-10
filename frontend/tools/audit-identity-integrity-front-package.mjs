@@ -292,7 +292,7 @@ assertNotContains(
 );
 
 assertContains(
-  /const landscapeIdentityCard = \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? \([\s\S]*?\{landscapeIdentityCard\}[\s\S]*?<IdentityOpportunityGateway/,
+  /const landscapeIdentityCard = \([\s\S]*?data-gsn-identity-card="true"[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? landscapeIdentityCard : null\}/,
   "Normal Identity Integrity must render the Anchor while the dedicated card-only presentation renders the GSN Identity Card."
 );
 
@@ -378,7 +378,7 @@ assertNotContains(
   "GSN Identity Card must not render a duplicate action button below the card."
 );
 assertContains(
-  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? \([\s\S]*?\{landscapeIdentityCard\}[\s\S]*?<IdentityOpportunityGateway[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-details="covered"/,
+  /const cardOnlyMode = useMemo[\s\S]*?params\.get\("display"\) === "card-only"[\s\S]*?data-identity-integrity-display=\{cardOnlyMode \? "card-only" : "full"\}[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\{cardOnlyMode \? landscapeIdentityCard : null\}[\s\S]*?\{!cardOnlyMode \? \([\s\S]*?data-identity-integrity-details="covered"/,
   "Identity Integrity must keep its Anchor on the normal route and isolate the GSN card to card-only mode without normal-page details."
 );
 assertNotContains(

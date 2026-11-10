@@ -264,7 +264,7 @@ assertContains(
 
 assertContains(
   "verify",
-  /const canShowPrivateEvidence =[\s\S]*?ownsVisibleTrustSlip && !isCardRoute && !isPublicReceiverDelivery;/,
+  /const canShowPrivateEvidence =[\s\S]*?ownsVisibleTrustSlip && !isCardRoute && !isProfileRoute && !isPublicReceiverDelivery;/,
   "Private evidence visibility must require visible TrustSlip ownership and must stay hidden during a receiver delivery."
 );
 

@@ -1969,6 +1969,21 @@ def verify_trust_slip_public(
 
     merchant_summary = dict(merchant_view.get("merchant_summary") or {})
     holder_profile_image_url = getattr(holder, "profile_image_url", None)
+    public_professional_profile_enabled = bool(
+        visibility_level != "minimal"
+        and getattr(holder, "public_professional_profile_enabled", False)
+        and str(getattr(holder, "professional_headline", "") or "").strip()
+    )
+    public_professional_headline = (
+        str(getattr(holder, "professional_headline", "") or "").strip()
+        if public_professional_profile_enabled
+        else None
+    )
+    public_professional_summary = (
+        str(getattr(holder, "professional_summary", "") or "").strip() or None
+        if public_professional_profile_enabled
+        else None
+    )
 
     gmfn_id = merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None)
     trust_limit = merchant_summary.get("trust_limit") or full_summary.get("trust_limit")
@@ -2228,6 +2243,9 @@ def verify_trust_slip_public(
         "holder_name": display_name,
         "display_name": display_name,
         "profile_image_url": merchant_view_out.get("profile_image_url") if visibility_level != "minimal" else None,
+        "public_professional_profile_enabled": public_professional_profile_enabled,
+        "professional_headline": public_professional_headline,
+        "professional_summary": public_professional_summary,
         "gmfn_id": gmfn_id,
         "holder_gmfn_id": gmfn_id,
         "community_name": community,

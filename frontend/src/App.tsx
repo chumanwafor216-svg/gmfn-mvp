@@ -977,6 +977,7 @@ export default function App() {
       <Route path="/t/s/:shareToken" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code/card" element={<TrustSlipVerifyPage />} />
+      <Route path="/t/:code/profile" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code/lite" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trust-slip" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trustslip" element={<TrustSlipVerifyPage />} />
@@ -984,6 +985,7 @@ export default function App() {
       <Route path="/trust-slips/verify/:code/page" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/lite" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/card" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code/profile" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/print" element={<TrustSlipVerifyPage />} />
       <Route path="/merchant-release/:token" element={<MerchantReleasePage />} />
       <Route path="/community-collections/:publicCode" element={<CommunityCollectionPage />} />

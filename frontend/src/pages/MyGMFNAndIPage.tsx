@@ -1530,6 +1530,7 @@ export default function MyGMFNAndIPage() {
   const [slowLoad, setSlowLoad] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [professionalProfileSaving, setProfessionalProfileSaving] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -1547,6 +1548,9 @@ export default function MyGMFNAndIPage() {
     readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
   );
   const [profileDisplayName, setProfileDisplayName] = useState("");
+  const [professionalHeadline, setProfessionalHeadline] = useState("");
+  const [professionalSummary, setProfessionalSummary] = useState("");
+  const [publicProfessionalProfileEnabled, setPublicProfessionalProfileEnabled] = useState(false);
   const [memberOpportunity, setMemberOpportunity] = useState<MemberOpportunityModel>(
     EMPTY_MEMBER_OPPORTUNITY_MODEL
   );
@@ -1636,6 +1640,11 @@ export default function MyGMFNAndIPage() {
             meRes?.name,
             meRes?.first_name
           )
+        );
+        setProfessionalHeadline(safeStr(meRes?.professional_headline));
+        setProfessionalSummary(safeStr(meRes?.professional_summary));
+        setPublicProfessionalProfileEnabled(
+          meRes?.public_professional_profile_enabled === true
         );
         setCurrentClan(clanRes || null);
         setLoading(false);
@@ -2677,6 +2686,49 @@ export default function MyGMFNAndIPage() {
       );
     } finally {
       setProfileSaving(false);
+    }
+  }
+
+  async function saveProfessionalProfile() {
+    const cleanName = profileDisplayName.trim();
+    const cleanHeadline = professionalHeadline.trim();
+    const cleanSummary = professionalSummary.trim();
+    if (cleanName.length < 2) {
+      showNotice("error", "Save your display name before publishing a public profile.");
+      return;
+    }
+    if (publicProfessionalProfileEnabled && cleanHeadline.length < 2) {
+      showNotice("error", "Add a professional headline before making this profile public.");
+      return;
+    }
+
+    setProfessionalProfileSaving(true);
+    try {
+      const updated = await updateMyProfile({
+        display_name: cleanName,
+        professional_headline: cleanHeadline,
+        professional_summary: cleanSummary,
+        public_professional_profile_enabled: publicProfessionalProfileEnabled,
+      });
+      setMe(updated || me);
+      setProfessionalHeadline(firstTruthy(updated?.professional_headline, cleanHeadline));
+      setProfessionalSummary(firstTruthy(updated?.professional_summary, cleanSummary));
+      setPublicProfessionalProfileEnabled(
+        updated?.public_professional_profile_enabled === true
+      );
+      showNotice(
+        "success",
+        updated?.public_professional_profile_enabled === true
+          ? "Your minimal professional profile is now available from your shared GSN ID."
+          : "Your professional details are saved but not public."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "GSN could not save your public profile right now."
+      );
+    } finally {
+      setProfessionalProfileSaving(false);
     }
   }
 
@@ -4800,6 +4852,58 @@ export default function MyGMFNAndIPage() {
                       debugId="my-gmfn.profile-name.save"
                     >
                       Save Display Name
+                    </PrimaryButton>
+                  </div>
+                </div>
+
+                <div data-my-gsn-public-professional-profile="opt-in" style={innerCard()}>
+                  <div style={sectionLabel()}>Public professional profile</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Add only the short professional details you want people opening your shared GSN ID to see. Your phone, email, named communities, and private evidence stay hidden.
+                  </div>
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    <input
+                      value={professionalHeadline}
+                      onChange={(event) => setProfessionalHeadline(event.target.value)}
+                      maxLength={120}
+                      placeholder="Professional headline, role, or service"
+                      aria-label="Professional headline"
+                      style={selectStyle()}
+                    />
+                    <textarea
+                      value={professionalSummary}
+                      onChange={(event) => setProfessionalSummary(event.target.value)}
+                      maxLength={500}
+                      rows={4}
+                      placeholder="A short professional introduction"
+                      aria-label="Professional summary"
+                      style={{ ...selectStyle(), resize: "vertical", minHeight: 110 }}
+                    />
+                    <label style={checkboxRow()}>
+                      <input
+                        type="checkbox"
+                        checked={publicProfessionalProfileEnabled}
+                        onChange={(event) =>
+                          setPublicProfessionalProfileEnabled(event.target.checked)
+                        }
+                      />
+                      <span>
+                        <strong>Show this profile from my shared GSN ID</strong>
+                        <span style={{ display: "block", marginTop: 3, color: "#64748B", fontSize: 12 }}>
+                          Off by default. Turn it on only when these details are ready for public viewing.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <PrimaryButton
+                      onClick={() => void saveProfessionalProfile()}
+                      busy={professionalProfileSaving}
+                      busyLabel="Saving..."
+                      disabled={professionalProfileSaving}
+                      debugId="my-gmfn.public-professional-profile.save"
+                    >
+                      Save Public Profile
                     </PrimaryButton>
                   </div>
                 </div>

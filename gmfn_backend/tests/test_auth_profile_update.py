@@ -53,6 +53,57 @@ def test_profile_update_saves_display_name_to_account(client):
         assert user.display_name == "Nwafor Chuma"
 
 
+def test_profile_update_requires_explicit_opt_in_for_professional_details(client):
+    email = _seed_profile_user()
+
+    response = client.patch(
+        "/auth/me/profile",
+        headers=_headers(email),
+        json={
+            "display_name": "Nwafor Chuma",
+            "professional_headline": "Community commerce adviser",
+            "professional_summary": "Supports small organisations with trusted local commerce.",
+            "public_professional_profile_enabled": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["professional_headline"] == "Community commerce adviser"
+    assert body["professional_summary"] == (
+        "Supports small organisations with trusted local commerce."
+    )
+    assert body["public_professional_profile_enabled"] is True
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        assert user.public_professional_profile_enabled is True
+
+
+def test_profile_update_cannot_publish_without_professional_headline(client):
+    email = _seed_profile_user()
+
+    response = client.patch(
+        "/auth/me/profile",
+        headers=_headers(email),
+        json={
+            "display_name": "Nwafor Chuma",
+            "professional_headline": "",
+            "professional_summary": "Short public introduction.",
+            "public_professional_profile_enabled": True,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert "professional headline" in response.text
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        assert user.public_professional_profile_enabled is False
+
+
 def test_profile_update_rejects_missing_name_placeholder(client):
     email = _seed_profile_user()
 

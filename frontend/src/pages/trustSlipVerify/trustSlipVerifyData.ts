@@ -51,6 +51,9 @@ export type TrustSlipVerifyRecord = {
   sponsor_count?: string | number | null;
   active_clan_count?: string | number | null;
   profile_image_url?: string | null;
+  public_professional_profile_enabled?: boolean | null;
+  professional_headline?: string | null;
+  professional_summary?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
   community_footprint?: TrustSlipCommunityOption[] | null;
@@ -375,6 +378,11 @@ export function normalizeTrustSlipVerification(
       merchantSummary?.profile_image_url,
       identityContext?.profile_image_url
     ),
+    public_professional_profile_enabled: firstBoolean(
+      src?.public_professional_profile_enabled
+    ),
+    professional_headline: firstTruthy(src?.professional_headline),
+    professional_summary: firstTruthy(src?.professional_summary),
     identity_context: identityContext,
     community_context: communityContext,
     community_footprint: normalizeCommunityOptions(

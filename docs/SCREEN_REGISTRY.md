@@ -34,6 +34,7 @@ No bottom navigation on these screens.
 9. CommunityAttendancePage
 10. CommunityResponsePage
 11. TrustSlipVerifyPage card-only route variant (`/t/:code/card`)
+12. TrustSlipVerifyPage minimal public-professional-profile route variant (`/t/:code/profile`; explicit member opt-in; no phone, email, named-community, exact-location, or private-evidence disclosure)
 
 ## Authenticated Screens
 

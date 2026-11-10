@@ -42,6 +42,20 @@ class User(Base):
         String(512),
         nullable=True,
     )
+    professional_headline: Mapped[Optional[str]] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+    professional_summary: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    public_professional_profile_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
 
     role: Mapped[str] = mapped_column(
         String(20),

@@ -1,5 +1,32 @@
 # Active Handoff Notes
 
+## GSN ID opportunity boundary correction - 2026-11-10
+
+- Phone review proved that the new authenticated GSN ID Opportunity Gateway was
+  a duplicate dashboard: Shop Control, Marketplace, Demand Box and Communities
+  already belong to the signed-in shell and made the shareable ID page unclear.
+- The authenticated card-only route now returns to one job: display and share
+  the GSN ID card. The duplicate owner gateway is removed completely.
+- A scanned `/t/:code/card` now has a bounded three-destination contract:
+  current TrustSlip verification and its privacy-preserving community evidence,
+  an explicitly opted-in minimal public professional profile, and `Shop &
+  verification` only when current merchant verification and the public Shop
+  face both pass. The label deliberately avoids claiming GSN guarantees the
+  shop merely because the verification service is active.
+- The new `/t/:code/profile` variant shows only public name/photo, GSN ID,
+  professional headline, short summary and aggregate role/community footprint.
+  Phone, email, exact location, named communities, private Trust Passport
+  evidence and unpublished profile fields stay hidden. Direct visits fail
+  closed when the member has not opted in.
+- Profile settings now own the headline, short summary and off-by-default public
+  consent. Item 4 in the owner's opportunity list remains deliberately
+  unimplemented because it has not yet been defined.
+- Verification passed: focused identity opportunity, Identity Integrity,
+  public TrustSlip first-viewport and public/private-boundary audits; eight
+  focused backend profile/privacy regressions; Alembic single-head check;
+  public TrustSlip browser state smoke; `git diff --check`; and the 325-module
+  production build.
+
 ## Join Community one-part-name repair - 2026-11-09
 
 - Owner evidence showed a Homeland ISA invite recipient entering the one-part

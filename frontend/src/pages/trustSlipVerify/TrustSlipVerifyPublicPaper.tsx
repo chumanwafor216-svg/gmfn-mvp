@@ -147,6 +147,9 @@ type TrustSlipVerifyPublicPaperProps = {
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
   publicOpportunityShopPath?: string;
+  publicProfessionalProfileEnabled?: boolean;
+  professionalHeadline?: string;
+  professionalSummary?: string;
   decisionPackProfile: {
     accessPurpose: string;
     recipientQuestion: string;
@@ -367,7 +370,7 @@ type TrustSlipVerifyPublicPaperProps = {
     note: string;
     focus: string;
   };
-  variant?: "full" | "lite" | "card";
+  variant?: "full" | "lite" | "card" | "profile";
 };
 
 function safeText(value: unknown): string {
@@ -1800,6 +1803,9 @@ export default function TrustSlipVerifyPublicPaper({
   onRequestCommunityPulse,
   publicActions,
   publicOpportunityShopPath = "",
+  publicProfessionalProfileEnabled = false,
+  professionalHeadline = "",
+  professionalSummary = "",
   decisionPackProfile,
   recipientAccessRecord,
   variant = "full",
@@ -2553,6 +2559,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const isLite = variant === "lite";
   const isCard = variant === "card";
+  const isProfile = variant === "profile";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
     verifyPath,
@@ -2642,6 +2649,140 @@ export default function TrustSlipVerifyPublicPaper({
     "Every community member, shop, transaction, or dispute",
     "Future behaviour or guaranteed performance",
   ];
+  if (isProfile) {
+    const cardPath = resolvedCode
+      ? `/t/${encodeURIComponent(resolvedCode)}/card`
+      : verifyPath || "/verify/trust-slip";
+    if (!publicProfessionalProfileEnabled || !professionalHeadline) {
+      return (
+        <section
+          data-gsn-public-professional-profile="not-published"
+          style={{
+            maxWidth: compact ? 430 : 520,
+            margin: compact ? "12px auto 24px" : "28px auto 42px",
+            borderRadius: compact ? 24 : 30,
+            border: "1px solid rgba(214,170,69,0.30)",
+            background: "#FFFFFF",
+            boxShadow: "0 18px 42px rgba(7,23,44,0.14)",
+            padding: compact ? 18 : 24,
+            display: "grid",
+            gap: 14,
+          }}
+        >
+          <div style={{ color: "#9B6A12", fontSize: 11, fontWeight: 1000, textTransform: "uppercase" }}>
+            Public professional profile
+          </div>
+          <h1 style={{ margin: 0, color: "#07172C", fontSize: compact ? 24 : 30, lineHeight: 1.08 }}>
+            No public profile published
+          </h1>
+          <p style={{ margin: 0, color: "#526579", fontSize: compact ? 13.5 : 15, fontWeight: 760, lineHeight: 1.5 }}>
+            This member has not chosen to publish professional details from this GSN ID.
+          </p>
+          <StableCtaLink
+            to={cardPath}
+            stableHeight={compact ? 50 : 54}
+            debugId="trust-slip-verify.profile.unavailable.back-to-card"
+            style={{ justifyContent: "center", borderRadius: 16 }}
+          >
+            Back to GSN ID
+          </StableCtaLink>
+        </section>
+      );
+    }
+    const publicRoleLabel = roleMixLabel(communityConfirmationOptions, holderRole) || "GSN member";
+    const publicCommunityCount = positiveNumber(activeCommunityCount);
+
+    return (
+      <section
+        data-gsn-public-professional-profile="minimal"
+        style={{
+          maxWidth: compact ? 430 : 540,
+          margin: compact ? "8px auto 24px" : "24px auto 42px",
+          borderRadius: compact ? 24 : 30,
+          border: "1px solid rgba(214,170,69,0.34)",
+          background: "linear-gradient(180deg, #061827 0%, #0A2B48 36%, #FFFFFF 36.1%, #F8FBFF 100%)",
+          boxShadow: compact ? "0 14px 30px rgba(7,23,44,0.14)" : "0 22px 54px rgba(7,23,44,0.18)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ padding: compact ? 18 : 24, display: "grid", gap: compact ? 14 : 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: compact ? "82px minmax(0, 1fr)" : "108px minmax(0, 1fr)", gap: 16, alignItems: "center" }}>
+            <div
+              style={{
+                width: compact ? 82 : 108,
+                height: compact ? 82 : 108,
+                borderRadius: compact ? 20 : 26,
+                overflow: "hidden",
+                border: "2px solid rgba(242,199,102,0.74)",
+                background: "#12314D",
+                color: "#FFFFFF",
+                display: "grid",
+                placeItems: "center",
+                fontSize: compact ? 24 : 32,
+                fontWeight: 1000,
+              }}
+            >
+              {profileImageUrl ? (
+                <img
+                  src={profileImageUrl}
+                  alt={`${holderName} public professional profile`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 16%" }}
+                />
+              ) : (
+                holderName.slice(0, 2).toUpperCase()
+              )}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: "#F2C766", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                Public professional profile
+              </div>
+              <h1 style={{ margin: "5px 0 0", color: "#FFFFFF", fontSize: compact ? 25 : 34, lineHeight: 1.04, overflowWrap: "break-word" }}>
+                {holderName}
+              </h1>
+              <div style={{ marginTop: 6, color: "#DCE9F5", fontSize: compact ? 12 : 13.5, fontWeight: 850, overflowWrap: "anywhere" }}>
+                {gsnId}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderRadius: 18, background: "#FFFFFF", border: "1px solid rgba(37,78,119,0.12)", padding: compact ? 14 : 18 }}>
+            <div style={{ color: "#07172C", fontSize: compact ? 19 : 23, fontWeight: 1000, lineHeight: 1.2 }}>
+              {firstTruthy(professionalHeadline, publicRoleLabel)}
+            </div>
+            {professionalSummary ? (
+              <p style={{ margin: "9px 0 0", color: "#526579", fontSize: compact ? 13.5 : 15, fontWeight: 760, lineHeight: 1.5 }}>
+                {professionalSummary}
+              </p>
+            ) : null}
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              <div style={statTile("#F8FBFF")}>
+                <div style={{ ...sectionLabel(), color: "#64748B" }}>Public role</div>
+                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>{publicRoleLabel}</div>
+              </div>
+              <div style={statTile("#F8FBFF")}>
+                <div style={{ ...sectionLabel(), color: "#64748B" }}>Communities</div>
+                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
+                  {publicCommunityCount > 0 ? `${publicCommunityCount} linked` : "Not shown"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ color: "#617085", fontSize: compact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.35 }}>
+            Only details this member chose to publish are shown. Phone, email, named communities, private evidence, and exact location stay hidden.
+          </div>
+          <StableCtaLink
+            to={cardPath}
+            stableHeight={compact ? 50 : 54}
+            debugId="trust-slip-verify.profile.back-to-card"
+            style={{ justifyContent: "center", borderRadius: 16 }}
+          >
+            Back to GSN ID
+          </StableCtaLink>
+        </div>
+      </section>
+    );
+  }
   if (isCard) {
     const cardSerial = resolvedCode
       ? `GSN-ID-${resolvedCode.slice(0, 4)}-${resolvedCode.slice(-4)}`
@@ -2697,11 +2838,22 @@ export default function TrustSlipVerifyPublicPaper({
             },
           ]
         : []),
+      ...(resolvedCode && publicProfessionalProfileEnabled && professionalHeadline
+        ? [
+            {
+              key: "public-profile",
+              label: "View public profile",
+              to: `/t/${encodeURIComponent(resolvedCode)}/profile`,
+              debugId: "trust-slip-verify.card.opportunity.public-profile",
+              icon: "identity-card" as const,
+            },
+          ]
+        : []),
       ...(publicOpportunityShopPath
         ? [
             {
               key: "public-shop",
-              label: "Visit public shop",
+              label: "Shop & verification",
               to: publicOpportunityShopPath,
               debugId: "trust-slip-verify.card.opportunity.public-shop",
               icon: "shop-storefront" as const,
@@ -2914,8 +3066,8 @@ export default function TrustSlipVerifyPublicPaper({
           <IdentityOpportunityGateway
             audience="public"
             compact={compact}
-            title="What can this GSN ID help you do?"
-            description="Check permitted evidence and continue only through options this member has made public."
+            title="Use this GSN ID"
+            description="Verify identity evidence, view public professional details, or open a published shop with its current verification path."
             actions={publicOpportunityActions}
             emptyMessage="No public opportunity is available from this card yet."
           />

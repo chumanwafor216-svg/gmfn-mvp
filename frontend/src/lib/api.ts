@@ -840,10 +840,25 @@ export async function getMe(options?: { timeoutMs?: number }) {
 
 export async function updateMyProfile(payload: {
   display_name: string;
+  professional_headline?: string | null;
+  professional_summary?: string | null;
+  public_professional_profile_enabled?: boolean;
 }): Promise<any> {
-  const out = await httpJson("/auth/me/profile", "PATCH", {
+  const body: Record<string, unknown> = {
     display_name: String(payload?.display_name || "").trim(),
-  });
+  };
+  if (Object.prototype.hasOwnProperty.call(payload, "professional_headline")) {
+    body.professional_headline = String(payload.professional_headline || "").trim();
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "professional_summary")) {
+    body.professional_summary = String(payload.professional_summary || "").trim();
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "public_professional_profile_enabled")) {
+    body.public_professional_profile_enabled = Boolean(
+      payload.public_professional_profile_enabled
+    );
+  }
+  const out = await httpJson("/auth/me/profile", "PATCH", body);
   rememberGmfnIdFrom(out);
   rememberRoleFrom(out);
   getMeInFlight = null;

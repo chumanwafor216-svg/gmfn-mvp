@@ -518,9 +518,16 @@ export default function TrustSlipVerifyPage() {
       safeStr(params.get("view")).toLowerCase() === "card"
     );
   }, [location.pathname, location.search]);
+  const isProfileRoute = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return (
+      location.pathname.replace(/\/+$/, "").endsWith("/profile") ||
+      safeStr(params.get("view")).toLowerCase() === "profile"
+    );
+  }, [location.pathname, location.search]);
 
   const isPublicReceiverDelivery =
-    !isCardRoute && Boolean(requestedCode || requestedShareToken);
+    !isCardRoute && !isProfileRoute && Boolean(requestedCode || requestedShareToken);
 
   const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;
 
@@ -792,7 +799,11 @@ export default function TrustSlipVerifyPage() {
   useEffect(() => {
     let active = true;
 
-    if (!isCardRoute || !gmfnIdValue) {
+    if (
+      !isCardRoute ||
+      !gmfnIdValue ||
+      record?.merchant_verify_active !== true
+    ) {
       setPublicOpportunityShopPath("");
       return () => {
         active = false;
@@ -818,7 +829,7 @@ export default function TrustSlipVerifyPage() {
     return () => {
       active = false;
     };
-  }, [gmfnIdValue, isCardRoute]);
+  }, [gmfnIdValue, isCardRoute, record?.merchant_verify_active]);
 
   const holderName = useMemo(() => {
     const candidate = firstTruthy(
@@ -932,7 +943,7 @@ export default function TrustSlipVerifyPage() {
     ]
   );
   const canShowPrivateEvidence =
-    ownsVisibleTrustSlip && !isCardRoute && !isPublicReceiverDelivery;
+    ownsVisibleTrustSlip && !isCardRoute && !isProfileRoute && !isPublicReceiverDelivery;
 
   const {
     profileImageUrl,
@@ -1755,13 +1766,20 @@ export default function TrustSlipVerifyPage() {
             }}
             publicActions={publicTrustSlipActions}
             publicOpportunityShopPath={publicOpportunityShopPath}
+            publicProfessionalProfileEnabled={
+              record?.public_professional_profile_enabled === true
+            }
+            professionalHeadline={firstTruthy(record?.professional_headline)}
+            professionalSummary={firstTruthy(record?.professional_summary)}
             decisionPackProfile={decisionPackProfile}
             recipientAccessRecord={recipientAccessRecord}
-            variant={isCardRoute ? "card" : isLiteRoute ? "lite" : "full"}
+            variant={
+              isCardRoute ? "card" : isProfileRoute ? "profile" : isLiteRoute ? "lite" : "full"
+            }
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || showRecipientEnvelope || isLiteRoute || isCardRoute || isCompact ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || publicVerifyEndpointErrorCopy || showRecipientEnvelope || isLiteRoute || isCardRoute || isProfileRoute || isCompact ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {canShowPrivateEvidence ? (
         <details

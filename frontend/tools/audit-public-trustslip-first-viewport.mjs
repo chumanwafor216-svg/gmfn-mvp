@@ -141,13 +141,13 @@ assertContains(
 
 assertContains(
   "routePage",
-  /const \[recipientEnvelopeOpened, setRecipientEnvelopeOpened\] = useState\(false\)[\s\S]*?const isPublicReceiverDelivery =[\s\S]*?!isCardRoute && Boolean\(requestedCode \|\| requestedShareToken\)[\s\S]*?setRecipientEnvelopeOpened\(false\)[\s\S]*?const showRecipientEnvelope =[\s\S]*?isPublicReceiverDelivery[\s\S]*?!noPublicCodeSupplied[\s\S]*?!publicVerifyEndpointErrorCopy[\s\S]*?!recipientEnvelopeOpened[\s\S]*?showRecipientEnvelope \? \([\s\S]*?<TrustSlipRecipientEnvelope[\s\S]*?onOpen=\{\(\) => setRecipientEnvelopeOpened\(true\)\}/,
-  "Every public code or share delivery must show the envelope first, even inside the authenticated shell; only card-only routes bypass it."
+  /const \[recipientEnvelopeOpened, setRecipientEnvelopeOpened\] = useState\(false\)[\s\S]*?const isPublicReceiverDelivery =[\s\S]*?!isCardRoute && !isProfileRoute && Boolean\(requestedCode \|\| requestedShareToken\)[\s\S]*?setRecipientEnvelopeOpened\(false\)[\s\S]*?const showRecipientEnvelope =[\s\S]*?isPublicReceiverDelivery[\s\S]*?!noPublicCodeSupplied[\s\S]*?!publicVerifyEndpointErrorCopy[\s\S]*?!recipientEnvelopeOpened[\s\S]*?showRecipientEnvelope \? \([\s\S]*?<TrustSlipRecipientEnvelope[\s\S]*?onOpen=\{\(\) => setRecipientEnvelopeOpened\(true\)\}/,
+  "Every public TrustSlip delivery must show the envelope first; only focused card and opted-in profile routes bypass it."
 );
 
 assertContains(
   "routePage",
-  /noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary/,
+  /noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isProfileRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary/,
   "Supporting boundary content must remain hidden while the recipient envelope is still sealed."
 );
 
@@ -200,7 +200,7 @@ assertContains(
 );
 assertContains(
   "routePage",
-  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isProfileRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The public lite TrustSlip route must open as a focused card/paper without the extra boundary support section."
 );
 
@@ -217,13 +217,13 @@ assertContains(
 
 assertContains(
   "routePage",
-  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?const isProfileRoute =[\s\S]*?endsWith\("\/profile"\)[\s\S]*?isCardRoute \? "card" : isProfileRoute \? "profile" : isLiteRoute \? "lite" : "full"[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isProfileRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The TrustSlip verify page must render /card as a focused card-only public view without the extra boundary support section."
 );
 
 assertContains(
   "publicPaper",
-  /variant\?: "full" \| "lite" \| "card"[\s\S]*?const isCard = variant === "card"[\s\S]*?data-gsn-public-identity-card-only="true"/,
+  /variant\?: "full" \| "lite" \| "card" \| "profile"[\s\S]*?const isCard = variant === "card"[\s\S]*?data-gsn-public-identity-card-only="true"/,
   "The public paper must support a card-only public identity surface."
 );
 

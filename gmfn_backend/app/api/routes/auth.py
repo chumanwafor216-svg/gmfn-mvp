@@ -61,6 +61,9 @@ class UserOut(BaseModel):
     phone_verified: bool = False
     display_name: Optional[str] = None
     profile_image_url: Optional[str] = None
+    professional_headline: Optional[str] = None
+    professional_summary: Optional[str] = None
+    public_professional_profile_enabled: bool = False
     nickname: Optional[str] = None
 
     cci_score: Optional[float] = None
@@ -75,12 +78,24 @@ class UserOut(BaseModel):
 
 class ProfileUpdateIn(BaseModel):
     display_name: str = Field(..., min_length=2, max_length=120)
+    professional_headline: Optional[str] = Field(default=None, max_length=120)
+    professional_summary: Optional[str] = Field(default=None, max_length=500)
+    public_professional_profile_enabled: Optional[bool] = None
 
     @field_validator("display_name", mode="before")
     @classmethod
     def _reject_non_text_display_name(cls, value: object) -> object:
         if not isinstance(value, str):
             raise ValueError("display_name must be text.")
+        return value
+
+    @field_validator("professional_headline", "professional_summary", mode="before")
+    @classmethod
+    def _reject_non_text_professional_profile(cls, value: object) -> object:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError("professional profile fields must be text.")
         return value
 
 
@@ -668,6 +683,11 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
         "phone_verified": bool(phone_verified_at and getattr(user, "phone_e164", None)),
         "display_name": display_name,
         "profile_image_url": getattr(user, "profile_image_url", None),
+        "professional_headline": getattr(user, "professional_headline", None),
+        "professional_summary": getattr(user, "professional_summary", None),
+        "public_professional_profile_enabled": bool(
+            getattr(user, "public_professional_profile_enabled", False)
+        ),
         "nickname": display_name,
         "cci_score": cci_payload.get("cci_score"),
         "cci_class": cci_payload.get("cci_class"),
@@ -698,6 +718,11 @@ def _clean_profile_display_name(value: object) -> str:
         )
 
     return collapsed[:120]
+
+
+def _clean_optional_profile_text(value: object, *, max_length: int) -> Optional[str]:
+    collapsed = " ".join(str(value or "").split())
+    return collapsed[:max_length] or None
 
 
 def _join_evidence_display_name_for_user(db: Session, user: User) -> Optional[str]:
@@ -786,6 +811,30 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
 ):
     current_user.display_name = _clean_profile_display_name(payload.display_name)
+    fields_set = payload.model_fields_set
+    if "professional_headline" in fields_set:
+        current_user.professional_headline = _clean_optional_profile_text(
+            payload.professional_headline,
+            max_length=120,
+        )
+    if "professional_summary" in fields_set:
+        current_user.professional_summary = _clean_optional_profile_text(
+            payload.professional_summary,
+            max_length=500,
+        )
+    if "public_professional_profile_enabled" in fields_set:
+        current_user.public_professional_profile_enabled = bool(
+            payload.public_professional_profile_enabled
+        )
+
+    if (
+        bool(getattr(current_user, "public_professional_profile_enabled", False))
+        and not str(getattr(current_user, "professional_headline", "") or "").strip()
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Add a professional headline before making this profile public.",
+        )
     db.add(current_user)
     db.commit()
     db.refresh(current_user)

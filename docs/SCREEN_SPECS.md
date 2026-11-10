@@ -1451,6 +1451,9 @@ Rules:
   presentation. That presentation mounts the card and its covered actions only;
   the page guide, Anchor package, and all secondary sections
   must be absent rather than merely collapsed.
+- The authenticated card-only presentation must not mount a second opportunity,
+  Shop, Marketplace, Demand Box, or Communities gateway below the card. Those
+  are private account destinations already owned by the authenticated shell.
 - The card-only presentation uses one responsive landscape membership card:
   deep navy upper field, gold GSN globe/wordmark, quiet world-map texture,
   member photo, member name, GSN ID, one evidence-derived membership status,
@@ -1832,6 +1835,23 @@ Must show:
   evidence, and next safe reader action
 
 Rules:
+- The public `/t/:code/card` route may provide only three identity-owned next
+  steps: check the current TrustSlip (including scoped community-confirmation
+  evidence without exposing private responders or named wider communities),
+  open the holder's explicitly published minimal professional profile, and open
+  a public Shop with its verification path only while current merchant
+  verification is active. It must not
+  expose Shop Control, Marketplace, Demand Box, My Communities, or other
+  authenticated account navigation.
+- `/t/:code/profile` is the minimal public professional-profile variant. It may
+  show the holder's public name/photo, GSN ID, opted-in professional headline
+  and short summary, plus aggregate role/community footprint. It must not show
+  phone, email, exact location, named communities, private Trust Passport
+  evidence, or unpublished fields. Direct visits fail closed when the holder
+  has not opted in.
+- Public professional profile publishing is off by default and is controlled
+  from the authenticated Profile settings surface. A headline is required
+  before opt-in can be enabled.
 - Every public code or share delivery must first show a sealed TrustSlip envelope, the sender/holder identity, community context, and one `Open TrustSlip` action, including when the receiver is signed in. Do not mount the quick-decision certificate until the receiver opens the envelope. The signed-in holder workspace without a receiver code/share token, no-code/error states, and QR-focused card view do not use this gate.
 - On phones, the opened public TrustSlip must show one compact quick-decision certificate: result, person, community, and one primary next action. The action label carries the recommendation; do not repeat it in a separate recommendation card. Keep only one quiet `More about this result` path when a separate real-world action is available. Do not expose record ID, formal source/date, reasoning, limits, or a second report index on this first face.
 - Do not lead with cautionary language. Keep the short formal boundary in the last evidence step; do not remove or weaken the underlying evidence, privacy, credit, payment, or universal-character boundaries.

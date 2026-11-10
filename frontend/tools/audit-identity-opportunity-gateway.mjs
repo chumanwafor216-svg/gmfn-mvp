@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   component: "src/components/IdentityOpportunityGateway.tsx",
+  app: "src/App.tsx",
   identity: "src/pages/IdentityIntegrityPage.tsx",
+  profile: "src/pages/MyGMFNAndIPage.tsx",
   verify: "src/pages/TrustSlipVerifyPage.tsx",
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
 };
@@ -21,6 +23,11 @@ function requirePattern(key, pattern, message) {
   findings.push(`${files[key]}: ${message}`);
 }
 
+function forbidPattern(key, pattern, message) {
+  if (!pattern.test(source[key])) return;
+  findings.push(`${files[key]}: ${message}`);
+}
+
 requirePattern(
   "component",
   /function OpportunityAction[\s\S]*?<StableCtaLink[\s\S]*?data-gsn-identity-opportunity-gateway=\{audience\}[\s\S]*?GSN Opportunity Gateway[\s\S]*?data-gsn-identity-opportunity-secondary="covered"/,
@@ -28,23 +35,38 @@ requirePattern(
 );
 requirePattern(
   "identity",
-  /identity-integrity\.opportunity\.shop[\s\S]*?identity-integrity\.opportunity\.marketplace[\s\S]*?identity-integrity\.opportunity\.demand-box[\s\S]*?identity-integrity\.opportunity\.trust-slip[\s\S]*?identity-integrity\.opportunity\.communities/,
-  "The owner card must connect Shop, Marketplace, Demand Box, TrustSlip, and Communities."
+  /\{cardOnlyMode \? landscapeIdentityCard : null\}/,
+  "The authenticated card-only surface must render only the shareable ID card."
+);
+forbidPattern(
+  "identity",
+  /IdentityOpportunityGateway|identity-integrity\.opportunity\.|ownerOpportunityActions|Manage my shop|Explore my community marketplace|Ask my community/,
+  "The shareable authenticated ID must not duplicate private account, Shop Control, Marketplace, Demand Box, or community navigation."
 );
 requirePattern(
-  "identity",
-  /cardOnlyMode \? \([\s\S]*?landscapeIdentityCard[\s\S]*?<IdentityOpportunityGateway[\s\S]*?audience="owner"[\s\S]*?collapseSecondary/,
-  "Owner opportunity guidance must sit directly below the card-only presentation."
+  "app",
+  /<Route path="\/t\/:code\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/trust-slips\/verify\/:code\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>/,
+  "The public route table must provide a focused profile variant for shared GSN IDs."
+);
+requirePattern(
+  "profile",
+  /data-my-gsn-public-professional-profile="opt-in"[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?Show this profile from my shared GSN ID[\s\S]*?my-gmfn\.public-professional-profile\.save/,
+  "Public professional details must be explicit opt-in account data."
 );
 requirePattern(
   "verify",
-  /getPublicMarketplaceShopByGmfnId\(gmfnIdValue,[\s\S]*?response\?\.is_public_shop_face === true[\s\S]*?publicShopPath\(gmfnIdValue\)/,
-  "The scanner Shop route must depend on the backend-confirmed public Shop response."
+  /record\?\.merchant_verify_active !== true[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnIdValue,[\s\S]*?response\?\.is_public_shop_face === true[\s\S]*?publicShopPath\(gmfnIdValue\)/,
+  "The scanner Shop route must require current merchant verification and the backend-confirmed public Shop response."
 );
 requirePattern(
   "publicPaper",
-  /publicOpportunityShopPath[\s\S]*?Visit public shop[\s\S]*?audience="public"[\s\S]*?Check permitted evidence/,
-  "The public card must explain its controlled gateway and expose only the approved Shop path."
+  /Check this TrustSlip[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?View public profile[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?audience="public"[\s\S]*?Verify identity evidence/,
+  "The public card must expose only TrustSlip verification, an opted-in public profile, and a public Shop with a current verification path."
+);
+requirePattern(
+  "publicPaper",
+  /data-gsn-public-professional-profile="not-published"[\s\S]*?No public profile published[\s\S]*?data-gsn-public-professional-profile="minimal"[\s\S]*?Phone, email, named communities, private evidence, and exact location stay hidden/,
+  "The public profile route must fail closed and keep personal contact, named communities, exact location, and private evidence hidden."
 );
 
 if (findings.length) {
@@ -54,5 +76,5 @@ if (findings.length) {
 }
 
 console.log(
-  "Identity opportunity gateway audit passed: owner routes are connected and public Shop access is visibility-gated."
+  "Identity opportunity gateway audit passed: the owner card stays focused and public identity opportunities are consent- and verification-gated."
 );

@@ -967,6 +967,9 @@ def test_public_trustslip_verify_uses_live_holder_profile_image_not_stale_snapsh
         user.display_name = "Chidimma"
         user.gmfn_id = "GMFN-U-66E6A380"
         user.profile_image_url = "/uploads/profile/chidimma-holder.jpg"
+        user.professional_headline = "Community trade coordinator"
+        user.professional_summary = "Coordinates trusted local trade and member support."
+        user.public_professional_profile_enabled = True
         user.phone_e164 = "+2348000000000"
         user.phone_verified_at = issued_at
 
@@ -1026,7 +1029,26 @@ def test_public_trustslip_verify_uses_live_holder_profile_image_not_stale_snapsh
     assert data["merchant_view"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
     assert data["merchant_view"]["merchant_summary"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
     assert data["identity_context"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
+    assert data["public_professional_profile_enabled"] is True
+    assert data["professional_headline"] == "Community trade coordinator"
+    assert data["professional_summary"] == (
+        "Coordinates trusted local trade and member support."
+    )
     assert stale_wrong_photo not in json.dumps(data)
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        user.public_professional_profile_enabled = False
+        db.add(user)
+        db.commit()
+
+    private_response = client.get("/trust-slips/verify/PUBLIC-HOLDER-PHOTO")
+    assert private_response.status_code == 200, private_response.text
+    private_data = private_response.json()
+    assert private_data["public_professional_profile_enabled"] is False
+    assert private_data["professional_headline"] is None
+    assert private_data["professional_summary"] is None
 
 
 def test_public_trustslip_verify_uses_public_id_when_holder_name_is_missing(
