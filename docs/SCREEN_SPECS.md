@@ -231,6 +231,13 @@ Rules:
   no-fifth-reading restrictions. The 45-second timing, card geometry,
   Shop Analytics handoff, actions, routes, permissions, APIs, and data
   contracts remain unchanged.
+- Owner-approved presentation exception (2026-11-10): polish the approved
+  five-reading Market Wisdom card with a deeper navy phone stage, luminous
+  cyan-gold-violet title treatment, and one signal-aware static neon rim around
+  the currently visible reading. Desktop keeps the same treatment at soft
+  strength. Lighting must remain static and readable: no flashing, pulsing,
+  transition, new control, extra reading, changed copy, changed timing, changed
+  card dimensions, route, action, permission, API, or data-contract change.
 - Owner-approved visual correction (2026-11-08): on phone, the existing
   authenticated `Menu`, `Tools`, five bottom tabs, compact identity card,
   My Pulse actions, DemandBox/Focus cards, TrustSlip tools banner, and outer

@@ -8,6 +8,7 @@ import {
   AUTHENTICATED_STATIC_NEON_STAGE,
   authenticatedStaticNeonAction,
   authenticatedStaticNeonFrame,
+  type AuthenticatedStaticNeonTone,
 } from "../design/authenticatedNeon";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
 import dashboardDemandMarket from "../assets/dashboard/dashboard-demand-market.jpg";
@@ -364,6 +365,22 @@ const DASHBOARD_PHOTO_TEXT_SCRIM =
   "linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.94) 28%, rgba(255,255,255,0.44) 42%, rgba(255,255,255,0.06) 55%, rgba(255,255,255,0) 68%)";
 const MARKET_WISDOM_ROTATION_MS = 45000;
 const MARKET_WISDOM_SIGNAL_COUNT = 5;
+
+function marketWisdomSignalNeonTone(
+  signalKey: string
+): AuthenticatedStaticNeonTone {
+  switch (signalKey) {
+    case "gsn":
+      return "cyanViolet";
+    case "guide":
+    case "capability":
+      return "goldViolet";
+    case "market":
+    case "now":
+    default:
+      return "cyanGold";
+  }
+}
 
 const PUBLIC_ROUTE_PREFIXES = [
   "guide",
@@ -11007,7 +11024,9 @@ export default function DashboardPage() {
         data-dashboard-neon-surface="market-wisdom"
         style={{
           ...pageCard(
-            "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
+            isPhone
+              ? "radial-gradient(circle at 14% 0%, rgba(31,220,255,0.22) 0%, rgba(31,220,255,0) 30%), radial-gradient(circle at 92% 14%, rgba(220,72,255,0.18) 0%, rgba(220,72,255,0) 32%), radial-gradient(circle at 52% 0%, rgba(242,207,119,0.16) 0%, rgba(242,207,119,0) 26%), linear-gradient(180deg, #08233D 0%, #061A2E 58%, #041426 100%)"
+              : "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
           ),
           gridColumn: isPhone ? "1 / -1" : undefined,
           order: 80,
@@ -11029,7 +11048,12 @@ export default function DashboardPage() {
           <div>
             <DashboardSectionLabel
               label="Your Market Wisdom"
-              style={{ color: "#0F3B74" }}
+              style={{
+                color: isPhone ? "#F4D77C" : "#0F3B74",
+                textShadow: isPhone
+                  ? "0 0 14px rgba(242,207,119,0.48), 0 0 24px rgba(31,220,255,0.18)"
+                  : "none",
+              }}
             />
           </div>
         </div>
@@ -11038,12 +11062,17 @@ export default function DashboardPage() {
           style={{
             marginTop: 10,
             ...innerCard(
-              "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
+              isPhone
+                ? "radial-gradient(circle at 12% 0%, rgba(31,220,255,0.12) 0%, rgba(31,220,255,0) 34%), radial-gradient(circle at 90% 18%, rgba(220,72,255,0.10) 0%, rgba(220,72,255,0) 34%), linear-gradient(180deg, rgba(5,31,54,0.98) 0%, rgba(3,20,38,0.99) 100%)"
+                : "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%)"
             ),
-            border: "1px solid rgba(15,59,116,0.12)",
+            border: isPhone
+              ? "1px solid rgba(91,226,255,0.34)"
+              : "1px solid rgba(15,59,116,0.12)",
             padding: 14,
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(2,12,27,0.08)",
+            boxShadow: isPhone
+              ? "inset 0 1px 0 rgba(255,255,255,0.10), 0 0 22px rgba(31,220,255,0.12), 0 16px 30px rgba(2,12,27,0.26)"
+              : "inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(2,12,27,0.08)",
           }}
         >
           <div
@@ -11057,11 +11086,14 @@ export default function DashboardPage() {
           >
             <div
               style={{
-                color: "#0B1F33",
+                color: isPhone ? "#F8FBFF" : "#0B1F33",
                 fontSize: 18,
                 fontWeight: 900,
                 lineHeight: 1.26,
                 flex: "1 1 280px",
+                textShadow: isPhone
+                  ? "0 0 12px rgba(91,226,255,0.36), 0 0 22px rgba(220,72,255,0.14)"
+                  : "none",
               }}
             >
               {activeWisdomTitle || "Your live GSN reading"}
@@ -11088,10 +11120,11 @@ export default function DashboardPage() {
               <div
                 style={{
                   ...softCard(activeMarketWisdomSignal.background),
+                  ...authenticatedStaticNeonFrame(
+                    marketWisdomSignalNeonTone(activeMarketWisdomSignal.key),
+                    isPhone ? "vivid" : "soft"
+                  ),
                   padding: "12px 14px",
-                  border: `1px solid ${activeMarketWisdomSignal.border}`,
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.82), 0 14px 28px rgba(10,24,49,0.06)",
                 }}
               >
                 <div
@@ -11125,10 +11158,13 @@ export default function DashboardPage() {
                   >
                     <div
                       style={{
-                        color: DASHBOARD_BRAND.helper,
+                        color: activeMarketWisdomSignal.accent,
                         fontSize: 11.5,
                         fontWeight: 900,
                         letterSpacing: 0.22,
+                        textShadow: isPhone
+                          ? "0 0 10px rgba(91,226,255,0.34)"
+                          : "none",
                       }}
                     >
                       {((marketWisdomSignalIndex % marketWisdomSignals.length) || 0) + 1} /{" "}

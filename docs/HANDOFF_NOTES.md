@@ -1,5 +1,21 @@
 # Active Handoff Notes
 
+## Market Wisdom static-neon presentation polish - 2026-11-10
+
+- The product owner explicitly requested a more polished neon presentation for
+  the existing five-reading Market Wisdom card.
+- The scoped implementation deepens the phone stage to navy, illuminates the
+  existing heading, and gives only the active reading a signal-aware static
+  cyan/gold/violet rim. Desktop remains softer.
+- Reading order, capability rotation, 45-second timing, copy, actions, routes,
+  dimensions, Shop Analytics, permissions, APIs, and backend data are unchanged.
+- Verification passed: authenticated static-neon presentation, Market Wisdom
+  contract, Dashboard actions, Dashboard button inventory, Dashboard phone
+  buttons, and the 326-module production frontend build.
+- No dedicated authenticated Dashboard screenshot runner exists in the repository;
+  final visual confirmation remains an actual-phone check after deployment.
+- Commit and deployment are pending.
+
 ## Market Wisdom fifth GSN capability reading - 2026-11-10
 
 - The product owner explicitly approved a fifth Market Wisdom reading:

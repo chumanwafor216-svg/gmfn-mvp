@@ -92,8 +92,14 @@ requirePattern(
 requirePattern(
   dashboardFile,
   dashboard,
-  /data-dashboard-neon-surface="market-wisdom"[\s\S]{0,900}?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold"/,
-  "Dashboard Market Wisdom may receive only its approved outer static frame."
+  /data-dashboard-neon-surface="market-wisdom"[\s\S]{0,1200}?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold"/,
+  "Dashboard Market Wisdom must keep its approved outer cyan-gold static frame."
+);
+requirePattern(
+  dashboardFile,
+  dashboard,
+  /function marketWisdomSignalNeonTone\([\s\S]*?case "gsn":[\s\S]*?"cyanViolet"[\s\S]*?case "guide":[\s\S]*?case "capability":[\s\S]*?"goldViolet"[\s\S]*?case "market":[\s\S]*?case "now":[\s\S]*?"cyanGold"[\s\S]*?data-dashboard-neon-surface="market-wisdom"[\s\S]*?authenticatedStaticNeonFrame\([\s\S]{0,120}?marketWisdomSignalNeonTone\(activeMarketWisdomSignal\.key\)[\s\S]{0,120}?isPhone \? "vivid" : "soft"/,
+  "Dashboard Market Wisdom must use one signal-aware static neon rim with vivid phone and soft desktop strength."
 );
 
 requirePattern(
