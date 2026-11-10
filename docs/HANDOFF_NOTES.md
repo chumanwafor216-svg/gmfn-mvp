@@ -10,7 +10,16 @@
   Menu shows one immediate Notifications shortcut and repeats the count on the
   existing Notifications row. No sixth bottom tab or new notification source
   was added.
-- Verification and deployment are pending.
+- Verification passed: Web Push readiness, Notifications button inventory,
+  authenticated five-tab rail, Dashboard phone buttons, and the production
+  frontend build. The broad protected-button suite still reports unrelated
+  pre-existing failures in `MyGMFNAndIPage.tsx` and `MemberActivationPage.tsx`,
+  plus sandbox-blocked visual workers; none are in this patch's touched files.
+- Deployment evidence: application commit `4276a9b0` was pushed unchanged to the
+  pilot branch and `main`. Frontend-only workflow `42879703462` completed
+  successfully on that exact commit, Render frontend deploy
+  `dep-dbpmga59fdbs73fbu5eg` reached `live`, and every backend/API deploy step was
+  correctly skipped.
 
 ## Market Wisdom neon removed - 2026-11-10
 
