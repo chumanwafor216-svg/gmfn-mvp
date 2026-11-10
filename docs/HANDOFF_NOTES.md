@@ -14,7 +14,9 @@
   buttons, and the 326-module production frontend build.
 - No dedicated authenticated Dashboard screenshot runner exists in the repository;
   final visual confirmation remains an actual-phone check after deployment.
-- Commit and deployment are pending.
+- Published in commit `bbe1605f` to the pilot branch and `main`. GitHub
+  workflow `42870631199` completed successfully and verified frontend Render
+  deploy `dep-dbplnd1srm7s73ar0ti0`; no API deploy was requested.
 
 ## Market Wisdom fifth GSN capability reading - 2026-11-10
 
