@@ -335,8 +335,8 @@ assertContains(
 );
 
 assertContains(
-  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl/,
-  "GSN Identity Card must keep separate live-card and verification targets: QR/live card to /card, copy verify link to /lite."
+  /identityCardLivePath[\s\S]*?gmfnIdValue[\s\S]*?`\/id\/\$\{encodeURIComponent\(gmfnIdValue\)\}`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl/,
+  "GSN Identity Card must keep a stable GSN-ID live target while TrustSlip verification remains a separate optional /lite target."
 );
 
 assertContains(
@@ -360,8 +360,8 @@ assertContains(
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?showNotice\(\s*"error",\s*trustSlipPendingDetail\s*\)[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
-  "GSN Identity Card must share the visible card as a PNG when the phone browser supports file sharing, while keeping the phone/TrustSlip gate."
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?GSN ID is not ready yet[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
+  "GSN Identity Card must share the visible card as a PNG whenever the stable GSN ID exists, without making TrustSlip currentness a share gate."
 );
 
 assertContains(

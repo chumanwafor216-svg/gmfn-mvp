@@ -147,6 +147,9 @@ type TrustSlipVerifyPublicPaperProps = {
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
   publicOpportunityShopPath?: string;
+  publicIdentityPath?: string;
+  publicIdentityUrl?: string;
+  publicProfilePath?: string;
   publicProfessionalProfileEnabled?: boolean;
   professionalHeadline?: string;
   professionalSummary?: string;
@@ -1803,6 +1806,9 @@ export default function TrustSlipVerifyPublicPaper({
   onRequestCommunityPulse,
   publicActions,
   publicOpportunityShopPath = "",
+  publicIdentityPath = "",
+  publicIdentityUrl = "",
+  publicProfilePath = "",
   publicProfessionalProfileEnabled = false,
   professionalHeadline = "",
   professionalSummary = "",
@@ -2650,9 +2656,8 @@ export default function TrustSlipVerifyPublicPaper({
     "Future behaviour or guaranteed performance",
   ];
   if (isProfile) {
-    const cardPath = resolvedCode
-      ? `/t/${encodeURIComponent(resolvedCode)}/card`
-      : verifyPath || "/verify/trust-slip";
+    const cardPath = publicIdentityPath ||
+      (resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}/card` : verifyPath || "/verify/trust-slip");
     if (!publicProfessionalProfileEnabled || !professionalHeadline) {
       return (
         <section
@@ -2784,10 +2789,12 @@ export default function TrustSlipVerifyPublicPaper({
     );
   }
   if (isCard) {
-    const cardSerial = resolvedCode
-      ? `GSN-ID-${resolvedCode.slice(0, 4)}-${resolvedCode.slice(-4)}`
+    const normalizedGsnId = safeText(gsnId).replace(/[^A-Za-z0-9]/g, "");
+    const cardSerial = normalizedGsnId
+      ? `GSN-ID-${normalizedGsnId.slice(-8)}`
       : "GSN-ID-PUBLIC";
-    const publicVerifyUrl = verifyUrl ? `${verifyUrl.replace(/\/+$/, "")}/card` : "";
+    const publicVerifyUrl = publicIdentityUrl ||
+      (verifyUrl ? `${verifyUrl.replace(/\/+$/, "")}/card` : "");
     const publicVerifyDisplay = publicVerifyUrl
       ? publicVerifyUrl.replace(/^https?:\/\//i, "")
       : verifyPath || "Live card link not available";
@@ -2838,12 +2845,12 @@ export default function TrustSlipVerifyPublicPaper({
             },
           ]
         : []),
-      ...(resolvedCode && publicProfessionalProfileEnabled && professionalHeadline
+      ...(publicProfilePath && publicProfessionalProfileEnabled && professionalHeadline
         ? [
             {
               key: "public-profile",
               label: "View public profile",
-              to: `/t/${encodeURIComponent(resolvedCode)}/profile`,
+              to: publicProfilePath,
               debugId: "trust-slip-verify.card.opportunity.public-profile",
               icon: "identity-card" as const,
             },

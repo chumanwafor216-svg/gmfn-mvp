@@ -2009,6 +2009,7 @@ export default function IdentityIntegrityPage() {
         selectedClanId,
         "identity-integrity.route.identity-risk"
       ),
+      publicProfileSettings: "/app/my-gmfn-and-i?tab=settings#public-professional-profile",
     }),
     [selectedClanId]
   );
@@ -2690,8 +2691,8 @@ export default function IdentityIntegrityPage() {
     : trustSlipLifecycleStatus === "membership_inactive"
       ? "GSN ID RETAINED  •  MEMBERSHIP NOT CURRENT"
       : `GSN RECORD  •  ${identityCardStatusText.toUpperCase()}`;
-  const identityCardLivePath = trustSlipCode
-    ? `/t/${encodeURIComponent(trustSlipCode)}/card`
+  const identityCardLivePath = gmfnIdValue
+    ? `/id/${encodeURIComponent(gmfnIdValue)}`
     : "";
   const trustSlipVerifyPath = trustSlipCode
     ? `/t/${encodeURIComponent(trustSlipCode)}/lite`
@@ -3141,20 +3142,16 @@ export default function IdentityIntegrityPage() {
   }
 
   function handleGsnIdentityCardPrimaryAction() {
-    if (identityCardValid) {
+    if (identityCardLiveUrl) {
       void shareGsnIdentityCard();
       return;
     }
 
-    showNotice("error", trustSlipPendingDetail);
-    navigateWithOrigin(navigate, routes.trustSlip, location);
+    showNotice("error", "GSN ID is not ready yet.");
   }
   async function shareGsnIdentityCard() {
-    if (!identityCardValid) {
-      showNotice(
-        "error",
-        trustSlipPendingDetail
-      );
+    if (!identityCardLiveUrl) {
+      showNotice("error", "GSN ID is not ready yet.");
       return;
     }
 
@@ -4202,7 +4199,7 @@ export default function IdentityIntegrityPage() {
               fullWidth
               debugId="identity-integrity.gsn-card.share"
             >
-              {identityCardValid ? "Share card" : "Finish card"}
+              {identityCardLiveUrl ? "Share card" : "ID pending"}
             </PrimaryButton>
             <SecondaryButton
               onClick={() => void refreshGsnIdentityCard()}
@@ -4225,9 +4222,18 @@ export default function IdentityIntegrityPage() {
               onClick={() => void copyTrustSlipVerifyLink()}
               stableHeight={50}
               fullWidth
+              disabled={!trustSlipVerifyUrl}
               debugId="identity-integrity.gsn-card.copy-verify-link"
             >
-              Copy verification link
+              {trustSlipVerifyUrl ? "Copy verification link" : "TrustSlip pending"}
+            </SecondaryButton>
+            <SecondaryButton
+              onClick={() => navigate(routes.publicProfileSettings)}
+              stableHeight={50}
+              fullWidth
+              debugId="identity-integrity.gsn-card.public-profile-settings"
+            >
+              Public profile settings
             </SecondaryButton>
           </div>
         ) : null}

@@ -1,5 +1,31 @@
 # Active Handoff Notes
 
+## Stable GSN ID and profile-route correction - 2026-11-10
+
+- Phone review exposed a wrong dependency in the first opportunity package:
+  the shareable GSN ID QR, Share action and public profile route all depended on
+  a current TrustSlip code. Members with `TrustSlip pending` therefore could
+  not use the identity card or find the profile angle.
+- The GSN ID is now the stable public anchor at `/id/:gmfnId`. The card QR and
+  owner Share action use that route whenever a GSN ID exists; TrustSlip status
+  remains visible but no longer blocks sharing.
+- `/id/:gmfnId/profile` is the stable minimal professional-profile route. It
+  reads only the public ID face and explicitly opted-in headline/summary. The
+  new unauthenticated identity contract deliberately excludes phone/email,
+  verification indicators, community names/counts/roles, exact location,
+  private evidence and Shop entitlement.
+- TrustSlip remains a separate conditional opportunity. When a public code
+  exists the scanned card offers `Check this TrustSlip`; while pending, the ID
+  still works and makes no verification claim. An already-public Shop is found
+  through the existing privacy-controlled public Shop endpoint, not exposed by
+  the new identity contract.
+- The covered `GSN ID Card / Tap to use` actions now include `Public profile
+  settings`, which opens the existing Profile settings editor directly. Public
+  publishing remains off by default and requires a professional headline.
+- Local verification passed: nine focused backend identity/profile privacy
+  tests, all four affected frontend source-contract audits, `git diff --check`,
+  and the 325-module production build.
+
 ## GSN ID opportunity boundary correction - 2026-11-10
 
 - Phone review proved that the new authenticated GSN ID Opportunity Gateway was
@@ -7,13 +33,13 @@
   already belong to the signed-in shell and made the shareable ID page unclear.
 - The authenticated card-only route now returns to one job: display and share
   the GSN ID card. The duplicate owner gateway is removed completely.
-- A scanned `/t/:code/card` now has a bounded three-destination contract:
+- Legacy scanned `/t/:code/card` links retain a bounded three-destination contract:
   current TrustSlip verification and its privacy-preserving community evidence,
   an explicitly opted-in minimal public professional profile, and `Shop &
   verification` only when current merchant verification and the public Shop
   face both pass. The label deliberately avoids claiming GSN guarantees the
   shop merely because the verification service is active.
-- The new `/t/:code/profile` variant shows only public name/photo, GSN ID,
+- The legacy `/t/:code/profile` variant shows only public name/photo, GSN ID,
   professional headline, short summary and aggregate role/community footprint.
   Phone, email, exact location, named communities, private Trust Passport
   evidence and unpublished profile fields stay hidden. Direct visits fail

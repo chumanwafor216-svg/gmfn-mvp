@@ -1835,20 +1835,25 @@ Must show:
   evidence, and next safe reader action
 
 Rules:
-- The public `/t/:code/card` route may provide only three identity-owned next
-  steps: check the current TrustSlip (including scoped community-confirmation
-  evidence without exposing private responders or named wider communities),
-  open the holder's explicitly published minimal professional profile, and open
-  a public Shop with its verification path only while current merchant
-  verification is active. It must not
+- The stable shareable GSN ID route is `/id/:gmfnId`; it must remain available
+  when TrustSlip is pending, expired, unavailable, or later reissued. The card
+  QR and Share action must not use a TrustSlip code as the identity route key.
+- The stable card may provide only three identity-owned next steps: check a
+  TrustSlip when a public code exists (including its privacy-preserving scoped
+  community-confirmation evidence), open the holder's explicitly published
+  minimal professional profile, and open an already-public Shop through the
+  existing public Shop privacy decision. It must not
   expose Shop Control, Marketplace, Demand Box, My Communities, or other
   authenticated account navigation.
-- `/t/:code/profile` is the minimal public professional-profile variant. It may
-  show the holder's public name/photo, GSN ID, opted-in professional headline
-  and short summary, plus aggregate role/community footprint. It must not show
-  phone, email, exact location, named communities, private Trust Passport
-  evidence, or unpublished fields. Direct visits fail closed when the holder
-  has not opted in.
+- `/id/:gmfnId/profile` is the stable minimal public professional-profile
+  variant. It may show only the holder's public name/photo, GSN ID, opted-in
+  professional headline and short summary. It must not show phone, email,
+  verification indicators, exact location, community names/counts/roles,
+  private Trust Passport evidence, Shop entitlement, or unpublished fields.
+  Direct visits fail closed when the holder has not opted in.
+- Existing `/t/:code/card` and `/t/:code/profile` links remain valid legacy
+  aliases, but newly generated QR/share/profile links must use the stable GSN ID
+  routes.
 - Public professional profile publishing is off by default and is controlled
   from the authenticated Profile settings surface. A headline is required
   before opt-in can be enabled.

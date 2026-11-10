@@ -211,13 +211,13 @@ assertContains(
 );
 assertContains(
   "app",
-  /<Route path="\/t\/:code\/card" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/trust-slips\/verify\/:code\/card" element=\{<TrustSlipVerifyPage \/>\} \/>/,
-  "The public route table must include a card-only TrustSlip identity route for live QR checks."
+  /<Route path="\/id\/:gmfnId" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/id\/:gmfnId\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/t\/:code\/card" element=\{<TrustSlipVerifyPage \/>\} \/>/,
+  "The public route table must include stable GSN ID and profile routes before the legacy TrustSlip-card route."
 );
 
 assertContains(
   "routePage",
-  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?const isProfileRoute =[\s\S]*?endsWith\("\/profile"\)[\s\S]*?isCardRoute \? "card" : isProfileRoute \? "profile" : isLiteRoute \? "lite" : "full"[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isProfileRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isCardRoute =[\s\S]*?requestedGsnId[\s\S]*?endsWith\("\/card"\)[\s\S]*?const isProfileRoute =[\s\S]*?endsWith\("\/profile"\)[\s\S]*?isCardRoute \? "card" : isProfileRoute \? "profile" : isLiteRoute \? "lite" : "full"[\s\S]*?noPublicCodeSupplied \|\| publicVerifyEndpointErrorCopy \|\| showRecipientEnvelope \|\| isLiteRoute \|\| isCardRoute \|\| isProfileRoute \|\| isCompact \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The TrustSlip verify page must render /card as a focused card-only public view without the extra boundary support section."
 );
 
@@ -235,8 +235,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const publicVerifyUrl =[\s\S]*?\/card` : "";[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Live ID card/,
-  "The card-only public identity surface must show a live-card QR/link that opens this same improved card route."
+  /const publicVerifyUrl = publicIdentityUrl \|\|[\s\S]*?\/card` : ""\);[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Live ID card/,
+  "The card-only public identity surface must prefer the stable GSN ID URL for its live-card QR."
 );
 assertContains(
   "publicPaper",

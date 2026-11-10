@@ -1418,6 +1418,61 @@ def ping() -> Dict[str, Any]:
     return {"ok": True, "service": "trust-slips"}
 
 
+@router.get("/public-identity/{gmfn_id}")
+def get_public_identity_by_gmfn_id(
+    gmfn_id: str,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    for header_name, header_value in _no_store_headers().items():
+        response.headers[header_name] = header_value
+    _throttle_public(request, "public_identity_by_gmfn_id")
+
+    public_id = _safe_str(gmfn_id)
+    holder = db.query(User).filter(User.gmfn_id == public_id).first()
+    if holder is None or not public_id:
+        raise HTTPException(status_code=404, detail="GSN ID not found")
+
+    slip = get_current_trust_slip_for_user(db, user_id=int(holder.id))
+    profile_enabled = bool(
+        getattr(holder, "public_professional_profile_enabled", False)
+        and _safe_str(getattr(holder, "professional_headline", None))
+    )
+
+    return {
+        "code": _safe_str(getattr(slip, "code", None)) or None,
+        "holder_name": _public_holder_name(holder),
+        "display_name": _public_holder_name(holder),
+        "gmfn_id": public_id,
+        "holder_gmfn_id": public_id,
+        "profile_image_url": getattr(holder, "profile_image_url", None),
+        "public_professional_profile_enabled": profile_enabled,
+        "professional_headline": (
+            _safe_str(getattr(holder, "professional_headline", None)) or None
+            if profile_enabled
+            else None
+        ),
+        "professional_summary": (
+            _safe_str(getattr(holder, "professional_summary", None)) or None
+            if profile_enabled
+            else None
+        ),
+        "status": getattr(slip, "status", None) if slip is not None else "pending",
+        "verification_status": "available" if slip is not None else "pending",
+        "is_current": bool(getattr(slip, "is_current", False)) if slip is not None else False,
+        "verification_note": (
+            "Open the linked TrustSlip to check its current public status."
+            if slip is not None
+            else "This GSN ID remains shareable while TrustSlip verification is pending."
+        ),
+        "disclaimer": (
+            "Public GSN identity only. Phone, email, named communities, exact location, "
+            "private evidence, and verification signals are not disclosed here."
+        ),
+    }
+
+
 @router.get("/me")
 def get_my_trust_slip(
     db: Session = Depends(get_db),

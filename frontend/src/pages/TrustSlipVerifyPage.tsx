@@ -16,7 +16,7 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicShopPath } from "../lib/publicLinks";
+import { canonicalPublicFrontendUrl, publicShopPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
@@ -290,7 +290,7 @@ function verifyEndpointErrorCopy(error: TrustSlipVerifyEndpointError): {
   };
 }
 export default function TrustSlipVerifyPage() {
-  const params = useParams<{ code?: string; shareToken?: string }>();
+  const params = useParams<{ code?: string; shareToken?: string; gmfnId?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -500,8 +500,13 @@ export default function TrustSlipVerifyPage() {
   const requestedCode = useMemo(() => {
     return isShareInvitationRoute ? "" : firstTruthy(params.code, queryCode);
   }, [isShareInvitationRoute, params.code, queryCode]);
+  const requestedGsnId = useMemo(() => firstTruthy(params.gmfnId), [params.gmfnId]);
   const verifyContextKey = `${isAppRoute ? "app" : "public"}:${selectedClanId || 0}:${
-    requestedShareToken ? `share:${requestedShareToken}` : requestedCode || "auto"
+    requestedShareToken
+      ? `share:${requestedShareToken}`
+      : requestedGsnId
+        ? `identity:${requestedGsnId}`
+        : requestedCode || "auto"
   }:${publicDecisionPackContextKey}`;
   verifyContextRef.current = verifyContextKey;
   const isLiteRoute = useMemo(() => {
@@ -514,10 +519,11 @@ export default function TrustSlipVerifyPage() {
   const isCardRoute = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return (
+      (Boolean(requestedGsnId) && !location.pathname.replace(/\/+$/, "").endsWith("/profile")) ||
       location.pathname.replace(/\/+$/, "").endsWith("/card") ||
       safeStr(params.get("view")).toLowerCase() === "card"
     );
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, requestedGsnId]);
   const isProfileRoute = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return (
@@ -529,7 +535,8 @@ export default function TrustSlipVerifyPage() {
   const isPublicReceiverDelivery =
     !isCardRoute && !isProfileRoute && Boolean(requestedCode || requestedShareToken);
 
-  const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;
+  const noPublicCodeSupplied =
+    !isAppRoute && !requestedCode && !requestedShareToken && !requestedGsnId;
 
   useEffect(() => {
     setRecipientEnvelopeOpened(false);
@@ -598,7 +605,7 @@ export default function TrustSlipVerifyPage() {
       );
     };
 
-    if (requestedCode || requestedShareToken) {
+    if (requestedCode || requestedShareToken || requestedGsnId) {
       void import("./trustSlipVerify/TrustSlipVerifyPublicPaper");
     }
 
@@ -620,6 +627,15 @@ export default function TrustSlipVerifyPage() {
         let codeToUse = requestedCode;
         let appContext: [any, any, any] | null = null;
         let verifyResult: any = null;
+
+        if (requestedGsnId) {
+          verifyResult = await api.getPublicIdentityByGmfnId(requestedGsnId);
+          codeToUse = firstTruthy(
+            verifyResult?.code,
+            verifyResult?.trust_slip_code,
+            verifyResult?.verification_code
+          );
+        }
 
         if (requestedShareToken) {
           verifyResult = await (api as any).getTrustSlipShareInvitation(requestedShareToken, "minimal");
@@ -662,7 +678,7 @@ export default function TrustSlipVerifyPage() {
         setResolvedCode(codeToUse);
         resolvedCodeRef.current = codeToUse;
 
-        if (!codeToUse) {
+        if (!codeToUse && !verifyResult) {
           setRecord(null);
           setLoadError(requestedShareToken ? "This TrustSlip share invitation did not resolve to a readable TrustSlip." : "No TrustSlip code was supplied.");
           return;
@@ -771,6 +787,7 @@ export default function TrustSlipVerifyPage() {
   }, [
     requestedCode,
     requestedShareToken,
+    requestedGsnId,
     isAppRoute,
     selectedClanId,
     verifyContextKey,
@@ -795,6 +812,13 @@ export default function TrustSlipVerifyPage() {
     return firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null);
   }, [record, me, isAppRoute]);
   const gmfnId = gmfnIdValue || "Not issued yet";
+  const publicIdentityPath = gmfnIdValue
+    ? `/id/${encodeURIComponent(gmfnIdValue)}`
+    : "";
+  const publicProfilePath = publicIdentityPath ? `${publicIdentityPath}/profile` : "";
+  const publicIdentityUrl = publicIdentityPath
+    ? canonicalPublicFrontendUrl(publicIdentityPath)
+    : "";
 
   useEffect(() => {
     let active = true;
@@ -802,7 +826,7 @@ export default function TrustSlipVerifyPage() {
     if (
       !isCardRoute ||
       !gmfnIdValue ||
-      record?.merchant_verify_active !== true
+      (!requestedGsnId && record?.merchant_verify_active !== true)
     ) {
       setPublicOpportunityShopPath("");
       return () => {
@@ -829,7 +853,7 @@ export default function TrustSlipVerifyPage() {
     return () => {
       active = false;
     };
-  }, [gmfnIdValue, isCardRoute, record?.merchant_verify_active]);
+  }, [gmfnIdValue, isCardRoute, record?.merchant_verify_active, requestedGsnId]);
 
   const holderName = useMemo(() => {
     const candidate = firstTruthy(
@@ -1766,6 +1790,9 @@ export default function TrustSlipVerifyPage() {
             }}
             publicActions={publicTrustSlipActions}
             publicOpportunityShopPath={publicOpportunityShopPath}
+            publicIdentityPath={publicIdentityPath}
+            publicIdentityUrl={publicIdentityUrl}
+            publicProfilePath={publicProfilePath}
             publicProfessionalProfileEnabled={
               record?.public_professional_profile_enabled === true
             }

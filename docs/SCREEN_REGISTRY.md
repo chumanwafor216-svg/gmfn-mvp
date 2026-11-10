@@ -33,8 +33,9 @@ No bottom navigation on these screens.
 8. CommunityNoticePage
 9. CommunityAttendancePage
 10. CommunityResponsePage
-11. TrustSlipVerifyPage card-only route variant (`/t/:code/card`)
-12. TrustSlipVerifyPage minimal public-professional-profile route variant (`/t/:code/profile`; explicit member opt-in; no phone, email, named-community, exact-location, or private-evidence disclosure)
+11. TrustSlipVerifyPage stable GSN ID card variant (`/id/:gmfnId`; remains available while TrustSlip is pending)
+12. TrustSlipVerifyPage stable minimal public-professional-profile variant (`/id/:gmfnId/profile`; explicit member opt-in; no phone, email, named-community, community-count/role, exact-location, verification-signal, or private-evidence disclosure)
+13. TrustSlipVerifyPage legacy TrustSlip-keyed card/profile variants (`/t/:code/card`, `/t/:code/profile`; retained for existing shared links)
 
 ## Authenticated Screens
 

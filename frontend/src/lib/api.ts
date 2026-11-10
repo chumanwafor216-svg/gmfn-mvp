@@ -3310,6 +3310,20 @@ export async function verifyTrustSlip(
   );
 }
 
+export async function getPublicIdentityByGmfnId(gmfnId: string): Promise<any> {
+  return httpJson(
+    `/trust-slips/public-identity/${encodeURIComponent(String(gmfnId))}`,
+    "GET",
+    undefined,
+    {
+      includeAuth: false,
+      header_clan_id: null,
+      quiet: true,
+      timeoutMs: TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS,
+    }
+  );
+}
+
 export async function getTrustSlipShareBundle(
   code: string,
   level?: "minimal" | "standard" | "detailed"

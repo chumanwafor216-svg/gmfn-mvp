@@ -45,18 +45,18 @@ forbidPattern(
 );
 requirePattern(
   "app",
-  /<Route path="\/t\/:code\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/trust-slips\/verify\/:code\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>/,
-  "The public route table must provide a focused profile variant for shared GSN IDs."
+  /<Route path="\/id\/:gmfnId" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/id\/:gmfnId\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>/,
+  "The public route table must provide stable card and profile variants that do not depend on TrustSlip issuance."
 );
 requirePattern(
   "profile",
-  /data-my-gsn-public-professional-profile="opt-in"[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?Show this profile from my shared GSN ID[\s\S]*?my-gmfn\.public-professional-profile\.save/,
+  /id="public-professional-profile"[\s\S]*?data-my-gsn-public-professional-profile="opt-in"[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?Show this profile from my shared GSN ID[\s\S]*?my-gmfn\.public-professional-profile\.save/,
   "Public professional details must be explicit opt-in account data."
 );
 requirePattern(
   "verify",
-  /record\?\.merchant_verify_active !== true[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnIdValue,[\s\S]*?response\?\.is_public_shop_face === true[\s\S]*?publicShopPath\(gmfnIdValue\)/,
-  "The scanner Shop route must require current merchant verification and the backend-confirmed public Shop response."
+  /\(!requestedGsnId && record\?\.merchant_verify_active !== true\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnIdValue,[\s\S]*?response\?\.is_public_shop_face === true[\s\S]*?publicShopPath\(gmfnIdValue\)/,
+  "The scanner Shop route must use the backend privacy-controlled public Shop response; legacy TrustSlip cards keep their merchant-verification gate."
 );
 requirePattern(
   "publicPaper",

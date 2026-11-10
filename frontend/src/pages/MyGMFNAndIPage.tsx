@@ -1591,6 +1591,24 @@ export default function MyGMFNAndIPage() {
   }, [settings]);
 
   useEffect(() => {
+    if (
+      loading ||
+      activeTab !== "settings" ||
+      location.hash !== "#public-professional-profile"
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById("public-professional-profile")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, loading, location.hash]);
+
+  useEffect(() => {
     if (!notice) return;
 
     const timer = window.setTimeout(() => {
@@ -4856,7 +4874,11 @@ export default function MyGMFNAndIPage() {
                   </div>
                 </div>
 
-                <div data-my-gsn-public-professional-profile="opt-in" style={innerCard()}>
+                <div
+                  id="public-professional-profile"
+                  data-my-gsn-public-professional-profile="opt-in"
+                  style={innerCard()}
+                >
                   <div style={sectionLabel()}>Public professional profile</div>
                   <div style={{ marginTop: 8, ...helperText() }}>
                     Add only the short professional details you want people opening your shared GSN ID to see. Your phone, email, named communities, and private evidence stay hidden.

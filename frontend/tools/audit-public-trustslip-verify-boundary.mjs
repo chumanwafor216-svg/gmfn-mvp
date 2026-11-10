@@ -112,7 +112,7 @@ assertContains(
 
 assertContains(
   "verify",
-  /const noPublicCodeSupplied = !isAppRoute && !requestedCode && !requestedShareToken;/,
+  /const noPublicCodeSupplied =[\s\S]*?!isAppRoute && !requestedCode && !requestedShareToken && !requestedGsnId;/,
   "Public no-code state must stay public-only and not fall through to signed-in lookup behavior."
 );
 assertContains(
@@ -732,7 +732,7 @@ assertContains(
 
 assertContains(
   "verify",
-  /const appContextPromise = isAppRoute[\s\S]*?getMyTrustSlip[\s\S]*?if \(requestedCode \|\| requestedShareToken\) \{[\s\S]*?void import\("\.\/trustSlipVerify\/TrustSlipVerifyPublicPaper"\)[\s\S]*?let codeToUse = requestedCode;[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?\} else if \(isAppRoute\) \{[\s\S]*?appContextPromise\.then[\s\S]*?verifyResult = await callFirstAvailable/,
+  /const appContextPromise = isAppRoute[\s\S]*?getMyTrustSlip[\s\S]*?if \(requestedCode \|\| requestedShareToken \|\| requestedGsnId\) \{[\s\S]*?void import\("\.\/trustSlipVerify\/TrustSlipVerifyPublicPaper"\)[\s\S]*?let codeToUse = requestedCode;[\s\S]*?if \(requestedGsnId\)[\s\S]*?getPublicIdentityByGmfnId[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?\} else if \(isAppRoute\) \{[\s\S]*?appContextPromise\.then[\s\S]*?if \(!verifyResult\)[\s\S]*?verifyResult = await callFirstAvailable/,
   "TrustSlip Verify must start public verification from a supplied code without waiting for signed-in holder context; private app context may hydrate afterward."
 );
 assertContains(
