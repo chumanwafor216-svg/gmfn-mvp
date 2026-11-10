@@ -42,6 +42,7 @@ import {
 } from "../lib/guidance";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
+  GMFN_CAPABILITIES,
   GMFN_CAPABILITY_COUNT,
   getFeaturedGmfnCapability,
   getGmfnCapability,
@@ -362,6 +363,7 @@ const DASHBOARD_AVATAR_MAX_DIMENSION = 1280;
 const DASHBOARD_PHOTO_TEXT_SCRIM =
   "linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.94) 28%, rgba(255,255,255,0.44) 42%, rgba(255,255,255,0.06) 55%, rgba(255,255,255,0) 68%)";
 const MARKET_WISDOM_ROTATION_MS = 45000;
+const MARKET_WISDOM_SIGNAL_COUNT = 5;
 
 const PUBLIC_ROUTE_PREFIXES = [
   "guide",
@@ -5375,6 +5377,38 @@ export default function DashboardPage() {
     urgentDemandItems.length,
   ]);
 
+  const marketWisdomExplainedCapability = useMemo(() => {
+    const completedCycles = Math.floor(
+      marketWisdomIndex / MARKET_WISDOM_SIGNAL_COUNT
+    );
+
+    return GMFN_CAPABILITIES[
+      completedCycles % GMFN_CAPABILITIES.length
+    ];
+  }, [marketWisdomIndex]);
+
+  const marketWisdomCapabilityLine = useMemo(() => {
+    const whatItIs = safeStr(marketWisdomExplainedCapability?.whatItIs);
+    const whyItMatters = safeStr(
+      marketWisdomExplainedCapability?.whyItMatters
+    );
+
+    if (!whatItIs && !whyItMatters) {
+      return (
+        "GSN has " +
+        GMFN_CAPABILITY_COUNT +
+        " core capabilities. This reading explains one at a time."
+      );
+    }
+
+    return [
+      whatItIs,
+      whyItMatters ? "Why this helps: " + whyItMatters : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [marketWisdomExplainedCapability]);
+
   const activeWisdomCategoryLabel = useMemo(() => {
     switch (activeWisdomCategory) {
       case "trade":
@@ -5485,10 +5519,10 @@ export default function DashboardPage() {
     );
 
     if (activeWisdomGuideCapability) {
-      return `${activeWisdomGuideCapability.title}: ${guideLine}`;
+      return guideLine;
     }
 
-    return `My GSN and I keeps the ${GMFN_CAPABILITY_COUNT} core capabilities visible behind this reading.`;
+    return "Use this guide to steady the next decision before you act.";
   }, [
     activeWisdomCategory,
     activeWisdomGuideCapability,
@@ -5645,8 +5679,8 @@ export default function DashboardPage() {
       {
         key: "guide",
         label: "Guide",
-        title: activeWisdomGuideCapability?.title || "My GSN and I",
-        detail: "The guide connects this reading to one GSN capability.",
+        title: "Decision guide",
+        detail: "The guide turns this reading into one careful decision rule.",
         text: marketWisdomGuideLine,
         accent: DASHBOARD_BRAND.goldText,
         border: "rgba(184,137,45,0.18)",
@@ -5663,12 +5697,33 @@ export default function DashboardPage() {
         border: marketWisdomAttentionState.border,
         background: marketWisdomAttentionState.background,
       },
+      {
+        key: "capability",
+        label: "GSN capability",
+        title:
+          marketWisdomExplainedCapability?.title ||
+          "What GSN can help you do",
+        detail:
+          "Capability " +
+          (marketWisdomExplainedCapability?.id || 1) +
+          " of " +
+          GMFN_CAPABILITY_COUNT +
+          " - one explained at a time.",
+        text: marketWisdomCapabilityLine,
+        accent: "#6D28D9",
+        border: "rgba(109,40,217,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(237,233,254,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      },
     ],
     [
       activeWisdomGuideCapability?.title,
       activeWisdomCategoryLabel,
       activeWisdomTitle,
       marketWisdomAttentionState,
+      marketWisdomCapabilityLine,
+      marketWisdomExplainedCapability?.id,
+      marketWisdomExplainedCapability?.title,
       marketWisdomGuideLine,
       marketWisdomNowLine,
       signalSupport,

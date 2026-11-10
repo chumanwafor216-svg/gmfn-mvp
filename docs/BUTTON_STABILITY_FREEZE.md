@@ -44,8 +44,8 @@ buttons, and type in the fields without being thrown elsewhere.
 The protected freeze band covers:
 
 - Dashboard route action contracts and phone button geometry.
-- Dashboard Market Wisdom source contract, smart weighting, four-signal display,
-  and frozen action scope.
+- Dashboard Market Wisdom source contract, smart weighting, approved five-signal
+  display with one-at-a-time GSN capability explanation, and frozen action scope.
 - Community Home route action contracts, compact rows, app-shell tap rescue, and
   phone button geometry.
 - Shop Control route action contracts, native field stability, and focused-task

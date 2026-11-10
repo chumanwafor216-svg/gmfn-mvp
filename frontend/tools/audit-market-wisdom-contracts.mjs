@@ -143,8 +143,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /const marketWisdomSignals = useMemo\([\s\S]*?key: "market"[\s\S]*?detail: `\$\{activeWisdomCategoryLabel\} context is shaping this reading\.`[\s\S]*?key: "gsn"[\s\S]*?detail: "GSN translates the reading into a safer next decision\."[\s\S]*?key: "guide"[\s\S]*?detail: "The guide connects this reading to one GSN capability\."[\s\S]*?key: "now"[\s\S]*?detail: marketWisdomAttentionState\.detail[\s\S]*?const activeMarketWisdomSignal/,
-  "Dashboard Market Wisdom must keep the four-signal presentation with signal-specific context: Market, GSN, Guide, and Now."
+  /const MARKET_WISDOM_SIGNAL_COUNT = 5;[\s\S]*?const marketWisdomExplainedCapability = useMemo\(\(\) => \{[\s\S]*?Math\.floor\([\s\S]*?marketWisdomIndex \/ MARKET_WISDOM_SIGNAL_COUNT[\s\S]*?GMFN_CAPABILITIES\[[\s\S]*?completedCycles % GMFN_CAPABILITIES\.length[\s\S]*?const marketWisdomCapabilityLine = useMemo[\s\S]*?whatItIs[\s\S]*?Why this helps:[\s\S]*?const marketWisdomSignals = useMemo\([\s\S]*?key: "market"[\s\S]*?key: "gsn"[\s\S]*?key: "guide"[\s\S]*?title: "Decision guide"[\s\S]*?key: "now"[\s\S]*?key: "capability"[\s\S]*?label: "GSN capability"[\s\S]*?text: marketWisdomCapabilityLine[\s\S]*?const activeMarketWisdomSignal/,
+  "Dashboard Market Wisdom must keep the approved five-signal order and explain one canonical GSN capability per completed rotation."
 );
 
 assertContains(
@@ -199,5 +199,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Market Wisdom contract audit passed: backend source, bounded commerce evidence, smart weighting, four-signal display, and approved action scope are caged."
+  "Market Wisdom contract audit passed: backend source, bounded commerce evidence, smart weighting, five-signal capability display, and approved action scope are caged."
 );

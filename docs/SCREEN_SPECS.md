@@ -222,6 +222,15 @@ Frozen:
 - Market Wisdom presentation and interaction model
 
 Rules:
+- Owner-approved exception (2026-11-10): Market Wisdom uses the five-reading
+  sequence `Market -> GSN -> Guide -> Now -> GSN capability`. The fifth
+  reading selects one entry from the canonical GSN capability bank, explains
+  what it is and why it matters, and advances only after a complete five-step
+  rotation. `Guide` remains the decision rule so the two readings do not
+  repeat each other. This supersedes only the earlier four-reading and
+  no-fifth-reading restrictions. The 45-second timing, card geometry,
+  Shop Analytics handoff, actions, routes, permissions, APIs, and data
+  contracts remain unchanged.
 - Owner-approved visual correction (2026-11-08): on phone, the existing
   authenticated `Menu`, `Tools`, five bottom tabs, compact identity card,
   My Pulse actions, DemandBox/Focus cards, TrustSlip tools banner, and outer

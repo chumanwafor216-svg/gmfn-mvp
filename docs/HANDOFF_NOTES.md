@@ -1,5 +1,24 @@
 # Active Handoff Notes
 
+## Market Wisdom fifth GSN capability reading - 2026-11-10
+
+- The product owner explicitly approved a fifth Market Wisdom reading:
+  `Market -> GSN -> Guide -> Now -> GSN capability`.
+- The capability reading rotates through the canonical 12-capability GSN bank,
+  showing one capability at a time with its `what it is` and `why it matters`
+  explanation. It advances once per completed five-reading cycle.
+- `Guide` now carries only the decision rule, preventing it from repeating the
+  new capability explanation. No control, action, route, fetch, permission,
+  backend contract, card geometry, or 45-second interval changed.
+- Verification passed: Market Wisdom contract, Dashboard actions, Dashboard
+  button inventory, Dashboard phone buttons, and the 326-module production
+  frontend build.
+- The protected freeze suite reached and passed the updated Market Wisdom guard,
+  then remained red on four unrelated existing checks: My GSN and I smooth
+  scroll, Dashboard QR graphics detection, Shop Control mobile visual counts,
+  and Member Activation missing-identifier copy.
+- Commit and deployment verification are pending.
+
 ## Public GSN ID evidence-truth correction - 2026-11-10
 
 - The stable public identity route `GET /trust-slips/public-identity/{gmfn_id}`
