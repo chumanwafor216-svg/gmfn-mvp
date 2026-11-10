@@ -97,6 +97,16 @@ Current explicit frozen paths:
     or introduce route-local tab variants. This is caged by
     `frontend/tools/audit-authenticated-mobile-tab-rail.mjs` and the existing
     shell, tap-stability, route-ownership and entry-flow audits.
+  - Owner-approved 2026-11-10 notification-wayfinding exception: the existing
+    phone `Menu` control may mirror the backend unread-notification count already
+    used by the launcher badge. When the count is positive, the open drawer may
+    show one compact `Notifications` shortcut and the existing Notifications row
+    may repeat the same count. This adds no sixth tab, new notification source,
+    invented count, changed route, changed push permission, or backend contract.
+    Push taps retain their exact deep links; this exception only makes manually
+    opened unread items discoverable. It is caged by
+    `frontend/tools/audit-web-push-production-readiness.mjs` and the existing
+    authenticated shell/button audits.
   - Owner-approved 2026-11-08 neon-legibility correction: the existing phone
     `Menu` and `Tools` controls keep a visible static cyan-violet edge, and all
     five existing bottom tabs keep a quieter inactive edge while the current

@@ -299,6 +299,12 @@ Rules:
 - Dashboard may show a compact `My Pulse` strip inside `What needs your attention`. My Pulse reads server-owned Attention Spine signals from `/attention-spine/me` first, then local Focus Commitments and Market Wisdom context where those engines are not yet server-persisted. It must reveal the current signal list in place when tapped, while any deeper action routes back to the existing owner screen. It must not become a separate dashboard card, inbox, posting area, approval queue, or commitment manager.
 - The Attention Guide popup must stay compact at every width: show the urgency, issue title, one short consequence, dismissal, and actions. Do not restore cadence/source metadata or repeated explanation cards.
 - On phones, Notifications must open with one current item and one primary action. Hide the four-stat summary, duplicate `Open page`, `Not now` / `Mark as read`, Dashboard return, current-item collapse control, decorative trust message, history, and label glossary from the first surface. Keep one closed `Other items` row; opening it reveals compact label-and-count rows without explanatory sentences. Dashboard remains available through the fixed authenticated bottom navigation.
+- The authenticated phone shell must mirror the same backend unread count used by
+  the launcher badge on `Menu`. When positive, opening Menu must immediately show
+  one `Notifications` shortcut with that count, and the existing Notifications
+  row may repeat it. Do not add a sixth bottom tab or fabricate a separate count.
+  Push taps continue to open their exact task destination; the shell shortcut
+  opens Action Inbox for members who launch GSN manually.
 
 
 ## MyGMFNAndIPage / Profile

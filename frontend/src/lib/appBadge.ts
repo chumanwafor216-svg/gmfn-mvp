@@ -4,8 +4,11 @@ import {
 } from "./api";
 
 export const GSN_AUTH_SESSION_CHANGED_EVENT = "GSN_AUTH_SESSION_CHANGED";
+export const GSN_APP_BADGE_COUNT_CHANGED_EVENT =
+  "GSN_APP_BADGE_COUNT_CHANGED";
 
 const APP_BADGE_REFRESH_MIN_MS = 15000;
+let currentGsnAppBadgeCount = 0;
 let badgeRefreshInFlight: {
   accessToken: string;
   promise: Promise<void>;
@@ -17,24 +20,40 @@ function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof navigator !== "undefined";
 }
 
+function normalizeBadgeCount(value: unknown): number {
+  const count = Number(value ?? 0);
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
 function unreadCountFromPayload(payload: any): number {
-  const count = Number(
+  return normalizeBadgeCount(
     payload?.unread_count ??
       payload?.unreadCount ??
       payload?.count ??
       payload?.total ??
       0
   );
-  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
+export function getCurrentGsnAppBadgeCount(): number {
+  return currentGsnAppBadgeCount;
+}
+
+function publishGsnAppBadgeCount(count: number): void {
+  currentGsnAppBadgeCount = normalizeBadgeCount(count);
+  window.dispatchEvent(
+    new CustomEvent(GSN_APP_BADGE_COUNT_CHANGED_EVENT, {
+      detail: { unreadCount: currentGsnAppBadgeCount },
+    })
+  );
 }
 
 export async function setGsnAppBadge(count: number): Promise<void> {
   if (!isBrowser()) return;
 
-  const normalized = Number.isFinite(Number(count)) && Number(count) > 0
-    ? Math.floor(Number(count))
-    : 0;
+  const normalized = normalizeBadgeCount(count);
   const nav = navigator as any;
+  publishGsnAppBadgeCount(normalized);
 
   try {
     if (normalized > 0 && typeof nav.setAppBadge === "function") {
@@ -130,4 +149,5 @@ export function installGsnAppBadgeSync(): void {
     });
   }
 
+  refreshSoon();
 }

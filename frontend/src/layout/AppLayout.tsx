@@ -17,6 +17,11 @@ import { preloadCoreAppRoutes, preloadRouteForPath } from "../lib/routePreload";
 import { gmfnBrand } from "../styles/gmfnBrand";
 import { isCompactAppViewport } from "../lib/responsiveLayout";
 import { authenticatedStaticNeonAction } from "../design/authenticatedNeon";
+import {
+  getCurrentGsnAppBadgeCount,
+  GSN_APP_BADGE_COUNT_CHANGED_EVENT,
+  refreshGsnAppBadge,
+} from "../lib/appBadge";
 
 type NavLinkItem = {
   label: string;
@@ -1779,6 +1784,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(() =>
+    getCurrentGsnAppBadgeCount()
+  );
   const [trustSlipShareOpen, setTrustSlipShareOpen] = useState(false);
   const [trustSlipSharePurpose, setTrustSlipSharePurpose] =
     useState<TrustSlipSharePurposeKey>("work");
@@ -1869,6 +1877,33 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   useEffect(() => {
     preloadCoreAppRoutes();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleBadgeCountChanged(event: Event) {
+      const detail = (event as CustomEvent<{ unreadCount?: number }>).detail;
+      const nextCount = Number(
+        detail?.unreadCount ?? getCurrentGsnAppBadgeCount()
+      );
+      setUnreadNotificationCount(
+        Number.isFinite(nextCount) && nextCount > 0 ? Math.floor(nextCount) : 0
+      );
+    }
+
+    window.addEventListener(
+      GSN_APP_BADGE_COUNT_CHANGED_EVENT,
+      handleBadgeCountChanged
+    );
+    void refreshGsnAppBadge();
+
+    return () => {
+      window.removeEventListener(
+        GSN_APP_BADGE_COUNT_CHANGED_EVENT,
+        handleBadgeCountChanged
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -2435,11 +2470,18 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
           >
             <StableButton
               onClick={openDrawer}
-              aria-label="Open navigation"
+              aria-label={
+                unreadNotificationCount > 0
+                  ? `Open navigation, ${unreadNotificationCount} unread notification${
+                      unreadNotificationCount === 1 ? "" : "s"
+                    }`
+                  : "Open navigation"
+              }
               kind="secondary"
               debugId="app-layout.mobile.open-navigation"
               style={{
                 ...mobileIconButton(),
+                position: "relative",
                 ...(isDemandBoxRoute
                   ? {
                       color: "#F8FBFF",
@@ -2453,6 +2495,34 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
             >
               <MobileTopIcon name="menu" />
               Menu
+              {unreadNotificationCount > 0 ? (
+                <span
+                  data-gsn-shell-notification-badge="menu"
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: -7,
+                    right: -7,
+                    minWidth: 23,
+                    height: 23,
+                    padding: "0 6px",
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#E53935",
+                    border: "2px solid #FFFFFF",
+                    color: "#FFFFFF",
+                    fontSize: 11,
+                    fontWeight: 1000,
+                    lineHeight: 1,
+                    boxShadow: "0 4px 10px rgba(138,18,18,0.34)",
+                  }}
+                >
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : unreadNotificationCount}
+                </span>
+              ) : null}
             </StableButton>
 
             <div style={mobileTopMeta()}>
@@ -2593,6 +2663,77 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
               ) : null}
             </div>
 
+            {unreadNotificationCount > 0 ? (
+              <StableCtaLink
+                to={APP_ROUTES.NOTIFICATIONS}
+                kind="soft"
+                onClick={closeDrawerAfterNavigation}
+                onFocus={() => warmRouteBeforeNavigation(APP_ROUTES.NOTIFICATIONS)}
+                onPointerDown={() => warmRouteBeforeNavigation(APP_ROUTES.NOTIFICATIONS)}
+                onPointerEnter={() => warmRouteBeforeNavigation(APP_ROUTES.NOTIFICATIONS)}
+                debugId="app-layout.drawer.unread-notifications"
+                data-gsn-shell-notification-shortcut="true"
+                style={{
+                  ...drawerLink(false, false),
+                  marginTop: 12,
+                  height: 62,
+                  minHeight: 62,
+                  maxHeight: 62,
+                  display: "grid",
+                  gridTemplateColumns: "42px minmax(0, 1fr) auto",
+                  gap: 10,
+                  background:
+                    "linear-gradient(135deg, rgba(11,99,209,0.98) 0%, rgba(8,35,58,0.98) 100%)",
+                  border: "1px solid rgba(116,202,255,0.66)",
+                }}
+              >
+                <GsnRealisticIcon
+                  name="records-folder"
+                  size={38}
+                  decorative
+                />
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 14.5, fontWeight: 1000 }}>
+                    Notifications
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 3,
+                      color: "rgba(255,255,255,0.78)",
+                      fontSize: 11.5,
+                      fontWeight: 760,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Open your unread items and their next steps
+                  </span>
+                </span>
+                <span
+                  aria-label={`${unreadNotificationCount} unread`}
+                  style={{
+                    minWidth: 34,
+                    height: 34,
+                    padding: "0 8px",
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#E53935",
+                    border: "2px solid rgba(255,255,255,0.9)",
+                    color: "#FFFFFF",
+                    fontSize: 13,
+                    fontWeight: 1000,
+                  }}
+                >
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : unreadNotificationCount}
+                </span>
+              </StableCtaLink>
+            ) : null}
+
             {mobileDrawerGroups.map((group) => (
               <div key={group.title}>
                 <div style={drawerSectionTitle()}>{group.title}</div>
@@ -2621,12 +2762,45 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                     >
                       <span
                         style={{
+                          width: "100%",
                           minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
                         }}
                       >
-                        {item.label}
+                        <span
+                          style={{
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                        {item.to === APP_ROUTES.NOTIFICATIONS &&
+                        unreadNotificationCount > 0 ? (
+                          <span
+                            aria-label={`${unreadNotificationCount} unread`}
+                            style={{
+                              marginLeft: "auto",
+                              minWidth: 28,
+                              height: 28,
+                              padding: "0 7px",
+                              borderRadius: 999,
+                              display: "grid",
+                              placeItems: "center",
+                              background: "#E53935",
+                              color: "#FFFFFF",
+                              fontSize: 11.5,
+                              fontWeight: 1000,
+                            }}
+                          >
+                            {unreadNotificationCount > 99
+                              ? "99+"
+                              : unreadNotificationCount}
+                          </span>
+                        ) : null}
                       </span>
                     </StableCtaLink>
                   ))}

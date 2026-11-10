@@ -90,8 +90,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/appBadge.ts",
-  /getMyUnreadNotificationCount[\s\S]*?GSN_AUTH_SESSION_CHANGED[\s\S]*?setAppBadge[\s\S]*?clearAppBadge/,
-  "frontend must refresh the launcher badge from the unread notification count."
+  /GSN_AUTH_SESSION_CHANGED[\s\S]*?GSN_APP_BADGE_COUNT_CHANGED[\s\S]*?publishGsnAppBadgeCount[\s\S]*?setAppBadge[\s\S]*?clearAppBadge[\s\S]*?getMyUnreadNotificationCount[\s\S]*?refreshSoon\(\)/,
+  "frontend must refresh the launcher badge and publish the same unread count to the authenticated shell."
+);
+
+assertContains(
+  "frontend/src/layout/AppLayout.tsx",
+  /GSN_APP_BADGE_COUNT_CHANGED_EVENT[\s\S]*?unreadNotificationCount[\s\S]*?data-gsn-shell-notification-badge="menu"[\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?data-gsn-shell-notification-shortcut="true"[\s\S]*?Open your unread items and their next steps/,
+  "authenticated phone shell must mirror launcher unread count on Menu and expose a visible Notifications shortcut."
 );
 
 assertContains(

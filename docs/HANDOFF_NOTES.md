@@ -1,5 +1,17 @@
 # Active Handoff Notes
 
+## Launcher-to-in-app notification wayfinding - 2026-11-10
+
+- Root cause confirmed: the service worker and launcher badge already use the
+  real backend unread count, and push taps already preserve exact action URLs,
+  but manually opening GSN exposes no shell-level marker showing where those
+  unread items live.
+- The authenticated phone shell now mirrors that same count on `Menu`. Opening
+  Menu shows one immediate Notifications shortcut and repeats the count on the
+  existing Notifications row. No sixth bottom tab or new notification source
+  was added.
+- Verification and deployment are pending.
+
 ## Market Wisdom neon removed - 2026-11-10
 
 - At the product owner's clarified direction, restored the former light
