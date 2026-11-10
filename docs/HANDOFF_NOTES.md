@@ -34,9 +34,14 @@
   response, Entry flow polish, and the 326-module production frontend build.
   The broad Button Stability audit remains red on unrelated existing
   AppLayout, DemandBox, Shop Gallery, and Shop Assets expectations.
-- Publication is not claimed. This combined local branch still includes the
-  preceding Public Shop voice fallback repair and has not been committed,
-  pushed, or deployed.
+- Deployment evidence: combined application commit `1475e05b` was pushed
+  unchanged to `codex/public-shop-audio-fallback` and `main`. Manual workflow
+  `42892021779` completed successfully on that exact commit. Render frontend
+  deploy `dep-dbpniqjrjlhs73adcgf0` and API deploy
+  `dep-dbpnjh5g1s2s73b8hmj0` both reached `live`; the workflow then passed its
+  frontend shell and live API identity-contract checks. An independent live
+  request returned `already_active` with `login` as the next action for the
+  consumed exact GSN-ID/request pair, without exposing personal details.
 
 ## Public Shop voice fallback repair - 2026-11-10
 
@@ -59,9 +64,11 @@
   owner product-hero expectation. The protected freeze retains unrelated
   failures in My GSN smooth-scroll, Dashboard QR graphics, Shop Control
   analytics counts/geometry, and Member Activation copy.
-- Publication is not claimed. The repair is isolated on
-  `codex/public-shop-audio-fallback` and has not been committed, pushed, or
-  deployed.
+- Deployment evidence: this repair shipped in combined application commit
+  `1475e05b` through workflow `42892021779` and live frontend Render deploy
+  `dep-dbpniqjrjlhs73adcgf0`. Independent live asset inspection confirmed the
+  deployed Shop Gallery chunk contains the repaired latest-valid-voice
+  fallback path.
 
 ## Launcher-to-in-app notification wayfinding - 2026-11-10
 
