@@ -60,8 +60,13 @@ requirePattern(
 );
 requirePattern(
   "publicPaper",
-  /Check this TrustSlip[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?View public profile[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?audience="public"[\s\S]*?Verify identity evidence/,
-  "The public card must expose only TrustSlip verification, an opted-in public profile, and a public Shop with a current verification path."
+  /Check this TrustSlip[\s\S]*?\.\.\.\(publicProfilePath\s*\?[\s\S]*?Personal profile[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?audience="public"[\s\S]*?Verify identity evidence/,
+  "The public card must expose TrustSlip verification, the privacy-safe personal profile route, and a public Shop with a current verification path."
+);
+forbidPattern(
+  "publicPaper",
+  /publicProfilePath\s*&&\s*publicProfessionalProfileEnabled/,
+  "The personal profile action must remain visible; unpublished profiles are handled safely by the profile route."
 );
 requirePattern(
   "publicPaper",

@@ -2845,11 +2845,11 @@ export default function TrustSlipVerifyPublicPaper({
             },
           ]
         : []),
-      ...(publicProfilePath && publicProfessionalProfileEnabled && professionalHeadline
+      ...(publicProfilePath
         ? [
             {
               key: "public-profile",
-              label: "View public profile",
+              label: "Personal profile",
               to: publicProfilePath,
               debugId: "trust-slip-verify.card.opportunity.public-profile",
               icon: "identity-card" as const,

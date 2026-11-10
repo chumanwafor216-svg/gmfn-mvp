@@ -1847,6 +1847,10 @@ Rules:
   existing public Shop privacy decision. It must not
   expose Shop Control, Marketplace, Demand Box, My Communities, or other
   authenticated account navigation.
+- The `Personal profile` action remains visible on the stable card whenever the
+  public profile route exists. If the holder has not opted in, that route must
+  show the privacy-safe `No public profile published` state rather than hiding
+  the profile opportunity or exposing unpublished details.
 - `/id/:gmfnId/profile` is the stable minimal public professional-profile
   variant. It may show only the holder's public name/photo, GSN ID, opted-in
   professional headline and short summary. It must not show phone, email,

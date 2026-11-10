@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Public GSN ID personal-profile gateway correction - 2026-11-10
+
+- Corrected `/id/:gmfnId` so its Opportunity Gateway consistently shows the
+  `Personal profile` route alongside available `Check this TrustSlip` and
+  `Shop & verification` actions.
+- The profile action no longer disappears when the holder has not published
+  professional details. `/id/:gmfnId/profile` continues to fail closed with
+  `No public profile published`, so no phone, email, named community, exact
+  location, verification signal, or private evidence is exposed.
+- Tightened `frontend/tools/audit-identity-opportunity-gateway.mjs` to reject
+  publication-gated profile buttons while retaining the privacy-safe route
+  boundary.
+
 ## Public Shop compact waveform clarification - 2026-11-10
 
 - Owner clarification kept the existing placement contract unchanged: visitors
