@@ -8,7 +8,12 @@
 - The five-reading rotation, capability reading, 45-second timing, copy,
   geometry, actions, routes, permissions, APIs, and data remain unchanged.
   Other Dashboard neon surfaces are untouched.
-- Verification and deployment are pending.
+- Verification passed: authenticated neon presentation, Market Wisdom
+  contracts, Dashboard actions, Dashboard button inventory, Dashboard phone
+  buttons, and the 326-module production frontend build.
+- Published in code commit `af15f247` to the pilot branch and `main`. GitHub
+  workflow `42877403830` completed successfully and verified frontend Render
+  deploy `dep-dbpm9ql9fdbs73fb9ar0`; no API deploy was requested.
 
 ## Public identity privacy presentation corrected - 2026-11-10
 
