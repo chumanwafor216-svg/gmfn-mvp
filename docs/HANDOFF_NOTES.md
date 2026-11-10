@@ -1,20 +1,21 @@
 # Active Handoff Notes
 
-## Public professional profile redundant tiles removed - 2026-11-10
+## Public identity privacy presentation corrected - 2026-11-10
 
-- Removed the `Profile — Professional details published` and
-  `Communities — Not shown` tiles from `/id/:gmfnId/profile` at the product
-  owner's direction.
-- The opted-in headline and summary remain visible. The existing privacy note
-  remains the single explanation that phone, email, named communities, private
-  evidence, and exact location stay hidden.
+- Removed the redundant `Profile / Professional details published` and
+  `Communities / Not shown` tiles from `/id/:gmfnId/profile`.
+- Removed `Back to GSN ID` from both published and unpublished public
+  professional-profile variants so the shared profile has no navigation
+  control. The opted-in headline, summary, and single privacy note remain.
+- The stable public ID card now reads `Linked privately` only when linked-
+  community evidence exists; it exposes no community name, count, role, or
+  administrative status. Unknown evidence still reads `Not shown`.
 - Verification passed: identity opportunity gateway, public TrustSlip first
   viewport, public TrustSlip privacy boundary, and the 326-module production
   frontend build.
-- Initial compactness fix published in commit `bbf04752`; deployment workflow
-  `42873330256` was triggered for that exact commit.
-- Owner follow-up in progress: remove profile-route navigation and acknowledge
-  known linked communities as `Linked privately` without names, counts, or roles.
+- Published in final code commit `3bc55d11` to the pilot branch and `main`.
+  GitHub workflow `42874194250` completed successfully and verified frontend
+  Render deploy `dep-dbpm0umc6qcc73deer2g`; no API deploy was requested.
 
 ## Market Wisdom static-neon presentation polish - 2026-11-10
 
