@@ -17,7 +17,9 @@
   then remained red on four unrelated existing checks: My GSN and I smooth
   scroll, Dashboard QR graphics detection, Shop Control mobile visual counts,
   and Member Activation missing-identifier copy.
-- Commit and deployment verification are pending.
+- Published in commit `b4f0c49a` to the pilot branch and `main`. GitHub
+  workflow `42868913431` completed successfully and verified frontend Render
+  deploy `dep-dbplih59fdbs73f90jgg`; no API deploy was requested.
 
 ## Public GSN ID evidence-truth correction - 2026-11-10
 
