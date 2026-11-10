@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { deleteShopVoice, fetchShopVoiceBlob } from "../lib/api";
+import AudioWavePlayer from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import {
   DangerButton,
-  PrimaryButton,
   SecondaryButton,
+  SubtleButton,
 } from "./StableButton";
 
 type ShopVoiceNotePlayerProps = {
@@ -347,36 +348,42 @@ export default function ShopVoiceNotePlayer({
         gap: 9,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0B1F33", fontWeight: 900 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: 8, color: "#0B1F33", fontWeight: 900 }}>
         <GsnLegacyIcon name="speaker" size={24} />
         <span>{label}</span>
-        {Number(durationSeconds || 0) > 0 ? (
-          <span style={{ color: "#587087", fontSize: 12, fontWeight: 800 }}>
-            {Math.ceil(Number(durationSeconds))}s
-          </span>
-        ) : null}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
+          {Number(durationSeconds || 0) > 0 ? (
+            <span style={{ color: "#587087", fontSize: 11, fontWeight: 800 }}>
+              {Math.ceil(Number(durationSeconds))}s
+            </span>
+          ) : null}
+          {canDelete && !confirmingDelete ? (
+            <SubtleButton
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              stableHeight={30}
+              minWidth={0}
+              debugId={debugId + ".delete.open"}
+              style={{ minHeight: 30, height: 30, padding: "4px 8px", borderRadius: 999, color: "#9F2424", fontSize: 10.5, boxShadow: "none" }}
+            >
+              Delete
+            </SubtleButton>
+          ) : null}
+        </div>
       </div>
       <div style={{ color: "#526C84", fontSize: 11.5, lineHeight: 1.4 }}>
         {[shopName, speakerName, speakerGmfnId].filter(Boolean).join(" · ")}
       </div>
-      {audioUrl ? (
-        <audio controls autoPlay preload="metadata" src={audioUrl} style={{ width: "100%" }} />
-      ) : (
-        <PrimaryButton
-          type="button"
-          onClick={() => void loadAudio()}
-          disabled={loading}
-          busy={loading}
-          busyLabel="Opening voice note..."
-          fullWidth
-          stableHeight={50}
-          debugId={debugId}
-        >
-          Listen
-        </PrimaryButton>
-      )}
-      {canDelete ? (
-        confirmingDelete ? (
+      <AudioWavePlayer
+        src={audioUrl}
+        durationSeconds={durationSeconds}
+        loading={loading}
+        onRequestSource={loadAudio}
+        onPlaybackError={setError}
+        debugId={debugId}
+        compact
+      />
+      {canDelete && confirmingDelete ? (
           <div
             data-gsn-shop-voice-delete-confirmation="true"
             style={{
@@ -415,17 +422,6 @@ export default function ShopVoiceNotePlayer({
               </DangerButton>
             </div>
           </div>
-        ) : (
-          <DangerButton
-            type="button"
-            onClick={() => setConfirmingDelete(true)}
-            stableHeight={46}
-            fullWidth
-            debugId={debugId + ".delete.open"}
-          >
-            Delete voice note
-          </DangerButton>
-        )
       ) : null}
       {error ? <div role="alert" style={{ color: "#A33B16", fontSize: 12 }}>{error}</div> : null}
     </div>

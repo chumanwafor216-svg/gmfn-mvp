@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import AudioWavePlayer from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 
@@ -192,13 +193,18 @@ export default function VoiceNoteRecorder({
         </div>
       ) : value ? (
         <>
-          <audio controls preload="metadata" src={previewUrl} style={{ width: "100%" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <AudioWavePlayer
+            src={previewUrl}
+            onPlaybackError={setError}
+            debugId={`${debugPrefix}.preview`}
+            compact
+          />
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 10 }}>
             <SecondaryButton
               type="button"
               onClick={() => void startRecording()}
               disabled={disabled}
-              stableHeight={48}
+              stableHeight={42}
               debugId={`${debugPrefix}.rerecord`}
             >
               Record again
@@ -207,8 +213,10 @@ export default function VoiceNoteRecorder({
               type="button"
               onClick={() => onChange(null)}
               disabled={disabled}
-              stableHeight={48}
+              stableHeight={34}
+              minWidth={0}
               debugId={`${debugPrefix}.remove`}
+              style={{ minHeight: 34, height: 34, padding: "4px 10px", borderRadius: 999, color: "#9F2424", fontSize: 11, boxShadow: "none" }}
             >
               Remove
             </SubtleButton>

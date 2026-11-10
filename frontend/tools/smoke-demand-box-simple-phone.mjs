@@ -371,7 +371,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   );
 
   const deleteVoiceButton = freezerCard.getByRole("button", {
-    name: "Delete voice note",
+    name: "Delete",
     exact: true,
   });
   assert(await deleteVoiceButton.isVisible(), "The sender voice-delete action is missing.");

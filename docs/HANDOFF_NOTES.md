@@ -1,5 +1,24 @@
 # Active Handoff Notes
 
+## Shared voice waveform and compact deletion correction - 2026-11-10
+
+- Phone evidence showed Community Bulletin voice playback had regressed to the
+  browser-native audio bar and a full-width red `Delete voice note` action.
+  DemandBox, Shop Voice and recording previews each carried separate versions
+  of the same behavior, so fixing only Community Home would have repeated the
+  regression.
+- `AudioWavePlayer` is now the shared compact GSN playback surface for Community
+  notices, DemandBox recordings, full Shop Voice cards and recorder previews.
+  It keeps deliberate play/pause, progress, elapsed time and duration while the
+  real audio element remains hidden from the visual layout.
+- Sender-only deletion is now a quiet 30px `Delete` action beside recording
+  metadata. Permanent deletion still requires the existing second confirmation
+  and preserves each domain's retained-history tombstone. Recorder removal is
+  also subordinate rather than occupying half the action row.
+- `audit:audio-wave-player` prevents these surfaces from restoring native
+  `controls`, the legacy oversized delete label, or independent playback UI.
+  The focused source audits and production build cover this correction.
+
 ## Stable GSN ID and profile-route correction - 2026-11-10
 
 - Phone review exposed a wrong dependency in the first opportunity package:
