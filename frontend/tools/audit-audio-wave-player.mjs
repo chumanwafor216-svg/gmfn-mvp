@@ -34,10 +34,14 @@ requirePattern("shared", /<audio[\s\S]*?preload="metadata"/, "shared playback mu
 forbidPattern("shared", /<audio[^>]*\bcontrols\b/, "shared playback must not expose browser-native controls");
 
 for (const key of ["community", "demand", "shop", "recorder"]) {
-  requirePattern(key, /import AudioWavePlayer from "\.\/AudioWavePlayer";/, "voice playback must use the shared waveform component");
+  requirePattern(key, /import AudioWavePlayer(?:, \{ AudioWaveSignal \})? from "\.\/AudioWavePlayer";/, "voice playback must use the shared waveform component");
   requirePattern(key, /<AudioWavePlayer/, "voice playback must render the shared waveform component");
   forbidPattern(key, /<audio[^>]*\bcontrols\b/, "voice playback must not regress to browser-native controls");
 }
+
+requirePattern("shop", /<AudioWaveSignal mode="inline" playing=\{playing\}/, "the owner strip must show the shared waveform signal");
+requirePattern("shop", /<AudioWaveSignal mode="symbol" playing=\{playing\}/, "the visitor coming-soon control must show the shared waveform signal");
+forbidPattern("shop", /setCompleted\(|keepVisibleAfterPlayback/, "compact Shop waveform controls must remain available after playback");
 
 for (const key of ["community", "demand", "shop"]) {
   requirePattern(key, /debugId=\{debugId \+ "\.delete\.open"\}[\s\S]*?>\s*Delete\s*</, "sender deletion must remain a small labelled action");

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { deleteShopVoice, fetchShopVoiceBlob } from "../lib/api";
-import AudioWavePlayer from "./AudioWavePlayer";
+import AudioWavePlayer, { AudioWaveSignal } from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import {
   DangerButton,
@@ -22,7 +22,6 @@ type ShopVoiceNotePlayerProps = {
   label: string;
   compactInline?: boolean;
   symbolOnly?: boolean;
-  keepVisibleAfterPlayback?: boolean;
 };
 
 export default function ShopVoiceNotePlayer({
@@ -39,13 +38,11 @@ export default function ShopVoiceNotePlayer({
   label,
   compactInline = false,
   symbolOnly = false,
-  keepVisibleAfterPlayback = false,
 }: ShopVoiceNotePlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playAfterLoadRef = useRef(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [playing, setPlaying] = useState(false);
-  const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -65,13 +62,9 @@ export default function ShopVoiceNotePlayer({
     playAfterLoadRef.current = false;
     void audioRef.current?.play().catch(() => {
       setPlaying(false);
-      setError("Tap Listen again to play this voice note.");
+      setError("Tap play again to hear this voice note.");
     });
   }, [audioUrl, compactInline, symbolOnly]);
-
-  useEffect(() => {
-    setCompleted(false);
-  }, [attachmentId]);
 
   async function loadAudio() {
     if (!attachmentId) return;
@@ -101,11 +94,11 @@ export default function ShopVoiceNotePlayer({
         await audio.play();
       } catch {
         setPlaying(false);
-        setError("Tap Play again to hear this voice note.");
+        setError("Tap play again to hear this voice note.");
       }
-    } else {
-      audio.pause();
+      return;
     }
+    audio.pause();
   }
 
   async function permanentlyDelete() {
@@ -148,8 +141,6 @@ export default function ShopVoiceNotePlayer({
 
   if (!attachmentId) return null;
 
-  if (compactInline && completed) return null;
-
   if (symbolOnly) {
     const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
     const actionLabel = loading
@@ -169,13 +160,11 @@ export default function ShopVoiceNotePlayer({
           preload="metadata"
           src={audioUrl || undefined}
           onPlay={() => {
-            setCompleted(false);
             setPlaying(true);
           }}
           onPause={() => setPlaying(false)}
           onEnded={() => {
             setPlaying(false);
-            setCompleted(false);
             if (audioRef.current) audioRef.current.currentTime = 0;
           }}
           onError={() => {
@@ -211,16 +200,17 @@ export default function ShopVoiceNotePlayer({
           <span
             aria-hidden="true"
             style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateRows: "28px 22px",
               alignItems: "center",
               justifyContent: "center",
-              gap: 5,
+              gap: 4,
+              width: 58,
               opacity: loading ? 0.58 : 1,
             }}
           >
-            <GsnLegacyIcon name="speaker" size={30} />
             {playing ? (
-              <span style={{ display: "flex", gap: 4 }}>
+              <span style={{ display: "flex", justifyContent: "center", gap: 4 }}>
                 <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
                 <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
               </span>
@@ -236,6 +226,7 @@ export default function ShopVoiceNotePlayer({
                 }}
               />
             )}
+            <AudioWaveSignal mode="symbol" playing={playing} />
           </span>
         </SecondaryButton>
         {error ? (
@@ -262,12 +253,6 @@ export default function ShopVoiceNotePlayer({
 
   if (compactInline) {
     const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
-    const durationLabel = Number(durationSeconds || 0) > 0
-      ? `${Math.ceil(Number(durationSeconds))}s`
-      : "";
-    const secondaryLabel = error
-      ? "Try again"
-      : [speakerGmfnId, durationLabel].filter(Boolean).join(" · ");
     return (
       <div
         data-gsn-shop-voice-player="true"
@@ -280,19 +265,12 @@ export default function ShopVoiceNotePlayer({
           preload="metadata"
           src={audioUrl || undefined}
           onPlay={() => {
-            setCompleted(false);
             setPlaying(true);
           }}
           onPause={() => setPlaying(false)}
           onEnded={() => {
             setPlaying(false);
-            if (keepVisibleAfterPlayback) {
-              setCompleted(false);
-              if (audioRef.current) audioRef.current.currentTime = 0;
-              return;
-            }
-            setCompleted(true);
-            setAudioUrl("");
+            if (audioRef.current) audioRef.current.currentTime = 0;
           }}
           onError={() => {
             setPlaying(false);
@@ -308,7 +286,7 @@ export default function ShopVoiceNotePlayer({
           stableHeight={40}
           minWidth={0}
           debugId={debugId}
-          aria-label={`${playing ? "Pause" : "Listen to"} ${label}${attribution ? ` from ${attribution}` : ""}`}
+          aria-label={`${playing ? "Pause" : "Play"} ${label}${attribution ? ` from ${attribution}` : ""}`}
           style={{
             width: "100%",
             minWidth: 0,
@@ -317,20 +295,24 @@ export default function ShopVoiceNotePlayer({
             padding: "3px 7px",
             borderRadius: 10,
             display: "grid",
-            gridTemplateColumns: "auto minmax(0, 1fr)",
+            gridTemplateColumns: "22px minmax(0, 1fr)",
             alignItems: "center",
             gap: 5,
             fontSize: 10,
             lineHeight: 1.05,
           }}
         >
-          <GsnLegacyIcon name="speaker" size={16} />
-          <span style={{ minWidth: 0, display: "grid", textAlign: "left" }}>
-            <span style={{ fontWeight: 950 }}>{playing ? "Pause" : audioUrl ? "Play" : "Listen"}</span>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 7.5, fontWeight: 800, opacity: 0.82 }}>
-              {secondaryLabel || "Voice note"}
-            </span>
+          <span aria-hidden="true" style={{ display: "grid", placeItems: "center", color: "#0B4EA2" }}>
+            {playing ? (
+              <span style={{ display: "flex", gap: 3 }}>
+                <span style={{ width: 3, height: 12, borderRadius: 3, background: "currentColor" }} />
+                <span style={{ width: 3, height: 12, borderRadius: 3, background: "currentColor" }} />
+              </span>
+            ) : (
+              <span style={{ width: 0, height: 0, marginLeft: 2, borderTop: "6px solid transparent", borderBottom: "6px solid transparent", borderLeft: "10px solid currentColor" }} />
+            )}
           </span>
+          <AudioWaveSignal mode="inline" playing={playing} />
         </SecondaryButton>
       </div>
     );

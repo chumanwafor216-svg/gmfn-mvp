@@ -622,6 +622,12 @@ async function collectMetrics(page) {
       inlineWelcomeVoicePresent: Boolean(inlineWelcomeVoice),
       inlineWelcomeVoiceLabel:
         inlineWelcomeVoiceAction?.getAttribute("aria-label") || null,
+      inlineWelcomeVoiceWavePresent: Boolean(
+        inlineWelcomeVoiceAction?.querySelector('[data-gsn-audio-wave-bars="true"]')
+      ),
+      inlineWelcomeVoiceVisibleText: (inlineWelcomeVoiceAction?.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim(),
       inlineWelcomeVoiceWidth: inlineWelcomeVoiceRect
         ? Math.round(inlineWelcomeVoiceRect.width)
         : null,
@@ -812,7 +818,7 @@ async function run() {
         await page.waitForTimeout(250);
       }
       const metrics = await collectMetrics(page);
-      let postPlaybackVoiceCollapsed = false;
+      let postPlaybackVoiceReplayable = false;
       if (item.name === "05-public-shop-normal-visitor-430") {
         const welcomeVoiceAction = page.locator(
           'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
@@ -844,9 +850,20 @@ async function run() {
           const track = document.querySelector(
             ".public-shop-product-update-track"
           );
-          return !voice && track && getComputedStyle(track).animationPlayState === "running";
+          const action = voice?.querySelector(
+            'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+          );
+          const wave = action?.querySelector('[data-gsn-audio-wave-bars="true"]');
+          return Boolean(
+            voice &&
+              action &&
+              wave &&
+              /^Play Shop welcome voice/.test(action.getAttribute("aria-label") || "") &&
+              track &&
+              getComputedStyle(track).animationPlayState === "running"
+          );
         });
-        postPlaybackVoiceCollapsed = true;
+        postPlaybackVoiceReplayable = true;
       }
       let loopStability = null;
       if (item.name === "19-public-shop-alternate-owner-360") {
@@ -1015,13 +1032,15 @@ async function run() {
           !metrics.inlineWelcomeVoicePresent ||
           metrics.inlineWelcomeVoiceWidth > 100 ||
           metrics.inlineWelcomeVoiceActionHeight !== 40 ||
+          !metrics.inlineWelcomeVoiceWavePresent ||
+          /listen|audio|voice note/i.test(metrics.inlineWelcomeVoiceVisibleText || "") ||
           metrics.ownerShopUpdateShortcutPresent ||
-          !String(metrics.inlineWelcomeVoiceLabel || "").includes("Listen to Shop welcome voice") ||
+          !String(metrics.inlineWelcomeVoiceLabel || "").includes("Play Shop welcome voice") ||
           metrics.diaryDisplay !== "none" ||
-          !postPlaybackVoiceCollapsed
+          !postPlaybackVoiceReplayable
         ) {
           throw new Error(
-            `${item.name} did not keep visitor Listen and the rotating update in one compact strip without the lower duplicate: ` +
+            `${item.name} did not keep the visitor waveform and rotating update in one compact replayable strip without the lower duplicate: ` +
               JSON.stringify({
                 ticker: metrics.productUpdateTickerPresent,
                 marketplace: metrics.returnMarketplacePresent,
@@ -1029,10 +1048,12 @@ async function run() {
                 voice: metrics.inlineWelcomeVoicePresent,
                 voiceWidth: metrics.inlineWelcomeVoiceWidth,
                 voiceActionHeight: metrics.inlineWelcomeVoiceActionHeight,
+                voiceWave: metrics.inlineWelcomeVoiceWavePresent,
+                voiceVisibleText: metrics.inlineWelcomeVoiceVisibleText,
                 voiceLabel: metrics.inlineWelcomeVoiceLabel,
                 ownerShortcut: metrics.ownerShopUpdateShortcutPresent,
                 diaryDisplay: metrics.diaryDisplay,
-                collapsedAfterPlayback: postPlaybackVoiceCollapsed,
+                replayableAfterPlayback: postPlaybackVoiceReplayable,
               })
           );
         }

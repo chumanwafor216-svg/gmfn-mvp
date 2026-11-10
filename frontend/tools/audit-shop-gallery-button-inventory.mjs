@@ -345,8 +345,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const shopWelcomeVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?const latestShopUpdateVoice = positiveNumber\(featuredDiaryEntry\?\.voice_attachment_id\)[\s\S]*?const visitorPublicShopVoice = !signedInOwnsShop[\s\S]*?activeShopWelcomeVoice \|\| activeLatestShopUpdateVoice[\s\S]*?const publicShopTickerVoice = signedInOwnsShop[\s\S]*?: visitorPublicShopVoice[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?compactInline[\s\S]*?keepVisibleAfterPlayback=\{!signedInOwnsShop\}[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
-  "Public Shop phones must preserve the owner's compact message/update behavior while visitors receive one replayable public message shared with the coming-soon card."
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?const productsServicesUpdateText = featuredDiaryEntry[\s\S]*?const shopWelcomeVoice = effectiveShop\?\.voiceAttachmentId[\s\S]*?const latestShopUpdateVoice = positiveNumber\(featuredDiaryEntry\?\.voice_attachment_id\)[\s\S]*?const visitorPublicShopVoice = !signedInOwnsShop[\s\S]*?activeShopWelcomeVoice \|\| activeLatestShopUpdateVoice[\s\S]*?const publicShopTickerVoice = signedInOwnsShop[\s\S]*?: visitorPublicShopVoice[\s\S]*?function renderShopDiaryShortcut\(compact = false\)[\s\S]*?label="Add Shop Update or voice note"[\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?compactInline[\s\S]*?debugId="shop-gallery\.welcome-voice\.listen"/,
+  "Public Shop phones must preserve the owner strip and visitor coming-soon placement for the same replayable public message."
 );
 
 assertContains(

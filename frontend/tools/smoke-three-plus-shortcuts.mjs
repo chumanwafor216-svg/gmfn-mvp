@@ -714,9 +714,33 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   if (await page.locator('[data-visitor-opening-soon-audio]').count()) {
     throw new Error('Empty owner shop received the visitor-only audio half inside its plus block.');
   }
-  await page
-    .locator('button[data-cta-id="shop-gallery.welcome-voice.listen"]')
-    .waitFor({ state: 'visible', timeout: 20_000 });
+  const ownerVoiceAction = page.locator(
+    'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+  );
+  await ownerVoiceAction.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!(await ownerVoiceAction.locator('[data-gsn-audio-wave-bars="true"]').count())) {
+    throw new Error('Owner compact shop message did not show the audio waveform cue.');
+  }
+  if (/listen|audio|voice note/i.test((await ownerVoiceAction.textContent()) || '')) {
+    throw new Error('Owner compact shop message restored written audio instructions.');
+  }
+  const ownerVoiceRequest = page.waitForRequest(
+    (request) => apiPath(request.url()) === '/shop-voice/public/901',
+    { timeout: 5_000 },
+  );
+  await ownerVoiceAction.click();
+  await ownerVoiceRequest;
+  await page.locator('.public-shop-inline-voice audio').dispatchEvent('ended');
+  await ownerVoiceAction.waitFor({ state: 'visible', timeout: 5_000 });
+  await page.waitForFunction(() => {
+    const action = document.querySelector(
+      'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
+    );
+    return /^Play /.test(action?.getAttribute('aria-label') || '');
+  }, { timeout: 5_000 });
+  if (!/^Play /.test(await ownerVoiceAction.getAttribute('aria-label') || '')) {
+    throw new Error('Owner compact shop message disappeared or stopped being replayable.');
+  }
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1
   );
@@ -810,10 +834,19 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
   if (!/^Play public shop message/.test(await visitorShopMessage.getAttribute('aria-label') || '')) {
     throw new Error('Visitor shop message did not expose an accessible Play action.');
   }
+  if (!(await visitorShopMessage.locator('[data-gsn-audio-wave-bars="true"]').count())) {
+    throw new Error('Visitor Products & Services message did not show the audio waveform cue.');
+  }
+  if (/listen|audio|voice note/i.test((await visitorShopMessage.textContent()) || '')) {
+    throw new Error('Visitor Products & Services message restored written audio instructions.');
+  }
   const visitorTickerMessage = visitor.page.locator(
     'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
   );
   await visitorTickerMessage.waitFor({ state: 'visible', timeout: 20_000 });
+  if (!(await visitorTickerMessage.locator('[data-gsn-audio-wave-bars="true"]').count())) {
+    throw new Error('Visitor compact shop message did not show the audio waveform cue.');
+  }
   const visitorTickerRequest = visitor.page.waitForRequest(
     (request) => apiPath(request.url()) === '/shop-voice/public/901',
     { timeout: 5_000 },
@@ -826,9 +859,9 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     const action = document.querySelector(
       'button[data-cta-id="shop-gallery.welcome-voice.listen"]'
     );
-    return /^(Play|Listen to) Shop welcome voice/.test(action?.getAttribute('aria-label') || '');
+    return /^Play Shop welcome voice/.test(action?.getAttribute('aria-label') || '');
   }, { timeout: 5_000 });
-  if (!/^(Play|Listen to) Shop welcome voice/.test(await visitorTickerMessage.getAttribute('aria-label') || '')) {
+  if (!/^Play Shop welcome voice/.test(await visitorTickerMessage.getAttribute('aria-label') || '')) {
     throw new Error('Visitor compact shop message did not remain replayable after playback ended.');
   }
   const publicShopMessageRequest = visitor.page.waitForRequest(

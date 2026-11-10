@@ -1,5 +1,22 @@
 # Active Handoff Notes
 
+## Public Shop compact waveform clarification - 2026-11-10
+
+- Owner clarification kept the existing placement contract unchanged: visitors
+  receive the public shop recording in the Products & Services `Product coming
+  soon` card, while the exact owner retains the compact `P&S Update` strip.
+- Both compact controls now use the same recognisable play/pause plus waveform
+  signal as Community Bulletin and DemandBox instead of relying on visible
+  `Listen`, `Audio`, or `Voice note` wording.
+- The owner strip no longer disappears after one natural playback. Owner and
+  visitor controls reset for replay; recording selection, 24-hour Shop Update
+  fallback, persistent welcome voice, product voice and placement are unchanged.
+- Verified with the focused `05-public-shop-normal-visitor-430` visual case,
+  owner-only `smoke-three-plus-shortcuts`, all three focused Shop/audio audits,
+  and the production build. The complete shortcut smoke still stops earlier at
+  its pre-existing product-source hero wait in `testOwnerShopShortcuts`; that
+  unrelated failure does not reach the Shop audio assertions.
+
 ## Shared voice waveform and compact deletion correction - 2026-11-10
 
 - Phone evidence showed Community Bulletin voice playback had regressed to the

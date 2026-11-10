@@ -5496,7 +5496,6 @@ export default function ShopGalleryPage() {
                 shopName={shopNameText}
                 publicAccess
                 compactInline
-                keepVisibleAfterPlayback={!signedInOwnsShop}
                 debugId="shop-gallery.welcome-voice.listen"
                 label={publicShopTickerVoice.label}
               />

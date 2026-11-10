@@ -23,6 +23,51 @@ function formatAudioTime(value: number): string {
   return `${minutes}:${seconds}`;
 }
 
+export function AudioWaveSignal({
+  mode = "inline",
+  playing = false,
+}: {
+  mode?: "inline" | "symbol";
+  playing?: boolean;
+}) {
+  const heights = mode === "symbol" ? WAVE_HEIGHTS.slice(7, 23) : WAVE_HEIGHTS.slice(2, 26);
+  const scale = mode === "symbol" ? 0.56 : 0.5;
+
+  return (
+    <div
+      data-gsn-audio-wave-bars="true"
+      aria-hidden="true"
+      style={{
+        width: "100%",
+        height: mode === "symbol" ? 22 : 19,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: mode === "symbol" ? 2 : 1,
+        overflow: "hidden",
+      }}
+    >
+      {heights.map((height, index) => (
+        <span
+          key={`${height}-${index}`}
+          style={{
+            flex: "1 1 2px",
+            minWidth: mode === "symbol" ? 2 : 1,
+            maxWidth: mode === "symbol" ? 3 : 4,
+            height: Math.max(4, height * scale),
+            borderRadius: 999,
+            background: mode === "symbol"
+              ? "linear-gradient(180deg, #20C4E6 0%, #0B4EA2 100%)"
+              : "rgba(11,78,162,0.54)",
+            transform: playing && index % 3 === 0 ? "scaleY(1.12)" : "scaleY(1)",
+            transition: "transform 160ms ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function AudioWavePlayer({
   src = "",
   durationSeconds,
