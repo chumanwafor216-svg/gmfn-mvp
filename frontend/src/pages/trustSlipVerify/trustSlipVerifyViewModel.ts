@@ -1319,7 +1319,7 @@ function normalizeDecisionPackProfile(
       record?.state,
       "Record found"
     ),
-    issuedAtLabel: safeDateTime(record?.issued_at) || "Not stated",
+    issuedAtLabel: safeDateTime(record?.issued_at) || "Not shown",
     expiresAtLabel: safeDateTime(record?.expires_at) || "Not stated",
     systemNote: firstTruthy(record?.message, record?.detail),
     verificationState,

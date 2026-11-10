@@ -73,6 +73,16 @@ requirePattern(
   /data-gsn-public-professional-profile="not-published"[\s\S]*?No public profile published[\s\S]*?data-gsn-public-professional-profile="minimal"[\s\S]*?Phone, email, named communities, private evidence, and exact location stay hidden/,
   "The public profile route must fail closed and keep personal contact, named communities, exact location, and private evidence hidden."
 );
+requirePattern(
+  "publicPaper",
+  /Professional details published[\s\S]*?Communities[\s\S]*?Not shown/,
+  "The published professional profile must describe publication truth without inferring community-role totals."
+);
+forbidPattern(
+  "publicPaper",
+  /roleMixLabel|Membership \$\{|Membership \d|Admin \$\{|Admin \d/,
+  "Public identity surfaces must not turn confirmation options into membership or admin totals."
+);
 
 if (findings.length) {
   console.error("Identity opportunity gateway audit failed:");

@@ -6,7 +6,7 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, TrustSlip, User
+from app.db.models import Clan, TrustSlip, User, UserPayoutDestination
 
 
 def _seed_public_identity(*, with_trust_slip: bool, profile_enabled: bool) -> None:
@@ -50,6 +50,18 @@ def _seed_public_identity(*, with_trust_slip: bool, profile_enabled: bool) -> No
                     is_current=True,
                 )
             )
+        db.add(
+            UserPayoutDestination(
+                user_id=1,
+                destination_name="Public Holder",
+                bank_name="Private Pilot Bank",
+                account_number="12345678",
+                country="GB",
+                currency="GBP",
+                verification_status="verified",
+                verified_at=now,
+            )
+        )
         db.commit()
 
 
@@ -70,7 +82,12 @@ def test_public_identity_remains_available_without_trustslip(client: TestClient)
     assert "private-holder@example.com" not in serialized
     assert "+2348000000000" not in serialized
     assert "private community" not in serialized
-    assert "phone_verified" not in serialized
+    assert data["identity_context"]["phone_recorded"] is True
+    assert data["identity_context"]["phone_verified"] is True
+    assert data["identity_context"]["photo_recorded"] is True
+    assert data["identity_context"]["bank_details_recorded"] is True
+    assert data["identity_context"]["bank_verified"] is True
+    assert data["issued_at"] is None
     assert "active_community" not in serialized
 
 
@@ -84,6 +101,16 @@ def test_public_identity_keeps_profile_private_and_links_existing_trustslip(
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["code"] == "PUBLIC-ID-TRUSTSLIP"
+    assert data["issued_at"]
+    assert data["created_at"] == data["issued_at"]
+    assert data["identity_context"]["phone_recorded"] is True
+    assert data["identity_context"]["bank_details_recorded"] is True
+    assert data["identity_context"]["bank_verified"] is True
     assert data["public_professional_profile_enabled"] is False
     assert data["professional_headline"] is None
     assert data["professional_summary"] is None
+    serialized = response.text.lower()
+    assert "+2348000000000" not in serialized
+    assert "private pilot bank" not in serialized
+    assert "12345678" not in serialized
+    assert "private community" not in serialized

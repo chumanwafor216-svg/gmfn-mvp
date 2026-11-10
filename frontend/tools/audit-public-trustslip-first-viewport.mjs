@@ -240,8 +240,14 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /const roleMix = roleMixLabel\(communityConfirmationOptions, holderRole\)[\s\S]*?const linkedCommunityFootprint =[\s\S]*?activeCommunityCountLabel[\s\S]*?roleMix[\s\S]*?label: "Linked communities"/,
-  "The card-only public identity surface must show aggregate linked community and role counts without exposing community names."
+  /const linkedCommunityFootprint = "Not shown"[\s\S]*?label: "Linked communities"[\s\S]*?value: linkedCommunityFootprint/,
+  "The card-only public identity surface must keep community totals and roles private."
+);
+
+assertNotContains(
+  "publicPaper",
+  /Membership \$\{|Membership \d|Admin \$\{|Admin \d|roleMixLabel/,
+  "The public ID and professional profile must not invent membership or admin totals from confirmation options."
 );
 
 assertContains(

@@ -44,6 +44,7 @@ from app.services.trust_slips_services import (
     build_trust_slip_visibility_view,
     ensure_trust_slip_snapshot,
     get_current_trust_slip_for_user,
+    get_public_identity_status_context,
     get_trust_slip_payload,
     has_material_trustslip_change,
     issue_trust_slip_for_user,
@@ -1435,6 +1436,9 @@ def get_public_identity_by_gmfn_id(
         raise HTTPException(status_code=404, detail="GSN ID not found")
 
     slip = get_current_trust_slip_for_user(db, user_id=int(holder.id))
+    identity_context = get_public_identity_status_context(db, user=holder)
+    issued_at = getattr(slip, "created_at", None) if slip is not None else None
+    expires_at = getattr(slip, "expires_at", None) if slip is not None else None
     profile_enabled = bool(
         getattr(holder, "public_professional_profile_enabled", False)
         and _safe_str(getattr(holder, "professional_headline", None))
@@ -1447,6 +1451,8 @@ def get_public_identity_by_gmfn_id(
         "gmfn_id": public_id,
         "holder_gmfn_id": public_id,
         "profile_image_url": getattr(holder, "profile_image_url", None),
+        "identity_context": identity_context,
+        "phone_verified": bool(identity_context.get("phone_verified")),
         "public_professional_profile_enabled": profile_enabled,
         "professional_headline": (
             _safe_str(getattr(holder, "professional_headline", None)) or None
@@ -1461,6 +1467,9 @@ def get_public_identity_by_gmfn_id(
         "status": getattr(slip, "status", None) if slip is not None else "pending",
         "verification_status": "available" if slip is not None else "pending",
         "is_current": bool(getattr(slip, "is_current", False)) if slip is not None else False,
+        "created_at": issued_at.isoformat() if issued_at else None,
+        "issued_at": issued_at.isoformat() if issued_at else None,
+        "expires_at": expires_at.isoformat() if expires_at else None,
         "verification_note": (
             "Open the linked TrustSlip to check its current public status."
             if slip is not None

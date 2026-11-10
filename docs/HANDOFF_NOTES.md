@@ -1,5 +1,23 @@
 # Active Handoff Notes
 
+## Public GSN ID evidence-truth correction - 2026-11-10
+
+- The stable public identity route `GET /trust-slips/public-identity/{gmfn_id}`
+  now returns the current TrustSlip issue/expiry timestamps and privacy-safe
+  evidence booleans for phone, photo, bank/wallet, and identity documents. It
+  does not return phone numbers, bank names, account numbers, named
+  communities, or community totals.
+- `/id/:gmfnId` now shows the real issue date when a current TrustSlip exists.
+  Phone and bank/wallet show `Recorded` or `Verified` from current evidence;
+  the public photo remains `Shown`.
+- The public ID card and professional profile no longer turn one community
+  confirmation option into the false aggregate `Membership 1 / Admin 0`.
+  Community totals remain `Not shown`, and the profile tile states only that
+  professional details were published.
+- Verification passed: 25 TrustSlip/public-identity backend tests, identity
+  opportunity gateway audit, public TrustSlip first-viewport audit, public
+  TrustSlip boundary audit, and the 326-module production frontend build.
+
 ## Public GSN ID personal-profile gateway correction - 2026-11-10
 
 - Corrected `/id/:gmfnId` so its Opportunity Gateway consistently shows the

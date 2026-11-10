@@ -825,6 +825,53 @@ def _controlled_label(value: Any, labels: Dict[str, str], fallback: str) -> str:
     return labels.get(key, fallback)
 
 
+
+def get_public_identity_status_context(
+    db: Session,
+    *,
+    user: Optional[User],
+) -> Dict[str, Any]:
+    """Return current identity evidence states without returning private values."""
+    entry_context = _entry_verification_context(db, user=user)
+    if user is None:
+        return {
+            "profile_image_url": None,
+            "photo_recorded": False,
+            "phone_recorded": False,
+            "phone_verified": False,
+            "bank_details_recorded": False,
+            "bank_verified": False,
+            "official_id_recorded": False,
+            "official_id_verified": False,
+            "passport_recorded": False,
+            "passport_verified": False,
+            "driver_licence_recorded": False,
+        }
+
+    phone_recorded = bool(
+        getattr(user, "phone_e164", None) or entry_context["phone_recorded"]
+    )
+    phone_verified = bool(
+        getattr(user, "phone_e164", None)
+        and getattr(user, "phone_verified_at", None)
+    )
+    profile_image_url = getattr(user, "profile_image_url", None)
+
+    return {
+        "profile_image_url": profile_image_url,
+        "photo_recorded": bool(profile_image_url),
+        "phone_recorded": phone_recorded,
+        "phone_verified": phone_verified,
+        "bank_details_recorded": bool(entry_context["bank_details_recorded"]),
+        "bank_verified": bool(entry_context["bank_verified"]),
+        "official_id_recorded": bool(entry_context["official_id_recorded"]),
+        "official_id_verified": bool(entry_context["official_id_verified"]),
+        "passport_recorded": bool(entry_context["passport_recorded"]),
+        "passport_verified": bool(entry_context["passport_verified"]),
+        "driver_licence_recorded": bool(entry_context["driver_licence_recorded"]),
+    }
+
+
 def _invite_relationship_evidence_summary(db: Session, *, user_id: int) -> Dict[str, Any]:
     accepted_rows = (
         db.query(TrustEvent)

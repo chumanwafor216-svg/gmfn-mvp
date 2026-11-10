@@ -423,44 +423,6 @@ function identityEvidenceLabel({
   return "Not shown";
 }
 
-function publicRoleName(value: unknown): string {
-  const role = safeText(value).toLowerCase();
-  if (!role) return "";
-  if (/owner|founder|admin|administrator|lead|leader|officer|steward|chair|moderator/.test(role)) {
-    return "Admin";
-  }
-  return "Membership";
-}
-
-function roleMixLabel(options: CommunityConfirmationOption[], fallbackRole?: string | null): string {
-  const counts = new Map<string, number>([
-    ["Membership", 0],
-    ["Admin", 0],
-  ]);
-  const seen = new Set<string>();
-  let hasRoleEvidence = false;
-  options.forEach((item, index) => {
-    const key = firstTruthy(item.community_id, item.clan_id, item.community_code, `row-${index}`);
-    if (seen.has(key)) return;
-    seen.add(key);
-    const label = publicRoleName(firstTruthy(item.holder_role, item.role));
-    if (!label) return;
-    hasRoleEvidence = true;
-    counts.set(label, (counts.get(label) || 0) + 1);
-  });
-
-  if (!hasRoleEvidence) {
-    const fallback = publicRoleName(fallbackRole);
-    if (!fallback) return "";
-    hasRoleEvidence = true;
-    counts.set(fallback, (counts.get(fallback) || 0) + 1);
-  }
-
-  return hasRoleEvidence
-    ? ["Membership", "Admin"].map((label) => `${label} ${counts.get(label) || 0}`).join(" / ")
-    : "";
-}
-
 function referenceFingerprint(...values: unknown[]): string {
   const input = values.map((value) => safeText(value)).join("|") || "gsn-trustslip";
   let hashA = 0x811c9dc5;
@@ -2694,9 +2656,6 @@ export default function TrustSlipVerifyPublicPaper({
         </section>
       );
     }
-    const publicRoleLabel = roleMixLabel(communityConfirmationOptions, holderRole) || "GSN member";
-    const publicCommunityCount = positiveNumber(activeCommunityCount);
-
     return (
       <section
         data-gsn-public-professional-profile="minimal"
@@ -2752,7 +2711,7 @@ export default function TrustSlipVerifyPublicPaper({
 
           <div style={{ borderRadius: 18, background: "#FFFFFF", border: "1px solid rgba(37,78,119,0.12)", padding: compact ? 14 : 18 }}>
             <div style={{ color: "#07172C", fontSize: compact ? 19 : 23, fontWeight: 1000, lineHeight: 1.2 }}>
-              {firstTruthy(professionalHeadline, publicRoleLabel)}
+              {professionalHeadline}
             </div>
             {professionalSummary ? (
               <p style={{ margin: "9px 0 0", color: "#526579", fontSize: compact ? 13.5 : 15, fontWeight: 760, lineHeight: 1.5 }}>
@@ -2761,13 +2720,13 @@ export default function TrustSlipVerifyPublicPaper({
             ) : null}
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
               <div style={statTile("#F8FBFF")}>
-                <div style={{ ...sectionLabel(), color: "#64748B" }}>Public role</div>
-                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>{publicRoleLabel}</div>
+                <div style={{ ...sectionLabel(), color: "#64748B" }}>Profile</div>
+                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>Professional details published</div>
               </div>
               <div style={statTile("#F8FBFF")}>
                 <div style={{ ...sectionLabel(), color: "#64748B" }}>Communities</div>
                 <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
-                  {publicCommunityCount > 0 ? `${publicCommunityCount} linked` : "Not shown"}
+                  Not shown
                 </div>
               </div>
             </div>
@@ -2798,10 +2757,7 @@ export default function TrustSlipVerifyPublicPaper({
     const publicVerifyDisplay = publicVerifyUrl
       ? publicVerifyUrl.replace(/^https?:\/\//i, "")
       : verifyPath || "Live card link not available";
-    const roleMix = roleMixLabel(communityConfirmationOptions, holderRole);
-    const linkedCommunityFootprint = activeCommunityCountLabel
-      ? `${activeCommunityCountLabel} visible${roleMix ? `; ${roleMix}` : ""}`
-      : roleMix || "Public count not shown";
+    const linkedCommunityFootprint = "Not shown";
     const phoneEvidence = identityEvidenceLabel({
       verified: firstKnownBoolean(identityContext?.phone_verified, phoneVerified),
       recorded: firstKnownBoolean(identityContext?.phone_recorded, identityContext?.phone_verified, phoneVerified),
@@ -2830,7 +2786,7 @@ export default function TrustSlipVerifyPublicPaper({
       { label: "ID document", value: idEvidence, icon: "certificate-seal", good: idEvidence !== "Not shown" },
       { label: "Photo", value: photoEvidence, icon: "identity-card", good: photoEvidence !== "Not shown" },
       { label: "Bank / wallet", value: bankEvidence, icon: "finance-bank-building", good: bankEvidence !== "Not shown" },
-      { label: "Linked communities", value: linkedCommunityFootprint, icon: "public-globe", good: activeCommunityContexts > 0 || Boolean(roleMix) },
+      { label: "Linked communities", value: linkedCommunityFootprint, icon: "public-globe", good: false },
     ];
     const publicOpportunityActions: IdentityOpportunityAction[] = [
       ...(resolvedCode
