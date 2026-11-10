@@ -2718,18 +2718,6 @@ export default function TrustSlipVerifyPublicPaper({
                 {professionalSummary}
               </p>
             ) : null}
-            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-              <div style={statTile("#F8FBFF")}>
-                <div style={{ ...sectionLabel(), color: "#64748B" }}>Profile</div>
-                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>Professional details published</div>
-              </div>
-              <div style={statTile("#F8FBFF")}>
-                <div style={{ ...sectionLabel(), color: "#64748B" }}>Communities</div>
-                <div style={{ marginTop: 5, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
-                  Not shown
-                </div>
-              </div>
-            </div>
           </div>
 
           <div style={{ color: "#617085", fontSize: compact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.35 }}>

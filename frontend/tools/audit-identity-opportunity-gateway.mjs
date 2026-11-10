@@ -75,8 +75,13 @@ requirePattern(
 );
 requirePattern(
   "publicPaper",
-  /Professional details published[\s\S]*?Communities[\s\S]*?Not shown/,
-  "The published professional profile must describe publication truth without inferring community-role totals."
+  /data-gsn-public-professional-profile="minimal"[\s\S]*?professionalHeadline[\s\S]*?professionalSummary[\s\S]*?Only details this member chose to publish are shown\.[\s\S]*?named communities[\s\S]*?stay hidden/,
+  "The published professional profile must keep its opted-in details and one privacy boundary without redundant summary tiles."
+);
+forbidPattern(
+  "publicPaper",
+  /Professional details published|>Communities<\/div>/,
+  "The public professional profile must not repeat publication or hidden-community state in summary tiles."
 );
 forbidPattern(
   "publicPaper",

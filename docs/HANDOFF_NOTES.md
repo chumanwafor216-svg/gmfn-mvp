@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Public professional profile redundant tiles removed - 2026-11-10
+
+- Removed the `Profile — Professional details published` and
+  `Communities — Not shown` tiles from `/id/:gmfnId/profile` at the product
+  owner's direction.
+- The opted-in headline and summary remain visible. The existing privacy note
+  remains the single explanation that phone, email, named communities, private
+  evidence, and exact location stay hidden.
+- Verification passed: identity opportunity gateway, public TrustSlip first
+  viewport, public TrustSlip privacy boundary, and the 326-module production
+  frontend build.
+- Commit and deployment are pending.
+
 ## Market Wisdom static-neon presentation polish - 2026-11-10
 
 - The product owner explicitly requested a more polished neon presentation for

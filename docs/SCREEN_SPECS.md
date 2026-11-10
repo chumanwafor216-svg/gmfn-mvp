@@ -1876,6 +1876,13 @@ Rules:
 - Existing `/t/:code/card` and `/t/:code/profile` links remain valid legacy
   aliases, but newly generated QR/share/profile links must use the stable GSN ID
   routes.
+- Owner-approved compactness correction (2026-11-10): the published public
+  professional profile must not repeat `Professional details published` and
+  `Communities — Not shown` as two summary tiles. The visible professional
+  content already proves publication, while the single privacy note remains
+  the source of truth for hidden phone, email, named communities, private
+  evidence, and exact location. No publication, privacy, route, or API contract
+  changes.
 - Public professional profile publishing is off by default and is controlled
   from the authenticated Profile settings surface. A headline is required
   before opt-in can be enabled.
