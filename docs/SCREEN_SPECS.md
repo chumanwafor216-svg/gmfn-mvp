@@ -238,6 +238,13 @@ Rules:
   strength. Lighting must remain static and readable: no flashing, pulsing,
   transition, new control, extra reading, changed copy, changed timing, changed
   card dimensions, route, action, permission, API, or data-contract change.
+- Owner-approved Market Wisdom neon removal (2026-11-10), superseding the
+  Market Wisdom portion of the presentation exception above: restore the former
+  light blue/white outer stage and inner panel, and remove the outer frame,
+  active-reading glow, and glow text from Market Wisdom only. Keep the
+  five-reading rotation, copy, timing, geometry, actions, routes, permissions,
+  APIs, and data contracts unchanged. Other approved Dashboard neon surfaces
+  remain unchanged.
 - Owner-approved visual correction (2026-11-08): on phone, the existing
   authenticated `Menu`, `Tools`, five bottom tabs, compact identity card,
   My Pulse actions, DemandBox/Focus cards, TrustSlip tools banner, and outer

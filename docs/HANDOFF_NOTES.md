@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## Market Wisdom neon removed - 2026-11-10
+
+- At the product owner's clarified direction, restored the former light
+  blue/white outer stage and white inner panel and removed the outer frame,
+  active-reading glow, and glow text from Market Wisdom only.
+- The five-reading rotation, capability reading, 45-second timing, copy,
+  geometry, actions, routes, permissions, APIs, and data remain unchanged.
+  Other Dashboard neon surfaces are untouched.
+- Verification and deployment are pending.
+
 ## Public identity privacy presentation corrected - 2026-11-10
 
 - Removed the redundant `Profile / Professional details published` and

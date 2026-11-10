@@ -37,6 +37,12 @@ const community = readRepo(communityFile);
 const communityInvite = readRepo(communityInviteFile);
 const marketplace = readRepo(marketplaceFile);
 const profile = readRepo(profileFile);
+const marketWisdomStart = dashboard.indexOf('data-dashboard-surface="market-wisdom"');
+const marketWisdomEnd = dashboard.indexOf(
+  'data-dashboard-neon-surface="focus"',
+  marketWisdomStart
+);
+const marketWisdomSection = dashboard.slice(marketWisdomStart, marketWisdomEnd);
 
 requirePattern(
   presentationFile,
@@ -69,7 +75,7 @@ forbidPattern(
   "Authenticated neon presentation must remain static and must not add motion."
 );
 
-for (const surface of ["trustslip", "demandbox", "pulse", "market-wisdom", "focus"]) {
+for (const surface of ["trustslip", "demandbox", "pulse", "focus"]) {
   requirePattern(
     dashboardFile,
     dashboard,
@@ -91,15 +97,15 @@ requirePattern(
 );
 requirePattern(
   dashboardFile,
-  dashboard,
-  /data-dashboard-neon-surface="market-wisdom"[\s\S]{0,1200}?authenticatedStaticNeonFrame\([\s\S]{0,80}?"cyanGold"/,
-  "Dashboard Market Wisdom must keep its approved outer cyan-gold static frame."
+  marketWisdomSection,
+  /data-dashboard-surface="market-wisdom"[\s\S]{0,500}?linear-gradient\(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%\)[\s\S]*?linear-gradient\(180deg, #FFFFFF 0%, #F4F9FF 100%\)/,
+  "Dashboard Market Wisdom must keep its restored light outer and inner backgrounds."
 );
-requirePattern(
+forbidPattern(
   dashboardFile,
-  dashboard,
-  /function marketWisdomSignalNeonTone\([\s\S]*?case "gsn":[\s\S]*?"cyanViolet"[\s\S]*?case "guide":[\s\S]*?case "capability":[\s\S]*?"goldViolet"[\s\S]*?case "market":[\s\S]*?case "now":[\s\S]*?"cyanGold"[\s\S]*?data-dashboard-neon-surface="market-wisdom"[\s\S]*?authenticatedStaticNeonFrame\([\s\S]{0,120}?marketWisdomSignalNeonTone\(activeMarketWisdomSignal\.key\)[\s\S]{0,120}?isPhone \? "vivid" : "soft"/,
-  "Dashboard Market Wisdom must use one signal-aware static neon rim with vivid phone and soft desktop strength."
+  marketWisdomSection,
+  /authenticatedStaticNeonFrame|textShadow|#08233D|#061A2E|#041426/,
+  "Dashboard Market Wisdom must not render neon frames, glow text, or the replaced dark-neon background."
 );
 
 requirePattern(
