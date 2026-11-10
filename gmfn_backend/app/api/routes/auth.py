@@ -188,6 +188,11 @@ class ActivateMembershipIn(BaseModel):
     request_id: Optional[str] = None
 
 
+class ActivationEntryStatusIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    request_id: int = Field(..., gt=0)
+
+
 class PasswordRecoveryStartIn(BaseModel):
     gmfn_id: str = Field(..., min_length=6, max_length=64)
     phone_e164: str = Field(..., min_length=6, max_length=32)
@@ -1338,6 +1343,48 @@ def get_approved_member_activation_status(
             "message": "Public account status lookup by GSN ID has been retired. Use the protected application continuation or sign in.",
         },
     )
+
+
+@router.post("/activation-entry-status", response_model=dict[str, object])
+def get_activation_entry_status(
+    payload: ActivationEntryStatusIn,
+    db: Session = Depends(get_db),
+):
+    request_row = db.get(ClanJoinRequest, int(payload.request_id))
+    if request_row is None or str(request_row.status or "").strip().lower() != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "activation_entry_not_found",
+                "message": "This activation link could not be confirmed.",
+            },
+        )
+
+    applicant = db.get(User, int(request_row.applicant_user_id))
+    supplied_ids = set(_gsn_id_candidates(payload.gmfn_id))
+    recorded_id = str(getattr(applicant, "gmfn_id", "") or "").strip().upper()
+    if applicant is None or not supplied_ids or recorded_id not in supplied_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "activation_entry_not_found",
+                "message": "This activation link could not be confirmed.",
+            },
+        )
+
+    if is_user_activation_pending(applicant):
+        return {
+            "ok": True,
+            "status": "activation_pending",
+            "next_action": "continue_activation",
+        }
+
+    return {
+        "ok": True,
+        "status": "already_active",
+        "next_action": "login",
+        "login_path": "/login?force=1",
+    }
 
 
 @router.post(

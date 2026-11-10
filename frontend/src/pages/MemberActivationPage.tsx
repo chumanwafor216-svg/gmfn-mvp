@@ -7,12 +7,14 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import {
   activateApprovedMember,
   activateMembership,
   confirmJoinActivationAssistance,
   confirmJoinActivationPhoneRecovery,
   getAccessToken,
+  getActivationEntryStatus,
   getMe,
   getMeWithToken,
   getSelectedClanId,
@@ -107,6 +109,13 @@ type ActivationNotice = {
   actionLabel?: string;
   actionPath?: string;
 };
+
+type ActivationEntryState =
+  | "idle"
+  | "checking"
+  | "pending"
+  | "already-active"
+  | "unconfirmed";
 
 function loginPathFromDetail(detail: Record<string, any> | null): string {
   const rawPath = safeStr(detail?.login_path);
@@ -761,6 +770,11 @@ export default function MemberActivationPage() {
   const [activationCredential, setActivationCredential] = useState(
     initialActivationCredential
   );
+  const [activationEntryState, setActivationEntryState] = useState<ActivationEntryState>(
+    !initialActivationCredential && initialGmfnId && initialRequestId
+      ? "checking"
+      : "idle"
+  );
   const [continuationBusy, setContinuationBusy] = useState(false);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [assistedCode, setAssistedCode] = useState("");
@@ -792,6 +806,58 @@ export default function MemberActivationPage() {
 
   const hasGsnId = Boolean(requestReady.gmfn_id);
   const hasRequestId = Boolean(requestReady.request_id);
+  const alreadyActiveLoginPath = useMemo(() => {
+    const params = new URLSearchParams({ force: "1", activation: "complete" });
+    if (requestReady.gmfn_id) params.set("gmfn_id", requestReady.gmfn_id);
+    return `/login?${params.toString()}`;
+  }, [requestReady.gmfn_id]);
+
+  useEffect(() => {
+    if (requestReady.activation_token) {
+      setActivationEntryState("idle");
+      return;
+    }
+    if (!requestReady.gmfn_id || !requestReady.request_id) {
+      setActivationEntryState("idle");
+      return;
+    }
+
+    let active = true;
+    setActivationEntryState("checking");
+    getActivationEntryStatus({
+      gmfn_id: requestReady.gmfn_id,
+      request_id: requestReady.request_id,
+    })
+      .then((result) => {
+        if (!active) return;
+        const status = safeStr(result?.status).toLowerCase();
+        if (status === "already_active") {
+          clearActivationContinuation({
+            requestId: requestReady.request_id,
+            gmfnId: requestReady.gmfn_id,
+          });
+          setActivationEntryState("already-active");
+          navigate(alreadyActiveLoginPath, { replace: true });
+          return;
+        }
+        setActivationEntryState(
+          status === "activation_pending" ? "pending" : "unconfirmed"
+        );
+      })
+      .catch(() => {
+        if (active) setActivationEntryState("unconfirmed");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    alreadyActiveLoginPath,
+    navigate,
+    requestReady.activation_token,
+    requestReady.gmfn_id,
+    requestReady.request_id,
+  ]);
 
   useEffect(() => {
     if (
@@ -1003,6 +1069,19 @@ export default function MemberActivationPage() {
     setNotice(null);
     setSuccess("");
 
+    if (!requestReady.gmfn_id && !requestReady.request_id) {
+      showNotice(
+        {
+          tone: "warning",
+          title: "Add approved GSN ID or request ID",
+          message:
+            "Enter either the GSN ID shown after approval or the request ID from approval status.",
+        },
+        { dismissMs: 4200 }
+      );
+      return;
+    }
+
     if (!requestReady.activation_token) {
       showNotice(
         {
@@ -1015,8 +1094,6 @@ export default function MemberActivationPage() {
       );
       return;
     }
-
-    if (!requestReady.gmfn_id && !requestReady.request_id) return;
 
     if (!requestReady.password || requestReady.password.length < 6) {
       showNotice(
@@ -1113,7 +1190,6 @@ export default function MemberActivationPage() {
           me?.phone_verified_at
       );
       const needsPhoneVerification = !phoneVerified;
-      const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.identityRecovery;
       const nextMessage = needsPhoneVerification
         ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
         : "Membership activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
@@ -1128,11 +1204,6 @@ export default function MemberActivationPage() {
           message: nextMessage,
         }
       );
-      if (typeof window !== "undefined") {
-        routeTimerRef.current = window.setTimeout(() => {
-          navigate(nextRoute, { replace: true });
-        }, 1200);
-      }
     } catch (err: any) {
       const outcome = friendlyActivationError(err);
       showNotice(outcome.notice, {
@@ -1447,18 +1518,35 @@ export default function MemberActivationPage() {
                 >
                   <div>
                     <div style={{ color: "#F4D37C", fontWeight: 1000, fontSize: 20 }}>
-                      {continuationBusy
+                      {activationEntryState === "checking"
+                        ? "Checking this joining link..."
+                        : activationEntryState === "unconfirmed"
+                          ? "This joining link could not be confirmed"
+                          : continuationBusy
                         ? "Restoring your secure approval..."
                         : "Use your private activation code"}
                     </div>
                     <div style={{ color: "#C8D8EA", lineHeight: 1.55, marginTop: 6 }}>
-                      {continuationBusy
+                      {activationEntryState === "checking"
+                        ? "GSN is checking whether account setup is still required."
+                        : activationEntryState === "unconfirmed"
+                          ? "If you already created your password, sign in instead. Otherwise reopen the original approval on the phone or browser where you applied."
+                          : continuationBusy
                         ? "GSN is checking the protected approval saved in this browser."
                         : "On a different phone or browser, ask your community administrator to recognize you and create a private six-digit code. The code lasts 15 minutes and works once."}
                     </div>
                   </div>
 
-                  {!continuationBusy ? (
+                  {activationEntryState === "unconfirmed" ? (
+                    <StableCtaLink
+                      to={alreadyActiveLoginPath}
+                      kind="primary"
+                      debugId="member-activation.unconfirmed-sign-in"
+                      style={{ borderRadius: 18, fontWeight: 1000 }}
+                    >
+                      Sign in to GSN
+                    </StableCtaLink>
+                  ) : !continuationBusy && activationEntryState !== "checking" ? (
                     <>
                       <div style={{ display: "grid", gap: 10 }}>
                         <label style={labelText()} htmlFor="member-activation-assisted-code">
@@ -1708,6 +1796,12 @@ export default function MemberActivationPage() {
         </form>
 
         {activated ? (
+          <div style={{ display: "grid", gap: 12 }} data-gsn-activation-complete="true">
+          <GsnInstallPrompt
+            tone="dark"
+            compact={isCompact}
+            surface="member-activation-complete"
+          />
           <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
               to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
@@ -1738,6 +1832,7 @@ export default function MemberActivationPage() {
               Open Trust Passport
             </StableCtaLink>
           </CardActionRow>
+          </div>
         ) : null}
       </div>
     </div>

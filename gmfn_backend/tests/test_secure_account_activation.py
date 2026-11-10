@@ -86,6 +86,64 @@ def test_identifier_only_activation_is_rejected(client: TestClient):
     assert client.post("/auth/activate-approved-member", json=payload).status_code == 422
 
 
+def test_request_bound_activation_entry_status_reports_pending_then_active(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    activation_token, _status_token = _seed_pending_member(with_join_request=True)
+    payload = {"gmfn_id": "GMFN-U-APPLICANT1", "request_id": 1}
+
+    pending = client.post("/auth/activation-entry-status", json=payload)
+    assert pending.status_code == 200, pending.text
+    assert pending.json() == {
+        "ok": True,
+        "status": "activation_pending",
+        "next_action": "continue_activation",
+    }
+
+    activated = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-APPLICANT1",
+            "request_id": "1",
+            "activation_token": activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+    assert activated.status_code == 200, activated.text
+
+    complete = client.post("/auth/activation-entry-status", json=payload)
+    assert complete.status_code == 200, complete.text
+    assert complete.json() == {
+        "ok": True,
+        "status": "already_active",
+        "next_action": "login",
+        "login_path": "/login?force=1",
+    }
+
+
+def test_activation_entry_status_requires_exact_request_and_gsn_pair(client: TestClient):
+    _seed_pending_member(with_join_request=True)
+
+    wrong_gsn_id = client.post(
+        "/auth/activation-entry-status",
+        json={"gmfn_id": "GMFN-U-WRONG000", "request_id": 1},
+    )
+    wrong_request = client.post(
+        "/auth/activation-entry-status",
+        json={"gmfn_id": "GMFN-U-APPLICANT1", "request_id": 999},
+    )
+    retired_gsn_only = client.get("/auth/approved-member/GMFN-U-APPLICANT1")
+
+    assert wrong_gsn_id.status_code == 404
+    assert wrong_request.status_code == 404
+    assert wrong_gsn_id.json()["detail"]["code"] == "activation_entry_not_found"
+    assert wrong_request.json()["detail"]["code"] == "activation_entry_not_found"
+    assert retired_gsn_only.status_code == 410
+
+
 def test_one_activation_wins_across_all_account_grants(client: TestClient, monkeypatch):
     monkeypatch.setenv("GMFN_DEV_MODE", "1")
     first_token, _ = _seed_pending_member()

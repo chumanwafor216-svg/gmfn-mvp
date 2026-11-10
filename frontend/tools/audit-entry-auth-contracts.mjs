@@ -233,8 +233,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /status_token\?: string;[\s\S]*savedContinuation\.statusToken[\s\S]*refreshJoinActivationContinuation[\s\S]*handleConfirmAssistedCode[\s\S]*!activationCredential[\s\S]*Use your private activation code[\s\S]*activationCredential \? \([\s\S]*Create password/,
-  "Activation must restore same-browser approval proof and offer a request-bound private administrator code before password setup in another browser."
+  /status_token\?: string;[\s\S]*savedContinuation\.statusToken[\s\S]*getActivationEntryStatus[\s\S]*already_active[\s\S]*navigate\(alreadyActiveLoginPath[\s\S]*refreshJoinActivationContinuation[\s\S]*handleConfirmAssistedCode[\s\S]*!activationCredential[\s\S]*Use your private activation code[\s\S]*activationCredential \? \([\s\S]*Create password/,
+  "Activation must restore same-browser approval proof, redirect consumed exact-pair links to sign in, and offer a request-bound private administrator code only while activation remains pending."
 );
 
 assertContains(
@@ -245,14 +245,14 @@ assertContains(
 
 assertContains(
   "src/lib/api.ts",
-  /refreshJoinActivationContinuation[\s\S]*X-Join-Status-Token[\s\S]*issueJoinActivationAssistance[\s\S]*activation-assistance[\s\S]*confirmJoinActivationAssistance[\s\S]*activation-assistance\/confirm[\s\S]*startJoinActivationPhoneRecovery[\s\S]*activation-phone\/start[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*activation-phone\/confirm/,
-  "Shared frontend API helpers must preserve separate status-proof, private assisted-code, and one-time phone-code activation recovery contracts."
+  /getActivationEntryStatus[\s\S]*activation-entry-status[\s\S]*refreshJoinActivationContinuation[\s\S]*X-Join-Status-Token[\s\S]*issueJoinActivationAssistance[\s\S]*activation-assistance[\s\S]*confirmJoinActivationAssistance[\s\S]*activation-assistance\/confirm[\s\S]*startJoinActivationPhoneRecovery[\s\S]*activation-phone\/start[\s\S]*confirmJoinActivationPhoneRecovery[\s\S]*activation-phone\/confirm/,
+  "Shared frontend API helpers must preserve exact-pair entry status, separate status-proof, private assisted-code, and one-time phone-code activation recovery contracts."
 );
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*identityRecovery:[\s\S]*"cci"[\s\S]*task=recovery&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*const nextRoute = needsPhoneVerification[\s\S]*routes\.identityPhone[\s\S]*routes\.identityRecovery[\s\S]*Membership activated\. Verify this phone next[\s\S]*Set private recovery next[\s\S]*navigate\(nextRoute, \{ replace: true \}\);/,
-  "Successful activation must answer visibly, route unverified joined members to phone verification, and route verified members to private recovery setup before First Circle growth."
+  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*identityRecovery:[\s\S]*"cci"[\s\S]*task=recovery&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*Membership activated\. Verify this phone next[\s\S]*Set private recovery next[\s\S]*data-gsn-activation-complete="true"[\s\S]*GsnInstallPrompt[\s\S]*member-activation\.verify-phone[\s\S]*member-activation\.set-recovery/,
+  "Successful activation must answer visibly, offer phone shortcut guidance, and keep phone verification or private recovery as the primary next action before First Circle growth."
 );
 
 assertContains(

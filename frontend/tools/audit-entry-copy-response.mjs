@@ -222,8 +222,14 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle/,
-  "Member Activation must answer success visibly, send unverified members to phone verification, and send verified members to private recovery before First Circle growth."
+  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle/,
+  "Member Activation must answer success visibly, offer shortcut guidance, and lead to phone verification or private recovery before First Circle growth."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /activationComplete[\s\S]*?This one-time activation link has already been used[\s\S]*?sign in with your GSN ID and password/,
+  "Sign in must explain why a consumed activation link redirected the member there."
 );
 
 assertContains(

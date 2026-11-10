@@ -1,5 +1,68 @@
 # Active Handoff Notes
 
+## Consumed activation-link and phone-shortcut repair - 2026-11-10
+
+- Owner evidence: Naomi reopened the old approval/activation link on a family
+  phone because that phone had no GSN home-screen shortcut. The link displayed
+  private activation-code recovery even though account setup had already
+  finished.
+- Production truth: GSN ID `GMFN-U-9CED9F0E`, join request `28`, and active
+  Homeland isa membership belong to the same user. The activation grant was
+  consumed at `2026-11-10T09:00:46.065Z`; this account is already active.
+- Root cause: `MemberActivationPage` trusted the GSN ID and request ID in the
+  old URL, but another browser had neither the protected activation token nor
+  a safe request-bound way to check whether activation had already completed.
+  It therefore exposed the pending-account recovery UI again.
+- Backend repair: `POST /auth/activation-entry-status` accepts only the exact
+  GSN ID + approved request ID pair and returns only
+  `activation_pending` or `already_active`. Wrong pairs fail closed with the
+  same 404 response. The retired GSN-ID-only public account-status lookup stays
+  retired, and no phone, email, profile, password, token, or membership detail
+  is returned.
+- Frontend repair: an already-active exact pair clears stale continuation state
+  and replaces the activation route with a prefilled Sign in redirect. Sign in
+  explains that the one-time setup link was already used. Unconfirmed links do
+  not expose private-code recovery; they lead to Sign in or the original
+  protected approval browser.
+- Forward prevention: successful activation no longer auto-leaves before the
+  shared `Keep GSN nearby` phone-shortcut handoff can be used. Phone
+  verification/private recovery remains the primary next action. Newly
+  generated administrator activation messages label the setup link one-time
+  and include the separate permanent Sign in page.
+- Verification passed: all 106 secure-activation and join-request backend tests,
+  focused source ESLint, Entry/Auth contracts, Member/Entry actions, Entry copy
+  response, Entry flow polish, and the 326-module production frontend build.
+  The broad Button Stability audit remains red on unrelated existing
+  AppLayout, DemandBox, Shop Gallery, and Shop Assets expectations.
+- Publication is not claimed. This combined local branch still includes the
+  preceding Public Shop voice fallback repair and has not been committed,
+  pushed, or deployed.
+
+## Public Shop voice fallback repair - 2026-11-10
+
+- Owner evidence: the Ardent Ebony Uplift LTD shared Public Shop and a second
+  phone both omitted the recorded shop message from the Product coming soon
+  card.
+- Production truth: shop `GMFN-U-63655DE6` has no persistent welcome voice,
+  but public Shop Update `24` has active, undeleted 27.41-second attachment `4`.
+  Newer text-only update `25` was selected as the featured row and therefore
+  hid the valid older voice.
+- Frontend repair: Public Shop still uses the newest live update for visible
+  text, but now independently selects the newest live public update containing
+  an undeleted voice attachment. Welcome voice still has priority when present.
+- Regression coverage: the phone smoke now places a newer text-only update
+  before a valid voice update and confirms the coming-soon player requests the
+  valid voice attachment.
+- Verification passed: focused ESLint, Shop Diary Phase 1 and 2, workflow-plus
+  and Public Shop button-inventory audits, the production build, and the exact
+  browser regression scenario. The broad smoke later fails in an unrelated
+  owner product-hero expectation. The protected freeze retains unrelated
+  failures in My GSN smooth-scroll, Dashboard QR graphics, Shop Control
+  analytics counts/geometry, and Member Activation copy.
+- Publication is not claimed. The repair is isolated on
+  `codex/public-shop-audio-fallback` and has not been committed, pushed, or
+  deployed.
+
 ## Launcher-to-in-app notification wayfinding - 2026-11-10
 
 - Root cause confirmed: the service worker and launcher badge already use the

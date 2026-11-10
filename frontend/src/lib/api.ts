@@ -1007,6 +1007,21 @@ export async function activateMembership(payload: {
   return out;
 }
 
+export async function getActivationEntryStatus(payload: {
+  gmfn_id: string;
+  request_id: string | number;
+}): Promise<any> {
+  return httpJson(
+    "/auth/activation-entry-status",
+    "POST",
+    {
+      gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
+      request_id: Number(payload?.request_id || 0),
+    },
+    { quiet: true }
+  );
+}
+
 export async function markJoinRequestActivationOpened(
     requestId: string | number,
   gmfnId: string,

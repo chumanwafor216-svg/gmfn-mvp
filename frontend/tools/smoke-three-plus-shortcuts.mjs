@@ -227,7 +227,21 @@ async function installMocks(page, scenario) {
       }));
     }
     if (path.startsWith(`/shop-diaries/public/${ownerId}`)) {
-      return route.fulfill(json({ items: [scenarioDiary], total: 1 }));
+      const diaryRows = scenario.newerTextDiary
+        ? [
+            {
+              ...diary,
+              id: 92,
+              note: 'A newer written shop update.',
+              voice_attachment_id: null,
+              voice_duration_seconds: null,
+              voice_speaker_name: null,
+              voice_speaker_gmfn_id: null,
+            },
+            scenarioDiary,
+          ]
+        : [scenarioDiary];
+      return route.fulfill(json({ items: diaryRows, total: diaryRows.length }));
     }
     if (path === '/marketplace/shops/101/spotlight-status') {
       if (scenario.paidPromotionStage) {
@@ -900,6 +914,7 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     identity: visitorId,
     shopVoice: false,
     diaryVoice: true,
+    newerTextDiary: true,
     voiceReads: [],
     mutations: [],
   };

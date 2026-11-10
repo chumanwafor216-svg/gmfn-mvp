@@ -564,6 +564,7 @@ export default function LoginPage() {
   const forceLogin = searchParams.get("force") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
   const sessionClosed = searchParams.get("session") === "closed";
+  const activationComplete = searchParams.get("activation") === "complete";
   const publishRecoveryReturnTarget = useMemo(
     () => peekPublishRecoveryTarget(),
     []
@@ -599,7 +600,9 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [sessionNotice, setSessionNotice] = useState<string | null>(() =>
-    sessionClosed
+    activationComplete
+      ? "This one-time activation link has already been used. Your GSN account is active, so sign in with your GSN ID and password."
+      : sessionClosed
       ? BACKGROUND_SESSION_NOTICE
       : sessionExpired
       ? publishRecoveryReturnTarget

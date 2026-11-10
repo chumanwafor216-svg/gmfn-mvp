@@ -3709,6 +3709,22 @@ export default function ShopGalleryPage() {
       .slice(0, 1);
   }, [shopDiaryEntries]);
   const featuredDiaryEntry = liveShopDiaryEntries[0] || null;
+  const latestPublicShopUpdateVoiceEntry = useMemo(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return (
+      shopDiaryEntries.find((entry) => {
+        const timestamp = Date.parse(String(entry.occurred_at || entry.created_at));
+        return (
+          Number.isFinite(timestamp) &&
+          timestamp >= cutoff &&
+          entry.is_public !== false &&
+          entry.is_active !== false &&
+          positiveNumber(entry.voice_attachment_id) > 0 &&
+          !entry.voice_deleted_at
+        );
+      }) || null
+    );
+  }, [shopDiaryEntries]);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -4779,12 +4795,15 @@ export default function ShopGalleryPage() {
       }
     : null;
   const latestShopUpdateVoice = positiveNumber(featuredDiaryEntry?.voice_attachment_id)
+    || positiveNumber(latestPublicShopUpdateVoiceEntry?.voice_attachment_id)
     ? {
-        attachmentId: positiveNumber(featuredDiaryEntry?.voice_attachment_id),
-        durationSeconds: featuredDiaryEntry?.voice_duration_seconds,
-        deletedAt: featuredDiaryEntry?.voice_deleted_at,
-        speakerName: featuredDiaryEntry?.voice_speaker_name,
-        speakerGmfnId: featuredDiaryEntry?.voice_speaker_gmfn_id,
+        attachmentId: positiveNumber(
+          latestPublicShopUpdateVoiceEntry?.voice_attachment_id
+        ),
+        durationSeconds: latestPublicShopUpdateVoiceEntry?.voice_duration_seconds,
+        deletedAt: latestPublicShopUpdateVoiceEntry?.voice_deleted_at,
+        speakerName: latestPublicShopUpdateVoiceEntry?.voice_speaker_name,
+        speakerGmfnId: latestPublicShopUpdateVoiceEntry?.voice_speaker_gmfn_id,
         label: "Latest Shop Update voice",
       }
     : null;

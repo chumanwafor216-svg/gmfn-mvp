@@ -111,8 +111,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /const nextRoute = needsPhoneVerification[\s\S]*?routes\.identityPhone[\s\S]*?routes\.identityRecovery[\s\S]*?Verify this phone next[\s\S]*?Set private recovery next[\s\S]*?navigate\(nextRoute[\s\S]*?Verify phone[\s\S]*?Set recovery[\s\S]*?Build first circle/,
-  "Member Activation success must route unverified joined members to phone verification, then route verified members to private recovery while keeping First Circle available after recovery setup."
+  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation-complete[\s\S]*?Verify phone[\s\S]*?Set recovery[\s\S]*?Build first circle/,
+  "Member Activation success must keep phone verification or private recovery as the next action, offer shortcut guidance, and retain First Circle after setup."
 );
 
 assertContains(

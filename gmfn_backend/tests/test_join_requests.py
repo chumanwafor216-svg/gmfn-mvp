@@ -282,6 +282,9 @@ def test_public_qr_join_request_auto_approves_preapproved_phone(client):
     assert data["activation_required"] is True
     assert "activate-membership" in data["activation_path"]
     assert str(data["request_id"]) in data["activation_path"]
+    assert "one-time account setup link" in data["activation_message"]
+    assert "permanent GSN sign-in page" in data["activation_message"]
+    assert "/login?force=1" in data["activation_message"]
     assert data["pending_status_path"].endswith(f"request_id={data['request_id']}")
     assert data["approval_result"]["status"] == "approved"
     assert data["approval_result"]["activation_required"] is True

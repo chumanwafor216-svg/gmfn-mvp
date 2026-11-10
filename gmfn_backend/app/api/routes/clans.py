@@ -3302,6 +3302,7 @@ def _build_activation_package(
     gmfn_id = _safe_str(getattr(applicant, "gmfn_id", None))
     activation_path = _frontend_activation_path(gmfn_id, int(join_request.id))
     activation_link = _frontend_activation_link(request, gmfn_id, int(join_request.id))
+    sign_in_link = f"{_frontend_origin(request)}/login?force=1"
     community_code = _community_code(clan.id)
     inviter_name = _member_display(inviter)
     marketplace_name = _safe_str(getattr(clan, "marketplace_name", None))
@@ -3329,8 +3330,12 @@ def _build_activation_package(
             "3. Create your own new password. Do not ask anyone else to choose or send a password for you.",
             "4. After activation, use your GSN ID and the password you created to sign in.",
             "",
-            "This link identifies the activation screen but does not prove account ownership:",
+            "This is a one-time account setup link. It identifies the activation screen but does not prove account ownership:",
             activation_link,
+            "",
+            "After activation, use the permanent GSN sign-in page instead:",
+            sign_in_link,
+            "Do not keep reopening the one-time setup link.",
             "",
             "If the protected continuation is no longer available, use verified account recovery. A GSN ID or request ID alone cannot activate an account.",
             "",
@@ -3349,6 +3354,7 @@ def _build_activation_package(
         "invited_by_display": inviter_name,
         "activation_path": activation_path,
         "activation_link": activation_link,
+        "sign_in_link": sign_in_link,
         "activation_message": "\n".join(lines),
         "lineage": {
             "origin_community_id": int(clan.id),
