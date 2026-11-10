@@ -95,6 +95,37 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Dashboard Attention Guide exact-action handoff repair - 2026-11-10
+
+- The Attention Guide now uses the first real actionable notification's title,
+  detail, CTA label, and exact destination instead of classifying any member
+  with a GSN ID as a seller and falling back to an unexplained `Open Shop`.
+- Generic Dashboard shop guidance now opens the authenticated Public Shop alias
+  `/app/shop/me`; explicit shop-management notifications can still open Shop
+  Control when management is the actual task.
+- Repeated unchanged issues are quieted after a shown, dismissed, or acted touch.
+  Attention semantics, Dashboard action, phone-button, and production-build
+  checks pass.
+
+## TrustSlip Stage 1 truth and public-disclosure audit - 2026-11-10
+
+- TrustSlip lifecycle state now distinguishes active membership, inactive
+  membership, superseded anchors, revocation, freezing, and expiry without
+  falling back to an active claim.
+- Leaving every community retains the stable GSN ID and TrustSlip code but no
+  longer claims active membership. Leaving anchor A while active in B creates a
+  current B-anchored TrustSlip and leaves the A code resolvable as superseded.
+- Anonymous verification is no-cache, fails unsupported visibility closed to
+  minimal, suppresses exact private counts and wider-community inference, and
+  exposes at most the authorized primary anchor.
+- Identity surfaces no longer make broad active-network or live-verified claims
+  without current phone evidence, a current TrustSlip, and current anchor
+  membership.
+- Repository tests prove the shop privacy authority when enabled, but
+  `GSN_SHOP_PRIVACY_AUTHORITY_V1_ENABLED` defaults off when unset. Production
+  privacy enforcement remains unproven until the Render environment and a live
+  anonymous check confirm it.
+
 ## Spotlight no-repeat rotation correction - 2026-11-10
 
 - A real canonical Public Shop fairness defect was reproduced. With eight live

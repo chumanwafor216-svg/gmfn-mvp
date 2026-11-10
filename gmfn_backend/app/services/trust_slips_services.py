@@ -1654,6 +1654,33 @@ def _find_latest_trust_slip(db: Session, *, user_id: int) -> Optional[TrustSlip]
     )
 
 
+def _active_issue_membership(
+    db: Session,
+    *,
+    user_id: int,
+    clan_id: Any,
+) -> Optional[ClanMembership]:
+    resolved_clan_id = _safe_positive_int(clan_id)
+    if not resolved_clan_id:
+        return None
+
+    clan = db.get(Clan, resolved_clan_id)
+    if not clan:
+        return None
+    if _safe_str(getattr(clan, "status", "active"), "active").lower() != "active":
+        return None
+
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.clan_id == resolved_clan_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+
 def _resolve_issue_clan_id(
     db: Session,
     *,
@@ -1668,28 +1695,30 @@ def _resolve_issue_clan_id(
         if _safe_str(getattr(clan, "status", "active"), "active").lower() != "active":
             raise ValueError("Selected community is not active for TrustSlip issuance")
 
-        membership = (
-            db.query(ClanMembership)
-            .filter(
-                ClanMembership.user_id == int(user_id),
-                ClanMembership.clan_id == int(preferred_id),
-                ClanMembership.left_at.is_(None),
-            )
-            .first()
+        membership = _active_issue_membership(
+            db,
+            user_id=int(user_id),
+            clan_id=preferred_id,
         )
         if not membership:
             raise ValueError("You are not an active member of the selected community")
         return int(preferred_id)
 
     latest = _find_latest_trust_slip(db, user_id=int(user_id))
-    if latest and getattr(latest, "clan_id", None):
+    if latest and _active_issue_membership(
+        db,
+        user_id=int(user_id),
+        clan_id=getattr(latest, "clan_id", None),
+    ):
         return int(latest.clan_id)
 
     membership = (
         db.query(ClanMembership)
+        .join(Clan, Clan.id == ClanMembership.clan_id)
         .filter(
             ClanMembership.user_id == int(user_id),
             ClanMembership.left_at.is_(None),
+            Clan.status == "active",
         )
         .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
         .first()
@@ -2779,10 +2808,24 @@ def issue_trust_slip_for_user(
 
     selected_clan_id = _safe_positive_int(preferred_clan_id)
     current = get_current_trust_slip_for_user(db, user_id=uid)
+    current_status = _safe_str(
+        getattr(current, "status", None) if current else None,
+        "",
+    ).lower()
+    current_anchor_active = bool(
+        current
+        and _active_issue_membership(
+            db,
+            user_id=uid,
+            clan_id=getattr(current, "clan_id", None),
+        )
+    )
     if (
         current
         and bool(getattr(current, "is_current", False))
         and not _trust_slip_is_expired(current)
+        and current_status in {"active", "issued"}
+        and current_anchor_active
         and (
             not selected_clan_id
             or int(getattr(current, "clan_id", 0) or 0) == selected_clan_id
@@ -2819,13 +2862,18 @@ def issue_trust_slip_for_user(
         return result
 
     if current and bool(getattr(current, "is_current", False)):
+        reissue_reason = (
+            "membership_anchor_changed"
+            if current_status in {"active", "issued"} and not current_anchor_active
+            else "expired_trustslip_auto_refresh"
+        )
         return {
             "ok": True,
             "issued": True,
             **reissue_trust_slip(
                 db,
                 user_id=uid,
-                reason="expired_trustslip_auto_refresh",
+                reason=reissue_reason,
                 include_payload=include_payload,
                 preferred_clan_id=selected_clan_id,
                 v1_purpose=v1_purpose,

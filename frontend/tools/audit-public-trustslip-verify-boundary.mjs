@@ -327,8 +327,8 @@ assertContains(
 );
 assertContains(
   "backend",
-  /"evidence_scope": merchant_view\.get\("evidence_scope"\)[\s\S]*?"evidence_scope": evidence_scope[\s\S]*?"active_community_count": evidence_scope\.get\("active_community_count"\)/,
-  "Public TrustSlip Verify JSON must publish the explicit evidence scope and active community count."
+  /"evidence_scope": evidence_scope[\s\S]*?"active_community_count": None[\s\S]*?"sponsor_count": None[\s\S]*?"membership_active": membership_active/,
+  "Public TrustSlip Verify JSON must publish the scoped evidence reading while suppressing exact community and sponsor counts."
 );
 assertContains(
   "viewModel",
@@ -691,8 +691,8 @@ assertContains(
 
 assertContains(
   "backend",
-  /def _public_visibility_level\([\s\S]*?ranks = \{"minimal": 0, "standard": 1\}[\s\S]*?if requested not in ranks:[\s\S]*?return stored/,
-  "Backend public visibility must continue to exclude detailed public resolution."
+  /def _public_visibility_level\([\s\S]*?ranks = \{"minimal": 0, "standard": 1\}[\s\S]*?if requested == "detailed":[\s\S]*?return stored[\s\S]*?if requested not in ranks:[\s\S]*?return "minimal"/,
+  "Backend public visibility must cap detailed requests and fail unsupported levels closed to minimal."
 );
 
 assertContains(
@@ -726,8 +726,8 @@ assertContains(
 );
 assertContains(
   "backend",
-  /community_confirmation_options = \([\s\S]*?\[\][\s\S]*?if visibility_level == "minimal"[\s\S]*?else _public_community_confirmation_options/,
-  "Backend minimal public TrustSlip verify must skip heavier community-confirmation option building."
+  /community_confirmation_options = \([\s\S]*?\[\][\s\S]*?if visibility_level == "minimal" or not association_authorized[\s\S]*?else \[[\s\S]*?"community_id": int\(getattr\(slip, "clan_id"\)\)[\s\S]*?"is_primary_anchor": True/,
+  "Backend public TrustSlip verify must omit options at minimal level and expose only the authorized primary anchor at standard level."
 );
 
 assertContains(

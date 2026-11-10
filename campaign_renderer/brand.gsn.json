@@ -1,0 +1,26 @@
+{
+  "brandName": "GSN - Global Support Network",
+  "logoPath": "../site_gsn_public/assets/gsn-app-icon.png",
+  "website": "globalsupportnetwork.org",
+  "pilotUrl": "https://globalsupportnetwork.org/pilot/",
+  "defaultCta": "Join the GSN Community Pilot",
+  "colors": {
+    "navy": "#061827",
+    "navy2": "#08233A",
+    "navy3": "#0B2D4A",
+    "gold": "#D6AA45",
+    "goldSoft": "#F2C766",
+    "white": "#F7FAFF",
+    "muted": "#B9C6D6",
+    "green": "#2E9B62"
+  },
+  "fonts": {
+    "regular": "C:/Windows/Fonts/arial.ttf",
+    "bold": "C:/Windows/Fonts/arialbd.ttf"
+  },
+  "endCard": {
+    "headline": "Your community can help shape what comes next.",
+    "cta": "Join the GSN Community Pilot",
+    "url": "globalsupportnetwork.org/pilot/"
+  }
+}

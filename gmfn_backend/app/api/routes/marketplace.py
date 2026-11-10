@@ -76,6 +76,14 @@ from app.services.marketplace_media_cleanup_service import (
 from app.services.marketplace_media_quality_service import (
     is_verified_marketplace_video_url,
 )
+from app.services.marketplace_shop_privacy_service import (
+    ShopPrivacyDecision,
+    ShopPrivacyScope,
+    contact_ready_for_shop,
+    project_shop_contact_fields,
+    project_spotlight_shop_contact_fields,
+    resolve_shop_privacy_decision,
+)
 from app.services.spotlight_retention_service import (
     compact_spotlight_payloads_for_deleted_product,
 )
@@ -4262,7 +4270,13 @@ class MarketplaceRepostCreateIn(BaseModel):
     idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=96)
 
 
-def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
+def _shop_out(
+    db: Session,
+    shop: MarketplaceShop,
+    *,
+    privacy_scope: ShopPrivacyScope = ShopPrivacyScope.LEGACY,
+    privacy_decision: Optional[ShopPrivacyDecision] = None,
+) -> Dict[str, Any]:
     owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
     clan = db.query(Clan).filter(Clan.id == int(shop.clan_id)).first()
 
@@ -4298,7 +4312,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         governance_policy,
     )
 
-    return {
+    payload = {
         "id": int(shop.id),
         "clan_id": int(shop.clan_id) if shop.clan_id is not None else None,
         "owner_user_id": int(shop.owner_user_id),
@@ -4341,6 +4355,13 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
             parent_id=int(shop.id),
         ),
     }
+    decision = privacy_decision or resolve_shop_privacy_decision(
+        db,
+        owner_user_id=int(shop.owner_user_id),
+        scope=privacy_scope,
+        shop_active=bool(shop.is_active),
+    )
+    return project_shop_contact_fields(payload, decision=decision)
 
 
 def _product_out(
@@ -5037,6 +5058,12 @@ def list_marketplace_shop_directory(
     for shop, owner, offer_count, directory_rank in page_rows:
         owner_name = str(getattr(owner, "display_name", "") or "").strip()
         owner_gmfn_id = str(getattr(owner, "gmfn_id", "") or "").strip()
+        privacy_decision = resolve_shop_privacy_decision(
+            db,
+            owner_user_id=int(shop.owner_user_id),
+            scope=ShopPrivacyScope.AUTHORIZED_COMMUNITY,
+            shop_active=bool(shop.is_active),
+        )
         items.append(
             {
                 "id": int(shop.id),
@@ -5049,9 +5076,9 @@ def list_marketplace_shop_directory(
                 "description": str(shop.description or "").strip() or None,
                 "service_summary": str(shop.description or "").strip() or None,
                 "image_url": str(shop.image_url or "").strip() or None,
-                "contact_ready": bool(
-                    str(shop.whatsapp_number or "").strip()
-                    or str(shop.telegram_handle or "").strip()
+                "contact_ready": contact_ready_for_shop(
+                    shop,
+                    decision=privacy_decision,
                 ),
                 "offer_count": int(offer_count or 0),
                 "is_active": True,
@@ -5120,7 +5147,14 @@ def list_marketplace_shops(
     )
 
     return {
-        "items": [_shop_out(db, x) for x in visible],
+        "items": [
+            _shop_out(
+                db,
+                x,
+                privacy_scope=ShopPrivacyScope.AUTHORIZED_COMMUNITY,
+            )
+            for x in visible
+        ],
         "total": len(visible),
         "clan_id": resolved_clan_id,
         "marketplace_governance_policy": marketplace_governance_policy,
@@ -5191,7 +5225,15 @@ def _owner_public_shop_payload(
 
     return {
         "ok": True,
-        "item": _shop_out(db, shop),
+        "item": _shop_out(
+            db,
+            shop,
+            privacy_scope=(
+                ShopPrivacyScope.OWNER_MANAGEMENT
+                if owner_is_current_user
+                else ShopPrivacyScope.AUTHORIZED_COMMUNITY
+            ),
+        ),
         "products": _products_out(
             db,
             product_rows,
@@ -5255,6 +5297,36 @@ def get_marketplace_shop_by_gmfn_id(
     return payload
 
 
+def _public_shop_broadcast_out(
+    db: Session,
+    *,
+    broadcast: MarketplaceBroadcast,
+) -> Dict[str, Any]:
+    payload = _broadcast_out(db, broadcast)
+    source_shop = None
+    if getattr(broadcast, "shop_id", None) is not None:
+        source_shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(broadcast.shop_id))
+            .first()
+        )
+    if source_shop is None:
+        source_shop = _get_canonical_shop_by_owner(
+            db,
+            owner_user_id=int(broadcast.author_user_id),
+        )
+    if source_shop is None:
+        return payload
+
+    decision = resolve_shop_privacy_decision(
+        db,
+        owner_user_id=int(source_shop.owner_user_id),
+        scope=ShopPrivacyScope.UNAUTHENTICATED_PUBLIC,
+        shop_active=bool(source_shop.is_active),
+    )
+    return project_spotlight_shop_contact_fields(payload, decision=decision)
+
+
 
 @router.get("/public/shop/{gmfn_id}")
 def get_public_marketplace_shop_by_gmfn_id(
@@ -5274,6 +5346,15 @@ def get_public_marketplace_shop_by_gmfn_id(
         owner_user_id=int(owner.id),
     )
     if not shop or not bool(getattr(shop, "is_active", True)):
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    privacy_decision = resolve_shop_privacy_decision(
+        db,
+        owner_user_id=int(owner.id),
+        scope=ShopPrivacyScope.UNAUTHENTICATED_PUBLIC,
+        shop_active=bool(shop.is_active),
+    )
+    if not privacy_decision.shop_visible:
         raise HTTPException(status_code=404, detail="Shop not found")
 
     active_owner_shops = (
@@ -5415,17 +5496,26 @@ def get_public_marketplace_shop_by_gmfn_id(
         clan_ids=spotlight_clan_ids,
         limit=int(broadcast_limit),
     )
+    public_broadcasts = [
+        _public_shop_broadcast_out(db, broadcast=row)
+        for row in broadcast_rows
+    ]
 
     return {
         "ok": True,
-        "item": _shop_out(db, shop),
+        "item": _shop_out(
+            db,
+            shop,
+            privacy_scope=ShopPrivacyScope.UNAUTHENTICATED_PUBLIC,
+            privacy_decision=privacy_decision,
+        ),
         "products": _products_out(
             db,
             product_rows,
             assignment_products=product_context_rows,
         ),
-        "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
-        "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
+        "broadcasts": public_broadcasts,
+        "primary_broadcast": public_broadcasts[0] if public_broadcasts else None,
         "spotlight_scope": "community",
         "spotlight_clan_ids": [int(clan_id) for clan_id in spotlight_clan_ids],
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
@@ -5950,7 +6040,11 @@ def create_marketplace_shop(
 
         return {
             "ok": True,
-            "item": _shop_out(db, existing_shop),
+            "item": _shop_out(
+                db,
+                existing_shop,
+                privacy_scope=ShopPrivacyScope.OWNER_MANAGEMENT,
+            ),
             "detail": "Existing canonical shop returned.",
             "marketplace_governance_policy": marketplace_governance_policy,
         }
@@ -6008,7 +6102,11 @@ def create_marketplace_shop(
 
         return {
             "ok": True,
-            "item": _shop_out(db, dormant_shop),
+            "item": _shop_out(
+                db,
+                dormant_shop,
+                privacy_scope=ShopPrivacyScope.OWNER_MANAGEMENT,
+            ),
             "detail": "Existing canonical shop reactivated.",
             "marketplace_governance_policy": marketplace_governance_policy,
         }
@@ -6052,7 +6150,11 @@ def create_marketplace_shop(
 
     return {
         "ok": True,
-        "item": _shop_out(db, shop),
+        "item": _shop_out(
+            db,
+            shop,
+            privacy_scope=ShopPrivacyScope.OWNER_MANAGEMENT,
+        ),
         "marketplace_governance_policy": marketplace_governance_policy,
     }
 
@@ -6164,7 +6266,11 @@ def update_marketplace_shop(
 
     return {
         "ok": True,
-        "item": _shop_out(db, shop),
+        "item": _shop_out(
+            db,
+            shop,
+            privacy_scope=ShopPrivacyScope.OWNER_MANAGEMENT,
+        ),
         "detail": "Shop updated.",
     }
 
@@ -6941,7 +7047,15 @@ def decide_marketplace_listing_review_submission(
         "decision_event_id": int(decision_event.id),
         "decision": payload.decision,
         "listing_type": listing_type,
-        "shop": _shop_out(db, published_shop) if published_shop else None,
+        "shop": (
+            _shop_out(
+                db,
+                published_shop,
+                privacy_scope=ShopPrivacyScope.OWNER_MANAGEMENT,
+            )
+            if published_shop
+            else None
+        ),
         "product": _product_out(db, published_product) if published_product else None,
         "notifications_created": int(follower_notifications_created),
         "review_notifications_retired": int(review_notifications_retired),

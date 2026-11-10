@@ -2814,7 +2814,7 @@ export default function TrustSlipVerifyPublicPaper({
                 textTransform: "uppercase",
               }}
             >
-              <span>{validNow ? "Live verified" : publicValidityLabel}</span>
+              <span>{validNow ? "TrustSlip current" : publicValidityLabel}</span>
             </div>
           </div>
 

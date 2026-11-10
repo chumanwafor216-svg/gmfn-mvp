@@ -2,6 +2,7 @@
 
 Audit date: 2026-09-13
 Repository commit inspected: `69ddf6f1`
+Latest capability refresh: 2026-11-08 against features confirmed on `origin/main`.
 
 This inventory classifies user-facing GSN capability from current route code, backend route inventory, frontend audits, backend tests, and mocked current screenshots. It is an audit document, not public marketing copy.
 
@@ -44,6 +45,11 @@ This inventory classifies user-facing GSN capability from current route code, ba
 | F024 | TrustGraph and Trust Analytics admin views | C | ADMIN_ONLY | NONE | SYSTEM_DERIVES_OR_UPDATES | /app/command-center/trust-graph; /app/command-center/trust-analytics | Trust Graph; Trust Analytics | Use admin Command Center after permission; correct source events instead of editing graph interpretation directly. |
 | F025 | Notifications and phone Web Push | C | PARTIAL | OPTIONAL_CONFIGURATION | SYSTEM_DERIVES_OR_UPDATES | /app/notifications; service worker; web-push API | Notifications; Action Inbox; Web Push | Install/permit PWA/browser notifications, verify environment keys, open Action Inbox fallback. |
 | F026 | Opportunity / Market Intelligence capability | D | EXPERIMENTAL | NONE | CONDITIONALLY_UNLOCKED | /app/shop-control#shop-control-summary; /app/marketplace; /app/demand-box | Opportunity Engine / Market Intelligence; Advanced Analytics snapshot; Opportunity reading; Recommended next move; Ask Community; Open DemandBox | Add a real offer, publish/share, post or answer DemandBox items, close outcomes, and recheck after evidence grows. |
+| F027 | GSN Shop Reel | B | LIVE | OPTIONAL_CONFIGURATION | USER_TRIGGERS_ON_DEMAND | /app/shop-control#shop-control-spotlight | GSN Shop Reel; Choose picture; Choose video; Create Reel; Share Reel from phone; Download reel | Choose eligible shop media, resolve any media or permission warning, then create again; download and post manually if native file sharing is unavailable. |
+| F028 | Shop Diary and Products & Services Update | A | LIVE | OPTIONAL_CONFIGURATION | USER_CONFIGURES_OR_CREATES | /app/shop-control#shop-assets-diary; /app/shop-assets; /shop/:gmfnId | Shop Update; Add diary entry; Write shop update; Products and Services Update; Share update; Promote this update | Create a current public update, confirm Shop Diary is enabled, or wait for the next product/service change to replace an expired update. |
+| F029 | DemandBox protected voice and private conversations | B | LIVE | NONE | USER_TRIGGERS_ON_DEMAND | /app/demand-box | Voice note; Listen & reply; Private replies; Past requests; Post again | Open the request, confirm you belong to its permitted audience, retry protected playback, or use text when recording is unavailable. |
+| F030 | Public Shop voice messages | A | LIVE | OPTIONAL_CONFIGURATION | USER_CONFIGURES_OR_CREATES | /app/shop-assets; /app/shop-control; /shop/:gmfnId | Shop welcome voice; Latest Shop Update voice; Product or service voice note; Listen | Add or replace the voice note from the owner tools, confirm the related shop/item remains public, or use the written shop information. |
+| F031 | Marketplace community member roster | B | LIVE | NONE | USER_TRIGGERS_ON_DEMAND | /app/marketplace; /app/community-confirmations/policy | Community members; Search name or GSN ID; Filters; Confirm I know this member; Ask this member to confirm me | Select a community, clear search/filter text, move through the ten-member pages, or ask an administrator about membership visibility. |
 
 ## F001 - Member account, profile, and personal GSN identity
 
@@ -76,6 +82,8 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Recovery path: Use latest invite link/code, ask owner/admin to review, or return to Community Home/Dashboard.
 - Screenshot: screenshots/2026-09-13_community-home.png
 - Verification evidence: Community Home and Clans audits; join request tests; appRoutes COMMUNITY/CLANS/JOIN_PENDING.
+- Recent admission capability: A personal instant invitation remains single-use, while an explicitly generated Community QR can admit many people under the community's saved admission mode until it is revoked, retired, or that mode changes. Every new person still completes their own identity and account setup.
+- Activation recovery: Approved applicants can restore same-browser activation authority, or use the bounded administrator-supervised private-code fallback. GSN ID knowledge alone never authorises password creation; live SMS recovery remains disabled until its provider and operating cost are approved.
 
 ## F003 - Community Domain setup and administration
 
@@ -108,6 +116,10 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Recovery path: Open Bulletin tools, check policy, submit again with required length, or ask admin to decide.
 - Screenshot: screenshots/2026-09-13_community-home.png
 - Verification evidence: Community Home button inventory passed; community_notices backend tests passed.
+- Voice and poll capability: A permitted member can publish text, one voice announcement of up to 60 seconds, or both. The existing policy/review path governs publication; playback is deliberate, and announcement polls can collect one bounded response per eligible audience member.
+- Voice boundary: There is no autoplay, transcription, public comment thread, cross-community discovery, or reuse of Shop/DemandBox recordings. The exact sender may delete the recording while the notice and its audit history remain.
+- Documented meeting-link use: An administrator may attach an externally created WhatsApp call link for a smaller meeting or Zoom meeting link for a larger meeting, with the purpose, date, time, time zone, duration, and a clear join label in the notice.
+- Attendance and provider boundary: GSN can retain availability responses and an administrator-confirmed roll call, but it does not host the call, automatically call members, create the provider link, or independently verify external attendance. Capacity, guest access, expiry, charges, and security remain controlled by the external provider.
 
 ## F005 - Shop setup
 
@@ -252,6 +264,8 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Recovery path: Create/join a community, add a title if validation responds, reopen DemandBox, or contact requester.
 - Screenshot: screenshots/2026-09-13_demandbox.png
 - Verification evidence: DemandBox front package audit passed; marketplace_requests backend tests passed.
+- Recent conversation capability: A request may use text, one protected voice note of up to 60 seconds, or both. Each responder receives a private exchange with the requester; unrelated community members cannot read or play it. Replies may also use text, voice, or both.
+- Conversation boundary: Protected audio follows the request audience, sender portraits require per-message consent, and no delivery/read receipt, online state, typing state, transcription, or WhatsApp identity is invented. A sender can permanently delete only their own recording while the message audit tombstone remains.
 
 ## F014 - Ask Community through DemandBox
 
@@ -284,6 +298,7 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Recovery path: Holder refreshes/generates current TrustSlip, selects correct purpose, shares latest QR/code/link.
 - Screenshot: screenshots/2026-09-13_trustslip.png
 - Verification evidence: Public TrustSlip audits passed; Decision Pack QR/public-link issue registered.
+- Recent evidence capability: TrustSlip V1 now builds bounded evidence sets and deterministic projections from eligible source records. The same inputs produce the same reading, unsupported evidence is excluded, and public output remains an aggregate decision aid rather than a universal character, credit, payment, or future-behaviour claim.
 
 ## F016 - Community confirmation and witness response
 
@@ -460,3 +475,88 @@ This inventory classifies user-facing GSN capability from current route code, ba
 - Recovery path: Add a real offer, publish/share, post or answer DemandBox items, close outcomes, and recheck after evidence grows.
 - Screenshot: screenshots/2026-09-13_shop-control.png
 - Verification evidence: Advanced Analytics brief; Spotlight system feed audit verifies Opportunity snapshot under existing analytics, not standalone engine.
+
+## F027 - GSN Shop Reel
+
+- Product status: `LIVE`
+- Setup requirement: `OPTIONAL_CONFIGURATION`
+- Behaviour type: `USER_TRIGGERS_ON_DEMAND`
+- Source data: Exact owner's selected shop picture or short video, optional owner-authorised sound, saved shop name, and attributed Public Shop link.
+- Prerequisites: Signed-in exact shop owner; active shop; eligible prepared picture or video.
+- Dependencies: Shop Control Spotlight composer, authenticated marketplace media-quality service, GSN Natural Finish, Public Shop share link, browser share/download support.
+- Permissions: Exact shop owner creates, reviews, shares, or downloads the Reel; recipients receive only the owner-chosen public output.
+- Exact route(s): `/app/shop-control#shop-control-spotlight`
+- Exact visible labels: GSN Shop Reel; Choose picture; Choose video; Create Reel from picture; Create Reel from video; Share Reel from phone; Choose link channel; Download reel
+- Empty/stale state: No eligible picture/video selected, preparation failed, or the browser cannot share a media file natively.
+- Recovery path: Choose eligible shop media, resolve any media or rights warning, create again, or download and post manually when native sharing is unavailable.
+- Screenshot: Not captured in this pass
+- Verification evidence: Shop Reel media-quality tests, Shop Control button inventory, share-action audit, and production build passed for the deployed feature chain.
+- Boundary: The Reel is a five/ten-second owner-controlled promotional file with the approved shop entrance ending. GSN does not auto-post it, provide a music catalogue, prove delivery or sales, expose Vault content, or invent/repair product detail.
+
+## F028 - Shop Diary and Products & Services Update
+
+- Product status: `LIVE`
+- Setup requirement: `OPTIONAL_CONFIGURATION`
+- Behaviour type: `USER_CONFIGURES_OR_CREATES`
+- Source data: Owner-created text/voice update, activity type, related product or confirmed same-shop trade where supplied, event time, and current public product/service count.
+- Prerequisites: Active owner shop; selected community; Shop Diary enabled by the applicable community/domain policy.
+- Dependencies: Shop Assets diary composer, shop-diaries API, Public Shop, share helpers, optional Spotlight handoff.
+- Permissions: Exact shop owner creates updates; public visitors see only active public-safe output; stronger trade confirmation requires eligible same-shop evidence.
+- Exact route(s): `/app/shop-control#shop-assets-diary; /app/shop-assets; /shop/:gmfnId`
+- Exact visible labels: Shop Update; Add diary entry; Write shop update; Products and Services Update; Share update; Promote this update
+- Empty/stale state: No current public update, an update has passed its 24-hour Public Shop window, or Shop Diary is disabled.
+- Recovery path: Create a current public update, confirm Shop Diary is enabled, or publish/update a real product or service.
+- Screenshot: Not captured in this pass
+- Verification evidence: Shop Diary API and public-share contracts, Public Shop Shop Diary audits, update-ticker audit, and phone visual smoke passed.
+- Boundary: The ticker summarizes the current Shop Update or products/services state. A diary entry is not a product listing, paid placement, transaction proof, TrustSlip result, or automatic Spotlight publication.
+
+## F029 - DemandBox protected voice and private conversations
+
+- Product status: `LIVE`
+- Setup requirement: `NONE`
+- Behaviour type: `USER_TRIGGERS_ON_DEMAND`
+- Source data: Demand category, text and/or protected voice note, request audience, consented sender portrait or initials, private requester/responder replies, and message times.
+- Prerequisites: Signed-in member; selected community; request exists; member belongs to the request's authorised audience.
+- Dependencies: DemandBox request and reply APIs, protected audio storage/playback, notification boundary, request history and Post again flow.
+- Permissions: Request audio is limited to the requester and authorised request audience; each reply exchange is limited to that responder and requester.
+- Exact route(s): `/app/demand-box`
+- Exact visible labels: Voice note; Listen & reply; Replies are private; Past requests; Post again; Delete voice note
+- Empty/stale state: No replies yet, voice recording unavailable, protected audio deleted, or the signed-in member is outside the permitted audience.
+- Recovery path: Open the request, confirm audience access, retry playback, use text instead, or post a new linked request from Past requests.
+- Screenshot: Not captured in this pass
+- Verification evidence: DemandBox voice/reply backend tests, privacy and front-package audits, participant-isolation browser smoke, and production build passed.
+- Boundary: GSN does not transcribe the recording, expose one responder's exchange to another, or invent delivery/read receipts, online status, typing status, identity proof, or WhatsApp behaviour.
+
+## F030 - Public Shop voice messages
+
+- Product status: `LIVE`
+- Setup requirement: `OPTIONAL_CONFIGURATION`
+- Behaviour type: `USER_CONFIGURES_OR_CREATES`
+- Source data: Exact owner's shop-welcome recording, Shop Update recording, or product/service recording, plus speaker name and GSN ID attribution.
+- Prerequisites: Active owner shop; exact owner permission; related public shop, update, or product/service remains visible.
+- Dependencies: Shop owner tools, protected shop voice API/storage, Public Shop player, Shop Diary and product lifecycle.
+- Permissions: Exact owner creates, replaces, or removes recordings; public visitors receive only voice attached to a public-safe shop surface.
+- Exact route(s): `/app/shop-assets; /app/shop-control; /shop/:gmfnId`
+- Exact visible labels: Shop welcome voice; Latest Shop Update voice; Product or service voice note; Listen
+- Empty/stale state: No recording exists, owner deleted it, the Shop Update expired, or its related item is no longer public.
+- Recovery path: Add or replace the recording from owner tools, keep the related item public, or rely on the written shop/product information.
+- Screenshot: Not captured in this pass
+- Verification evidence: Shop voice backend tests, Public Shop action audits, visitor-audio browser smoke, and production build passed.
+- Boundary: Playback is deliberate and never replaces required product/service facts. A voice note supports explanation; it does not prove identity, quality, availability, delivery, price, endorsement, or a completed trade.
+
+## F031 - Marketplace community member roster
+
+- Product status: `LIVE`
+- Setup requirement: `NONE`
+- Behaviour type: `USER_TRIGGERS_ON_DEMAND`
+- Source data: Selected-community active membership rows, public-safe member name/GSN ID, saved portrait or initials, membership role, and Public Shop availability.
+- Prerequisites: Signed-in member; selected community; active membership context available to Marketplace.
+- Dependencies: Marketplace Shops & Services lane, selected-community membership data, Community Confirmation policy route, canonical Public Shop links.
+- Permissions: Members receive the public-safe selected-community roster; confirmation management settings remain restricted to authorised managers.
+- Exact route(s): `/app/marketplace; /app/community-confirmations/policy`
+- Exact visible labels: Community members; Search name or GSN ID; Filters; Confirm I know this member; Ask this member to confirm me; Open public shop
+- Empty/stale state: No selected community, no matching member, filter excludes all rows, or membership data is unavailable.
+- Recovery path: Select the correct community, clear search/filter text, move through the ten-member pages, or ask an administrator about membership visibility.
+- Screenshot: Not captured in this pass
+- Verification evidence: Marketplace community-member-row audit, existing Marketplace audits, and production build passed.
+- Boundary: The roster does not expose private contact fields, create cross-community discovery, fabricate confirmation status, or treat a portrait, role, GSN ID, or shop as proof of reliability.

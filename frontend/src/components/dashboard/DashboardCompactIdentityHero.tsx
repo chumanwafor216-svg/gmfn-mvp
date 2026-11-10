@@ -1,6 +1,7 @@
 import React from "react";
 import GSNBrandMark from "../GSNBrandMark";
 import { GsnLegacyIcon } from "../GsnLegacyIcon";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../GsnRealisticIcon";
 import PictureFrameToolsControl from "../PictureFrameToolsControl";
 import { StableButton, StableDisclosureSummary } from "../StableButton";
 import { colors, radius } from "../../design/tokens";
@@ -51,6 +52,54 @@ const compactActionFrame: React.CSSProperties = {
   WebkitTapHighlightColor: "transparent",
 };
 
+type IdentityReadingPresentation = {
+  icon: Gsn3DIconKey;
+  endIcon: Gsn3DIconKey;
+  description: string;
+  background: string;
+  borderColor: string;
+  glow: string;
+  valueColor: string;
+};
+
+function identityReadingPresentation(label: string): IdentityReadingPresentation {
+  switch (label.trim().toLowerCase()) {
+    case "wider":
+      return {
+        icon: "community-building",
+        endIcon: "public-globe",
+        description: "Grow your trust across more communities.",
+        background:
+          "linear-gradient(102deg, rgba(4,35,92,0.98) 0%, rgba(11,24,68,0.98) 47%, rgba(88,31,150,0.96) 100%)",
+        borderColor: "rgba(186,116,255,0.94)",
+        glow: "rgba(139,78,255,0.48)",
+        valueColor: "#FFD15A",
+      };
+    case "trustslip":
+      return {
+        icon: "trust-shield",
+        endIcon: "certificate-seal",
+        description: "Your Trust Record on GSN (for people, shops and trades).",
+        background:
+          "linear-gradient(102deg, rgba(3,53,91,0.98) 0%, rgba(5,34,65,0.98) 54%, rgba(72,59,18,0.96) 100%)",
+        borderColor: "rgba(58,225,255,0.94)",
+        glow: "rgba(38,213,255,0.42)",
+        valueColor: "#FFFFFF",
+      };
+    default:
+      return {
+        icon: "identity-card",
+        endIcon: "trust-shield",
+        description: "You’re getting known and trusted on GSN.",
+        background:
+          "linear-gradient(102deg, rgba(3,54,118,0.98) 0%, rgba(5,35,83,0.98) 52%, rgba(5,104,62,0.96) 100%)",
+        borderColor: "rgba(63,239,224,0.94)",
+        glow: "rgba(54,231,178,0.42)",
+        valueColor: "#9AFF4D",
+      };
+  }
+}
+
 export default function DashboardCompactIdentityHero({
   order,
   name,
@@ -83,7 +132,7 @@ export default function DashboardCompactIdentityHero({
         width: "100%",
         minWidth: 0,
         borderRadius: radius.lg,
-        border: "1px solid rgba(214,170,69,0.28)",
+        border: "1px solid rgba(52,211,255,0.76)",
         backgroundColor: colors.navy900,
         backgroundImage: `linear-gradient(90deg, rgba(3,16,31,0.98) 0%, rgba(3,16,31,0.92) 38%, rgba(3,16,31,0.42) 72%, rgba(3,16,31,0.16) 100%), url(${dashboardNetworkGlobe})`,
         backgroundPosition: "center, center",
@@ -91,7 +140,7 @@ export default function DashboardCompactIdentityHero({
         backgroundSize: "cover, cover",
         color: colors.white,
         boxShadow:
-          "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+          "0 0 0 1px rgba(255,255,255,0.16), 0 0 18px rgba(31,203,255,0.40), 0 0 34px rgba(117,73,255,0.22), 0 20px 40px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.18)",
         overflow: "visible",
         position: "relative",
         zIndex: 20,
@@ -238,7 +287,8 @@ export default function DashboardCompactIdentityHero({
                 color: colors.navy700,
               fontSize: 18,
               fontWeight: 1000,
-              boxShadow: "0 12px 22px rgba(0,0,0,0.20)",
+              boxShadow:
+                "0 0 0 1px rgba(52,211,255,0.54), 0 0 13px rgba(31,203,255,0.30), 0 12px 22px rgba(0,0,0,0.24)",
             }}
           >
             {avatarSrc ? (
@@ -279,12 +329,13 @@ export default function DashboardCompactIdentityHero({
               maxHeight: 30,
               padding: "0 8px",
               borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.22)",
+              border: "1px solid rgba(52,211,255,0.68)",
               background: "rgba(255,255,255,0.10)",
               color: colors.white,
               fontSize: 10.5,
               fontWeight: 900,
-              ...authenticatedStaticNeonAction("cyanViolet"),
+              boxShadow:
+                "0 0 11px rgba(31,203,255,0.34), 0 0 18px rgba(117,73,255,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
             railGap={7}
             railColumns="repeat(3, minmax(0, 1fr))"
@@ -346,9 +397,11 @@ export default function DashboardCompactIdentityHero({
           gridTemplateColumns: "minmax(0, 1fr) auto",
           alignItems: "stretch",
           position: "relative",
-          borderTop: "1px solid rgba(255,255,255,0.10)",
+          borderTop: "1px solid rgba(52,211,255,0.42)",
           borderRadius: "0 0 23px 23px",
           background: "rgba(3,16,31,0.32)",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 7px 16px rgba(31,203,255,0.06)",
         }}
       >
         <StableButton
@@ -367,12 +420,14 @@ export default function DashboardCompactIdentityHero({
             alignItems: "center",
             padding: "8px 11px",
             border: "none",
-            borderRight: "1px solid rgba(255,255,255,0.10)",
+            borderRight: "1px solid rgba(52,211,255,0.28)",
             borderRadius: 0,
-            background: "transparent",
+            background:
+              "linear-gradient(180deg, rgba(31,203,255,0.055) 0%, rgba(117,73,255,0.035) 100%)",
             color: colors.white,
             textAlign: "left",
-            ...authenticatedStaticNeonAction("cyanViolet"),
+            boxShadow:
+              "inset 0 0 0 1px rgba(52,211,255,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
           }}
         >
           <GsnLegacyIcon name="id" size={24} decorative />
@@ -423,91 +478,197 @@ export default function DashboardCompactIdentityHero({
               lineHeight: 1.15,
               textAlign: "center",
               listStyle: "none",
-              ...authenticatedStaticNeonAction("cyanViolet"),
+              background:
+                "linear-gradient(180deg, rgba(31,203,255,0.07) 0%, rgba(117,73,255,0.05) 100%)",
+              boxShadow:
+                "inset 0 0 0 1px rgba(52,211,255,0.18), 0 0 10px rgba(31,203,255,0.12)",
             }}
           >
             Identity &amp; trust
           </StableDisclosureSummary>
 
           <div
+            data-dashboard-identity-reading-style="reference-two"
             style={{
               position: "absolute",
-              left: 12,
-              right: 12,
+              left: 7,
+              right: 7,
               zIndex: 40,
               marginTop: 7,
               display: "grid",
-              gap: 7,
-              padding: 9,
-              borderRadius: 16,
-              border: "1px solid rgba(214,170,69,0.26)",
-              background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
-              boxShadow: "0 18px 36px rgba(6,24,39,0.22)",
+              gap: 8,
+              padding: 7,
+              borderRadius: 20,
+              border: "1px solid rgba(52,211,255,0.52)",
+              background:
+                "linear-gradient(180deg, rgba(2,14,35,0.99) 0%, rgba(3,19,45,0.99) 100%)",
+              boxShadow:
+                "0 0 0 1px rgba(255,255,255,0.10), 0 18px 38px rgba(1,8,24,0.50), 0 0 24px rgba(60,203,255,0.20)",
             }}
           >
-            {readings.map((reading) => (
-              <StableButton
-                debugId={`dashboard.passport-signal.${reading.label.toLowerCase()}`}
-                key={reading.label}
-                type="button"
-                onClick={(event) => onOpenReading(event, reading.to)}
-                onPointerDown={onPointerDown}
-                style={{
-                  ...compactActionFrame,
-                  display: "grid",
-                  gridTemplateColumns: "84px minmax(0, 1fr)",
-                  gap: 8,
-                  alignItems: "center",
-                  minHeight: 42,
-                  padding: "7px 9px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(15,59,116,0.10)",
-                  background: "rgba(255,255,255,0.90)",
-                  color: "#07172C",
-                  textAlign: "left",
-                  ...authenticatedStaticNeonAction("cyanViolet"),
-                }}
-              >
-                <span
+            {readings.map((reading) => {
+              const presentation = identityReadingPresentation(reading.label);
+              const readingKey = reading.label.trim().toLowerCase();
+              const description =
+                readingKey === "trustslip" && reading.detail
+                  ? reading.detail
+                  : presentation.description;
+
+              return (
+                <StableButton
+                  debugId={`dashboard.passport-signal.${readingKey}`}
+                  key={reading.label}
+                  type="button"
+                  aria-label={`Open ${reading.label}: ${reading.value}`}
+                  onClick={(event) => onOpenReading(event, reading.to)}
+                  onPointerDown={onPointerDown}
                   style={{
-                      color: colors.textMuted,
-                    fontSize: 10.5,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
+                    ...compactActionFrame,
+                    width: "100%",
+                    minWidth: 0,
+                    minHeight: 90,
+                    display: "grid",
+                    gridTemplateColumns: "74px minmax(0, 1fr) 54px",
+                    gap: 8,
+                    alignItems: "stretch",
+                    padding: 0,
+                    overflow: "hidden",
+                    borderRadius: 22,
+                    border: `1px solid ${presentation.borderColor}`,
+                    background: presentation.background,
+                    color: colors.white,
+                    textAlign: "left",
+                    boxShadow: `0 0 0 1px rgba(255,255,255,0.13), 0 0 13px ${presentation.glow}, inset 0 1px 0 rgba(255,255,255,0.20)`,
                   }}
                 >
-                  {reading.label}
-                </span>
-                <span style={{ minWidth: 0 }}>
                   <span
                     style={{
-                      display: "block",
-                      color: colors.textDark,
-                      fontSize: 12,
-                      fontWeight: 950,
-                      lineHeight: 1.15,
-                      overflowWrap: "anywhere",
+                      minWidth: 0,
+                      display: "grid",
+                      placeItems: "center",
+                      alignContent: "center",
+                      gap: 2,
+                      padding: "7px 4px",
+                      borderRight: "1px solid rgba(255,255,255,0.18)",
+                      borderRadius: "21px 0 0 21px",
+                      background:
+                        "linear-gradient(135deg, rgba(20,92,189,0.58), rgba(7,27,78,0.46))",
+                      boxShadow: "inset -10px 0 22px rgba(2,11,38,0.22)",
                     }}
                   >
-                    {reading.value}
+                    <GsnRealisticIcon
+                      name={presentation.icon}
+                      size={42}
+                      decorative
+                      loading="eager"
+                      style={{
+                        borderRadius: 13,
+                        filter: `drop-shadow(0 0 7px ${presentation.glow})`,
+                      }}
+                    />
+                    <span
+                      style={{
+                        maxWidth: "100%",
+                        color: "#FFFFFF",
+                        fontSize: 9.5,
+                        fontWeight: 1000,
+                        lineHeight: 1,
+                        letterSpacing: 0.2,
+                        textAlign: "center",
+                        textTransform: "uppercase",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {reading.label}
+                    </span>
                   </span>
-                  {reading.detail ? (
+
+                  <span
+                    style={{
+                      minWidth: 0,
+                      alignSelf: "center",
+                      display: "grid",
+                      alignContent: "center",
+                      padding: "8px 0",
+                    }}
+                  >
                     <span
                       style={{
                         display: "block",
-                        marginTop: 2,
-                        color: colors.textMuted,
-                        fontSize: 10.5,
-                        fontWeight: 750,
-                        lineHeight: 1.2,
+                        color: presentation.valueColor,
+                        fontSize: "clamp(16px, 5vw, 21px)",
+                        fontWeight: 1000,
+                        lineHeight: 1.02,
+                        overflowWrap: "anywhere",
+                        textShadow: `0 0 10px ${presentation.glow}`,
                       }}
                     >
-                      {reading.detail}
+                      {reading.value}
                     </span>
-                  ) : null}
-                </span>
-              </StableButton>
-            ))}
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 4,
+                        color: "rgba(255,255,255,0.94)",
+                        fontSize: 10.5,
+                        fontWeight: 760,
+                        lineHeight: 1.18,
+                      }}
+                    >
+                      {description}
+                    </span>
+                    {readingKey === "wider" ? (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: "fit-content",
+                          maxWidth: "100%",
+                          minHeight: 22,
+                          marginTop: 6,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "3px 8px",
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.72)",
+                          background: "rgba(106,43,186,0.48)",
+                          color: "#FFFFFF",
+                          fontSize: 9.5,
+                          fontWeight: 950,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                          boxShadow: "0 0 9px rgba(183,105,255,0.38)",
+                        }}
+                      >
+                        Grow My Reach <span style={{ fontSize: 13 }}>&gt;</span>
+                      </span>
+                    ) : null}
+                  </span>
+
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "grid",
+                      placeItems: "center",
+                      paddingRight: 5,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <GsnRealisticIcon
+                      name={presentation.endIcon}
+                      size={48}
+                      decorative
+                      loading="eager"
+                      style={{
+                        borderRadius: 14,
+                        filter: `drop-shadow(0 0 8px ${presentation.glow})`,
+                      }}
+                      imageStyle={{ transform: "scale(1.06)" }}
+                    />
+                  </span>
+                </StableButton>
+              );
+            })}
           </div>
         </details>
       </div>

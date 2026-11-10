@@ -185,9 +185,9 @@ const requiredNeonAffordancePatterns = [
     file: dashboardCompactIdentityFile,
     source: compactIdentitySource,
     pattern:
-      /data-dashboard-neon-surface="identity"[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet", "vivid"\)[\s\S]*?debugId="dashboard\.passport-gsn-id-card"[\s\S]*?authenticatedStaticNeonAction\("cyanViolet"\)/,
+      /function identityReadingPresentation[\s\S]*?data-dashboard-compact-identity="true"[\s\S]*?authenticatedStaticNeonFrame\("cyanViolet", "vivid"\)[\s\S]*?debugId="dashboard\.passport-gsn-id-card"[\s\S]*?data-dashboard-identity-reading-style="reference-two"[\s\S]*?gridTemplateColumns: "74px minmax\(0, 1fr\) 54px"[\s\S]*?<GsnRealisticIcon[\s\S]*?Grow My Reach/,
     message:
-      "Dashboard compact identity and its covered actions must keep readable neon affordances.",
+      "Dashboard compact identity must keep the approved three-row neon reference treatment and covered actions.",
   },
   {
     file: appLayoutFile,

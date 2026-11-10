@@ -68,6 +68,7 @@ from app.api.routes.merchant_verify import router as merchant_verify_router
 from app.api.routes.merchant_risk import router as merchant_risk_router
 from app.api.routes.merchant_release import router as merchant_release_router
 from app.api.routes.marketplace import router as marketplace_router
+from app.api.routes.commerce_taxonomy import router as commerce_taxonomy_router
 from app.api.routes.marketplace_media import router as marketplace_media_router
 from app.api.routes.marketplace_analytics import router as marketplace_analytics_router
 from app.api.routes.protected_trades import router as protected_trades_router
@@ -188,6 +189,7 @@ api_router.include_router(merchant_risk_router)
 api_router.include_router(merchant_release_router)
 api_router.include_router(marketplace_media_router)
 api_router.include_router(marketplace_router)
+api_router.include_router(commerce_taxonomy_router)
 api_router.include_router(marketplace_analytics_router)
 api_router.include_router(protected_trades_router)
 api_router.include_router(shop_diary_router)

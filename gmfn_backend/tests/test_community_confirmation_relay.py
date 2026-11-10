@@ -808,19 +808,9 @@ def test_community_confirmation_request_can_scope_trustslip_to_selected_holder_c
     assert verified_slip.status_code == 200, verified_slip.text
     options = verified_slip.json().get("community_confirmation_options", [])
     option_ids = {str(option.get("community_id")) for option in options}
-    assert {"1", "202"}.issubset(option_ids)
-    relevant_option = next(
-        option for option in options if str(option.get("community_id")) == "202"
-    )
-    assert relevant_option["community_name"] == "Relevant Work Community"
-    assert relevant_option["active_member_count"] == 2
-    assert relevant_option["contactable_reference_count"] == 1
-    assert relevant_option["relay_available"] is True
-    relevant_option_text = json.dumps(relevant_option).lower()
-    assert "phone_e164" not in relevant_option_text
-    assert "email" not in relevant_option_text
-    assert "contact_user_id" not in relevant_option_text
-    assert "contact_masked" not in relevant_option_text
+    assert option_ids == {"1"}
+    assert "Relevant Work Community" not in verified_slip.text
+    assert "Unrelated Community" not in verified_slip.text
 
     rejected = client.post(
         "/community-confirmations/request",

@@ -7224,8 +7224,17 @@ export async function recordMarketplaceAttentionEvent(payload: {
 export async function getPublicShopSpotlightOpportunity(
   gmfnId: string,
   presentationRequestId: string,
-  visibilityWindow = 0
+  visibilityWindow = 0,
+  rotationSeenCampaignIds: number[] = []
 ): Promise<any> {
+  const seenCampaignIds = Array.from(
+    new Set(
+      rotationSeenCampaignIds
+        .map((campaignId) => Math.floor(Number(campaignId) || 0))
+        .filter((campaignId) => campaignId > 0)
+    )
+  ).slice(0, 256);
+
   return httpJson(
     `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}/spotlight-opportunity`,
     "GET",
@@ -7238,6 +7247,11 @@ export async function getPublicShopSpotlightOpportunity(
         'X-Spotlight-Visibility-Window': String(
           Math.max(0, Math.floor(Number(visibilityWindow) || 0))
         ),
+        ...(seenCampaignIds.length > 0
+          ? {
+              'X-Spotlight-Rotation-Seen-Campaign-Ids': seenCampaignIds.join(','),
+            }
+          : {}),
         "X-Spotlight-Presentation-Request-Id": presentationRequestId,
       },
     }

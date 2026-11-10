@@ -941,15 +941,14 @@ def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
     assert data["display_name"] == "GSMIT"
     assert data["gmfn_id"] == "GMFN-U-9867079C"
     assert data["holder_name"] != data["gmfn_id"]
-    assert data["active_community_count"] == 2
-    assert data["active_clan_count"] == 2
+    assert data["active_community_count"] is None
+    assert data["active_clan_count"] is None
     scope = data["evidence_scope"]
-    assert scope["reading_scope"] == "primary_plus_wider"
+    assert scope["reading_scope"] == "primary_only"
     assert scope["primary_anchor_label"] == "Test Clan"
-    assert scope["active_community_count"] == 2
-    assert scope["has_wider_context"] is True
-    assert "Primary anchor: Test Clan" in scope["public_summary"]
-    assert "Wider context: 2 active community contexts" in scope["public_summary"]
+    assert "active_community_count" not in scope
+    assert "has_wider_context" not in scope
+    assert "public_summary" not in scope
     assert "not as proof that every community gives the same judgement" in scope["boundary"]
     assert datetime.fromisoformat(data["issued_at"]).replace(tzinfo=timezone.utc) == issued_at
 

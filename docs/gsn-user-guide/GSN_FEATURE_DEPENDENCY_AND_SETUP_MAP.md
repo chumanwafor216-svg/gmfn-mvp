@@ -15,11 +15,13 @@ Audit date: 2026-09-13
 ### A. What the user must set up or create
 
 - **Member account, profile, and personal GSN identity**: needs User must create or sign in to an account. Feeds/dependencies: Auth routes, entry verification routes, profile page, selected community state.
-- **Create community or join existing community**: needs Signed-in member and invite or owner intent to create. Feeds/dependencies: Community Home, Clans/invite routes, join requests, admin review policy.
+- **Create community or join existing community**: needs Signed-in member and invite or owner intent to create. Feeds/dependencies: Community Home, Clans/invite routes, reusable Community QR policy, join requests, admission mode, secure activation proof, and admin review/recovery policy.
 - **Community Domain setup and administration**: needs Existing community or owner authority; domain name/template choice. Feeds/dependencies: Community Domain purchase/dashboard, community domain API, package/payment instructions, governance policy.
-- **Community Bulletin / official notice board**: needs Selected community; posting permission according to notice policy. Feeds/dependencies: Community Home, Community Notices API, review queue, public notice route, Web Push where configured.
+- **Community Bulletin / official notice board**: needs Selected community; posting permission according to notice policy. Feeds/dependencies: Community Home, Community Notices API, voice storage/playback, announcement polls, review queue, public notice route, Web Push where configured, and externally created meeting links when attached.
 - **Shop setup**: needs Signed-in member with community membership and shop feature enabled. Feeds/dependencies: Marketplace shop routes, Shop Control, public shop, feature policy.
 - **Product/service public blocks and images**: needs Shop exists; media meets file rules; public slots available. Feeds/dependencies: Shop Assets, Marketplace products API, media upload route, public shop rendering.
+- **Shop Diary and Products & Services Update**: needs Active owner shop; selected community; Shop Diary enabled. Feeds/dependencies: Shop Assets diary composer, shop-diaries API, Public Shop update ticker, share helpers, and optional Spotlight handoff.
+- **Public Shop voice messages**: needs Active owner shop and a public-safe shop, update, or product/service target. Feeds/dependencies: Shop owner tools, protected shop voice storage/playback, Public Shop, Shop Diary, and product lifecycle.
 - **Contact information for shop and DemandBox**: needs User consents to show a contact path for shop/request. Feeds/dependencies: Shop Control, DemandBox, public shop, WhatsApp link helper.
 - **Private Vault offers and access links**: needs Shop and at least one private offer. Feeds/dependencies: Vault Control, vault access API, marketplace products private visibility.
 - **Free Spotlight publisher**: needs Shop exists, product/media/message eligible, daily free quota available. Feeds/dependencies: Shop Control Spotlight workflow, Marketplace broadcast API, Dashboard/Public Shop feed.
@@ -27,12 +29,15 @@ Audit date: 2026-09-13
 
 ### B. What the user does only when needed
 
+- **GSN Shop Reel**: needs Exact shop owner, active shop, and eligible picture or short video. Feeds/dependencies: Shop Control Spotlight media handlers, marketplace media-quality service, GSN Natural Finish, Public Shop link, and browser share/download support.
 - **Share public shop, product, Spotlight, or bulletin link**: needs A public output must already exist. Feeds/dependencies: Public links/share helpers, QR/public routes, route-specific copy/share buttons.
 - **QR and public verification links**: needs Underlying public record exists and is current. Feeds/dependencies: QR component, public frontend/API origin, trust/public routes.
-- **DemandBox post, response, close, and cancellation**: needs Signed-in member and selected community; DemandBox feature enabled. Feeds/dependencies: Marketplace request API, DemandBox page, Dashboard DemandBox preview.
+- **DemandBox post, response, close, and cancellation**: needs Signed-in member and selected community; DemandBox feature enabled. Feeds/dependencies: Marketplace request API, DemandBox page, Dashboard DemandBox preview, protected voice, and private reply history.
+- **DemandBox protected voice and private conversations**: needs Existing request and membership in its authorised audience. Feeds/dependencies: DemandBox request/reply APIs, protected audio storage/playback, participant isolation, history, and Post again.
 - **Ask Community through DemandBox**: needs Signed-in member and selected community; DemandBox enabled. Feeds/dependencies: DemandBox modal, createMarketplaceRequest API, not Community Notice engine.
-- **TrustSlip generation, sharing, and recipient verification**: needs Holder has account and enough eligible evidence for requested purpose/context. Feeds/dependencies: TrustSlip page, trust slip APIs, public verify page, TrustPassport/private evidence boundary.
+- **TrustSlip generation, sharing, and recipient verification**: needs Holder has account and enough eligible evidence for requested purpose/context. Feeds/dependencies: TrustSlip page, bounded evidence builder, deterministic projection service, trust slip APIs, public verify page, TrustPassport/private evidence boundary.
 - **Community confirmation and witness response**: needs Public TrustSlip/community evidence context and configured response permissions. Feeds/dependencies: Community confirmation APIs, public confirmation route, inbox/policy route.
+- **Marketplace community member roster**: needs Signed-in member, selected community, and active membership rows. Feeds/dependencies: Marketplace Shops & Services lane, public-safe membership data, Community Confirmation policy route, and canonical Public Shop links.
 - **Community Domain Bulletin Bridge**: needs A public Community Domain bulletin/notice already exists. Feeds/dependencies: Community notices list, public notice URL builder, WhatsApp/share helper.
 
 ### C. What GSN produces or updates automatically

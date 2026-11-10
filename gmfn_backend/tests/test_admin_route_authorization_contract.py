@@ -14,6 +14,7 @@ AUTH_MARKERS = (
     "Depends(_require_admin)",
 )
 ADMIN_GUARD_MARKERS = (
+    "_platform_admin_required(",
     "_require_platform_admin(",
     "_require_admin(",
     "require_admin(",

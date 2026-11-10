@@ -40,6 +40,8 @@ Empty or stale state: No communities yet; invite code or join link needed; reque
 Recovery: Use latest invite link/code, ask owner/admin to review, or return to Community Home/Dashboard.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
 
+Recent joining capability: A personal instant invitation remains single-use. An explicitly generated Community QR can be reused by many people under the community's saved admission mode until it is revoked, retired, or that mode changes. Every applicant still completes their own identity and account setup. Approved applicants can recover same-browser activation authority or use the bounded administrator-supervised private-code process; knowing a GSN ID alone never authorises password creation, and live SMS recovery remains disabled until its provider and operating cost are approved.
+
 ### Community Domain setup and administration
 
 Status: PARTIAL. Setup requirement: FOUNDATIONAL_REQUIRED.
@@ -64,6 +66,14 @@ Empty or stale state: No active notice or no public bulletin ready; member submi
 Recovery: Open Bulletin tools, check policy, submit again with required length, or ask admin to decide.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
 
+Voice announcements and polls: A permitted member can publish text, one voice announcement of up to 60 seconds, or both. Publication follows the existing Community Bulletin policy and review path. Playback is deliberate, and a poll can collect one bounded response from each eligible audience member. GSN does not autoplay or transcribe the recording, create a public comment thread, expose it across communities, or reuse a Shop/DemandBox recording.
+
+Live meeting bridge: A community administrator can create a WhatsApp call link for a smaller meeting or a Zoom meeting link for a larger meeting, then attach that link to a Community Bulletin notice. The notice should state the meeting purpose, date, time, time zone, expected duration, and a clear action such as **Join WhatsApp call** or **Join Zoom meeting**. Members open the notice in GSN and use the attached link at the scheduled time; they do not need a separate WhatsApp group inside GSN.
+
+Attendance and safety: Add an availability poll before the meeting, then let an administrator record a confirmed roll call after the meeting. Use a member-only notice for private meetings and enable the external provider's approval, waiting-room, or passcode controls where available. Close or replace the notice when its meeting link is no longer current.
+
+External-service boundary: GSN organises the notice, link access, RSVP evidence, and administrator-confirmed attendance record. GSN does not host the live call, automatically call every member, create the external provider's link, or independently verify who entered a WhatsApp or Zoom call. Capacity, guest access, expiry, data charges, and call security remain subject to the chosen provider's current rules.
+
 ### Shop setup
 
 Status: LIVE. Setup requirement: FOUNDATIONAL_REQUIRED.
@@ -87,6 +97,30 @@ What feeds or creates it: Product title, detail, price/currency, category, avail
 Empty or stale state: Empty slot or no media link; public shop hides missing media rather than broken links.
 Recovery: Open Shop Assets or Manage Products, replace slot, add media, archive duplicate/old block.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
+
+### Shop Diary and Products & Services Update
+
+Status: LIVE. Setup requirement: OPTIONAL_CONFIGURATION.
+
+Status: LIVE. Behaviour: USER_CONFIGURES_OR_CREATES.
+Where to go: Shop Update; Add diary entry; Write shop update; Products and Services Update; Share update; Promote this update.
+Before it works: Active owner shop; selected community; Shop Diary enabled by the applicable community/domain policy.
+What feeds or creates it: Owner-created text/voice update, activity type, related product or eligible same-shop evidence, time, and current products/services state.
+Empty or stale state: No current public update, the 24-hour Public Shop display window ended, or Shop Diary is disabled.
+Recovery: Create a current public update, confirm Shop Diary is enabled, or publish/update a real product or service.
+Boundary: The ticker summarizes current shop activity. It is not a product listing, paid placement, completed-trade proof, TrustSlip result, or automatic Spotlight publication.
+
+### Public Shop voice messages
+
+Status: LIVE. Setup requirement: OPTIONAL_CONFIGURATION.
+
+Status: LIVE. Behaviour: USER_CONFIGURES_OR_CREATES.
+Where to go: Shop welcome voice; Latest Shop Update voice; Product or service voice note; Listen.
+Before it works: Active owner shop; exact owner permission; related shop, update, or product/service remains public.
+What feeds or creates it: Owner-recorded voice attached to the shop welcome, Shop Update, or an exact product/service, with speaker name and GSN ID attribution.
+Empty or stale state: No recording exists, it was deleted, the Shop Update expired, or the related item is no longer public.
+Recovery: Add or replace the recording from owner tools, keep the related item public, or rely on the written shop/product information.
+Boundary: Playback is deliberate and supports explanation. It does not replace required product facts or prove identity, quality, availability, delivery, price, endorsement, or trade completion.
 
 ### Contact information for shop and DemandBox
 
@@ -138,6 +172,18 @@ Boundary: GSN presents evidence or an action outcome. The receiving person or or
 
 ## B. What You Do Only When Needed
 
+### GSN Shop Reel
+
+Status: LIVE. Setup requirement: OPTIONAL_CONFIGURATION.
+
+Status: LIVE. Behaviour: USER_TRIGGERS_ON_DEMAND.
+Where to go: GSN Shop Reel; Choose picture; Choose video; Create Reel; Share Reel from phone; Choose link channel; Download reel.
+Before it works: Signed-in exact shop owner; active shop; eligible prepared picture or short video.
+What feeds or creates it: Owner-selected media, optional permitted sound, saved shop name, approved GSN shop entrance ending, and attributed Public Shop link.
+Empty or stale state: No eligible source media, preparation failed, or the browser cannot share media files natively.
+Recovery: Choose eligible media, resolve media/permission warnings, create again, or download and post manually.
+Boundary: GSN does not auto-post the Reel, supply a music catalogue, prove delivery or sales, expose Vault content, or invent/repair product detail.
+
 ### Share public shop, product, Spotlight, or bulletin link
 
 Status: LIVE. Setup requirement: NONE.
@@ -174,6 +220,18 @@ Empty or stale state: No community available; no extra detail yet; feature may b
 Recovery: Create/join a community, add a title if validation responds, reopen DemandBox, or contact requester.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
 
+### DemandBox protected voice and private conversations
+
+Status: LIVE. Setup requirement: NONE.
+
+Status: LIVE. Behaviour: USER_TRIGGERS_ON_DEMAND.
+Where to go: Voice note; Listen & reply; Replies are private; Past requests; Post again; Delete voice note.
+Before it works: Signed-in member; selected community; request exists; member belongs to its authorised audience.
+What feeds or creates it: Demand category, text and/or protected voice note, consented portrait or initials, private requester/responder replies, and message times.
+Empty or stale state: No replies yet, recording unavailable, audio deleted, or the member is outside the permitted audience.
+Recovery: Open the request, confirm audience access, retry playback, use text instead, or post a new linked request from Past requests.
+Boundary: Each responder's exchange stays private with the requester. GSN does not transcribe audio, expose conversations to unrelated members, or invent read receipts, online/typing states, identity proof, or WhatsApp behaviour.
+
 ### Ask Community through DemandBox
 
 Status: LIVE. Setup requirement: NONE.
@@ -198,6 +256,8 @@ Empty or stale state: Expired, missing, stale, or not enough evidence; verifier 
 Recovery: Holder refreshes/generates current TrustSlip, selects correct purpose, shares latest QR/code/link.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
 
+Recent evidence capability: TrustSlip V1 builds bounded evidence sets and deterministic projections from eligible source records. Unsupported evidence is excluded, and its public result remains a decision aid rather than a universal character, credit, payment, or future-behaviour claim.
+
 ### Community confirmation and witness response
 
 Status: PARTIAL. Setup requirement: NONE.
@@ -209,6 +269,18 @@ What feeds or creates it: TrustSlip/community confirmation request, public token
 Empty or stale state: Request can remain pending or response pool unavailable.
 Recovery: Use inbox/policy screens, ask community only when code/response pool ready, review evidence before relying.
 Boundary: GSN presents evidence or an action outcome. The receiving person or organisation still decides.
+
+### Marketplace community member roster
+
+Status: LIVE. Setup requirement: NONE.
+
+Status: LIVE. Behaviour: USER_TRIGGERS_ON_DEMAND.
+Where to go: Community members; Search name or GSN ID; Filters; Confirm I know this member; Ask this member to confirm me; Open public shop.
+Before it works: Signed-in member; selected community; active membership context available to Marketplace.
+What feeds or creates it: Public-safe selected-community membership rows, saved portrait or initials, role, GSN ID, and Public Shop availability.
+Empty or stale state: No selected community, no matching member, filter excludes all rows, or membership data is unavailable.
+Recovery: Select the correct community, clear search/filter text, move through the ten-member pages, or ask an administrator about membership visibility.
+Boundary: The roster does not expose private contacts, create cross-community discovery, fabricate confirmation status, or make a portrait, role, GSN ID, or shop proof of reliability.
 
 ### Community Domain Bulletin Bridge
 

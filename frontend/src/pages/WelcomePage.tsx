@@ -464,9 +464,6 @@ export default function WelcomePage() {
           {entryMode === "approved" && isKnownSingleLane(entryMode) ? (
             <div style={routeCard()}>
               <div style={labelText()}>Activation</div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                Finish activation
-              </div>
               <div style={supportText()}>
                 Create your password and complete your entry into the system.
               </div>
@@ -486,9 +483,6 @@ export default function WelcomePage() {
           {entryMode === "existing" ? (
             <div style={routeCard()}>
               <div style={labelText()}>Existing account</div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                Go to sign in
-              </div>
               <div style={supportText()}>
                 Enter your email and password on the next page.
               </div>
@@ -527,17 +521,8 @@ export default function WelcomePage() {
                   <WelcomeIcon name="identity-card" />
                 </div>
 
-                <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ display: "grid" }}>
                   <div style={routePill()}>Existing member</div>
-                  <div
-                    style={{
-                      fontSize: isCompact ? 25 : 30,
-                      fontWeight: 900,
-                      lineHeight: 1.08,
-                    }}
-                  >
-                    Sign in
-                  </div>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>

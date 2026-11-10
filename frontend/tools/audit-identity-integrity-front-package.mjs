@@ -267,7 +267,7 @@ assertNotContains(
 );
 
 assertContains(
-  /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?communityConfirmations: routeTarget\([\s\S]*?"communityConfirmationInbox"[\s\S]*?to: routes\.communityConfirmations[\s\S]*?to: routes\.payoutDetails/,
+  /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?key: "community"[\s\S]*?to:[\s\S]*?routes\.trustSlip[\s\S]*?"focus=community-confirmation"[\s\S]*?key: "bank"[\s\S]*?to: routes\.payoutDetails/,
   "Identity Integrity must route real bank/wallet and community tasks to real completion surfaces."
 );
 
@@ -297,13 +297,17 @@ assertContains(
 );
 
 assertContains(
-  /identityCardValid[\s\S]*?identitySignals\.phoneVerified[\s\S]*?trustSlipCode[\s\S]*?!trustSlipExpired[\s\S]*?identityCardStatusText[\s\S]*?Phone required[\s\S]*?TrustSlip pending/,
-  "GSN Identity Card validity must require verified phone evidence plus an active TrustSlip."
+  /trustSlipCurrent[\s\S]*?trustSlipLifecycleBlocked[\s\S]*?identityCardValid[\s\S]*?identitySignals\.phoneVerified[\s\S]*?trustSlipCurrent[\s\S]*?trustSlipMembershipActive[\s\S]*?identityCardStatusText[\s\S]*?Membership inactive[\s\S]*?Superseded[\s\S]*?Revoked[\s\S]*?Frozen/,
+  "GSN Identity Card validity must require verified phone evidence, a current TrustSlip, and current anchor membership."
 );
 
 assertContains(
-  /membershipCardStatus[\s\S]*?identityCardValid[\s\S]*?Active Network Membership[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?\{membershipCardStatus\}/,
-  "The landscape membership card must show one bounded, evidence-derived membership status."
+  /membershipCardStatus[\s\S]*?identityCardValid[\s\S]*?Active GSN Community Member[\s\S]*?GSN Identity Record[\s\S]*?membershipCardSignalLine[\s\S]*?MEMBERSHIP ACTIVE[\s\S]*?TRUSTSLIP CURRENT[\s\S]*?GSN ID RETAINED[\s\S]*?MEMBERSHIP NOT CURRENT[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?\{membershipCardStatus\}/,
+  "The landscape card must separate active membership from the holder's retained GSN identity."
+);
+assertNotContains(
+  /Active Network Membership|VERIFIED\s*(?:â€¢|•)\s*CONNECTED\s*(?:â€¢|•)\s*EMPOWERED|Live verified/,
+  "Identity and public TrustSlip surfaces must not use one broad verified claim for distinct evidence states."
 );
 assertContains(
   /import gsnConnectedGlobeMark from "\.\.\/assets\/identity\/gsn-connected-globe-mark\.jpg";[\s\S]*?function GsnDottedWorldMap[\s\S]*?data-gsn-identity-card-reference="landscape-membership"[\s\S]*?data-gsn-identity-card-core="true"[\s\S]*?aspectRatio: "1\.62 \/ 1"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?<GsnDottedWorldMap \/>[\s\S]*?data-gsn-identity-card-connected-globe="true"[\s\S]*?src=\{gsnConnectedGlobeMark\}/,

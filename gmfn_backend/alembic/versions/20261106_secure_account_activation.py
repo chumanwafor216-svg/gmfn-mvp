@@ -1,7 +1,7 @@
 """secure account activation grants
 
 Revision ID: 20261106_secure_activation
-Revises: 20261030_market_dir_scale
+Revises: 20261102_taxonomy_authority
 Create Date: 2026-11-06
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "20261106_secure_activation"
-down_revision: Union[str, Sequence[str], None] = "20261030_market_dir_scale"
+down_revision: Union[str, Sequence[str], None] = "20261102_taxonomy_authority"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

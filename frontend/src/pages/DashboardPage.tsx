@@ -406,7 +406,7 @@ const DASHBOARD_TARGETS = {
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
-  SHOP_ME: "/app/shop-control",
+  SHOP_ME: "/app/shop/me",
   COMMAND_CENTER: "/app/command-center",
   GUARANTOR_EARNINGS: "/app/guarantor-earnings",
 } as const;
@@ -546,6 +546,12 @@ const DASHBOARD_BRAND = {
   accentDeep: "#123055",
   goldText: "#8A651E",
 };
+
+const DASHBOARD_NEON_SURFACE_SHADOW =
+  "0 0 0 1px rgba(255,255,255,0.72), 0 0 17px rgba(31,203,255,0.28), 0 0 30px rgba(117,73,255,0.14), 0 16px 32px rgba(7,34,66,0.12), inset 0 1px 0 rgba(255,255,255,0.94)";
+
+const DASHBOARD_NEON_BUTTON_SHADOW =
+  "0 0 0 1px rgba(255,255,255,0.82), 0 0 11px rgba(31,203,255,0.26), 0 0 18px rgba(117,73,255,0.10), 0 8px 18px rgba(7,34,66,0.09), inset 0 1px 0 rgba(255,255,255,0.96)";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -4260,7 +4266,7 @@ export default function DashboardPage() {
       lineHeight: 1.08,
     });
 
-  const myShopLink = "/app/shop-control";
+  const myShopLink = DASHBOARD_TARGETS.SHOP_ME;
 
   const unreadCount = useMemo(
     () => notices.filter((n) => !n?.is_read).length,
@@ -5015,6 +5021,8 @@ export default function DashboardPage() {
       ),
     [dashboardNoticeSummary.allRows]
   );
+  const dashboardAttentionLeadItem =
+    dashboardAttentionActionableRows[0] || null;
 
   const targetedDemandAttentionItem = useMemo(
     () =>
@@ -5953,15 +5961,29 @@ export default function DashboardPage() {
       const useTargetedDemand =
         priorityRoutes.primaryRoute.key === "demand-box" &&
         Boolean(targetedDemandAttentionItem);
+      const useExactActionableItem =
+        !useTargetedDemand && Boolean(dashboardAttentionLeadItem);
       const exactDemandTitle = safeStr(targetedDemandRequest?.title);
+      const actionableRouteLabel = safeStr(
+        dashboardAttentionLeadItem?.ctaLabel ||
+          dashboardAttentionLeadItem?.source ||
+          "notification"
+      ).replace(/^Open\s+(?:your\s+)?/i, "");
 
       return buildDashboardAttentionSignal({
         userClass: userOperationalClass,
-        nextRouteKey: priorityRoutes.primaryRoute.key,
-        nextRouteLabel: routeSurfaceLabel(priorityRoutes.primaryRoute),
+        nextRouteKey: useExactActionableItem
+          ? "notifications"
+          : priorityRoutes.primaryRoute.key,
+        nextRouteLabel: useExactActionableItem
+          ? actionableRouteLabel || "notification"
+          : routeSurfaceLabel(priorityRoutes.primaryRoute),
         nextRouteTo:
           useTargetedDemand && targetedDemandAttentionTo
             ? targetedDemandAttentionTo
+            : useExactActionableItem
+            ? dashboardAttentionLeadItem?.ctaTo ||
+              DASHBOARD_TARGETS.WHAT_MATTERS_NOW
             : priorityRoutes.primaryRoute.to,
         nextRouteCopy,
         totalNotifications: dashboardNoticeTotalCount,
@@ -5974,11 +5996,15 @@ export default function DashboardPage() {
           ? exactDemandTitle
             ? `Request for you: ${exactDemandTitle}`
             : targetedDemandAttentionItem?.title
+          : useExactActionableItem
+          ? dashboardAttentionLeadItem?.title
           : undefined,
         issueDetail: useTargetedDemand
           ? exactDemandTitle
             ? "This was sent directly to you. Open it to decide whether you can help; you are not committed until you answer."
             : targetedDemandAttentionItem?.detail
+          : useExactActionableItem
+          ? dashboardAttentionLeadItem?.detail
           : undefined,
         scopeKey: [
           selectedClanId || "no-community",
@@ -6008,6 +6034,7 @@ export default function DashboardPage() {
       dashboardNoticeSummary.counts.unread,
       dashboardNoticeSummary.counts.actionable,
       dashboardAttentionActionableRows,
+      dashboardAttentionLeadItem,
       targetedDemandAttentionItem,
       targetedDemandRequest,
       targetedDemandAttentionTo,
@@ -6948,7 +6975,9 @@ export default function DashboardPage() {
         borderRadius: isPhone ? 15 : 15,
         background:
           "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
-        border: "1px solid rgba(11,99,209,0.14)",
+        border: isPhone
+          ? "1px solid rgba(35,184,241,0.48)"
+          : "1px solid rgba(11,99,209,0.14)",
         color: "#123055",
         fontWeight: 900,
         userSelect: "none",
@@ -6969,7 +6998,9 @@ export default function DashboardPage() {
         padding: isPhone ? "9px 10px" : "8px 12px",
         borderRadius: isPhone ? 15 : 14,
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
-        border: "1px solid rgba(11,99,209,0.14)",
+        border: isPhone
+          ? "1px solid rgba(35,184,241,0.48)"
+          : "1px solid rgba(11,99,209,0.14)",
         color: DASHBOARD_BRAND.accentDeep,
         fontWeight: 900,
         fontSize: isPhone ? 12.5 : 13,
@@ -7009,7 +7040,7 @@ export default function DashboardPage() {
       alignItems: "center",
       padding: isPhone ? "0 12px" : "0 15px",
       borderRadius: isPhone ? 20 : 22,
-      border,
+      border: isPhone ? "1px solid rgba(52,211,255,0.68)" : border,
       background,
       color: DASHBOARD_BRAND.ink,
       boxShadow:
@@ -7088,9 +7119,10 @@ export default function DashboardPage() {
         gap: 4,
         padding: "4px 7px",
         borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.76)",
+        border: "1px solid rgba(52,211,255,0.68)",
         background: "rgba(255,255,255,0.90)",
-        boxShadow: "0 5px 14px rgba(4,24,39,0.14)",
+        boxShadow:
+          "0 0 9px rgba(31,203,255,0.28), 0 5px 14px rgba(4,24,39,0.16)",
         backdropFilter: "blur(4px)",
         overflow: "hidden",
       }
@@ -7134,9 +7166,10 @@ export default function DashboardPage() {
           minWidth: 30,
           minHeight: 30,
           color: "#08233A",
-          border: "1px solid rgba(255,255,255,0.78)",
+          border: "1px solid rgba(52,211,255,0.72)",
           background: "rgba(255,255,255,0.90)",
-          boxShadow: "0 5px 14px rgba(4,24,39,0.14)",
+          boxShadow:
+            "0 0 10px rgba(31,203,255,0.30), 0 5px 14px rgba(4,24,39,0.16)",
           backdropFilter: "blur(4px)",
         }
       : dashboardAccordionChevronStyle(expanded);
@@ -9577,7 +9610,9 @@ export default function DashboardPage() {
           gridColumn: isPhone ? "1 / -1" : undefined,
           order: isPhone ? 100 : dashboardToolsOrder,
           marginTop: isPhone ? 0 : undefined,
-          border: "1px solid rgba(214,170,69,0.24)",
+          border: isPhone
+            ? "1px solid rgba(52,211,255,0.58)"
+            : "1px solid rgba(214,170,69,0.24)",
           borderRadius: isPhone ? 20 : 24,
           padding: isPhone ? 9 : 18,
           boxShadow:
@@ -9725,7 +9760,7 @@ export default function DashboardPage() {
           padding: isPhone ? 8 : 20,
           borderRadius: isPhone ? 20 : 26,
           boxShadow: isPhone
-            ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
+            ? DASHBOARD_NEON_SURFACE_SHADOW
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanViolet",
@@ -10527,6 +10562,8 @@ export default function DashboardPage() {
           order: dashboardAttentionOrder,
           border: dashboardHasActionableAttention
             ? "1px solid rgba(184,137,45,0.38)"
+            : isPhone
+            ? "1px solid rgba(52,211,255,0.58)"
             : notificationSurfaceChrome.shellBorder,
           padding: dashboardHasActionableAttention && isPhone
             ? 14
@@ -10540,6 +10577,8 @@ export default function DashboardPage() {
             : 26,
           boxShadow: dashboardHasActionableAttention
             ? "0 18px 38px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.90)"
+            : isPhone
+            ? DASHBOARD_NEON_SURFACE_SHADOW
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanGold",
@@ -11284,7 +11323,7 @@ export default function DashboardPage() {
           gap: isPhone ? 0 : 14,
           borderRadius: isPhone ? 20 : 26,
           boxShadow: isPhone
-            ? "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)"
+            ? DASHBOARD_NEON_SURFACE_SHADOW
             : undefined,
           ...authenticatedStaticNeonFrame(
             "cyanViolet",

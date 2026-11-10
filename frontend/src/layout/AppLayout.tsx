@@ -1284,7 +1284,9 @@ function mobileTopBar(): React.CSSProperties {
     padding: "10px 12px",
     background: "rgba(255,255,255,0.97)",
     backdropFilter: "blur(10px)",
-    borderBottom: "1px solid rgba(11,31,51,0.08)",
+    borderBottom: "1px solid rgba(48,202,255,0.34)",
+    boxShadow:
+      "0 6px 18px rgba(31,203,255,0.10), 0 10px 26px rgba(117,73,255,0.06)",
   };
 }
 
@@ -1295,8 +1297,9 @@ function mobileIconButton(): React.CSSProperties {
     minHeight: 44,
     maxHeight: 44,
     borderRadius: 11,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
+    border: "1px solid rgba(35,184,241,0.58)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(239,248,255,0.98) 100%)",
     color: "#0B1F33",
     fontSize: 11.5,
     fontWeight: 900,

@@ -252,8 +252,10 @@ def _public_visibility_level(
     if not requested_level:
         return stored
     requested = str(requested_level).strip().lower()
-    if requested not in ranks:
+    if requested == "detailed":
         return stored
+    if requested not in ranks:
+        return "minimal"
     return requested if ranks[requested] <= ranks[stored] else stored
 
 
@@ -312,6 +314,25 @@ PUBLIC_TRUSTSLIP_BLOCKED_KEYS = {
     "notes",
     "raw_event_type",
     "event_type",
+    "community_footprint",
+    "community_role_counts",
+    "relationship_evidence_summary",
+    "member_witness_count",
+    "unique_counterparties",
+    "sponsor_count",
+    "active_clan_count",
+    "active_community_count",
+    "community_footprint_count",
+    "community_member_count",
+    "active_member_count",
+    "total_member_count",
+    "phone_recorded_at",
+    "bank_verified_at",
+    "driver_licence_recorded_at",
+    "official_id_recorded_at",
+    "membership_valid_until",
+    "next_witness_renewal_at",
+    "community_activity_latest_at",
 }
 
 
@@ -334,66 +355,108 @@ def _public_trustslip_merchant_view(view: Dict[str, Any]) -> Dict[str, Any]:
     return safe if isinstance(safe, dict) else {}
 
 
-def _public_community_confirmation_options(
-    db: Session,
-    footprint: Any,
+PUBLIC_TRUSTSLIP_IDENTITY_CONTEXT_KEYS = {
+    "profile_image_url",
+    "photo_recorded",
+    "phone_recorded",
+    "phone_status_label",
+    "phone_verified",
+    "bank_details_recorded",
+    "bank_verified",
+    "bank_evidence_status",
+    "bank_verification_label",
+    "driver_licence_recorded",
+    "driver_licence_label",
+    "official_id_recorded",
+    "official_id_verified",
+    "official_id_label",
+    "passport_recorded",
+    "passport_verified",
+    "passport_verification_label",
+    "community_identity_confirmed",
+    "community_identity_label",
+    "identity_status_label",
+    "plain_language",
+}
+
+PUBLIC_TRUSTSLIP_COMMUNITY_CONTEXT_KEYS = {
+    "community_name",
+    "community_global_id",
+    "community_code",
+    "community_public_face_status",
+    "community_public_face_label",
+    "official_affiliate_status",
+    "official_affiliate_label",
+    "community_evidence_currentness_status",
+    "community_evidence_currentness_label",
+    "community_evidence_currentness_scope",
+    "holder_role",
+    "current_user_is_active_member",
+    "membership_strength",
+    "membership_strength_label",
+    "membership_renewal_status",
+    "membership_renewal_status_label",
+    "next_witness_renewal_status",
+    "next_witness_renewal_status_label",
+    "membership_currentness_label",
+    "membership_currentness_scope",
+    "community_activity_categories",
+    "community_activity_label",
+    "community_activity_public_note",
+    "plain_language",
+}
+
+
+def _public_identity_context(context: Any, *, visible: bool) -> Dict[str, Any]:
+    if not visible or not isinstance(context, dict):
+        return {}
+    return _public_trustslip_merchant_view(
+        {
+            key: context.get(key)
+            for key in PUBLIC_TRUSTSLIP_IDENTITY_CONTEXT_KEYS
+            if key in context
+        }
+    )
+
+
+def _public_community_context(
+    context: Any,
     *,
-    primary_clan_id: Any,
-    subject_user_id: Any,
-) -> list[Dict[str, Any]]:
-    if not isinstance(footprint, list):
-        return []
-    primary_id = _safe_str(primary_clan_id)
-    options: list[Dict[str, Any]] = []
-    seen: set[str] = set()
-    for item in footprint:
-        if not isinstance(item, dict):
-            continue
-        community_id = _safe_str(item.get("clan_id") or item.get("community_id"))
-        if not community_id or community_id in seen:
-            continue
-        seen.add(community_id)
-        community_name = _safe_str(
-            item.get("community_name") or item.get("name"),
-            f"Community {community_id}",
-        )
-        community_code = _safe_str(item.get("community_code"))
-        holder_role = _safe_str(item.get("role"), "member")
-        readiness: Dict[str, Any] = {}
-        try:
-            readiness = build_community_confirmation_summary(
-                db,
-                community_id=int(community_id),
-                subject_user_id=int(subject_user_id),
-            )
-        except Exception:
-            readiness = {
-                "relay_available": False,
-                "instant_pulse_available": False,
-                "plain_language": "Live confirmation readiness could not be loaded for this community.",
-            }
-        options.append(
-            {
-                "community_id": community_id,
-                "clan_id": community_id,
-                "community_name": community_name,
-                "community_code": community_code,
-                "holder_role": holder_role,
-                "is_primary_anchor": community_id == primary_id,
-                "community_status": readiness.get("community_status"),
-                "active_member_count": readiness.get("active_member_count"),
-                "contactable_reference_count": readiness.get("contactable_reference_count"),
-                "sponsor_signal_count": readiness.get("sponsor_signal_count"),
-                "last_community_confirmation": readiness.get("last_community_confirmation"),
-                "relay_available": bool(readiness.get("relay_available")),
-                "instant_pulse_available": bool(readiness.get("instant_pulse_available")),
-                "plain_language": readiness.get("plain_language"),
-                "confirmation_scope_note": (
-                    "Request responses from people connected to this community only."
-                ),
-            }
-        )
-    return options
+    association_authorized: bool,
+) -> Dict[str, Any]:
+    if not association_authorized or not isinstance(context, dict):
+        return {}
+    return _public_trustslip_merchant_view(
+        {
+            key: context.get(key)
+            for key in PUBLIC_TRUSTSLIP_COMMUNITY_CONTEXT_KEYS
+            if key in context
+        }
+    )
+
+
+def _public_evidence_scope(
+    scope: Any,
+    *,
+    association_authorized: bool,
+) -> Dict[str, Any]:
+    if not isinstance(scope, dict):
+        return {}
+    allowed = {
+        "reading_scope",
+        "boundary",
+    }
+    if association_authorized:
+        allowed.update({"primary_anchor_label", "primary_anchor_id"})
+    projected = {
+        key: scope.get(key)
+        for key in allowed
+        if scope.get(key) not in (None, "")
+    }
+    projected["reading_scope"] = (
+        "primary_only" if association_authorized else "identity_only"
+    )
+    return projected
 
 
 def _safe_public_path_key(value: Any) -> str:
@@ -467,6 +530,55 @@ def _member_credential_page_for_holder(
     )
 
 
+def _trust_slip_anchor_membership(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    holder: Optional[User] = None,
+) -> Optional[ClanMembership]:
+    resolved_holder = holder or _slip_holder(db, slip)
+    if resolved_holder is None:
+        return None
+
+    clan_id = int(getattr(slip, "clan_id", 0) or 0)
+    holder_id = int(getattr(resolved_holder, "id", 0) or 0)
+    if clan_id <= 0 or holder_id <= 0:
+        return None
+
+    clan = db.get(Clan, clan_id)
+    if clan is None:
+        return None
+    if _safe_str(getattr(clan, "status", "active"), "active").lower() != "active":
+        return None
+
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == clan_id,
+            ClanMembership.user_id == holder_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+
+def _holder_has_active_membership(db: Session, *, holder: User) -> bool:
+    holder_id = int(getattr(holder, "id", 0) or 0)
+    if holder_id <= 0:
+        return False
+    return (
+        db.query(ClanMembership)
+        .join(Clan, Clan.id == ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == holder_id,
+            ClanMembership.left_at.is_(None),
+            Clan.status == "active",
+        )
+        .first()
+        is not None
+    )
+
+
 def _qr_png_bytes(url: str) -> bytes:
     if qrcode is None:
         raise HTTPException(
@@ -533,21 +645,51 @@ def _status_effective(
     expires_at: Optional[datetime],
     *,
     merchant_verify_active: bool = True,
+    is_current: bool = True,
+    membership_active: bool = True,
 ) -> str:
     s = (status or "").lower().strip()
-
-    if _is_expired(expires_at):
-        return "expired"
 
     if s in {"revoked", "frozen"}:
         return s
 
+    if not is_current:
+        return "superseded"
+
+    if _is_expired(expires_at) or s == "expired":
+        return "expired"
+
     if s in {"active", "issued"}:
+        if not membership_active:
+            return "membership_inactive"
         if not merchant_verify_active:
             return "merchant_verify_inactive"
         return "active"
 
     return "invalid"
+
+
+def _status_effective_for_slip(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    holder: Optional[User],
+    merchant_verify_active: bool,
+) -> str:
+    return _status_effective(
+        getattr(slip, "status", "") or "",
+        getattr(slip, "expires_at", None),
+        merchant_verify_active=merchant_verify_active,
+        is_current=bool(getattr(slip, "is_current", False))
+        and not bool(getattr(slip, "superseded_by_trust_slip_id", None)),
+        membership_active=bool(
+            _trust_slip_anchor_membership(
+                db,
+                slip=slip,
+                holder=holder,
+            )
+        ),
+    )
 
 
 def _trust_slip_needs_refresh(slip: Optional[TrustSlip]) -> bool:
@@ -570,6 +712,10 @@ def _merchant_badge(effective_status: str) -> tuple[str, str]:
         return ("REVOKED - VERIFICATION BLOCKED", "#991B1B")
     if effective_status == "frozen":
         return ("FROZEN - CONTACT GSN ADMIN", "#991B1B")
+    if effective_status == "superseded":
+        return ("SUPERSEDED - ASK FOR THE CURRENT TRUSTSLIP", "#991B1B")
+    if effective_status == "membership_inactive":
+        return ("MEMBERSHIP NOT CURRENT - GSN ID RETAINED", "#92400E")
     return ("NOT CURRENT - ASK FOR UPDATED VERIFICATION", "#991B1B")
 
 
@@ -614,8 +760,13 @@ def _payload_with_identity(
     *,
     user_id: int,
     requested_level: Optional[str] = None,
+    preferred_clan_id: Any = None,
 ) -> Dict[str, Any]:
-    payload = get_trust_slip_payload(db, user_id=int(user_id))
+    payload = get_trust_slip_payload(
+        db,
+        user_id=int(user_id),
+        preferred_clan_id=preferred_clan_id,
+    )
     user = db.get(User, int(user_id))
     visibility_level = _safe_visibility_level(user, requested_level)
 
@@ -631,6 +782,88 @@ def _payload_with_identity(
     return payload
 
 
+def _existing_slip_fallback_payload(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    holder: User,
+) -> Dict[str, Any]:
+    clan = db.get(Clan, int(getattr(slip, "clan_id", 0) or 0))
+    display_name = _public_holder_name(holder)
+    community_name = _safe_str(
+        getattr(clan, "marketplace_name", None) if clan else None,
+        _safe_str(getattr(clan, "name", None) if clan else None, "Community record"),
+    )
+    created_at = getattr(slip, "created_at", None)
+    expires_at = getattr(slip, "expires_at", None)
+    phone_verified = bool(
+        getattr(holder, "phone_verified_at", None)
+        and getattr(holder, "phone_e164", None)
+    )
+    payload: Dict[str, Any] = {
+        "code": getattr(slip, "code", None),
+        "status": getattr(slip, "status", None),
+        "is_current": bool(getattr(slip, "is_current", False)),
+        "issued_reason": getattr(slip, "issued_reason", None),
+        "supersedes_trust_slip_id": getattr(slip, "supersedes_trust_slip_id", None),
+        "superseded_by_trust_slip_id": getattr(slip, "superseded_by_trust_slip_id", None),
+        "gmfn_id": getattr(holder, "gmfn_id", None),
+        "display_name": display_name,
+        "community": community_name,
+        "clan_id": int(getattr(slip, "clan_id", 0) or 0) or None,
+        "created_at": created_at.isoformat() if created_at else None,
+        "issued_at": created_at.isoformat() if created_at else None,
+        "expires_at": expires_at.isoformat() if expires_at else None,
+        "trust_limit": (
+            str(getattr(slip, "trust_limit"))
+            if getattr(slip, "trust_limit", None) is not None
+            else None
+        ),
+        "currency": getattr(slip, "currency", None),
+        "phone_verified": phone_verified,
+        "identity_context": {
+            "phone_verified": phone_verified,
+            "identity_status_label": (
+                "Phone verified; other identity evidence is not shown"
+                if phone_verified
+                else "Identity evidence is not shown"
+            ),
+        },
+        "community_context": {
+            "current_user_is_active_member": False,
+        },
+        "evidence_scope": {
+            "reading_scope": "historical_anchor_only",
+            "boundary": (
+                "This fallback preserves the historical TrustSlip reference without "
+                "claiming current community membership."
+            ),
+        },
+        "merchant_visibility_level": _safe_visibility_level(holder, None),
+        "not_a_bank_guarantee": True,
+        "no_auto_debit": True,
+        "disclaimer": (
+            "TrustSlip is a decision aid, not a bank guarantee, payment instruction, "
+            "or proof of current community membership."
+        ),
+    }
+    payload["merchant_summary"] = {
+        "code": payload["code"],
+        "gmfn_id": payload["gmfn_id"],
+        "display_name": display_name,
+        "community": community_name,
+        "expires_at": payload["expires_at"],
+        "trust_limit": payload["trust_limit"],
+        "currency": payload["currency"],
+        "phone_verified": phone_verified,
+    }
+    payload["merchant_view"] = build_trust_slip_visibility_view(
+        payload,
+        level=payload["merchant_visibility_level"],
+    )
+    return payload
+
+
 def _aligned_snapshot_for_slip(
     db: Session,
     *,
@@ -641,11 +874,19 @@ def _aligned_snapshot_for_slip(
     if holder is None:
         raise HTTPException(status_code=404, detail="TrustSlip holder not found")
 
-    full_payload = _payload_with_identity(
-        db,
-        user_id=int(holder.id),
-        requested_level=None,
-    )
+    try:
+        full_payload = _payload_with_identity(
+            db,
+            user_id=int(holder.id),
+            requested_level=None,
+            preferred_clan_id=getattr(slip, "clan_id", None),
+        )
+    except ValueError:
+        full_payload = _existing_slip_fallback_payload(
+            db,
+            slip=slip,
+            holder=holder,
+        )
 
     snapshot = ensure_trust_slip_snapshot(
         db,
@@ -689,6 +930,33 @@ def _aligned_snapshot_for_slip(
     else:
         merchant_view = dict(snapshot.get("merchant_view") or {})
 
+    association_authorized = bool(
+        _member_credential_page_for_holder(
+            db,
+            clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
+            holder=holder,
+        )
+    )
+    merchant_view = _public_trustslip_merchant_view(merchant_view)
+    full_summary = _public_trustslip_merchant_view(full_summary)
+    if not association_authorized:
+        community_label = "Community association not shown"
+        merchant_view["community"] = community_label
+        merchant_view["community_context"] = {}
+        merchant_view["evidence_scope"] = _public_evidence_scope(
+            merchant_view.get("evidence_scope"),
+            association_authorized=False,
+        )
+        merchant_view.setdefault("merchant_summary", {})["community"] = community_label
+        full_summary["community"] = community_label
+        full_summary["clan_name"] = community_label
+        full_summary["community_context"] = {}
+        full_summary["evidence_scope"] = _public_evidence_scope(
+            full_summary.get("evidence_scope"),
+            association_authorized=False,
+        )
+        full_summary.setdefault("merchant_summary", {})["community"] = community_label
+
     if "snapshot_checksum" not in snapshot and getattr(slip, "snapshot_checksum", None):
         snapshot["snapshot_checksum"] = getattr(slip, "snapshot_checksum", None)
     if "snapshot_version" not in snapshot and getattr(slip, "snapshot_version", None):
@@ -717,6 +985,7 @@ def _can_manage_trust_slip(
 
 
 def _is_valid_current_holder_trust_slip(
+    db: Session,
     slip: Optional[TrustSlip],
     *,
     current_user: User,
@@ -731,6 +1000,12 @@ def _is_valid_current_holder_trust_slip(
         return False
     status = _safe_str(getattr(slip, "status", "")).lower()
     if status not in {"active", "issued"}:
+        return False
+    if not _trust_slip_anchor_membership(
+        db,
+        slip=slip,
+        holder=current_user,
+    ):
         return False
     return bool(_safe_str(getattr(slip, "code", "")))
 
@@ -761,7 +1036,10 @@ def _current_trust_slip_identity_payload(
         "clan_id": clan_id,
         "community_id": clan_id,
         "status": _safe_str(getattr(slip, "status", None), "active"),
+        "effective_status": "active",
         "is_current": True,
+        "membership_active": True,
+        "membership_status": "active",
         "created_at": created_at.isoformat() if created_at else None,
         "issued_at": created_at.isoformat() if created_at else None,
         "expires_at": expires_at.isoformat() if expires_at else None,
@@ -777,9 +1055,60 @@ def _ensure_my_trust_slip_payload(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    current_status = _safe_str(
+        getattr(current, "status", None) if current else None,
+        "",
+    ).lower()
+    current_anchor_active = bool(
+        current
+        and _trust_slip_anchor_membership(
+            db,
+            slip=current,
+            holder=current_user,
+        )
+    )
+    holder_has_active_membership = _holder_has_active_membership(
+        db,
+        holder=current_user,
+    )
+    valid_current = _is_valid_current_holder_trust_slip(
+        db,
+        current,
+        current_user=current_user,
+    )
 
     if (
-        not _is_valid_current_holder_trust_slip(current, current_user=current_user)
+        current
+        and current_status in {"active", "issued"}
+        and not _trust_slip_needs_refresh(current)
+        and not current_anchor_active
+        and not holder_has_active_membership
+    ):
+        return {
+            **_current_trust_slip_identity_payload(
+                current,
+                current_user=current_user,
+            ),
+            "verified": False,
+            "active": False,
+            "effective_status": "membership_inactive",
+            "membership_active": False,
+            "membership_status": "inactive",
+            "reason": "active_membership_required",
+            "detail": (
+                "Your GSN ID remains yours, but this TrustSlip's community membership "
+                "is no longer active. Join or reactivate a community before presenting "
+                "current membership evidence."
+            ),
+            "community_context": {
+                "current_user_is_active_member": False,
+            },
+            "merchant_verify_active": False,
+            "merchant_verify_subscription_required": True,
+        }
+
+    if (
+        not valid_current
         and (
             not getattr(current_user, "phone_verified_at", None)
             or not getattr(current_user, "phone_e164", None)
@@ -797,7 +1126,7 @@ def _ensure_my_trust_slip_payload(
             "merchant_verify_subscription_required": True,
         }
 
-    if _is_valid_current_holder_trust_slip(current, current_user=current_user):
+    if valid_current:
         identity_payload = _current_trust_slip_identity_payload(
             current,
             current_user=current_user,
@@ -859,13 +1188,24 @@ def _ensure_my_trust_slip_payload(
         }
 
     issued_payload: Optional[Dict[str, Any]] = None
-    if not current or _trust_slip_needs_refresh(current):
+    membership_anchor_changed = bool(
+        current
+        and current_status in {"active", "issued"}
+        and not current_anchor_active
+        and holder_has_active_membership
+    )
+    if not current or _trust_slip_needs_refresh(current) or membership_anchor_changed:
+        reissue_reason = (
+            "membership_anchor_changed"
+            if membership_anchor_changed
+            else "expired_trustslip_auto_refresh"
+        )
         try:
             issue_result = (
                 reissue_trust_slip(
                     db,
                     user_id=int(current_user.id),
-                    reason="expired_trustslip_auto_refresh",
+                    reason=reissue_reason,
                     include_payload=True,
                 )
                 if current
@@ -907,6 +1247,28 @@ def _ensure_my_trust_slip_payload(
         db,
         holder=current_user,
     )
+    resolved_current = get_current_trust_slip_for_user(
+        db,
+        user_id=int(current_user.id),
+    )
+    membership_active = bool(
+        resolved_current
+        and _trust_slip_anchor_membership(
+            db,
+            slip=resolved_current,
+            holder=current_user,
+        )
+    )
+    effective_status = (
+        _status_effective_for_slip(
+            db,
+            slip=resolved_current,
+            holder=current_user,
+            merchant_verify_active=merchant_verify_active,
+        )
+        if resolved_current
+        else "invalid"
+    )
 
     return {
         **payload,
@@ -914,6 +1276,9 @@ def _ensure_my_trust_slip_payload(
         "verification_code": code,
         "token": code,
         "public_verify_url": _verify_page_url(code) if code else None,
+        "effective_status": effective_status,
+        "membership_active": membership_active,
+        "membership_status": "active" if membership_active else "inactive",
         "merchant_verify_active": bool(merchant_verify_active),
         "merchant_verify_subscription_required": not bool(merchant_verify_active),
         "merchant_verify_detail": (
@@ -1082,6 +1447,7 @@ def get_my_trust_slip_feature_summary(
     active = bool(
         current
         and _is_valid_current_holder_trust_slip(
+            db,
             current,
             current_user=current_user,
         )
@@ -1446,9 +1812,10 @@ def create_my_trust_slip_share_invitation(
     if int(getattr(slip, "holder_user_id", 0) or 0) != int(current_user.id):
         raise HTTPException(status_code=403, detail="Only the TrustSlip holder can create this share invitation.")
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=current_user,
         merchant_verify_active=True,
     )
     if effective != "active" or not bool(getattr(slip, "is_current", True)):
@@ -1492,9 +1859,12 @@ def create_my_trust_slip_share_invitation(
 def resolve_trust_slip_share_invitation_public(
     share_token: str,
     request: Request,
+    response: Response,
     level: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
+    for header_name, header_value in _no_store_headers().items():
+        response.headers[header_name] = header_value
     _throttle_public(request, "trustslip_share_invitation")
     try:
         row = resolve_share_invitation(db, share_token)
@@ -1505,7 +1875,13 @@ def resolve_trust_slip_share_invitation_public(
     if not slip:
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
-    payload = verify_trust_slip_public(code=str(slip.code), request=request, level=level, db=db)
+    payload = verify_trust_slip_public(
+        code=str(slip.code),
+        request=request,
+        response=response,
+        level=level,
+        db=db,
+    )
     context = decision_context_from_share(row)
     share_path = _trust_slip_share_path(share_token)
     share_status = _safe_str(getattr(row, "status", "active")).lower() or "active"
@@ -1554,9 +1930,12 @@ def resolve_trust_slip_share_invitation_public(
 def verify_trust_slip_public(
     code: str,
     request: Request,
+    response: Response,
     level: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
+    for header_name, header_value in _no_store_headers().items():
+        response.headers[header_name] = header_value
     _throttle_public(request, "trustslip_verify_json")
 
     slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
@@ -1580,9 +1959,10 @@ def verify_trust_slip_public(
         holder=holder,
     )
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=holder,
         merchant_verify_active=merchant_verify_active,
     )
     badge_text, _ = _merchant_badge(effective)
@@ -1715,6 +2095,54 @@ def verify_trust_slip_public(
         clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
         holder=holder,
     )
+    membership_active = bool(
+        _trust_slip_anchor_membership(
+            db,
+            slip=slip,
+            holder=holder,
+        )
+    )
+    association_authorized = membership_active and bool(member_credential_page)
+    if not association_authorized:
+        community = (
+            "Community membership not current"
+            if effective == "membership_inactive"
+            else "Community association not shown"
+        )
+
+    identity_context = _public_identity_context(
+        identity_context,
+        visible=visibility_level != "minimal",
+    )
+    community_context = _public_community_context(
+        community_context,
+        association_authorized=association_authorized,
+    )
+    evidence_scope = _public_evidence_scope(
+        evidence_scope,
+        association_authorized=association_authorized,
+    )
+    merchant_view_out["community"] = community
+    merchant_view_out["identity_context"] = identity_context
+    merchant_view_out["community_context"] = community_context
+    merchant_view_out["evidence_scope"] = evidence_scope
+    public_merchant_summary = merchant_view_out.setdefault("merchant_summary", {})
+    public_merchant_summary["community"] = community
+    public_merchant_summary["identity_context"] = identity_context
+    public_merchant_summary["community_context"] = community_context
+    public_merchant_summary["evidence_scope"] = evidence_scope
+    if not association_authorized:
+        for association_key in (
+            "community_global_id",
+            "community_code",
+            "holder_role",
+            "member_credential_page",
+        ):
+            merchant_view_out.pop(association_key, None)
+            merchant_view_out.setdefault("merchant_summary", {}).pop(
+                association_key,
+                None,
+            )
     if member_credential_page:
         merchant_view_out["member_credential_page"] = member_credential_page
     membership_currentness_label = (
@@ -1739,30 +2167,53 @@ def verify_trust_slip_public(
         merchant_view_out.setdefault("merchant_summary", {})[
             "membership_currentness_scope"
         ] = membership_currentness_scope
-    community_confirmation: Dict[str, Any] = {}
-    try:
-        community_confirmation = build_community_confirmation_summary(
-            db,
-            community_id=int(getattr(slip, "clan_id")),
-            subject_user_id=int(getattr(slip, "holder_user_id")),
+    if not membership_active:
+        membership_currentness_label = "Community membership not current"
+        membership_currentness_scope = (
+            "The holder's GSN ID remains stable, but this TrustSlip no longer proves "
+            "active membership in its recorded community."
         )
-    except Exception:
+        merchant_view_out["membership_currentness_label"] = membership_currentness_label
+        merchant_view_out["membership_currentness_scope"] = membership_currentness_scope
+        merchant_view_out.setdefault("merchant_summary", {})[
+            "membership_currentness_label"
+        ] = membership_currentness_label
+        merchant_view_out.setdefault("merchant_summary", {})[
+            "membership_currentness_scope"
+        ] = membership_currentness_scope
+    merchant_view_out = _public_trustslip_merchant_view(merchant_view_out)
+    community_confirmation: Dict[str, Any] = {}
+    if association_authorized:
+        try:
+            community_confirmation = build_community_confirmation_summary(
+                db,
+                community_id=int(getattr(slip, "clan_id")),
+                subject_user_id=int(getattr(slip, "holder_user_id")),
+            )
+        except Exception:
+            community_confirmation = {
+                "relay_available": False,
+                "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
+            }
+    else:
         community_confirmation = {
             "relay_available": False,
-            "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
+            "plain_language": "No current public community association is available for this TrustSlip.",
         }
     community_confirmation_options = (
         []
-        if visibility_level == "minimal"
-        else _public_community_confirmation_options(
-            db,
-            merchant_view_out.get("community_footprint")
-            or merchant_summary.get("community_footprint")
-            or full_summary.get("community_footprint")
-            or [],
-            primary_clan_id=getattr(slip, "clan_id", None),
-            subject_user_id=getattr(slip, "holder_user_id", None),
-        )
+        if visibility_level == "minimal" or not association_authorized
+        else [
+            {
+                "community_id": int(getattr(slip, "clan_id")),
+                "clan_id": int(getattr(slip, "clan_id")),
+                "community_name": community,
+                "community_code": community_context.get("community_code"),
+                "holder_role": community_context.get("holder_role"),
+                "role": community_context.get("holder_role"),
+                "is_primary_anchor": True,
+            }
+        ]
     )
 
     decision_pack_context = normalize_decision_pack_context(request.query_params)
@@ -1790,16 +2241,22 @@ def verify_trust_slip_public(
         },
         "community_confirmation_options": community_confirmation_options if visibility_level != "minimal" else [],
         "cci_explainer": public_cci_explainer if visibility_level != "minimal" else {},
-        "identity_verified": bool(identity_context.get("identity_verified")),
+        "identity_verified": bool(identity_context.get("official_id_verified")),
         "identity_status_label": identity_context.get("identity_status_label"),
-        "community_global_id": community_context.get("community_global_id"),
-        "community_code": community_context.get("community_code"),
-        "holder_role": community_context.get("holder_role"),
-        "community_member_count": community_context.get("active_member_count"),
-        "active_member_count": community_context.get("active_member_count"),
-        "total_member_count": community_context.get("total_member_count"),
-        "active_clan_count": evidence_scope.get("active_community_count"),
-        "active_community_count": evidence_scope.get("active_community_count"),
+        "community_global_id": community_context.get("community_global_id")
+        if association_authorized
+        else None,
+        "community_code": community_context.get("community_code")
+        if association_authorized
+        else None,
+        "holder_role": community_context.get("holder_role")
+        if association_authorized
+        else None,
+        "community_member_count": None,
+        "active_member_count": None,
+        "total_member_count": None,
+        "active_clan_count": None,
+        "active_community_count": None,
         "trust_band": band,
         "band": band,
         "status": getattr(slip, "status", None),
@@ -1820,8 +2277,16 @@ def verify_trust_slip_public(
         "cci_public_label": cci_public_label,
         "cci_public_meaning": cci_public_meaning,
         "cci_public_boundary": cci_public_boundary,
-        "sponsor_count": top_level_sponsor_count,
+        "sponsor_count": None,
         "phone_verified": bool(top_level_phone_verified),
+        "membership_active": membership_active,
+        "membership_status": "active" if membership_active else "inactive",
+        "membership_status_label": (
+            "Active community membership confirmed"
+            if membership_active
+            else "Community membership not current"
+        ),
+        "community_association_public": association_authorized,
         "membership_currentness_label": membership_currentness_label,
         "membership_currentness_scope": membership_currentness_scope,
         "visibility_level": visibility_level,
@@ -1879,9 +2344,12 @@ def verify_trust_slip_public(
 def trust_slip_share_text_public(
     code: str,
     request: Request,
+    response: Response,
     level: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
+    for header_name, header_value in _no_store_headers().items():
+        response.headers[header_name] = header_value
     _throttle_public(request, "trustslip_share_text")
 
     slip = db.query(TrustSlip).filter(TrustSlip.code == code).first()
@@ -1894,9 +2362,10 @@ def trust_slip_share_text_public(
         holder=holder,
     )
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=holder,
         merchant_verify_active=merchant_verify_active,
     )
     msg, _ = _merchant_badge(effective)
@@ -1970,9 +2439,10 @@ def trust_slip_verify_lite_page(
         holder=holder,
     )
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=holder,
         merchant_verify_active=merchant_verify_active,
     )
     msg, color = _merchant_badge(effective)
@@ -2003,6 +2473,8 @@ def trust_slip_verify_lite_page(
         "merchant_verify_inactive": "Public record only",
         "revoked": "Revoked",
         "frozen": "Frozen",
+        "superseded": "Superseded",
+        "membership_inactive": "Community membership not current",
     }.get(effective, "Not current")
     action_text = (
         "Use this only as a quick confirmation. For support, trade, or credit decisions, open the full public verification paper."
@@ -2184,9 +2656,10 @@ def trust_slip_verify_page(
         holder=holder,
     )
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=holder,
         merchant_verify_active=merchant_verify_active,
     )
     badge_text, badge_color = _merchant_badge(effective)
@@ -2194,7 +2667,7 @@ def trust_slip_verify_page(
         "status-valid"
         if effective == "active"
         else "status-caution"
-        if effective in {"expired", "merchant_verify_inactive"}
+        if effective in {"expired", "merchant_verify_inactive", "membership_inactive"}
         else "status-blocked"
     )
 
@@ -2308,6 +2781,8 @@ def trust_slip_verify_page(
         "merchant_verify_inactive": "Public record only",
         "revoked": "Revoked",
         "frozen": "Frozen",
+        "superseded": "Superseded",
+        "membership_inactive": "Community membership not current",
     }.get(effective, "Not current")
     safe_code_path = quote(str(code), safe="")
     print_link = f"/trust-slips/verify/{safe_code_path}/print?level={visibility_level}"
@@ -2810,9 +3285,10 @@ def trust_slip_share_bundle(
             detail="Merchant verification subscription is not active for this TrustSlip holder.",
         )
 
-    effective = _status_effective(
-        getattr(slip, "status", "") or "",
-        getattr(slip, "expires_at", None),
+    effective = _status_effective_for_slip(
+        db,
+        slip=slip,
+        holder=holder,
         merchant_verify_active=merchant_verify_active,
     )
     msg, _ = _merchant_badge(effective)

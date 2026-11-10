@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, event, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import sessionmaker
 from starlette.requests import Request
+from starlette.responses import Response
 
 from app.main import app
 from app.api.routes import trust_slips as trust_slips_route
@@ -380,6 +381,7 @@ def test_postgres_holder_summary_and_public_verification_load_expected_evidence(
     public_payload = trust_slips_route.verify_trust_slip_public(
         "PG-BORROWER-OLD",
         request=_public_request(b"decision_pack=housing_decision"),
+        response=Response(),
         level="standard",
         db=pg_session,
     )

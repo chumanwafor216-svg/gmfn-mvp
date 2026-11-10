@@ -1924,7 +1924,6 @@ class AccountActivationAssistanceChallenge(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
 
-
 class ClanJoinVote(Base):
     __tablename__ = "clan_join_votes"
 
@@ -6092,4 +6091,550 @@ class UserSettings(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+
+
+class CommerceTaxonomyRelease(Base):
+    __tablename__ = "commerce_taxonomy_releases"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('draft', 'published', 'withdrawn')",
+            name="ck_commerce_taxonomy_release_status_v1",
+        ),
+        CheckConstraint("version_number > 0", name="ck_commerce_taxonomy_release_version_v1"),
+        Index("ix_commerce_taxonomy_release_status_v1", "status", "version_number"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+        index=True,
+    )
+    languages_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]", server_default="[]")
+    checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    steward_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    backup_steward_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    safety_reviewer_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    published_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    withdrawn_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    withdrawn_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    withdrawal_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class CommerceTaxonomyConcept(Base):
+    __tablename__ = "commerce_taxonomy_concepts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class CommerceTaxonomyConceptVersion(Base):
+    __tablename__ = "commerce_taxonomy_concept_versions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "release_id",
+            "concept_id",
+            name="uq_commerce_taxonomy_concept_release_v1",
+        ),
+        CheckConstraint(
+            "concept_kind IN ('product', 'service', 'hybrid')",
+            name="ck_commerce_taxonomy_concept_kind_v1",
+        ),
+        CheckConstraint(
+            "sensitivity IN ('standard', 'regulated', 'safety_critical')",
+            name="ck_commerce_taxonomy_sensitivity_v1",
+        ),
+        CheckConstraint(
+            "lifecycle_status IN ('active', 'retired')",
+            name="ck_commerce_taxonomy_concept_lifecycle_v1",
+        ),
+        CheckConstraint(
+            "parent_concept_id IS NULL OR parent_concept_id <> concept_id",
+            name="ck_commerce_taxonomy_parent_self_v1",
+        ),
+        Index("ix_commerce_taxonomy_concept_release_parent_v1", "release_id", "parent_concept_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    release_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_releases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    concept_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    parent_concept_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    canonical_label: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    concept_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    sensitivity: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="standard",
+        server_default="standard",
+    )
+    credential_notice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    lifecycle_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="active",
+        server_default="active",
+    )
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class CommerceTaxonomyTerm(Base):
+    __tablename__ = "commerce_taxonomy_terms"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "release_id",
+            "locale",
+            "normalized_term",
+            name="uq_commerce_taxonomy_term_resolution_v1",
+        ),
+        CheckConstraint(
+            "term_kind IN ('canonical', 'alias')",
+            name="ck_commerce_taxonomy_term_kind_v1",
+        ),
+        CheckConstraint(
+            "review_status IN ('draft', 'approved', 'rejected')",
+            name="ck_commerce_taxonomy_term_review_v1",
+        ),
+        Index("ix_commerce_taxonomy_term_lookup_v1", "release_id", "locale", "normalized_term"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    release_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_releases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    concept_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    term: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_term: Mapped[str] = mapped_column(String(200), nullable=False)
+    term_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    review_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+    )
+    reviewed_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class CommerceTaxonomyRedirect(Base):
+    __tablename__ = "commerce_taxonomy_redirects"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "release_id",
+            "source_concept_id",
+            name="uq_commerce_taxonomy_redirect_source_v1",
+        ),
+        CheckConstraint(
+            "redirect_kind IN ('renamed', 'merged', 'retired', 'reparented')",
+            name="ck_commerce_taxonomy_redirect_kind_v1",
+        ),
+        CheckConstraint(
+            "source_concept_id <> target_concept_id",
+            name="ck_commerce_taxonomy_redirect_self_v1",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    release_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_releases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    source_concept_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    target_concept_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    redirect_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class CommerceTaxonomyProposal(Base):
+    __tablename__ = "commerce_taxonomy_proposals"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected', 'duplicate', 'withdrawn')",
+            name="ck_commerce_taxonomy_proposal_status_v1",
+        ),
+        Index(
+            "ix_commerce_taxonomy_proposal_duplicate_v1",
+            "proposer_user_id",
+            "locale",
+            "normalized_term",
+            "status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    proposer_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    proposed_concept_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    locale: Mapped[str] = mapped_column(String(16), nullable=False)
+    term: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_term: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+        index=True,
+    )
+    moderation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    duplicate_of_proposal_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("commerce_taxonomy_proposals.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    reviewed_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    retention_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class MarketplaceShopCapability(Base):
+    __tablename__ = "marketplace_shop_capabilities"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "shop_id",
+            "role_code",
+            "normalized_description",
+            name="uq_marketplace_shop_capability_description_v1",
+        ),
+        UniqueConstraint(
+            "shop_id",
+            "role_code",
+            "concept_id",
+            name="uq_marketplace_shop_capability_concept_v1",
+        ),
+        CheckConstraint(
+            "role_code IN ('manufactures', 'sells', 'repairs', 'installs', 'delivers', 'rents', 'teaches_trains', 'professional_service', 'other')",
+            name="ck_marketplace_shop_capability_role_v1",
+        ),
+        CheckConstraint(
+            "mapping_status IN ('unmapped', 'owner_selected', 'admin_approved', 'rejected')",
+            name="ck_marketplace_shop_capability_mapping_v1",
+        ),
+        CheckConstraint(
+            "claim_basis = 'owner_declared'",
+            name="ck_marketplace_shop_capability_claim_basis_v1",
+        ),
+        CheckConstraint(
+            "((mapping_status = 'unmapped' AND concept_id IS NULL AND taxonomy_release_id IS NULL) OR "
+            "(mapping_status <> 'unmapped' AND concept_id IS NOT NULL AND taxonomy_release_id IS NOT NULL))",
+            name="ck_marketplace_shop_capability_mapping_refs_v1",
+        ),
+        CheckConstraint(
+            "length(trim(owner_description)) > 0",
+            name="ck_marketplace_shop_capability_description_v1",
+        ),
+        Index("ix_marketplace_shop_capability_active_v1", "shop_id", "is_active", "role_code"),
+        Index("ix_marketplace_shop_capability_concept_active_v1", "concept_id", "is_active"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    concept_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    taxonomy_release_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("commerce_taxonomy_releases.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    owner_description: Mapped[str] = mapped_column(String(240), nullable=False)
+    normalized_description: Mapped[str] = mapped_column(String(240), nullable=False, index=True)
+    role_code: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    mapping_status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="unmapped",
+        server_default="unmapped",
+        index=True,
+    )
+    claim_basis: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="owner_declared",
+        server_default="owner_declared",
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+        index=True,
+    )
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class MarketplaceShopCapabilityAvailability(Base):
+    __tablename__ = "marketplace_shop_capability_availability"
+
+    __table_args__ = (
+        CheckConstraint(
+            "availability_status IN ('available', 'on_request', 'unavailable', 'unspecified')",
+            name="ck_marketplace_shop_capability_availability_v1",
+        ),
+        CheckConstraint(
+            "available_until IS NULL OR available_from IS NULL OR available_until >= available_from",
+            name="ck_marketplace_shop_capability_availability_dates_v1",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    capability_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shop_capabilities.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    availability_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="unspecified",
+        server_default="unspecified",
+        index=True,
+    )
+    available_from: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    available_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String(240), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class MarketplaceShopCapabilityCoverage(Base):
+    __tablename__ = "marketplace_shop_capability_coverage"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "capability_id",
+            "scope_type",
+            "country_code",
+            "region_name",
+            "locality_name",
+            name="uq_marketplace_shop_capability_coverage_v1",
+        ),
+        CheckConstraint(
+            "scope_type IN ('locality', 'region', 'country', 'remote')",
+            name="ck_marketplace_shop_capability_coverage_scope_v1",
+        ),
+        CheckConstraint(
+            "((scope_type = 'remote' AND country_code IS NULL AND region_name IS NULL AND locality_name IS NULL) OR "
+            "(scope_type = 'country' AND country_code IS NOT NULL AND region_name IS NULL AND locality_name IS NULL) OR "
+            "(scope_type = 'region' AND country_code IS NOT NULL AND region_name IS NOT NULL AND locality_name IS NULL) OR "
+            "(scope_type = 'locality' AND country_code IS NOT NULL AND region_name IS NOT NULL AND locality_name IS NOT NULL))",
+            name="ck_marketplace_shop_capability_coverage_fields_v1",
+        ),
+        Index("ix_marketplace_shop_capability_coverage_lookup_v1", "scope_type", "country_code", "region_name", "locality_name"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    capability_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shop_capabilities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    scope_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    country_code: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, index=True)
+    region_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True, index=True)
+    locality_name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class MarketplaceProductCapability(Base):
+    __tablename__ = "marketplace_product_capabilities"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id",
+            "concept_id",
+            name="uq_marketplace_product_capability_concept_v1",
+        ),
+        CheckConstraint(
+            "mapping_status IN ('owner_selected', 'admin_approved', 'rejected')",
+            name="ck_marketplace_product_capability_mapping_v1",
+        ),
+        Index("ix_marketplace_product_capability_concept_v1", "concept_id", "mapping_status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    concept_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_concepts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    taxonomy_release_id: Mapped[int] = mapped_column(
+        ForeignKey("commerce_taxonomy_releases.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    mapping_status: Mapped[str] = mapped_column(String(24), nullable=False)
+    mapped_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
     )

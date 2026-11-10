@@ -157,11 +157,59 @@ try {
     ...baseInput,
     userClass: "approval",
     nextRouteKey: "join-requests",
+    nextRouteLabel: "Join Requests",
+    nextRouteTo: "/app/community?tab=join-requests",
     actionableCount: 1,
     issueKeys: ["approval:7"],
+    issueTitle: "One membership request is waiting.",
+    issueDetail: "Review the request and approve or decline it.",
   });
   assert.equal(actionableSignal.active, true);
   assert.equal(actionableSignal.sourceKind, "approval");
+
+  const notificationSignal = engine.buildDashboardAttentionSignal({
+    ...baseInput,
+    userClass: "seller",
+    nextRouteKey: "notifications",
+    nextRouteLabel: "shop setup",
+    nextRouteTo: "/app/shop-control#shop-control-summary",
+    actionableCount: 1,
+    issueKeys: ["shop:setup:7"],
+    issueTitle: "Your first shop item is still missing.",
+    issueDetail: "Add one product or service so visitors can understand what you offer.",
+  });
+  assert.equal(notificationSignal.sourceKind, "notifications");
+  assert.equal(notificationSignal.title, "Your first shop item is still missing.");
+  assert.match(notificationSignal.intro, /add one product or service/i);
+  assert.equal(notificationSignal.ctaLabel, "Open shop setup");
+  assert.equal(
+    notificationSignal.ctaTo,
+    "/app/shop-control#shop-control-summary"
+  );
+
+  const actedNotificationState = engine.markDashboardAttentionActed(
+    notificationSignal.state,
+    new Date(nowMs + 1000).toISOString()
+  );
+  const sameNotificationAfterScopeChange = engine.buildDashboardAttentionSignal({
+    ...baseInput,
+    userClass: "seller",
+    nextRouteKey: "notifications",
+    nextRouteLabel: "shop setup",
+    nextRouteTo: "/app/shop-control#shop-control-summary",
+    actionableCount: 1,
+    issueKeys: ["shop:setup:7"],
+    issueTitle: "Your first shop item is still missing.",
+    issueDetail: "Add one product or service so visitors can understand what you offer.",
+    scopeKey: "community-1|changed-trust-copy",
+    nowMs: nowMs + 2000,
+    storedState: actedNotificationState,
+  });
+  assert.equal(
+    sameNotificationAfterScopeChange.signature,
+    notificationSignal.signature
+  );
+  assert.equal(sameNotificationAfterScopeChange.shouldShow, false);
 
   const targetedDemandSignal = engine.buildDashboardAttentionSignal({
     ...baseInput,

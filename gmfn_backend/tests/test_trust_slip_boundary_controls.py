@@ -392,6 +392,184 @@ def test_get_my_trust_slip_returns_existing_current_code_without_new_issue(
     assert _trust_event_count() == 0
 
 
+def test_current_trustslip_retains_gsn_id_but_not_active_membership_after_holder_leaves_all(
+    client,
+    seed_clan_member_membership,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="MEMBERSHIP-ENDED", clan_id=1)
+
+    db = SessionLocal()
+    try:
+        user = db.get(User, 1)
+        user.gmfn_id = "GMFN-U-STABLE"
+        membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == 1,
+                ClanMembership.user_id == 1,
+            )
+            .one()
+        )
+        membership.left_at = datetime.now(timezone.utc)
+        db.commit()
+
+        payload = trust_slips_route._ensure_my_trust_slip_payload(
+            db,
+            current_user=user,
+        )
+    finally:
+        db.close()
+
+    assert payload["code"] == "MEMBERSHIP-ENDED"
+    assert payload["gmfn_id"] == "GMFN-U-STABLE"
+    assert payload["active"] is False
+    assert payload["verified"] is False
+    assert payload["effective_status"] == "membership_inactive"
+    assert payload["membership_active"] is False
+    assert payload["reason"] == "active_membership_required"
+    assert _trust_slip_count() == 1
+
+    public = client.get("/trust-slips/verify/MEMBERSHIP-ENDED?level=minimal")
+    assert public.status_code == 200, public.text
+    data = public.json()
+    assert data["effective_status"] == "membership_inactive"
+    assert data["membership_active"] is False
+    assert data["community_association_public"] is False
+    assert data["community_name"] == "Community membership not current"
+    assert data["member_credential_page"] is None
+    assert data["community_code"] is None
+    assert data["holder_role"] is None
+    assert public.headers["cache-control"] == "no-store, max-age=0"
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        assert slip.is_current is True
+        assert slip.superseded_by_trust_slip_id is None
+    finally:
+        db.close()
+
+
+def test_current_trustslip_reanchors_when_holder_leaves_a_but_remains_in_b(
+    client,
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    old_slip_id = _create_trust_slip(code="ANCHOR-A", clan_id=1)
+    _add_active_membership(clan_id=2, user_id=1)
+
+    db = SessionLocal()
+    try:
+        membership_a = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == 1,
+                ClanMembership.user_id == 1,
+            )
+            .one()
+        )
+        membership_a.left_at = datetime.now(timezone.utc)
+        db.commit()
+
+        user = db.get(User, 1)
+        payload = trust_slips_route._ensure_my_trust_slip_payload(
+            db,
+            current_user=user,
+        )
+    finally:
+        db.close()
+
+    assert payload["code"] != "ANCHOR-A"
+    assert payload["clan_id"] == 2
+    assert payload["membership_active"] is True
+
+    monkeypatch.setattr(
+        trust_slips_route,
+        "has_active_feature",
+        lambda *args, **kwargs: True,
+    )
+    old_public = client.get("/trust-slips/verify/ANCHOR-A?level=minimal")
+    assert old_public.status_code == 200, old_public.text
+    assert old_public.json()["effective_status"] == "superseded"
+
+    new_public = client.get(
+        f"/trust-slips/verify/{payload['code']}?level=minimal"
+    )
+    assert new_public.status_code == 200, new_public.text
+    assert new_public.json()["effective_status"] == "active"
+    assert new_public.json()["membership_active"] is True
+
+    db = SessionLocal()
+    try:
+        old_slip = db.get(TrustSlip, old_slip_id)
+        new_slip = (
+            db.query(TrustSlip)
+            .filter(TrustSlip.code == payload["code"])
+            .one()
+        )
+        assert old_slip is not None
+        assert old_slip.is_current is False
+        assert old_slip.superseded_by_trust_slip_id == new_slip.id
+        assert new_slip.clan_id == 2
+        assert new_slip.issued_reason == "membership_anchor_changed"
+    finally:
+        db.close()
+
+
+@pytest.mark.parametrize(
+    ("status", "is_current", "expired", "expected"),
+    (
+        ("revoked", True, True, "revoked"),
+        ("frozen", True, False, "frozen"),
+        ("active", False, False, "superseded"),
+        ("active", True, True, "expired"),
+    ),
+)
+def test_public_trustslip_lifecycle_states_never_fall_back_to_active(
+    client,
+    seed_clan_member_membership,
+    monkeypatch,
+    status,
+    is_current,
+    expired,
+    expected,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(
+        code=f"LIFECYCLE-{expected.upper()}",
+        clan_id=1,
+    )
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        slip.status = status
+        slip.is_current = is_current
+        if expired:
+            slip.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(
+        trust_slips_route,
+        "has_active_feature",
+        lambda *args, **kwargs: True,
+    )
+    response = client.get(
+        f"/trust-slips/verify/LIFECYCLE-{expected.upper()}?level=minimal"
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["effective_status"] == expected
+    assert data["verification_status"] == expected
+    assert data["effective_status"] != "active"
+
+
 def _assert_existing_code_recovered_without_issue(data: dict, *, expected_code: str, expected_clan_id: int) -> None:
     assert data["ok"] is True
     assert data["code"] == expected_code

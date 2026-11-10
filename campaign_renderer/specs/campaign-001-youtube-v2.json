@@ -1,0 +1,88 @@
+{
+  "campaignId": "GSN-SM-20260921-002",
+  "rendererCaseId": "campaign-001",
+  "version": "v2-audio-image-led",
+  "title": "Your Community Already Has Trust",
+  "theme": "Community trust evidence is already present but poorly preserved.",
+  "status": "renderer prototype draft - not approved, not published",
+  "visualStyle": "image_led",
+  "ctaText": "Join the GSN Community Pilot",
+  "ctaUrl": "https://globalsupportnetwork.org/pilot/?campaign=GSN-SM-20260921-002&platform=video&region=global&creative=trust-renderer-v2",
+  "audio": {
+    "tts": true,
+    "voiceName": "Microsoft Hazel Desktop",
+    "backgroundMusic": "generated_copyright_safe_ambient_bed",
+    "publishingNote": "Replace with approved human voiceover and licensed/approved music before final publishing if desired."
+  },
+  "outputs": {
+    "video": { "width": 1080, "height": 1920, "fps": 12, "durationSeconds": 35, "format": "mp4" },
+    "static": ["poster_1080x1350", "square_1080", "thumbnail", "end_card"]
+  },
+  "assets": {
+    "hero": "../site_gsn_public/assets/gsn-hero-community-trust.png",
+    "community": "../site_gsn_public/assets/gsn-community-home.png",
+    "witnessing": "../site_gsn_public/assets/gsn-community-witnessing.png",
+    "product": "../site_gsn_public/assets/gsn-product-mobile.png",
+    "command": "../site_gsn_public/assets/gsn-command-center.png",
+    "marketplace": "../site_gsn_public/assets/gsn-marketplace-support.png",
+    "trustslip": "../site_gsn_public/assets/gsn-trustslip-verify.png"
+  },
+  "scenes": [
+    {
+      "id": "scene-01",
+      "start": 0,
+      "end": 4,
+      "type": "headline",
+      "visualAsset": "hero",
+      "onScreen": ["YOUR COMMUNITY", "ALREADY HAS TRUST."],
+      "accentWord": "TRUST.",
+      "narration": "Your community already has trust."
+    },
+    {
+      "id": "scene-02",
+      "start": 4,
+      "end": 10,
+      "type": "participation",
+      "visualAsset": "community",
+      "onScreen": ["PARTICIPATES", "CONTRIBUTES", "HELPS", "FOLLOWS THROUGH"],
+      "narration": "People already know who participates, who contributes, who helps, and who follows through."
+    },
+    {
+      "id": "scene-03",
+      "start": 10,
+      "end": 16,
+      "type": "question",
+      "visualAsset": "witnessing",
+      "onScreen": ["BUT WHERE DOES", "THAT EVIDENCE GO?"],
+      "narration": "But much of that knowledge remains scattered across conversations, meetings and people's memories."
+    },
+    {
+      "id": "scene-04",
+      "start": 16,
+      "end": 22,
+      "type": "identity",
+      "visualAsset": "product",
+      "onScreen": ["GSN MAKES TRUSTED", "ACTIVITY MORE VISIBLE"],
+      "narration": "GSN is building community infrastructure designed to make participation, opportunity, support and trusted activity more visible."
+    },
+    {
+      "id": "scene-05",
+      "start": 22,
+      "end": 28,
+      "type": "pillars",
+      "visualAsset": "command",
+      "onScreen": ["PEOPLE", "OPPORTUNITIES", "SUPPORT", "TRUST"],
+      "narration": "Helping communities organise people, uncover opportunities, strengthen support and preserve useful trust evidence."
+    },
+    {
+      "id": "scene-06",
+      "start": 28,
+      "end": 35,
+      "type": "cta",
+      "visualAsset": "trustslip",
+      "onScreen": ["YOUR COMMUNITY CAN HELP", "SHAPE WHAT COMES NEXT.", "JOIN THE GSN COMMUNITY PILOT", "globalsupportnetwork.org/pilot/"],
+      "narration": "We're looking for real communities to help us test GSN. Join the GSN Community Pilot."
+    }
+  ],
+  "approvalBoundary": "Renderer output requires human review and Founder approval before publication."
+}

@@ -1595,6 +1595,27 @@ def test_public_trustslip_verify_does_not_upgrade_or_leak_private_payload(
         holder.phone_e164 = "+234800000002"
         holder.phone_verified_at = issued_at
         db.add(
+            Clan(
+                id=2,
+                name="Private Secondary Community",
+                community_code="GMFN-C-000002",
+                invite_code="private-secondary",
+                status="active",
+                invite_uses=0,
+                created_at=issued_at,
+            )
+        )
+        db.add(
+            ClanMembership(
+                id=99,
+                clan_id=2,
+                user_id=2,
+                role="member",
+                personal_pool_balance=Decimal("0.00"),
+                created_at=issued_at,
+            )
+        )
+        db.add(
             TrustSlip(
                 code="PUBLIC-TRUSTSLIP-PRIVACY",
                 clan_id=1,
@@ -1628,9 +1649,69 @@ def test_public_trustslip_verify_does_not_upgrade_or_leak_private_payload(
     assert "holder-private" not in payload_text
     assert "example.com" not in payload_text
     assert "+234800000002" not in payload_text
+    assert "Private Secondary Community" not in response.text
+    assert len(data["community_confirmation_options"]) == 1
+    assert data["community_confirmation_options"][0]["community_id"] == 1
+    assert data["identity_verified"] is False
+    assert data["active_community_count"] is None
+    assert data["sponsor_count"] is None
+    assert response.headers["cache-control"] == "no-store, max-age=0"
+    assert response.headers["pragma"] == "no-cache"
+
+    def values_for_key(node, key):
+        values = []
+        if isinstance(node, dict):
+            for child_key, child_value in node.items():
+                if child_key == key:
+                    values.append(child_value)
+                values.extend(values_for_key(child_value, key))
+        elif isinstance(node, list):
+            for child in node:
+                values.extend(values_for_key(child, key))
+        return values
+
+    for query, expected_level in (
+        ("", "standard"),
+        ("?level=minimal", "minimal"),
+        ("?level=standard", "standard"),
+        ("?level=detailed", "standard"),
+        ("?level=unsupported", "minimal"),
+    ):
+        public_response = client.get(
+            f"/trust-slips/verify/PUBLIC-TRUSTSLIP-PRIVACY{query}"
+        )
+        assert public_response.status_code == 200, public_response.text
+        public_data = public_response.json()
+        assert public_data["visibility_level"] == expected_level
+        assert public_response.headers["cache-control"] == "no-store, max-age=0"
+        assert "Private Secondary Community" not in public_response.text
+        assert "community_footprint" not in public_response.text
+        assert "primary_plus_wider" not in public_response.text
+        assert "has_wider_context" not in public_response.text
+        assert "phone_recorded_at" not in public_response.text
+        assert "bank_verified_at" not in public_response.text
+        assert "official_id_recorded_at" not in public_response.text
+        for sensitive_count_key in (
+            "member_witness_count",
+            "unique_counterparties",
+            "sponsor_count",
+            "active_community_count",
+        ):
+            assert all(
+                value is None
+                for value in values_for_key(public_data, sensitive_count_key)
+            )
+        if expected_level == "minimal":
+            assert public_data["identity_context"] == {}
+            assert public_data["community_context"] == {}
+            assert public_data["community_confirmation_options"] == []
+        else:
+            assert len(public_data["community_confirmation_options"]) == 1
+            assert public_data["evidence_scope"]["reading_scope"] == "primary_only"
 
     share_text = client.get("/trust-slips/verify/PUBLIC-TRUSTSLIP-PRIVACY/share-text?level=detailed")
     assert share_text.status_code == 200, share_text.text
+    assert share_text.headers["cache-control"] == "no-store, max-age=0"
     share_data = share_text.json()
     assert share_data["merchant_visibility_level"] == "standard"
     assert "GSN TrustSlip public check" in share_data["text"]

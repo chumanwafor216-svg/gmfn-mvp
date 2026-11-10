@@ -216,6 +216,8 @@ function buildAttentionSignature(
       : input.focusWatchCount > 0
       ? "watch"
       : "steady";
+  const scopeFingerprint =
+    sourceKind === "notifications" ? "" : cleanText(input.scopeKey || "");
 
   return [
     sourceKind,
@@ -223,7 +225,7 @@ function buildAttentionSignature(
     cleanText(input.nextRouteKey),
     notificationPressure,
     focusPressure,
-    cleanText(input.scopeKey || ""),
+    scopeFingerprint,
     [...(input.issueKeys || [])].map(cleanText).filter(Boolean).sort().join(","),
   ].join("|");
 }
@@ -398,8 +400,10 @@ function buildAttentionCopy(
   }
 
   if (sourceKind === "notifications") {
+    const issueTitle = cleanText(input.issueTitle || "");
+    const issueDetail = cleanText(input.issueDetail || "");
     return {
-      title: pickByShowCount(
+      title: issueTitle || pickByShowCount(
         stage === "early"
           ? [
               "Your notifications now need action.",
@@ -417,11 +421,12 @@ function buildAttentionCopy(
         showCount
       ),
       intro:
-        stage === "early"
+        issueDetail ||
+        (stage === "early"
           ? "The app is now interpreting the notification build-up instead of leaving you to guess."
           : stage === "followup"
           ? "The notifications are still open, so the app is bringing the same issue back again."
-          : "The app is now repeating the alert more often because the issue is still not cleared.",
+          : "The app is now repeating the alert more often because the issue is still not cleared."),
       ctaLabel: `Open ${nextRouteLabel}`,
       ctaTo: input.nextRouteTo,
       secondaryCtaLabel: "Open notifications",
@@ -481,8 +486,9 @@ function buildAttentionDetailLines(
 
   if (sourceKind === "notifications") {
     return {
-      problemText: sentence(input.nextRouteCopy.issueText),
+      problemText: sentence(input.issueTitle || input.nextRouteCopy.issueText),
       consequenceText:
+        sentence(input.issueDetail || "") ||
         "If these notifications keep building up, small matters can turn into evidence concerns.",
       actionText: sentence(input.nextRouteCopy.actionText),
     };
@@ -541,7 +547,7 @@ export function buildDashboardAttentionSignal(
   const hoursSinceLastTouch = lastTouchMs
     ? Math.max(0, (input.nowMs - lastTouchMs) / 3600000)
     : 0;
-  const hasShownBefore = Boolean(parseTimeMs(nextState.lastShownAt));
+  const hasShownBefore = Boolean(lastTouchMs);
   const shouldShow =
     !hasShownBefore ||
     (stage === "persistent" && hoursSinceLastTouch >= intervalHours);

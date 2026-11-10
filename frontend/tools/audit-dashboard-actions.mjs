@@ -232,6 +232,16 @@ assertContains(
 );
 
 assertContains(
+  /const dashboardAttentionLeadItem =[\s\S]*?dashboardAttentionActionableRows\[0\][\s\S]*?const useExactActionableItem =[\s\S]*?nextRouteKey: useExactActionableItem[\s\S]*?dashboardAttentionLeadItem\?\.ctaTo[\s\S]*?dashboardAttentionLeadItem\?\.title[\s\S]*?dashboardAttentionLeadItem\?\.detail/,
+  "Dashboard Attention Guide must carry the first real actionable item's route, title, and explanation instead of falling back to a generic seller route."
+);
+
+assertContains(
+  /SHOP_ME: "\/app\/shop\/me"[\s\S]*?const myShopLink = DASHBOARD_TARGETS\.SHOP_ME/,
+  "Dashboard Open Shop guidance must open the signed-in member's Public Shop, not Shop Control."
+);
+
+assertContains(
   /targetedDemandAttentionItem[\s\S]*?kind\)\.toLowerCase\(\) === "demand_tagged"[\s\S]*?dashboardDemandIdFromTarget[\s\S]*?appendDashboardQueryParam\([\s\S]*?"demand_id"/,
   "Dashboard must reserve personal demand attention for tagged requests and route historic notices to the exact matching request when possible."
 );
@@ -269,6 +279,11 @@ assertContains(
 assertEngineContains(
   /const active =[\s\S]*?input\.focusBehindCount > 0 \|\|[\s\S]*?input\.actionableCount > 0/,
   "Dashboard attention engine must require a real actionable item or missed focus commitment."
+);
+
+assertEngineContains(
+  /const scopeFingerprint =[\s\S]*?sourceKind === "notifications" \? "" : cleanText[\s\S]*?scopeFingerprint[\s\S]*?if \(sourceKind === "notifications"\)[\s\S]*?issueTitle \|\| pickByShowCount[\s\S]*?issueDetail \|\|[\s\S]*?const hasShownBefore = Boolean\(lastTouchMs\)/,
+  "Notification attention must explain the exact issue, ignore unrelated trust-scope copy changes, and treat shown, dismissed, or acted touches as quieting the same issue."
 );
 
 assertEngineNotContains(

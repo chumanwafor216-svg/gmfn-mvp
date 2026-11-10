@@ -1,0 +1,33 @@
+name: Render Status
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-status-readonly
+  cancel-in-progress: false
+
+jobs:
+  render-status:
+    name: Render read-only status
+    runs-on: ubuntu-latest
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_FRONTEND_SERVICE_ID: srv-d7h4oe9f9bms739lhh9g
+      RENDER_API_SERVICE_ID: ${{ secrets.RENDER_API_SERVICE_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require Render API key
+        if: ${{ env.RENDER_API_KEY == '' }}
+        run: |
+          echo "::error::RENDER_API_KEY is not configured. Add the GitHub secret before running this read-only verifier."
+          exit 1
+
+      - name: Report Render deployment status
+        run: |
+          python tools/render_status.py --discover-api-service

@@ -101,8 +101,12 @@ type TrustSlipRecord = {
   id?: number;
   code?: string | null;
   status?: string | null;
+  effective_status?: string | null;
+  verification_status?: string | null;
   active?: boolean | null;
   verified?: boolean | null;
+  is_current?: boolean | null;
+  membership_active?: boolean | null;
   public_verify_url?: string | null;
   verification_code?: string | null;
   verification_token?: string | null;
@@ -120,6 +124,7 @@ type TrustSlipRecord = {
   photo_verified?: boolean | null;
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
+  community_context?: Record<string, any> | null;
   trust_band?: string | null;
   trust_class?: string | null;
   trust_score?: string | number | null;
@@ -811,11 +816,11 @@ async function buildGsnIdentityCardShareImage(
   ctx.textAlign = "left";
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 28px Arial, Helvetica, sans-serif";
-  ctx.fillText(params.valid ? "Active Network Membership" : params.cardStatus, 585, 627);
+  ctx.fillText(params.cardStatus, 585, 627);
   ctx.fillStyle = "rgba(255,255,255,0.58)";
   ctx.font = "900 16px Arial, Helvetica, sans-serif";
   ctx.fillText(
-    params.valid ? "VERIFIED   •   CONNECTED   •   EMPOWERED" : params.memberships.toUpperCase(),
+    params.memberships.toUpperCase(),
     510,
     687
   );
@@ -846,7 +851,7 @@ async function buildGsnIdentityCardShareImage(
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 20px Arial, Helvetica, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("View Membership Record  ↗", 1350, 630);
+  ctx.fillText("Check Current GSN Status  ↗", 1350, 630);
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "800 17px Arial, Helvetica, sans-serif";
@@ -947,7 +952,7 @@ async function buildGsnIdentityCardShareImage(
 
   ctx.fillStyle = "rgba(255,255,255,0.60)";
   ctx.font = "800 18px Arial, Helvetica, sans-serif";
-  ctx.fillText("The QR opens this card's live public membership record.", 84, 1262);
+  ctx.fillText("Scan the QR to check this card's current GSN status.", 84, 1262);
 
   ctx.restore();
   ctx.strokeStyle = gold;
@@ -2533,24 +2538,11 @@ export default function IdentityIntegrityPage() {
     : visibleCommunityCount
       ? `${visibleCommunityCount} visible community context${visibleCommunityCount === 1 ? "" : "s"}`
       : "No community shown";
-  const identityCardCommunityFootprintLabel = activeCommunityCount
-    ? `${activeCommunityCount} active`
-    : visibleCommunityCount
-      ? `${visibleCommunityCount} visible`
-      : "None shown";
   const roleFootprintLabel = [
     ownerCommunityCount ? `Owner ${ownerCommunityCount}` : "",
     adminCommunityCount ? `Admin ${adminCommunityCount}` : "",
     memberCommunityCount ? `Member ${memberCommunityCount}` : "",
   ].filter(Boolean).join(" / ") || "Roles private";
-  const recognisedMembershipLabel = activeCommunityCount
-    ? `${activeCommunityCount} active`
-    : visibleCommunityCount
-      ? `${visibleCommunityCount} linked`
-      : "None shown";
-  const identityCardMembershipLabel = activeCommunityCount
-    ? `${activeCommunityCount} linked`
-    : recognisedMembershipLabel;
   const identityContext = trustSlip?.identity_context || {};
   const phoneEvidenceLabel = identitySignals.phoneVerified
     ? "Verified"
@@ -2618,10 +2610,42 @@ export default function IdentityIntegrityPage() {
   const trustSlipExpired = trustSlipExpiresAt
     ? new Date(trustSlipExpiresAt).getTime() < Date.now()
     : false;
+  const trustSlipLifecycleStatus = safeStr(
+    trustSlip?.effective_status || trustSlip?.verification_status || trustSlip?.status
+  ).toLowerCase();
+  const trustSlipLifecycleBlocked = [
+    "expired",
+    "revoked",
+    "frozen",
+    "superseded",
+    "membership_inactive",
+    "invalid",
+  ].includes(trustSlipLifecycleStatus);
+  const trustSlipMembershipActive = Boolean(
+    trustSlip?.membership_active === true ||
+      trustSlip?.community_context?.current_user_is_active_member === true
+  );
+  const trustSlipCurrent = Boolean(
+    trustSlipCode &&
+      trustSlip?.active !== false &&
+      trustSlip?.is_current !== false &&
+      !trustSlipExpired &&
+      !trustSlipLifecycleBlocked
+  );
   const trustSlipStatusText = trustSlipCode
-    ? trustSlipExpired
+    ? trustSlipLifecycleStatus === "revoked"
+      ? "Revoked"
+      : trustSlipLifecycleStatus === "frozen"
+        ? "Frozen"
+        : trustSlipLifecycleStatus === "superseded"
+          ? "Superseded"
+          : trustSlipLifecycleStatus === "membership_inactive"
+            ? "Membership inactive"
+            : trustSlipExpired
       ? "Expired"
-      : "Active"
+              : trustSlipCurrent
+                ? "Current"
+                : "Not current"
     : trustSlipPendingLabel;
   const trustSlipExpiryLabel = trustSlipCode
     ? trustSlipExpiresAt
@@ -2631,12 +2655,20 @@ export default function IdentityIntegrityPage() {
       : "Expiry not shown"
     : trustSlipPendingDetail;
   const identityCardValid = Boolean(
-    identitySignals.phoneVerified && trustSlipCode && !trustSlipExpired
+    identitySignals.phoneVerified && trustSlipCurrent && trustSlipMembershipActive
   );
   const identityCardStatusText = identityCardValid
-    ? "Valid"
+    ? "Current"
     : !identitySignals.phoneVerified
       ? "Phone required"
+      : trustSlipLifecycleStatus === "membership_inactive"
+        ? "Membership inactive"
+        : trustSlipLifecycleStatus === "superseded"
+          ? "Superseded"
+          : trustSlipLifecycleStatus === "revoked"
+            ? "Revoked"
+            : trustSlipLifecycleStatus === "frozen"
+              ? "Frozen"
       : trustSlipExpired
         ? "Expired"
         : trustSlipIssueReason
@@ -2648,6 +2680,16 @@ export default function IdentityIntegrityPage() {
       ? "watch"
       : "pending";
   const identityCardGeneratedLabel = safeCompactDateTime(identityCardGeneratedAt);
+  const membershipCardStatus = identityCardValid
+    ? "Active GSN Community Member"
+    : trustSlipLifecycleStatus === "membership_inactive"
+      ? "GSN Identity Record"
+      : identityCardStatusText;
+  const membershipCardSignalLine = identityCardValid
+    ? "MEMBERSHIP ACTIVE  •  TRUSTSLIP CURRENT"
+    : trustSlipLifecycleStatus === "membership_inactive"
+      ? "GSN ID RETAINED  •  MEMBERSHIP NOT CURRENT"
+      : `GSN RECORD  •  ${identityCardStatusText.toUpperCase()}`;
   const identityCardLivePath = trustSlipCode
     ? `/t/${encodeURIComponent(trustSlipCode)}/card`
     : "";
@@ -2696,7 +2738,7 @@ export default function IdentityIntegrityPage() {
   const gsnIdentityCardShareText = [
     "GSN Identity Card",
     `${displayName} - ${gmfnId}`,
-    `Status: ${identityCardStatusText}`,
+    `Status: ${membershipCardStatus}`,
     `Phone: ${phoneEvidenceLabel}. ID: ${officialIdEvidenceLabel}. Photo: ${photoEvidenceLabel}.`,
     trustSlipCode ? `TrustSlip: ${trustSlipCode}` : "",
     identityCardLiveUrl ? `Live ID card: ${identityCardLiveUrl}` : "",
@@ -3135,8 +3177,8 @@ export default function IdentityIntegrityPage() {
       initials: profileInitials,
       avatarSrc,
       gmfnId,
-      cardStatus: identityCardStatusText,
-      memberships: identityCardMembershipLabel,
+      cardStatus: membershipCardStatus,
+      memberships: membershipCardSignalLine,
       verifyDisplay: identityCardLiveDisplay,
       websiteDisplay: GSN_PUBLIC_WEBSITE_DISPLAY,
       socialHandle: GSN_SOCIAL_HANDLE,
@@ -3477,12 +3519,6 @@ export default function IdentityIntegrityPage() {
     }
   }
 
-  const membershipCardStatus = identityCardValid
-    ? "Active Network Membership"
-    : identityCardStatusText;
-  const membershipCardSignalLine = identityCardValid
-    ? "VERIFIED  •  CONNECTED  •  EMPOWERED"
-    : `MEMBERSHIP RECORD  •  ${identityCardStatusText.toUpperCase()}`;
   const landscapeIdentityCard = (
     <section
       data-gsn-identity-card="true"
@@ -3882,7 +3918,7 @@ export default function IdentityIntegrityPage() {
               data-gsn-identity-card-qr="true"
               data-gsn-identity-card-qr-link="true"
               data-gsn-identity-card-qr-value={identityCardLiveUrl}
-              aria-label="Open live GSN membership record"
+              aria-label="Open current GSN status"
               debugId="identity-integrity.gsn-card.qr-open"
               style={{
                 width: isCompact ? 65 : 126,
@@ -3944,7 +3980,7 @@ export default function IdentityIntegrityPage() {
               whiteSpace: "nowrap",
             }}
           >
-            Scan to verify
+            Scan to check current status
           </div>
           <div
             style={{

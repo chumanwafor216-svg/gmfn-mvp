@@ -159,7 +159,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /shopFollowState\.isOwner \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{ownerShopAnalyticsPath\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"/,
+  /const shopOptionsOwner = signedInOwnsShop \|\| shopFollowState\.isOwner;[\s\S]*?shopOptionsOwner \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{ownerShopAnalyticsPath\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"/,
   "Public Shop owner analytics shortcut must remain hidden unless the signed-in viewer is the shop owner."
 );
 assertContains(
@@ -529,7 +529,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /appendShopShareAttribution[\s\S]*?gsn_share[\s\S]*?trackShopShareAction[\s\S]*?"share_action"[\s\S]*?copy_shop_link[\s\S]*?share_product/,
+  /appendShopShareAttribution[\s\S]*?gsn_share[\s\S]*?trackShopShareAction[\s\S]*?"share_action"[\s\S]*?"share_shop"[\s\S]*?share_product/,
   "Public Shop share and copy actions must add campaign attribution and record share attempts without creating a duplicate analytics engine."
 );
 
