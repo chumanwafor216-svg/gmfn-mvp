@@ -1082,6 +1082,149 @@ def test_thirty_two_campaign_endpoint_windows_cover_all_before_wrapping(
     assert _ledger_count() == 0
 
 
+def test_new_campaign_joins_current_rotation_without_forcing_early_repeats(
+    client,
+    override_current_user_user,
+):
+    _seed_users_and_clans()
+    with engine.begin() as conn:
+        for owner_user_id in range(3, 11):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO users (
+                        id, email, hashed_password, role, gmfn_id,
+                        display_name, trust_score, trust_band,
+                        trust_score_updated_at
+                    ) VALUES (
+                        :owner_user_id, :email, 'hashed', 'member', :gmfn_id,
+                        :display_name, 70, 'B', CURRENT_TIMESTAMP
+                    )
+                    """
+                ),
+                {
+                    "owner_user_id": owner_user_id,
+                    "email": f"live-rotation-owner-{owner_user_id}@example.com",
+                    "gmfn_id": f"GSN-LIVE-ROTATION-{owner_user_id}",
+                    "display_name": f"Live Rotation Owner {owner_user_id}",
+                },
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO clan_memberships (
+                        id, clan_id, user_id, role, personal_pool_balance
+                    ) VALUES (
+                        :membership_id, 1, :owner_user_id, 'member', 0
+                    )
+                    """
+                ),
+                {
+                    "membership_id": owner_user_id,
+                    "owner_user_id": owner_user_id,
+                },
+            )
+
+    for campaign_id in range(1, 9):
+        _seed_campaign_and_broadcast(
+            campaign_id=campaign_id,
+            owner_user_id=campaign_id + 1,
+        )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET commercial_mode = 'paid'
+                WHERE id = 1
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                UPDATE marketplace_broadcasts
+                SET priority_mode = 'paid'
+                WHERE spotlight_campaign_id = 1
+                """
+            )
+        )
+
+    first_response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+        headers={
+            'X-Spotlight-Request-ID': 'live-rotation-window-0',
+            'X-Spotlight-Visibility-Window': '0',
+        },
+    )
+    assert first_response.status_code == 200, first_response.text
+    shown_campaign_ids = [
+        int(item['opportunity_campaign_id'])
+        for item in first_response.json()['items']
+    ]
+
+    _seed_campaign_and_broadcast(campaign_id=9, owner_user_id=10)
+    with engine.begin() as conn:
+        shared_activation = _now() - timedelta(hours=1)
+        conn.execute(
+            text(
+                """
+                UPDATE spotlight_campaigns
+                SET created_at = :shared_activation,
+                    activated_at = :shared_activation
+                """
+            ),
+            {"shared_activation": shared_activation},
+        )
+
+    for sequence in range(1, 5):
+        response = client.get(
+            '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+            headers={
+                'X-Spotlight-Request-ID': f'live-rotation-window-{sequence}',
+                'X-Spotlight-Visibility-Window': str(sequence),
+                'X-Spotlight-Rotation-Seen-Campaign-Ids': ','.join(
+                    str(campaign_id) for campaign_id in shown_campaign_ids
+                ),
+            },
+        )
+        assert response.status_code == 200, response.text
+        shown_campaign_ids.extend(
+            int(item['opportunity_campaign_id'])
+            for item in response.json()['items']
+        )
+
+    assert len(shown_campaign_ids) == 9
+    assert len(set(shown_campaign_ids)) == 9
+    assert set(shown_campaign_ids) == set(range(1, 10))
+    assert shown_campaign_ids.count(1) == 1
+
+    completed_response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+        headers={
+            'X-Spotlight-Request-ID': 'live-rotation-window-complete',
+            'X-Spotlight-Visibility-Window': '5',
+            'X-Spotlight-Rotation-Seen-Campaign-Ids': ','.join(
+                str(campaign_id) for campaign_id in shown_campaign_ids
+            ),
+        },
+    )
+    assert completed_response.status_code == 200, completed_response.text
+    completed_body = completed_response.json()
+    assert completed_body['items'] == []
+    assert completed_body['canonical_visibility']['rotation_cycle_complete'] is True
+
+    restarted_response = client.get(
+        '/marketplace/public/shop/GSN-P4E2-OWNER/spotlight-opportunity',
+        headers={
+            'X-Spotlight-Request-ID': 'live-rotation-window-restarted',
+            'X-Spotlight-Visibility-Window': '6',
+        },
+    )
+    assert restarted_response.status_code == 200, restarted_response.text
+    assert len(restarted_response.json()['items']) == 2
+
+
 def test_qualified_presentation_replays_without_new_delivery_or_exposure(
     client,
     override_current_user_user,

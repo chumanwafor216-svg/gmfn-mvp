@@ -218,6 +218,10 @@ type PublicShopSpotlightSelectionCycle = {
   expiresAtMs: number;
 };
 
+type PublicShopSpotlightWindowResult = {
+  items: ShopBroadcast[];
+  rotationCycleComplete: boolean;
+};
 const publicShopSpotlightSelectionCycles = new Map<
   string,
   PublicShopSpotlightSelectionCycle
@@ -457,26 +461,34 @@ function publicShopSpotlightPresentationDeadlineMs(item: ShopBroadcast): number 
 
 async function loadNextPublicShopSpotlightPresentations(
   cleanedGmfnId: string,
-  visibilityWindow: number
-): Promise<ShopBroadcast[]> {
-  if (!cleanedGmfnId || !getAccessToken()) return [];
+  visibilityWindow: number,
+  rotationSeenCampaignIds: number[]
+): Promise<PublicShopSpotlightWindowResult> {
+  if (!cleanedGmfnId || !getAccessToken()) {
+    return { items: [], rotationCycleComplete: false };
+  }
   const response = await getPublicShopSpotlightOpportunity(
     cleanedGmfnId,
     newSpotlightPresentationRequestId(),
-    visibilityWindow
+    visibilityWindow,
+    rotationSeenCampaignIds
   );
   if (Number(response?.serving_contract_version || 0) < 2) {
     throw new Error('Spotlight serving contract is unavailable.');
   }
-  return publicShopSpotlightResponseItems(response)
-    .filter((row) => publicShopSpotlightRowIsCanonical(row))
-    .map((row) => normalizeBroadcast(row))
-    .filter(
-      (item): item is ShopBroadcast =>
-        publicShopSpotlightPresentationIsCurrent(item) && broadcastIsActive(item)
-    );
+  return {
+    items: publicShopSpotlightResponseItems(response)
+      .filter((row) => publicShopSpotlightRowIsCanonical(row))
+      .map((row) => normalizeBroadcast(row))
+      .filter(
+        (item): item is ShopBroadcast =>
+          publicShopSpotlightPresentationIsCurrent(item) && broadcastIsActive(item)
+      ),
+    rotationCycleComplete: Boolean(
+      response?.canonical_visibility?.rotation_cycle_complete
+    ),
+  };
 }
-
 function publicShopSpotlightCycleExpiryMs(items: any[], selectedAtMs: number): number {
   const explicitExpiry = items
     .map((item) => {
@@ -1988,6 +2000,7 @@ export default function ShopGalleryPage() {
   const spotlightInteractionPausedUntilRef = useRef(0);
   const spotlightRefreshGenerationRef = useRef(0);
   const spotlightVisibilityWindowRef = useRef(1);
+  const spotlightSeenCampaignIdsRef = useRef<Set<number>>(new Set());
   const [spotlightPresentationActivated, setSpotlightPresentationActivated] =
     useState(false);
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
@@ -2897,6 +2910,7 @@ export default function ShopGalleryPage() {
     spotlightNextEmptyUntilRef.current = 0;
     spotlightRefreshRetryCountRef.current = 0;
     spotlightVisibilityWindowRef.current = 1;
+    spotlightSeenCampaignIdsRef.current.clear();
     if (spotlightRefreshRetryTimerRef.current !== null) {
       window.clearTimeout(spotlightRefreshRetryTimerRef.current);
       spotlightRefreshRetryTimerRef.current = null;
@@ -3233,13 +3247,39 @@ export default function ShopGalleryPage() {
     }
 
     spotlightNextRequestPendingRef.current = true;
-    const requestedVisibilityWindow = spotlightVisibilityWindowRef.current;
     try {
-      const nextItems = await loadNextPublicShopSpotlightPresentations(
+      const queuedCampaignIds = communitySpotlightsRef.current
+        .map((item) => positiveNumber(item.opportunityCampaignId))
+        .filter((campaignId) => campaignId > 0);
+      const seenCampaignIds = Array.from(
+        new Set([
+          ...spotlightSeenCampaignIdsRef.current,
+          ...queuedCampaignIds,
+        ])
+      );
+      let requestedVisibilityWindow = spotlightVisibilityWindowRef.current;
+      let nextWindow = await loadNextPublicShopSpotlightPresentations(
         cleanedGmfnId,
-        requestedVisibilityWindow
+        requestedVisibilityWindow,
+        seenCampaignIds
       );
       spotlightVisibilityWindowRef.current = requestedVisibilityWindow + 1;
+
+      if (
+        nextWindow.rotationCycleComplete &&
+        nextWindow.items.length <= 0
+      ) {
+        spotlightSeenCampaignIdsRef.current.clear();
+        requestedVisibilityWindow = spotlightVisibilityWindowRef.current;
+        nextWindow = await loadNextPublicShopSpotlightPresentations(
+          cleanedGmfnId,
+          requestedVisibilityWindow,
+          queuedCampaignIds
+        );
+        spotlightVisibilityWindowRef.current = requestedVisibilityWindow + 1;
+      }
+
+      const nextItems = nextWindow.items;
       spotlightRefreshRetryCountRef.current = 0;
       if (spotlightRefreshRetryTimerRef.current !== null) {
         window.clearTimeout(spotlightRefreshRetryTimerRef.current);
@@ -3900,14 +3940,23 @@ export default function ShopGalleryPage() {
 
     const advancePastActiveOccurrence = () => {
       const activeRows = communitySpotlightsRef.current;
-      if (activeRows.length <= 1) {
-        void requestNextCanonicalSpotlight();
-        return false;
-      }
+      if (activeRows.length <= 0) return false;
+
       const activeIndex = Math.min(
         Math.max(miniSpotlightIndexRef.current, 0),
         activeRows.length - 1
       );
+      const activeCampaignId = positiveNumber(
+        activeRows[activeIndex]?.opportunityCampaignId
+      );
+      if (activeCampaignId > 0) {
+        spotlightSeenCampaignIdsRef.current.add(activeCampaignId);
+      }
+      if (activeRows.length <= 1) {
+        void requestNextCanonicalSpotlight();
+        return false;
+      }
+
       const nextIndexBeforeRemoval = (activeIndex + 1) % activeRows.length;
       const nextItem = activeRows[nextIndexBeforeRemoval] || null;
       const nextMediaKey = spotlightItemMediaKey(nextItem);
@@ -3947,7 +3996,6 @@ export default function ShopGalleryPage() {
       }
       return true;
     };
-
     const activeRowsAtStart = communitySpotlightsRef.current;
     const activeIndexAtStart = Math.min(
       Math.max(miniSpotlightIndexRef.current, 0),

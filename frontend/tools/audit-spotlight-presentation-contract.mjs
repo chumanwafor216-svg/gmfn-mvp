@@ -507,6 +507,29 @@ assertContains(
 );
 
 assertContains(
+  'frontend/src/lib/api.ts',
+  /X-Spotlight-Rotation-Seen-Campaign-Ids[^]*?seenCampaignIds\.join/,
+  'Public Shop must send the bounded campaign ids already shown or queued in the current fair pass.'
+);
+
+assertContains(
+  'gmfn_backend/app/api/routes/marketplace.py',
+  /X-Spotlight-Rotation-Seen-Campaign-Ids[^]*?rotation_seen_campaign_ids=rotation_seen_campaign_ids[^]*?rotation_cycle_complete/,
+  'The Spotlight endpoint must exclude campaigns already represented in the current pass and report when that pass is complete.'
+);
+
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightSeenCampaignIdsRef[^]*?queuedCampaignIds[^]*?rotationCycleComplete[^]*?spotlightSeenCampaignIdsRef\.current\.clear\(\)[^]*?activeCampaignId[^]*?spotlightSeenCampaignIdsRef\.current\.add/,
+  'Public Shop must preserve a no-repeat seen set until the server confirms the fair pass is exhausted.'
+);
+
+assertContains(
+  'gmfn_backend/tests/test_spotlight_presentation_contract.py',
+  /test_new_campaign_joins_current_rotation_without_forcing_early_repeats[^]*?X-Spotlight-Rotation-Seen-Campaign-Ids[^]*?len\(set\(shown_campaign_ids\)\) == 9[^]*?rotation_cycle_complete[^]*?restarted_response/,
+  'Backend regression coverage must prove a newly joined campaign cannot trigger repeats before every campaign has appeared.'
+);
+assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
   /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?nextRows.length <= 1[^]*?preloadVideo='auto'/,
   'Public Shop must preload the next asset, bound failed media, refill early, and keep the final row from stalling until server expiry.'

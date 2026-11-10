@@ -95,6 +95,40 @@ This file is the compact current-state handoff required by `README.md` and
 2026-10-17 is preserved in
 [`archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md`](archive/HANDOFF_NOTES_ARCHIVE_THROUGH_2026-10-17.md).
 
+## Spotlight no-repeat rotation correction - 2026-11-10
+
+- A real canonical Public Shop fairness defect was reproduced. With eight live
+  campaigns, then a ninth campaign joining after the first two-item window,
+  the old stateless window algorithm showed only seven unique campaigns before
+  repeats and could repeat a campaign in the immediately following window.
+  Static 30/32-campaign tests had not covered inventory insertion or removal.
+- `GET /marketplace/public/shop/{gmfn_id}/spotlight-opportunity` now accepts a
+  bounded `X-Spotlight-Rotation-Seen-Campaign-Ids` cursor, excludes campaigns
+  already shown or queued in the current pass, and reports
+  `canonical_visibility.rotation_cycle_complete`. The client clears its seen
+  set only after that explicit completion response, then starts the next pass.
+  A newly active campaign remains unseen and therefore joins the current pass.
+- `/shop/:gmfnId` records a campaign only after its full governed dwell, sends
+  completed plus currently queued ids on refill, keeps the existing two-item
+  response bound, and retains the existing 5-second image / 8-10-second video
+  dwell. Delivery, exposure, quota, lifecycle, replay, paid/repost separation,
+  and the frozen Dashboard Market Wisdom surface are unchanged.
+- The canonical route deliberately gives every eligible campaign one queue
+  occurrence per pass. The new regression includes a paid-tagged campaign and
+  proves it appears exactly once before restart. Legacy paid-first / weight-3
+  compatibility metadata still exists in the unmounted legacy feed path, but
+  the current Public Shop does not use weighted client duplication. No governed
+  paid-frequency product has been added.
+- Verification passed: all 20 Spotlight presentation backend tests; dynamic
+  insertion/no-repeat/cycle-restart regression; Spotlight presentation,
+  controls, quota and system-feed audits; eight presentation-policy cases; and
+  the 314-module production frontend build.
+- Remaining truth: this is synthetic and build verification, not a completed
+  physical-phone 10-20 minute observation against live production inventory.
+  Old clients that do not send the new seen-campaign header retain the older
+  stateless behavior until the corrected frontend and backend are deployed
+  together.
+
 ## Marketplace community member row - 2026-11-07
 
 - The opened Marketplace Shops & Services lane now leads with a compact

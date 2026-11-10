@@ -217,6 +217,12 @@ class SpotlightPresentationVisibility:
         }
 
 
+@dataclass(frozen=True)
+class SpotlightPresentationVisibilityWindow:
+    items: tuple[SpotlightPresentationVisibility, ...]
+    rotation_cycle_complete: bool = False
+
+
 def presentation_policy() -> SpotlightPresentationPolicy:
     return SpotlightPresentationPolicy()
 
@@ -409,8 +415,9 @@ def list_spotlight_presentation_visibility(
     now: Optional[datetime] = None,
     limit: int = SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT,
     exclude_campaign_ids: Optional[set[int]] = None,
+    rotation_seen_campaign_ids: Optional[set[int]] = None,
     window_sequence: Optional[int] = None,
-) -> list[SpotlightPresentationVisibility]:
+) -> SpotlightPresentationVisibilityWindow:
     '''Return bounded live content without reserving or spending delivery.
 
     Delivery pacing and frequency caps decide which presentation may count.
@@ -423,11 +430,16 @@ def list_spotlight_presentation_visibility(
     viewer_id = int(viewer_user_id or 0)
     safe_limit = max(min(int(limit), SPOTLIGHT_PRESENTATION_VISIBILITY_LIMIT), 0)
     if viewer_id <= 0 or safe_limit <= 0:
-        return []
+        return SpotlightPresentationVisibilityWindow(items=())
 
     excluded = {
         int(value)
         for value in (exclude_campaign_ids or set())
+        if int(value or 0) > 0
+    }
+    rotation_seen = {
+        int(value)
+        for value in (rotation_seen_campaign_ids or set())
         if int(value or 0) > 0
     }
     campaign_query = (
@@ -450,6 +462,10 @@ def list_spotlight_presentation_visibility(
             | (SpotlightCampaign.opportunity_expires_at > current_time)
         )
     )
+    if rotation_seen:
+        campaign_query = campaign_query.filter(
+            ~SpotlightCampaign.id.in_(sorted(rotation_seen))
+        )
     # Keep the cursor coordinate system independent of transient response
     # exclusions. The fresh presentation and recent replay set can change on
     # every request; removing them before count/offset made the same adjacent
@@ -458,7 +474,10 @@ def list_spotlight_presentation_visibility(
     # active-campaign window has been selected and ordered.
     campaign_count = int(campaign_query.count())
     if campaign_count <= 0:
-        return []
+        return SpotlightPresentationVisibilityWindow(
+            items=(),
+            rotation_cycle_complete=bool(rotation_seen),
+        )
 
     scan_limit = min(
         campaign_count,
@@ -500,7 +519,10 @@ def list_spotlight_presentation_visibility(
         )
     campaign_ids = [int(row.id) for row in campaign_rows]
     if not campaign_ids:
-        return []
+        return SpotlightPresentationVisibilityWindow(
+            items=(),
+            rotation_cycle_complete=bool(rotation_seen),
+        )
 
     # The explicit active set intentionally bypasses delivery-pacing discovery
     # while retaining lifecycle, self-delivery, membership, route,
@@ -512,8 +534,23 @@ def list_spotlight_presentation_visibility(
         limit=None,
         now=current_time,
     )
+    if not candidates and rotation_seen and campaign_count > len(campaign_ids):
+        remaining_campaign_ids = [
+            int(row.id)
+            for row in ordered_campaign_query.all()
+        ]
+        candidates = build_spotlight_opportunity_candidates(
+            db,
+            viewer_user_id=viewer_id,
+            campaign_ids=remaining_campaign_ids,
+            limit=None,
+            now=current_time,
+        )
     if not candidates:
-        return []
+        return SpotlightPresentationVisibilityWindow(
+            items=(),
+            rotation_cycle_complete=bool(rotation_seen),
+        )
     diversity = allocate_spotlight_opportunity_candidates(
         db,
         viewer_user_id=viewer_id,
@@ -583,7 +620,7 @@ def list_spotlight_presentation_visibility(
         if len(visible) >= safe_limit:
             break
 
-    return visible
+    return SpotlightPresentationVisibilityWindow(items=tuple(visible))
 
 
 def select_spotlight_presentation(

@@ -5482,6 +5482,20 @@ def _presentation_broadcast_for_candidate(
     )
 
 
+def _spotlight_rotation_seen_campaign_ids(raw_value: Optional[str]) -> set[int]:
+    seen_campaign_ids: list[int] = []
+    for raw_campaign_id in str(raw_value or '').split(','):
+        try:
+            campaign_id = int(raw_campaign_id.strip())
+        except (TypeError, ValueError):
+            continue
+        if campaign_id > 0 and campaign_id not in seen_campaign_ids:
+            seen_campaign_ids.append(campaign_id)
+        if len(seen_campaign_ids) >= 256:
+            break
+    return set(seen_campaign_ids)
+
+
 @router.get("/public/shop/{gmfn_id}/spotlight-opportunity")
 def get_public_shop_spotlight_opportunity(
     gmfn_id: str,
@@ -5489,6 +5503,10 @@ def get_public_shop_spotlight_opportunity(
     x_spotlight_visibility_window: Optional[int] = Header(
         default=None,
         alias='X-Spotlight-Visibility-Window',
+    ),
+    x_spotlight_rotation_seen_campaign_ids: Optional[str] = Header(
+        default=None,
+        alias='X-Spotlight-Rotation-Seen-Campaign-Ids',
     ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -5504,16 +5522,21 @@ def get_public_shop_spotlight_opportunity(
     }
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
-    visibility = list_spotlight_presentation_visibility(
+    rotation_seen_campaign_ids = _spotlight_rotation_seen_campaign_ids(
+        x_spotlight_rotation_seen_campaign_ids
+    )
+    visibility_window = list_spotlight_presentation_visibility(
         db,
         viewer_user_id=int(current_user.id),
         limit=SPOTLIGHT_PRESENTATION_MAX_ITEMS_PER_WINDOW,
+        rotation_seen_campaign_ids=rotation_seen_campaign_ids,
         window_sequence=(
             max(int(x_spotlight_visibility_window), 0)
             if x_spotlight_visibility_window is not None
             else None
         ),
     )
+    visibility = list(visibility_window.items)
     window_campaign_ids = [
         int(visible.candidate.campaign_id)
         for visible in visibility
@@ -5702,6 +5725,10 @@ def get_public_shop_spotlight_opportunity(
             'count': rendered_visibility_count,
             'counts_as_delivery': False,
             'counts_as_exposure': False,
+            'rotation_seen_campaign_count': len(rotation_seen_campaign_ids),
+            'rotation_cycle_complete': bool(
+                visibility_window.rotation_cycle_complete
+            ),
             'window_sequence': (
                 max(int(x_spotlight_visibility_window), 0)
                 if x_spotlight_visibility_window is not None
