@@ -10,6 +10,9 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    Clan,
+    ClanMembership,
+    MarketplaceShop,
     MarketWisdomEntry,
     MarketWisdomExposure,
     MarketWisdomGenerationRun,
@@ -1219,6 +1222,48 @@ def update_market_wisdom_entry(
     return entry
 
 
+def _resolve_market_wisdom_community_scope(
+    db: Session,
+    *,
+    user: Optional[User],
+    requested_clan_id: Optional[int],
+) -> Optional[int]:
+    user_id = int(getattr(user, "id", 0) or 0)
+    if not user_id:
+        if requested_clan_id is not None:
+            raise LookupError("Community not found.")
+        return None
+
+    resolved_clan_id = int(requested_clan_id) if requested_clan_id is not None else None
+    if resolved_clan_id is None:
+        owned_shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.owner_user_id == user_id)
+            .order_by(MarketplaceShop.id.asc())
+            .first()
+        )
+        if owned_shop is not None and owned_shop.clan_id is not None:
+            resolved_clan_id = int(owned_shop.clan_id)
+
+    if resolved_clan_id is None:
+        return None
+
+    clan_exists = db.get(Clan, resolved_clan_id) is not None
+    membership_exists = (
+        db.query(ClanMembership.id)
+        .filter(
+            ClanMembership.clan_id == resolved_clan_id,
+            ClanMembership.user_id == user_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+        is not None
+    )
+    if not clan_exists or not membership_exists:
+        raise LookupError("Community not found.")
+    return resolved_clan_id
+
+
 def recommend_market_wisdom(
     db: Session,
     *,
@@ -1227,11 +1272,16 @@ def recommend_market_wisdom(
     context: Optional[str] = None,
     signals: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_market_wisdom_community_scope(
+        db,
+        user=user,
+        requested_clan_id=clan_id,
+    )
     ensure_seed_market_wisdom(db)
     commerce_signal = build_market_wisdom_commerce_signal(
         db,
-        user_id=getattr(user, "id", None),
-        clan_id=clan_id,
+        viewer=user,
+        clan_id=resolved_clan_id,
     )
     signal_terms = {_normalise_text(context)}
     for signal in signals or []:
@@ -1253,10 +1303,10 @@ def recommend_market_wisdom(
             .all()
         )
         exposed_ids.update(int(row[0]) for row in rows if row[0])
-    if clan_id:
+    if resolved_clan_id:
         rows = (
             db.query(MarketWisdomExposure.wisdom_entry_id)
-            .filter(MarketWisdomExposure.clan_id == int(clan_id))
+            .filter(MarketWisdomExposure.clan_id == int(resolved_clan_id))
             .filter(MarketWisdomExposure.shown_at >= cooldown_since)
             .all()
         )
@@ -1387,6 +1437,11 @@ def record_market_wisdom_exposure(
     feedback: Optional[str] = None,
     outcome_signal: Optional[str] = None,
 ) -> Dict[str, Any]:
+    resolved_clan_id = _resolve_market_wisdom_community_scope(
+        db,
+        user=user,
+        requested_clan_id=clan_id,
+    )
     ensure_seed_market_wisdom(db)
     entry = db.query(MarketWisdomEntry).filter(MarketWisdomEntry.public_id == public_id).first()
     if not entry:
@@ -1400,7 +1455,7 @@ def record_market_wisdom_exposure(
     exposure = MarketWisdomExposure(
         wisdom_entry_id=entry.id,
         user_id=getattr(user, "id", None),
-        clan_id=int(clan_id) if clan_id else None,
+        clan_id=resolved_clan_id,
         feedback=_safe_str(feedback) or None,
         outcome_signal=_safe_str(outcome_signal) or None,
     )

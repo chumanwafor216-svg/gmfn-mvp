@@ -10,9 +10,10 @@ from app.db.models import (
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
-    MarketplaceRequest,
     MarketplaceShop,
+    User,
 )
+from app.services.demand_box_access_service import visible_open_request_count
 
 
 COMMERCE_WINDOW_DAYS = 7
@@ -60,14 +61,15 @@ def _unavailable_signal(
 def build_market_wisdom_commerce_signal(
     db: Session,
     *,
-    user_id: Optional[int],
+    viewer: Optional[User],
     clan_id: Optional[int] = None,
     now: Optional[datetime] = None,
 ) -> dict[str, Any]:
     """Return a small owner-scoped commerce observation, not a sales diagnosis."""
 
     observed_at = now or _now_utc()
-    if not user_id:
+    user_id = int(getattr(viewer, "id", 0) or 0)
+    if not user_id or viewer is None:
         return _unavailable_signal(state="unavailable", now=observed_at, clan_id=clan_id)
 
     shop = (
@@ -137,21 +139,13 @@ def build_market_wisdom_commerce_signal(
         if event_type in attention:
             attention[event_type] = int(count or 0)
 
-    open_demands = 0
-    if shop_clan_id is not None:
-        open_demands = (
-            db.query(func.count(MarketplaceRequest.id))
-            .filter(
-                MarketplaceRequest.clan_id == shop_clan_id,
-                MarketplaceRequest.status == "open",
-                or_(
-                    MarketplaceRequest.expires_at.is_(None),
-                    MarketplaceRequest.expires_at > observed_at,
-                ),
-            )
-            .scalar()
-            or 0
-        )
+    demand_visibility = visible_open_request_count(
+        db,
+        current_user=viewer,
+        clan_id=shop_clan_id,
+        now=observed_at,
+    )
+    open_demands = demand_visibility.count
 
     evidence_counts = {
         "active_products": int(active_products),
@@ -161,7 +155,7 @@ def build_market_wisdom_commerce_signal(
         "spotlight_impressions_7d": attention["spotlight_impression"],
         "spotlight_shop_clicks_7d": attention["spotlight_shop_click"],
         "contact_taps_7d": attention["contact_tap"],
-        "open_community_demands": int(open_demands),
+        "open_community_demands": open_demands,
     }
     attention_total = sum(attention.values())
 
@@ -196,7 +190,7 @@ def build_market_wisdom_commerce_signal(
         headline = "Your shop recorded attention during the last seven days."
         why_it_matters = "Review which item or Spotlight earned attention before changing the next offer."
         ranking_signals = ["shop", "visibility", "spotlight", "attention"]
-    elif open_demands > 0:
+    elif demand_visibility.available and int(open_demands or 0) > 0:
         state = "community_need_visible"
         headline = "Your community has open DemandBox requests to review."
         why_it_matters = "They show current community requests, not confirmed matches, buyers, or orders."
@@ -223,10 +217,15 @@ def build_market_wisdom_commerce_signal(
         "first_action_label": action_label,
         "first_action_route": action_route,
         "evidence_counts": evidence_counts,
+        "demand_visibility": demand_visibility.as_dict(),
         "ranking_signals": ranking_signals,
         "boundaries": [
             "Views, opens, impressions, clicks, and contact taps are attention evidence, not buyers, sales, payments, delivery, verification, or trust scores.",
-            "DemandBox counts are community request context, not confirmed matches, buyers, or orders.",
+            (
+                "DemandBox counts are community request context, not confirmed matches, buyers, or orders."
+                if demand_visibility.available
+                else "DemandBox evidence is unavailable without active access to the shop community; missing access is not a zero-demand finding."
+            ),
             "Spotlight impressions use the qualified visibility threshold; they do not prove meaningful attention or completion.",
         ],
     }

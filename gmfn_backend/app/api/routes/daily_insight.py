@@ -142,13 +142,16 @@ def market_wisdom_recommendation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    return recommend_market_wisdom(
-        db,
-        user=current_user,
-        clan_id=clan_id,
-        context=context,
-        signals=signals,
-    )
+    try:
+        return recommend_market_wisdom(
+            db,
+            user=current_user,
+            clan_id=clan_id,
+            context=context,
+            signals=signals,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/market-wisdom/exposures")

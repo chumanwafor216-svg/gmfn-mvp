@@ -71,14 +71,26 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/market_wisdom_commerce_signal_service.py",
-  /def build_market_wisdom_commerce_signal[\s\S]*?MarketplaceShop\.owner_user_id == int\(user_id\)[\s\S]*?community_mismatch[\s\S]*?MarketplaceProduct\.is_active\.is_\(True\)[\s\S]*?MarketplaceAttentionEvent\.created_at >= attention_since[\s\S]*?MarketplaceRequest\.status == "open"[\s\S]*?"available": True[\s\S]*?"boundaries": \[/,
-  "Market Wisdom commerce input must remain owner-scoped, selected-community-safe, persisted, bounded, and explicit about evidence limits."
+  /def build_market_wisdom_commerce_signal[\s\S]*?viewer: Optional\[User\][\s\S]*?MarketplaceShop\.owner_user_id == int\(user_id\)[\s\S]*?community_mismatch[\s\S]*?MarketplaceProduct\.is_active\.is_\(True\)[\s\S]*?MarketplaceAttentionEvent\.created_at >= attention_since[\s\S]*?visible_open_request_count\([\s\S]*?current_user=viewer[\s\S]*?"demand_visibility": demand_visibility\.as_dict\(\)[\s\S]*?"boundaries": \[/,
+  "Market Wisdom commerce input must remain viewer-authorized, owner-scoped, selected-community-safe, persisted, bounded, and explicit about protected DemandBox evidence limits."
 );
 
 assertContains(
   "gmfn_backend/app/services/daily_insight_service.py",
   /commerce_signal = build_market_wisdom_commerce_signal\([\s\S]*?commerce_signal\.get\("ranking_signals"\)[\s\S]*?"signal_basis"[\s\S]*?"commerce_signal": commerce_signal/,
   "Market Wisdom recommendation must rank approved guidance with the bounded server commerce signal and return that signal in the existing response."
+);
+
+assertContains(
+  "gmfn_backend/app/services/daily_insight_service.py",
+  /resolved_clan_id = _resolve_market_wisdom_community_scope\([\s\S]*?requested_clan_id=clan_id[\s\S]*?ensure_seed_market_wisdom\(db\)[\s\S]*?viewer=user[\s\S]*?clan_id=resolved_clan_id/,
+  "Market Wisdom must authorize explicit or inferred community scope before seed work, commerce reads, cooldown reads, or exposure writes."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /visible_open_request_count\([\s\S]*?current_user=viewer[\s\S]*?demand_available = demand_visibility\.available[\s\S]*?"status": "Live" if demand_available[\s\S]*?"demand_visibility": demand_visibility\.as_dict\(\)[\s\S]*?viewer=current_user/,
+  "Shop Opportunity Engine must use the actual viewer's protected DemandBox visibility and preserve unavailable as distinct from zero."
 );
 
 assertContains(

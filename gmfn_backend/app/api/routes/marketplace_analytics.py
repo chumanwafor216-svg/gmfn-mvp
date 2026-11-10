@@ -21,12 +21,12 @@ from app.db.models import (
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
-    MarketplaceRequest,
     MarketplaceShop,
     ProtectedTradeRecord,
     ShopFollower,
     User,
 )
+from app.services.demand_box_access_service import visible_open_request_count
 
 router = APIRouter(prefix="/marketplace/analytics", tags=["marketplace-analytics"])
 
@@ -428,21 +428,6 @@ def _recommendation_action_summary(db: Session, *, shop_id: int, since: datetime
     }
 
 
-def _open_demand_count_for_shop_community(db: Session, *, shop: MarketplaceShop, now: datetime) -> int:
-    clan_id = _safe_positive_int(getattr(shop, "clan_id", None))
-    if clan_id is None:
-        return 0
-    return (
-        db.query(MarketplaceRequest)
-        .filter(
-            MarketplaceRequest.clan_id == clan_id,
-            MarketplaceRequest.status == "open",
-            (MarketplaceRequest.expires_at.is_(None)) | (MarketplaceRequest.expires_at >= now),
-        )
-        .count()
-    )
-
-
 def _active_shop_product_count(db: Session, *, shop_id: int) -> int:
     return (
         db.query(MarketplaceProduct)
@@ -458,6 +443,7 @@ def _opportunity_engine_summary(
     db: Session,
     *,
     shop: MarketplaceShop,
+    viewer: User,
     now: datetime,
     period_last_7_days: dict[str, Any],
     spotlight: dict[str, Any],
@@ -468,7 +454,15 @@ def _opportunity_engine_summary(
     shop_id = int(shop.id)
     clan_id = _safe_positive_int(getattr(shop, "clan_id", None))
     active_products = _active_shop_product_count(db, shop_id=shop_id)
-    open_demand = _open_demand_count_for_shop_community(db, shop=shop, now=now)
+    demand_visibility = visible_open_request_count(
+        db,
+        current_user=viewer,
+        clan_id=clan_id,
+        now=now,
+    )
+    demand_available = demand_visibility.available
+    open_demand = demand_visibility.count
+    open_demand_for_logic = int(open_demand or 0)
     active_spotlights = int(spotlight.get("active_spotlights") or 0)
     spotlight_impressions = int(period_last_7_days.get("spotlight_impressions") or 0)
     shop_visits = int(period_last_7_days.get("shop_visits") or 0)
@@ -491,7 +485,7 @@ def _opportunity_engine_summary(
         "Ready to estimate"
         if has_acquisition_trail and has_outcome_trail
         else "Partial"
-        if has_acquisition_trail or has_outcome_trail or open_demand > 0
+        if has_acquisition_trail or has_outcome_trail or (demand_available and open_demand_for_logic > 0)
         else "Not ready"
     )
 
@@ -513,9 +507,13 @@ def _opportunity_engine_summary(
         {
             "key": "demand_box",
             "label": "DemandBox",
-            "status": "Live" if open_demand > 0 else "Next",
-            "count": open_demand,
-            "evidence": "Open non-expired MarketplaceRequest rows scoped to the shop community.",
+            "status": "Live" if demand_available and open_demand_for_logic > 0 else "Next" if demand_available else "Unavailable",
+            "count": open_demand if demand_available else None,
+            "evidence": (
+                "Open non-expired MarketplaceRequest rows visible to this viewer in the shop community."
+                if demand_available
+                else "DemandBox evidence is unavailable because this viewer has no active access to the shop community; this is not a zero-demand finding."
+            ),
         },
         {
             "key": "protected_trade",
@@ -563,7 +561,7 @@ def _opportunity_engine_summary(
         "current_evidence": [
             f"Acquisition signals: {acquisition_signals}",
             f"Outcome signals: {outcome_signals}",
-            f"DemandBox signals: {open_demand}",
+            f"DemandBox signals: {open_demand}" if demand_available else "DemandBox signals: unavailable (not zero)",
         ],
         "missing_evidence": [
             "Paid or effort cost by channel before a true promotion-cost calculation.",
@@ -614,7 +612,11 @@ def _opportunity_engine_summary(
             "step": "Review sample quality",
             "metric": "Decision quality",
             "currently_available": attention_events >= 5 and protected_trade_records > 0,
-            "reads": "The current seven-day attention window, DemandBox count, protected records, and recommendation action trail.",
+            "reads": (
+                "The current seven-day attention window, viewer-visible DemandBox count, protected records, and recommendation action trail."
+                if demand_available
+                else "The current seven-day attention window, protected records, and recommendation action trail. DemandBox evidence is unavailable and excluded."
+            ),
             "owner_action": "Use small experiments until repeated records over time show the same direction.",
             "boundary": "Tiny samples are learning signals, not a business model, investor metric, or guarantee.",
         },
@@ -633,14 +635,34 @@ def _opportunity_engine_summary(
         },
         {
             "title": "DemandBox fit check",
-            "trigger": "Community requests can reveal local need only when requests repeat or match shop capability.",
-            "hypothesis": "A repeated DemandBox pattern may point to an offer the shop can test safely.",
-            "metric": "Open DemandBox requests and matched shop offers",
-            "owner_action": "Compare the next real community request with one existing shop offer before creating a new product push.",
-            "review_window": "90 days",
-            "success_signal": "More than one independent request points to the same need or service gap.",
-            "stop_rule": "Do not treat one request or founder memory as market size.",
-            "boundary": "DemandBox is a signal lane, not a guaranteed customer list or community-wide vote.",
+            "trigger": (
+                "Community requests can reveal local need only when requests repeat or match shop capability."
+                if demand_available
+                else "DemandBox evidence is unavailable until this viewer has active access to the shop community."
+            ),
+            "hypothesis": (
+                "A repeated DemandBox pattern may point to an offer the shop can test safely."
+                if demand_available
+                else "No DemandBox demand inference is available from inaccessible community requests."
+            ),
+            "metric": "Open viewer-visible DemandBox requests and matched shop offers" if demand_available else "No DemandBox metric available",
+            "owner_action": (
+                "Compare the next real community request with one existing shop offer before creating a new product push."
+                if demand_available
+                else "Restore authorized community access before using DemandBox evidence in an opportunity decision."
+            ),
+            "review_window": "90 days" if demand_available else "after access is restored",
+            "success_signal": (
+                "More than one independent request points to the same need or service gap."
+                if demand_available
+                else "Authorized community access becomes available; only then may visible requests be evaluated."
+            ),
+            "stop_rule": (
+                "Do not treat one request or founder memory as market size."
+                if demand_available
+                else "Do not infer zero demand, demand volume, or product direction from unavailable requests."
+            ),
+            "boundary": "DemandBox is a signal lane, not a guaranteed customer list or community-wide vote." if demand_available else "Unavailable DemandBox evidence is excluded from guidance and conclusions.",
         },
         {
             "title": "Protected outcome close-loop",
@@ -740,7 +762,11 @@ def _opportunity_engine_summary(
         {
             "cadence": "90-day review",
             "status": "Next",
-            "review_now": "Look for repeat buyers, repeat DemandBox patterns, recurring support needs, and owner return usage of Advanced Analytics.",
+            "review_now": (
+                "Look for repeat buyers, repeat DemandBox patterns, recurring support needs, and owner return usage of Advanced Analytics."
+                if demand_available
+                else "Look for repeat buyers, recurring support needs, and owner return usage of Advanced Analytics; DemandBox patterns remain excluded while access is unavailable."
+            ),
             "evidence_required": "Repeat-customer, repeat-request, retention, margin, support-cost, and saved reviewed-report records.",
             "upgrade_rule": "Only discuss long-term value after repeat value and retention can be traced across more than one cycle.",
             "boundary": "Ninety days can show direction; it still must not become a forecast or guarantee without governed review.",
@@ -763,10 +789,18 @@ def _opportunity_engine_summary(
         },
         {
             "source": "DemandBox",
-            "status": "Live" if open_demand > 0 else "Next",
-            "records": open_demand,
-            "reads": "Open non-expired marketplace_requests rows in the selected community.",
-            "privacy_boundary": "Request count only; no private response thread or personal scoring exposed.",
+            "status": "Live" if demand_available and open_demand_for_logic > 0 else "Next" if demand_available else "Unavailable",
+            "records": open_demand if demand_available else None,
+            "reads": (
+                "Open non-expired marketplace_requests rows visible to this viewer in the selected community."
+                if demand_available
+                else "No DemandBox records are read because this viewer lacks active community access."
+            ),
+            "privacy_boundary": (
+                "Viewer-visible request count only; protected targets, private response threads, and personal scoring are not exposed."
+                if demand_available
+                else "Unavailable means access was not authorized; it must not be interpreted as zero requests or zero demand."
+            ),
         },
         {
             "source": "Protected Trade",
@@ -805,14 +839,38 @@ def _opportunity_engine_summary(
         },
         {
             "lens": "Market",
-            "signal": f"{open_demand} open DemandBox requests are visible in this shop community.",
-            "evidence": "Open non-expired MarketplaceRequest rows scoped to the selected community.",
-            "interpretation": "DemandBox can become a local demand clue when requests repeat, but zero or tiny counts are still only a gap signal.",
-            "opportunity": "Compare the shop's public offers with the next real community request before adding more promotion.",
-            "risk": "One request, or no request, must not be presented as market size or guaranteed customer demand.",
-            "time_horizon": "90 days",
-            "confidence": "medium" if open_demand >= 3 else "low",
-            "suggested_next_step": "Watch for repeated community requests before treating this as a product direction.",
+            "signal": (
+                f"{open_demand} open DemandBox requests are visible to this viewer in the shop community."
+                if demand_available
+                else "DemandBox evidence is unavailable to this viewer for the shop community."
+            ),
+            "evidence": (
+                "Open non-expired MarketplaceRequest rows visible to this viewer in the selected community."
+                if demand_available
+                else "No DemandBox count or request evidence was used because active community access was not authorized."
+            ),
+            "interpretation": (
+                "DemandBox can become a local demand clue when requests repeat, but zero or tiny counts are still only a gap signal."
+                if demand_available
+                else "No demand interpretation is available; inaccessible evidence is not a zero-demand result."
+            ),
+            "opportunity": (
+                "Compare the shop's public offers with the next real community request before adding more promotion."
+                if demand_available
+                else "Do not derive a DemandBox opportunity until authorized community access is restored."
+            ),
+            "risk": (
+                "One request, or no request, must not be presented as market size or guaranteed customer demand."
+                if demand_available
+                else "Treating unavailable evidence as zero would create a false market conclusion."
+            ),
+            "time_horizon": "90 days" if demand_available else "unavailable",
+            "confidence": "medium" if demand_available and open_demand_for_logic >= 3 else "low" if demand_available else "unavailable",
+            "suggested_next_step": (
+                "Watch for repeated community requests before treating this as a product direction."
+                if demand_available
+                else "Restore active community authorization before reviewing DemandBox demand signals."
+            ),
             "human_review": "Owner reviews before acting or publishing.",
         },
         {
@@ -835,6 +893,7 @@ def _opportunity_engine_summary(
         "live_signal_count": live_count,
         "signal_group_count": len(signal_groups),
         "signal_groups": signal_groups,
+        "demand_visibility": demand_visibility.as_dict(),
         "output_cards": output_cards,
         "unit_economics_readiness": unit_economics_readiness,
         "evidence_ledger": evidence_ledger,
@@ -845,11 +904,19 @@ def _opportunity_engine_summary(
         "snapshot": {
             "title": "Current evidence snapshot",
             "headline": f"{live_count} of {len(signal_groups)} owner-summary signal groups are live.",
-            "evidence": "Computed from the existing shop analytics summary, DemandBox request count, protected trade records, and marketplace attention events.",
+            "evidence": (
+                "Computed from the existing shop analytics summary, viewer-visible DemandBox request count, protected trade records, and marketplace attention events."
+                if demand_available
+                else "Computed from existing shop analytics and protected trade evidence; unavailable DemandBox evidence was excluded."
+            ),
             "next_step": "Persist reviewed snapshots before treating this as a saved Advanced Analytics report.",
         },
         "boundary_label": "Computed owner analytics only. This is not a saved reviewed report, billing entitlement, external-context research, sales proof, or a trust score.",
-        "count_method": "Owner-only computed summary from marketplace_products, marketplace_broadcasts, marketplace_requests, marketplace_attention_events, and protected_trade_records.",
+        "count_method": (
+            "Owner-only computed summary from marketplace_products, marketplace_broadcasts, viewer-visible marketplace_requests, marketplace_attention_events, and protected_trade_records."
+            if demand_available
+            else "Authorized shop summary from marketplace_products, marketplace_broadcasts, marketplace_attention_events, and protected_trade_records; marketplace_requests were excluded because community access is unavailable."
+        ),
     }
 
 def _share_response_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
@@ -1569,6 +1636,7 @@ def get_marketplace_shop_attention_summary(
         "opportunity_engine": _opportunity_engine_summary(
             db,
             shop=shop,
+            viewer=current_user,
             now=now,
             period_last_7_days=last_7_days_period,
             spotlight=spotlight_summary,

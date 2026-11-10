@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -13,6 +15,27 @@ VISIBILITY_SCOPE_PROTECTED_TARGET = "protected_target"
 PROTECTED_TARGET_MARKER = "[GSN_VISIBILITY_SCOPE:protected_target]"
 
 _HANDLE_PATTERN = re.compile(r"@([A-Za-z0-9][A-Za-z0-9_.-]{2,63})")
+
+
+@dataclass(frozen=True)
+class RequestVisibilityContext:
+    current_user_id: int
+    active_clan_ids: frozenset[int]
+    gmfn_handle_key: str
+
+
+@dataclass(frozen=True)
+class VisibleRequestCount:
+    available: bool
+    count: int | None
+    state: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "available": self.available,
+            "count": self.count,
+            "state": self.state,
+        }
 
 
 def _safe_text(value: object) -> str:
@@ -102,6 +125,34 @@ def _handle_key(value: str) -> str:
     return _safe_text(value).lstrip("@").lower()
 
 
+def build_request_visibility_context(
+    db: Session,
+    *,
+    current_user: User,
+) -> RequestVisibilityContext:
+    current_user_id = int(getattr(current_user, "id", 0) or 0)
+    canonical_user = db.get(User, current_user_id) if current_user_id else None
+    gmfn_id = _safe_text(
+        getattr(canonical_user or current_user, "gmfn_id", None)
+    )
+    active_clan_ids = {
+        int(row[0])
+        for row in (
+            db.query(ClanMembership.clan_id)
+            .filter(
+                ClanMembership.user_id == current_user_id,
+                ClanMembership.left_at.is_(None),
+            )
+            .all()
+        )
+    }
+    return RequestVisibilityContext(
+        current_user_id=current_user_id,
+        active_clan_ids=frozenset(active_clan_ids),
+        gmfn_handle_key=_handle_key(gmfn_id),
+    )
+
+
 def mentioned_member_ids(db: Session, row: MarketplaceRequest) -> set[int]:
     handle_keys = {_handle_key(handle) for handle in mentioned_handles(row)}
     handle_keys.discard("")
@@ -131,11 +182,21 @@ def request_visible_to_user(
     row: MarketplaceRequest,
     *,
     current_user_id: int,
+    visibility_context: RequestVisibilityContext | None = None,
 ) -> bool:
     if int(row.user_id) == int(current_user_id):
         return True
     if not is_protected_target_request(row):
         return True
+    if visibility_context is not None:
+        clan_id = int(getattr(row, "clan_id", 0) or 0)
+        if clan_id not in visibility_context.active_clan_ids:
+            return False
+        if not visibility_context.gmfn_handle_key:
+            return False
+        return visibility_context.gmfn_handle_key in {
+            _handle_key(handle) for handle in mentioned_handles(row)
+        }
     return int(current_user_id) in mentioned_member_ids(db, row)
 
 
@@ -158,3 +219,53 @@ def request_visibility_query_clause(*, current_user: User):
             ]
         )
     return or_(*filters)
+
+
+def visible_open_request_count(
+    db: Session,
+    *,
+    current_user: User,
+    clan_id: int | None,
+    now: datetime,
+) -> VisibleRequestCount:
+    if clan_id is None:
+        return VisibleRequestCount(
+            available=False,
+            count=None,
+            state="no_community_scope",
+        )
+
+    context = build_request_visibility_context(db, current_user=current_user)
+    safe_clan_id = int(clan_id)
+    if safe_clan_id not in context.active_clan_ids:
+        return VisibleRequestCount(
+            available=False,
+            count=None,
+            state="community_access_unavailable",
+        )
+
+    canonical_user = db.get(User, context.current_user_id) or current_user
+    rows = (
+        db.query(MarketplaceRequest)
+        .filter(
+            MarketplaceRequest.clan_id == safe_clan_id,
+            MarketplaceRequest.status == "open",
+            or_(
+                MarketplaceRequest.expires_at.is_(None),
+                MarketplaceRequest.expires_at > now,
+            ),
+            request_visibility_query_clause(current_user=canonical_user),
+        )
+        .all()
+    )
+    count = sum(
+        1
+        for row in rows
+        if request_visible_to_user(
+            db,
+            row,
+            current_user_id=context.current_user_id,
+            visibility_context=context,
+        )
+    )
+    return VisibleRequestCount(available=True, count=count, state="visible")
