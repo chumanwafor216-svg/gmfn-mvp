@@ -6414,3 +6414,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Regression coverage: `test_market_wisdom_privacy_authorization.py` covers requester, exact recipient, same-community nonrecipient, cross-community outsider, prefix-overlapping handles, former member, unmatched target, expired/closed rows, 125-row uncapped counts, recommendation invariance, no-write authorization failures, general fallback, community mismatch, and owner-versus-admin Shop Analytics.
 - Verification passed: 7 new privacy tests; 16 existing Market Wisdom and Shop Analytics tests; Python compile checks; Market Wisdom contract audit; `git diff --check`; and the frontend production build.
 - Unrelated verification truth: the broad protected-button freeze still reports pre-existing findings in `MyGMFNAndIPage.tsx`, the Dashboard passport hitbox audit, Shop Control analytics visual expectations, and `MemberActivationPage.tsx`. No frozen UI source was changed for Stage 1.
+
+# Community Home Pipeline Credit balance - 2026-11-12
+
+- Product-owner amendment to the frozen `/app/community` surface: the selected-community identity hero now reads `/pipeline-credits/me-service-balance` and shows one compact `Your Pipeline Credits` fact for the signed-in member.
+- The balance is the member's global customer-service Pipeline Credit account, not community money. A server-returned unopened account displays the truthful zero balance; a failed/unreadable request displays no invented value.
+- Community Home adds no top-up, purchase, transfer, or spend action. The existing Bulletin order, route ownership, permissions, and protected button inventory remain unchanged.
+- Regression coverage is recorded in `frontend/tools/audit-community-home-billboard.mjs`.

@@ -58,6 +58,12 @@ requirePattern(
 );
 requirePattern(
   communitySource,
+  /getMyPipelineCreditServiceBalance\("global"\)[\s\S]*?response\?\.account\?\.balance[\s\S]*?data-debug-id="community-home\.identity\.pipeline-credit-balance"[\s\S]*?Your Pipeline Credits[\s\S]*?formatPipelineCreditBalance/,
+  communityFile,
+  "Community Home must show the authenticated customer-service Pipeline Credit balance inside the identity hero."
+);
+requirePattern(
+  communitySource,
   /data-debug-id="community-home\.identity-card"[\s\S]*?<SimpleCommunityInviteCard[\s\S]*?<\/section>[\s\S]*?<section id="community-home-bulletin"/,
   communityFile,
   "The identity billboard, Invite action, and immediate Bulletin order must remain intact."
@@ -73,6 +79,12 @@ requirePattern(
   /missing count data must say `Count unavailable`[\s\S]*?selected-community `Available now` balance only when[\s\S]*?must not fetch `getPoolMeSummary`/,
   specFile,
   "The frozen screen specification must record the truthful count and selected-community-only balance exception."
+);
+requirePattern(
+  specSource,
+  /Owner-approved Pipeline Credit balance amendment[\s\S]*?Label the fact `Your Pipeline Credits`[\s\S]*?Do not add a top-up, purchase, transfer, or spend action/,
+  specFile,
+  "The frozen screen amendment must preserve the Pipeline Credit balance boundary and prohibit invented Community Home actions."
 );
 
 if (findings.length > 0) {
