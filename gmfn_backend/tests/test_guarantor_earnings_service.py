@@ -130,3 +130,23 @@ def test_guarantor_share_becomes_earned_after_full_repayment(db):
     assert result["total_pending"] == "0.00"
     assert result["items"][0]["status"] == "earned"
     assert result["items"][0]["payable_amount"] == "80.00"
+
+
+def test_guarantor_earnings_currency_filter_does_not_relabel_other_money(db):
+    _clan, _borrower, guarantor, _loan, _row = _seed_supported_loan(
+        db, loan_status="approved"
+    )
+
+    ngn_result = get_my_guarantor_earnings(
+        db, user_id=int(guarantor.id), currency="ngn"
+    )
+    gbp_result = get_my_guarantor_earnings(
+        db, user_id=int(guarantor.id), currency="GBP"
+    )
+
+    assert ngn_result["currency"] == "NGN"
+    assert ngn_result["total_estimated"] == "80.00"
+    assert len(ngn_result["items"]) == 1
+    assert gbp_result["currency"] == "GBP"
+    assert gbp_result["total_estimated"] == "0.00"
+    assert gbp_result["items"] == []

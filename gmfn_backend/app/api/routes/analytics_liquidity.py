@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.clan_auth import get_current_clan_membership
@@ -23,6 +23,7 @@ def _d(x: Any) -> Decimal:
 
 @router.get("/clan-liquidity")
 def clan_liquidity(
+    currency: str | None = Query(None, min_length=3, max_length=8),
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ) -> Dict[str, Any]:
@@ -30,8 +31,16 @@ def clan_liquidity(
     Community liquidity index (simple deterministic aggregate).
     """
     clan, membership, current_user = clan_ctx
+    normalized_currency = str(currency or "").strip().upper() or None
 
-    gs = db.query(LoanGuarantor).filter(LoanGuarantor.clan_id == int(clan.id)).all()
+    guarantor_query = db.query(LoanGuarantor).filter(
+        LoanGuarantor.clan_id == int(clan.id)
+    )
+    if normalized_currency:
+        guarantor_query = guarantor_query.join(
+            Loan, Loan.id == LoanGuarantor.loan_id
+        ).filter(Loan.currency == normalized_currency)
+    gs = guarantor_query.all()
 
     pledged_total = Decimal("0")
     locked_total = Decimal("0")
@@ -42,16 +51,21 @@ def clan_liquidity(
         locked_total += _d(getattr(g, "locked_amount", None))
         released_total += _d(getattr(g, "released_amount", None))
 
-    active_loans = (
+    active_loan_query = (
         db.query(Loan)
         .filter(Loan.clan_id == int(clan.id))
         .filter(Loan.status.in_(["pending", "incomplete", "approved", "disbursed"]))
-        .count()
     )
+    if normalized_currency:
+        active_loan_query = active_loan_query.filter(
+            Loan.currency == normalized_currency
+        )
+    active_loans = active_loan_query.count()
 
     return {
         "clan_id": int(clan.id),
         "clan_name": getattr(clan, "name", None),
+        "currency": normalized_currency,
         "active_loans_count": int(active_loans),
         "pledged_total": str(pledged_total),
         "locked_total": str(locked_total),

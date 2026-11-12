@@ -5,7 +5,12 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import text
 
-from app.api.routes import marketplace_requests, pool
+from app.api.routes import (
+    analytics_liquidity,
+    guarantors_exposure,
+    marketplace_requests,
+    pool,
+)
 from app.db.database import SessionLocal, engine
 from app.schemas.marketplace_requests import MarketplaceRequestCreate
 from app.services.notification_service import (
@@ -1124,3 +1129,72 @@ def test_pool_summary_keeps_guarantee_locks_in_their_loan_currency():
     summaries = {row["currency"]: row for row in data["currency_summaries"]}
     assert summaries["GBP"]["totals"]["guarantee_locked_as_guarantor"] == "35.00"
     assert summaries["USD"]["totals"]["guarantee_locked_as_guarantor"] == "50.00"
+
+
+def test_guarantor_exposure_can_be_read_one_currency_at_a_time():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO loans
+                    (id, borrower_user_id, amount, currency, status, clan_id, guarantors_required)
+                VALUES
+                    (201, 2, 100, 'GBP', 'approved', 1, 1),
+                    (202, 2, 200, 'USD', 'approved', 1, 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO loan_guarantors
+                    (
+                        id,
+                        loan_id,
+                        clan_id,
+                        guarantor_user_id,
+                        pledge_amount,
+                        status,
+                        is_locked,
+                        locked_amount,
+                        released_amount
+                    )
+                VALUES
+                    (201, 201, 1, 1, 40, 'approved', 1, 40, 5),
+                    (202, 202, 1, 1, 60, 'approved', 1, 60, 10)
+                """
+            )
+        )
+
+    clan_ctx = (Obj(id=1), Obj(clan_id=1, user_id=1), _fake_current_user())
+    with SessionLocal() as db:
+        gbp = guarantors_exposure.my_guarantor_exposure(
+            currency="GBP",
+            db=db,
+            clan_ctx=clan_ctx,
+        )
+        usd = guarantors_exposure.my_guarantor_exposure(
+            currency="usd",
+            db=db,
+            clan_ctx=clan_ctx,
+        )
+        gbp_liquidity = analytics_liquidity.clan_liquidity(
+            currency="GBP",
+            db=db,
+            clan_ctx=clan_ctx,
+        )
+
+    assert gbp["currency"] == "GBP"
+    assert float(gbp["total_locked"]) == 40.0
+    assert float(gbp["total_released"]) == 5.0
+    assert usd["currency"] == "USD"
+    assert float(usd["total_locked"]) == 60.0
+    assert float(usd["total_released"]) == 10.0
+    assert gbp_liquidity["currency"] == "GBP"
+    assert gbp_liquidity["active_loans_count"] == 1
+    assert float(gbp_liquidity["pledged_total"]) == 40.0
+    assert float(gbp_liquidity["locked_total"]) == 40.0
+    assert float(gbp_liquidity["released_total"]) == 5.0

@@ -81,6 +81,7 @@ type PoolEvent = {
 type ClanLiquidity = {
   clanId?: number | null;
   clanName?: string | null;
+  currency?: string | null;
   activeLoansCount?: number | null;
   pledgedTotal?: string | null;
   lockedTotal?: string | null;
@@ -162,6 +163,7 @@ type CrossCommunityPoolSummary = {
     guarantee_locked_as_guarantor?: string | null;
   } | null;
   items?: CrossCommunityPoolItem[];
+  currency_summaries?: CrossCommunityPoolSummary[];
 };
 
 type FinanceGlyphName =
@@ -208,6 +210,27 @@ const FINAL_LOAN_STATUSES = new Set([
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function parseFinanceCurrency(value: unknown): string {
+  const code = safeStr(value).toUpperCase();
+  return /^[A-Z]{3}$/.test(code) ? code : "";
+}
+
+function normalizeFinanceCurrency(
+  value: unknown,
+  fallback = "NGN"
+): string {
+  return parseFinanceCurrency(value) || fallback;
+}
+
+function routeWithFinanceCurrency(to: string, currency: string): string {
+  const [pathAndQuery, hash = ""] = safeStr(to).split("#", 2);
+  const [pathname, queryString = ""] = pathAndQuery.split("?", 2);
+  const query = new URLSearchParams(queryString);
+  query.set("currency", normalizeFinanceCurrency(currency));
+  const suffix = hash ? `#${hash}` : "";
+  return `${pathname}?${query.toString()}${suffix}`;
 }
 
 function firstTruthy(...values: any[]): string {
@@ -367,6 +390,9 @@ function normalizeCrossCommunityPoolSummary(
       : items.length,
     totals: src?.totals || null,
     items,
+    currency_summaries: rowsOf<any>(src?.currency_summaries)
+      .map((item) => normalizeCrossCommunityPoolSummary(item))
+      .filter(Boolean) as CrossCommunityPoolSummary[],
   };
 }
 
@@ -625,6 +651,7 @@ function normalizeClanLiquidity(raw: any): ClanLiquidity | null {
   return {
     clanId: positiveNumber(src?.clan_id) || null,
     clanName: firstTruthy(src?.clan_name),
+    currency: firstTruthy(src?.currency),
     activeLoansCount: Number.isFinite(Number(src?.active_loans_count))
       ? Number(src.active_loans_count)
       : null,
@@ -1035,21 +1062,44 @@ export default function FinancePage() {
         query.get("community_id")
     );
   }, [location.search]);
+  const routeSelectedCurrency = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return parseFinanceCurrency(query.get("currency"));
+  }, [location.search]);
   const selectedClanId =
     routeSelectedClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    routeSelectedCurrency || "NGN"
+  );
+  const [preferredCurrency, setPreferredCurrency] = useState("NGN");
+  const [currencyReady, setCurrencyReady] = useState(
+    Boolean(routeSelectedCurrency)
+  );
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "finance.route.dashboard"),
       marketplace: routeTarget("marketplace", selectedClanId, "finance.route.marketplace"),
-      moneyIn: routeTarget("moneyIn", selectedClanId, "finance.route.money-in-target"),
-      moneyOut: routeTarget("moneyOut", selectedClanId, "finance.route.money-out-target"),
-      paymentRails: routeTarget("paymentRails", selectedClanId, "finance.route.payment-rails-target"),
-      payoutDetails: routeTarget("payoutDetails", selectedClanId, "finance.route.payout-details-target"),
+      moneyIn: routeWithFinanceCurrency(
+        routeTarget("moneyIn", selectedClanId, "finance.route.money-in-target"),
+        selectedCurrency
+      ),
+      moneyOut: routeWithFinanceCurrency(
+        routeTarget("moneyOut", selectedClanId, "finance.route.money-out-target"),
+        selectedCurrency
+      ),
+      paymentRails: routeWithFinanceCurrency(
+        routeTarget("paymentRails", selectedClanId, "finance.route.payment-rails-target"),
+        selectedCurrency
+      ),
+      payoutDetails: routeWithFinanceCurrency(
+        routeTarget("payoutDetails", selectedClanId, "finance.route.payout-details-target"),
+        selectedCurrency
+      ),
       loanReadiness: routeTarget("loanReadiness", selectedClanId, "finance.route.loan-readiness-target"),
       trust: routeTarget("trust", selectedClanId, "finance.route.trust-target"),
       loans: routeTarget("loans", selectedClanId, "finance.route.loans-target"),
     }),
-    [selectedClanId]
+    [selectedClanId, selectedCurrency]
   );
   const financeRevealRef = useRef<number | null>(null);
   const financeLoadSeqRef = useRef(0);
@@ -1104,6 +1154,51 @@ export default function FinancePage() {
   }, [routeSelectedClanId]);
 
   useEffect(() => {
+    let alive = true;
+    const getSettings = (api as any).getMySettings;
+
+    if (routeSelectedCurrency) {
+      setSelectedCurrency(routeSelectedCurrency);
+      setCurrencyReady(true);
+    } else {
+      setCurrencyReady(false);
+    }
+
+    if (typeof getSettings !== "function") {
+      if (!routeSelectedCurrency) {
+        setSelectedCurrency("NGN");
+        setCurrencyReady(true);
+      }
+      return () => {
+        alive = false;
+      };
+    }
+
+    void getSettings()
+      .then((settings: any) => {
+        if (!alive) return;
+        const nextPreferredCurrency = normalizeFinanceCurrency(
+          settings?.preferredCurrency
+        );
+        setPreferredCurrency(nextPreferredCurrency);
+        if (!routeSelectedCurrency) {
+          setSelectedCurrency(nextPreferredCurrency);
+          setCurrencyReady(true);
+        }
+      })
+      .catch(() => {
+        if (alive && !routeSelectedCurrency) {
+          setSelectedCurrency("NGN");
+          setCurrencyReady(true);
+        }
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [routeSelectedCurrency]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     function handleResize() {
@@ -1133,8 +1228,10 @@ export default function FinancePage() {
   }, [collapsed]);
 
   useEffect(() => {
+    if (!currencyReady) return;
+
     let alive = true;
-    const contextKey = `community:${selectedClanId || "none"}`;
+    const contextKey = `community:${selectedClanId || "none"}:currency:${selectedCurrency}`;
     const loadSeq = financeLoadSeqRef.current + 1;
     financeLoadSeqRef.current = loadSeq;
     financeLoadContextRef.current = contextKey;
@@ -1202,12 +1299,18 @@ export default function FinancePage() {
 
         const poolPromise =
           typeof (api as any).getPoolMe === "function"
-            ? (api as any).getPoolMe("NGN", 20, scopedClanOptions).catch(() => null)
+            ? (api as any)
+                .getPoolMe(selectedCurrency, 20, scopedClanOptions)
+                .catch(() => null)
             : Promise.resolve(null);
 
         const crossPoolPromise =
           typeof (api as any).getPoolMeSummary === "function"
-            ? (api as any).getPoolMeSummary("NGN").catch(() => null)
+            ? (api as any)
+                .getPoolMeSummary(selectedCurrency, {
+                  include_all_currencies: true,
+                })
+                .catch(() => null)
             : Promise.resolve(null);
 
         const trustWhyPromise =
@@ -1217,7 +1320,9 @@ export default function FinancePage() {
 
         const guarantorEarningsPromise =
           typeof (api as any).getMyGuarantorEarnings === "function"
-            ? (api as any).getMyGuarantorEarnings(100).catch(() => null)
+            ? (api as any)
+                .getMyGuarantorEarnings(100, selectedCurrency)
+                .catch(() => null)
             : Promise.resolve(null);
 
         const providerGatesPromise =
@@ -1278,13 +1383,17 @@ export default function FinancePage() {
         if (selectedClanId) {
           const [surface, liquidityRes, expectedRes, pipelineCreditRes] = await Promise.all([
             gmfnId
-              ? getCommunityMoneySurface(selectedClanId, gmfnId, "NGN").catch(
-                  () => null
-                )
+              ? getCommunityMoneySurface(
+                  selectedClanId,
+                  gmfnId,
+                  selectedCurrency
+                ).catch(() => null)
               : Promise.resolve(null),
-            fetchJson("/analytics/clan-liquidity", selectedClanId).catch(
-              () => null
-            ),
+            fetchJson(
+              "/analytics/clan-liquidity?" +
+                new URLSearchParams({ currency: selectedCurrency }).toString(),
+              selectedClanId
+            ).catch(() => null),
             fetchJson(
               `/payment-instructions/my/expected?clan_id=${encodeURIComponent(
                 String(selectedClanId)
@@ -1312,7 +1421,12 @@ export default function FinancePage() {
         }
 
         const summaryTargets = filteredLoans
-          .filter((row) => isActiveLoan(row) && isBorrowerLoan(row))
+          .filter(
+            (row) =>
+              isActiveLoan(row) &&
+              isBorrowerLoan(row) &&
+              normalizeFinanceCurrency(row.currency) === selectedCurrency
+          )
           .slice(0, 12);
         const summaryPairs = await Promise.all(
           summaryTargets.map(async (row) => {
@@ -1347,7 +1461,7 @@ export default function FinancePage() {
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [currencyReady, selectedClanId, selectedCurrency]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -1377,7 +1491,7 @@ export default function FinancePage() {
     () => activeLoans.filter(isBorrowerLoan),
     [activeLoans]
   );
-  const guarantorExposure: GuarantorExposureSummary | null =
+  const rawGuarantorExposure: GuarantorExposureSummary | null =
     moneySurface?.guarantorExposure || null;
 
   const poolAmount = safeStr(
@@ -1401,9 +1515,14 @@ export default function FinancePage() {
   const pendingWithdrawals = safeStr(
     moneySurface?.pendingWithdrawals || poolState?.pending_withdrawals || "0.00"
   );
-  const poolCurrency = safeStr(
-    moneySurface?.poolCurrency || poolState?.currency || "NGN"
+  const poolCurrency = normalizeFinanceCurrency(
+    moneySurface?.poolCurrency || poolState?.currency,
+    selectedCurrency
   );
+  const guarantorExposure =
+    parseFinanceCurrency(rawGuarantorExposure?.currency) === poolCurrency
+      ? rawGuarantorExposure
+      : null;
   const poolReference = safeStr(
     moneySurface?.poolReference || poolState?.reference || ""
   );
@@ -1417,7 +1536,26 @@ export default function FinancePage() {
   const crossTotals = (crossCommunityPool?.totals || {}) as NonNullable<
     CrossCommunityPoolSummary["totals"]
   >;
-  const crossCurrency = safeStr(crossCommunityPool?.currency || poolCurrency || "NGN");
+  const crossCurrency = normalizeFinanceCurrency(
+    crossCommunityPool?.currency || poolCurrency,
+    selectedCurrency
+  );
+  const financeCurrencyOptions = useMemo(() => {
+    const recordedCurrencies = rowsOf<CrossCommunityPoolSummary>(
+      crossCommunityPool?.currency_summaries
+    )
+      .map((row) => parseFinanceCurrency(row.currency))
+      .filter(Boolean);
+    return Array.from(
+      new Set([selectedCurrency, preferredCurrency, ...recordedCurrencies])
+    ).sort((left, right) => {
+      if (left === selectedCurrency) return -1;
+      if (right === selectedCurrency) return 1;
+      if (left === preferredCurrency) return -1;
+      if (right === preferredCurrency) return 1;
+      return left.localeCompare(right);
+    });
+  }, [crossCommunityPool, preferredCurrency, selectedCurrency]);
   const crossCommunitiesCount =
     positiveNumber(crossCommunityPool?.communities_count) ||
     crossCommunityItems.length ||
@@ -1436,9 +1574,6 @@ export default function FinancePage() {
   );
   const crossReservedPool = safeStr(
     crossTotals?.reserved_pool || reservedPool || "0.00"
-  );
-  const crossMembershipPool = safeStr(
-    crossTotals?.membership_pool_balance || crossAvailableBalance || "0.00"
   );
   const crossLockedGuarantees = safeStr(
     crossTotals?.guarantee_locked_as_guarantor ||
@@ -1503,15 +1638,40 @@ export default function FinancePage() {
         "loan_defaulted",
         "write_off",
       ]);
-  const guarantorEarningsTotal = safeStr(guarantorEarnings?.total_earned || "0.00");
-  const guarantorEarningsItems = rowsOf<any>(guarantorEarnings);
+  const guarantorEarningsItems = useMemo(
+    () =>
+      rowsOf<any>(guarantorEarnings).filter(
+        (item) =>
+          normalizeFinanceCurrency(item?.currency, crossCurrency) ===
+          crossCurrency
+      ),
+    [crossCurrency, guarantorEarnings]
+  );
+  const guarantorEarningsTotal = useMemo(
+    () =>
+      guarantorEarningsItems.reduce(
+        (sum, item) => sum + parseMoneyNumber(item?.payable_amount),
+        0
+      ),
+    [guarantorEarningsItems]
+  );
 
-  const activeExpectedPayments = useMemo(() => {
+  const allActiveExpectedPayments = useMemo(() => {
     return expectedPayments.filter((item) => {
       const status = safeStr(item?.status).toLowerCase();
       return !["applied", "cancelled", "expired"].includes(status);
     });
   }, [expectedPayments]);
+
+  const activeExpectedPayments = useMemo(
+    () =>
+      allActiveExpectedPayments.filter(
+        (item) =>
+          normalizeFinanceCurrency(item?.currency, crossCurrency) ===
+          crossCurrency
+      ),
+    [allActiveExpectedPayments, crossCurrency]
+  );
 
   const pendingReconciliationCount = useMemo(() => {
     return activeExpectedPayments.filter((item) => {
@@ -1529,10 +1689,10 @@ export default function FinancePage() {
   }, [activeExpectedPayments]);
 
   const pipelineCreditExpectedPayments = useMemo(() => {
-    return activeExpectedPayments.filter(
+    return allActiveExpectedPayments.filter(
       (item) => safeStr(item?.expected_type).toLowerCase() === "pipeline_credit_topup"
     );
-  }, [activeExpectedPayments]);
+  }, [allActiveExpectedPayments]);
 
   const latestPipelineTopup = pipelineTopupResult || pipelineCreditExpectedPayments[0] || null;
   const pipelineCreditAccount = pipelineCreditStatus?.account || null;
@@ -1575,18 +1735,32 @@ export default function FinancePage() {
     );
   }, [activeExpectedPayments]);
 
+  const selectedCurrencyBorrowerLoans = useMemo(
+    () =>
+      borrowerLoans.filter((row) => {
+        const summary = loanSummaries[positiveNumber(row.id)];
+        return (
+          normalizeFinanceCurrency(
+            summary?.currency || row.currency,
+            crossCurrency
+          ) === crossCurrency
+        );
+      }),
+    [borrowerLoans, crossCurrency, loanSummaries]
+  );
+
   const borrowerRemainingTotal = useMemo(() => {
-    return borrowerLoans.reduce((sum, row) => {
+    return selectedCurrencyBorrowerLoans.reduce((sum, row) => {
       const summary = loanSummaries[positiveNumber(row.id)];
       return sum + parseMoneyNumber(summary?.remainingAmount);
     }, 0);
-  }, [borrowerLoans, loanSummaries]);
+  }, [loanSummaries, selectedCurrencyBorrowerLoans]);
 
   const borrowerRequestedTotal = useMemo(() => {
-    return borrowerLoans.reduce((sum, row) => {
+    return selectedCurrencyBorrowerLoans.reduce((sum, row) => {
       return sum + parseMoneyNumber(row.amount);
     }, 0);
-  }, [borrowerLoans]);
+  }, [selectedCurrencyBorrowerLoans]);
 
   const financeHelps = useMemo(() => {
     const rows: string[] = [];
@@ -1623,7 +1797,7 @@ export default function FinancePage() {
       );
     }
 
-    if (parseMoneyNumber(guarantorEarningsTotal) > 0) {
+    if (guarantorEarningsTotal > 0) {
       rows.push(
         `Earned supporter value: ${fmtMoney(
           guarantorEarningsTotal
@@ -1815,7 +1989,7 @@ export default function FinancePage() {
     ["Money out waiting", `${pendingWithdrawals} ${poolCurrency}`, "Outgoing money not completed yet."],
     ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
     ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
-    ["Support held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
+    ["Support held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed in this currency."],
     [
       "Support release records",
       `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`,
@@ -1843,14 +2017,14 @@ export default function FinancePage() {
   const communityMoneyContextRows: Array<[string, string]> = [
     ["Community", safeStr(clanLiquidity?.clanName || communityLabel)],
     ["Active loans", safeStr(clanLiquidity?.activeLoansCount ?? 0)],
-    ["Support committed", safeStr(clanLiquidity?.pledgedTotal || "0")],
-    ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0")],
-    ["Recorded release total", safeStr(clanLiquidity?.releasedTotal || "0")],
+    ["Support committed", safeStr(clanLiquidity?.pledgedTotal || "0") + " " + poolCurrency],
+    ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0") + " " + poolCurrency],
+    ["Recorded release total", safeStr(clanLiquidity?.releasedTotal || "0") + " " + poolCurrency],
     [
       "Note",
       safeStr(
         clanLiquidity?.note ||
-          "This shows the money context for this community."
+          "This shows the money context for this community and currency."
       ),
     ],
   ];
@@ -1934,6 +2108,22 @@ export default function FinancePage() {
 
   function openFinanceRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
+  }
+
+  function handleFinanceCurrencyChange(value: string) {
+    const nextCurrency = normalizeFinanceCurrency(value, selectedCurrency);
+    if (nextCurrency === selectedCurrency) return;
+
+    const query = new URLSearchParams(location.search);
+    query.set("currency", nextCurrency);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: `?${query.toString()}`,
+        hash: location.hash,
+      },
+      { replace: true }
+    );
   }
 
   async function copyPipelineTopupReference() {
@@ -2107,6 +2297,70 @@ export default function FinancePage() {
           display: isCompact && activeFinanceDetailLane ? "none" : undefined,
         }}
       >
+        <div
+          data-gsn-finance-currency-lane="selected"
+          style={{
+            marginBottom: isCompact ? 10 : 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "minmax(0, 1fr) 88px"
+              : "minmax(0, 1fr) 120px",
+            gap: 10,
+            alignItems: "center",
+            padding: isCompact ? "9px 10px" : "11px 14px",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.06)",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                color: "#FFFFFF",
+                fontSize: isCompact ? 13 : 14,
+                fontWeight: 950,
+              }}
+            >
+              Showing {selectedCurrency} records
+            </div>
+            <div
+              style={{
+                marginTop: 2,
+                color: "#D8E7F5",
+                fontSize: isCompact ? 11 : 12,
+                fontWeight: 750,
+                lineHeight: 1.35,
+              }}
+            >
+              Currencies stay separate. GSN does not combine or convert these balances.
+            </div>
+          </div>
+          <select
+            aria-label="Finance currency"
+            value={selectedCurrency}
+            onChange={(event) =>
+              handleFinanceCurrencyChange(event.target.value)
+            }
+            style={{
+              width: "100%",
+              minHeight: 42,
+              borderRadius: 12,
+              border: "1px solid rgba(214,170,69,0.72)",
+              background: "#FFFFFF",
+              color: "#0B2D4A",
+              padding: "0 10px",
+              fontSize: 14,
+              fontWeight: 950,
+            }}
+          >
+            {financeCurrencyOptions.map((currency) => (
+              <option key={currency} value={currency}>
+                {currency}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div
           style={{
             display: "grid",
@@ -2314,7 +2568,7 @@ export default function FinancePage() {
             {
               icon: "wallet" as FinanceGlyphName,
               label: "Visible balance",
-              value: fmtFinanceAmount(crossMembershipPool, crossCurrency),
+              value: fmtFinanceAmount(crossAvailableBalance, crossCurrency),
               note: `Set aside: ${fmtFinanceAmount(crossReservedPool, crossCurrency)}`,
             },
             {

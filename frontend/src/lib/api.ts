@@ -6647,9 +6647,13 @@ export async function getRevenueAllocation(loanId: number): Promise<any> {
 }
 
 export async function getMyGuarantorEarnings(
-  limit: number = 100
+  limit: number = 100,
+  currency?: string
 ): Promise<any> {
-  return httpJson(`/guarantor-earnings/me${buildQuery({ limit })}`, "GET");
+  return httpJson(
+    `/guarantor-earnings/me${buildQuery({ limit, currency })}`,
+    "GET"
+  );
 }
 
 export async function getSettlementConfig(): Promise<any> {

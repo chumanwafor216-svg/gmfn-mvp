@@ -1358,6 +1358,21 @@ Must show:
 
 Rules:
 - Finance must guide the user through one money lane at a time.
+- Finance must show one selected currency at a time. The saved preferred
+  currency chooses the initial lane only; a route `currency` choice overrides
+  it for the current view.
+- The currency control must remain compact and must list recorded currencies
+  separately. Finance must not add, convert, or relabel balances across
+  currencies. No exchange-rate or GBP-equivalent total is implied.
+- Pool balances, waiting money, borrower totals, supporter exposure,
+  supporter earnings, community liquidity, payment completion workload, and
+  recent money events must use the selected currency before Finance labels an
+  aggregate with that currency.
+- Legacy `ClanMembership.personal_pool_balance` is currency-untyped and must
+  not be used as the selected-currency visible balance. Use currency-scoped
+  pool-event totals instead.
+- Money In and other currency-aware payment routes opened from Finance must
+  inherit the selected currency rather than silently returning to NGN.
 - The Finance front desk must explain that GSN Finance is evidence and
   coordination infrastructure, not a bank, lender, wallet custodian, payment
   processor, or promise that money will move.

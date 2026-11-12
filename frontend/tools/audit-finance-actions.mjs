@@ -103,8 +103,8 @@ assertContains(
 );
 assertContains(
   "src/pages/FinancePage.tsx",
-  /\["Support committed", safeStr\(clanLiquidity\?\.pledgedTotal \|\| "0"\)\]/,
-  "Finance community money context must show committed support wording instead of pledged total wording."
+  /\["Support committed", safeStr\(clanLiquidity\?\.pledgedTotal \|\| "0"\) \+ " " \+ poolCurrency\]/,
+  "Finance community money context must show selected-currency committed support wording instead of an unlabelled pledged total."
 );
 
 assertNotContains(

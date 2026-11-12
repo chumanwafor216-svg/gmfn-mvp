@@ -60,6 +60,34 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
+  /getMySettings[\s\S]*?settings\?\.preferredCurrency[\s\S]*?getPoolMe\(selectedCurrency, 20, scopedClanOptions\)[\s\S]*?getPoolMeSummary\(selectedCurrency, \{[\s\S]*?include_all_currencies: true[\s\S]*?getMyGuarantorEarnings\(100, selectedCurrency\)[\s\S]*?getCommunityMoneySurface\([\s\S]*?selectedCurrency/,
+  "Finance must use the saved preference only to select a currency lane, then request pool, supporter earnings, and community money in that currency."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
+  /data-gsn-finance-currency-lane="selected"[\s\S]*?Showing \{selectedCurrency\} records[\s\S]*?Currencies stay separate\. GSN does not combine or convert these balances\.[\s\S]*?aria-label="Finance currency"[\s\S]*?financeCurrencyOptions\.map/,
+  "Finance must expose one compact selected-currency control and explicitly forbid combined or converted balances."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
+  /selectedCurrencyBorrowerLoans[\s\S]*?summary\?\.currency \|\| row\.currency[\s\S]*?borrowerRemainingTotal[\s\S]*?selectedCurrencyBorrowerLoans\.reduce[\s\S]*?borrowerRequestedTotal[\s\S]*?selectedCurrencyBorrowerLoans\.reduce/,
+  "Finance borrower aggregates must include only loans in the selected currency."
+);
+
+assertNotContains(
+  financeFile,
+  financeSource,
+  /getPoolMe\("NGN"|getPoolMeSummary\("NGN"|getCommunityMoneySurface\([^)]*"NGN"|crossMembershipPool|guarantorEarnings\?\.total_earned/g,
+  "Finance must not return to NGN-only requests, legacy untyped membership totals, or mixed supporter-earnings totals."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
   /Choose what you need now[\s\S]*?Open one finance lane at a time\. Keep the current money task focused\./,
   "Finance front tools must tell users to open one finance lane at a time and keep the current money task focused."
 );

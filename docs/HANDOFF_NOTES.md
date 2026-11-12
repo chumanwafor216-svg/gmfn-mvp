@@ -1,5 +1,31 @@
 # Active Handoff Notes
 
+## Finance selected-currency workbench - 2026-11-12
+
+- `/app/finance` no longer hardcodes NGN. It loads the saved preferred
+  currency as the initial lane, accepts a route `currency` override, and keeps
+  the user's choice in the URL.
+- The Finance hero now has one compact currency selector and states the truth:
+  currencies stay separate; GSN does not combine or convert balances.
+- Finance requests all recorded pool currencies for selector discovery, while
+  the visible pool totals, recent events, borrower aggregates, expected
+  payment workload, supporter earnings, supporter exposure, and community
+  liquidity are filtered to the selected currency.
+- Money In, Money Out, Payment Setup, and Payout Details links inherit the
+  selected currency. The legacy currency-untyped membership pool balance is no
+  longer used as Finance's visible balance.
+- `GET /guarantor-earnings/me`, `GET /guarantors/exposure/me`, and
+  `GET /analytics/clan-liquidity` now accept an optional `currency` query.
+  Omitting it preserves the prior all-currency response for older callers;
+  Finance always supplies it.
+- Community-wide liquidity money rows remain visible with their required
+  wording, but now carry the selected currency and are backed by a
+  currency-filtered API response.
+- Focused verification: 24 backend tests passed; TypeScript and focused ESLint
+  passed; Finance front-package, Finance actions, and surface-ownership audits
+  passed; Finance button inventory passed; backend compilation passed; the
+  production frontend build completed with 327 modules.
+
 ## Vault free-pilot fulfilment and simplified test journey - 2026-11-12
 
 - Supersedes the earlier same-day statement that `pilot` is preview-only. Current lifecycle truth: `shadow` remains quote-preview only; `pilot` may fulfil a connected service through an auditable zero-credit waiver; `enforced` is the only mode that may debit Pipeline Credits; `suspended` blocks new quote and fulfilment decisions.

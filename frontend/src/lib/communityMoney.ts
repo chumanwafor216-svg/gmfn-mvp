@@ -85,6 +85,7 @@ export type PaymentInstructionConfig = {
 export type GuarantorExposureSummary = {
   userId?: number | null;
   clanId?: number | null;
+  currency?: string | null;
   totalLocked: string;
   totalReleased: string;
   activeGuarantees: number;
@@ -95,6 +96,7 @@ export type GuarantorExposureSummary = {
 export type ClanLiquiditySummary = {
   clanId?: number | null;
   clanName?: string | null;
+  currency?: string | null;
   activeLoansCount?: number | null;
   pledgedTotal: string;
   lockedTotal: string;
@@ -521,6 +523,7 @@ function normalizeGuarantorExposure(raw: any): GuarantorExposureSummary | null {
   return {
     userId: Number.isFinite(Number(src?.user_id)) ? Number(src.user_id) : null,
     clanId: Number.isFinite(Number(src?.clan_id)) ? Number(src.clan_id) : null,
+    currency: firstTruthy(src?.currency),
     totalLocked: firstTruthy(src?.total_locked, "0"),
     totalReleased: firstTruthy(src?.total_released, "0"),
     activeGuarantees: Number.isFinite(Number(src?.active_guarantees))
@@ -541,6 +544,7 @@ function normalizeClanLiquidity(raw: any): ClanLiquiditySummary | null {
   return {
     clanId: Number.isFinite(Number(src?.clan_id)) ? Number(src.clan_id) : null,
     clanName: firstTruthy(src?.clan_name),
+    currency: firstTruthy(src?.currency),
     activeLoansCount: Number.isFinite(Number(src?.active_loans_count))
       ? Number(src.active_loans_count)
       : null,
@@ -809,16 +813,26 @@ export async function loadPoolState(
 }
 
 export async function getGuarantorExposureSummary(
-  clanId: number
+  clanId: number,
+  currency?: string
 ): Promise<GuarantorExposureSummary | null> {
-  const raw = await fetchJson("/guarantors/exposure/me", clanId).catch(() => null);
+  const query = currency
+    ? `?${new URLSearchParams({ currency }).toString()}`
+    : "";
+  const raw = await fetchJson(`/guarantors/exposure/me${query}`, clanId).catch(
+    () => null
+  );
   return normalizeGuarantorExposure(raw);
 }
 
 export async function getClanLiquiditySummary(
-  clanId: number
+  clanId: number,
+  currency?: string
 ): Promise<ClanLiquiditySummary | null> {
-  const raw = await fetchJson("/analytics/clan-liquidity", clanId).catch(
+  const query = currency
+    ? "?" + new URLSearchParams({ currency }).toString()
+    : "";
+  const raw = await fetchJson("/analytics/clan-liquidity" + query, clanId).catch(
     () => null
   );
   return normalizeClanLiquidity(raw);
@@ -1275,8 +1289,8 @@ export async function getCommunityMoneySurface(
     getPaymentRailContext("pool_withdrawal", currency, clanId).catch(() => null),
     loadCommunityDepositRoute(clanId, gmfnId, currency).catch(() => null),
     loadCommunityWithdrawalRoute(clanId, gmfnId, { currency }).catch(() => null),
-    getGuarantorExposureSummary(clanId).catch(() => null),
-    getClanLiquiditySummary(clanId).catch(() => null),
+    getGuarantorExposureSummary(clanId, currency).catch(() => null),
+    getClanLiquiditySummary(clanId, currency).catch(() => null),
   ]);
 
   return {

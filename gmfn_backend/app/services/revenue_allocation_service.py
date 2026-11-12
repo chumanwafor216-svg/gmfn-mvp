@@ -150,12 +150,26 @@ def get_loan_revenue_allocation(db: Session, *, loan_id: int) -> Dict[str, Any]:
     }
 
 
-def get_my_guarantor_earnings(db: Session, *, user_id: int, limit: int = 100) -> Dict[str, Any]:
-    rows = (
+def get_my_guarantor_earnings(
+    db: Session,
+    *,
+    user_id: int,
+    limit: int = 100,
+    currency: str | None = None,
+) -> Dict[str, Any]:
+    normalized_currency = str(currency or "").strip().upper() or None
+    query = (
         db.query(LoanGuarantor)
         .filter(LoanGuarantor.guarantor_user_id == int(user_id))
         .filter(LoanGuarantor.status == "approved")
-        .order_by(LoanGuarantor.id.desc())
+    )
+    if normalized_currency:
+        query = query.join(Loan, Loan.id == LoanGuarantor.loan_id).filter(
+            Loan.currency == normalized_currency
+        )
+
+    rows = (
+        query.order_by(LoanGuarantor.id.desc())
         .limit(int(max(1, min(limit, 500))))
         .all()
     )
@@ -212,6 +226,7 @@ def get_my_guarantor_earnings(db: Session, *, user_id: int, limit: int = 100) ->
 
     return {
         "user_id": int(user_id),
+        "currency": normalized_currency,
         "total_estimated": str(total_estimated),
         "total_earned": str(total_earned),
         "total_payable": str(total_earned),
