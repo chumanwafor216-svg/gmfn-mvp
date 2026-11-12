@@ -176,6 +176,9 @@ class ActivateApprovedMemberOut(BaseModel):
     next_action: Optional[str] = None
     next_action_label: Optional[str] = None
     next_action_path: Optional[str] = None
+    clan_id: Optional[int] = None
+    community_id: Optional[int] = None
+    community_name: Optional[str] = None
     access_token: str
     token_type: str = "bearer"
 
@@ -968,7 +971,7 @@ def activate_approved_member(
     if confirm_password and confirm_password != payload.password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    user, _destination_clan = _complete_account_activation(
+    user, destination_clan = _complete_account_activation(
         db,
         activation_token=payload.activation_token,
         password=payload.password,
@@ -984,6 +987,9 @@ def activate_approved_member(
         "display_name": getattr(user, "display_name", None),
         "nickname": getattr(user, "display_name", None),
         **_activation_phone_status(user),
+        "clan_id": int(destination_clan.id) if destination_clan is not None else None,
+        "community_id": int(destination_clan.id) if destination_clan is not None else None,
+        "community_name": getattr(destination_clan, "name", None),
         "access_token": access_token,
         "token_type": "bearer",
     }

@@ -376,6 +376,16 @@ export function publicApiUrl(pathOrUrl: string): string {
   return `${publicOrigin}${path}`;
 }
 
+export function publicIdentitySocialPreviewPath(gmfnId: string): string {
+  const memberId = cleanText(gmfnId);
+  return memberId ? `/share/id/${encodeURIComponent(memberId)}` : "";
+}
+
+export function publicIdentitySocialPreviewUrl(gmfnId: string): string {
+  const path = publicIdentitySocialPreviewPath(gmfnId);
+  return path ? publicApiUrl(path) : "";
+}
+
 export function publicShopSharePath(params: {
   gmfnId: string;
   productId?: string | number | null;

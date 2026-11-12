@@ -4,6 +4,7 @@ import {
   CardActionRow,
   PrimaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -704,10 +705,37 @@ export default function MemberActivationPage() {
   const [searchParams] = useSearchParams();
   const isCompact =
     typeof window !== "undefined" ? window.innerWidth <= 560 : false;
-  const selectedClanId = Number(getSelectedClanId() || 0);
+
+  const state =
+    (location.state as {
+      gmfn_id?: string;
+      request_id?: string;
+      activation_token?: string;
+      status_token?: string;
+      community_id?: string | number;
+      community_name?: string;
+    }) || {};
+  const intendedCommunityId = Number(
+    state.community_id || searchParams.get("community_id") || getSelectedClanId() || 0
+  );
+  const intendedCommunityName = safeStr(
+    state.community_name || searchParams.get("community_name") || ""
+  );
+  const [activatedCommunityId, setActivatedCommunityId] = useState(
+    Number.isFinite(intendedCommunityId) ? intendedCommunityId : 0
+  );
+  const [activatedCommunityName, setActivatedCommunityName] = useState(
+    intendedCommunityName
+  );
+  const selectedClanId = activatedCommunityId;
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "member-activation.route.dashboard"),
+      community: routeTarget(
+        "communityDetail",
+        selectedClanId,
+        "member-activation.route.community"
+      ),
       identityPhone: (() => {
         const identityPath = routeTarget(
           "cci",
@@ -735,14 +763,6 @@ export default function MemberActivationPage() {
     }),
     [selectedClanId]
   );
-
-  const state =
-    (location.state as {
-      gmfn_id?: string;
-      request_id?: string;
-      activation_token?: string;
-      status_token?: string;
-    }) || {};
 
   const initialGmfnId = safeStr(state.gmfn_id || searchParams.get("gmfn_id") || "");
   const initialRequestId = safeStr(
@@ -1190,10 +1210,23 @@ export default function MemberActivationPage() {
           me?.phone_verified_at
       );
       const needsPhoneVerification = !phoneVerified;
-      const nextMessage = needsPhoneVerification
-        ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
-        : "Membership activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
+      const destinationCommunityId = Number(
+        activationResult?.community_id ||
+          activationResult?.clan_id ||
+          intendedCommunityId ||
+          0
+      );
+      const destinationCommunityName = safeStr(
+        activationResult?.community_name || intendedCommunityName
+      );
+      const nextMessage = destinationCommunityName
+        ? `Membership active in ${destinationCommunityName}. Open the community to continue.`
+        : "Membership active. Open your community to continue.";
 
+      setActivatedCommunityId(
+        Number.isFinite(destinationCommunityId) ? destinationCommunityId : 0
+      );
+      setActivatedCommunityName(destinationCommunityName);
       setActivated(true);
       setPhoneVerificationRequired(needsPhoneVerification);
       setSuccess(nextMessage);
@@ -1797,41 +1830,64 @@ export default function MemberActivationPage() {
 
         {activated ? (
           <div style={{ display: "grid", gap: 12 }} data-gsn-activation-complete="true">
-          <GsnInstallPrompt
-            tone="dark"
-            compact={isCompact}
-            surface="member-activation-complete"
-          />
           <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
-              to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
+              to={routes.community}
               kind="primary"
+              debugId="member-activation.open-community"
+              style={postActivationLink(true)}
+            >
+              {activatedCommunityName
+                ? `Open ${activatedCommunityName}`
+                : "Open community"}
+            </StableCtaLink>
+            <StableCtaLink
+              to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
+              kind="secondary"
               debugId={
                 phoneVerificationRequired
                   ? "member-activation.verify-phone"
                   : "member-activation.set-recovery"
               }
-              style={postActivationLink(true)}
+              style={postActivationLink(false)}
             >
               {phoneVerificationRequired ? "Verify phone" : "Set recovery"}
             </StableCtaLink>
-            <StableCtaLink
-              to={routes.buildFirstCircle}
-              kind="secondary"
-              debugId="member-activation.build-first-circle"
-              style={postActivationLink(false)}
-            >
-              Build first circle
-            </StableCtaLink>
-            <StableCtaLink
-              to={routes.trust}
-              kind="secondary"
-              debugId="member-activation.trust"
-              style={postActivationLink(false)}
-            >
-              Open Trust Passport
-            </StableCtaLink>
           </CardActionRow>
+          <details>
+            <StableDisclosureSummary
+              debugId="member-activation.other-setup"
+              stableHeight={48}
+              style={postActivationLink(false)}
+            >
+              Other setup
+            </StableDisclosureSummary>
+            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+              <GsnInstallPrompt
+                tone="dark"
+                compact={isCompact}
+                surface="member-activation-complete"
+              />
+              <CardActionRow style={postActivationRow(isCompact)} align="center">
+                <StableCtaLink
+                  to={routes.buildFirstCircle}
+                  kind="secondary"
+                  debugId="member-activation.build-first-circle"
+                  style={postActivationLink(false)}
+                >
+                  Build first circle
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.trust}
+                  kind="secondary"
+                  debugId="member-activation.trust"
+                  style={postActivationLink(false)}
+                >
+                  Open Trust Passport
+                </StableCtaLink>
+              </CardActionRow>
+            </div>
+          </details>
           </div>
         ) : null}
       </div>

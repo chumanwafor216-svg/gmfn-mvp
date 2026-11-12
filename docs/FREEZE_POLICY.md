@@ -336,7 +336,7 @@ When possible, solve the task in route-local code instead of shared infrastructu
 Only escalate into frozen or high-risk files when the task genuinely cannot be solved safely elsewhere.
 
 ## GSN ID live-preview correction - 2026-11-12
-- Founder correction: Share live card may share only the stable public ID route so WhatsApp and other receivers can render one generic GSN preview card.
-- The preview must not include phone, ID-document, photo, TrustSlip-code, community, shop-name, or other personal evidence metadata.
+- Founder amendment: Share live card may use the route-local, read-only `/share/id/:gmfnId` social-preview gateway. Its only human handoff is the existing stable `/id/:gmfnId` public ID route; preview retrieval must not authenticate, create membership, accept invitations, consume invite uses, or record a human opening.
+- The preview may show only the member's public display name, member-chosen public profile portrait, and GSN ID. It must not include phone, ID-document image or number, TrustSlip code or status, community, shop, payment, admission, or other evidence metadata.
 - Tapping the preview opens the existing privacy-controlled public ID gateway, where current TrustSlip, explicitly published Shop/profile, and the official GSN website remain reachable.
-- The non-interactive privacy-safe PNG remains a separate Save picture action. Do not combine the PNG and URL in one share payload or restore the retired metadata paragraph.
+- The visible in-app QR and card destinations remain the stable public ID route. The non-interactive privacy-safe PNG remains a separate Save picture action. Do not combine the PNG and URL in one share payload or restore the retired metadata paragraph.

@@ -48,6 +48,7 @@ import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
 import {
   canonicalPublicFrontendUrl,
   publicCommunityMemberCredentialPath,
+  publicIdentitySocialPreviewUrl,
 } from "../lib/publicLinks";
 import {
   getContextualEvidencePosture,
@@ -2666,6 +2667,9 @@ export default function IdentityIntegrityPage() {
   const identityCardLiveUrl = identityCardLivePath
     ? canonicalPublicFrontendUrl(identityCardLivePath)
     : "";
+  const identityCardShareUrl = gmfnIdValue
+    ? publicIdentitySocialPreviewUrl(gmfnIdValue)
+    : "";
   const trustSlipVerifyUrl = trustSlipVerifyPath
     ? canonicalPublicFrontendUrl(trustSlipVerifyPath)
     : "";
@@ -3102,7 +3106,7 @@ export default function IdentityIntegrityPage() {
     showNotice("error", "GSN ID is not ready yet.");
   }
   async function shareGsnIdentityCard() {
-    if (!identityCardLiveUrl) {
+    if (!identityCardLiveUrl || !identityCardShareUrl) {
       showNotice("error", "GSN ID is not ready yet.");
       return;
     }
@@ -3111,8 +3115,8 @@ export default function IdentityIntegrityPage() {
     if (nativeShare) {
       try {
         await nativeShare.call(navigator, {
-          title: "GSN Identity Card",
-          url: identityCardLiveUrl,
+          title: "Open my GSN card",
+          url: identityCardShareUrl,
         });
         showNotice("success", "Share sheet opened with the live GSN Identity Card.");
         return;
@@ -3121,11 +3125,11 @@ export default function IdentityIntegrityPage() {
       }
     }
 
-    const copied = await safeCopy(identityCardLiveUrl);
+    const copied = await safeCopy(identityCardShareUrl);
     showNotice(
       copied ? "success" : "error",
       copied
-        ? "Live GSN Identity Card link copied. Paste it to show the branded preview."
+        ? "GSN card ready to paste."
         : "The live card could not be shared. Open the QR and try again."
     );
   }

@@ -86,6 +86,29 @@ def test_identifier_only_activation_is_rejected(client: TestClient):
     assert client.post("/auth/activate-approved-member", json=payload).status_code == 422
 
 
+def test_approved_member_activation_returns_intended_community(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
+    activation_token, _status_token = _seed_pending_member(with_join_request=True)
+
+    activated = client.post(
+        "/auth/activate-approved-member",
+        json={
+            "request_id": "1",
+            "activation_token": activation_token,
+            "password": "secret123",
+            "confirm_password": "secret123",
+        },
+    )
+
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["community_id"] == 1
+    assert activated.json()["clan_id"] == 1
+    assert activated.json()["community_name"] == "Security Test Circle"
+
+
 def test_request_bound_activation_entry_status_reports_pending_then_active(
     client: TestClient,
     monkeypatch,

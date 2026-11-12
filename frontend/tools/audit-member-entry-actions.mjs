@@ -105,14 +105,14 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"/,
+  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.open-community[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.other-setup[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"/,
   "Member Activation actions must remain traceable."
 );
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation-complete[\s\S]*?Verify phone[\s\S]*?Set recovery[\s\S]*?Build first circle/,
-  "Member Activation success must keep phone verification or private recovery as the next action, offer shortcut guidance, and retain First Circle after setup."
+  /Membership active in[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation\.open-community[\s\S]*?Verify phone[\s\S]*?Set recovery[\s\S]*?member-activation\.other-setup[\s\S]*?member-activation-complete[\s\S]*?Build first circle/,
+  "Member Activation success must prioritise the admitted member's Community Home, preserve phone or recovery security, and retain optional setup behind disclosure."
 );
 
 assertContains(

@@ -299,6 +299,22 @@ def _vault_request_card_url(request: Request, gmfn_id: str) -> str:
     return f"{base}{path}"
 
 
+def _identity_frontend_url(gmfn_id: str) -> str:
+    base = _public_frontend_origin()
+    path = f"/id/{quote(_safe_str(gmfn_id), safe='')}"
+    return f"{base}{path}"
+
+
+def _identity_share_page_url(request: Request, gmfn_id: str) -> str:
+    base = _public_api_origin(request)
+    path = f"/share/id/{quote(_safe_str(gmfn_id), safe='')}"
+    return f"{base}{path}"
+
+
+def _identity_share_card_url(request: Request, gmfn_id: str) -> str:
+    return f"{_identity_share_page_url(request, gmfn_id)}/card.png"
+
+
 def _join_frontend_url(
     code: str,
 ) -> str:
@@ -566,7 +582,6 @@ def _get_join_invite_context(
     community_code: str = "",
 ) -> tuple[Optional[Clan], Optional[ClanInvite]]:
     clean_code = _safe_str(code)
-    invite_row = None
     if clean_code:
         invite_row = (
             db.query(ClanInvite)
@@ -574,10 +589,16 @@ def _get_join_invite_context(
             .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
             .first()
         )
-        if invite_row is not None:
+        if invite_row is not None and _join_invite_is_available(invite_row):
             clan = db.get(Clan, int(invite_row.clan_id))
-            if clan is not None:
+            if clan is not None and _safe_str(getattr(clan, "status", "active")).lower() == "active":
+                supplied_community_code = _safe_str(community_code)
+                saved_community_code = _safe_str(getattr(clan, "community_code", None))
+                if supplied_community_code and supplied_community_code != saved_community_code:
+                    return None, None
                 return clan, invite_row
+        if invite_row is not None:
+            return None, None
 
         legacy_clan = (
             db.query(Clan)
@@ -585,21 +606,61 @@ def _get_join_invite_context(
             .order_by(Clan.id.desc())
             .first()
         )
-        if legacy_clan is not None:
+        if legacy_clan is not None and _legacy_join_invite_is_available(legacy_clan):
+            supplied_community_code = _safe_str(community_code)
+            saved_community_code = _safe_str(getattr(legacy_clan, "community_code", None))
+            if supplied_community_code and supplied_community_code != saved_community_code:
+                return None, None
             return legacy_clan, None
 
-    clean_community_code = _safe_str(community_code)
-    if clean_community_code:
-        clan = (
-            db.query(Clan)
-            .filter(Clan.community_code == clean_community_code)
-            .order_by(Clan.id.desc())
-            .first()
-        )
-        if clan is not None:
-            return clan, invite_row
+    return None, None
 
-    return None, invite_row
+
+def _utc_datetime(value: Any) -> Optional[datetime]:
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _join_invite_is_available(invite: ClanInvite) -> bool:
+    if not bool(getattr(invite, "is_active", False)):
+        return False
+    if getattr(invite, "revoked_at", None) is not None:
+        return False
+    expires_at = _utc_datetime(getattr(invite, "expires_at", None))
+    if expires_at is not None and expires_at < datetime.now(timezone.utc):
+        return False
+    max_uses = int(getattr(invite, "max_uses", 0) or 0)
+    uses = int(getattr(invite, "uses", 0) or 0)
+    return max_uses <= 0 or uses < max_uses
+
+
+def _legacy_join_invite_is_available(clan: Clan) -> bool:
+    if _safe_str(getattr(clan, "status", "active")).lower() != "active":
+        return False
+    expires_at = _utc_datetime(getattr(clan, "invite_expires_at", None))
+    if expires_at is not None and expires_at < datetime.now(timezone.utc):
+        return False
+    max_uses = int(getattr(clan, "invite_max_uses", 0) or 0)
+    uses = int(getattr(clan, "invite_uses", 0) or 0)
+    return max_uses <= 0 or uses < max_uses
+
+
+def _public_join_inviter_name(user: Optional[User]) -> str:
+    if user is None:
+        return ""
+    for raw_value in (
+        getattr(user, "display_name", None),
+        getattr(user, "name", None),
+        getattr(user, "full_name", None),
+    ):
+        value = _safe_str(raw_value)
+        digits = "".join(character for character in value if character.isdigit())
+        if value and "@" not in value and len(digits) < 7:
+            return value
+    return "A GSN member"
 
 
 def _join_invite_preview_payload(
@@ -616,8 +677,14 @@ def _join_invite_preview_payload(
     inviter = None
     shop = None
     product = None
+    if clan is not None:
+        inviter_user_id = int(
+            getattr(invite_row, "created_by_user_id", 0)
+            or getattr(clan, "created_by_user_id", 0)
+            or 0
+        )
+        inviter = db.get(User, inviter_user_id) if inviter_user_id else None
     if clan is not None and invite_row is not None:
-        inviter = db.get(User, int(invite_row.created_by_user_id))
         shop = (
             db.query(MarketplaceShop)
             .filter(MarketplaceShop.clan_id == int(clan.id))
@@ -638,10 +705,39 @@ def _join_invite_preview_payload(
                 .first()
             )
 
-    resolved_community_code = _safe_str(getattr(clan, "community_code", None)) or _safe_str(community_code) or "GSN INVITE"
+    if clan is None:
+        return {
+            "gmfn_id": "",
+            "owner_name": "GSN",
+            "shop_name": "Community invitation",
+            "product_line": "Check whether this invitation is still available",
+            "trust_line": "Invitation unavailable or expired",
+            "title": "GSN community invitation",
+            "description": "Open GSN to check whether this invitation is still available.",
+            "price": "",
+            "target_url": _join_frontend_url(code),
+            "community_name": "",
+            "marketplace_name": "",
+            "invite_code": _safe_str(code),
+            "hero_image_url": "",
+            "card_label": "Invitation",
+            "cta_label": "CHECK INVITATION",
+        }
+
+    resolved_community_code = _safe_str(getattr(clan, "community_code", None))
     community_name = _safe_str(getattr(clan, "name", None), "GSN community")
     marketplace_name = _safe_str(getattr(clan, "marketplace_name", None)) or community_name
-    inviter_name = _safe_str(getattr(inviter, "display_name", None))
+    inviter_name = _public_join_inviter_name(inviter)
+    saved_admission_mode = _safe_str(
+        getattr(invite_row, "admission_mode", None)
+        if invite_row is not None
+        else getattr(clan, "admission_mode", None)
+    ).lower()
+    admission_mode = (
+        saved_admission_mode
+        if saved_admission_mode in {"instant_invite", "admin_approval", "community_vote"}
+        else "community_vote"
+    )
     shop_name = marketplace_name
     product_line = "Come and join me on GSN" if inviter_name else "Join this GSN community"
     title = (
@@ -649,7 +745,18 @@ def _join_invite_preview_payload(
         if inviter_name
         else f"Invitation to join {marketplace_name} on GSN"
     )
-    description = "Open to request access. Approval is required."
+    if admission_mode == "instant_invite":
+        description = "Open to join this GSN community. No approval wait."
+        trust_line = "Invitation - no approval wait"
+        card_label = "Invitation"
+    elif admission_mode == "admin_approval":
+        description = "Open to request access. A community administrator must approve it."
+        trust_line = "Request access - administrator approval"
+        card_label = "Join request"
+    else:
+        description = "Open to request access. Community approval is required."
+        trust_line = "Request access - community approval"
+        card_label = "Join request"
     target_url = _join_frontend_url(code)
     hero_image_url = (
         _safe_str(getattr(shop, "image_url", None))
@@ -661,7 +768,7 @@ def _join_invite_preview_payload(
         "owner_name": inviter_name or "A known GSN member",
         "shop_name": shop_name,
         "product_line": product_line,
-        "trust_line": "Request access - approval required",
+        "trust_line": trust_line,
         "title": title,
         "description": description,
         "price": _money_text(product),
@@ -670,6 +777,8 @@ def _join_invite_preview_payload(
         "marketplace_name": marketplace_name,
         "invite_code": _safe_str(code),
         "hero_image_url": hero_image_url,
+        "card_label": card_label,
+        "cta_label": "OPEN INVITATION",
     }
 
 
@@ -772,6 +881,26 @@ def _preview_payload(
         "description": description,
         "price": _money_text(product),
         "hero_image_url": hero_image_url,
+    }
+
+
+def _identity_preview_payload(db: Session, *, gmfn_id: str) -> dict[str, str]:
+    owner = _get_share_owner(db, gmfn_id)
+    if owner is None:
+        raise HTTPException(status_code=404, detail="GSN ID not found.")
+
+    owner_id = _safe_str(getattr(owner, "gmfn_id", None)).upper()
+    if not owner_id:
+        raise HTTPException(status_code=404, detail="GSN ID not found.")
+
+    display_name = _public_join_inviter_name(owner) or "GSN member"
+    return {
+        "gmfn_id": owner_id,
+        "display_name": display_name,
+        "profile_image_url": _safe_str(getattr(owner, "profile_image_url", None)),
+        "title": "Open my GSN card",
+        "description": f"{display_name} shared a GSN identity card with you.",
+        "target_url": _identity_frontend_url(owner_id),
     }
 
 
@@ -1012,6 +1141,44 @@ def _share_card_hero(value: Any, size: tuple[int, int]) -> Optional[Image.Image]
                 size,
                 method=Image.Resampling.LANCZOS,
                 centering=(0.5, 0.42),
+            ).convert("RGBA")
+    except Exception:
+        return None
+
+
+def _identity_profile_hero(value: Any, size: tuple[int, int]) -> Optional[Image.Image]:
+    path = urlsplit(_safe_str(value)).path.replace("\\", "/")
+    allowed_prefix = "/uploads/profile/users/"
+    if not path.startswith(allowed_prefix):
+        return None
+
+    relative = path[len("/uploads/") :].lstrip("/")
+    relative_parts = Path(relative).parts
+    if (
+        not relative
+        or any(part in {"", ".", ".."} for part in relative_parts)
+        or Path(relative).name != Path(path).name
+    ):
+        return None
+
+    try:
+        root = Path(_safe_str(os.getenv("GMFN_UPLOADS_DIR", "uploads"), "uploads")).expanduser().resolve()
+        candidate = (root / relative).resolve()
+        candidate.relative_to(root)
+    except Exception:
+        return None
+
+    if not candidate.is_file():
+        return None
+
+    try:
+        with Image.open(candidate) as source:
+            prepared = ImageOps.exif_transpose(source).convert("RGB")
+            return ImageOps.fit(
+                prepared,
+                size,
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.34),
             ).convert("RGBA")
     except Exception:
         return None
@@ -1373,6 +1540,162 @@ def _draw_public_shop_share_card_png(payload: dict[str, str]) -> bytes:
     return out.getvalue()
 
 
+def _identity_initials(value: str) -> str:
+    words = [word for word in _safe_str(value).split() if word]
+    initials = "".join(word[0] for word in words[:2]).upper()
+    return initials or "GSN"
+
+
+def _draw_identity_share_card_png(payload: dict[str, str]) -> bytes:
+    image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#EAF2F8")
+    shadow = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        (48, 58, 1152, 600),
+        radius=42,
+        fill=(0, 0, 0, 82),
+    )
+    image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(18)))
+
+    card_box = (44, 42, 1156, 588)
+    card = _gradient_card((card_box[2] - card_box[0], card_box[3] - card_box[1]))
+    card_mask = Image.new("L", card.size, 0)
+    ImageDraw.Draw(card_mask).rounded_rectangle(
+        (0, 0, card.size[0], card.size[1]),
+        radius=42,
+        fill=255,
+    )
+    image.paste(card, card_box[:2], card_mask)
+    draw = ImageDraw.Draw(image, "RGBA")
+    draw.rounded_rectangle(card_box, radius=42, outline="#D6AA45", width=4)
+
+    draw.rounded_rectangle((82, 76, 218, 130), radius=27, fill="#F7FAFF")
+    draw.text((116, 91), "GSN", font=_font(25, bold=True), fill="#B78321")
+    draw.text(
+        (244, 92),
+        "GLOBAL SUPPORT NETWORK",
+        font=_font(22, bold=True),
+        fill="#F2CF77",
+    )
+    draw.text(
+        (826, 94),
+        "PEOPLE  |  TRUST  |  OPPORTUNITY",
+        font=_font(16, bold=True),
+        fill="#D8E7F5",
+    )
+
+    photo_box = (82, 158, 394, 496)
+    photo_size = (photo_box[2] - photo_box[0], photo_box[3] - photo_box[1])
+    portrait = _identity_profile_hero(payload.get("profile_image_url"), photo_size)
+    photo_mask = Image.new("L", photo_size, 0)
+    ImageDraw.Draw(photo_mask).rounded_rectangle(
+        (0, 0, photo_size[0], photo_size[1]),
+        radius=34,
+        fill=255,
+    )
+    if portrait is not None:
+        image.paste(portrait, photo_box[:2], photo_mask)
+    else:
+        placeholder = Image.new("RGBA", photo_size, "#12314D")
+        placeholder_draw = ImageDraw.Draw(placeholder)
+        initials = _identity_initials(payload["display_name"])
+        initials_font = _font(82, bold=True)
+        initials_box = placeholder_draw.textbbox((0, 0), initials, font=initials_font)
+        initials_x = (photo_size[0] - (initials_box[2] - initials_box[0])) / 2
+        initials_y = (photo_size[1] - (initials_box[3] - initials_box[1])) / 2 - 10
+        placeholder_draw.text(
+            (initials_x, initials_y),
+            initials,
+            font=initials_font,
+            fill="#FFFFFF",
+        )
+        image.paste(placeholder, photo_box[:2], photo_mask)
+    draw = ImageDraw.Draw(image, "RGBA")
+    draw.rounded_rectangle(photo_box, radius=34, outline="#F2C766", width=5)
+
+    content_x = 446
+    draw.text(
+        (content_x, 166),
+        "NETWORK MEMBER",
+        font=_font(22, bold=True),
+        fill="#F2CF77",
+    )
+    name_font = _font(58, bold=True)
+    name_lines = _png_text_lines(
+        payload["display_name"],
+        draw=draw,
+        font=name_font,
+        max_width=650,
+        max_lines=2,
+    )
+    after_name = _draw_lines(
+        draw,
+        name_lines,
+        x=content_x,
+        y=202,
+        font=name_font,
+        fill="#FFFFFF",
+        gap=2,
+    )
+
+    id_label_y = min(max(after_name + 20, 324), 350)
+    draw.text(
+        (content_x, id_label_y),
+        "GSN ID",
+        font=_font(21, bold=True),
+        fill="#AFC4D8",
+    )
+    draw.text(
+        (content_x, id_label_y + 34),
+        payload["gmfn_id"],
+        font=_font(35, bold=True),
+        fill="#F6D276",
+    )
+
+    draw.rounded_rectangle(
+        (content_x, 418, 824, 466),
+        radius=24,
+        fill=(33, 84, 126, 122),
+        outline="#7DD3FC",
+        width=3,
+    )
+    draw.text(
+        (content_x + 24, 431),
+        "GSN IDENTITY REFERENCE",
+        font=_font(19, bold=True),
+        fill="#FFFFFF",
+    )
+
+    cta_label = "OPEN MY GSN CARD"
+    cta_font = _font(25, bold=True)
+    cta_width = int(_text_width(draw, cta_label, cta_font)) + 92
+    draw.rounded_rectangle(
+        (content_x, 486, content_x + cta_width, 544),
+        radius=29,
+        fill="#F2C766",
+    )
+    draw.text(
+        (content_x + 30, 502),
+        cta_label,
+        font=cta_font,
+        fill="#07172C",
+    )
+    arrow_x = content_x + cta_width - 42
+    draw.line((arrow_x - 15, 515, arrow_x + 10, 515), fill="#07172C", width=5)
+    draw.line((arrow_x, 505, arrow_x + 12, 515, arrow_x, 525), fill="#07172C", width=5, joint="curve")
+
+    boundary = "GSN membership reference. Not government ID, credit approval, payment guarantee, or future behaviour proof."
+    draw.text(
+        (82, 550),
+        boundary,
+        font=_font(16, bold=True),
+        fill="#D8E7F5",
+    )
+
+    out = BytesIO()
+    image.convert("RGB").save(out, format="PNG", optimize=True)
+    return out.getvalue()
+
+
 def _draw_trustslip_card_png(payload: dict[str, str]) -> bytes:
     image = _gradient_card((CARD_WIDTH, CARD_HEIGHT))
     draw = ImageDraw.Draw(image)
@@ -1425,6 +1748,82 @@ def _draw_trustslip_card_png(payload: dict[str, str]) -> bytes:
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
+
+
+@router.get("/id/{gmfn_id}", response_class=HTMLResponse)
+def public_identity_share_preview(
+    gmfn_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    payload = _identity_preview_payload(db, gmfn_id=gmfn_id)
+    share_url = _identity_share_page_url(request, payload["gmfn_id"])
+    image_url = _identity_share_card_url(request, payload["gmfn_id"])
+    title = escape(payload["title"])
+    description = escape(payload["description"])
+    target = escape(payload["target_url"], quote=True)
+
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{escape(share_url, quote=True)}" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Global Support Network" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{escape(share_url, quote=True)}" />
+    <meta property="og:image" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN identity card" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
+    <meta http-equiv="refresh" content="0;url={target}" />
+    <style>
+      body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
+      main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
+      a {{ display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 0 24px; border-radius: 24px; background: #D6AA45; color: #07172C; font-weight: 900; text-decoration: none; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Opening this GSN card...</p>
+      <p><a href="{target}">Continue to GSN</a></p>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(
+        content=html,
+        headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.get("/id/{gmfn_id}/card.png")
+def public_identity_share_card_png(
+    gmfn_id: str,
+    db: Session = Depends(get_db),
+) -> Response:
+    payload = _identity_preview_payload(db, gmfn_id=gmfn_id)
+    png = _draw_identity_share_card_png(payload)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @router.get("/trustslip/{share_ref}", response_class=HTMLResponse)
@@ -1592,8 +1991,8 @@ def public_join_invite_share_card_png(
         target_url=payload["target_url"],
         block=None,
         eyebrow="GSN INVITE",
-        block_label_override="Join request",
-        cta_label="OPEN INVITATION",
+        block_label_override=payload["card_label"],
+        cta_label=payload["cta_label"],
     )
     return Response(
         content=png,

@@ -1242,11 +1242,17 @@ function CompactInviteWelcome({
   inviterLabel,
   inviteChecking,
   inviteReady,
+  inviteBlocked,
+  inviteMessage,
+  isInstantJoin,
 }: {
   communityName: string;
   inviterLabel: string;
   inviteChecking: boolean;
   inviteReady: boolean;
+  inviteBlocked: boolean;
+  inviteMessage: string;
+  isInstantJoin: boolean;
 }) {
   const safeCommunityName = cleanText(communityName) || "this GSN community";
 
@@ -1283,7 +1289,7 @@ function CompactInviteWelcome({
             letterSpacing: -0.6,
           }}
         >
-          You&apos;re Invited!
+          {inviteBlocked ? "Invitation unavailable" : "You are invited"}
         </h1>
         <div
           style={{
@@ -1294,13 +1300,17 @@ function CompactInviteWelcome({
             color: "#EAF3FF",
           }}
         >
-          Join {safeCommunityName} on GSN
+          {inviteBlocked ? (
+            "Ask for a fresh GSN invitation"
+          ) : (
+            <>Join {safeCommunityName} on GSN</>
+          )}
         </div>
       </div>
 
       <div style={{ padding: "20px 18px 18px", textAlign: "center" }}>
         <div style={{ color: "#64748B", fontSize: 13, fontWeight: 800 }}>
-          Invited by: {inviterLabel}
+          Invited by {inviterLabel}
         </div>
         <h2
           style={{
@@ -1311,7 +1321,11 @@ function CompactInviteWelcome({
             fontWeight: 1000,
           }}
         >
-          Welcome to your community
+          {inviteBlocked
+            ? "This invitation cannot be used"
+            : isInstantJoin
+              ? "Membership starts after account setup"
+              : "The community reviews your request"}
         </h2>
         <p
           style={{
@@ -1323,8 +1337,25 @@ function CompactInviteWelcome({
             fontWeight: 700,
           }}
         >
-          Join to connect, showcase your business and discover opportunities.
+          {inviteBlocked
+            ? inviteMessage
+            : isInstantJoin
+              ? "Accepting this invitation joins the community."
+              : "Submitting this form sends a request for approval."}
         </p>
+        {!inviteBlocked ? (
+          <div
+            style={{
+              margin: "12px auto 0",
+              color: "#0B1F33",
+              fontSize: 13,
+              lineHeight: 1.45,
+              fontWeight: 900,
+            }}
+          >
+            Free to join. No payment required.
+          </div>
+        ) : null}
         {inviteChecking || inviteReady ? (
           <div
             style={{
@@ -1353,10 +1384,12 @@ function CompactInviteWelcome({
 function CommunityInviteQr({
   inviteUrl,
   communityName,
+  isInstantJoin,
   compact = false,
 }: {
   inviteUrl: string;
   communityName: string;
+  isInstantJoin: boolean;
   compact?: boolean;
 }) {
   const safeCommunityName = cleanText(communityName) || "this GSN community";
@@ -1407,7 +1440,9 @@ function CommunityInviteQr({
           textAlign: "center",
         }}
       >
-        Scan to open this same invitation for {safeCommunityName}. Community approval is still required.
+        Scan to open this same invitation for {safeCommunityName}. {isInstantJoin
+          ? "No approval wait applies."
+          : "Community approval is required."}
       </div>
     </div>
   );
@@ -1730,13 +1765,13 @@ export default function JoinEntryPage() {
     Boolean(inviteCode) || Boolean(restoredJoinDraft?.inviteAcknowledged)
   );
   const [formOpen, setFormOpen] = useState<boolean>(() => {
-    if (!restoredJoinDraftHasInput) return false;
+    if (!restoredJoinDraftHasInput) return Boolean(inviteCode);
     return restoredJoinDraft?.formOpen !== false;
   });
   const [joinPathChoice, setJoinPathChoice] = useState<JoinPathChoice>(() => {
     if (cleanText(restoredJoinDraft?.existingGsnId || "")) return "existing";
     if (restoredJoinDraftHasInput && restoredJoinDraft?.formOpen !== false) return "new";
-    return null;
+    return inviteCode ? "new" : null;
   });
   const newRequestFormRef = useRef<HTMLFormElement>(null);
   const shouldRevealNewRequestFormRef = useRef(false);
@@ -1847,8 +1882,9 @@ export default function JoinEntryPage() {
     invitePreview?.admission_mode || "community_vote"
   ).toLowerCase();
   const isInstantJoin = inviteAdmissionMode === "instant_invite";
-  const joinActionLabel = isInstantJoin ? "Accept invite" : "Request access";
-  const compactJoinActionLabel = isInstantJoin ? "Join Community" : "Request to Join";
+  const joinActionLabel = isInstantJoin
+    ? "Accept invite and join"
+    : "Submit request for approval";
 
   const inviteGovernanceTitle = useMemo(() => {
     if (!inviteGovernanceProfile) return "";
@@ -2031,7 +2067,7 @@ export default function JoinEntryPage() {
   );
   const alreadyMemberCta = useMemo(
     () =>
-      resolveCtaTarget("marketplace", {
+      resolveCtaTarget("communityDetail", {
         communityId: cleanText(success?.community_id || ""),
         debugId: "join-entry.open-community",
       }),
@@ -2116,6 +2152,8 @@ export default function JoinEntryPage() {
             request_id: requestId,
             activation_token: activationToken || undefined,
             status_token: statusToken || undefined,
+            community_id: cleanText(result?.community_id || ""),
+            community_name: community,
           },
         });
         return true;
@@ -3112,6 +3150,7 @@ export default function JoinEntryPage() {
                     <CommunityInviteQr
                       inviteUrl={communityQrInviteUrl}
                       communityName={resolvedCommunityName}
+                      isInstantJoin={isInstantJoin}
                     />
                   ) : null}
                   <div
@@ -3196,6 +3235,7 @@ export default function JoinEntryPage() {
                           <CommunityInviteQr
                             inviteUrl={communityQrInviteUrl}
                             communityName={resolvedCommunityName}
+                            isInstantJoin={isInstantJoin}
                             compact
                           />
                         ) : null}
@@ -3251,35 +3291,9 @@ export default function JoinEntryPage() {
                   </span>
                 </label>
               ) : null}
-              {!inviteAcknowledged ? (
-                <div style={{ marginTop: 18 }}>
-                  <PrimaryButton
-                    type="button"
-                    disabled={!canOpenForm}
-                    onClick={() => {
-                      if (!canOpenForm) return;
-                      setInviteAcknowledged(true);
-                      setJoinPathChoice("new");
-                      setFormOpen(true);
-                    }}
-                    debugId="join-entry.acknowledge-invite"
-                    stableHeight={52}
-                    style={{
-                      ...entryChoiceActionStyle("primary"),
-                      width: "min(100%, 420px)",
-                    }}
-                  >
-                    {joinEntryIconText(
-                      "navigation",
-                      inviteChecking ? "Checking invite..." : "Continue"
-                    )}
-                  </PrimaryButton>
-                </div>
-              ) : null}
             </div>
           </div>
 
-          {inviteAcknowledged ? (
           <div
             style={{
               ...pageCard(),
@@ -3294,6 +3308,9 @@ export default function JoinEntryPage() {
                   inviterLabel={inviterLabel}
                   inviteChecking={inviteChecking}
                   inviteReady={inviteReady}
+                  inviteBlocked={inviteBlocked}
+                  inviteMessage={inviteHelpMessage}
+                  isInstantJoin={isInstantJoin}
                 />
                 {communityQrInviteUrl ? (
                   <details style={{ marginTop: 12 }}>
@@ -3307,6 +3324,7 @@ export default function JoinEntryPage() {
                     <CommunityInviteQr
                       inviteUrl={communityQrInviteUrl}
                       communityName={resolvedCommunityName}
+                      isInstantJoin={isInstantJoin}
                       compact
                     />
                   </details>
@@ -3484,7 +3502,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("primary")}
                   >
-                    {joinEntryIconText("id", "Join with GSN ID")}
+                    {joinEntryIconText("id", joinActionLabel)}
                   </PrimaryButton>
                 </div>
               </div>
@@ -3571,32 +3589,30 @@ export default function JoinEntryPage() {
                       isCompact ? "Already on GSN? Sign in" : "Sign in"
                     )}
                   </StableCtaLink>
-                  <SecondaryButton
-                    type="button"
-                    disabled={!canOpenForm}
-                    onClick={chooseNewRequesterPath}
-                    debugId="join-entry.toggle-new-member-request-form"
-                    aria-controls="join-entry-new-request-form"
-                    aria-expanded={formOpen && joinPathChoice === "new"}
-                    stableHeight={52}
-                    style={{
-                      ...entryChoiceActionStyle(
-                        isCompact || joinPathChoice === "new" ? "primary" : "secondary"
-                      ),
-                      order: isCompact ? 1 : 2,
-                      opacity: canOpenForm ? 1 : 0.62,
-                      cursor: canOpenForm ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    {joinEntryIconText(
-                      "join-person-plus",
-                      inviteChecking
-                        ? "Checking"
-                        : isCompact
-                          ? compactJoinActionLabel
-                          : joinActionLabel
-                    )}
-                  </SecondaryButton>
+                  {formOpen && joinPathChoice === "new" ? null : (
+                    <SecondaryButton
+                      type="button"
+                      disabled={!canOpenForm}
+                      onClick={chooseNewRequesterPath}
+                      debugId="join-entry.toggle-new-member-request-form"
+                      aria-controls="join-entry-new-request-form"
+                      aria-expanded={formOpen && joinPathChoice === "new"}
+                      stableHeight={52}
+                      style={{
+                        ...entryChoiceActionStyle(
+                          isCompact || joinPathChoice === "new" ? "primary" : "secondary"
+                        ),
+                        order: isCompact ? 1 : 2,
+                        opacity: canOpenForm ? 1 : 0.62,
+                        cursor: canOpenForm ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      {joinEntryIconText(
+                        "join-person-plus",
+                        inviteChecking ? "Checking" : joinActionLabel
+                      )}
+                    </SecondaryButton>
+                  )}
                 </div>
 
                 <details style={{ marginTop: 2 }}>
@@ -3744,7 +3760,7 @@ export default function JoinEntryPage() {
                               : "not-allowed",
                         }}
                       >
-                        {joinEntryIconText("id", "Send with GSN ID")}
+                        {joinEntryIconText("id", joinActionLabel)}
                       </PrimaryButton>
                       <SecondaryButton
                         type="button"
@@ -3787,7 +3803,7 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {!inviteCode || inviteBlocked ? (
+            {!inviteCode || (!isCompact && inviteBlocked) ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 <div style={{ fontWeight: 1000, marginBottom: 8 }}>
                   {inviteBlocked ? "Fresh invite link needed." : "Invite code or join link needed."}
@@ -4163,7 +4179,7 @@ export default function JoinEntryPage() {
                 >
                   {joinEntryIconText(
                     "join-person-plus",
-                    isCompact ? compactJoinActionLabel : "Submit request"
+                    joinActionLabel
                   )}
                 </PrimaryButton>
               </div>
@@ -4218,22 +4234,9 @@ export default function JoinEntryPage() {
                     ) : null}
                   </div>
                 </details>
-                <div
-                  style={{
-                    marginTop: 14,
-                    textAlign: "center",
-                    color: "#64748B",
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    fontWeight: 850,
-                  }}
-                >
-                  Free to join. No payment required
-                </div>
               </>
             ) : null}
           </div>
-          ) : null}
         </div>
 
         <div

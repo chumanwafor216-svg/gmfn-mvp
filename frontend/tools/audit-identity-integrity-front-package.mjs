@@ -335,8 +335,8 @@ assertContains(
 );
 
 assertContains(
-  /identityCardLivePath[\s\S]*?gmfnIdValue[\s\S]*?`\/id\/\$\{encodeURIComponent\(gmfnIdValue\)\}`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl/,
-  "GSN Identity Card must keep a stable GSN-ID live target while TrustSlip verification remains a separate optional /lite target."
+  /identityCardLivePath[\s\S]*?gmfnIdValue[\s\S]*?`\/id\/\$\{encodeURIComponent\(gmfnIdValue\)\}`[\s\S]*?identityCardLiveUrl[\s\S]*?identityCardShareUrl[\s\S]*?publicIdentitySocialPreviewUrl\(gmfnIdValue\)[\s\S]*?trustSlipVerifyUrl/,
+  "GSN Identity Card must keep its stable direct ID target while sharing through the read-only social-preview gateway."
 );
 
 assertContains(
@@ -355,8 +355,8 @@ assertContains(
 );
 
 assertContains(
-  /async function shareGsnIdentityCard\(\)[\s\S]*?title: "GSN Identity Card"[\s\S]*?url: identityCardLiveUrl[\s\S]*?Share sheet opened with the live GSN Identity Card[\s\S]*?async function saveGsnIdentityCardPicture\(\)[\s\S]*?cardStatus: "GSN Identity Reference"[\s\S]*?qrDataUrl: ""[\s\S]*?privacySafe: true[\s\S]*?downloadGsnIdentityCardFile\(cardImage\)/,
-  "GSN Identity Card sharing must use one live preview URL while keeping the privacy-safe standalone PNG as an explicit save action."
+  /async function shareGsnIdentityCard\(\)[\s\S]*?title: "Open my GSN card"[\s\S]*?url: identityCardShareUrl[\s\S]*?Share sheet opened with the live GSN Identity Card[\s\S]*?async function saveGsnIdentityCardPicture\(\)[\s\S]*?cardStatus: "GSN Identity Reference"[\s\S]*?qrDataUrl: ""[\s\S]*?privacySafe: true[\s\S]*?downloadGsnIdentityCardFile\(cardImage\)/,
+  "GSN Identity Card sharing must use the personalized read-only preview while keeping the privacy-safe standalone PNG as an explicit save action."
 );
 
 assertNotContains(
@@ -365,8 +365,8 @@ assertNotContains(
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?navigator\.share[\s\S]*?url: identityCardLiveUrl[\s\S]*?safeCopy\(identityCardLiveUrl\)[\s\S]*?debugId="identity-integrity\.gsn-card\.save-picture"/,
-  "GSN Identity Card must share its stable live gateway and retain a separate privacy-safe picture download without rebuilding the old metadata paragraph."
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl \|\| !identityCardShareUrl[\s\S]*?navigator\.share[\s\S]*?url: identityCardShareUrl[\s\S]*?safeCopy\(identityCardShareUrl\)[\s\S]*?debugId="identity-integrity\.gsn-card\.save-picture"/,
+  "GSN Identity Card must share its read-only preview gateway and retain a separate privacy-safe picture download without rebuilding the old metadata paragraph."
 );
 
 assertContains(

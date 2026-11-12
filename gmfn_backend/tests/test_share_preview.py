@@ -219,6 +219,108 @@ def _seed_other_holder_community():
         community_code="GMFN-C-OTHER-HOLDER",
     )
 
+
+def test_share_identity_preview_is_read_only_and_privacy_bounded(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    _seed_public_shop()
+
+    with engine.begin() as conn:
+        before = {
+            "users": conn.execute(text("SELECT COUNT(*) FROM users")).scalar_one(),
+            "memberships": conn.execute(text("SELECT COUNT(*) FROM clan_memberships")).scalar_one(),
+            "invite_uses": conn.execute(
+                text("SELECT uses FROM clan_invites WHERE code = 'share-invite'")
+            ).scalar_one(),
+        }
+
+    response = client.get("/share/id/GMFN-U-SHARE")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert 'property="og:type" content="profile"' in response.text
+    assert 'property="og:title" content="Open my GSN card"' in response.text
+    assert "Ada Seller shared a GSN identity card with you." in response.text
+    assert "https://api.gsn.example/share/id/GMFN-U-SHARE/card.png" in response.text
+    assert 'content="0;url=https://pilot.gsn.example/id/GMFN-U-SHARE"' in response.text
+    assert "share-owner@example.com" not in response.text
+    assert "Share Clan" not in response.text
+    assert "Ada Trust Shop" not in response.text
+    assert "share-invite" not in response.text
+    assert "TrustSlip" not in response.text
+    assert "phone" not in response.text.lower()
+
+    with engine.begin() as conn:
+        after = {
+            "users": conn.execute(text("SELECT COUNT(*) FROM users")).scalar_one(),
+            "memberships": conn.execute(text("SELECT COUNT(*) FROM clan_memberships")).scalar_one(),
+            "invite_uses": conn.execute(
+                text("SELECT uses FROM clan_invites WHERE code = 'share-invite'")
+            ).scalar_one(),
+        }
+
+    assert after == before
+
+
+def test_share_identity_card_png_uses_public_portrait_renderer(client, monkeypatch):
+    portrait_calls = []
+
+    def fake_public_portrait(value, size):
+        portrait_calls.append((value, size))
+        return Image.new("RGB", size, "#F20DCB")
+
+    monkeypatch.setattr(
+        share_preview_route,
+        "_identity_profile_hero",
+        fake_public_portrait,
+    )
+    _seed_public_shop()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE users SET profile_image_url = "
+                "'/uploads/profile/users/member.png' WHERE id = 1"
+            )
+        )
+
+    response = client.get("/share/id/GMFN-U-SHARE/card.png")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["cache-control"] == "no-store"
+    assert portrait_calls == [
+        ("/uploads/profile/users/member.png", (312, 338)),
+    ]
+    image = Image.open(BytesIO(response.content)).convert("RGB")
+    assert image.size == (1200, 630)
+    red, green, blue = image.getpixel((200, 300))
+    assert red > 220
+    assert green < 50
+    assert blue > 180
+
+
+def test_share_identity_preview_rejects_unknown_gsn_id(client):
+    page_response = client.get("/share/id/GMFN-U-MISSING")
+    card_response = client.get("/share/id/GMFN-U-MISSING/card.png")
+
+    assert page_response.status_code == 404
+    assert page_response.json()["detail"] == "GSN ID not found."
+    assert card_response.status_code == 404
+    assert card_response.json()["detail"] == "GSN ID not found."
+
+
+def test_identity_portrait_loader_rejects_private_or_traversal_paths():
+    assert share_preview_route._identity_profile_hero(
+        "/uploads/entry/identity/government-id.png",
+        (100, 100),
+    ) is None
+    assert share_preview_route._identity_profile_hero(
+        "/uploads/profile/users/../../private/government-id.png",
+        (100, 100),
+    ) is None
+
+
 def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
     monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
@@ -463,7 +565,7 @@ def test_share_join_preview_exposes_open_graph_card(client, monkeypatch):
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
     assert "Ada Seller invited you to join Share Clan on GSN" in res.text
-    assert "Open to request access. Approval is required." in res.text
+    assert "Open to request access. Community approval is required." in res.text
     assert "https://api.gsn.example/share/join/share-invite/card.png?community_code=GMFN-C-SHARE&amp;qr_policy=market_access" in res.text
     assert 'property="og:image:type" content="image/png"' in res.text
     assert "https://pilot.gsn.example/start/join/share-invite" in res.text
@@ -481,6 +583,100 @@ def test_share_join_card_png_uses_invite_branding(client, monkeypatch):
     assert res.headers["content-type"].startswith("image/png")
     assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(res.content) > 10_000
+
+
+def test_share_join_preview_uses_saved_instant_policy_without_consuming_invite(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE clan_invites SET admission_mode = 'instant_invite' "
+                "WHERE code = 'share-invite'"
+            )
+        )
+        before = {
+            "uses": conn.execute(
+                text("SELECT uses FROM clan_invites WHERE code = 'share-invite'")
+            ).scalar_one(),
+            "memberships": conn.execute(
+                text("SELECT COUNT(*) FROM clan_memberships")
+            ).scalar_one(),
+            "requests": conn.execute(
+                text("SELECT COUNT(*) FROM clan_join_requests")
+            ).scalar_one(),
+        }
+
+    res = client.get("/share/join/share-invite")
+    card = client.get("/share/join/share-invite/card.png")
+
+    assert res.status_code == 200
+    assert card.status_code == 200
+    assert "Open to join this GSN community. No approval wait." in res.text
+    assert "Approval is required" not in res.text
+    with engine.begin() as conn:
+        after = {
+            "uses": conn.execute(
+                text("SELECT uses FROM clan_invites WHERE code = 'share-invite'")
+            ).scalar_one(),
+            "memberships": conn.execute(
+                text("SELECT COUNT(*) FROM clan_memberships")
+            ).scalar_one(),
+            "requests": conn.execute(
+                text("SELECT COUNT(*) FROM clan_join_requests")
+            ).scalar_one(),
+        }
+    assert after == before
+
+
+def test_share_join_preview_uses_saved_admin_approval_policy(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE clan_invites SET admission_mode = 'admin_approval' "
+                "WHERE code = 'share-invite'"
+            )
+        )
+
+    res = client.get("/share/join/share-invite")
+
+    assert res.status_code == 200
+    assert "A community administrator must approve it." in res.text
+
+
+def test_share_join_preview_hides_metadata_for_expired_or_mismatched_invites(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+    mismatched = client.get(
+        "/share/join/share-invite",
+        params={"community_code": "GMFN-C-OTHER"},
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE clan_invites SET expires_at = :expired_at "
+                "WHERE code = 'share-invite'"
+            ),
+            {"expired_at": datetime.now(timezone.utc) - timedelta(minutes=1)},
+        )
+
+    expired = client.get("/share/join/share-invite")
+
+    for res in (expired, mismatched):
+        assert res.status_code == 200
+        assert "GSN community invitation" in res.text
+        assert "check whether this invitation is still available" in res.text
+        assert "Share Clan" not in res.text
+        assert "Ada Seller" not in res.text
+        assert "Ada Trust Shop" not in res.text
 
 
 def test_trustslip_share_preview_exposes_route_specific_open_graph_card(client, monkeypatch):

@@ -251,14 +251,14 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*identityRecovery:[\s\S]*"cci"[\s\S]*task=recovery&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*Membership activated\. Verify this phone next[\s\S]*Set private recovery next[\s\S]*data-gsn-activation-complete="true"[\s\S]*GsnInstallPrompt[\s\S]*member-activation\.verify-phone[\s\S]*member-activation\.set-recovery/,
-  "Successful activation must answer visibly, offer phone shortcut guidance, and keep phone verification or private recovery as the primary next action before First Circle growth."
+  /community:\s*routeTarget\([\s\S]*"communityDetail"[\s\S]*identityPhone:[\s\S]*task=phone&mode=complete[\s\S]*identityRecovery:[\s\S]*task=recovery&mode=complete[\s\S]*Membership active in[\s\S]*data-gsn-activation-complete="true"[\s\S]*member-activation\.open-community[\s\S]*member-activation\.verify-phone[\s\S]*member-activation\.set-recovery[\s\S]*member-activation\.other-setup[\s\S]*GsnInstallPrompt[\s\S]*member-activation\.build-first-circle/,
+  "Successful activation must answer visibly, open the admitted member's exact Community Home first, preserve phone/recovery security actions, and collapse optional setup."
 );
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /const joinActionLabel = isInstantJoin \? "Accept invite" : "Request access";[\s\S]*debugId="join-entry\.sign-in-existing"[\s\S]*Sign in[\s\S]*debugId="join-entry\.toggle-new-member-request-form"[\s\S]*joinActionLabel[\s\S]*Already have a GSN ID\?[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*Full name[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
-  "Logged-out invite entry must show the simple Sign in and mode-aware Accept invite / Request access decision first, while keeping existing-GSN-ID reuse behind help before the new-person form."
+  /if \(!restoredJoinDraftHasInput\) return Boolean\(inviteCode\);[\s\S]*return inviteCode \? "new" : null;[\s\S]*const joinActionLabel = isInstantJoin[\s\S]*"Accept invite and join"[\s\S]*"Submit request for approval"[\s\S]*debugId="join-entry\.sign-in-existing"[\s\S]*Already have a GSN ID\?[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*Full name[\s\S]*Phone number[\s\S]*debugId="join-entry\.submit-new-request"[\s\S]*joinActionLabel/,
+  "Logged-out invite entry must open the required form on the first usable screen, retain Sign in and existing-GSN-ID recovery, and use admission-specific submit wording."
 );
 
 assertContains(

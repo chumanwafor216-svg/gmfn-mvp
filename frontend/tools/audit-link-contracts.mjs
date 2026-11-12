@@ -609,14 +609,14 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<title>GSN<\/title>[\s\S]*?GSN Public Record[\s\S]*?Check the current GSN page before you act\.[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
-  "The static frontend shell must use a short, human-facing frontend-hosted PNG fallback poster, not a shop-specific or repeated trusted-link fallback."
+  /<title>GSN<\/title>[\s\S]*?content="A GSN page has been shared with you\."[\s\S]*?property="og:title" content="GSN"[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  "The static frontend shell must use short, welcoming generic copy with the frontend-hosted PNG fallback poster."
 );
 
 assertContains(
   "public/gsn-share-poster.svg",
-  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*GSN Public Record[\s\S]*Check the current GSN page before you act\.[\s\S]*gmfn-frontend\.onrender\.com/,
-  "The static fallback share poster must keep important text centered, crop-safe, and bounded to public-record language for social preview cards."
+  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*Welcome to GSN[\s\S]*A GSN page has been shared with you\.[\s\S]*Tap the card to continue/,
+  "The static fallback share poster must keep welcoming action text centered, crop-safe, and free of warning-style or technical-host language."
 );
 
 assertNotContains(

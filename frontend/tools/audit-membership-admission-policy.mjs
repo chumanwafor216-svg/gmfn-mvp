@@ -70,7 +70,7 @@ requirePattern(
 );
 requirePattern(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin \? "Accept invite" : "Request access";[\s\S]*?confirms membership[\s\S]*?identity[\s\S]*?trust/i,
+  /const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin[\s\S]*?"Accept invite and join"[\s\S]*?"Submit request for approval"[\s\S]*?confirms membership[\s\S]*?identity[\s\S]*?trust/i,
   "Invite entry must use the mode-aware action and preserve the membership/trust boundary."
 );
 requirePattern(
