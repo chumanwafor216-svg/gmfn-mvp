@@ -6566,3 +6566,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Review artifact: `tmp/identity-preview-review.png`. It uses initials because no valid local public portrait fixture was available; production cards use the saved public profile portrait when present.
 - Verification passed: four focused identity-preview tests, 33 passing tests across the broader share-preview module with one unrelated sandbox temp-folder error in the pre-existing live-video cache test, backend compile, the Identity Integrity front-package audit, `git diff --check`, TypeScript and the 327-module production frontend build.
 - Deployment dependency: frontend and backend must be released together with the frontend public API origin pointing to the deployed API. Existing WhatsApp preview caches may continue showing an older card until WhatsApp refreshes that URL.
+
+# Invitation and personalised GSN ID deployment - 2026-11-12
+
+- Commit `03651b82d532240f9577a0de27866089cdd1ab8a` was pushed to the working branch and promoted unchanged to `main`.
+- GitHub Actions run `43313299154` deployed both `gmfn-frontend` and `gmfn-api` through the Render API and completed successfully. The workflow verified the frontend build marker, frontend no-store shell policy and live API identity contracts.
+- Post-deploy HTTP verification passed for `GMFN-U-63655DE6`: the personalised preview returned `200` with `Cache-Control: no-store`, the preview title was `Open my GSN card`, the human target was the stable frontend `/id/:gmfnId` route, the card returned `200 image/png`, and the frontend ID route returned `200`.
+- WhatsApp may temporarily retain an older preview for a previously shared URL because its preview cache is external to GSN. Its native `Copy link` and `Open link` controls remain outside GSN control.
