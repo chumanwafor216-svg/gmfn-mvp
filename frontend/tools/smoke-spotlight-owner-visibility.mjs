@@ -351,6 +351,22 @@ async function installMocks(page, scenario) {
       }
       const streamIndex = scenario.canonicalCalls;
       if (streamIndex > scenario.streamLimit) {
+        if (scenario.repeatLastCanonicalAfterStream) {
+          const item = spotlightItem({
+            label: "Visitor eligible Spotlight",
+            canonical: true,
+            streamIndex: 1,
+          });
+          return route.fulfill(
+            json({
+              serving_contract_version: 2,
+              item,
+              items: [item],
+              presentation: null,
+              rejection_code: "no_new_rotation_candidate",
+            })
+          );
+        }
         if (scenario.replayAfterStream) {
           scenario.replayResponses = Number(scenario.replayResponses || 0) + 1;
           const items = Array.from(
@@ -1550,6 +1566,50 @@ async function testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl
   return scenario;
 }
 
+async function testDuplicateCanonicalRefillUsesCooldown(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+    repeatLastCanonicalAfterStream: true,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.waitForTimeout(8_000);
+  if (
+    !(await page.getByText('Visitor eligible Spotlight', { exact: true }).count())
+  ) {
+    throw new Error('A duplicate refill erased the last valid Spotlight.');
+  }
+  if (scenario.canonicalCalls !== 2) {
+    throw new Error(
+      `Duplicate canonical refill bypassed cooldown: calls=${scenario.canonicalCalls}`
+    );
+  }
+  if (scenario.qualifyCalls !== 1 || scenario.impressionCalls !== 1) {
+    throw new Error(
+      `Duplicate refill changed impression accounting: qualify=${scenario.qualifyCalls}, impressions=${scenario.impressionCalls}`
+    );
+  }
+  await context.close();
+  return scenario;
+}
+
 async function testPresentationExpiryRemovesContact(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
@@ -1617,6 +1677,7 @@ try {
     freshLeasePriority: testFreshLeaseWinsOverWeightedReplay,
     qualificationRetry: testRejectedQualificationRetriesBeforeAttention,
     refreshFailure: testCanonicalRefreshFailureKeepsCurrentSpotlight,
+    duplicateRefillCooldown: testDuplicateCanonicalRefillUsesCooldown,
     presentationExpiry: testPresentationExpiryRemovesContact,
   };
   const requestedCase = String(process.env.GSN_SPOTLIGHT_SMOKE_CASE || '').trim();

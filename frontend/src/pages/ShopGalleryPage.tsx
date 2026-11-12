@@ -3290,6 +3290,45 @@ export default function ShopGalleryPage() {
         spotlightNextEmptyUntilRef.current = Date.now() + SPOTLIGHT_PILOT_REFRESH_MS;
         return;
       }
+      const retainedAtResponse = dedupePublicShopSpotlightRows(
+        communitySpotlightsRef.current.filter(
+          (item) =>
+            !item.isCanonicalOpportunity ||
+            publicShopSpotlightPresentationIsCurrent(item)
+        )
+      );
+      const retainedCampaignIds = new Set(
+        retainedAtResponse
+          .map((item) => positiveNumber(item.opportunityCampaignId))
+          .filter(Boolean)
+      );
+      const retainedPresentationIds = new Set(
+        retainedAtResponse
+          .map((item) =>
+            firstMeaningful(
+              item.opportunityPresentationId,
+              spotlightBroadcastKey(item)
+            )
+          )
+          .filter(Boolean)
+      );
+      const appendableNextItems = dedupePublicShopSpotlightRows(nextItems).filter(
+        (item) => {
+          const campaignId = positiveNumber(item.opportunityCampaignId);
+          const presentationId = firstMeaningful(
+            item.opportunityPresentationId,
+            spotlightBroadcastKey(item)
+          );
+          return !(
+            (campaignId > 0 && retainedCampaignIds.has(campaignId)) ||
+            (presentationId && retainedPresentationIds.has(presentationId))
+          );
+        }
+      );
+      if (appendableNextItems.length <= 0) {
+        spotlightNextEmptyUntilRef.current = Date.now() + SPOTLIGHT_PILOT_REFRESH_MS;
+        return;
+      }
       spotlightNextEmptyUntilRef.current = 0;
       setCommunitySpotlights((current) => {
         const retained = dedupePublicShopSpotlightRows(
@@ -3314,7 +3353,7 @@ export default function ShopGalleryPage() {
             )
             .filter(Boolean)
         );
-        const unseenNextItems = dedupePublicShopSpotlightRows(nextItems).filter(
+        const unseenNextItems = appendableNextItems.filter(
           (item) => {
             const campaignId = positiveNumber(item.opportunityCampaignId);
             const presentationId = firstMeaningful(

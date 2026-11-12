@@ -6450,3 +6450,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Dashboard Identity Passport is now the single primary balance surface on phone and desktop. It reads `/pipeline-credits/me-service-balance`, shows a truthful zero when loaded, hides on request failure, and adds no payment action.
 - Dashboard Market Wisdom is untouched. Community Home's existing cash `Available now` exception, Bulletin order, routes, permissions, and button inventory remain unchanged.
 - Regression coverage now requires the Dashboard ownership and forbids the balance from returning to Community Home.
+
+# Public Shop Spotlight duplicate-refill backpressure - 2026-11-12
+
+- Owner evidence: the 19m36s phone recording `WhatsApp Video 2026-11-12 at 09.27.04.mp4` rotated normally at the approved media-aware cadence until roughly 12m30s, then kept the Hand fan Spotlight visible for about seven minutes.
+- Production evidence: Render API logs for the matching `08:55-09:16 UTC` session were normal before `09:08`, then rose to 96 requests in `09:08` and more than 100 requests per minute in `09:09-09:11`, almost entirely `200 OK` responses to the Public Shop Spotlight opportunity endpoint.
+- Root cause: after the active card completed its dwell, a successful refill containing no appendable campaign was deduplicated by the client, but the elapsed rotation tick retried every 250ms. The server was reachable; this was a client backpressure defect, not a 5-10 second dwell-policy defect.
+- Correction: successful empty responses and successful duplicate-only responses now share the existing 30-second refill cooldown. The last valid Spotlight remains visible, no fabricated campaign is inserted, and qualification/impression accounting is unchanged.
+- Regression coverage: the Spotlight phone smoke now returns the same canonical campaign after the first dwell and proves the card remains visible, accounting remains single-counted, and only one refill request occurs before cooldown.

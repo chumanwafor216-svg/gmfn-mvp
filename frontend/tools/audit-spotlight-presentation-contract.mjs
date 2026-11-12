@@ -489,6 +489,18 @@ assertContains(
 );
 
 assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /appendableNextItems[^]*?appendableNextItems\.length <= 0[^]*?spotlightNextEmptyUntilRef\.current = Date\.now\(\) \+ SPOTLIGHT_PILOT_REFRESH_MS/,
+  'A successful Spotlight refill containing no new campaign must enter cooldown instead of retrying on every rotation tick.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testDuplicateCanonicalRefillUsesCooldown[^]*?repeatLastCanonicalAfterStream[^]*?canonicalCalls !== 2[^]*?Duplicate canonical refill bypassed cooldown/,
+  'The phone smoke must prove duplicate successful refills cannot create a Spotlight request storm.'
+);
+
+assertContains(
   'gmfn_backend/tests/test_spotlight_presentation_contract.py',
   /pacing_gap_keeps_unseen_active_spotlight_visible_without_counting[^]*?exhausted_delivery_budget_keeps_live_spotlight_visible_without_counting[^]*?multiple_paced_campaigns_share_bounded_non_counting_rotation/,
   'Backend regressions must prove continuous visibility through pacing gaps, exhausted budgets, and multi-campaign rotation without accounting changes.'
