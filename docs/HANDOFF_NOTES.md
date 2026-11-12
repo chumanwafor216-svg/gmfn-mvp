@@ -32,8 +32,14 @@
   (9), frontend Vault integrity audit, Vault button inventory, private Vault
   visual-language audit, Community Domain product contract audit, Python
   compilation, and the 326-module production frontend build.
-- No commit, push, deployment, schema migration, or production-state change was
-  performed in this session.
+- Publication: the scoped Vault patch was committed and pushed to the working
+  branch and `main`. The final handoff commit is the commit selected for the
+  manual Trigger Render Deploy workflow with both frontend and API deployment.
+- Full backend CI reached 1,789 passed and 24 skipped tests. Its only failure
+  was the pre-existing taxonomy migration-head assertion expecting
+  `20261106_assisted_activation` while the test database is already at
+  `20261110_public_profile`; no Vault test failed.
+- No schema migration was added by this Vault repair.
 
 ## Consumed activation-link and phone-shortcut repair - 2026-11-10
 
