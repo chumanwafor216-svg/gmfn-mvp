@@ -2461,6 +2461,12 @@ Must show:
 - one progressive `Review enforcement` flow for the selected country/package and service set;
 - privileged `Enforce and lock` and `Suspend` actions with effective time, immutable history, and no deletion of prior evidence.
 
+Implementation checkpoint - 2026-11-12:
+- The dormant control plane is implemented: immutable global commercial-status versions and country acquisition-pack versions; Command Centre editing for global service credit costs, commercial status, and country-local acquisition packs; one-click `Suspend`; client-region-independent quotes using global service cost; and Vault control that prevents shadow/pilot previews from being agreed or spent.
+- `Research` blocks quotes/debits; `Shadow` and `Pilot` create only non-spendable previews; `Enforced` is the only spendable mode; and `Suspended` blocks new decisions. The global payment-operations guard remains independent. Acquisition-pack configuration is separate from the disconnected checkout path. No price or pack is seeded or activated.
+- Validation recorded: 38 backend-focused tests, three named frontend audits, and the 327-module production frontend build.
+- `Review enforcement`, effective time, named cohort, server-resolved billing country, and pack checkout remain outstanding; therefore the default stays `Research` and no operator value is seeded.
+
 Rules:
 - Platform-admin access only; community admins and ordinary members cannot change global pricing.
 - User-facing purchase screens submit a service code and governed quantity, never a client-owned amount, country, pricing region, conversion, or debit.

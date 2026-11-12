@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.db.models import MarketplaceShop
 from app.db.pipeline_credit_models import (
+    PipelineCreditAcquisitionPackVersion,
+    PipelineCreditCommercialControlVersion,
     PipelineCreditPricingPolicy,
     PipelineCreditServiceQuote,
     PipelineCreditServiceSpendOrder,
@@ -38,6 +40,8 @@ from app.services.vault_domain_service import (
 CREDIT_QUANT = Decimal("0.01")
 RATE_QUANT = Decimal("0.0001")
 QUOTE_LIFETIME_MINUTES = 15
+COMMERCIAL_LIFECYCLE_STATUSES = frozenset({"research", "draft", "shadow", "pilot", "enforced", "suspended"})
+ACQUISITION_PACK_LIFECYCLE_STATUSES = COMMERCIAL_LIFECYCLE_STATUSES | {"retired"}
 
 SERVICE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "vault.slot": {
@@ -145,6 +149,206 @@ def _aware(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _lifecycle_status(value: Any, *, allowed: frozenset[str], field: str) -> str:
+    resolved = _clean(value).lower()
+    if resolved not in allowed:
+        raise PipelineCreditCommerceError("invalid_lifecycle_status", f"{field} has an unsupported lifecycle status")
+    return resolved
+
+
+def serialize_commercial_control(
+    row: Optional[PipelineCreditCommercialControlVersion],
+) -> dict[str, Any]:
+    if row is None:
+        return {
+            "id": None,
+            "version": None,
+            "lifecycle_status": "research",
+            "decision_note": None,
+            "quotes_enabled": False,
+            "spends_enabled": False,
+            "created_by_user_id": None,
+            "created_at": None,
+        }
+    lifecycle_status = _clean(row.lifecycle_status, "research").lower()
+    return {
+        "id": int(row.id),
+        "version": int(row.version),
+        "lifecycle_status": lifecycle_status,
+        "decision_note": row.decision_note,
+        "quotes_enabled": lifecycle_status in {"shadow", "pilot", "enforced"},
+        "spends_enabled": lifecycle_status == "enforced",
+        "created_by_user_id": int(row.created_by_user_id),
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+def current_commercial_control(
+    db: Session,
+) -> Optional[PipelineCreditCommercialControlVersion]:
+    return (
+        db.query(PipelineCreditCommercialControlVersion)
+        .order_by(
+            PipelineCreditCommercialControlVersion.version.desc(),
+            PipelineCreditCommercialControlVersion.id.desc(),
+        )
+        .first()
+    )
+
+
+def set_commercial_control(
+    db: Session,
+    *,
+    lifecycle_status: str,
+    decision_note: Optional[str],
+    actor_user_id: int,
+) -> PipelineCreditCommercialControlVersion:
+    status = _lifecycle_status(
+        lifecycle_status,
+        allowed=COMMERCIAL_LIFECYCLE_STATUSES,
+        field="lifecycle_status",
+    )
+    note = _clean(decision_note) or None
+    if status in {"enforced", "suspended"} and not note:
+        raise PipelineCreditCommerceError(
+            "decision_note_required",
+            f"A decision note is required when commercial status is {status}",
+        )
+    if note and len(note) > 500:
+        raise PipelineCreditCommerceError("invalid_decision_note", "decision_note must be 500 characters or fewer")
+    current = current_commercial_control(db)
+    row = PipelineCreditCommercialControlVersion(
+        version=int(current.version) + 1 if current else 1,
+        lifecycle_status=status,
+        decision_note=note,
+        created_by_user_id=int(actor_user_id),
+        created_at=_now(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def acquisition_pack_out(row: PipelineCreditAcquisitionPackVersion) -> dict[str, Any]:
+    try:
+        country_codes = json.loads(row.country_codes_json or "[]")
+    except (TypeError, ValueError):
+        country_codes = []
+    credit_quantity = Decimal(str(row.credit_quantity)).quantize(CREDIT_QUANT)
+    cash_amount = Decimal(str(row.cash_amount)).quantize(CREDIT_QUANT)
+    return {
+        "id": int(row.id),
+        "profile_code": row.profile_code,
+        "profile_label": row.profile_label,
+        "country_codes": country_codes,
+        "currency": row.currency,
+        "pack_code": row.pack_code,
+        "version": int(row.version),
+        "credit_quantity": f"{credit_quantity:.2f}",
+        "cash_amount": f"{cash_amount:.2f}",
+        "credits_per_currency_unit": f"{(credit_quantity / cash_amount).quantize(RATE_QUANT):.4f}",
+        "lifecycle_status": row.lifecycle_status,
+        "decision_note": row.decision_note,
+        "created_by_user_id": int(row.created_by_user_id),
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+def latest_acquisition_packs(db: Session) -> list[dict[str, Any]]:
+    rows = (
+        db.query(PipelineCreditAcquisitionPackVersion)
+        .order_by(
+            PipelineCreditAcquisitionPackVersion.profile_code.asc(),
+            PipelineCreditAcquisitionPackVersion.pack_code.asc(),
+            PipelineCreditAcquisitionPackVersion.version.desc(),
+            PipelineCreditAcquisitionPackVersion.id.desc(),
+        )
+        .all()
+    )
+    latest: dict[tuple[str, str], PipelineCreditAcquisitionPackVersion] = {}
+    for row in rows:
+        latest.setdefault((row.profile_code, row.pack_code), row)
+    return [acquisition_pack_out(row) for row in latest.values()]
+
+
+def set_acquisition_pack(
+    db: Session,
+    *,
+    profile_code: str,
+    profile_label: str,
+    country_codes: list[str],
+    currency: str,
+    pack_code: str,
+    credit_quantity: Any,
+    cash_amount: Any,
+    lifecycle_status: str,
+    decision_note: Optional[str],
+    actor_user_id: int,
+) -> PipelineCreditAcquisitionPackVersion:
+    profile = _clean(profile_code).lower()
+    pack = _clean(pack_code).lower()
+    label = _clean(profile_label)
+    if not profile:
+        raise PipelineCreditCommerceError("invalid_profile_code", "profile_code is required")
+    if not pack:
+        raise PipelineCreditCommerceError("invalid_pack_code", "pack_code is required")
+    if not label:
+        raise PipelineCreditCommerceError("invalid_profile_label", "profile_label is required")
+    normalized_countries: list[str] = []
+    seen_countries: set[str] = set()
+    for country_code in list(country_codes or []):
+        normalized = _clean(country_code).upper()
+        if not normalized:
+            raise PipelineCreditCommerceError("invalid_country_codes", "country_codes cannot contain empty values")
+        if normalized not in seen_countries:
+            normalized_countries.append(normalized)
+            seen_countries.add(normalized)
+    if not normalized_countries or len(normalized_countries) > 80:
+        raise PipelineCreditCommerceError("invalid_country_codes", "country_codes must contain 1 to 80 values")
+    resolved_currency = _clean(currency).upper()
+    if not resolved_currency:
+        raise PipelineCreditCommerceError("invalid_currency", "currency is required")
+    status = _lifecycle_status(
+        lifecycle_status,
+        allowed=ACQUISITION_PACK_LIFECYCLE_STATUSES,
+        field="lifecycle_status",
+    )
+    note = _clean(decision_note) or None
+    if note and len(note) > 500:
+        raise PipelineCreditCommerceError("invalid_decision_note", "decision_note must be 500 characters or fewer")
+    credit_value = _decimal(credit_quantity, field="credit_quantity")
+    cash_value = _decimal(cash_amount, field="cash_amount")
+    current = (
+        db.query(PipelineCreditAcquisitionPackVersion)
+        .filter(PipelineCreditAcquisitionPackVersion.profile_code == profile)
+        .filter(PipelineCreditAcquisitionPackVersion.pack_code == pack)
+        .order_by(
+            PipelineCreditAcquisitionPackVersion.version.desc(),
+            PipelineCreditAcquisitionPackVersion.id.desc(),
+        )
+        .first()
+    )
+    row = PipelineCreditAcquisitionPackVersion(
+        profile_code=profile,
+        profile_label=label,
+        country_codes_json=_json(normalized_countries),
+        currency=resolved_currency,
+        pack_code=pack,
+        version=int(current.version) + 1 if current else 1,
+        credit_quantity=credit_value,
+        cash_amount=cash_value,
+        lifecycle_status=status,
+        decision_note=note,
+        created_by_user_id=int(actor_user_id),
+        created_at=_now(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
 def _pricing_policy_out(row: Optional[PipelineCreditPricingPolicy]) -> Optional[dict[str, Any]]:
     if row is None:
         return None
@@ -222,11 +426,12 @@ def pricing_catalogue(
     region_code: str = "global",
     currency: str = "GBP",
 ) -> dict[str, Any]:
-    region = _clean(region_code, "global").lower()
-    policy = active_pricing_policy(db, region_code=region, currency=currency)
+    region = "global"
+    resolved_currency = _clean(currency, "GBP").upper()
+    policy = active_pricing_policy(db, region_code=region, currency=resolved_currency)
     services = [
         _service_out(
-            active_service_version(db, service_code=service_code, region_code=region),
+            active_service_version(db, service_code=service_code, region_code="global"),
             definition,
             service_code,
         )
@@ -235,9 +440,13 @@ def pricing_catalogue(
     return {
         "ok": True,
         "region_code": region,
-        "currency": _clean(currency, "GBP").upper(),
+        "currency": resolved_currency,
         "pricing_policy": _pricing_policy_out(policy),
         "services": services,
+        "commercial_control": serialize_commercial_control(current_commercial_control(db)),
+        "acquisition_packs": latest_acquisition_packs(db),
+        "acquisition_checkout_connected": False,
+        "service_region_code": "global",
         "boundary": CUSTOMER_SERVICE_CREDIT_BOUNDARY,
     }
 
@@ -250,7 +459,7 @@ def set_pricing_policy(
     credits_per_currency_unit: Any,
     actor_user_id: int,
 ) -> PipelineCreditPricingPolicy:
-    region = _clean(region_code, "global").lower()
+    region = "global"
     resolved_currency = _clean(currency, "GBP").upper()
     rate = _decimal(credits_per_currency_unit, quant=RATE_QUANT, field="credits_per_currency_unit")
     current = active_pricing_policy(db, region_code=region, currency=resolved_currency)
@@ -325,7 +534,7 @@ def set_service_price(
     definition = SERVICE_DEFINITIONS.get(code)
     if not definition:
         raise PipelineCreditCommerceError("unknown_service", "Unknown Pipeline Credit service code")
-    region = _clean(region_code, "global").lower()
+    region = "global"
     mode = _clean(pricing_mode, "fixed_credits").lower()
     if mode not in {"fixed_credits", "conversion"}:
         raise PipelineCreditCommerceError("invalid_pricing_mode", "pricing_mode must be fixed_credits or conversion")
@@ -338,18 +547,18 @@ def set_service_price(
     else:
         cash_amount = _decimal(cash_reference_amount, field="cash_reference_amount")
         cash_currency = _clean(cash_reference_currency, "GBP").upper()
-        policy = active_pricing_policy(db, region_code=region, currency=cash_currency)
+        policy = active_pricing_policy(db, region_code="global", currency=cash_currency)
         if not policy:
             raise PipelineCreditCommerceError(
                 "pricing_policy_not_configured",
-                f"Set the {cash_currency} Pipeline Credit conversion for {region} first",
+                f"Set the global {cash_currency} Pipeline Credit conversion first",
             )
         resolved_credit_cost = (
             cash_amount * Decimal(str(policy.credits_per_currency_unit))
         ).quantize(CREDIT_QUANT, rounding=ROUND_HALF_UP)
         pricing_policy_version = int(policy.version)
 
-    current = active_service_version(db, service_code=code, region_code=region)
+    current = active_service_version(db, service_code=code, region_code="global")
     next_version = int(current.version) + 1 if current else 1
     if current:
         current.status = "retired"
@@ -358,7 +567,7 @@ def set_service_price(
     row = PipelineCreditServiceVersion(
         service_code=code,
         service_label=definition["label"],
-        region_code=region,
+        region_code="global",
         version=next_version,
         pricing_mode=mode,
         credit_cost=resolved_credit_cost,
@@ -383,7 +592,7 @@ def set_service_price(
 
 
 def customer_credit_status(db: Session, *, user_id: int, region_code: str = "global") -> dict[str, Any]:
-    region = _clean(region_code, "global").lower()
+    region = "global"
     account = get_pipeline_credit_account(
         db,
         owner_type="user",
@@ -461,7 +670,14 @@ def _validate_service_context(
             "vault_capacity_unavailable",
             f"Vault has {available_blocks} available block{'' if available_blocks == 1 else 's'} right now",
         )
-    return {"shop_id": int(shop.id), "clan_id": clan_id}
+    safe_context = {"shop_id": int(shop.id), "clan_id": clan_id}
+    control_metadata = context.get("_pipeline_credit_control")
+    if isinstance(control_metadata, dict):
+        safe_context["_pipeline_credit_control"] = {
+            "version": control_metadata.get("version"),
+            "lifecycle_status": control_metadata.get("lifecycle_status"),
+        }
+    return safe_context
 
 
 def issue_service_quote(
@@ -480,14 +696,26 @@ def issue_service_quote(
     idem = _clean(idempotency_key)
     if len(idem) < 8:
         raise PipelineCreditCommerceError("idempotency_required", "idempotency_key must contain at least 8 characters")
-    region = _clean(region_code, "global").lower()
+    region = "global"
+    control = serialize_commercial_control(current_commercial_control(db))
+    if not control["quotes_enabled"]:
+        raise PipelineCreditCommerceError(
+            "commercial_quotes_disabled",
+            f"Pipeline Credit commercial quotes are {control['lifecycle_status']}",
+        )
     safe_quantity = int(quantity or 0)
+    safe_context = dict(context or {})
+    safe_context.pop("_pipeline_credit_control", None)
+    safe_context["_pipeline_credit_control"] = {
+        "version": control["version"],
+        "lifecycle_status": control["lifecycle_status"],
+    }
     safe_context = _validate_service_context(
         db,
         actor_user_id=int(actor_user_id),
         service_code=code,
         quantity=safe_quantity,
-        context=dict(context or {}),
+        context=safe_context,
     )
     request = {
         "actor_user_id": int(actor_user_id),
@@ -495,6 +723,10 @@ def issue_service_quote(
         "quantity": safe_quantity,
         "region_code": region,
         "context": safe_context,
+        "commercial_control": {
+            "version": control["version"],
+            "lifecycle_status": control["lifecycle_status"],
+        },
     }
     fingerprint = _fingerprint(request)
     existing = (
@@ -508,7 +740,7 @@ def issue_service_quote(
             raise PipelineCreditCommerceError("idempotency_conflict", "This quote key was already used for different details")
         return existing
 
-    service = active_service_version(db, service_code=code, region_code=region)
+    service = active_service_version(db, service_code=code, region_code="global")
     if not service:
         raise PipelineCreditCommerceError(
             "service_price_not_configured",
@@ -535,7 +767,7 @@ def issue_service_quote(
         unit_credit_cost=unit_cost,
         total_credit_cost=total_cost,
         context_json=_json(safe_context),
-        status="issued",
+        status="issued" if control["lifecycle_status"] == "enforced" else "shadow",
         expires_at=_now() + timedelta(minutes=QUOTE_LIFETIME_MINUTES),
         idempotency_key=idem,
         request_fingerprint=fingerprint,
@@ -552,6 +784,19 @@ def quote_out(db: Session, row: PipelineCreditServiceQuote) -> dict[str, Any]:
     balance = pipeline_credit_balance(db, account_id=int(row.account_id))
     total = Decimal(str(row.total_credit_cost)).quantize(CREDIT_QUANT)
     service = db.get(PipelineCreditServiceVersion, int(row.service_version_id))
+    try:
+        context = json.loads(row.context_json or "{}")
+    except (TypeError, ValueError):
+        context = {}
+    control_metadata = context.get("_pipeline_credit_control") if isinstance(context, dict) else {}
+    if not isinstance(control_metadata, dict):
+        control_metadata = {}
+    commercial_status = _clean(control_metadata.get("lifecycle_status"), "research").lower()
+    commercial_version = control_metadata.get("version")
+    try:
+        commercial_version = int(commercial_version) if commercial_version is not None else None
+    except (TypeError, ValueError):
+        commercial_version = None
     return {
         "quote_key": row.quote_key,
         "service_code": row.service_code,
@@ -565,6 +810,9 @@ def quote_out(db: Session, row: PipelineCreditServiceQuote) -> dict[str, Any]:
         "resulting_balance": f"{max(Decimal('0.00'), balance - total):.2f}",
         "has_sufficient_balance": balance >= total,
         "status": row.status,
+        "commercial_status": commercial_status,
+        "commercial_control_version": commercial_version,
+        "spendable": row.status == "issued" and commercial_status == "enforced",
         "expires_at": row.expires_at.isoformat() if row.expires_at else None,
         "boundary": CUSTOMER_SERVICE_CREDIT_BOUNDARY,
     }
@@ -609,6 +857,22 @@ def spend_service_quote(
     )
     if prior_order:
         return prior_order
+    current_control = serialize_commercial_control(current_commercial_control(db))
+    if not current_control["spends_enabled"]:
+        raise PipelineCreditCommerceError(
+            "commercial_enforcement_disabled",
+            "Pipeline Credit commercial enforcement is not enabled",
+        )
+    try:
+        context = json.loads(quote.context_json or "{}")
+    except (TypeError, ValueError):
+        context = {}
+    control_metadata = context.get("_pipeline_credit_control") if isinstance(context, dict) else {}
+    if not isinstance(control_metadata, dict) or _clean(control_metadata.get("lifecycle_status")).lower() != "enforced":
+        raise PipelineCreditCommerceError(
+            "shadow_quote_not_spendable",
+            "This quote was created in a non-enforced commercial mode and cannot be spent",
+        )
     if quote.status != "issued":
         raise PipelineCreditCommerceError("quote_not_available", "This Pipeline Credit quote is no longer available")
     if _aware(quote.expires_at) <= _now():
@@ -622,7 +886,7 @@ def spend_service_quote(
         owner_type="user",
         owner_user_id=int(actor_user_id),
         account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
-        pricing_region=quote.region_code,
+        pricing_region="global",
         currency="PC",
     )
     if int(account.id) != int(quote.account_id):

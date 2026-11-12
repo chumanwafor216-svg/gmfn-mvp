@@ -6,6 +6,8 @@ from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
 from app.services.pipeline_credit_commerce_service import (
+    set_acquisition_pack,
+    set_commercial_control,
     set_pricing_policy,
     set_service_price,
 )
@@ -64,6 +66,16 @@ def _configure_vault_price(*, credit_cost: str = "20.00", duration_days: int = 3
             credit_cost=credit_cost,
             duration_days=duration_days,
             unit_label="block",
+            actor_user_id=1,
+        )
+
+
+def _set_commercial_status(status: str = "enforced") -> None:
+    with SessionLocal() as db:
+        set_commercial_control(
+            db,
+            lifecycle_status=status,
+            decision_note=f"Test commercial status configured as {status}",
             actor_user_id=1,
         )
 
@@ -147,6 +159,8 @@ def test_conversion_change_versions_service_without_rewriting_old_quote(
     assert first_version["credit_cost"] == "20.00"
     assert first_version["version"] == 1
 
+    _set_commercial_status()
+
     old_quote = _quote(client, quantity=1, key="vault-conversion-quote-v1")
     assert old_quote.status_code == 201, old_quote.text
     assert old_quote.json()["quote"]["total_credit_cost"] == "20.00"
@@ -194,6 +208,7 @@ def test_service_spend_is_blocked_while_payment_operations_are_suspended(
     _seed_vault_owner()
     _configure_vault_price(credit_cost="10.00")
     _fund_customer("20.00")
+    _set_commercial_status()
 
     quoted = _quote(client, quantity=1, key="vault-suspended-spend-quote")
     assert quoted.status_code == 201, quoted.text
@@ -227,6 +242,7 @@ def test_vault_quote_spend_atomically_debits_and_unlocks_blocks(
     monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
     _seed_vault_owner()
     _configure_vault_price(credit_cost="10.00", duration_days=45)
+    _set_commercial_status()
 
     untouched = client.get("/pipeline-credits/me-service-balance")
     assert untouched.status_code == 200, untouched.text
@@ -317,6 +333,7 @@ def test_insufficient_balance_does_not_debit_or_unlock(
     _seed_vault_owner()
     _configure_vault_price(credit_cost="20.00")
     _fund_customer("10.00")
+    _set_commercial_status()
 
     quoted = _quote(client, quantity=1, key="vault-insufficient-quote")
     assert quoted.status_code == 201, quoted.text
@@ -368,3 +385,141 @@ def test_direct_vault_bank_instruction_is_retired(
         assert conn.execute(
             text("SELECT COUNT(*) FROM expected_payments WHERE expected_type = 'vault_subscription'")
         ).scalar_one() == 0
+
+
+def test_control_lifecycle_keeps_research_dormant_and_regions_server_owned(
+    client,
+    override_current_user,
+    monkeypatch,
+):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    _seed_vault_owner()
+    _configure_vault_price(credit_cost="10.00")
+
+    blocked = _quote(client, quantity=1, key="commercial-research-quote")
+    assert blocked.status_code == 409, blocked.text
+    assert blocked.json()["detail"]["code"] == "commercial_quotes_disabled"
+
+    shadow = client.put(
+        "/pipeline-credits/admin/commercial-control",
+        json={"lifecycle_status": "shadow"},
+    )
+    assert shadow.status_code == 200, shadow.text
+    shadow_quote = client.post(
+        "/pipeline-credits/service-quotes",
+        json={
+            "service_code": "vault.slot",
+            "quantity": 1,
+            "region_code": "nigeria",
+            "context": {"shop_id": 1, "clan_id": 1},
+            "idempotency_key": "commercial-shadow-quote",
+        },
+    )
+    assert shadow_quote.status_code == 201, shadow_quote.text
+    shadow_body = shadow_quote.json()["quote"]
+    assert shadow_body["status"] == "shadow"
+    assert shadow_body["commercial_status"] == "shadow"
+    assert shadow_body["spendable"] is False
+    assert shadow_body["region_code"] == "global"
+
+    shadow_spend = client.post(
+        "/pipeline-credits/service-spends",
+        json={
+            "quote_key": shadow_body["quote_key"],
+            "idempotency_key": "commercial-shadow-spend",
+        },
+    )
+    assert shadow_spend.status_code == 409, shadow_spend.text
+    assert shadow_spend.json()["detail"]["code"] == "commercial_enforcement_disabled"
+
+    enforced = client.put(
+        "/pipeline-credits/admin/commercial-control",
+        json={"lifecycle_status": "enforced", "decision_note": "Pilot evidence accepted"},
+    )
+    assert enforced.status_code == 200, enforced.text
+    fresh = client.post(
+        "/pipeline-credits/service-quotes",
+        json={
+            "service_code": "vault.slot",
+            "quantity": 1,
+            "region_code": "united_kingdom",
+            "context": {"shop_id": 1, "clan_id": 1},
+            "idempotency_key": "commercial-enforced-quote",
+        },
+    )
+    assert fresh.status_code == 201, fresh.text
+    fresh_body = fresh.json()["quote"]
+    assert fresh_body["status"] == "issued"
+    assert fresh_body["commercial_status"] == "enforced"
+    assert fresh_body["spendable"] is True
+    assert fresh_body["region_code"] == "global"
+
+
+def test_acquisition_pack_versions_are_immutable_and_catalogue_returns_latest(
+    client,
+    override_current_user,
+):
+    with SessionLocal() as db:
+        first = set_acquisition_pack(
+            db,
+            profile_code="emerging-ng",
+            profile_label="Nigeria discovery",
+            country_codes=["ng", "NG"],
+            currency="NGN",
+            pack_code="starter",
+            credit_quantity="5",
+            cash_amount="500",
+            lifecycle_status="draft",
+            decision_note=None,
+            actor_user_id=1,
+        )
+        second = set_acquisition_pack(
+            db,
+            profile_code="emerging-ng",
+            profile_label="Nigeria discovery",
+            country_codes=["ng", "NG"],
+            currency="NGN",
+            pack_code="starter",
+            credit_quantity="5",
+            cash_amount="450",
+            lifecycle_status="shadow",
+            decision_note="Shadow acquisition pack",
+            actor_user_id=1,
+        )
+        first_version = int(first.version)
+        second_version = int(second.version)
+
+    assert first_version == 1
+    assert second_version == 2
+
+    catalogue_response = client.get(
+        "/pipeline-credits/admin/pricing-catalogue",
+        params={"currency": "NGN"},
+    )
+    assert catalogue_response.status_code == 200, catalogue_response.text
+    catalogue = catalogue_response.json()
+    packs = catalogue["acquisition_packs"]
+    assert len(packs) == 1
+    assert catalogue["region_code"] == "global"
+    assert catalogue["currency"] == "NGN"
+    assert packs[0]["profile_code"] == "emerging-ng"
+    assert packs[0]["profile_label"] == "Nigeria discovery"
+    assert packs[0]["pack_code"] == "starter"
+    assert packs[0]["version"] == 2
+    assert packs[0]["country_codes"] == ["NG"]
+    assert packs[0]["currency"] == "NGN"
+    assert packs[0]["credit_quantity"] == "5.00"
+    assert packs[0]["cash_amount"] == "450.00"
+    assert packs[0]["lifecycle_status"] == "shadow"
+    assert packs[0]["credits_per_currency_unit"] == "0.0111"
+
+    with engine.begin() as conn:
+        assert conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM pipeline_credit_acquisition_pack_versions
+                WHERE profile_code = 'emerging-ng' AND pack_code = 'starter'
+                """
+            )
+        ).scalar_one() == 2

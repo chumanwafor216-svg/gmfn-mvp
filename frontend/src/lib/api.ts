@@ -8173,6 +8173,58 @@ export async function updatePipelineCreditPricingPolicy(payload: {
   });
 }
 
+export async function updatePipelineCreditCommercialControl(payload: {
+  lifecycle_status:
+    | "research"
+    | "draft"
+    | "shadow"
+    | "pilot"
+    | "enforced"
+    | "suspended";
+  decision_note?: string | null;
+}): Promise<any> {
+  return httpJson("/pipeline-credits/admin/commercial-control", "PUT", {
+    lifecycle_status: payload.lifecycle_status,
+    decision_note: payload.decision_note ?? null,
+  });
+}
+
+export async function updatePipelineCreditAcquisitionPack(
+  profileCode: string,
+  payload: {
+    profile_label: string;
+    country_codes: string[];
+    currency: string;
+    pack_code: string;
+    credit_quantity: string;
+    cash_amount: string;
+    lifecycle_status:
+      | "research"
+      | "draft"
+      | "shadow"
+      | "pilot"
+      | "enforced"
+      | "suspended"
+      | "retired";
+    decision_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/admin/acquisition-packs/${encodeURIComponent(profileCode)}`,
+    "PUT",
+    {
+      profile_label: payload.profile_label,
+      country_codes: payload.country_codes,
+      currency: payload.currency,
+      pack_code: payload.pack_code,
+      credit_quantity: payload.credit_quantity,
+      cash_amount: payload.cash_amount,
+      lifecycle_status: payload.lifecycle_status,
+      decision_note: payload.decision_note ?? null,
+    }
+  );
+}
+
 export async function updatePipelineCreditServicePrice(
   serviceCode: string,
   payload: {

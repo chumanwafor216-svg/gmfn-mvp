@@ -27,6 +27,8 @@ from app.services.pipeline_credit_commerce_service import (
     issue_service_quote,
     pricing_catalogue,
     quote_out,
+    set_acquisition_pack,
+    set_commercial_control,
     set_pricing_policy,
     set_service_price,
     spend_out,
@@ -133,6 +135,49 @@ class PipelineCreditServicePriceIn(BaseModel):
     unit_label: Optional[str] = Field(default=None, max_length=80)
 
 
+class PipelineCreditCommercialControlIn(BaseModel):
+    lifecycle_status: str = Field(..., min_length=3, max_length=24)
+    decision_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("lifecycle_status", "decision_note", mode="before")
+    @classmethod
+    def _strings_only(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text")
+        return value.strip()
+
+
+class PipelineCreditAcquisitionPackIn(BaseModel):
+    profile_label: str = Field(..., min_length=1, max_length=120)
+    country_codes: list[str] = Field(..., min_length=1, max_length=80)
+    currency: str = Field(..., min_length=2, max_length=8)
+    pack_code: str = Field(..., min_length=1, max_length=48)
+    credit_quantity: str = Field(..., min_length=1, max_length=32)
+    cash_amount: str = Field(..., min_length=1, max_length=32)
+    lifecycle_status: str = Field(default="draft", min_length=3, max_length=24)
+    decision_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator(
+        "profile_label",
+        "currency",
+        "pack_code",
+        "credit_quantity",
+        "cash_amount",
+        "lifecycle_status",
+        "decision_note",
+        mode="before",
+    )
+    @classmethod
+    def _strings_only(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text")
+        return value.strip()
+
+
 class PipelineCreditServiceQuoteIn(BaseModel):
     service_code: str = Field(..., min_length=3, max_length=96)
     quantity: int = Field(default=1, ge=1, le=1000)
@@ -217,6 +262,9 @@ def _raise_commerce_error(exc: PipelineCreditCommerceError) -> None:
         "service_not_connected",
         "service_price_not_configured",
         "vault_capacity_unavailable",
+        "commercial_quotes_disabled",
+        "commercial_enforcement_disabled",
+        "shadow_quote_not_spendable",
     }:
         status_code = 409
     else:
@@ -450,6 +498,54 @@ def pipeline_credit_admin_set_pricing_policy(
         db.rollback()
         _raise_commerce_error(exc)
     return pricing_catalogue(db, region_code=payload.region_code, currency=payload.currency)
+
+
+@router.put("/admin/commercial-control")
+def pipeline_credit_admin_set_commercial_control(
+    payload: PipelineCreditCommercialControlIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        set_commercial_control(
+            db,
+            lifecycle_status=payload.lifecycle_status,
+            decision_note=payload.decision_note,
+            actor_user_id=int(current_user.id),
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    return pricing_catalogue(db, region_code="global", currency="GBP")
+
+
+@router.put("/admin/acquisition-packs/{profile_code}")
+def pipeline_credit_admin_set_acquisition_pack(
+    profile_code: str,
+    payload: PipelineCreditAcquisitionPackIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        set_acquisition_pack(
+            db,
+            profile_code=profile_code,
+            profile_label=payload.profile_label,
+            country_codes=payload.country_codes,
+            currency=payload.currency,
+            pack_code=payload.pack_code,
+            credit_quantity=payload.credit_quantity,
+            cash_amount=payload.cash_amount,
+            lifecycle_status=payload.lifecycle_status,
+            decision_note=payload.decision_note,
+            actor_user_id=int(current_user.id),
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    return pricing_catalogue(db, region_code="global", currency=payload.currency)
 
 
 @router.put("/admin/service-prices/{service_code:path}")

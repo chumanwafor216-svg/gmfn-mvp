@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## Pipeline Credit dormant control plane implementation - 2026-11-12
+
+- Added migration `20261112_pipeline_credit_control_plane` with immutable global commercial-status versions and country acquisition-pack versions.
+- Implemented dormant modes: default `research` blocks quotes/debits; `shadow` and `pilot` create only non-spendable previews; `enforced` is the only spendable mode; `suspended` blocks new decisions. The global payment-operations guard still applies independently.
+- Command Centre now edits global service credit costs, commercial status, and country-local acquisition packs. One-click `Suspend` exists. No price or pack is seeded or activated.
+- Service quotes ignore client region and use global service cost. Acquisition packs remain separate, and checkout/acquisition orders are still disconnected.
+- Vault reflects the commercial modes and never lets a shadow/pilot preview be agreed or spent.
+- Validation recorded: 38 backend-focused tests, three named frontend audits, and the 327-module production frontend build.
+- Remaining truth: no server-resolved billing-country assignment, pack checkout/acquisition orders, tax/refund/expiry policy, named-cohort pilot enforcement, evidence review/effective-time flow, or legacy Member Service Credit retirement.
+
 ## Pipeline Credit regional affordability and dormant enforcement architecture - 2026-11-12
 
 - Consolidated all existing Pipeline Credit pricing, migration, revenue, costing, forecast, UI, ledger, quote, and Vault decisions into `docs/GSN_PIPELINE_CREDIT_REGIONAL_AFFORDABILITY_AND_ENFORCEMENT_ARCHITECTURE_2026-11-12.md`.

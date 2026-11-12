@@ -62,16 +62,16 @@ The canonical migration map, module decision register, revenue truth map, foreca
 
 1. `frontend/src/pages/FinancePage.tsx` previously said one Pipeline Credit means GBP 1. That live contradiction was corrected in this work and is now protected by the Finance audit.
 2. The untracked September costing note contains the historical one-credit-equals-GBP-one example. It remains historical evidence, not current policy; tracked canonical sources supersede it.
-3. `PipelineCreditPricingPage` is hardcoded to `global` and `GBP`; it cannot yet administer country-local policies.
-4. `VaultControlPage` requests the `global` catalogue and submits `global` on its quote.
-5. The quote API accepts `region_code` from the client. Activating cheaper regions under that contract would allow price-region shopping unless the server rejects mismatches.
-6. Service versions are region-scoped. The owner direction is now to keep ordinary service debits global and vary acquisition prices by country, with regional service exceptions requiring an explicit documented reason.
-7. The current pricing tables have only active/retired behavior. They do not provide the required research, draft, shadow, pilot, enforced, and suspended lifecycle.
-8. The new service-spend path was not independently guarded by the global payment-operations switch. This work adds that suspension guard and a regression test; the dedicated research/shadow/pilot/enforced commercial lifecycle still remains to be implemented.
-9. Confirmed bank Pipeline Credit top-ups still default to the provider-operations account purpose rather than the canonical customer-service acquisition path.
-10. The older Member Service Credit engine still coexists with the customer-service Pipeline Credit balance.
-11. No country-assignment evidence, controlled region-change workflow, acquisition-pack quote, tax snapshot, or customer acquisition order exists yet.
-12. No Command Centre enforce-and-lock workflow exists. Saving a price currently makes it active immediately.
+3. Command Centre now has global commercial status, global service credit cost, and country-local acquisition-pack controls; no price or pack is seeded or activated.
+4. Vault now uses the commercial control. Research blocks quotes/debits, shadow and pilot previews are non-spendable, enforced is the only spendable mode, and suspended blocks new decisions.
+5. Service quotes ignore client region and use the global service cost. The acquisition-pack catalogue remains separate from the service catalogue.
+6. Global service pricing and country-local acquisition packs are now separate, with immutable commercial-status and acquisition-pack lifecycle versions.
+7. The research/draft/shadow/pilot/enforced/suspended/retired commercial lifecycle and immutable control versions now exist; named-cohort pilot enforcement and effective scheduling remain outstanding.
+8. The service-spend path now has an independent global payment-operations guard. Payment suspension still blocks a spend even when commercial control is otherwise available.
+9. Customer top-up remains disconnected from the canonical `customer_service` acquisition path, and the older Member Service Credit engine still coexists with the customer-service Pipeline Credit balance.
+10. Acquisition-pack configuration exists, but server-resolved billing-country assignment, country evidence and change review, acquisition orders/checkout, and tax snapshots do not.
+11. `Apply status` and one-click `Suspend` exist in Command Centre, but the full reviewed effective-time `Enforce and lock` workflow remains outstanding.
+12. Regional acquisition and ordinary-user charging therefore remain dormant: no operator value is seeded or activated, and shadow/pilot previews cannot be agreed or spent.
 
 Regional pricing must not be enforced while these contradictions remain.
 
@@ -369,17 +369,17 @@ These are configuration and policy decisions, not reasons to rebuild the ledger 
 ## Required implementation sequence
 
 1. Keep misleading one-credit-equals-GBP-one copy absent from live surfaces and treat historical examples as superseded - live Finance correction completed.
-2. Keep the new service-spend endpoint behind the global payment-suspension guard - completed; add the dedicated commercial-enforcement lifecycle before regional activation.
-3. Remove authoritative client control of `region_code`; resolve account country/region on the server.
-4. Separate global service debit versions from country-local acquisition-pack versions.
-5. Add research/draft/shadow/pilot/enforced/suspended/retired lifecycle and immutable enforcement decisions.
-6. Add country profile, evidence snapshot, region-change review, and acquisition quote/order models.
+2. Keep the new service-spend endpoint behind the global payment-suspension guard - completed.
+3. Remove authoritative client control of `region_code`; client region is now ignored, but server country assignment remains outstanding.
+4. Separate global service debit versions from country-local acquisition-pack versions - completed.
+5. Add research/draft/shadow/pilot/enforced/suspended/retired lifecycle and immutable enforcement decisions - partially completed with immutable global control and acquisition versions; named-cohort enforcement and effective scheduling remain outstanding.
+6. Add country profile, evidence snapshot, region-change review, and acquisition quote/order models - partially completed with pack versions; evidence, assignment, and acquisition-order work remains outstanding.
 7. Route reconciled customer top-ups into canonical `customer_service` accounts.
 8. Migrate or retire the Member Service Credit customer balance using proven purchase provenance only.
-9. Add Command Centre country pricing, shadow preview, review, enforce-and-lock, suspend, and history surfaces.
+9. Add Command Centre country pricing, shadow preview, review, enforce-and-lock, suspend, and history surfaces - partially completed; status, service, pack, and suspend UI exists, while formal review, effective time, and history disclosure remain outstanding.
 10. Keep ordinary user flows simple and connect one service at a time.
 11. Run a named-cohort pilot before any regional ordinary-user enforcement.
 
 ## Final truth boundary
 
-The repository has a credible ledger, quote, versioning, and first atomic-delivery foundation. It does not yet have safe regional acquisition, server-owned country assignment, a comprehensive enforcement gate, a canonical customer top-up, or a retired duplicate wallet. The architecture can be completed now and held in research/shadow mode, but regional customer charging must remain unenforced until customer discovery, accounting/legal review, delivery readiness, and the activation gates are satisfied.
+The repository now has a safe dormant Pipeline Credit control plane with global service-cost/status control, immutable commercial and acquisition versions, mode-aware Vault behavior, and an independent payment-operations guard. It defaults to `research`: no price or pack is seeded or activated. Regional acquisition is not operational or enforced because server-resolved billing-country assignment, evidence/change review, pack checkout/acquisition orders, tax/refund/expiry policy, named-cohort pilot enforcement, the full reviewed effective-time workflow, canonical customer top-up, and legacy wallet retirement remain incomplete.

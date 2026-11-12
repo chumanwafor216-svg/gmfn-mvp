@@ -189,6 +189,9 @@ type PipelineCreditQuote = {
   service_code: string;
   service_version_id?: number | null;
   service_version?: number | null;
+  commercial_status?: string | null;
+  commercial_control_version?: number | null;
+  spendable?: boolean;
   quantity: number;
   unit_credit_cost: string;
   total_credit_cost: string;
@@ -1225,6 +1228,19 @@ export default function VaultControlPage() {
   const vaultCreditService = rowsOf<any>(pipelineCreditCatalogue?.services).find(
     (item) => firstTruthy(item?.service_code).toLowerCase() === "vault.slot"
   );
+  const pipelineCommercialControl = pipelineCreditCatalogue?.commercial_control || {};
+  const pipelineCommercialStatus = firstTruthy(
+    pipelineCommercialControl?.lifecycle_status,
+    "research"
+  ).toLowerCase();
+  const pipelineQuotesEnabled = pipelineCommercialControl?.quotes_enabled === true;
+  const pipelineSpendsEnabled = pipelineCommercialControl?.spends_enabled === true;
+  const pipelineCommercialGuidance =
+    pipelineCommercialStatus === "shadow" || pipelineCommercialStatus === "pilot"
+      ? "This is a preview-only commercial stage. No credits can be taken until the service is Enforced."
+      : pipelineCommercialStatus === "enforced"
+        ? "Enforced status permits connected service debits after you review and agree to the server quote."
+        : "Commercial quotes are currently unavailable while Pipeline Credit commerce is in research, draft or suspended status.";
   const vaultCreditPriceConfigured = Boolean(vaultCreditService?.configured);
   const vaultUnitCreditCost = Number(vaultCreditService?.credit_cost || 0);
   const customerPipelineCreditBalance = firstTruthy(
@@ -1638,6 +1654,10 @@ export default function VaultControlPage() {
       showNotice("error", "Shop record is not ready.");
       return;
     }
+    if (!pipelineQuotesEnabled) {
+      showNotice("info", pipelineCommercialGuidance);
+      return;
+    }
     if (vaultFeatureOff) {
       showNotice("error", vaultFeatureOffText);
       return;
@@ -1664,15 +1684,20 @@ export default function VaultControlPage() {
         idempotency_key: `vault-quote-${shop.id}-${safeQuantity}-${Date.now()}`,
       });
       if (!mountedRef.current) return;
-      setVaultCreditQuote((result?.quote || null) as PipelineCreditQuote | null);
+      const quote = (result?.quote || null) as PipelineCreditQuote | null;
+      setVaultCreditQuote(quote);
       setVaultCreditQuoteAgreed(false);
       setOpenVaultPanels((prev) => ({ ...prev, activation: false, payment: true }));
-      showNotice(
-        result?.quote?.has_sufficient_balance ? "success" : "info",
-        result?.quote?.has_sufficient_balance
-          ? `Your exact Vault quote is ready: ${result.quote.total_credit_cost} Pipeline Credits.`
-          : `The quote is ${result?.quote?.total_credit_cost || selectedVaultCreditCost} Pipeline Credits, but your current balance is ${result?.quote?.balance || customerPipelineCreditBalance}.`
-      );
+      if (quote?.spendable === false) {
+        showNotice("info", "This is a non-spendable Shadow/Pilot preview. No credits were taken.");
+      } else {
+        showNotice(
+          quote?.has_sufficient_balance ? "success" : "info",
+          quote?.has_sufficient_balance
+            ? `Your exact Vault quote is ready: ${quote.total_credit_cost} Pipeline Credits.`
+            : `The quote is ${quote?.total_credit_cost || selectedVaultCreditCost} Pipeline Credits, but your current balance is ${quote?.balance || customerPipelineCreditBalance}.`
+        );
+      }
     } catch (err: any) {
       if (!mountedRef.current) return;
       showNotice("error", structuredErrorMessage(err, "The Vault Pipeline Credit quote could not be created."));
@@ -1684,6 +1709,10 @@ export default function VaultControlPage() {
   async function spendVaultPipelineCredits() {
     if (!vaultCreditQuote?.quote_key) {
       showNotice("info", "Request the exact Vault Pipeline Credit quote first.");
+      return;
+    }
+    if (vaultCreditQuote.spendable === false) {
+      showNotice("info", "This is a non-spendable Shadow/Pilot preview. No credits can be taken.");
       return;
     }
     if (!vaultCreditQuoteAgreed) {
@@ -2158,7 +2187,7 @@ export default function VaultControlPage() {
           >
             {!isCompact ? <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div> : null}
             <div style={{ marginTop: isCompact ? 0 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
-              Choose one or two private spaces. GSN will show the exact Pipeline Credit debit before anything is taken.
+              Choose one or two private spaces. {pipelineCommercialGuidance}
             </div>
             {!isCompact ? (
               <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
@@ -2206,7 +2235,7 @@ export default function VaultControlPage() {
             </div>
             <PrimaryButton
               onClick={() => void requestVaultCreditQuote(paymentSlots)}
-              disabled={vaultFeatureOff || creatingPayment || !shop?.id || !vaultCreditPriceConfigured || availableVaultSlots <= 0}
+              disabled={vaultFeatureOff || creatingPayment || !shop?.id || !vaultCreditPriceConfigured || availableVaultSlots <= 0 || !pipelineQuotesEnabled}
               busy={creatingPayment}
               busyLabel="Getting quote..."
               style={{
@@ -2217,7 +2246,9 @@ export default function VaultControlPage() {
               }}
               debugId="vault-control.request-credit-quote"
             >
-              Get exact Pipeline Credit quote
+              {pipelineCommercialStatus === "shadow" || pipelineCommercialStatus === "pilot"
+                ? "Preview Pipeline Credit quote"
+                : "Get exact Pipeline Credit quote"}
             </PrimaryButton>
           </div>
           <div
@@ -2245,6 +2276,9 @@ export default function VaultControlPage() {
                 {vaultFeatureOffText}
               </div>
             ) : null}
+            <div style={{ marginTop: 14, ...noticeCard("info") }}>
+              {pipelineCommercialGuidance} {pipelineSpendsEnabled ? "Connected debits are currently permitted by the commercial control." : "Connected debits are not currently enabled by the commercial control."}
+            </div>
             <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
               No direct bank-payment code is created for Vault. Any bank or provider payment belongs to a separate Pipeline Credit acquisition flow, which is not connected on this Vault screen.
             </div>
@@ -2290,7 +2324,11 @@ export default function VaultControlPage() {
               ))}
             </div>
 
-            {!vaultCreditQuote.has_sufficient_balance ? (
+            {vaultCreditQuote.spendable === false ? (
+              <div style={noticeCard("info")}>
+                This is a non-spendable Shadow/Pilot preview. No credits can be taken and no Vault block will be opened.
+              </div>
+            ) : !vaultCreditQuote.has_sufficient_balance ? (
               <div style={noticeCard("error")}>
                 You do not have enough Pipeline Credits for this quote. No credits were taken and no Vault block was opened.
               </div>
@@ -2303,7 +2341,7 @@ export default function VaultControlPage() {
             <StableButton
               kind={vaultCreditQuoteAgreed ? "primary" : "secondary"}
               onClick={() => setVaultCreditQuoteAgreed((current) => !current)}
-              disabled={!vaultCreditQuote.has_sufficient_balance || spendingPipelineCredits}
+              disabled={vaultCreditQuote.spendable === false || !vaultCreditQuote.has_sufficient_balance || spendingPipelineCredits}
               debugId="vault-control.agree-pipeline-credit-quote"
               style={{ minHeight: 56, width: "100%" }}
             >
@@ -2315,6 +2353,7 @@ export default function VaultControlPage() {
             <PrimaryButton
               onClick={() => void spendVaultPipelineCredits()}
               disabled={
+                vaultCreditQuote.spendable === false ||
                 !vaultCreditQuoteAgreed ||
                 !vaultCreditQuote.has_sufficient_balance ||
                 spendingPipelineCredits

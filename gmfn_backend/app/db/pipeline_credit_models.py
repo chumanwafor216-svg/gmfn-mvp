@@ -100,6 +100,60 @@ class PipelineCreditServiceVersion(Base):
     )
 
 
+class PipelineCreditCommercialControlVersion(Base):
+    __tablename__ = "pipeline_credit_commercial_control_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    lifecycle_status: Mapped[str] = mapped_column(String(24), nullable=False)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        UniqueConstraint("version", name="uq_pipeline_credit_commercial_control_version_v1"),
+        Index("ix_pipeline_credit_commercial_control_status_v1", "lifecycle_status", "version"),
+    )
+
+
+class PipelineCreditAcquisitionPackVersion(Base):
+    __tablename__ = "pipeline_credit_acquisition_pack_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    profile_code: Mapped[str] = mapped_column(String(48), nullable=False)
+    profile_label: Mapped[str] = mapped_column(String(120), nullable=False)
+    country_codes_json: Mapped[str] = mapped_column(Text, nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False)
+    pack_code: Mapped[str] = mapped_column(String(48), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    credit_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    cash_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    lifecycle_status: Mapped[str] = mapped_column(String(24), nullable=False)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "profile_code",
+            "pack_code",
+            "version",
+            name="uq_pipeline_credit_acquisition_pack_version_v1",
+        ),
+        Index(
+            "ix_pipeline_credit_acquisition_pack_current_v1",
+            "profile_code",
+            "pack_code",
+            "version",
+        ),
+        Index(
+            "ix_pipeline_credit_acquisition_pack_status_v1",
+            "lifecycle_status",
+            "currency",
+        ),
+    )
+
+
 class PipelineCreditServiceQuote(Base):
     __tablename__ = "pipeline_credit_service_quotes"
 
