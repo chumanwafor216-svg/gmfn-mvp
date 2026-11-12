@@ -3291,7 +3291,7 @@ export default function FinancePage() {
               <div style={innerCard("#FCFEFF")}>
                 <div style={sectionLabel()}>What spends credits</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  One pipeline credit means GBP 1 of planned usage value. These are pilot estimates, not final pricing.
+                  Pipeline Credits are non-cashable GSN service-use units. Their acquisition price is operator-controlled, may vary by approved billing country, and remains unenforced during customer discovery.
                 </div>
                 {isCompact ? (
                   <div style={{ marginTop: 12, display: "grid", gap: 10 }}>

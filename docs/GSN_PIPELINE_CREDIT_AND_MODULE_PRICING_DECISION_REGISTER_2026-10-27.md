@@ -12,6 +12,17 @@ Status: owner-approved payment-model direction plus implementation register. The
 - Other listed modules are catalogue placeholders only and must not claim connected Pipeline Credit delivery.
 - Customer Pipeline Credit acquisition remains a separate unfinished phase; existing provider-operation top-up behavior is not the customer wallet.
 
+## 2026-11-12 regional affordability and enforcement direction
+
+- Country-local acquisition packs determine the local-currency price of a fixed credit quantity.
+- Globally versioned service prices determine the credits consumed by each GSN service.
+- Approximately five credits for a Region A GBP 1 acquisition remains a discovery anchor only. Initial 100%, 50%, and 25% affordability bands remain hypotheses, not prices.
+- World Bank income evidence, ITU/GSMA affordability, local payment costs, direct cost floors, and GSN customer discovery inform operator review; no external company publishes a formula GSN can truthfully copy.
+- Account country/profile is server-owned and reviewable. Ordinary clients cannot choose a pricing region.
+- Pricing moves through research, draft, shadow, pilot, enforced, suspended, and retired states. Saving a draft does not activate charging.
+- Command Centre uses a reviewed `Enforce and lock` action to create an immutable effective version after evidence gates pass.
+- Full architecture and research: `docs/GSN_PIPELINE_CREDIT_REGIONAL_AFFORDABILITY_AND_ENFORCEMENT_ARCHITECTURE_2026-11-12.md`.
+
 ## Commercial model
 
 GSN's intended customer model is:
@@ -48,7 +59,7 @@ The canonical ledger must support a configurable credit catalogue by service and
 | Paid Spotlight | Example: one credit for one day of normal rotation | Current runtime sells one day-credit at GBP 1, with six credits for GBP 5 | Must use Pipeline Credits; debit remains undecided |
 | Paid Repost | Example: five credits for governed reach across five average communities or a defined target region | Current runtime consumes the same one-credit-per-day entitlement as Paid Spotlight | Must use Pipeline Credits under a separate service code; debit and reach bands remain undecided |
 | Extra public shop space | No fixed credit amount yet | Six spaces are included, with a maximum of four paid extras; runtime charges GBP 1 per annual extra and an earlier owner discussion used GBP 2 | Must use Pipeline Credits; debit and period remain to be confirmed |
-| Community Domain | No fixed credit amount yet | A GBP 10 monthly / GBP 99 annual cash proposal exists in the amendment register; payment creation is currently suspended | Must use Pipeline Credits; regional debit and package remain undecided |
+| Community Domain | No fixed credit amount yet | A GBP 10 monthly / GBP 99 annual cash proposal exists in the amendment register; payment creation is currently suspended | Must use Pipeline Credits; global debit, package, and local acquisition affordability remain undecided |
 | Private Vault | No fixed credit amount yet | Runtime is GBP 5 per private slot for 30 days, maximum two; later discussion mentioned GBP 5 per year conditionally | Must use Pipeline Credits; debit and duration remain undecided |
 | Merchant Verification | No fixed credit amount yet | Annual entitlement and payment rail exist, but the frontend sends GBP 1 while the backend accepts any positive amount. No preserved approved amount was found. | Must use Pipeline Credits; debit must be chosen and server-owned |
 | TrustSlip core | Included inside trust/evidence infrastructure; no duplicate charge | Merchant Verification can govern the active public merchant-verification status. Core TrustSlip issue/read has no separate paid entitlement. | Keep within Merchant Verification family unless incremental paid value is defined |
@@ -76,18 +87,18 @@ Paid Spotlight credits
   = catalogued base debit
   x governed appearance or day units
   x approved time factor
-  x approved region factor
+  x any explicitly approved delivery-cost factor
 
 Paid Repost credits
   = catalogued repost base debit
   x governed reach/destination factor
-  x approved time/region factors
+  x approved time/delivery factors
 
 Central advertising credits
   = promotion count
   x eligible destinations
   x scheduled appearance opportunities
-  x approved time/region factors
+  x approved time/delivery factors
 ```
 
 The current GSN-HOUSE quotation engine already calculates promotion count x eligible destinations x days or scheduled opportunities, but it labels the result quotation-only, has no financial effect, and explicitly leaves peak-time surcharge undecided. It measures addressable active accounts, not guaranteed viewers or sales.
@@ -96,15 +107,11 @@ Reach must never be sold as guaranteed viewing. A paid unit buys a governed elig
 
 ## Regional pricing boundary
 
-The base planning currency and the credit-to-cash exchange rate are not frozen. Customer discovery should determine locally acceptable top-up value and service debits for each region, participant type and use case. Credits must remain non-cashable and account-scoped if regional rates differ, otherwise people could arbitrage conflicting regional values.
+The architecture now chooses account-scoped, non-transferable credits, country-local acquisition packs, and globally credit-priced services. GBP is a planning anchor, not the credit denomination. Customer discovery still determines each country's local acquisition amount and every service debit.
 
-Before regional pricing goes live, GSN must choose one safe policy:
+The server owns billing-country/profile resolution. Country changes require review and affect only future acquisition quotes. Sponsor grants remain explicit. Regional service discounts are not the default and require a documented delivery-cost or policy exception.
 
-- account-scoped, non-transferable regional credit rates;
-- one global credit value with explicit regional service discounts or sponsor grants; or
-- region-specific service debits while the top-up exchange rate remains constant.
-
-The current decision does not choose among those three.
+All regional versions remain research, draft, or shadow records until the reviewed Command Centre enforcement gates pass.
 
 ## GSN Shop Reel: reuse-first scope
 
@@ -126,11 +133,11 @@ Do not build automatic posting, a music-rights library, a creator marketplace, a
 
 ## Decisions still required
 
-1. After regional customer discovery, choose the credit-to-cash top-up rate; approximately five credits per GBP 1 is only the current working thought.
+1. After regional customer discovery, choose country-local acquisition-pack prices; approximately five credits for Region A GBP 1 is only the current working thought.
 2. Define the debit, duration and renewal unit for Vault, Merchant Verification, extra shop space, extra members, Community Domain, ROSCA and Meeting Pack.
 3. Define what one extra DemandBox unit actually buys before assigning credits.
-4. Define region, participant, interest, reach and time bands for Spotlight, Repost and central advertising.
-5. Decide whether credit balances are region/account-scoped or use one global value with regional service discounts.
+4. Define participant, interest, reach, time and exceptional delivery-cost bands for Spotlight, Repost and central advertising.
+5. Define account-country evidence, review, sponsor, expiry, refund, tax and enforcement rules within the approved regional architecture.
 6. Decide whether Shop Reel has a free basic export and paid premium export, or remains entirely an acquisition feature during the pilot.
 
 ## Evidence rule

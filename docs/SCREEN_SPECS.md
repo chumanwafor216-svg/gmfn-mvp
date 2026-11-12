@@ -2446,28 +2446,34 @@ Rules:
 ## PipelineCreditPricingPage
 
 Purpose:
-Give a platform operator one protected source of truth for the Pipeline Credit conversion and each chargeable GSN service price without hardcoding credit amounts into user screens.
+Give a platform operator one protected source of truth for country-local Pipeline Credit acquisition, globally credit-priced GSN services, discovery evidence, and reviewed enforcement without hardcoding customer amounts into user screens.
 
 Route:
 - `/app/command-center/pipeline-credit-pricing`
 
 Must show:
-- the active region and currency conversion, including the number of Pipeline Credits issued for one currency unit;
-- a blank not-configured state until an operator deliberately records a conversion or service price;
+- one compact pricing status: Research, Shadow, Pilot, Enforced, or Suspended;
+- a country/currency acquisition profile with a standard credit-pack quantity, local price, evidence summary, and immutable version;
+- a blank research/not-configured state until an operator deliberately records a draft acquisition pack or service price;
 - one compact service row for each registered chargeable service code;
-- each service's active immutable version, credit cost, unit, duration, pricing mode, and connection status;
-- fixed-credit and conversion-derived pricing modes;
-- a clear warning that changing a conversion creates new versions for conversion-derived services but does not rewrite accepted historical quotes or spends.
+- each service's global immutable version, credit cost, unit, duration, connection status, and enforcement state;
+- a shadow preview that cannot debit or create a spendable customer quote;
+- one progressive `Review enforcement` flow for the selected country/package and service set;
+- privileged `Enforce and lock` and `Suspend` actions with effective time, immutable history, and no deletion of prior evidence.
 
 Rules:
 - Platform-admin access only; community admins and ordinary members cannot change global pricing.
-- User-facing purchase screens submit a service code and governed quantity, never a client-owned amount.
-- Every operator change creates a new server-side version and retires the prior active version.
-- Direct credit overrides remain fixed when the conversion changes; conversion-derived services are recalculated into new versions.
-- Service prices remain vacant until configured. An unconfigured service cannot issue a spendable quote.
+- User-facing purchase screens submit a service code and governed quantity, never a client-owned amount, country, pricing region, conversion, or debit.
+- The server resolves the account's approved billing country/profile. Country changes require governed review and affect future acquisition quotes only.
+- Regional affordability changes the country-local acquisition price of credits. Ordinary service debits remain global unless an exceptional delivery-cost rule is explicitly approved.
+- Saving research, draft, or shadow values must not activate charging. Enforcement requires a reviewed privileged action that creates a new immutable effective version.
+- Every operator change creates a new server-side version; later changes never rewrite accepted acquisitions, quotes, spends, balances, or rights.
+- An unconfigured or unenforced acquisition pack cannot create a customer top-up order. An unconfigured, unenforced, or unconnected service cannot create a spendable quote.
+- Global payment suspension and Pipeline Credit commercial enforcement must both block debit. Existing history and delivered rights remain visible.
 - Existing paid rights and historical direct-payment records remain valid and are never charged again.
 - The first connected delivery is `vault.slot`; other registered services may be priced in preparation but must not claim connected delivery until their atomic debit-and-delivery handler exists.
 - Credits are non-cashable service-use rights, not money, savings, lending, cash-out value, or ordinary user-to-user transfer.
+- Full research and architecture are maintained in `docs/GSN_PIPELINE_CREDIT_REGIONAL_AFFORDABILITY_AND_ENFORCEMENT_ARCHITECTURE_2026-11-12.md`.
 
 ## AdminCommunityOwnershipPage
 

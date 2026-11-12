@@ -185,10 +185,46 @@ def test_conversion_change_versions_service_without_rewriting_old_quote(
     assert Decimal(str(immutable_old_cost)) == Decimal("20.00")
 
 
+def test_service_spend_is_blocked_while_payment_operations_are_suspended(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "0")
+    _seed_vault_owner()
+    _configure_vault_price(credit_cost="10.00")
+    _fund_customer("20.00")
+
+    quoted = _quote(client, quantity=1, key="vault-suspended-spend-quote")
+    assert quoted.status_code == 201, quoted.text
+    quote = quoted.json()["quote"]
+
+    spent = client.post(
+        "/pipeline-credits/service-spends",
+        json={
+            "quote_key": quote["quote_key"],
+            "idempotency_key": f"spend-{quote['quote_key']}",
+        },
+    )
+    assert spent.status_code == 409, spent.text
+    assert spent.json()["detail"]["code"] == "payment_operations_suspended"
+
+    with engine.begin() as conn:
+        assert conn.execute(
+            text("SELECT balance FROM pipeline_credit_accounts WHERE account_key = 'customer_service:user:1'")
+        ).scalar_one() == 20
+        assert conn.execute(
+            text("SELECT COUNT(*) FROM pipeline_credit_ledger_entries WHERE entry_type = 'debit'")
+        ).scalar_one() == 0
+        assert conn.execute(text("SELECT COUNT(*) FROM vault_orders")).scalar_one() == 0
+
+
 def test_vault_quote_spend_atomically_debits_and_unlocks_blocks(
     client,
     override_current_user_user,
+    monkeypatch,
 ):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
     _seed_vault_owner()
     _configure_vault_price(credit_cost="10.00", duration_days=45)
 
@@ -275,7 +311,9 @@ def test_vault_quote_spend_atomically_debits_and_unlocks_blocks(
 def test_insufficient_balance_does_not_debit_or_unlock(
     client,
     override_current_user_user,
+    monkeypatch,
 ):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
     _seed_vault_owner()
     _configure_vault_price(credit_cost="20.00")
     _fund_customer("10.00")

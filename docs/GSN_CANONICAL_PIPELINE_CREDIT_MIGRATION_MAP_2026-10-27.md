@@ -2,6 +2,16 @@
 
 Status: repository-backed architecture and migration decision map, partially implemented on 2026-11-12 after explicit owner approval. Prices and conversion remain operator-configured and vacant by default.
 
+## 2026-11-12 regional affordability and enforcement direction
+
+- The approved target separates country-local Pipeline Credit acquisition packs from globally credit-priced GSN services.
+- GBP remains an internal planning anchor only. Pipeline Credits remain non-cashable service-use units.
+- Neutral country pricing profiles replace first-, second-, or third-world labels. World Bank, ITU, GSMA, local payment costs, direct cost floors, and GSN customer discovery inform operator recommendations.
+- The authenticated server must resolve the account's approved billing country and pricing profile. A client-supplied region must never choose a cheaper spendable quote.
+- Regional pricing remains in research, draft, or shadow mode until real payment, delivery, cost, repeat-use, accounting, and security gates pass.
+- Enforcement must create an immutable reviewed version through Command Centre. It is not implied by saving a draft amount.
+- The canonical detail and external research are recorded in `docs/GSN_PIPELINE_CREDIT_REGIONAL_AFFORDABILITY_AND_ENFORCEMENT_ARCHITECTURE_2026-11-12.md`.
+
 ## 2026-11-12 implementation truth
 
 - Purpose-scoped `customer_service` accounts now coexist safely with unchanged `provider_operations` history.
@@ -14,7 +24,7 @@ Status: repository-backed architecture and migration decision map, partially imp
 
 ## Settled owner direction
 
-Every chargeable GSN service must ultimately be funded from one customer-facing, non-cashable GSN Pipeline Credit balance. The credit-to-cash acquisition rate, each service debit and every regional adjustment remain undecided pending customer discovery.
+Every chargeable GSN service must ultimately be funded from one customer-facing, non-cashable GSN Pipeline Credit balance. Country-local acquisition prices and each global service debit remain undecided pending customer discovery; the regional architecture is now settled.
 
 The current examples of approximately five credits per GBP 1, one credit for a normal Spotlight day and five credits for Repost reach across five communities or a target region are hypotheses, not active prices.
 
@@ -148,18 +158,18 @@ Customer-service accounts now use optimistic account-version checks and a stored
 6. **Keep billing suspended where policy is suspended.** Community Domain and the general free-pilot payment gate remain closed until the owner separately authorises activation.
 7. **Never infer willingness to pay from migration.** Moving an existing balance or honouring an entitlement is not a new sale, renewal or customer-discovery result.
 
-## Regional policy requiring owner approval
+## Regional policy approved for architecture, not enforcement
 
-Recommended starting architecture, not yet an owner decision:
+- Bind each customer-service account to a server-resolved billing country and governed pricing profile.
+- Keep credits non-cashable, account-scoped, and non-transferable between ordinary users.
+- Use country-local acquisition-pack versions for the cash price of a fixed credit quantity.
+- Use one global credit debit per service version unless a documented delivery-cost exception is separately approved.
+- Snapshot country, acquisition version, service version, and enforcement version on the relevant quote, acquisition, and spend records.
+- Allow country/profile changes only through governed review affecting future acquisition quotes, never historical entries.
+- Use explicit sponsor grants instead of hidden cross-region balance transfers.
+- Keep all country profiles and provisional prices in research, draft, or shadow mode until activation gates pass.
 
-- bind every customer-service account to one pricing region;
-- keep credits non-cashable and non-transferable;
-- use region-specific top-up packs and region-specific service catalogue rows;
-- snapshot region and catalogue version on every quote and spend;
-- allow region changes only through a governed review that affects future quotes, not historical entries;
-- use explicit sponsor grants instead of hidden cross-region balance transfers.
-
-This is safer than allowing freely transferable credits acquired at different regional cash rates. Transferable region-priced credits create arbitrage, resale, refund and accounting problems before GSN has evidence that the added complexity creates customer value.
+This structure avoids arbitrage while keeping the member explanation simple: local cash buys credits; the same service consumes the same credits.
 
 ## Implementation sequence after commercial approval
 

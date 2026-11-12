@@ -1,5 +1,17 @@
 # Active Handoff Notes
 
+## Pipeline Credit regional affordability and dormant enforcement architecture - 2026-11-12
+
+- Consolidated all existing Pipeline Credit pricing, migration, revenue, costing, forecast, UI, ledger, quote, and Vault decisions into `docs/GSN_PIPELINE_CREDIT_REGIONAL_AFFORDABILITY_AND_ENFORCEMENT_ARCHITECTURE_2026-11-12.md`.
+- External benchmark: OpenAI separates wallet funds, usage credits, and feature rate cards; telecoms separate airtime/cash balance from local bundles; ITU measures affordability against monthly GNI per capita; World Bank income groups and PPP are evidence inputs, not automatic prices. No reviewed company publishes a country-tier formula GSN can truthfully copy.
+- Settled architecture: country-local acquisition packs fund one non-cashable, non-transferable balance; ordinary GSN services use globally versioned credit debits; the server owns account country/profile; sponsor support is a separate governed grant.
+- Initial Region A 100%, Region B 50%, Region C 25%, five-credits-per-Region-A-GBP-one, Spotlight, Repost, shop, and Vault values remain research hypotheses only. No price was activated or seeded.
+- Lifecycle is Research -> Draft -> Shadow -> Pilot -> Enforced -> Suspended -> Retired. Command Centre must use reviewed `Enforce and lock`, immutable effective versions, and progressive disclosure; saving a draft must never activate charging.
+- Runtime truth found during audit: the operator UI and Vault are hardcoded to global/GBP, the quote API trusts client `region_code`, service rows are region-scoped, customer acquisition is not connected, legacy Member Service Credits remain, and no enforce-and-lock model exists.
+- Safety repair: `/pipeline-credits/service-spends` now obeys `GSN_PAYMENT_OPERATIONS_ENABLED`; suspended payment operations return structured `payment_operations_suspended` without a debit or Vault delivery.
+- Corrected the live Finance explanation that falsely equated one credit with GBP 1. Tracked canonical sources now explicitly supersede that historical untracked example without absorbing the untracked costing file into this deployment.
+- Regional charging remains unenforced until country assignment, acquisition packs, comprehensive enforcement, accounting/tax/refund/expiry policy, delivery readiness, and real customer-discovery evidence are complete.
+
 ## Configurable customer Pipeline Credits and Vault first slice - 2026-11-12
 
 - Owner direction: all new chargeable GSN service actions must consume a

@@ -168,7 +168,7 @@ assertContains(
   "Finance desktop snapshot labels must use deterministic glyphs instead of emoji text."
 );
 assertContains(
-  /label: "Service credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?GSN service credits[\s\S]*?One pipeline credit means GBP 1 of planned usage value[\s\S]*?Credits fund usage\. They are not loans\./,
+  /label: "Service credits"[\s\S]*?openFinanceDetailLane\("pipelineCredits", "finance-pipeline-credits"\)[\s\S]*?id="finance-pipeline-credits"[\s\S]*?GSN service credits[\s\S]*?Pipeline Credits are non-cashable GSN service-use units\.[\s\S]*?Credits fund usage\. They are not loans\./,
   "Finance Pipeline Credits lane must stay wired from the secondary lane chooser to a truthful pricing/planning panel."
 );
 

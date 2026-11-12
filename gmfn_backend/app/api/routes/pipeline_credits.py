@@ -532,12 +532,18 @@ def pipeline_credit_create_service_spend(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     try:
+        require_payment_operations_enabled()
         order = spend_service_quote(
             db,
             actor_user_id=int(current_user.id),
             quote_key=payload.quote_key,
             idempotency_key=payload.idempotency_key,
         )
+    except PaymentOperationsSuspended as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "payment_operations_suspended", "message": str(exc)},
+        ) from exc
     except PipelineCreditCommerceError as exc:
         db.rollback()
         _raise_commerce_error(exc)

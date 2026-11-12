@@ -155,7 +155,7 @@ Views, members, posts, reactions, TrustSlips, payment instructions and merchant 
 2. Test one existing low-risk paid product with real buyers. Paid visibility credits are the cleanest candidate because price, payment, entitlement and consumption already connect.
 3. Test Vault separately because its value and 30-day delivery unit differ from visibility.
 4. Test Paid Spotlight and Paid Repost as separate service lines funded from the common credit balance. Do not count both the top-up and credit consumption as separate revenue.
-5. Keep Community Domain payment suspended until its Pipeline Credit package and regional debit are implemented safely and a real organisation or sponsor accepts it.
+5. Keep Community Domain payment suspended until its global Pipeline Credit debit and country-local acquisition package are implemented safely and a real organisation or sponsor accepts it.
 6. Connect the existing central-advertising settlement rail to a governed admin workflow only after GSN has permitted audience, brand-safety, delivery and pricing evidence.
 7. Prototype GSN Shop Reel by composing the existing Shop, media, renderer and share engines. Do not create a new feed or paid entitlement until the output and incremental value are tested.
 8. Select any Growth Partner reward only from collected, non-refunded contribution margin of one approved product. Do not reward raw traffic, registration or member-to-member sales.
