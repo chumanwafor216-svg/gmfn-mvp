@@ -25,6 +25,7 @@ type DashboardCompactIdentityHeroProps = {
   initials: string;
   gsnId: string;
   membershipLabel: string;
+  pipelineCreditBalance: string | null;
   readings: DashboardCompactIdentityReading[];
   photoToolsOpen: boolean;
   avatarInputId: string;
@@ -107,6 +108,7 @@ export default function DashboardCompactIdentityHero({
   initials,
   gsnId,
   membershipLabel,
+  pipelineCreditBalance,
   readings,
   photoToolsOpen,
   avatarInputId,
@@ -262,6 +264,30 @@ export default function DashboardCompactIdentityHero({
               />
               {membershipLabel}
             </span>
+            {pipelineCreditBalance !== null ? (
+              <span
+                data-debug-id="dashboard.identity.pipeline-credit-balance"
+                aria-label={`Your Pipeline Credits: ${pipelineCreditBalance}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  minHeight: 25,
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(242,207,119,0.30)",
+                  background: "rgba(214,170,69,0.14)",
+                  color: "#FFF8DC",
+                  fontSize: 10.5,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>Your Pipeline Credits</span>
+                <strong style={{ color: colors.gold300 }}>{pipelineCreditBalance}</strong>
+              </span>
+            ) : null}
           </div>
         </div>
 

@@ -56,11 +56,11 @@ requirePattern(
   communityFile,
   "The optional balance must come from the selected community and remain hidden unless it is positive."
 );
-requirePattern(
+forbidPattern(
   communitySource,
-  /getMyPipelineCreditServiceBalance\("global"\)[\s\S]*?response\?\.account\?\.balance[\s\S]*?data-debug-id="community-home\.identity\.pipeline-credit-balance"[\s\S]*?Your Pipeline Credits[\s\S]*?formatPipelineCreditBalance/,
+  /getMyPipelineCreditServiceBalance|community-home\.identity\.pipeline-credit-balance|Your Pipeline Credits/,
   communityFile,
-  "Community Home must show the authenticated customer-service Pipeline Credit balance inside the identity hero."
+  "Community Home must not imply that the member's global Pipeline Credit balance belongs to the selected community."
 );
 requirePattern(
   communitySource,
@@ -82,9 +82,9 @@ requirePattern(
 );
 requirePattern(
   specSource,
-  /Owner-approved Pipeline Credit balance amendment[\s\S]*?Label the fact `Your Pipeline Credits`[\s\S]*?Do not add a top-up, purchase, transfer, or spend action/,
+  /Owner-approved Pipeline Credit placement correction[\s\S]*?Do not surface the member's global Pipeline Credit balance on Community Home[\s\S]*?Dashboard Identity Passport owns the single primary global balance status/,
   specFile,
-  "The frozen screen amendment must preserve the Pipeline Credit balance boundary and prohibit invented Community Home actions."
+  "The frozen screen correction must keep the global Pipeline Credit balance out of selected-community context."
 );
 
 if (findings.length > 0) {

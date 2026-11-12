@@ -24,6 +24,7 @@ import {
   getMe,
   getMyAttentionSpine,
   getMyNotifications,
+  getMyPipelineCreditServiceBalance,
   getMyRoscaObligations,
   getMyTrustSlip,
   getSelectedClanId,
@@ -1083,6 +1084,14 @@ function stopDashboardPointerEvent(
 
 function safeStr(x: unknown): string {
   return String(x ?? "").trim();
+}
+
+function formatPipelineCreditAmount(value: unknown): string {
+  const amount = Math.max(0, Number(safeStr(value).replace(/,/g, "")) || 0);
+  return new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
 }
 
 function normalizeDashboardServerAttentionSignals(value: unknown): AttentionSpineSignal[] {
@@ -3417,6 +3426,7 @@ export default function DashboardPage() {
     useState<DashboardToolsLaneKey>("evidence");
 
   const [me, setMe] = useState<any>(null);
+  const [pipelineCreditBalance, setPipelineCreditBalance] = useState<string | null>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [trustExplanation, setTrustExplanation] = useState<any>(null);
@@ -3673,6 +3683,25 @@ export default function DashboardPage() {
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", refreshAttentionClock);
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    void getMyPipelineCreditServiceBalance("global")
+      .then((response) => {
+        if (!alive) return;
+        setPipelineCreditBalance(
+          formatPipelineCreditAmount(response?.account?.balance ?? "0.00")
+        );
+      })
+      .catch(() => {
+        if (alive) setPipelineCreditBalance(null);
+      });
+
+    return () => {
+      alive = false;
     };
   }, []);
 
@@ -7705,6 +7734,7 @@ export default function DashboardPage() {
               initials={profileInitials}
               gsnId={visibleGsnId}
               membershipLabel={dashboardMembershipLabel}
+              pipelineCreditBalance={pipelineCreditBalance}
               readings={[
                 {
                   label: "Trust",
@@ -8284,6 +8314,31 @@ export default function DashboardPage() {
               </svg>
             </span>
           </div>
+
+          {pipelineCreditBalance !== null ? (
+            <div
+              data-debug-id="dashboard.identity.pipeline-credit-balance"
+              style={{
+                order: 18,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "10px 16px",
+                borderLeft: "1px solid rgba(16,37,59,0.08)",
+                borderRight: "1px solid rgba(16,37,59,0.08)",
+                borderBottom: "1px solid rgba(16,37,59,0.08)",
+                background: "linear-gradient(90deg, #EEF6FF 0%, #FFF8E7 100%)",
+              }}
+            >
+              <span style={{ color: "#52677C", fontSize: 12, fontWeight: 900 }}>
+                Your Pipeline Credits
+              </span>
+              <span style={{ color: "#0B4F86", fontSize: 15, fontWeight: 1000 }}>
+                {pipelineCreditBalance}
+              </span>
+            </div>
+          ) : null}
 
           <div
             style={{

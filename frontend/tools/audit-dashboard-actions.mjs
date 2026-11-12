@@ -13,6 +13,7 @@ function read(relativePath) {
 const findings = [];
 const dashboardFile = "src/pages/DashboardPage.tsx";
 const dashboardSectionFiles = [
+  "src/components/dashboard/DashboardCompactIdentityHero.tsx",
   "src/components/dashboard/DashboardCommerceAnalyticsCard.tsx",
   "src/components/dashboard/DashboardToolsSection.tsx",
   "src/components/dashboard/DashboardInboxSection.tsx",
@@ -138,6 +139,15 @@ function assertDashboardSliceStaysInert(label, startNeedle, endNeedle) {
 
 assertStableActionsHaveDebugIds();
 assertNoSignedInPublicEntryLinks();
+
+assertContains(
+  /getMyPipelineCreditServiceBalance\("global"\)[\s\S]*?pipelineCreditBalance=\{pipelineCreditBalance\}[\s\S]*?data-debug-id="dashboard\.identity\.pipeline-credit-balance"/,
+  "Dashboard Identity Passport must own the authenticated global Pipeline Credit balance on phone and desktop."
+);
+assertNotContains(
+  /<(?:StableButton|button)\b[^>]*(?:debugId|data-debug-id)="dashboard\.identity\.pipeline-credit-balance"/,
+  "Dashboard Pipeline Credit balance must remain a non-clickable status until a dedicated acquisition workflow exists."
+);
 
 assertNotContains(
   /dashboard\.hidden-back\.community/,

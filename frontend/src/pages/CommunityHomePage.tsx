@@ -32,7 +32,6 @@ import communityFallbackImage from "../assets/dashboard/dashboard-demand-market.
 import {
   getPoolMe,
   getMe,
-  getMyPipelineCreditServiceBalance,
   getSelectedClanId,
   createCommunityNotice,
   createCommunityNoticeVoice,
@@ -1525,15 +1524,6 @@ function formatCommunityBalance(balance: SelectedCommunityBalance): string {
   }
 }
 
-function formatPipelineCreditBalance(value: any): string {
-  const amount = Math.max(0, moneyNumber(value));
-  const formatted = new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-  }).format(amount);
-  return `${formatted} Pipeline Credits`;
-}
-
 function wordLimit(text: string, maxWords: number): string {
   const words = safeStr(text).split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return words.join(" ");
@@ -2017,7 +2007,6 @@ export default function CommunityHomePage() {
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [selectedCommunityBalance, setSelectedCommunityBalance] =
     useState<SelectedCommunityBalance | null>(null);
-  const [pipelineCreditBalance, setPipelineCreditBalance] = useState<string | null>(null);
   const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
   const [communityPreviousAnnouncements, setCommunityPreviousAnnouncements] =
     useState<CommunityNoticeItem[]>([]);
@@ -2422,24 +2411,6 @@ export default function CommunityHomePage() {
       alive = false;
     };
   }, [selectedClanId]);
-
-  useEffect(() => {
-    let alive = true;
-    setPipelineCreditBalance(null);
-
-    void getMyPipelineCreditServiceBalance("global")
-      .then((response) => {
-        if (!alive) return;
-        setPipelineCreditBalance(firstTruthy(response?.account?.balance, "0.00"));
-      })
-      .catch(() => {
-        if (alive) setPipelineCreditBalance(null);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   const isCommunityNoticeOfficer = isCommunityOfficer(selectedClan, me);
   const activeNoticePostingPolicy = normalizeNoticePostingPolicy(
@@ -5106,13 +5077,6 @@ export default function CommunityHomePage() {
                   </div>
                 ) : null}
 
-                {pipelineCreditBalance !== null ? (
-                  <div data-debug-id="community-home.identity.pipeline-credit-balance" style={{ marginTop: 9, display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", padding: "8px 10px", borderRadius: 13, background: "#EEF6FF", border: "1px solid rgba(13,95,168,0.16)" }}>
-                    <span style={{ color: "#617085", fontSize: 11.5, fontWeight: 820 }}>Your Pipeline Credits</span>
-                    <span style={{ color: "#0B4F86", fontSize: 13, fontWeight: 950 }}>{formatPipelineCreditBalance(pipelineCreditBalance)}</span>
-                  </div>
-                ) : null}
-
                 {communityHomeNeedsDisplayName ? (
                   <StableButton
                     type="button"
@@ -5218,20 +5182,6 @@ export default function CommunityHomePage() {
                     <CommunityIdentityFact
                       label="Available now"
                       value={formatCommunityBalance(selectedCommunityBalance)}
-                      emphasis
-                      fullWidth
-                      compact={isCompact}
-                    />
-                  </div>
-                ) : null}
-                {pipelineCreditBalance !== null ? (
-                  <div
-                    style={{ gridColumn: "1 / -1" }}
-                    data-debug-id="community-home.identity.pipeline-credit-balance"
-                  >
-                    <CommunityIdentityFact
-                      label="Your Pipeline Credits"
-                      value={formatPipelineCreditBalance(pipelineCreditBalance)}
                       emphasis
                       fullWidth
                       compact={isCompact}

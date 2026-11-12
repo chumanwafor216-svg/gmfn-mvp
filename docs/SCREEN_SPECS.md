@@ -182,6 +182,13 @@ Rules:
 
 ## DashboardPage
 
+### Owner-approved Pipeline Credit balance placement - 2026-11-12
+- Dashboard Identity Passport is the single primary home for the signed-in member's global customer-service Pipeline Credit balance.
+- Show one compact, non-clickable `Your Pipeline Credits` status on phone and desktop, including a truthful zero when the authenticated endpoint reports an unopened account.
+- Hide the status when the endpoint cannot be read. Do not invent a top-up, purchase, transfer, or spend action on Dashboard.
+- Keep Pipeline Credits visibly separate from money, savings, lending, community finance, and transferable wallet language.
+- Do not alter Market Wisdom presentation, interaction, timing, data, or actions.
+
 ### Founder-approved static lighting refinement - 2026-11-07
 - On authenticated phones, the existing Dashboard content sits on one deep-navy route-local stage.
 - Use restrained static cyan, violet, and gold edge lighting only on the existing identity, My Pulse, DemandBox, Focus, Market Wisdom outer card, and TrustSlip surfaces.
@@ -748,11 +755,9 @@ After submission:
 
 ## CommunityHomePage
 
-### Owner-approved Pipeline Credit balance amendment - 2026-11-12
-- Surface the signed-in member's customer-service Pipeline Credit balance as one compact fact inside the existing selected-community identity hero.
-- Show a truthful zero balance when the authenticated balance endpoint reports that the account has not been opened yet; hide the fact only when the endpoint cannot be read.
-- Label the fact `Your Pipeline Credits` so it is not mistaken for community money, a bank balance, savings, lending, or a transferable wallet.
-- Do not add a top-up, purchase, transfer, or spend action to Community Home. Those workflows remain owned by their dedicated service and acquisition surfaces.
+### Owner-approved Pipeline Credit placement correction - 2026-11-12
+- Do not surface the member's global Pipeline Credit balance on Community Home. Community Home is selected-community context and would risk implying that the balance belongs to that community.
+- Dashboard Identity Passport owns the single primary global balance status.
 - Preserve the existing Community Home structure, Bulletin order, actions, permissions, and frozen button inventory.
 
 ### Founder-approved static lighting refinement - 2026-11-07
@@ -782,7 +787,6 @@ Must show, in phone-first order:
   - stable community reference / global ID labelled `Community ID`
   - signed-in member role labelled `Your role` and active membership labelled `Membership`
   - selected-community `Available now` balance only when the connected effective balance is greater than zero
-  - signed-in member `Your Pipeline Credits` customer-service balance, including a truthful zero when loaded
   - one small `Invite` action inside the hero
 - tapping `Invite` opens one recipient-name field and one `Send invite` action
   - the signed-in member is attached automatically as inviter
@@ -844,7 +848,7 @@ Rules:
 - On phone, the selected-community identity must rely on the community name and status badges instead of repeating a context paragraph.
 - On phone, the authenticated app shell owns the page title/navigation; Community Home must not add another route-level Back/title strip or repeat the `Community Home` label inside the identity hero.
 - On phone, the secondary-tools, switcher, and Admin disclosures use their action row as the card; do not wrap each row in another visible card.
-- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount remains the only approved conditional money fact in the hero; `Your Pipeline Credits` is a separate non-cashable service-use balance and must not be presented as money.
+- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. The signed-in member's own selected-community `Available now` amount is the only approved conditional money fact in the hero.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
 Role states to support:

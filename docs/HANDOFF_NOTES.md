@@ -6421,3 +6421,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The balance is the member's global customer-service Pipeline Credit account, not community money. A server-returned unopened account displays the truthful zero balance; a failed/unreadable request displays no invented value.
 - Community Home adds no top-up, purchase, transfer, or spend action. The existing Bulletin order, route ownership, permissions, and protected button inventory remain unchanged.
 - Regression coverage is recorded in `frontend/tools/audit-community-home-billboard.mjs`.
+
+# Pipeline Credit balance placement correction - 2026-11-12
+
+- Ruthless architecture correction: the global customer-service Pipeline Credit balance has been removed from `/app/community` because selected-community context could falsely imply community ownership.
+- Dashboard Identity Passport is now the single primary balance surface on phone and desktop. It reads `/pipeline-credits/me-service-balance`, shows a truthful zero when loaded, hides on request failure, and adds no payment action.
+- Dashboard Market Wisdom is untouched. Community Home's existing cash `Available now` exception, Bulletin order, routes, permissions, and button inventory remain unchanged.
+- Regression coverage now requires the Dashboard ownership and forbids the balance from returning to Community Home.
