@@ -1908,8 +1908,14 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /No private block is active yet\. Request the exact Pipeline Credit quote above, agree to it, and GSN will check the balance, debit the credits and unlock the selected blocks together\./,
-  "Vault Control empty state must describe the atomic Pipeline Credit debit-and-unlock boundary."
+  /pipelinePilotWaived \? "No private space is open yet\. Start the free pilot above\." : "No private space is open yet\. Review the credit cost above to continue\."/,
+  "Vault Control empty state must distinguish free pilot fulfilment from enforced Pipeline Credit review."
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /quote\.charge_mode === "pilot_waived"[\s\S]*?completeVaultActivation\(quote, true\)[\s\S]*?No Pipeline Credits were taken during pilot testing/,
+  "Vault Control pilot activation must pass through the connected service order while stating that no credits were taken."
 );
 
 assertNotContains(

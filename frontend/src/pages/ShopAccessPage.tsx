@@ -6,7 +6,6 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { StableCtaLink } from "../components/StableButton";
 import {
   TrustPaperAuthorityStrip,
-  TrustPaperSecurityFooter,
   TrustPaperSecurityNote,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
@@ -449,14 +448,6 @@ export default function ShopAccessPage() {
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
-        <ExplainToggle
-          label="Why this page opened"
-          what="This page opens private vault access to a shared shop view and explains why you can see this protected part of the shop."
-          why="It makes the access rules visible so private shop access does not feel random or permanent."
-          next="Check the vault status and access explanation first, then continue only while the shared access remains active."
-          tone="light"
-        />
-
         <section
           style={pageCard(
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
@@ -487,59 +478,17 @@ export default function ShopAccessPage() {
             </div>
           </div>
           <div style={{ marginTop: 12, ...helperText(), maxWidth: 860, color: "#D7E3F1" }}>
-            {firstTruthy(
-              view?.shop_description,
-              "You can see this private shop because the owner shared access with you."
-            )}
+            Shared privately by {firstTruthy(view?.owner_name, view?.gmfn_id, "the shop owner")}.
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
-              {shopAccessIconText("check", `Status: ${statusLabel(status)}`, 20)}
+              {shopAccessIconText("check", "Private link open", 20)}
             </span>
             <span style={badge(false)}>
-              {shopAccessIconText(
-                "community",
-                `Community: ${firstTruthy(view?.community_name, "Private community")}`,
-                20
-              )}
-            </span>
-            <span style={badge(false)}>
-              {shopAccessIconText(
-                "id",
-                `Merchant: ${firstTruthy(view?.owner_name, view?.gmfn_id, "GSN merchant")}`,
-                20
-              )}
-            </span>
-            <span style={badge(false)}>
-              {shopAccessIconText("shop", "You are inside Vault access", 20)}
-            </span>
-            <span style={badge(false)}>
-              {shopAccessIconText("navigation", "Private link accepted", 20)}
+              {shopAccessIconText("calendar", `Expires: ${safeDateTime(view?.policy?.expires_at)}`, 20)}
             </span>
           </div>
-
-          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {publicShopRoute ? (
-              <StableCtaLink
-                to={publicShopRoute}
-                kind="secondary"
-                stableHeight={52}
-                debugId="shop-access.hero.open-public-shop"
-              >
-                {shopAccessIconText("shop", "Open public shop face")}
-              </StableCtaLink>
-            ) : null}
-            <StableCtaLink
-              to="/welcome"
-              kind="primary"
-              stableHeight={52}
-              debugId="shop-access.hero.return-entry"
-            >
-              {shopAccessIconText("home", "Return to entry")}
-            </StableCtaLink>
-          </div>
-
           <TrustPaperAuthorityStrip
             title="GSN Private Vault Access Paper"
             reference={firstTruthy(view?.gmfn_id, view?.shop_name, "Private vault access")}
@@ -550,72 +499,8 @@ export default function ShopAccessPage() {
           />
         </section>
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>
-            {shopAccessIconText("shield", "Access explanation", 22)}
-          </div>
-          <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            You are viewing a private part of this shop. Access was shared by the owner and it can
-            end when the time, view limit, or access rules are reached.
-          </div>
-
-          <ExplainToggle
-            label="What this does"
-            what="This access explanation makes the private access rules clear, including why access exists and why it may end."
-            why="It helps visitors understand that vault access is permission-based rather than a permanent open shop state."
-            next="Read the access explanation first, then decide whether to continue browsing, contact the owner, or return later."
-            tone="light"
-            style={{ marginTop: 14 }}
-          />
-
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            <div
-              style={{
-                ...innerCard("rgba(248,251,255,0.98)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("eye", "Why you can see this", 22)}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                The owner shared a live Vault access link with you.
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(255,251,239,0.98)"),
-                border: "1px solid rgba(212,175,55,0.14)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("lock", "What can end access", 22)}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Access can end when the link expires, is turned off, or reaches its view limit.
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(248,251,255,0.98)"),
-                border: "1px solid rgba(11,99,209,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("navigation", "Your access is open", 22)}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                This Vault link is open for you now. Stay here until you finish reviewing the
-                approved private offers or the owner gives you a different next step.
-              </div>
-            </div>
-          </div>
-        </section>
-
         {safeStr(view?.banner_url || view?.image_url) ? (
-          <section style={pageCard("#FFFFFF")}>
+          <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
             <div
               style={{
                 width: "100%",
@@ -655,131 +540,30 @@ export default function ShopAccessPage() {
           </section>
         ) : null}
 
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>
-            {shopAccessIconText("document", "Access details", 22)}
-          </div>
-          <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            These details show how this private access works. They explain what is allowed here,
-            but they do not promise impossible device-wide blocking.
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <TrustPaperSecurityNote
-              reference={firstTruthy(view?.gmfn_id, view?.shop_name, "private vault access")}
-              compact
-            />
-          </div>
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                ...innerCard("rgba(252,254,255,0.98)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("calendar", "Expiry", 22)}
+        <section style={{ ...pageCard("#FFFFFF"), order: 3 }}>
+          <details>
+            <summary style={{ cursor: "pointer", color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
+              Link details
+            </summary>
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <div style={{ ...helperText(), color: "#0B1F33" }}>
+                Views: {safeStr(view?.policy?.views_used || 0)} / {safeStr(view?.policy?.max_views || "Unlimited")}
               </div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, lineHeight: 1.4 }}>
-                {safeDateTime(view?.policy?.expires_at)}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(252,254,255,0.98)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("eye", "Views used", 22)}
-              </div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, lineHeight: 1.4 }}>
-                {safeStr(view?.policy?.views_used || 0)} /{" "}
-                {safeStr(view?.policy?.max_views || "Unlimited")}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("rgba(252,254,255,0.98)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-              }}
-            >
-              <div style={sectionLabel()}>
-                {shopAccessIconText("shield", "What is allowed here", 22)}
-              </div>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {restrictionBadges.map((item) => (
                   <span key={item} style={badge(false)}>
                     {shopAccessIconText(restrictionIcon(item), item, 20)}
                   </span>
                 ))}
               </div>
+              <TrustPaperSecurityNote
+                reference={firstTruthy(view?.gmfn_id, view?.shop_name, "private vault access")}
+                compact
+              />
             </div>
-          </div>
-          <TrustPaperSecurityFooter text="Global Support Network (GSN) private access record" />
+          </details>
         </section>
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>
-            {shopAccessIconText("navigation", "What to do next", 22)}
-          </div>
-          <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            Use this page only for the private offers that were intentionally shared with you.
-            If you need the wider storefront, return to the public shop face. If this link no
-            longer serves the purpose you were given, go back to entry and wait for a fresh access
-            link.
-          </div>
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            <div style={innerCard("rgba(248,251,255,0.98)")}>
-              <div style={sectionLabel()}>
-                {shopAccessIconText("check", "Stay here when", 22)}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                You are reviewing the selected private offers that were shared through this Vault
-                link.
-              </div>
-            </div>
-            <div style={innerCard("rgba(248,251,255,0.98)")}>
-              <div style={sectionLabel()}>
-                {shopAccessIconText("globe", "Leave this page when", 22)}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                You want the normal public shop view, you need a different private link, or the
-                sender told you to continue somewhere else.
-              </div>
-            </div>
-          </div>
-          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {publicShopRoute ? (
-              <StableCtaLink
-                to={publicShopRoute}
-                kind="secondary"
-                stableHeight={52}
-                debugId="shop-access.next.open-public-shop"
-              >
-                {shopAccessIconText("shop", "Open public shop face")}
-              </StableCtaLink>
-            ) : null}
-            <StableCtaLink
-              to="/welcome"
-              kind="primary"
-              stableHeight={52}
-              debugId="shop-access.next.back-welcome"
-            >
-              {shopAccessIconText("home", "Back to Welcome")}
-            </StableCtaLink>
-          </div>
-        </section>
-
-        <section style={pageCard("#FFFFFF")}>
+        <section style={{ ...pageCard("#FFFFFF"), order: 1 }}>
           <div style={sectionLabel()}>
             {shopAccessIconText("shop", "Private products", 22)}
           </div>

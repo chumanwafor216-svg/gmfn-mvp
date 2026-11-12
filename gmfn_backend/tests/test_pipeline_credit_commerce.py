@@ -324,6 +324,61 @@ def test_vault_quote_spend_atomically_debits_and_unlocks_blocks(
         assert entitlement["status"] == "active"
 
 
+def test_pilot_waiver_activates_vault_without_debit(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "0")
+    _seed_vault_owner()
+    _configure_vault_price(credit_cost="20.00", duration_days=30)
+    _set_commercial_status("pilot")
+
+    quoted = _quote(client, quantity=1, key="vault-pilot-waiver-quote")
+    assert quoted.status_code == 201, quoted.text
+    quote = quoted.json()["quote"]
+    assert quote["status"] == "issued"
+    assert quote["commercial_status"] == "pilot"
+    assert quote["spendable"] is True
+    assert quote["charge_mode"] == "pilot_waived"
+    assert quote["total_credit_cost"] == "20.00"
+    assert quote["charged_credit_cost"] == "0.00"
+    assert quote["has_sufficient_balance"] is True
+    assert quote["resulting_balance"] == "0.00"
+
+    spent = client.post(
+        "/pipeline-credits/service-spends",
+        json={
+            "quote_key": quote["quote_key"],
+            "idempotency_key": f"spend-{quote['quote_key']}",
+        },
+    )
+    assert spent.status_code == 201, spent.text
+    spend = spent.json()["spend"]
+    assert spend["status"] == "completed"
+    assert spend["total_credit_cost"] == "0.00"
+    assert spend["balance"] == "0.00"
+    assert spend["result"]["activated"] == 1
+    assert spend["result"]["charge_mode"] == "pilot_waived"
+    assert spend["result"]["quoted_credit_cost"] == "20.00"
+    assert spend["result"]["charged_credit_cost"] == "0.00"
+
+    with engine.begin() as conn:
+        assert conn.execute(
+            text("SELECT COUNT(*) FROM pipeline_credit_ledger_entries WHERE entry_type = 'debit'")
+        ).scalar_one() == 0
+        assert conn.execute(
+            text("SELECT COUNT(*) FROM vault_blocks WHERE state = 'active'")
+        ).scalar_one() == 1
+        order = conn.execute(
+            text("SELECT amount_due, payment_method, pricing_rule, currency, status FROM vault_orders")
+        ).mappings().one()
+        assert Decimal(str(order["amount_due"])) == Decimal("0.00")
+        assert order["payment_method"] == "pipeline_credit_pilot_waiver"
+        assert order["pricing_rule"].endswith(".pilot_waived")
+        assert order["currency"] == "PC"
+        assert order["status"] == "confirmed"
+
 def test_insufficient_balance_does_not_debit_or_unlock(
     client,
     override_current_user_user,

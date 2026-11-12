@@ -43,6 +43,8 @@ type PricingCatalogue = {
     lifecycle_status?: string | null;
     quotes_enabled?: boolean;
     spends_enabled?: boolean;
+    debits_enabled?: boolean;
+    pilot_waiver_enabled?: boolean;
     version?: number | null;
     commercial_control_version?: number | null;
   } | null;
@@ -295,7 +297,7 @@ export default function PipelineCreditPricingPage() {
           <div style={brandSectionLabel()}>A · Commercial status</div>
           <h2 style={{ margin: "8px 0 0", color: gmfnBrand.colors.ink }}>Decide what Pipeline Credit commerce may do</h2>
           <p style={{ margin: "8px 0 0", ...brandHelperText() }}>
-            Current lifecycle: <strong>{currentStatus}</strong>. Quotes: <strong>{commercialControl.quotes_enabled === true ? "enabled" : "disabled"}</strong>. Spends: <strong>{commercialControl.spends_enabled === true ? "enabled" : "disabled"}</strong>. Immutable control version: <strong>{commercialVersion ?? "not reported"}</strong>.
+            Current lifecycle: <strong>{currentStatus}</strong>. Quotes: <strong>{commercialControl.quotes_enabled === true ? "enabled" : "disabled"}</strong>. Service fulfilment: <strong>{commercialControl.spends_enabled === true ? "enabled" : "disabled"}</strong>. Credit debits: <strong>{commercialControl.debits_enabled === true ? "enabled" : "disabled"}</strong>. Immutable control version: <strong>{commercialVersion ?? "not reported"}</strong>.
           </p>
           <div style={{ marginTop: 14, ...brandInnerCard("#F8FBFF"), display: "grid", gap: 10 }}>
             <label style={{ display: "grid", gap: 6, color: gmfnBrand.colors.inkSoft, fontWeight: 850 }}>
@@ -316,15 +318,15 @@ export default function PipelineCreditPricingPage() {
             </StableButton>
           </div>
           <div style={{ marginTop: 12, ...brandHelperText(), fontSize: 13 }}>
-            Shadow calculates non-spendable quotes. Pilot is non-spendable until named cohort support exists. Enforced permits connected service debits. Suspended blocks new quote and spend decisions.
+            Shadow calculates non-spendable quotes. Pilot fulfils connected services with a recorded zero-credit waiver. Enforced permits real credit debits. Suspended blocks new quotes and fulfilment.
           </div>
         </section>
 
         <section style={brandPageCard()}>
           <div style={brandSectionLabel()}>B · Global service costs</div>
-          <h2 style={{ margin: "8px 0 0", color: gmfnBrand.colors.ink }}>Set one direct debit price worldwide</h2>
+          <h2 style={{ margin: "8px 0 0", color: gmfnBrand.colors.ink }}>Set the service credit price</h2>
           <p style={{ margin: "8px 0 0", ...brandHelperText() }}>
-            The same service debit applies worldwide. The connected badge describes the current integration state; Vault is the first connected lane. No GBP conversion or region-specific service cost is configured here.
+            This is the operator-controlled service price. Pilot records it without charging; Enforced mode debits it. Vault is the first connected lane.
           </p>
           {loading ? <div style={{ marginTop: 16, ...brandHelperText() }}>Loading the operator catalogue...</div> : (
             <div style={{ marginTop: 16, display: "grid", gap: 8 }}>

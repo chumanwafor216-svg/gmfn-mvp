@@ -19,6 +19,7 @@ from app.db.pipeline_credit_models import (
     PipelineCreditServiceVersion,
 )
 from app.services.community_domain_feature_policy import require_domain_vault_enabled
+from app.services.payment_operations_policy import require_payment_operations_enabled
 from app.services.pipeline_credit_service import (
     ACCOUNT_PURPOSE_CUSTOMER,
     CUSTOMER_SERVICE_CREDIT_BOUNDARY,
@@ -167,6 +168,8 @@ def serialize_commercial_control(
             "decision_note": None,
             "quotes_enabled": False,
             "spends_enabled": False,
+            "debits_enabled": False,
+            "pilot_waiver_enabled": False,
             "created_by_user_id": None,
             "created_at": None,
         }
@@ -177,7 +180,9 @@ def serialize_commercial_control(
         "lifecycle_status": lifecycle_status,
         "decision_note": row.decision_note,
         "quotes_enabled": lifecycle_status in {"shadow", "pilot", "enforced"},
-        "spends_enabled": lifecycle_status == "enforced",
+        "spends_enabled": lifecycle_status in {"pilot", "enforced"},
+        "debits_enabled": lifecycle_status == "enforced",
+        "pilot_waiver_enabled": lifecycle_status == "pilot",
         "created_by_user_id": int(row.created_by_user_id),
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -767,7 +772,7 @@ def issue_service_quote(
         unit_credit_cost=unit_cost,
         total_credit_cost=total_cost,
         context_json=_json(safe_context),
-        status="issued" if control["lifecycle_status"] == "enforced" else "shadow",
+        status="issued" if control["lifecycle_status"] in {"pilot", "enforced"} else "shadow",
         expires_at=_now() + timedelta(minutes=QUOTE_LIFETIME_MINUTES),
         idempotency_key=idem,
         request_fingerprint=fingerprint,
@@ -797,6 +802,8 @@ def quote_out(db: Session, row: PipelineCreditServiceQuote) -> dict[str, Any]:
         commercial_version = int(commercial_version) if commercial_version is not None else None
     except (TypeError, ValueError):
         commercial_version = None
+    pilot_waived = commercial_status == "pilot"
+    charged_total = Decimal("0.00") if pilot_waived else total
     return {
         "quote_key": row.quote_key,
         "service_code": row.service_code,
@@ -807,12 +814,14 @@ def quote_out(db: Session, row: PipelineCreditServiceQuote) -> dict[str, Any]:
         "unit_credit_cost": f"{Decimal(str(row.unit_credit_cost)).quantize(CREDIT_QUANT):.2f}",
         "total_credit_cost": f"{total:.2f}",
         "balance": f"{balance:.2f}",
-        "resulting_balance": f"{max(Decimal('0.00'), balance - total):.2f}",
-        "has_sufficient_balance": balance >= total,
+        "resulting_balance": f"{max(Decimal('0.00'), balance - charged_total):.2f}",
+        "has_sufficient_balance": pilot_waived or balance >= total,
         "status": row.status,
         "commercial_status": commercial_status,
         "commercial_control_version": commercial_version,
-        "spendable": row.status == "issued" and commercial_status == "enforced",
+        "spendable": row.status == "issued" and commercial_status in {"pilot", "enforced"},
+        "charge_mode": "pilot_waived" if pilot_waived else "credit_debit",
+        "charged_credit_cost": f"{charged_total:.2f}",
         "expires_at": row.expires_at.isoformat() if row.expires_at else None,
         "boundary": CUSTOMER_SERVICE_CREDIT_BOUNDARY,
     }
@@ -868,10 +877,20 @@ def spend_service_quote(
     except (TypeError, ValueError):
         context = {}
     control_metadata = context.get("_pipeline_credit_control") if isinstance(context, dict) else {}
-    if not isinstance(control_metadata, dict) or _clean(control_metadata.get("lifecycle_status")).lower() != "enforced":
+    quoted_commercial_status = (
+        _clean(control_metadata.get("lifecycle_status")).lower()
+        if isinstance(control_metadata, dict)
+        else ""
+    )
+    if quoted_commercial_status not in {"pilot", "enforced"}:
         raise PipelineCreditCommerceError(
             "shadow_quote_not_spendable",
-            "This quote was created in a non-enforced commercial mode and cannot be spent",
+            "This quote was created in a non-spendable commercial mode",
+        )
+    if quoted_commercial_status != current_control["lifecycle_status"]:
+        raise PipelineCreditCommerceError(
+            "commercial_control_changed",
+            "Pipeline Credit commercial control changed; request a fresh quote",
         )
     if quote.status != "issued":
         raise PipelineCreditCommerceError("quote_not_available", "This Pipeline Credit quote is no longer available")
@@ -892,6 +911,8 @@ def spend_service_quote(
     if int(account.id) != int(quote.account_id):
         raise PipelineCreditCommerceError("account_mismatch", "The quote does not belong to this Pipeline Credit account")
 
+    pilot_waived = quoted_commercial_status == "pilot"
+    charged_credit_cost = Decimal("0.00") if pilot_waived else quote.total_credit_cost
     order = PipelineCreditServiceSpendOrder(
         actor_user_id=int(actor_user_id),
         account_id=int(account.id),
@@ -899,7 +920,7 @@ def spend_service_quote(
         service_version_id=int(quote.service_version_id),
         service_code=quote.service_code,
         quantity=int(quote.quantity),
-        total_credit_cost=quote.total_credit_cost,
+        total_credit_cost=charged_credit_cost,
         status="pending",
         idempotency_key=idem,
         request_fingerprint=request_fingerprint,
@@ -908,29 +929,32 @@ def spend_service_quote(
     db.add(order)
     db.flush()
 
-    try:
-        ledger = debit_pipeline_credits(
-            db,
-            account_id=int(account.id),
-            account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
-            amount=quote.total_credit_cost,
-            workflow_key=f"service.{quote.service_code}",
-            idempotency_key=f"pipeline-credit-service-spend:{int(order.id)}",
-            reference_type="service_spend_order",
-            reference_id=str(int(order.id)),
-            note=f"GSN service debit for {quote.service_code}",
-            created_by_user_id=int(actor_user_id),
-            meta={
-                "quote_id": int(quote.id),
-                "service_version_id": int(quote.service_version_id),
-                "quantity": int(quote.quantity),
-            },
-            commit=False,
-        )
-    except InsufficientPipelineCreditError as exc:
-        raise PipelineCreditCommerceError("insufficient_credits", "You do not have enough Pipeline Credits for this quote") from exc
-    except PipelineCreditError as exc:
-        raise PipelineCreditCommerceError("credit_debit_failed", str(exc)) from exc
+    ledger = None
+    if not pilot_waived:
+        require_payment_operations_enabled()
+        try:
+            ledger = debit_pipeline_credits(
+                db,
+                account_id=int(account.id),
+                account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
+                amount=quote.total_credit_cost,
+                workflow_key=f"service.{quote.service_code}",
+                idempotency_key=f"pipeline-credit-service-spend:{int(order.id)}",
+                reference_type="service_spend_order",
+                reference_id=str(int(order.id)),
+                note=f"GSN service debit for {quote.service_code}",
+                created_by_user_id=int(actor_user_id),
+                meta={
+                    "quote_id": int(quote.id),
+                    "service_version_id": int(quote.service_version_id),
+                    "quantity": int(quote.quantity),
+                },
+                commit=False,
+            )
+        except InsufficientPipelineCreditError as exc:
+            raise PipelineCreditCommerceError("insufficient_credits", "You do not have enough Pipeline Credits for this quote") from exc
+        except PipelineCreditError as exc:
+            raise PipelineCreditCommerceError("credit_debit_failed", str(exc)) from exc
 
     context = json.loads(quote.context_json or "{}")
     service = db.get(PipelineCreditServiceVersion, int(quote.service_version_id))
@@ -945,14 +969,24 @@ def spend_service_quote(
         owner_user_id=int(actor_user_id),
         clan_id=int(context.get("clan_id") or 0) or None,
         slot_count=int(quote.quantity),
-        total_credit_cost=quote.total_credit_cost,
+        total_credit_cost=charged_credit_cost,
         service_version=int(service.version),
-        payment_reference=f"PC-SPEND-{int(order.id)}",
+        payment_reference=(
+            f"PC-PILOT-WAIVER-{int(order.id)}"
+            if pilot_waived
+            else f"PC-SPEND-{int(order.id)}"
+        ),
         duration_days=int(service.duration_days),
+        charge_mode="pilot_waived" if pilot_waived else "credit_debit",
     )
 
+    delivery["commercial_status"] = quoted_commercial_status
+    delivery["charge_mode"] = "pilot_waived" if pilot_waived else "credit_debit"
+    delivery["quoted_credit_cost"] = f"{Decimal(str(quote.total_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+    delivery["charged_credit_cost"] = f"{Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+
     order.status = "completed"
-    order.ledger_entry_id = int(ledger.id)
+    order.ledger_entry_id = int(ledger.id) if ledger is not None else None
     order.delivery_reference_type = "vault_order"
     order.delivery_reference_id = str(delivery["vault_order_id"])
     order.result_json = _json(delivery)

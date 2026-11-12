@@ -182,7 +182,7 @@ type VaultConfigRecord = {
   billing_cycle?: string | null;
 };
 
-type VaultPanelKey = "activation" | "payment" | "blocks" | "link" | "flow";
+type VaultPanelKey = "activation" | "payment" | "blocks" | "link";
 
 type PipelineCreditQuote = {
   quote_key: string;
@@ -192,6 +192,8 @@ type PipelineCreditQuote = {
   commercial_status?: string | null;
   commercial_control_version?: number | null;
   spendable?: boolean;
+  charge_mode?: "pilot_waived" | "credit_debit" | string | null;
+  charged_credit_cost?: string | null;
   quantity: number;
   unit_credit_cost: string;
   total_credit_cost: string;
@@ -912,7 +914,6 @@ export default function VaultControlPage() {
     payment: false,
     blocks: false,
     link: false,
-    flow: false,
   });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
@@ -1235,12 +1236,15 @@ export default function VaultControlPage() {
   ).toLowerCase();
   const pipelineQuotesEnabled = pipelineCommercialControl?.quotes_enabled === true;
   const pipelineSpendsEnabled = pipelineCommercialControl?.spends_enabled === true;
-  const pipelineCommercialGuidance =
-    pipelineCommercialStatus === "shadow" || pipelineCommercialStatus === "pilot"
-      ? "This is a preview-only commercial stage. No credits can be taken until the service is Enforced."
+  const pipelineDebitsEnabled = pipelineCommercialControl?.debits_enabled === true;
+  const pipelinePilotWaived = pipelineCommercialStatus === "pilot";
+  const pipelineCommercialGuidance = pipelinePilotWaived
+    ? "Free during pilot testing. No Pipeline Credits will be taken."
+    : pipelineCommercialStatus === "shadow"
+      ? "Vault activation is not open while pricing is being tested."
       : pipelineCommercialStatus === "enforced"
-        ? "Enforced status permits connected service debits after you review and agree to the server quote."
-        : "Commercial quotes are currently unavailable while Pipeline Credit commerce is in research, draft or suspended status.";
+        ? "Review the exact Pipeline Credit cost before activation."
+        : "Vault activation is currently paused.";
   const vaultCreditPriceConfigured = Boolean(vaultCreditService?.configured);
   const vaultUnitCreditCost = Number(vaultCreditService?.credit_cost || 0);
   const customerPipelineCreditBalance = firstTruthy(
@@ -1263,7 +1267,7 @@ export default function VaultControlPage() {
       ? "payment"
       : "activation";
   const vaultNextStepTitle = vaultGuidedPanel === "activation"
-    ? "Activate a private space"
+    ? pipelinePilotWaived ? "Start your free Vault test" : "Activate a private space"
     : vaultGuidedPanel === "payment"
       ? "Confirm the Pipeline Credit use"
       : vaultGuidedPanel === "blocks"
@@ -1272,7 +1276,9 @@ export default function VaultControlPage() {
           ? "Share or manage your private link"
           : "Create the private link";
   const vaultNextStepDetail = vaultGuidedPanel === "activation"
-    ? "Choose one or two spaces and request the exact server-priced Pipeline Credit quote."
+    ? pipelinePilotWaived
+      ? "Choose one or two spaces. Continue free, then add your offer."
+      : "Choose one or two spaces, then review the exact credit cost."
     : vaultGuidedPanel === "payment"
       ? "Review the exact debit and balance, agree, then let GSN unlock the selected spaces."
       : vaultGuidedPanel === "blocks"
@@ -1289,7 +1295,6 @@ export default function VaultControlPage() {
       payment: vaultGuidedPanel === "payment",
       blocks: vaultGuidedPanel === "blocks",
       link: vaultGuidedPanel === "link",
-      flow: false,
     });
   }, [isCompact, loading, vaultGuidedPanel]);
   const vaultPaymentDueDays = Math.max(
@@ -1403,7 +1408,6 @@ export default function VaultControlPage() {
       payment: 3,
       blocks: 4,
       link: 5,
-      flow: 6,
     };
     const guidedOrder = panel === vaultGuidedPanel ? 1 : defaultOrder[panel];
     return editorOpen ? guidedOrder + 1 : guidedOrder;
@@ -1649,86 +1653,13 @@ export default function VaultControlPage() {
     }
   }
 
-  async function requestVaultCreditQuote(quantityTotal: number) {
-    if (!shop?.id) {
-      showNotice("error", "Shop record is not ready.");
-      return;
-    }
-    if (!pipelineQuotesEnabled) {
-      showNotice("info", pipelineCommercialGuidance);
-      return;
-    }
-    if (vaultFeatureOff) {
-      showNotice("error", vaultFeatureOffText);
-      return;
-    }
-    const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
-    if (availableVaultSlots <= 0 || safeQuantity > availableVaultSlots) {
-      showNotice("info", `Vault has ${availableVaultSlots} available block${availableVaultSlots === 1 ? "" : "s"} right now.`);
-      return;
-    }
-    if (!vaultCreditPriceConfigured) {
-      showNotice("info", "The GSN operator has not configured the Vault Pipeline Credit price yet.");
-      return;
-    }
-    setCreatingPayment(true);
-    try {
-      const result = await createPipelineCreditServiceQuote({
-        service_code: "vault.slot",
-        quantity: safeQuantity,
-        region_code: "global",
-        context: {
-          clan_id: Number(shop.clan_id || selectedClanId || 0),
-          shop_id: Number(shop.id),
-        },
-        idempotency_key: `vault-quote-${shop.id}-${safeQuantity}-${Date.now()}`,
-      });
-      if (!mountedRef.current) return;
-      const quote = (result?.quote || null) as PipelineCreditQuote | null;
-      setVaultCreditQuote(quote);
-      setVaultCreditQuoteAgreed(false);
-      setOpenVaultPanels((prev) => ({ ...prev, activation: false, payment: true }));
-      if (quote?.spendable === false) {
-        showNotice("info", "This is a non-spendable Shadow/Pilot preview. No credits were taken.");
-      } else {
-        showNotice(
-          quote?.has_sufficient_balance ? "success" : "info",
-          quote?.has_sufficient_balance
-            ? `Your exact Vault quote is ready: ${quote.total_credit_cost} Pipeline Credits.`
-            : `The quote is ${quote?.total_credit_cost || selectedVaultCreditCost} Pipeline Credits, but your current balance is ${quote?.balance || customerPipelineCreditBalance}.`
-        );
-      }
-    } catch (err: any) {
-      if (!mountedRef.current) return;
-      showNotice("error", structuredErrorMessage(err, "The Vault Pipeline Credit quote could not be created."));
-    } finally {
-      if (mountedRef.current) setCreatingPayment(false);
-    }
-  }
-
-  async function spendVaultPipelineCredits() {
-    if (!vaultCreditQuote?.quote_key) {
-      showNotice("info", "Request the exact Vault Pipeline Credit quote first.");
-      return;
-    }
-    if (vaultCreditQuote.spendable === false) {
-      showNotice("info", "This is a non-spendable Shadow/Pilot preview. No credits can be taken.");
-      return;
-    }
-    if (!vaultCreditQuoteAgreed) {
-      showNotice("info", `Agree to use ${vaultCreditQuote.total_credit_cost} Pipeline Credits first.`);
-      return;
-    }
-    if (!vaultCreditQuote.has_sufficient_balance) {
-      showNotice("error", "You do not have enough Pipeline Credits for this Vault quote.");
-      return;
-    }
+  async function completeVaultActivation(quote: PipelineCreditQuote, pilotWaived: boolean) {
     const firstNewSlot = [1, 2].find((slotNumber) => !activeVaultSlotNumbers.has(slotNumber)) || 1;
     setSpendingPipelineCredits(true);
     try {
       const result = await spendPipelineCreditServiceQuote({
-        quote_key: vaultCreditQuote.quote_key,
-        idempotency_key: `vault-spend-${vaultCreditQuote.quote_key}`,
+        quote_key: quote.quote_key,
+        idempotency_key: `vault-spend-${quote.quote_key}`,
       });
       if (!mountedRef.current) return;
       await loadPage();
@@ -1746,16 +1677,106 @@ export default function VaultControlPage() {
       }));
       showNotice(
         "success",
-        `${result?.spend?.total_credit_cost || "The quoted"} Pipeline Credits were used successfully. Add the private product now.`
+        pilotWaived
+          ? "Private space ready. No Pipeline Credits were taken during pilot testing."
+          : `${result?.spend?.total_credit_cost || "The quoted"} Pipeline Credits were used. Add your private offer now.`
       );
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice("error", structuredErrorMessage(err, "The Pipeline Credit debit could not be completed."));
+      showNotice(
+        "error",
+        structuredErrorMessage(
+          err,
+          pilotWaived
+            ? "The free pilot space could not be opened."
+            : "The Pipeline Credit debit could not be completed."
+        )
+      );
     } finally {
       if (mountedRef.current) setSpendingPipelineCredits(false);
     }
   }
 
+  async function requestVaultCreditQuote(quantityTotal: number) {
+    if (!shop?.id) {
+      showNotice("error", "Shop record is not ready.");
+      return;
+    }
+    if (!pipelineQuotesEnabled) {
+      showNotice("info", pipelineCommercialGuidance);
+      return;
+    }
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
+    const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
+    if (availableVaultSlots <= 0 || safeQuantity > availableVaultSlots) {
+      showNotice("info", `Vault has ${availableVaultSlots} available space${availableVaultSlots === 1 ? "" : "s"} right now.`);
+      return;
+    }
+    if (!vaultCreditPriceConfigured) {
+      showNotice("info", "The GSN operator has not configured the future Vault credit price yet.");
+      return;
+    }
+    setCreatingPayment(true);
+    try {
+      const result = await createPipelineCreditServiceQuote({
+        service_code: "vault.slot",
+        quantity: safeQuantity,
+        region_code: "global",
+        context: {
+          clan_id: Number(shop.clan_id || selectedClanId || 0),
+          shop_id: Number(shop.id),
+        },
+        idempotency_key: `vault-quote-${shop.id}-${safeQuantity}-${Date.now()}`,
+      });
+      if (!mountedRef.current) return;
+      const quote = (result?.quote || null) as PipelineCreditQuote | null;
+      if (!quote?.quote_key) {
+        showNotice("error", "GSN did not return a usable Vault activation record.");
+        return;
+      }
+      if (quote.charge_mode === "pilot_waived" || quote.commercial_status === "pilot") {
+        await completeVaultActivation(quote, true);
+        return;
+      }
+      setVaultCreditQuote(quote);
+      setVaultCreditQuoteAgreed(false);
+      setOpenVaultPanels((prev) => ({ ...prev, activation: false, payment: true }));
+      showNotice(
+        quote.has_sufficient_balance ? "success" : "info",
+        quote.has_sufficient_balance
+          ? `Review the exact Vault cost: ${quote.total_credit_cost} Pipeline Credits.`
+          : `This Vault costs ${quote.total_credit_cost} Pipeline Credits. Your balance is ${quote.balance}.`
+      );
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      showNotice("error", structuredErrorMessage(err, "Vault activation could not start."));
+    } finally {
+      if (mountedRef.current) setCreatingPayment(false);
+    }
+  }
+
+  async function spendVaultPipelineCredits() {
+    if (!vaultCreditQuote?.quote_key) {
+      showNotice("info", "Request the exact Vault credit cost first.");
+      return;
+    }
+    if (vaultCreditQuote.spendable === false) {
+      showNotice("info", "This Vault activation is not open yet.");
+      return;
+    }
+    if (!vaultCreditQuoteAgreed) {
+      showNotice("info", `Agree to use ${vaultCreditQuote.total_credit_cost} Pipeline Credits first.`);
+      return;
+    }
+    if (!vaultCreditQuote.has_sufficient_balance) {
+      showNotice("error", "You do not have enough Pipeline Credits for this Vault activation.");
+      return;
+    }
+    await completeVaultActivation(vaultCreditQuote, false);
+  }
   async function submitProduct() {
     if (preparingImage || preparingVideo) {
       setFormNotice({
@@ -1774,11 +1795,11 @@ export default function VaultControlPage() {
       return;
     }
     if (!confirmedVaultSlots) {
-      setFormNotice({ tone: "error", text: "Activate at least one paid Vault slot before adding block content." });
+      setFormNotice({ tone: "error", text: "Open at least one Vault space before adding an offer." });
       return;
     }
     if (!editingProductId && vaultProducts.length >= confirmedVaultSlots) {
-      setFormNotice({ tone: "error", text: "All paid Vault slots are already in use. Edit an existing block or activate more slots." });
+      setFormNotice({ tone: "error", text: "All open Vault spaces are in use. Edit an offer or open another space." });
       return;
     }
     if (!firstTruthy(productName)) {
@@ -2158,54 +2179,23 @@ export default function VaultControlPage() {
 
       <section
         data-vault-activation-panel="true"
-        style={{
-          ...vaultLightPanel(),
-          padding: 0,
-          overflow: "hidden",
-          order: vaultPhonePanelOrder("activation"),
-        }}
+        style={{ ...vaultLightPanel(), order: vaultPhonePanelOrder("activation") }}
       >
-        {isCompact ? (
-          <div style={{ padding: 18 }}>
-            {panelHeader(
-              "activation",
-              1,
-              "Activate private space",
-              `${vaultCreditPriceConfigured ? `${Number(vaultUnitCreditCost).toFixed(2)} credits each` : "Price not configured"}. ${confirmedVaultSlots} of ${VAULT_SLOT_LIMIT} spaces are active.`
-            )}
-          </div>
-        ) : null}
+        {panelHeader(
+          "activation",
+          1,
+          pipelinePilotWaived ? "Start your free Vault test" : "Activate private space",
+          `${confirmedVaultSlots} of ${VAULT_SLOT_LIMIT} spaces active.`
+        )}
         {!isCompact || openVaultPanels.activation ? (
-        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
-          <div
-            style={{
-              padding: isCompact ? 20 : 24,
-              borderRight: isCompact ? "none" : "1px solid rgba(23,58,92,0.12)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(246,250,254,0.84))",
-            }}
-          >
-            {!isCompact ? <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div> : null}
-            <div style={{ marginTop: isCompact ? 0 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
-              Choose one or two private spaces. {pipelineCommercialGuidance}
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <div style={{ color: gmfnBrand.colors.inkSoft, fontSize: 15, fontWeight: 800, lineHeight: 1.45 }}>
+              {pipelineCommercialGuidance}
             </div>
-            {!isCompact ? (
-              <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-                <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
-                <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
-                  {selectedVaultBundleText}
-                </div>
-              </div>
-            ) : null}
             <div
               role="radiogroup"
-              aria-label="Slots to activate"
-              style={{
-                marginTop: isCompact ? 10 : 14,
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: isCompact ? 8 : 12,
-              }}
+              aria-label="Spaces to activate"
+              style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}
             >
               {[1, 2].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
@@ -2227,7 +2217,7 @@ export default function VaultControlPage() {
                   >
                     <span>{slot}</span>
                     <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>
-                      {unavailable ? "not available" : `slot${slot === 1 ? "" : "s"}`}
+                      {unavailable ? "not available" : `space${slot === 1 ? "" : "s"}`}
                     </span>
                   </StableButton>
                 );
@@ -2235,63 +2225,35 @@ export default function VaultControlPage() {
             </div>
             <PrimaryButton
               onClick={() => void requestVaultCreditQuote(paymentSlots)}
-              disabled={vaultFeatureOff || creatingPayment || !shop?.id || !vaultCreditPriceConfigured || availableVaultSlots <= 0 || !pipelineQuotesEnabled}
-              busy={creatingPayment}
-              busyLabel="Getting quote..."
-              style={{
-                ...brandActionButton("primary"),
-                marginTop: isCompact ? 10 : 18,
-                minHeight: isCompact ? 52 : 62,
-                width: "100%",
-              }}
+              disabled={
+                vaultFeatureOff ||
+                creatingPayment ||
+                spendingPipelineCredits ||
+                !shop?.id ||
+                !vaultCreditPriceConfigured ||
+                availableVaultSlots <= 0 ||
+                !pipelineQuotesEnabled ||
+                !pipelineSpendsEnabled
+              }
+              busy={creatingPayment || spendingPipelineCredits}
+              busyLabel={pipelinePilotWaived ? "Opening your space..." : "Getting exact cost..."}
+              style={{ ...brandActionButton("primary"), minHeight: 58, width: "100%" }}
               debugId="vault-control.request-credit-quote"
             >
-              {pipelineCommercialStatus === "shadow" || pipelineCommercialStatus === "pilot"
-                ? "Preview Pipeline Credit quote"
-                : "Get exact Pipeline Credit quote"}
+              {pipelinePilotWaived ? "Continue free" : "Review credit cost"}
             </PrimaryButton>
+            <div style={{ ...vaultDisciplineCard(), ...helperText() }}>
+              {pipelinePilotWaived
+                ? `Future price: ${selectedVaultPaymentLabel}. Pilot charge today: 0 credits.`
+                : pipelineDebitsEnabled
+                  ? `${selectedVaultPaymentLabel}. Your balance is ${customerPipelineCreditBalance} credits.`
+                  : selectedVaultBundleText}
+            </div>
+            {vaultFeatureOff ? <div style={noticeCard("error")}>{vaultFeatureOffText}</div> : null}
           </div>
-          <div
-            style={{
-              padding: isCompact ? 20 : 24,
-              background:
-                "radial-gradient(circle at 90% 0%, rgba(12,79,168,0.09), transparent 32%), linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))",
-            }}
-          >
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Pipeline Credit preview</div>
-            <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
-              {selectedVaultSlotCount} block{selectedVaultSlotCount === 1 ? "" : "s"} = {selectedVaultPaymentLabel}
-            </div>
-            <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-              <div style={{ ...sectionLabel(), color: "#8A640E" }}>
-                {labelWithIcon("spark", "Best value check")}
-              </div>
-              <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
-            </div>
-            <div style={{ marginTop: 14, ...helperText() }}>
-              Your current customer-service balance is {customerPipelineCreditBalance} Pipeline Credits. The server quote locks the exact service version, quantity and debit for 15 minutes.
-            </div>
-            {vaultFeatureOff ? (
-              <div style={{ marginTop: 14, ...noticeCard("error") }}>
-                {vaultFeatureOffText}
-              </div>
-            ) : null}
-            <div style={{ marginTop: 14, ...noticeCard("info") }}>
-              {pipelineCommercialGuidance} {pipelineSpendsEnabled ? "Connected debits are currently permitted by the commercial control." : "Connected debits are not currently enabled by the commercial control."}
-            </div>
-            <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
-              No direct bank-payment code is created for Vault. Any bank or provider payment belongs to a separate Pipeline Credit acquisition flow, which is not connected on this Vault screen.
-            </div>
-            {identityBlocked ? (
-              <div style={{ marginTop: 14, ...noticeCard("info") }}>
-                Identity review may limit private sharing after activation, but it does not change the server-owned credit quote.
-              </div>
-            ) : null}
-          </div>
-        </div>
         ) : null}
       </section>
-
+      {!pipelinePilotWaived ? (
       <section data-vault-payment-panel="true" style={{ ...vaultLightPanel(), order: vaultPhonePanelOrder("payment") }}>
         {panelHeader(
           "payment",
@@ -2432,6 +2394,8 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
+      ) : null}
+
       <section
         id="vault-private-block-room"
         data-vault-offer-panel="true"
@@ -2452,7 +2416,7 @@ export default function VaultControlPage() {
           </div>
           {confirmedVaultSlots <= 0 ? (
             <div style={{ marginTop: 14, ...noticeCard("info") }}>
-              No private block is active yet. Request the exact Pipeline Credit quote above, agree to it, and GSN will check the balance, debit the credits and unlock the selected blocks together.
+              {pipelinePilotWaived ? "No private space is open yet. Start the free pilot above." : "No private space is open yet. Review the credit cost above to continue."}
             </div>
           ) : null}
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
@@ -2671,34 +2635,6 @@ export default function VaultControlPage() {
           </SecondaryButton>
         </div>
         </>
-        ) : null}
-      </section>
-
-      <section
-        style={{
-          ...pageCard(
-            "linear-gradient(135deg, #06111F 0%, #0C2A49 58%, #15456F 100%)"
-          ),
-          padding: isCompact ? 18 : 22,
-          border: "1px solid rgba(243,208,106,0.22)",
-          boxShadow:
-            "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
-          order: vaultPhonePanelOrder("flow"),
-        }}
-      >
-        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
-        {openVaultPanels.flow ? (
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr", gap: 12, color: "#FFFFFF" }}>
-          {["Activate slots|Choose and pay for your Vault slots.", "Add private offer|Add your content to the paid block.", "Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
-            const [title, text] = entry.split("|");
-            return (
-              <div key={title} style={{ display: "grid", gridTemplateColumns: "36px minmax(0,1fr)", gap: 10, alignItems: "start" }}>
-                <span style={stepBadge()}>{index + 1}</span>
-                <div><div style={{ fontWeight: 950 }}>{title}</div><div style={{ marginTop: 4, color: gmfnBrand.colors.darkMuted, fontSize: 13, lineHeight: 1.45 }}>{text}</div></div>
-              </div>
-            );
-          })}
-        </div>
         ) : null}
       </section>
 

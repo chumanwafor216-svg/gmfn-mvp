@@ -429,6 +429,7 @@ def activate_vault_order_from_pipeline_credit(
     service_version: int,
     payment_reference: str,
     duration_days: int = VAULT_SLOT_DURATION_DAYS,
+    charge_mode: str = "credit_debit",
 ) -> Dict[str, Any]:
     existing = (
         db.query(VaultOrder)
@@ -458,6 +459,7 @@ def activate_vault_order_from_pipeline_credit(
 
     now = _now_utc()
     expires_at = now + timedelta(days=max(1, int(duration_days)))
+    pilot_waived = _safe_str(charge_mode).lower() == "pilot_waived"
     order = VaultOrder(
         shop_id=int(shop_id),
         owner_user_id=int(owner_user_id),
@@ -465,8 +467,12 @@ def activate_vault_order_from_pipeline_credit(
         slot_count=slots,
         amount_due=_d(total_credit_cost),
         currency="PC",
-        pricing_rule=f"vault.slot.v{max(1, int(service_version))}",
-        payment_method="pipeline_credit",
+        pricing_rule=(
+            f"vault.slot.v{max(1, int(service_version))}.pilot_waived"
+            if pilot_waived
+            else f"vault.slot.v{max(1, int(service_version))}"
+        ),
+        payment_method="pipeline_credit_pilot_waiver" if pilot_waived else "pipeline_credit",
         payment_reference=_safe_str(payment_reference),
         expected_payment_id=None,
         bank_event_id=None,
@@ -515,6 +521,7 @@ def activate_vault_order_from_pipeline_credit(
             "shop_id": int(shop_id),
             "slot_count": slots,
             "total_credit_cost": str(_d(total_credit_cost)),
+            "charge_mode": "pilot_waived" if pilot_waived else "credit_debit",
             "service_version": max(1, int(service_version)),
             "expires_at": expires_at.isoformat(),
         },

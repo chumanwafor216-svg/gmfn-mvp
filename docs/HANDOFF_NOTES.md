@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## Vault free-pilot fulfilment and simplified test journey - 2026-11-12
+
+- Supersedes the earlier same-day statement that `pilot` is preview-only. Current lifecycle truth: `shadow` remains quote-preview only; `pilot` may fulfil a connected service through an auditable zero-credit waiver; `enforced` is the only mode that may debit Pipeline Credits; `suspended` blocks new quote and fulfilment decisions.
+- Vault pilot activation still traverses the server quote and service-order gate. The quote records the configured nominal price, while the spend order and confirmed Vault order record `0.00`, `pilot_waived`, no debit ledger entry, and the activated entitlement. Stale quotes are rejected if the commercial lifecycle changes before fulfilment.
+- The payment-operations kill switch still blocks enforced debits. It does not block a pilot waiver because no payment or balance movement occurs.
+- `/app/vault-control` now presents one current step on phone: choose one or two spaces, `Continue free`, add the private offer, create/share the block link, then extend or revoke it. The enforced quote/agreement/debit panel remains in source and only appears when lifecycle is `enforced`.
+- `/vault/:token` now puts the shared offers immediately after the identity hero. Repeated access lectures and duplicate navigation were removed; expiry, view count, restrictions, and the security note remain under compact `Link details`.
+- `/app/command-center/pipeline-credit-pricing` now distinguishes service fulfilment from credit debit. `pilot` is described as a recorded zero-credit waiver; `enforced` is described as real debit mode.
+- Operational requirement: deployment alone does not mutate production commerce state. To make the pilot usable, an operator must save a provisional `vault.slot` service price and set commercial lifecycle to `pilot`. Do not select `enforced` until charging is approved and test accounts can acquire customer Pipeline Credits.
+- Validation: `python -m pytest -q tests/test_pipeline_credit_commerce.py tests/test_vault_domain.py` (`18 passed`); frontend production build (`327 modules`); Vault inventory, access-integrity, visual-language, media-quality, share/tag, and three-plus audits passed. The broad protected-button suite still fails on unrelated existing mobile-tap/visual-route checks outside Vault; its Vault-specific stages passed.
 ## Pipeline Credit dormant control plane implementation - 2026-11-12
 
 - Added migration `20261112_pipeline_credit_control_plane` with immutable global commercial-status versions and country acquisition-pack versions.

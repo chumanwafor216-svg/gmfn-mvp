@@ -628,7 +628,6 @@ def pipeline_credit_create_service_spend(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     try:
-        require_payment_operations_enabled()
         order = spend_service_quote(
             db,
             actor_user_id=int(current_user.id),

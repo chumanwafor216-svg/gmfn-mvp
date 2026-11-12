@@ -360,10 +360,9 @@ assertVaultContains(
 );
 
 assertVaultContains(
-  /type VaultPanelKey = "activation" \| "payment" \| "blocks" \| "link" \| "flow"[\s\S]*?const vaultGuidedPanel: VaultPanelKey = confirmedVaultSlots > 0[\s\S]*?"Add your private offer"[\s\S]*?"Create the private link"[\s\S]*?data-vault-private-first-view="true"[\s\S]*?data-vault-next-panel=\{vaultGuidedPanel\}[\s\S]*?What to do next[\s\S]*?data-vault-activation-panel="true"[\s\S]*?openVaultPanels\.activation[\s\S]*?data-vault-payment-panel="true"[\s\S]*?data-vault-offer-panel="true"[\s\S]*?data-vault-link-panel="true"/,
-  "Private offers must keep one state-aware phone next step, open only its relevant task, and retain every payment, offer, and private-link panel."
+  /type VaultPanelKey = "activation" \| "payment" \| "blocks" \| "link"[\s\S]*?const vaultGuidedPanel: VaultPanelKey = confirmedVaultSlots > 0[\s\S]*?"Add your private offer"[\s\S]*?"Create the private link"[\s\S]*?data-vault-private-first-view="true"[\s\S]*?data-vault-next-panel=\{vaultGuidedPanel\}[\s\S]*?What to do next[\s\S]*?data-vault-activation-panel="true"[\s\S]*?pipelinePilotWaived \? "Continue free" : "Review credit cost"[\s\S]*?data-vault-payment-panel="true"[\s\S]*?data-vault-offer-panel="true"[\s\S]*?data-vault-link-panel="true"/,
+  "Private offers must keep one state-aware phone next step, expose one free pilot action, and retain every enforced-payment, offer, and private-link panel."
 );
-
 assertVaultContains(
   /function isUsableVaultLink\(link: VaultLinkItem \| null \| undefined\): boolean \{[\s\S]*?return Boolean\(link\) && vaultLinkStatus\(link\) === "active";/,
   "Private offers must not describe a missing Vault link as an active share link."
