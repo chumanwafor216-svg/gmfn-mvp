@@ -215,8 +215,22 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   memberHomeBranch,
-  /data-my-gsn-more="secondary"[\s\S]*?Shop, money, trust, credits, settings & help[\s\S]*?memberFinanceSummary \? \([\s\S]*?data-my-gsn-finance-summary="conditional"[\s\S]*?Finance across GSN[\s\S]*?debugId="my-gmfn\.finance\.open"[\s\S]*?Open Finance/,
+  /data-my-gsn-more="secondary"[\s\S]*?Shop, money, trust, credits, settings & help[\s\S]*?memberFinanceSummary \? \([\s\S]*?data-my-gsn-finance-summary="conditional"[\s\S]*?Finance across GSN[\s\S]*?data-my-gsn-finance-currencies="separate"[\s\S]*?debugId="my-gmfn\.finance\.open"[\s\S]*?Open Finance/,
   "My GSN must keep the cross-GSN finance status conditional, compact, behind More on phone, and routed to Finance."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /getSummary\(settings\.preferredCurrency,\s*\{[\s\S]*?include_all_currencies:\s*true[\s\S]*?source\?\.currency_summaries[\s\S]*?row\.availableNow > 0 \|\| row\.heldForGuarantees > 0[\s\S]*?left\.currency === preferredCurrency/,
+  "My GSN finance orientation must request all recorded currencies, keep them separate, and use the saved currency only for ordering."
+);
+
+assertNotContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  myGsn,
+  /getSummary\("NGN"\)|memberFinanceSummary\.recordedPool|Recorded pool:/,
+  "My GSN must not return to an NGN-only summary or relabel the legacy currency-unscoped membership balance."
 );
 
 assertContains(

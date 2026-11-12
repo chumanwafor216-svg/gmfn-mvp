@@ -52,6 +52,7 @@ type SettingsState = {
   unreadFirst: boolean;
   openActionsDirectly: boolean;
   tonePreset: "balanced-default" | "cooperative-warm" | "enterprise-green";
+  preferredCurrency: string;
 };
 
 type NoticeTone = "success" | "error";
@@ -158,11 +159,14 @@ type MemberOpportunityModel = {
   unavailableSources: MemberOpportunitySource[];
 };
 
-type MemberFinanceSummary = {
+type MemberFinanceCurrencySummary = {
   currency: string;
   availableNow: number;
-  recordedPool: number;
   heldForGuarantees: number;
+};
+
+type MemberFinanceSummary = {
+  currencies: MemberFinanceCurrencySummary[];
 };
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
@@ -209,6 +213,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   unreadFirst: true,
   openActionsDirectly: true,
   tonePreset: "balanced-default",
+  preferredCurrency: "NGN",
 };
 
 function safeStr(x: any): string {
@@ -1472,6 +1477,9 @@ function normalizeSettings(raw: any): SettingsState {
       tone === "cooperative-warm" || tone === "enterprise-green"
         ? (tone as SettingsState["tonePreset"])
         : "balanced-default",
+    preferredCurrency:
+      safeStr(raw?.preferredCurrency || raw?.preferred_currency).toUpperCase() ||
+      "NGN",
   };
 }
 
@@ -1748,34 +1756,50 @@ export default function MyGMFNAndIPage() {
       };
     }
 
-    void getSummary("NGN")
+    void getSummary(settings.preferredCurrency, {
+      include_all_currencies: true,
+    })
       .then((response: any) => {
         if (!alive) return;
 
         const source = response?.item || response?.data || response || {};
-        const totals = source?.totals || {};
-        const availableNow = moneyNumber(
-          firstTruthy(totals?.effective_available, totals?.available_balance)
-        );
-        const recordedPool = moneyNumber(totals?.membership_pool_balance);
-        const heldForGuarantees = moneyNumber(
-          totals?.guarantee_locked_as_guarantor
-        );
+        const preferredCurrency = safeStr(
+          settings.preferredCurrency
+        ).toUpperCase();
+        const currencyRows = rowsOf<any>(source?.currency_summaries)
+          .map((row) => {
+            const totals = row?.totals || {};
+            return {
+              currency: firstTruthy(row?.currency).toUpperCase(),
+              availableNow: moneyNumber(
+                firstTruthy(
+                  totals?.effective_available,
+                  totals?.available_balance
+                )
+              ),
+              heldForGuarantees: moneyNumber(
+                totals?.guarantee_locked_as_guarantor
+              ),
+            };
+          })
+          .filter(
+            (row) =>
+              row.currency &&
+              (row.availableNow > 0 || row.heldForGuarantees > 0)
+          )
+          .sort((left, right) => {
+            if (left.currency === preferredCurrency) return -1;
+            if (right.currency === preferredCurrency) return 1;
+            return left.currency.localeCompare(right.currency);
+          });
 
-        if (
-          availableNow <= 0 &&
-          recordedPool <= 0 &&
-          heldForGuarantees <= 0
-        ) {
+        if (currencyRows.length === 0) {
           setMemberFinanceSummary(null);
           return;
         }
 
         setMemberFinanceSummary({
-          currency: firstTruthy(source?.currency, "NGN").toUpperCase(),
-          availableNow,
-          recordedPool,
-          heldForGuarantees,
+          currencies: currencyRows,
         });
       })
       .catch(() => {
@@ -1785,7 +1809,7 @@ export default function MyGMFNAndIPage() {
     return () => {
       alive = false;
     };
-  }, [activeTab, isAppRoute]);
+  }, [activeTab, isAppRoute, settings.preferredCurrency]);
 
   useEffect(() => {
     let alive = true;
@@ -3732,14 +3756,43 @@ export default function MyGMFNAndIPage() {
                       true
                     )}
                     <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                      {formatMoneyAmount(
-                        memberFinanceSummary.availableNow,
-                        memberFinanceSummary.currency
-                      )} available now
+                      {memberFinanceSummary.currencies.length === 1
+                        ? `${memberFinanceSummary.currencies[0].currency} money recorded`
+                        : `${memberFinanceSummary.currencies.length} currencies recorded`}
                     </h2>
-                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
-                      Recorded pool: {formatMoneyAmount(memberFinanceSummary.recordedPool, memberFinanceSummary.currency)}.
-                      {" "}Held for support: {formatMoneyAmount(memberFinanceSummary.heldForGuarantees, memberFinanceSummary.currency)}.
+                    <div
+                      data-my-gsn-finance-currencies="separate"
+                      style={{ marginTop: 8, display: "grid", gap: 7 }}
+                    >
+                      {memberFinanceSummary.currencies.map((row) => (
+                        <div
+                          key={row.currency}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid rgba(11,99,209,0.12)",
+                            background: "#F7FAFF",
+                            padding: "8px 10px",
+                            display: "grid",
+                            gridTemplateColumns: "52px minmax(0, 1fr)",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <strong style={{ color: "#0B2D4A" }}>
+                            {row.currency}
+                          </strong>
+                          <span style={{ ...helperText(), color: "#526174" }}>
+                            Available{" "}
+                            {formatMoneyAmount(row.availableNow, row.currency)}
+                            {row.heldForGuarantees > 0
+                              ? ` · Held ${formatMoneyAmount(
+                                  row.heldForGuarantees,
+                                  row.currency
+                                )}`
+                              : ""}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                     <StableCtaLink
                       to={routes.finance}

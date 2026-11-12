@@ -1049,7 +1049,9 @@ def test_pool_summary_combines_member_communities():
                     (clan_id, user_id, event_type, amount, currency, reference)
                 VALUES
                     (1, 1, 'deposit.confirmed', 100, 'NGN', 'R1'),
-                    (2, 1, 'deposit.confirmed', 50, 'NGN', 'R2')
+                    (2, 1, 'deposit.confirmed', 50, 'NGN', 'R2'),
+                    (1, 1, 'deposit.confirmed', 25, 'GBP', 'R3'),
+                    (2, 1, 'deposit.confirmed', 10, 'GBP', 'R4')
                 """
             )
         )
@@ -1057,6 +1059,7 @@ def test_pool_summary_combines_member_communities():
     with SessionLocal() as db:
         data = pool.pool_me_summary(
             currency="NGN",
+            include_all_currencies=True,
             db=db,
             current_user=_fake_current_user(),
         )
@@ -1064,3 +1067,60 @@ def test_pool_summary_combines_member_communities():
     assert data["communities_count"] == 2
     assert data["totals"]["available_balance"] == "150.00"
     assert len(data["items"]) == 2
+    summaries = {row["currency"]: row for row in data["currency_summaries"]}
+    assert summaries["NGN"]["totals"]["available_balance"] == "150.00"
+    assert summaries["GBP"]["totals"]["available_balance"] == "35.00"
+    assert "membership_pool_balance" not in summaries["NGN"]["totals"]
+    assert "membership_pool_balance" not in summaries["GBP"]["totals"]
+
+
+def test_pool_summary_keeps_guarantee_locks_in_their_loan_currency():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO loans
+                    (id, borrower_user_id, amount, currency, status, clan_id, guarantors_required)
+                VALUES
+                    (101, 2, 100, 'GBP', 'approved', 1, 1),
+                    (102, 2, 200, 'USD', 'approved', 1, 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO loan_guarantors
+                    (
+                        id,
+                        loan_id,
+                        clan_id,
+                        guarantor_user_id,
+                        pledge_amount,
+                        status,
+                        is_locked,
+                        locked_amount,
+                        released_amount
+                    )
+                VALUES
+                    (101, 101, 1, 1, 40, 'approved', 1, 40, 5),
+                    (102, 102, 1, 1, 60, 'approved', 1, 60, 10)
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        data = pool.pool_me_summary(
+            currency="GBP",
+            include_all_currencies=True,
+            db=db,
+            current_user=_fake_current_user(),
+        )
+
+    assert data["totals"]["guarantee_locked_as_guarantor"] == "35.00"
+    summaries = {row["currency"]: row for row in data["currency_summaries"]}
+    assert summaries["GBP"]["totals"]["guarantee_locked_as_guarantor"] == "35.00"
+    assert summaries["USD"]["totals"]["guarantee_locked_as_guarantor"] == "50.00"

@@ -6477,3 +6477,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The Profile summary does not calculate a net position, expose a ledger, present Pipeline Credits as money, or combine guarantor earnings across currencies. Finance remains the full cumulative money workspace.
 - The existing contextual Marketplace `Your recorded money here` card remains conditional and now has one direct `Open Finance` exit so it is not a dead end. Community Home is unchanged.
 - Verification passed: surface ownership, member-entry, Marketplace front-package, Finance action, Finance front-package, `git diff --check`, TypeScript, and the production frontend build. The broad Marketplace button-inventory and button-stability audits remain red on documented pre-existing baseline drift across extracted Marketplace, DemandBox, AppLayout, Shop, and Vault sources; this package does not rewrite those unrelated contracts.
+
+# Multi-currency member finance orientation correction - 2026-11-12
+
+- Owner correction: the conditional My GSN finance summary must not read only NGN when the existing money engine records other currencies.
+- `GET /pool/me/summary` keeps its original single-currency response for compatibility and now accepts `include_all_currencies=true`. The additive `currency_summaries` list discovers the signed-in member's recorded Pool Event and Loan currencies across active communities and returns each currency separately. No FX conversion or cross-currency addition is performed.
+- Guarantee-held amounts now join the related Loan and filter by that Loan's currency and the member's active communities. A GBP guarantee is no longer repeated or relabelled as NGN, USD, or another requested currency.
+- My GSN uses the saved `preferredCurrency` only to place that currency first. It does not hide another positive currency. The compact card shows one row per positive currency with available and, when present, held-for-support amounts.
+- The legacy `ClanMembership.personal_pool_balance` field has no currency metadata. It remains in the original compatibility response but is deliberately excluded from `currency_summaries` and the Profile card rather than being falsely assigned to a currency.
+- Verification passed: 20 Marketplace/pool backend tests including new NGN+GBP and GBP+USD guarantee cases; backend compile; focused ESLint; surface-ownership, member-entry, Finance action and Finance front-package audits; TypeScript; `git diff --check`; and the 327-module production frontend build.

@@ -2729,9 +2729,15 @@ export async function getPoolMe(
   );
 }
 
-export async function getPoolMeSummary(currency: string = "NGN"): Promise<any> {
+export async function getPoolMeSummary(
+  currency: string = "NGN",
+  options?: { include_all_currencies?: boolean }
+): Promise<any> {
   return httpJson(
-    `/pool/me/summary${buildQuery({ currency })}`,
+    `/pool/me/summary${buildQuery({
+      currency,
+      include_all_currencies: options?.include_all_currencies || undefined,
+    })}`,
     "GET"
   );
 }
