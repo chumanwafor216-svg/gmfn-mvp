@@ -60,8 +60,8 @@ requirePattern(
 );
 requirePattern(
   "publicPaper",
-  /Check this TrustSlip[\s\S]*?\.\.\.\(publicProfilePath\s*\?[\s\S]*?Personal profile[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?audience="public"[\s\S]*?Verify identity evidence/,
-  "The public card must expose TrustSlip verification, the privacy-safe personal profile route, and a public Shop with a current verification path."
+  /Check this TrustSlip[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?GSN website[\s\S]*?\.\.\.\(publicProfilePath\s*\?[\s\S]*?Personal profile[\s\S]*?audience="public"[\s\S]*?Verify identity evidence[\s\S]*?collapseSecondary/,
+  "The public card must expose TrustSlip verification and cover the privacy-safe profile, public Shop, and official GSN website behind the shared gateway."
 );
 forbidPattern(
   "publicPaper",

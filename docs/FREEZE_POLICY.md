@@ -334,3 +334,9 @@ If a task touches a frozen or high-risk area, the assistant must:
 ## Practical instruction to the assistant
 When possible, solve the task in route-local code instead of shared infrastructure.
 Only escalate into frozen or high-risk files when the task genuinely cannot be solved safely elsewhere.
+
+## GSN ID live-preview correction - 2026-11-12
+- Founder correction: Share live card may share only the stable public ID route so WhatsApp and other receivers can render one generic GSN preview card.
+- The preview must not include phone, ID-document, photo, TrustSlip-code, community, shop-name, or other personal evidence metadata.
+- Tapping the preview opens the existing privacy-controlled public ID gateway, where current TrustSlip, explicitly published Shop/profile, and the official GSN website remain reachable.
+- The non-interactive privacy-safe PNG remains a separate Save picture action. Do not combine the PNG and URL in one share payload or restore the retired metadata paragraph.

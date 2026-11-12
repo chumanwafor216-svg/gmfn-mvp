@@ -6523,3 +6523,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: the focused Identity Integrity audit, focused ESLint with only the repository's pre-existing redundant `Boolean(trustSlip?.phone_verified)` rule suppressed, `git diff --check`, TypeScript and the 327-module production frontend build.
 - Broad protected-freeze truth: the suite still reports unrelated existing failures in My GSN smooth scrolling, Dashboard QR graphics detection, Shop Analytics mobile expectations and missing Pipeline Credit route coverage. The identity-specific source audit passes.
 - Remaining physical check: test `Share card` once on the pilot Android/WhatsApp combination and confirm WhatsApp receives one picture with no generated caption. The source now sends no text or URL, but only the real target app can prove its final presentation.
+
+# GSN ID Card live preview correction - 2026-11-12
+
+- Owner review proved the image-only privacy correction removed essential reachability. A picture attachment cannot contain several tappable hyperlinks, so the corrected primary transport is one stable live-card URL with a generic GSN Open Graph preview rather than a misleading dead picture.
+- `Share live card` now sends only `/id/:gmfnId` through the native share sheet. No phone/ID/photo evidence state, TrustSlip code, shop name, community, social handle, or verification paragraph is attached. Browsers without native sharing copy that same single URL.
+- The frontend server now supplies privacy-neutral metadata for `/id/:gmfnId`: `GSN Identity Card`, a generic capability description, and the existing generic GSN Public Record poster. The target remains the existing live ID route.
+- The public ID gateway keeps TrustSlip verification and backend-approved public Shop/profile access, adds the official GSN website, and covers secondary destinations behind one disclosure. Private or inactive Shops still do not surface.
+- The privacy-safe PNG remains available separately as `Save picture`. It intentionally remains non-interactive; recipients who need working destinations must receive the live preview.

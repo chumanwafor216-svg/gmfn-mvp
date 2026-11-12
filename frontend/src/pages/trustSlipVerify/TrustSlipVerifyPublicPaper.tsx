@@ -38,6 +38,8 @@ import {
   type TrustDocumentRibbonItem,
 } from "../../components/TrustDocumentLanguage";
 
+const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
+
 export type TrustSlipVerifyQuickAnswer = [Gsn3DIconKey, string, string];
 
 type CommunityConfirmationResult = {
@@ -2778,17 +2780,6 @@ export default function TrustSlipVerifyPublicPaper({
             },
           ]
         : []),
-      ...(publicProfilePath
-        ? [
-            {
-              key: "public-profile",
-              label: "Personal profile",
-              to: publicProfilePath,
-              debugId: "trust-slip-verify.card.opportunity.public-profile",
-              icon: "identity-card" as const,
-            },
-          ]
-        : []),
       ...(publicOpportunityShopPath
         ? [
             {
@@ -2797,6 +2788,24 @@ export default function TrustSlipVerifyPublicPaper({
               to: publicOpportunityShopPath,
               debugId: "trust-slip-verify.card.opportunity.public-shop",
               icon: "shop-storefront" as const,
+            },
+          ]
+        : []),
+      {
+        key: "gsn-website",
+        label: "GSN website",
+        to: GSN_PUBLIC_WEBSITE_URL,
+        debugId: "trust-slip-verify.card.opportunity.gsn-website",
+        icon: "public-globe" as const,
+      },
+      ...(publicProfilePath
+        ? [
+            {
+              key: "public-profile",
+              label: "Personal profile",
+              to: publicProfilePath,
+              debugId: "trust-slip-verify.card.opportunity.public-profile",
+              icon: "identity-card" as const,
             },
           ]
         : []),
@@ -3009,6 +3018,8 @@ export default function TrustSlipVerifyPublicPaper({
             title="Use this GSN ID"
             description="Verify identity evidence, view public professional details, or open a published shop with its current verification path."
             actions={publicOpportunityActions}
+            collapseSecondary
+            secondaryLabel="Shop, profile & GSN website"
             emptyMessage="No public opportunity is available from this card yet."
           />
         </div>

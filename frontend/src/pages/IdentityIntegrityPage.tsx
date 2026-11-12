@@ -3108,10 +3108,34 @@ export default function IdentityIntegrityPage() {
     }
 
     const nativeShare = typeof navigator !== "undefined" ? navigator.share : undefined;
-    const nativeCanShare =
-      typeof navigator !== "undefined" && typeof (navigator as any).canShare === "function"
-        ? (navigator as any).canShare.bind(navigator)
-        : null;
+    if (nativeShare) {
+      try {
+        await nativeShare.call(navigator, {
+          title: "GSN Identity Card",
+          url: identityCardLiveUrl,
+        });
+        showNotice("success", "Share sheet opened with the live GSN Identity Card.");
+        return;
+      } catch (err: any) {
+        if (safeStr(err?.name) === "AbortError") return;
+      }
+    }
+
+    const copied = await safeCopy(identityCardLiveUrl);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "Live GSN Identity Card link copied. Paste it to show the branded preview."
+        : "The live card could not be shared. Open the QR and try again."
+    );
+  }
+
+  async function saveGsnIdentityCardPicture() {
+    if (!identityCardLiveUrl) {
+      showNotice("error", "GSN ID is not ready yet.");
+      return;
+    }
+
     const cardImage = await buildGsnIdentityCardShareImage({
       displayName,
       initials: profileInitials,
@@ -3128,24 +3152,8 @@ export default function IdentityIntegrityPage() {
       valid: false,
     });
 
-    if (nativeShare && cardImage) {
-      const imagePayload = {
-        files: [cardImage],
-      };
-
-      if (!nativeCanShare || nativeCanShare({ files: [cardImage] })) {
-        try {
-          await nativeShare.call(navigator, imagePayload);
-          showNotice("success", "Share sheet opened with only the GSN Identity Card picture.");
-          return;
-        } catch (err: any) {
-          if (safeStr(err?.name) === "AbortError") return;
-        }
-      }
-    }
-
     if (cardImage && downloadGsnIdentityCardFile(cardImage)) {
-      showNotice("success", "Card picture downloaded. Attach that picture when you want to share it.");
+      showNotice("success", "Card picture saved. Use Share live card when the recipient needs working links.");
       return;
     }
 
@@ -4133,8 +4141,17 @@ export default function IdentityIntegrityPage() {
               fullWidth
               debugId="identity-integrity.gsn-card.share"
             >
-              {identityCardLiveUrl ? "Share card" : "ID pending"}
+              {identityCardLiveUrl ? "Share live card" : "ID pending"}
             </PrimaryButton>
+            <SecondaryButton
+              onClick={() => void saveGsnIdentityCardPicture()}
+              stableHeight={50}
+              fullWidth
+              disabled={!identityCardLiveUrl}
+              debugId="identity-integrity.gsn-card.save-picture"
+            >
+              Save picture
+            </SecondaryButton>
             <SecondaryButton
               onClick={() => void refreshGsnIdentityCard()}
               stableHeight={50}

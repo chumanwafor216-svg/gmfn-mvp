@@ -214,6 +214,15 @@ function fallbackJoinInviteMeta(pathname) {
   };
 }
 
+function identityCardMeta(gmfnId) {
+  return {
+    title: "GSN Identity Card",
+    description: "Open the live GSN card to check its TrustSlip, published shop, and official GSN website.",
+    imageUrl: frontendUrl("/gsn-share-poster.png"),
+    targetUrl: frontendUrl("/id/" + encodeURIComponent(gmfnId)),
+  };
+}
+
 async function fetchJoinInviteMeta(code, pathname) {
   const url = new URL(apiUrl("/clans/join-invite/preview"));
   url.searchParams.set("code", code);
@@ -323,6 +332,17 @@ async function serveJoinInviteHtml(res, url) {
 
   try {
     const html = await indexHtmlWithMeta(meta);
+    send(res, 200, html, "text/html; charset=utf-8", {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+  }
+}
+
+async function serveIdentityCardHtml(res, gmfnId) {
+  try {
+    const html = await indexHtmlWithMeta(identityCardMeta(gmfnId));
     send(res, 200, html, "text/html; charset=utf-8", {
       "Cache-Control": "public, max-age=300",
     });
@@ -497,6 +517,11 @@ createServer(async (req, res) => {
     const joinMatch = url.pathname.match(/^\/(?:start\/join|start\/invite|join|get-invite|join\/community)\/([^/]+)$/);
     if (joinMatch) {
       await serveJoinInviteHtml(res, url);
+      return;
+    }
+    const identityCardMatch = url.pathname.match(/^\/id\/([^/]+)$/);
+    if (identityCardMatch) {
+      await serveIdentityCardHtml(res, decodeURIComponent(identityCardMatch[1]));
       return;
     }
     await serveStaticOrFallback(res, url.pathname);

@@ -355,8 +355,8 @@ assertContains(
 );
 
 assertContains(
-  /cardStatus: "GSN Identity Reference"[\s\S]*?memberships: "CURRENT STATUS STAYS INSIDE GSN"[\s\S]*?verifyDisplay: GSN_PUBLIC_WEBSITE_DISPLAY[\s\S]*?qrDataUrl: ""[\s\S]*?privacySafe: true[\s\S]*?const imagePayload = \{[\s\S]*?files: \[cardImage\],[\s\S]*?\};[\s\S]*?nativeShare\.call\(navigator, imagePayload\)[\s\S]*?downloadGsnIdentityCardFile\(cardImage\)/,
-  "GSN Identity Card sharing must export a privacy-safe file-only image and download that image instead of falling back to exposed text or links."
+  /async function shareGsnIdentityCard\(\)[\s\S]*?title: "GSN Identity Card"[\s\S]*?url: identityCardLiveUrl[\s\S]*?Share sheet opened with the live GSN Identity Card[\s\S]*?async function saveGsnIdentityCardPicture\(\)[\s\S]*?cardStatus: "GSN Identity Reference"[\s\S]*?qrDataUrl: ""[\s\S]*?privacySafe: true[\s\S]*?downloadGsnIdentityCardFile\(cardImage\)/,
+  "GSN Identity Card sharing must use one live preview URL while keeping the privacy-safe standalone PNG as an explicit save action."
 );
 
 assertNotContains(
@@ -365,8 +365,8 @@ assertNotContains(
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?GSN ID is not ready yet[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with only the GSN Identity Card picture/,
-  "GSN Identity Card must share a freshly rendered PNG whenever the stable GSN ID exists, without making TrustSlip currentness a share gate or attaching metadata text."
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?navigator\.share[\s\S]*?url: identityCardLiveUrl[\s\S]*?safeCopy\(identityCardLiveUrl\)[\s\S]*?debugId="identity-integrity\.gsn-card\.save-picture"/,
+  "GSN Identity Card must share its stable live gateway and retain a separate privacy-safe picture download without rebuilding the old metadata paragraph."
 );
 
 assertContains(
