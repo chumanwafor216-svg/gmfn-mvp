@@ -315,7 +315,7 @@ assertContains(
 );
 
 assertContains(
-  /const GSN_PUBLIC_WEBSITE_URL = "https:\/\/globalsupportnetwork\.org";[\s\S]*?const GSN_PUBLIC_WEBSITE_DISPLAY = "globalsupportnetwork\.org";[\s\S]*?const GSN_SOCIAL_HANDLE = "@globalsupportnetwork";[\s\S]*?const gsnMemberHandle = gmfnIdValue[\s\S]*?`@\$\{gmfnIdValue\.toUpperCase\(\)\}`[\s\S]*?data-gsn-identity-card-contact-band="true"[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE/,
+  /const GSN_PUBLIC_WEBSITE_DISPLAY = "globalsupportnetwork\.org";[\s\S]*?const GSN_SOCIAL_HANDLE = "@globalsupportnetwork";[\s\S]*?const gsnMemberHandle = gmfnIdValue[\s\S]*?`@\$\{gmfnIdValue\.toUpperCase\(\)\}`[\s\S]*?data-gsn-identity-card-contact-band="true"[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE/,
   "The extended card must show the canonical GSN website, official social handle, and holder-specific GSN handle in one bounded contact band."
 );
 
@@ -350,18 +350,23 @@ assertContains(
 );
 
 assertContains(
-  /type GsnIdentityCardShareImageParams = \{[\s\S]*?websiteDisplay: string;[\s\S]*?socialHandle: string;[\s\S]*?memberHandle: string;[\s\S]*?const height = 1320;[\s\S]*?const contactBandTop = 964;[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE/,
-  "The shared PNG must preserve the extended contact band instead of exporting the old shorter card."
+  /type GsnIdentityCardShareImageParams = \{[\s\S]*?websiteDisplay: string;[\s\S]*?socialHandle: string;[\s\S]*?memberHandle: string;[\s\S]*?privacySafe: boolean;[\s\S]*?const height = 1320;[\s\S]*?params\.privacySafe \? "GSN" : "QR"[\s\S]*?Open GSN yourself[\s\S]*?const contactBandTop = 964;[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE[\s\S]*?For current status, type globalsupportnetwork\.org yourself\./,
+  "The shared PNG must preserve the public contact band while removing the QR payload and directing recipients to type the official GSN website themselves."
 );
 
 assertContains(
-  /const imagePayload = \{[\s\S]*?text: gsnIdentityCardShareText,[\s\S]*?files: \[cardImage\],[\s\S]*?\};[\s\S]*?nativeShare\.call\(navigator, \{[\s\S]*?title: "GSN Identity Card",[\s\S]*?text: gsnIdentityCardShareText,[\s\S]*?\}\)/,
-  "GSN Identity Card share must avoid a separate Web Share url field so WhatsApp does not append a duplicate verifier link."
+  /cardStatus: "GSN Identity Reference"[\s\S]*?memberships: "CURRENT STATUS STAYS INSIDE GSN"[\s\S]*?verifyDisplay: GSN_PUBLIC_WEBSITE_DISPLAY[\s\S]*?qrDataUrl: ""[\s\S]*?privacySafe: true[\s\S]*?const imagePayload = \{[\s\S]*?files: \[cardImage\],[\s\S]*?\};[\s\S]*?nativeShare\.call\(navigator, imagePayload\)[\s\S]*?downloadGsnIdentityCardFile\(cardImage\)/,
+  "GSN Identity Card sharing must export a privacy-safe file-only image and download that image instead of falling back to exposed text or links."
+);
+
+assertNotContains(
+  /gsnIdentityCardShareText|Phone: \$\{phoneEvidenceLabel\}|TrustSlip: \$\{trustSlipCode\}|Live ID card: \$\{identityCardLiveUrl\}|Verify record: \$\{trustSlipVerifyUrl\}/,
+  "GSN Identity Card sharing must not build or export the old verification-metadata paragraph."
 );
 
 assertContains(
-  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?GSN ID is not ready yet[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with the GSN Identity Card picture/,
-  "GSN Identity Card must share the visible card as a PNG whenever the stable GSN ID exists, without making TrustSlip currentness a share gate."
+  /async function buildGsnIdentityCardShareImage[\s\S]*?new File\(\[blob\], "gsn-identity-card\.png"[\s\S]*?async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardLiveUrl[\s\S]*?GSN ID is not ready yet[\s\S]*?navigator\.share[\s\S]*?canShare[\s\S]*?files: \[cardImage\][\s\S]*?Share sheet opened with only the GSN Identity Card picture/,
+  "GSN Identity Card must share a freshly rendered PNG whenever the stable GSN ID exists, without making TrustSlip currentness a share gate or attaching metadata text."
 );
 
 assertContains(

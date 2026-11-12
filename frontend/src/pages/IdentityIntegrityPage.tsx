@@ -65,7 +65,6 @@ const LazyQRCodeSVG = React.lazy(async () => {
   return { default: module.QRCodeSVG };
 });
 
-const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
 const GSN_PUBLIC_WEBSITE_DISPLAY = "globalsupportnetwork.org";
 const GSN_SOCIAL_HANDLE = "@globalsupportnetwork";
 
@@ -250,6 +249,7 @@ type GsnIdentityCardShareImageParams = {
   socialHandle: string;
   memberHandle: string;
   qrDataUrl: string;
+  privacySafe: boolean;
   valid: boolean;
 };
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v4";
@@ -800,19 +800,23 @@ async function buildGsnIdentityCardShareImage(
   ctx.fillText(params.gmfnId, 510, 548);
 
   drawIdentityCardRoundRect(ctx, 510, 580, 590, 72, 36);
-  ctx.fillStyle = params.valid ? "rgba(10,91,64,0.42)" : "rgba(121,78,17,0.38)";
+  ctx.fillStyle = params.privacySafe
+    ? "rgba(33,84,126,0.42)"
+    : params.valid
+      ? "rgba(10,91,64,0.42)"
+      : "rgba(121,78,17,0.38)";
   ctx.fill();
-  ctx.strokeStyle = params.valid ? green : gold;
+  ctx.strokeStyle = params.privacySafe ? "#7DD3FC" : params.valid ? green : gold;
   ctx.lineWidth = 4;
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(548, 616, 23, 0, Math.PI * 2);
-  ctx.fillStyle = params.valid ? "#4DE2A2" : gold;
+  ctx.fillStyle = params.privacySafe ? "#BAE6FD" : params.valid ? "#4DE2A2" : gold;
   ctx.fill();
   ctx.fillStyle = navy;
   ctx.font = "1000 28px Arial, Helvetica, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(params.valid ? "✓" : "!", 548, 626);
+  ctx.fillText(params.privacySafe ? "i" : params.valid ? "✓" : "!", 548, 626);
   ctx.textAlign = "left";
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 28px Arial, Helvetica, sans-serif";
@@ -825,7 +829,9 @@ async function buildGsnIdentityCardShareImage(
     687
   );
 
-  const qr = await loadIdentityCardImage(params.qrDataUrl);
+  const qr = params.privacySafe
+    ? null
+    : await loadIdentityCardImage(params.qrDataUrl);
   drawIdentityCardRoundRect(ctx, 1215, 300, 270, 270, 26);
   ctx.fillStyle = "#FFFFFF";
   ctx.fill();
@@ -838,7 +844,7 @@ async function buildGsnIdentityCardShareImage(
     ctx.fillStyle = navy;
     ctx.font = "1000 46px Arial, Helvetica, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("QR", 1350, 456);
+    ctx.fillText(params.privacySafe ? "GSN" : "QR", 1350, 456);
     ctx.textAlign = "left";
   }
 
@@ -851,7 +857,11 @@ async function buildGsnIdentityCardShareImage(
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 20px Arial, Helvetica, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Check Current GSN Status  ↗", 1350, 630);
+  ctx.fillText(
+    params.privacySafe ? "Open GSN yourself" : "Check Current GSN Status  ↗",
+    1350,
+    630
+  );
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "800 17px Arial, Helvetica, sans-serif";
@@ -952,7 +962,13 @@ async function buildGsnIdentityCardShareImage(
 
   ctx.fillStyle = "rgba(255,255,255,0.60)";
   ctx.font = "800 18px Arial, Helvetica, sans-serif";
-  ctx.fillText("Scan the QR to check this card's current GSN status.", 84, 1262);
+  ctx.fillText(
+    params.privacySafe
+      ? "For current status, type globalsupportnetwork.org yourself."
+      : "Scan the QR to check this card's current GSN status.",
+    84,
+    1262
+  );
 
   ctx.restore();
   ctx.strokeStyle = gold;
@@ -965,6 +981,19 @@ async function buildGsnIdentityCardShareImage(
   if (!blob) return null;
 
   return new File([blob], "gsn-identity-card.png", { type: "image/png" });
+}
+
+function downloadGsnIdentityCardFile(cardImage: File): boolean {
+  if (typeof document === "undefined" || typeof URL === "undefined") return false;
+
+  const objectUrl = URL.createObjectURL(cardImage);
+  const download = document.createElement("a");
+  download.href = objectUrl;
+  download.download = cardImage.name;
+  download.rel = "noopener";
+  download.click();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  return true;
 }
 function iconTile(
   color = "#FFFFFF",
@@ -2544,69 +2573,6 @@ export default function IdentityIntegrityPage() {
     adminCommunityCount ? `Admin ${adminCommunityCount}` : "",
     memberCommunityCount ? `Member ${memberCommunityCount}` : "",
   ].filter(Boolean).join(" / ") || "Roles private";
-  const identityContext = trustSlip?.identity_context || {};
-  const phoneEvidenceLabel = identitySignals.phoneVerified
-    ? "Verified"
-    : identitySignals.phoneRecorded
-      ? "Recorded"
-      : "Missing";
-  const bankEvidenceVerified = Boolean(
-    me?.bank_verified ||
-      me?.bank_verified_at ||
-      trustSlip?.bank_verified ||
-      identityContext?.bank_verified
-  );
-  const bankEvidenceRecorded = Boolean(
-    bankEvidenceVerified ||
-      me?.bank_details_recorded ||
-      me?.payout_destination_id ||
-      me?.withdrawal_destination_id ||
-      trustSlip?.bank_details_recorded ||
-      identityContext?.bank_details_recorded ||
-      identitySignals.bankReady
-  );
-  const bankEvidenceLabel = bankEvidenceVerified
-    ? "Verified"
-    : bankEvidenceRecorded
-      ? "Recorded"
-      : "Missing";
-  const officialIdEvidenceVerified = Boolean(
-    me?.passport_verified ||
-      me?.passport_verified_at ||
-      me?.official_id_verified_at ||
-      trustSlip?.official_id_verified ||
-      identityContext?.official_id_verified
-  );
-  const officialIdEvidenceRecorded = Boolean(
-    officialIdEvidenceVerified ||
-      me?.official_id_recorded ||
-      me?.identity_document_recorded ||
-      trustSlip?.official_id_recorded ||
-      identityContext?.official_id_recorded ||
-      identitySignals.officialIdReady
-  );
-  const officialIdEvidenceLabel = officialIdEvidenceVerified
-    ? "Verified"
-    : officialIdEvidenceRecorded
-      ? "Recorded"
-      : "Missing";
-  const photoEvidenceVerified = Boolean(
-    me?.photo_verified ||
-      me?.photo_verified_at ||
-      trustSlip?.photo_verified ||
-      identityContext?.photo_verified ||
-      events.some((event) =>
-        safeStr(event.event_type || event.type || event.kind).toLowerCase() ===
-        "identity.photo_evidence_verified"
-      )
-  );
-  const photoEvidenceLabel = photoEvidenceVerified
-    ? "Verified"
-    : identitySignals.photoReady
-      ? "Recorded"
-      : avatarSrc
-        ? "Face shown"
-        : "Missing";
   const trustSlipExpiresAt = safeStr(trustSlip?.expires_at);
   const trustSlipExpired = trustSlipExpiresAt
     ? new Date(trustSlipExpiresAt).getTime() < Date.now()
@@ -2735,20 +2701,6 @@ export default function IdentityIntegrityPage() {
     memberCredentialUrl,
   ];
   void retainedIdentityCardAuditLabels;
-
-  const gsnIdentityCardShareText = [
-    "GSN Identity Card",
-    `${displayName} - ${gmfnId}`,
-    `Status: ${membershipCardStatus}`,
-    `Phone: ${phoneEvidenceLabel}. ID: ${officialIdEvidenceLabel}. Photo: ${photoEvidenceLabel}.`,
-    trustSlipCode ? `TrustSlip: ${trustSlipCode}` : "",
-    identityCardLiveUrl ? `Live ID card: ${identityCardLiveUrl}` : "",
-    trustSlipVerifyUrl ? `Verify record: ${trustSlipVerifyUrl}` : "",
-    `GSN website: ${GSN_PUBLIC_WEBSITE_URL}`,
-    `GSN social: ${GSN_SOCIAL_HANDLE}`,
-    `My GSN handle: ${gsnMemberHandle}`,
-    "Evidence only. Not government ID, credit approval, payment guarantee, or future behaviour proof.",
-  ].filter(Boolean).join("\n");
 
   function identityTaskTarget(task: IdentityTaskKey): string {
     const separator = routes.identity.includes("?") ? "&" : "?";
@@ -3119,12 +3071,12 @@ export default function IdentityIntegrityPage() {
   }
 
   async function copyGsnIdentityCard() {
-    const copied = await safeCopy(gsnIdentityCardShareText);
+    const copied = gmfnIdValue ? await safeCopy(gmfnIdValue) : false;
     showNotice(
       copied ? "success" : "error",
       copied
-        ? "GSN Identity Card copied for sharing."
-        : "Copy failed. Use the visible card details."
+        ? "GSN ID copied. No verification details were included."
+        : "Copy failed. Your GSN ID is not ready yet."
     );
   }
 
@@ -3160,41 +3112,31 @@ export default function IdentityIntegrityPage() {
       typeof navigator !== "undefined" && typeof (navigator as any).canShare === "function"
         ? (navigator as any).canShare.bind(navigator)
         : null;
-    const qrSvg = document.querySelector(
-      '[data-gsn-identity-card-qr="true"] svg'
-    );
-    const qrDataUrl =
-      qrSvg instanceof SVGElement
-        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-            new XMLSerializer().serializeToString(qrSvg)
-          )}`
-        : "";
     const cardImage = await buildGsnIdentityCardShareImage({
       displayName,
       initials: profileInitials,
       avatarSrc,
       gmfnId,
-      cardStatus: membershipCardStatus,
-      memberships: membershipCardSignalLine,
-      verifyDisplay: identityCardLiveDisplay,
+      cardStatus: "GSN Identity Reference",
+      memberships: "CURRENT STATUS STAYS INSIDE GSN",
+      verifyDisplay: GSN_PUBLIC_WEBSITE_DISPLAY,
       websiteDisplay: GSN_PUBLIC_WEBSITE_DISPLAY,
       socialHandle: GSN_SOCIAL_HANDLE,
       memberHandle: gsnMemberHandle,
-      qrDataUrl,
-      valid: identityCardValid,
+      qrDataUrl: "",
+      privacySafe: true,
+      valid: false,
     });
 
     if (nativeShare && cardImage) {
       const imagePayload = {
-        title: "GSN Identity Card",
-        text: gsnIdentityCardShareText,
         files: [cardImage],
       };
 
       if (!nativeCanShare || nativeCanShare({ files: [cardImage] })) {
         try {
           await nativeShare.call(navigator, imagePayload);
-          showNotice("success", "Share sheet opened with the GSN Identity Card picture.");
+          showNotice("success", "Share sheet opened with only the GSN Identity Card picture.");
           return;
         } catch (err: any) {
           if (safeStr(err?.name) === "AbortError") return;
@@ -3202,20 +3144,12 @@ export default function IdentityIntegrityPage() {
       }
     }
 
-    if (nativeShare) {
-      try {
-        await nativeShare.call(navigator, {
-          title: "GSN Identity Card",
-          text: gsnIdentityCardShareText,
-        });
-        showNotice("success", "Share sheet opened with the GSN Identity Card link.");
-        return;
-      } catch (err: any) {
-        if (safeStr(err?.name) === "AbortError") return;
-      }
+    if (cardImage && downloadGsnIdentityCardFile(cardImage)) {
+      showNotice("success", "Card picture downloaded. Attach that picture when you want to share it.");
+      return;
     }
 
-    await copyGsnIdentityCard();
+    showNotice("error", "The card picture could not be prepared. Refresh the card and try again.");
   }
   function handleGuideSelect(item: { to?: string; disabled?: boolean }) {
     if (!item.to || item.disabled) return;
@@ -4216,7 +4150,7 @@ export default function IdentityIntegrityPage() {
               fullWidth
               debugId="identity-integrity.gsn-card.copy"
             >
-              Copy card
+              Copy GSN ID
             </SecondaryButton>
             <SecondaryButton
               onClick={() => void copyTrustSlipVerifyLink()}
