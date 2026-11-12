@@ -7452,7 +7452,7 @@ export default function ShopGalleryPage() {
                         fontWeight: 950,
                       }}
                     >
-                      {spotlightInformationOpen ? "−" : "+"}
+                      {spotlightInformationOpen ? "\u25B4" : "\u25BE"}
                     </span>
                   </StableDisclosureSummary>
                   <div
@@ -8483,8 +8483,8 @@ export default function ShopGalleryPage() {
                           stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.toggle`}
                           data-public-shop-neon-action="true"
-                          aria-label={isProductOpen ? `Hide details for ${displayTitle}` : `Show details for ${displayTitle}`}
-                          title={isProductOpen ? "Hide details" : "Show details"}
+                          aria-label={isProductOpen ? `Close ${displayTitle}` : `Open ${displayTitle}`}
+                          title={isProductOpen ? "Close" : "Open"}
                           style={{
                             ...secondaryBtn(false),
                             width: diaryActionWidth,
@@ -8506,7 +8506,7 @@ export default function ShopGalleryPage() {
                           }}
                         >
                           <span
-                            data-product-card-toggle-symbol={isProductOpen ? "collapse" : "expand"}
+                            data-product-card-toggle-symbol={isProductOpen ? "close" : "open"}
                             aria-hidden="true"
                             style={{
                               display: "inline-grid",
@@ -8516,10 +8516,10 @@ export default function ShopGalleryPage() {
                               fontSize: isCompact ? 25 : 28,
                               fontWeight: 760,
                               lineHeight: 1,
-                              transform: "translateY(-1px)",
+                              transform: isProductOpen ? "translateY(-1px)" : "none",
                             }}
                           >
-                            {isProductOpen ? "▴" : "▾"}
+                            {isProductOpen ? "×" : "+"}
                           </span>
                         </SecondaryButton>
                         {showBlockPlacementAction ? (

@@ -10,9 +10,9 @@
 - The Spotlight owner `+` continues to open the existing Spotlight workflow.
   A new owner-only Private Vault `+` opens `/app/vault-control`; the frozen
   Vault Control screen itself was not changed.
-- Product cards now use down/up chevrons for expand/collapse. After expansion,
-  the separate owner-only management `+` still opens the exact existing Shop
-  Control product-management section.
+- The Spotlight information row now uses down/up arrows for expand/collapse,
+  so the central owner shortcut is the only `+` in the Spotlight block.
+  Products & Services card controls remain unchanged.
 - Verification passed: workflow-plus audit, Public Shop button inventory,
   Private Vault visual-language audit, `git diff --check`, and the 326-module
   production frontend build. The broad Button Stability audit remains red on

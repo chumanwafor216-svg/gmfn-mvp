@@ -371,8 +371,8 @@ assertFileContains(
 
 
 assertContains(
-  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "collapse" : "expand"\}[\s\S]*?\{isProductOpen \? "▴" : "▾"\}/,
-  "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card disclosure uses up/down chevrons instead of a misleading plus."
+  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}/,
+  "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card open/close uses literal plus and close symbols in the action dock."
 );
 
 assertNotContains(
@@ -666,8 +666,8 @@ assertContains(
   "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the blue brand frame."
 );
 assertContains(
-  /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?data-spotlight-information-disclosure="true"[\s\S]*?open=\{spotlightInformationOpen\}[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?aria-expanded=\{spotlightInformationOpen\}[\s\S]*?data-spotlight-information-details="true"[\s\S]*?data-spotlight-screen="true"/,
-  "Public Shop Spotlight must start with secondary information collapsed on phone, keep an accessible disclosure, and leave the media screen outside that disclosure."
+  /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?data-spotlight-information-disclosure="true"[\s\S]*?open=\{spotlightInformationOpen\}[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?aria-expanded=\{spotlightInformationOpen\}[\s\S]*?\{spotlightInformationOpen \? "\\u25B4" : "\\u25BE"\}[\s\S]*?data-spotlight-information-details="true"[\s\S]*?data-spotlight-screen="true"/,
+  "Public Shop Spotlight must start with secondary information collapsed on phone, use arrow disclosure signs instead of a second plus, and leave the media screen outside that disclosure."
 );
 
 

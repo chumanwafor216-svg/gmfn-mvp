@@ -537,15 +537,15 @@ async function testOwnerProductMediaShortcut(browser, baseUrl) {
   if (await page.getByRole('link', { name: 'Manage media for Jollof tray' }).count()) {
     throw new Error('Product media shortcut appeared while the card was closed.');
   }
-  const productDisclosure = page.getByRole('button', { name: 'Show details for Jollof tray' });
-  await productDisclosure.waitFor({ state: 'visible', timeout: 20_000 });
-  const expandSymbol = await productDisclosure.locator('[data-product-card-toggle-symbol="expand"]').textContent();
-  if (expandSymbol?.trim() !== '▾') throw new Error(`Product disclosure was ${expandSymbol}, expected ▾.`);
-  await productDisclosure.click();
-  await page.getByRole('button', { name: 'Hide details for Jollof tray' }).waitFor({ state: 'visible', timeout: 20_000 });
-  await page.locator('[data-product-card-toggle-symbol="collapse"]').waitFor({ state: 'visible', timeout: 20_000 });
+  const productPlus = page.getByRole('button', { name: 'Open Jollof tray' });
+  await productPlus.waitFor({ state: 'visible', timeout: 20_000 });
+  const openSymbol = await productPlus.locator('[data-product-card-toggle-symbol="open"]').textContent();
+  if (openSymbol?.trim() !== '+') throw new Error(`Internal product control was ${openSymbol}, expected +.`);
+  await productPlus.click();
+  await page.getByRole('button', { name: 'Close Jollof tray' }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.locator('[data-product-card-toggle-symbol="close"]').waitFor({ state: 'visible', timeout: 20_000 });
   const productCard = page.locator('#shop-block-2');
-  const closeAction = productCard.getByRole('button', { name: 'Hide details for Jollof tray' });
+  const closeAction = productCard.getByRole('button', { name: 'Close Jollof tray' });
   const shareAction = productCard.getByRole('button', { name: 'Share' });
   const repostAction = productCard.getByRole('link', { name: /Repost Jollof tray/ });
   const managePlus = page.getByRole('link', { name: 'Manage media for Jollof tray' });
