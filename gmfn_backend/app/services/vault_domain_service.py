@@ -16,7 +16,7 @@ from app.db.models import (
     VaultOrder,
     VaultPrivateOffer,
 )
-from app.services.feature_entitlements_service import get_active_entitlements
+from app.services.feature_entitlements_service import get_active_entitlements, grant_or_extend_entitlement
 from app.services.trust_events_services import log_trust_event
 
 
@@ -416,6 +416,120 @@ def activate_vault_order_from_expected_payment(
     )
 
     return {"ok": True, "reason": "vault_slots_activated", "activated": activated, "vault_order_id": int(order.id)}
+
+
+def activate_vault_order_from_pipeline_credit(
+    db: Session,
+    *,
+    shop_id: int,
+    owner_user_id: int,
+    clan_id: Optional[int],
+    slot_count: int,
+    total_credit_cost: Any,
+    service_version: int,
+    payment_reference: str,
+    duration_days: int = VAULT_SLOT_DURATION_DAYS,
+) -> Dict[str, Any]:
+    existing = (
+        db.query(VaultOrder)
+        .filter(VaultOrder.payment_reference == _safe_str(payment_reference))
+        .first()
+    )
+    if existing:
+        return {
+            "ok": _safe_str(existing.status) == "confirmed",
+            "reason": "already_activated",
+            "activated": 0,
+            "vault_order_id": int(existing.id),
+        }
+
+    slots = _slot_count(slot_count)
+    expire_vault_blocks(db, shop_id=int(shop_id))
+    blocks = ensure_vault_blocks(db, shop_id=int(shop_id))
+    candidates = [
+        block
+        for block in blocks
+        if _safe_str(block.state, "inactive") in {"inactive", "expired"}
+    ]
+    if len(candidates) < slots:
+        raise ValueError(
+            f"Vault has {len(candidates)} available block{'' if len(candidates) == 1 else 's'} right now"
+        )
+
+    now = _now_utc()
+    expires_at = now + timedelta(days=max(1, int(duration_days)))
+    order = VaultOrder(
+        shop_id=int(shop_id),
+        owner_user_id=int(owner_user_id),
+        clan_id=int(clan_id) if clan_id is not None else None,
+        slot_count=slots,
+        amount_due=_d(total_credit_cost),
+        currency="PC",
+        pricing_rule=f"vault.slot.v{max(1, int(service_version))}",
+        payment_method="pipeline_credit",
+        payment_reference=_safe_str(payment_reference),
+        expected_payment_id=None,
+        bank_event_id=None,
+        status="confirmed",
+        instruction_expires_at=None,
+        paid_at=now,
+        confirmed_at=now,
+        activated_at=now,
+    )
+    db.add(order)
+    db.flush()
+
+    for block in candidates[:slots]:
+        block.state = "active"
+        block.current_order_id = int(order.id)
+        block.activated_at = now
+        block.expires_at = expires_at
+        db.add(block)
+
+    entitlement = grant_or_extend_entitlement(
+        db,
+        owner_user_id=int(owner_user_id),
+        clan_id=int(clan_id) if clan_id is not None else None,
+        shop_id=int(shop_id),
+        feature_code=FEATURE_VAULT_SLOT,
+        plan_code=f"PIPELINE_CREDIT_VAULT_SLOT_V{max(1, int(service_version))}",
+        payment_reference=_safe_str(payment_reference),
+        quantity_total=slots,
+        billing_cycle="monthly",
+        duration_days=max(1, int(duration_days)),
+        starts_at=now,
+        commit=False,
+        refresh=False,
+    )
+
+    log_trust_event(
+        db,
+        event_type="feature.vault_pipeline_credit.activated",
+        clan_id=int(clan_id or 0),
+        actor_user_id=int(owner_user_id),
+        subject_user_id=int(owner_user_id),
+        meta={
+            "reason": "vault_slots_activated_from_pipeline_credits",
+            "vault_order_id": int(order.id),
+            "entitlement_id": int(entitlement.id),
+            "shop_id": int(shop_id),
+            "slot_count": slots,
+            "total_credit_cost": str(_d(total_credit_cost)),
+            "service_version": max(1, int(service_version)),
+            "expires_at": expires_at.isoformat(),
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.flush()
+    return {
+        "ok": True,
+        "reason": "vault_slots_activated",
+        "activated": slots,
+        "vault_order_id": int(order.id),
+        "entitlement_id": int(entitlement.id),
+        "expires_at": expires_at.isoformat(),
+    }
 
 
 def find_vault_block_for_product(db: Session, *, product_id: int) -> Optional[VaultBlock]:

@@ -209,7 +209,7 @@ def test_vault_instruction_rejects_malformed_boundary_controls(
         )
 
 
-def test_vault_instruction_respects_disabled_community_domain_vault_policy(
+def test_retired_vault_bank_instruction_does_not_disclose_domain_policy(
     client,
     override_current_user,
 ):
@@ -225,11 +225,10 @@ def test_vault_instruction_respects_disabled_community_domain_vault_policy(
         },
     )
 
-    assert response.status_code == 403, response.text
+    assert response.status_code == 409, response.text
     detail = response.json()["detail"]
-    assert detail["code"] == "community_domain_feature_disabled"
-    assert detail["feature_key"] == "vault"
-    assert "Vault is not enabled" in detail["message"]
+    assert detail["code"] == "vault_uses_pipeline_credits"
+    assert "Pipeline Credit quote" in detail["message"]
 
     with engine.begin() as conn:
         created = conn.execute(

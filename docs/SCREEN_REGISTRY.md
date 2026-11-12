@@ -80,6 +80,7 @@ Bottom navigation is allowed here.
 29. AdminTrustGraphPage (`/app/command-center/trust-graph`; platform-admin selected-community relationship-evidence fallback with an explicit unconnected community-graph boundary; reviewed 2026-10-26)
 30. SystemOperationsPage (`/app/command-center/system-operations`; platform-admin live queue triage with one state-aware first action and closed operational details; reviewed 2026-10-26)
 31. VaultControlPage (`/app/vault-control`; frozen owner-side two-slot private-offer activation, content, and block-scoped link control)
+32. PipelineCreditPricingPage (`/app/command-center/pipeline-credit-pricing`; platform-admin-only Pipeline Credit conversion and versioned GSN service-price control)
 
 ## Current Repo Name Notes
 

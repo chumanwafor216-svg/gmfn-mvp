@@ -8147,6 +8147,103 @@ export async function getCommunityPipelineCreditProviderGates(payload: {
     "GET"
   );
 }
+
+export async function getPipelineCreditPricingCatalogue(payload?: {
+  region_code?: string;
+  currency?: string;
+}): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/admin/pricing-catalogue${buildQuery({
+      region_code: payload?.region_code || "global",
+      currency: payload?.currency || "GBP",
+    })}`,
+    "GET"
+  );
+}
+
+export async function updatePipelineCreditPricingPolicy(payload: {
+  region_code?: string;
+  currency?: string;
+  credits_per_currency_unit: string;
+}): Promise<any> {
+  return httpJson("/pipeline-credits/admin/pricing-policy", "PUT", {
+    region_code: payload.region_code || "global",
+    currency: payload.currency || "GBP",
+    credits_per_currency_unit: payload.credits_per_currency_unit,
+  });
+}
+
+export async function updatePipelineCreditServicePrice(
+  serviceCode: string,
+  payload: {
+    region_code?: string;
+    pricing_mode: "fixed_credits" | "conversion";
+    credit_cost?: string | null;
+    cash_reference_amount?: string | null;
+    cash_reference_currency?: string;
+    duration_days?: number | null;
+    unit_label?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/admin/service-prices/${encodeURIComponent(serviceCode)}`,
+    "PUT",
+    {
+      region_code: payload.region_code || "global",
+      pricing_mode: payload.pricing_mode,
+      credit_cost: payload.credit_cost || undefined,
+      cash_reference_amount: payload.cash_reference_amount || undefined,
+      cash_reference_currency: payload.cash_reference_currency || "GBP",
+      duration_days: payload.duration_days || undefined,
+      unit_label: payload.unit_label || undefined,
+    }
+  );
+}
+
+export async function getPipelineCreditServiceCatalogue(payload?: {
+  region_code?: string;
+  currency?: string;
+}): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/service-catalogue${buildQuery({
+      region_code: payload?.region_code || "global",
+      currency: payload?.currency || "GBP",
+    })}`,
+    "GET"
+  );
+}
+
+export async function getMyPipelineCreditServiceBalance(
+  regionCode: string = "global"
+): Promise<any> {
+  return httpJson(
+    `/pipeline-credits/me-service-balance${buildQuery({ region_code: regionCode })}`,
+    "GET"
+  );
+}
+
+export async function createPipelineCreditServiceQuote(payload: {
+  service_code: string;
+  quantity: number;
+  region_code?: string;
+  context?: Record<string, unknown>;
+  idempotency_key: string;
+}): Promise<any> {
+  return httpJson("/pipeline-credits/service-quotes", "POST", {
+    service_code: payload.service_code,
+    quantity: payload.quantity,
+    region_code: payload.region_code || "global",
+    context: payload.context || {},
+    idempotency_key: payload.idempotency_key,
+  });
+}
+
+export async function spendPipelineCreditServiceQuote(payload: {
+  quote_key: string;
+  idempotency_key: string;
+}): Promise<any> {
+  return httpJson("/pipeline-credits/service-spends", "POST", payload);
+}
 export async function getCommunityPackageStatus(payload: {
   clan_id: number;
   shop_id?: number | null;

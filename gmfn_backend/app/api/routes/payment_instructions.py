@@ -652,6 +652,19 @@ def create_vault_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "vault_uses_pipeline_credits",
+            "message": (
+                "New Vault activation no longer creates a direct bank-transfer instruction. "
+                "Request the server-priced Vault Pipeline Credit quote instead."
+            ),
+        },
+    )
+
+    # Historical bank-paid Vault orders remain readable and reconcilable below.
+    # This retained implementation is intentionally unreachable for new purchases.
     _require_new_payment_operations()
     shop = _require_shop_owner(
         db,

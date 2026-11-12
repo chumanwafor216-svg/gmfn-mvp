@@ -1,6 +1,16 @@
 # GSN Canonical Pipeline Credit Migration Map - 2026-10-27
 
-Status: repository-backed architecture and migration decision map. No price, exchange rate, payment route, entitlement, schema, balance or runtime behavior is changed by this document.
+Status: repository-backed architecture and migration decision map, partially implemented on 2026-11-12 after explicit owner approval. Prices and conversion remain operator-configured and vacant by default.
+
+## 2026-11-12 implementation truth
+
+- Purpose-scoped `customer_service` accounts now coexist safely with unchanged `provider_operations` history.
+- The account row has an optimistic version and stored balance for concurrency-safe customer debits.
+- A versioned global/region conversion policy and versioned service catalogue exist, with no seeded prices.
+- Immutable 15-minute quotes and idempotent service-spend orders exist.
+- `vault.slot` is the first and only connected atomic debit-plus-delivery handler. Its old direct bank-instruction route is retired for new purchases; historical records remain readable.
+- Spotlight, Repost, extra shop space, Merchant Verification, member capacity, Community Domain, ROSCA and Meeting Pack are registered only. They are not yet connected to credit-funded delivery.
+- Customer Pipeline Credit acquisition/top-up is not yet migrated to the new customer-service account. Operator allocation exists for controlled testing, so this must not be represented as a finished universal live wallet.
 
 ## Settled owner direction
 
@@ -10,16 +20,16 @@ The current examples of approximately five credits per GBP 1, one credit for a n
 
 ## Unabated runtime truth
 
-GSN does not currently have one universal customer Pipeline Credit wallet. It has two different credit systems and a separate entitlement engine:
+GSN now has the canonical customer-service account, catalogue, quote, and spend foundation, but it does not yet have a universal live wallet because acquisition and all services are not connected. The older systems remain:
 
 | Existing engine | Confirmed purpose and scope | Useful parts | Why it is not the finished universal rail |
 |---|---|---|---|
-| `PipelineCreditAccount` and `PipelineCreditLedgerEntry` | Decimal internal provider/API usage control. Accounts can belong to a user, community, sponsor or platform. | Two-decimal entries, scoped accounts, idempotency keys, workflow/provider/reference fields, bank-confirmed top-up path and read-only community status. | Its explicit contract says it is not a customer wallet. Admin controls allocations/debits, normal users have no general service-spend contract, and its current balance calculation is not yet the concurrency-safe customer purchase boundary. |
+| `PipelineCreditAccount` and `PipelineCreditLedgerEntry` | Segregated decimal accounts for internal provider/API control and the new customer-service rail. | Purpose-prefixed keys, stored/versioned customer balances, idempotent entries, immutable quotes, service spend orders, and one connected Vault delivery. | Customer acquisition and most module deliveries are not connected yet; provider-operation balances must never be presented or migrated as customer value. |
 | `MemberServiceCreditAccount` and member-credit purchase models | Isolated test customer catalogue and integer member balance. | Versioned packs/services, quote snapshots, purchase orders, payment provenance, Stripe link, optimistic account versioning, per-service permission and idempotent Spotlight spend. | Member-only, integer-only, test-gated, supports only `spotlight.single_day`, and cannot fund community, sponsor or platform-owned services. |
 | `FeatureEntitlement` and usage events | Time- or quantity-bounded rights such as Spotlight priority, extra shop space, member capacity, ROSCA, Meeting Pack, Merchant Verification and Community Domain. | Grant/extend, expiry, remaining quantity, consumption and existing product enforcement. | It records delivered rights, not a shared prepaid balance or regional service price. |
 | Expected-payment and bank-application services | Creates payment references and applies reconciled cash to either direct feature subscriptions or Pipeline Credit top-ups. | Server-side payment evidence, reconciliation, idempotent application and Trust Event records. | Direct feature payments and credit top-ups currently coexist. Leaving both purchase paths open after migration would create conflicting prices and double-purchase risk. |
 
-Calling either existing balance the universal wallet today would be false.
+Calling the partial customer-service foundation a finished universal live wallet today would still be false.
 
 ## Reuse-first target architecture
 
@@ -126,7 +136,7 @@ Every service purchase must follow one server-owned transaction boundary:
 8. If external delivery cannot be atomic, reserve first and create an idempotent reversal when delivery definitively fails. Do not silently lose or duplicate credits.
 9. Record service code, catalogue version, region, chargeable unit, entitlement/delivery reference, actor, account owner and correlation/idempotency key.
 
-The current decimal Pipeline Credit service calculates balance from the last ledger row but does not lock the account during a general debit. It must receive a concurrency-safe account version/lock before customer spending is activated.
+Customer-service accounts now use optimistic account-version checks and a stored balance during debit. Provider-operation accounts retain their historical ledger-derived behavior and separate purpose.
 
 ## Migration rules
 
@@ -159,7 +169,7 @@ This is safer than allowing freely transferable credits acquired at different re
 - Correct misleading documentation and UI amounts, but do not activate spending.
 - Preserve direct-entitlement history and both ledger histories.
 
-### Phase 1 - catalogue and quote foundation
+### Phase 1 - catalogue and quote foundation - implemented 2026-11-12
 
 - Add account-purpose and pricing-region contracts.
 - Generalise the existing versioned pack/service catalogue patterns for user, community and sponsor accounts.
@@ -172,10 +182,10 @@ This is safer than allowing freely transferable credits acquired at different re
 - Adapt the existing member purchase/Stripe provenance flow to allocate the same canonical account rather than a second balance.
 - Keep synthetic/test collections permanently distinguishable.
 
-### Phase 3 - one low-risk spend pilot
+### Phase 3 - one low-risk spend pilot - Vault foundation implemented, live acquisition still blocked
 
 - Activate one server-priced, versioned service only after the owner approves its unit, debit, region and refund contract.
-- Paid Spotlight is technically closest, but it must keep direct Spotlight and Repost as different service codes.
+- Vault is the first connected handler under explicit owner direction. Paid Spotlight and Repost remain separate registered service codes and are not connected yet.
 - Measure reconciled payment, consumption, reversals, delivery cost, support time and repeat purchase.
 
 ### Phase 4 - entitlement-backed modules
@@ -240,4 +250,4 @@ This is safer than allowing freely transferable credits acquired at different re
 
 ## Final truth boundary
 
-This map identifies how GSN can reuse its existing engines without maintaining two customer balances or confusing customer credits with internal provider cost. It does not approve a schema migration, activate payment operations, set a price, prove demand or authorise deployment.
+This map identifies how GSN reuses its existing engines without confusing customer credits with internal provider cost. The 2026-11-12 owner direction approved the configurable foundation and Vault first slice, but did not set a price, prove demand, connect customer acquisition, or migrate the remaining paid modules.

@@ -129,6 +129,9 @@ const TrustAnalyticsPage = React.lazy(
 const TrustCommandCentrePage = React.lazy(
   () => import("./pages/TrustCommandCentrePage")
 );
+const PipelineCreditPricingPage = React.lazy(
+  () => import("./pages/PipelineCreditPricingPage")
+);
 const AdminTrustEventsPage = React.lazy(
   () => import("./pages/AdminTrustEventsPage")
 );
@@ -1310,6 +1313,7 @@ export default function App() {
             <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
             <Route path="support" element={<AdminSupportPage />} />
             <Route path="gsn-campaigns" element={<AdminGsnHouseCampaignPage />} />
+            <Route path="pipeline-credit-pricing" element={<PipelineCreditPricingPage />} />
             <Route path="system-operations" element={<SystemOperationsPage />} />
             <Route path="trust-graph" element={<AdminTrustGraphPage />} />
           </Route>

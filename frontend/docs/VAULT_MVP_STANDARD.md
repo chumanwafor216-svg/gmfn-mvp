@@ -1,6 +1,6 @@
 # Vault MVP Standard
 
-Date: 2026-05-04
+Date: 2026-05-04; payment amendment approved 2026-11-12
 
 ## Product Definition
 
@@ -11,13 +11,13 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 ## Fixed MVP Rules
 
 - Maximum active paid Vault slots: 2.
-- Pricing: each Vault slot costs GBP 5 on the UK/Europe/US pilot rail.
+- Pricing is vacant until a GSN operator creates an active version in Command Centre. No user screen owns or hardcodes the amount.
 - No Vault bundle is active under the current pilot rule.
-- MVP payment method: bank transfer only.
-- Card payment may be added later, but the current Vault MVP must not pretend card payment is connected.
+- New Vault activation consumes customer-service Pipeline Credits only.
+- Bank/card/provider payment may acquire Pipeline Credits through a separately governed acquisition flow, but must not directly purchase Vault.
 - Vault revenue belongs to the platform/GMFN/GSN account, not community money.
-- Payment instruction expiry: 7 days.
-- Vault activation duration: 30 days by default.
+- Immutable service quote expiry: 15 minutes.
+- Vault activation duration comes from the active `vault.slot` service-price version; the initial catalogue default is 30 days until the operator changes it.
 - Private link expiry: 72 hours by default.
 - Each active private block holds one private image/video offer.
 - Each new private link should open one private block only.
@@ -28,16 +28,15 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 1. Owner opens `/app/vault-control`.
 2. The page shows the main shop hero and clearly labels the private layer as Vault.
 3. Owner chooses 1-2 slots.
-4. The page immediately shows the selected slot count and exact price.
-5. Owner explicitly agrees to that quote before any payment code is generated.
-6. Owner generates a payment code for the agreed slot count and amount.
-7. The payment instruction shows amount, bank details, exact payment code/reference, and expiry.
-8. Owner pays by bank transfer using the exact code.
-9. Bank reconciliation confirms exact reference plus exact amount.
-10. The purchased Vault slots unlock.
-11. Owner adds one private image/video offer to each active block.
-12. Owner creates a private link for the selected block.
-13. Viewer opens only that block through the private link.
+4. The page shows the active operator-configured preview and requests an immutable server quote.
+5. The quote shows exact Pipeline Credit debit, current balance, resulting balance, service version, and expiry.
+6. Owner explicitly agrees to that exact quote.
+7. GSN checks the purpose-scoped customer balance and atomically debits credits, creates the completed Vault order, activates the selected available blocks, and grants the entitlement.
+8. Insufficient balance leaves all delivery state unchanged.
+9. Successful activation opens the Add Product editor for the first newly active block.
+10. Owner adds one private image/video offer to each active block.
+11. Owner creates a private link for the selected block.
+12. Viewer opens only that block through the private link.
 
 ## Viewer Flow
 
@@ -54,10 +53,10 @@ The implementation now has dedicated Vault domain tables for the MVP lane:
 - `vault_private_offers` mirrors the private product content attached to a block.
 - `vault_access_logs` records Vault link open/status attempts.
 
-The MVP still keeps compatibility with older payment and product records:
+The MVP keeps compatibility with older payment and product records:
 
-- Payment reconciliation still starts from `expected_payments.expected_type = vault_subscription`.
-- Vault expected payments must be created through the Vault payment-instruction service so every payment instruction has a matching `vault_orders` row. Do not reintroduce a shortcut helper that creates a Vault expected payment without a Vault order.
+- Historical bank-paid Vault reconciliation may still read `expected_payments.expected_type = vault_subscription`; the direct creation route is retired for new purchases.
+- New Vault orders use `payment_method = pipeline_credit`, `currency = PC`, and a service-versioned pricing rule.
 - Active payment rights still grant/extend `feature_entitlements.feature_code = vault_slot`.
 - Private offer content is still saved as `marketplace_products.visibility_mode = vault_private`.
 - New private links are saved in `vault_access_links` with both `product_id` and `block_id`.
@@ -71,13 +70,16 @@ Do not expose these internal table names in user-facing copy.
 - Legacy links without `product_id` or `block_id` are legacy shop-scope links and should not be used as the future product rule.
 - Owner Vault Control must read backend `vault_blocks` status instead of relying on browser-only slot memory.
 - Saving a private offer must send the selected `vault_slot_number` so the backend attaches it to the intended active block.
-- Payment reconciliation must keep using expected-payment matching rather than a separate payment engine.
-- Exact reference plus exact amount can auto-confirm.
-- Wrong reference, short amount, duplicate, late, or ambiguous payments require admin review and must not auto-unlock slots.
+- New activation must use an immutable quote and idempotent spend order.
+- Customer-service accounts must remain segregated from provider-operation accounts.
+- Debit, Vault order, block activation, and entitlement grant must commit together or roll back together.
+- Historical expected-payment reconciliation remains available only for existing records.
 
 ## Do Not Claim
 
 - Do not claim Vault content cannot be saved. Say private controlled access.
 - Do not claim card payment exists until a real processor exists.
+- Do not claim every paid GSN module is migrated. Vault is the first connected customer Pipeline Credit delivery lane.
+- Do not claim customer Pipeline Credit acquisition is connected merely because the service-spend balance exists.
 - Do not claim old browser-local slot memory is the source of truth. Backend `vault_blocks.slot_number` is now the cross-device block position.
 - Do not claim a legacy shop-scope Vault link is the final private-block link model.

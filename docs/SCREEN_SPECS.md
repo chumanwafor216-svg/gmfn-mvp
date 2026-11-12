@@ -2431,6 +2431,32 @@ Rules:
 - Do not restore the exposed explanatory blocks, duplicate statistic grid, or repetitive Today/Tomorrow cards.
 - On phone, manual inputs and record/proof detail must not appear until the corresponding disclosure is opened.
 
+## PipelineCreditPricingPage
+
+Purpose:
+Give a platform operator one protected source of truth for the Pipeline Credit conversion and each chargeable GSN service price without hardcoding credit amounts into user screens.
+
+Route:
+- `/app/command-center/pipeline-credit-pricing`
+
+Must show:
+- the active region and currency conversion, including the number of Pipeline Credits issued for one currency unit;
+- a blank not-configured state until an operator deliberately records a conversion or service price;
+- one compact service row for each registered chargeable service code;
+- each service's active immutable version, credit cost, unit, duration, pricing mode, and connection status;
+- fixed-credit and conversion-derived pricing modes;
+- a clear warning that changing a conversion creates new versions for conversion-derived services but does not rewrite accepted historical quotes or spends.
+
+Rules:
+- Platform-admin access only; community admins and ordinary members cannot change global pricing.
+- User-facing purchase screens submit a service code and governed quantity, never a client-owned amount.
+- Every operator change creates a new server-side version and retires the prior active version.
+- Direct credit overrides remain fixed when the conversion changes; conversion-derived services are recalculated into new versions.
+- Service prices remain vacant until configured. An unconfigured service cannot issue a spendable quote.
+- Existing paid rights and historical direct-payment records remain valid and are never charged again.
+- The first connected delivery is `vault.slot`; other registered services may be priced in preparation but must not claim connected delivery until their atomic debit-and-delivery handler exists.
+- Credits are non-cashable service-use rights, not money, savings, lending, cash-out value, or ordinary user-to-user transfer.
+
 ## AdminCommunityOwnershipPage
 
 Purpose:

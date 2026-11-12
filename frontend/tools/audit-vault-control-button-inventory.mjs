@@ -22,12 +22,12 @@ const mediaFrameSource = readFileSync(join(frontendRoot, mediaFrameFile), "utf8"
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 5,
-  SecondaryButton: 9,
-  SubtleButton: 2,
-  StableButton: 3,
+  PrimaryButton: 6,
+  SecondaryButton: 8,
+  SubtleButton: 3,
+  StableButton: 4,
   StableCtaLink: 0,
-  total: 19,
+  total: 21,
 };
 const expectedNativeFieldCount = 7;
 const expectedFileInputActionRoots = 2;
@@ -204,8 +204,10 @@ for (const action of actions) {
 const expectedActionOrder = [
   "vault-control.panel.${panel}.toggle",
   "vault-control.payment-slot.${slot}",
-  "vault-control.confirm-quote",
-  "vault-control.generate-payment-code",
+  "vault-control.request-credit-quote",
+  "vault-control.agree-pipeline-credit-quote",
+  "vault-control.spend-pipeline-credits",
+  "vault-control.change-credit-quote",
   "vault-control.copy-payment-details",
   "vault-control.check-payment-status",
   "vault-control.block-slot.${slotNumber}.select",

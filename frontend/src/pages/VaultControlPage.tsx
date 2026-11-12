@@ -13,17 +13,21 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PrivateVaultEverydayItems from "../components/PrivateVaultEverydayItems";
 import {
   createVaultShopAccessLink,
+  createPipelineCreditServiceQuote,
   extendVaultShopAccessLink,
   getAccessToken,
   getMarketplaceShopByGmfnId,
   getMe,
+  getMyPipelineCreditServiceBalance,
   getMyIdentityRisk,
   getSelectedClanId,
   getVaultShopStatus,
+  getPipelineCreditServiceCatalogue,
   listMyCommunityDomains,
   listVaultShopAccessLinks,
   revokeVaultShopAccessLink,
   safeCopy,
+  spendPipelineCreditServiceQuote,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
   type VaultLinkItem,
@@ -45,6 +49,7 @@ import {
   forgetShopProductMedia,
   rememberShopProductMedia,
 } from "../lib/shopProductMediaCache";
+import { structuredErrorMessage } from "../lib/structuredErrors";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -179,6 +184,20 @@ type VaultConfigRecord = {
 
 type VaultPanelKey = "activation" | "payment" | "blocks" | "link" | "flow";
 
+type PipelineCreditQuote = {
+  quote_key: string;
+  service_code: string;
+  service_version_id?: number | null;
+  service_version?: number | null;
+  quantity: number;
+  unit_credit_cost: string;
+  total_credit_cost: string;
+  balance: string;
+  resulting_balance: string;
+  has_sufficient_balance: boolean;
+  expires_at?: string | null;
+};
+
 const VAULT_SLOT_LIMIT = 2;
 const VAULT_PAYMENT_DUE_DAYS = 7;
 const VAULT_LINK_DEFAULT_HOURS = 72;
@@ -208,16 +227,6 @@ function rowsOf<T = any>(input: any): T[] {
 function numberLike(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function vaultSlotPaymentAmount(slotCount: unknown): number {
-  const slots = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotCount || 1)));
-  return slots * 5;
-}
-
-function vaultPaymentQuoteKey(slotCount: unknown): string {
-  const slots = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotCount || 1)));
-  return `${slots}:${vaultSlotPaymentAmount(slots)}:GBP`;
 }
 
 function formatMoney(amount: unknown, currency = "GBP"): string {
@@ -883,13 +892,17 @@ export default function VaultControlPage() {
   const [vaultSettlement, setVaultSettlement] = useState<SettlementRecord | null>(null);
   const [vaultConfig, setVaultConfig] = useState<VaultConfigRecord | null>(null);
   const [vaultStatus, setVaultStatus] = useState<VaultShopStatus | null>(null);
+  const [pipelineCreditCatalogue, setPipelineCreditCatalogue] = useState<any>(null);
+  const [pipelineCreditBalance, setPipelineCreditBalance] = useState<any>(null);
+  const [vaultCreditQuote, setVaultCreditQuote] = useState<PipelineCreditQuote | null>(null);
+  const [vaultCreditQuoteAgreed, setVaultCreditQuoteAgreed] = useState(false);
   const [vaultSlotMap, setVaultSlotMap] = useState<Record<string, number>>({});
   const [identityBlocked, setIdentityBlocked] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
+  const [spendingPipelineCredits, setSpendingPipelineCredits] = useState(false);
   const [creatingLink, setCreatingLink] = useState(false);
   const [busyLinkId, setBusyLinkId] = useState<string>("");
   const [paymentSlots, setPaymentSlots] = useState(1);
-  const [confirmedPaymentQuoteKey, setConfirmedPaymentQuoteKey] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
   const [openVaultPanels, setOpenVaultPanels] = useState<Record<VaultPanelKey, boolean>>({
     activation: true,
@@ -999,16 +1012,22 @@ export default function VaultControlPage() {
     setVaultLinks([]);
     setExpectedPayments([]);
     setVaultStatus(null);
+    setPipelineCreditCatalogue(null);
+    setPipelineCreditBalance(null);
     try {
-      const [meRes, riskRes, instructionConfigRes] = await Promise.all([
+      const [meRes, riskRes, instructionConfigRes, creditCatalogueRes, creditBalanceRes] = await Promise.all([
         getMe().catch(() => null),
         getMyIdentityRisk().catch(() => null),
         apiJson<any>("/api/payment-instructions/my").catch(() => null),
+        getPipelineCreditServiceCatalogue({ region_code: "global", currency: "GBP" }).catch(() => null),
+        getMyPipelineCreditServiceBalance("global").catch(() => null),
       ]);
       if (!canApplyLoad(loadSeq)) return;
       setMe(meRes || null);
       setVaultSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
       setVaultConfig((instructionConfigRes?.vault_config || null) as VaultConfigRecord | null);
+      setPipelineCreditCatalogue(creditCatalogueRes || null);
+      setPipelineCreditBalance(creditBalanceRes || null);
       const continuity = (riskRes as any)?.continuity || {};
       const status = safeStr(continuity?.status).toLowerCase();
       setIdentityBlocked(status === "reverify_required" || status === "protected_lock");
@@ -1124,6 +1143,7 @@ export default function VaultControlPage() {
     return activeSlots;
   }, [vaultPayments, vaultStatus]);
   const confirmedVaultSlots = activeVaultSlotNumbers.size;
+  const availableVaultSlots = Math.max(0, VAULT_SLOT_LIMIT - confirmedVaultSlots);
 
   const latestVaultPayment = vaultPayments[0] || null;
   useEffect(() => {
@@ -1149,6 +1169,13 @@ export default function VaultControlPage() {
       setSelectedSlot(1);
     }
   }, [selectedSlot]);
+  useEffect(() => {
+    if (availableVaultSlots > 0 && paymentSlots > availableVaultSlots) {
+      setPaymentSlots(availableVaultSlots);
+      setVaultCreditQuote(null);
+      setVaultCreditQuoteAgreed(false);
+    }
+  }, [availableVaultSlots, paymentSlots]);
   const selectedSeatIsActive = activeVaultSlotNumbers.has(selectedSlot);
   const selectedProduct = vaultInnerSlots[selectedSlot - 1] || null;
   const selectedBlockLinks = selectedProduct
@@ -1195,6 +1222,15 @@ export default function VaultControlPage() {
     };
   }
   const shopHeroImageUrl = resolveAssetSrc(shop?.image_url);
+  const vaultCreditService = rowsOf<any>(pipelineCreditCatalogue?.services).find(
+    (item) => firstTruthy(item?.service_code).toLowerCase() === "vault.slot"
+  );
+  const vaultCreditPriceConfigured = Boolean(vaultCreditService?.configured);
+  const vaultUnitCreditCost = Number(vaultCreditService?.credit_cost || 0);
+  const customerPipelineCreditBalance = firstTruthy(
+    pipelineCreditBalance?.account?.balance,
+    "0.00"
+  );
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
   const activeVaultPaymentStatus = firstTruthy(activeVaultPayment?.status).toLowerCase();
   const vaultPaymentNeedsAction = Boolean(
@@ -1207,22 +1243,22 @@ export default function VaultControlPage() {
     ? selectedProduct
       ? "link"
       : "blocks"
-    : vaultPaymentNeedsAction
+    : vaultCreditQuote
       ? "payment"
       : "activation";
   const vaultNextStepTitle = vaultGuidedPanel === "activation"
     ? "Activate a private space"
     : vaultGuidedPanel === "payment"
-      ? "Complete the bank transfer"
+      ? "Confirm the Pipeline Credit use"
       : vaultGuidedPanel === "blocks"
         ? "Add your private offer"
         : selectedBlockHasUsableLink
           ? "Share or manage your private link"
           : "Create the private link";
   const vaultNextStepDetail = vaultGuidedPanel === "activation"
-    ? "Choose one or two spaces. Each space costs GBP 5 and opens only after payment is confirmed."
+    ? "Choose one or two spaces and request the exact server-priced Pipeline Credit quote."
     : vaultGuidedPanel === "payment"
-      ? "Use the payment code below, then upload proof or check the confirmation status."
+      ? "Review the exact debit and balance, agree, then let GSN unlock the selected spaces."
       : vaultGuidedPanel === "blocks"
         ? "Choose an active space and add the offer that invited customers should see."
         : selectedBlockHasUsableLink
@@ -1256,13 +1292,16 @@ export default function VaultControlPage() {
   const activeVaultPaymentCurrency = firstTruthy(activeVaultPayment?.currency, "GBP");
   const activeVaultPaymentDueAt = firstTruthy(activeVaultPayment?.due_at);
   const selectedVaultSlotCount = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(paymentSlots || 1)));
-  const selectedVaultPaymentAmount = vaultSlotPaymentAmount(selectedVaultSlotCount);
-  const selectedVaultPaymentLabel = formatMoney(selectedVaultPaymentAmount, "GBP");
-  const selectedVaultQuoteKey = vaultPaymentQuoteKey(selectedVaultSlotCount);
-  const paymentQuoteConfirmed = confirmedPaymentQuoteKey === selectedVaultQuoteKey;
-  const selectedVaultAgreementText = `${selectedVaultSlotCount} slot${selectedVaultSlotCount === 1 ? "" : "s"} = ${selectedVaultPaymentLabel}`;
+  const selectedVaultCreditCost = vaultCreditPriceConfigured
+    ? (vaultUnitCreditCost * selectedVaultSlotCount).toFixed(2)
+    : "";
+  const selectedVaultPaymentLabel = selectedVaultCreditCost
+    ? `${selectedVaultCreditCost} Pipeline Credits`
+    : "Pipeline Credit price not configured";
   const selectedVaultBundleText =
-    "Each Vault block is GBP 5 for the UK/Europe/US pilot rail. Regional pricing can be adjusted from the costing framework.";
+    vaultCreditPriceConfigured
+      ? `The active operator version charges ${Number(vaultUnitCreditCost).toFixed(2)} Pipeline Credits per ${firstTruthy(vaultCreditService?.unit_label, "block")} for ${Number(vaultCreditService?.duration_days || 30)} days.`
+      : "The GSN operator has left this price vacant. Vault cannot take credits until a version is configured in Command Centre.";
   const settlementMissingText = settlementValue(vaultSettlement, "missing_field_text") || "Payment setup is not ready for this region yet.";
   const vaultPaymentRegionCode = settlementValue(vaultSettlement, "region_code").toLowerCase();
   const vaultPaymentCountryCode = settlementValue(vaultSettlement, "country").toUpperCase();
@@ -1594,7 +1633,7 @@ export default function VaultControlPage() {
     }
   }
 
-  async function createVaultInstruction(quantityTotal: number) {
+  async function requestVaultCreditQuote(quantityTotal: number) {
     if (!shop?.id) {
       showNotice("error", "Shop record is not ready.");
       return;
@@ -1604,45 +1643,87 @@ export default function VaultControlPage() {
       return;
     }
     const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
-    const quoteKey = vaultPaymentQuoteKey(safeQuantity);
-    if (confirmedPaymentQuoteKey !== quoteKey) {
-      showNotice(
-        "info",
-        `Agree to the Vault quote first: ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} = ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
-      );
+    if (availableVaultSlots <= 0 || safeQuantity > availableVaultSlots) {
+      showNotice("info", `Vault has ${availableVaultSlots} available block${availableVaultSlots === 1 ? "" : "s"} right now.`);
+      return;
+    }
+    if (!vaultCreditPriceConfigured) {
+      showNotice("info", "The GSN operator has not configured the Vault Pipeline Credit price yet.");
       return;
     }
     setCreatingPayment(true);
     try {
-      const result = await apiJson<any>("/api/payment-instructions/vault", {
-        method: "POST",
-        body: JSON.stringify({
+      const result = await createPipelineCreditServiceQuote({
+        service_code: "vault.slot",
+        quantity: safeQuantity,
+        region_code: "global",
+        context: {
           clan_id: Number(shop.clan_id || selectedClanId || 0),
           shop_id: Number(shop.id),
-          quantity_total: safeQuantity,
-          currency: "GBP",
-        }),
+        },
+        idempotency_key: `vault-quote-${shop.id}-${safeQuantity}-${Date.now()}`,
       });
       if (!mountedRef.current) return;
-      setVaultInstruction(result as ExpectedPaymentRecord);
-      setVaultSettlement((result?.settlement || vaultSettlement || null) as SettlementRecord | null);
+      setVaultCreditQuote((result?.quote || null) as PipelineCreditQuote | null);
+      setVaultCreditQuoteAgreed(false);
       setOpenVaultPanels((prev) => ({ ...prev, activation: false, payment: true }));
-      await loadPage();
-      if (!mountedRef.current) return;
-      const reference = firstTruthy(result?.reference_display, result?.reference);
-      const copiedReference = reference ? await safeCopy(reference) : false;
-      if (!mountedRef.current) return;
       showNotice(
-        "success",
-        reference
-          ? `Vault payment code is ready: ${reference}. Use that exact code in the bank transfer.${copiedReference ? " Code copied." : " Copy was blocked, so copy it from the payment details shown here."}`
-          : `Vault payment request created for ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} at ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
+        result?.quote?.has_sufficient_balance ? "success" : "info",
+        result?.quote?.has_sufficient_balance
+          ? `Your exact Vault quote is ready: ${result.quote.total_credit_cost} Pipeline Credits.`
+          : `The quote is ${result?.quote?.total_credit_cost || selectedVaultCreditCost} Pipeline Credits, but your current balance is ${result?.quote?.balance || customerPipelineCreditBalance}.`
       );
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
+      showNotice("error", structuredErrorMessage(err, "The Vault Pipeline Credit quote could not be created."));
     } finally {
       if (mountedRef.current) setCreatingPayment(false);
+    }
+  }
+
+  async function spendVaultPipelineCredits() {
+    if (!vaultCreditQuote?.quote_key) {
+      showNotice("info", "Request the exact Vault Pipeline Credit quote first.");
+      return;
+    }
+    if (!vaultCreditQuoteAgreed) {
+      showNotice("info", `Agree to use ${vaultCreditQuote.total_credit_cost} Pipeline Credits first.`);
+      return;
+    }
+    if (!vaultCreditQuote.has_sufficient_balance) {
+      showNotice("error", "You do not have enough Pipeline Credits for this Vault quote.");
+      return;
+    }
+    const firstNewSlot = [1, 2].find((slotNumber) => !activeVaultSlotNumbers.has(slotNumber)) || 1;
+    setSpendingPipelineCredits(true);
+    try {
+      const result = await spendPipelineCreditServiceQuote({
+        quote_key: vaultCreditQuote.quote_key,
+        idempotency_key: `vault-spend-${vaultCreditQuote.quote_key}`,
+      });
+      if (!mountedRef.current) return;
+      await loadPage();
+      if (!mountedRef.current) return;
+      setSelectedSlot(firstNewSlot);
+      resetProductForm();
+      setEditorOpen(true);
+      setVaultCreditQuote(null);
+      setVaultCreditQuoteAgreed(false);
+      setOpenVaultPanels((prev) => ({
+        ...prev,
+        activation: false,
+        payment: false,
+        blocks: true,
+      }));
+      showNotice(
+        "success",
+        `${result?.spend?.total_credit_cost || "The quoted"} Pipeline Credits were used successfully. Add the private product now.`
+      );
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      showNotice("error", structuredErrorMessage(err, "The Pipeline Credit debit could not be completed."));
+    } finally {
+      if (mountedRef.current) setSpendingPipelineCredits(false);
     }
   }
 
@@ -2061,7 +2142,7 @@ export default function VaultControlPage() {
               "activation",
               1,
               "Activate private space",
-              `GBP 5 each. ${confirmedVaultSlots} of ${VAULT_SLOT_LIMIT} spaces are active.`
+              `${vaultCreditPriceConfigured ? `${Number(vaultUnitCreditCost).toFixed(2)} credits each` : "Price not configured"}. ${confirmedVaultSlots} of ${VAULT_SLOT_LIMIT} spaces are active.`
             )}
           </div>
         ) : null}
@@ -2077,13 +2158,13 @@ export default function VaultControlPage() {
           >
             {!isCompact ? <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div> : null}
             <div style={{ marginTop: isCompact ? 0 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
-              Choose one or two private spaces. They become available only after payment is confirmed.
+              Choose one or two private spaces. GSN will show the exact Pipeline Credit debit before anything is taken.
             </div>
             {!isCompact ? (
               <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
                 <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
                 <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
-                  Each Vault block is GBP 5 on the UK/Europe/US pilot rail. This shop can activate up to 2 private Vault blocks.
+                  {selectedVaultBundleText}
                 </div>
               </div>
             ) : null}
@@ -2099,39 +2180,44 @@ export default function VaultControlPage() {
             >
               {[1, 2].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
+                const unavailable = slot > availableVaultSlots;
                 return (
                   <StableButton
                     key={slot}
                     kind={selected ? "primary" : "secondary"}
                     role="radio"
                     aria-checked={selected}
+                    disabled={unavailable}
                     onClick={() => {
                       setPaymentSlots(slot);
-                      setConfirmedPaymentQuoteKey("");
+                      setVaultCreditQuote(null);
+                      setVaultCreditQuoteAgreed(false);
                     }}
-                    style={slotChoiceButton(selected, isCompact)}
+                    style={{ ...slotChoiceButton(selected, isCompact), opacity: unavailable ? 0.48 : 1 }}
                     debugId={`vault-control.payment-slot.${slot}`}
                   >
                     <span>{slot}</span>
-                    <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>slot{slot === 1 ? "" : "s"}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>
+                      {unavailable ? "not available" : `slot${slot === 1 ? "" : "s"}`}
+                    </span>
                   </StableButton>
                 );
               })}
             </div>
             <PrimaryButton
-              onClick={() => {
-                setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
-                showNotice("success", `Vault quote agreed: ${selectedVaultAgreementText}. Quote agreement is not payment confirmation.`);
-              }}
+              onClick={() => void requestVaultCreditQuote(paymentSlots)}
+              disabled={vaultFeatureOff || creatingPayment || !shop?.id || !vaultCreditPriceConfigured || availableVaultSlots <= 0}
+              busy={creatingPayment}
+              busyLabel="Getting quote..."
               style={{
                 ...brandActionButton("primary"),
                 marginTop: isCompact ? 10 : 18,
                 minHeight: isCompact ? 52 : 62,
                 width: "100%",
               }}
-              debugId="vault-control.confirm-quote"
+              debugId="vault-control.request-credit-quote"
             >
-              Agree: {selectedVaultAgreementText}
+              Get exact Pipeline Credit quote
             </PrimaryButton>
           </div>
           <div
@@ -2141,9 +2227,9 @@ export default function VaultControlPage() {
                 "radial-gradient(circle at 90% 0%, rgba(12,79,168,0.09), transparent 32%), linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))",
             }}
           >
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Payment preview</div>
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Pipeline Credit preview</div>
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
-              {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
+              {selectedVaultSlotCount} block{selectedVaultSlotCount === 1 ? "" : "s"} = {selectedVaultPaymentLabel}
             </div>
             <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
               <div style={{ ...sectionLabel(), color: "#8A640E" }}>
@@ -2152,49 +2238,19 @@ export default function VaultControlPage() {
               <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
             </div>
             <div style={{ marginTop: 14, ...helperText() }}>
-              Agree to this quote first. GSN will generate the payment code against this exact slot count and amount, then bank or finance reconciliation must confirm the payment before Vault blocks become available.
+              Your current customer-service balance is {customerPipelineCreditBalance} Pipeline Credits. The server quote locks the exact service version, quantity and debit for 15 minutes.
             </div>
             {vaultFeatureOff ? (
               <div style={{ marginTop: 14, ...noticeCard("error") }}>
                 {vaultFeatureOffText}
               </div>
             ) : null}
-            {!activeVaultPayment ? (
-              <SecondaryButton
-                onClick={() => {
-                  if (vaultFeatureOff) {
-                    showNotice("error", vaultFeatureOffText);
-                    return;
-                  }
-                  if (!paymentQuoteConfirmed) {
-                    showNotice("info", `Agree to this Vault quote first: ${selectedVaultAgreementText}.`);
-                    return;
-                  }
-                  void createVaultInstruction(paymentSlots);
-                }}
-                disabled={vaultFeatureOff || creatingPayment || !shop?.id}
-                style={{
-                  ...brandActionButton(
-                    "secondary",
-                    vaultFeatureOff || creatingPayment || !shop?.id
-                  ),
-                  marginTop: 10,
-                  minHeight: 54,
-                  width: "100%",
-                }}
-                busy={creatingPayment}
-                busyLabel="Generating payment code..."
-                debugId="vault-control.generate-payment-code"
-              >
-                {creatingPayment ? "Generating payment code..." : "Generate payment code"}
-              </SecondaryButton>
-            ) : null}
             <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
-              Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
+              No direct bank-payment code is created for Vault. Any bank or provider payment belongs to a separate Pipeline Credit acquisition flow, which is not connected on this Vault screen.
             </div>
             {identityBlocked ? (
               <div style={{ marginTop: 14, ...noticeCard("info") }}>
-                Identity review may limit private sharing, but you can still generate the payment code here.
+                Identity review may limit private sharing after activation, but it does not change the server-owned credit quote.
               </div>
             ) : null}
           </div>
@@ -2206,12 +2262,84 @@ export default function VaultControlPage() {
         {panelHeader(
           "payment",
           2,
-          "Payment code and bank transfer",
-          activeVaultPayment
-            ? `${activeVaultPaymentReference || "Payment code ready"} - ${activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : "amount shown inside"}`
-            : "Generate the payment code after agreeing to the quote."
+          "Confirm Pipeline Credit use",
+          vaultCreditQuote
+            ? `${vaultCreditQuote.total_credit_cost} credits for ${vaultCreditQuote.quantity} block${vaultCreditQuote.quantity === 1 ? "" : "s"}`
+            : "Request the exact server quote after choosing one or two blocks."
         )}
-        {openVaultPanels.payment ? activeVaultPayment ? (
+        {openVaultPanels.payment ? vaultCreditQuote ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {[
+                ["Exact debit", `${vaultCreditQuote.total_credit_cost} credits`],
+                ["Current balance", `${vaultCreditQuote.balance} credits`],
+                ["Balance after", `${vaultCreditQuote.resulting_balance} credits`],
+              ].map(([label, value]) => (
+                <div key={label} style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>{label}</div>
+                  <div style={{ marginTop: 7, color: gmfnBrand.colors.ink, fontWeight: 950, fontSize: 20 }}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!vaultCreditQuote.has_sufficient_balance ? (
+              <div style={noticeCard("error")}>
+                You do not have enough Pipeline Credits for this quote. No credits were taken and no Vault block was opened.
+              </div>
+            ) : (
+              <div style={noticeCard("info")}>
+                This quote uses Vault price version {vaultCreditQuote.service_version || vaultCreditQuote.service_version_id || "recorded by GSN"} and expires {safeDateTime(vaultCreditQuote.expires_at) || "in 15 minutes"}. A later operator price change will not rewrite this accepted quote.
+              </div>
+            )}
+
+            <StableButton
+              kind={vaultCreditQuoteAgreed ? "primary" : "secondary"}
+              onClick={() => setVaultCreditQuoteAgreed((current) => !current)}
+              disabled={!vaultCreditQuote.has_sufficient_balance || spendingPipelineCredits}
+              debugId="vault-control.agree-pipeline-credit-quote"
+              style={{ minHeight: 56, width: "100%" }}
+            >
+              {vaultCreditQuoteAgreed
+                ? `Agreed: use ${vaultCreditQuote.total_credit_cost} Pipeline Credits`
+                : `Agree to use ${vaultCreditQuote.total_credit_cost} Pipeline Credits`}
+            </StableButton>
+
+            <PrimaryButton
+              onClick={() => void spendVaultPipelineCredits()}
+              disabled={
+                !vaultCreditQuoteAgreed ||
+                !vaultCreditQuote.has_sufficient_balance ||
+                spendingPipelineCredits
+              }
+              busy={spendingPipelineCredits}
+              busyLabel="Checking and unlocking..."
+              debugId="vault-control.spend-pipeline-credits"
+              style={{ minHeight: 60, width: "100%" }}
+            >
+              Check balance, use credits and unlock
+            </PrimaryButton>
+
+            <SubtleButton
+              onClick={() => {
+                setVaultCreditQuote(null);
+                setVaultCreditQuoteAgreed(false);
+                setOpenVaultPanels((prev) => ({ ...prev, activation: true, payment: false }));
+              }}
+              disabled={spendingPipelineCredits}
+              debugId="vault-control.change-credit-quote"
+            >
+              Change block selection
+            </SubtleButton>
+          </div>
+        ) : activeVaultPayment ? (
           <>
             <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 14 }}>
               {[vaultPaymentTransferLines.slice(0, Math.ceil(vaultPaymentTransferLines.length / 2)), vaultPaymentTransferLines.slice(Math.ceil(vaultPaymentTransferLines.length / 2))].map((group, groupIndex) => (
@@ -2260,7 +2388,7 @@ export default function VaultControlPage() {
           </>
         ) : (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            Select slots, agree to the quote, then generate the payment code. The bank details stay here until the instruction is payment-confirmed, expired, or cancelled.
+            Choose one or two blocks above, then request the exact Pipeline Credit quote. No credits are taken until you review and agree to that server quote.
           </div>
         ) : null}
       </section>
@@ -2285,7 +2413,7 @@ export default function VaultControlPage() {
           </div>
           {confirmedVaultSlots <= 0 ? (
             <div style={{ marginTop: 14, ...noticeCard("info") }}>
-              No private block is active yet. Generate a payment code above, complete the bank transfer, and Vault blocks become available here only after payment confirmation.
+              No private block is active yet. Request the exact Pipeline Credit quote above, agree to it, and GSN will check the balance, debit the credits and unlock the selected blocks together.
             </div>
           ) : null}
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
@@ -2299,7 +2427,7 @@ export default function VaultControlPage() {
                   kind={selected ? "primary" : "secondary"}
                   onClick={() => {
                     setSelectedSlot(slotNumber);
-                    if (!active) showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding content there.`);
+                    if (!active) showNotice("info", `Vault block #${slotNumber} is locked. Use Pipeline Credits to activate it before adding content.`);
                   }}
                   style={{
                     ...slotChoiceButton(selected),
@@ -2352,16 +2480,16 @@ export default function VaultControlPage() {
             <span style={badge(false)}>Private Vault</span>
           </div>
           <div style={{ marginTop: 12, ...helperText() }}>
-            {selectedProduct ? firstTruthy(selectedProduct.description, "This private block has no note yet.") : selectedSeatIsActive ? "Add the private content for this block. Use a picture, a short video, or both." : "Pay for this block before adding private content."}
+            {selectedProduct ? firstTruthy(selectedProduct.description, "This private block has no note yet.") : selectedSeatIsActive ? "Add the private content for this block. Use a picture, a short video, or both." : "Activate this block with Pipeline Credits before adding private content."}
           </div>
           <div style={{ marginTop: 14 }}>
             {!selectedSeatIsActive ? (
               <SecondaryButton
-                onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)}
+                onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with Pipeline Credits above before adding content.`)}
                 style={brandActionButton("secondary")}
                 debugId="vault-control.selected-block.locked"
               >
-                Locked until paid
+                Locked until activated
               </SecondaryButton>
             ) : selectedProduct ? (
               <div style={actionGrid(isCompact, 160)}>

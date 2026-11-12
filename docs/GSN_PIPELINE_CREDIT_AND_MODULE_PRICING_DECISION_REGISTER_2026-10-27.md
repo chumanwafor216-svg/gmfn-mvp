@@ -1,6 +1,16 @@
 # GSN Pipeline Credit And Module Pricing Decision Register - 2026-10-27
 
-Status: owner-approved payment-model direction plus implementation-gap audit. Credit value and module debit amounts remain deliberately unfixed pending regional customer discovery.
+Status: owner-approved payment-model direction plus implementation register. The configurable foundation and Vault first slice were approved and implemented on 2026-11-12; credit value and module debit amounts remain deliberately unfixed until an operator records a version.
+
+## 2026-11-12 operator-control decision
+
+- Command Centre owns the conversion and every service-price version; user screens never submit their own amount.
+- The conversion and all service prices start vacant. GBP 1 = 5 Pipeline Credits remains only an example until an operator saves it.
+- Conversion-derived services receive a new active price version when the conversion changes. Fixed-credit overrides remain fixed.
+- Accepted quotes and completed spends are immutable historical evidence and are never rewritten by a later price change.
+- `vault.slot` is connected end to end. The customer reviews and agrees to an exact quote; sufficient customer-service credits are debited atomically with Vault block and entitlement activation.
+- Other listed modules are catalogue placeholders only and must not claim connected Pipeline Credit delivery.
+- Customer Pipeline Credit acquisition remains a separate unfinished phase; existing provider-operation top-up behavior is not the customer wallet.
 
 ## Commercial model
 
@@ -18,16 +28,16 @@ The cash value of one Pipeline Credit is not decided. The owner's current workin
 
 The top-up and the later debit must not both be counted as two sales. The top-up funds the balance; consumption identifies the service revenue line. Recognition timing, tax, expiry, refunds and unused balances require professional accounting advice.
 
-## Runtime truth: the universal wallet does not exist yet
+## Runtime truth: the universal wallet is only partially implemented
 
 The repo currently contains two different credit systems:
 
 1. `PipelineCreditAccount` uses decimal amounts to two places, but its code contract says it is an internal provider/API usage-control account, not a customer wallet.
 2. `MemberServiceCreditAccount` is an isolated test catalogue for member services. It uses integer units and currently exposes only Spotlight when feature flags permit it.
 
-Neither is the owner-approved universal customer credit rail. Calling today's runtime unified would be false. The implementation must choose one canonical ledger, migrate or retire the duplicate meaning, preserve audit history, and keep the public product boundary non-cashable.
+The decimal Pipeline Credit ledger now contains a segregated, purpose-scoped customer-service rail with optimistic balance versioning, versioned service prices, immutable quotes, idempotent spend orders, and Vault delivery. Calling today's runtime universal would still be false because customer acquisition and the remaining paid modules are not connected, and the test member-credit engine still exists separately.
 
-The reuse-first ledger, catalogue, atomic-spend and migration design is mapped in `docs/GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`. It is architecture only and does not authorise payment activation.
+The reuse-first ledger, catalogue, atomic-spend and migration design is mapped in `docs/GSN_CANONICAL_PIPELINE_CREDIT_MIGRATION_MAP_2026-10-27.md`. Its 2026-11-12 update records the owner-approved partial implementation boundary.
 
 The canonical ledger must support a configurable credit catalogue by service and region. The denomination, divisibility and debit amounts must be chosen only after the exchange-rate and regional-pricing decisions are made.
 

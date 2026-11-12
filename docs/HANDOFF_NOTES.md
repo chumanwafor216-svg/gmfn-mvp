@@ -1,5 +1,61 @@
 # Active Handoff Notes
 
+## Configurable customer Pipeline Credits and Vault first slice - 2026-11-12
+
+- Owner direction: all new chargeable GSN service actions must consume a
+  customer-facing, non-cashable Pipeline Credit balance. Command Centre owns
+  the conversion and per-service costs; no price is seeded or hardcoded.
+- Added purpose segregation to the decimal Pipeline Credit ledger. Existing
+  accounts remain `provider_operations`; new customer accounts use keys such
+  as `customer_service:user:<id>`, a stored decimal balance, and optimistic
+  version checks. Existing provider balances were not relabelled or moved.
+- Added migration `20261112_pipeline_credit_commerce` with versioned pricing
+  policies, service-price versions, immutable 15-minute quotes, and idempotent
+  service-spend orders. The migration is the single Alembic head.
+- Added platform-admin route
+  `/app/command-center/pipeline-credit-pricing`. Conversion and every service
+  price start vacant. Operators can save fixed-credit prices or
+  conversion-derived prices; changing the conversion creates new versions for
+  conversion-derived services and does not rewrite old quotes or spends.
+- Registered Vault, Paid Spotlight, Paid Repost, extra shop space, Merchant
+  Verification, member capacity, Community Domain, ROSCA, and Meeting Pack.
+  Truth boundary: only `vault.slot` has a connected debit-and-delivery handler.
+  The other entries are catalogue preparation, not working purchase flows.
+- Vault owner flow now chooses one or two available blocks, requests an exact
+  server quote, sees debit/current balance/resulting balance/version/expiry,
+  explicitly agrees, and asks GSN to spend. A successful transaction debits
+  the customer account, creates a confirmed Pipeline Credit Vault order,
+  activates blocks, grants the configured-duration entitlement, then opens the
+  Add Product editor for the first newly active block. Insufficient balance
+  leaves all delivery state unchanged.
+- New `POST /payment-instructions/vault` requests return
+  `vault_uses_pipeline_credits`; historical bank-paid Vault records remain
+  readable and reconcilable. No direct Vault bank/card purchase is created.
+- New API surfaces:
+  `GET /pipeline-credits/admin/pricing-catalogue`,
+  `PUT /pipeline-credits/admin/pricing-policy`,
+  `PUT /pipeline-credits/admin/service-prices/{service_code}`,
+  `GET /pipeline-credits/service-catalogue`,
+  `GET /pipeline-credits/me-service-balance`,
+  `POST /pipeline-credits/service-quotes`, and
+  `POST /pipeline-credits/service-spends`.
+- Important unfinished boundary: ordinary customer Pipeline Credit acquisition
+  is not connected to the new customer-service account yet. Existing bank
+  top-up behavior remains provider-operation/community credit. Controlled
+  admin allocation can fund test accounts, but the runtime must not be called
+  a finished universal live wallet and Vault must not imply acquisition is
+  available on its screen.
+- Verification passed: 5 new commerce tests; 37 focused Pipeline Credit,
+  Vault, and payment-boundary tests; 24 legacy provider top-up/provider-gate
+  tests; all 3 migration round-trip/head tests; the complete backend suite at
+  1,795 passed and 24 skipped; Vault button, access-integrity, and visual
+  audits; admin route-guard audit; `git diff --check`; Python compilation;
+  single Alembic head; and the 327-module production frontend build.
+- The broad Trust Action audit still has six unrelated pre-existing failures
+  in TrustSlip Verify, Public Shop follow guidance, Community Confirmation,
+  and the public trust-slip API. Its three obsolete Vault bank-payment checks
+  were updated and Vault no longer appears in that failure list.
+
 ## Public Shop owner shortcuts and product disclosure - 2026-11-12
 
 - Owner phone evidence showed the Public Shop Spotlight owner `+` missing while

@@ -193,6 +193,7 @@ def grant_or_extend_entitlement(
     shop_id: Optional[int] = None,
     clan_id: Optional[int] = None,
     billing_cycle: str = "annual",
+    duration_days: Optional[int] = None,
     starts_at: Optional[datetime] = None,
     commit: bool = True,
     refresh: bool = True,
@@ -211,7 +212,11 @@ def grant_or_extend_entitlement(
         return existing
 
     starts = _to_aware(starts_at) or _now_utc()
-    expires = _expiry_for_cycle(starts_at=starts, billing_cycle=billing_cycle)
+    expires = (
+        starts + timedelta(days=max(1, int(duration_days)))
+        if duration_days is not None
+        else _expiry_for_cycle(starts_at=starts, billing_cycle=billing_cycle)
+    )
 
     row = FeatureEntitlement(
         owner_user_id=int(owner_user_id),

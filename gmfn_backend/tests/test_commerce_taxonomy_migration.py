@@ -11,7 +11,7 @@ from app.db.database import engine
 
 
 PREVIOUS_REVISION = "20261030_market_dir_scale"
-HEAD_REVISION = "20261106_assisted_activation"
+HEAD_REVISION = "20261112_pipeline_credit_commerce"
 
 
 EXPECTED_TABLES = {

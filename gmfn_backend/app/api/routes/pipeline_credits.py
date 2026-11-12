@@ -21,6 +21,17 @@ from app.services.pipeline_credit_service import (
     serialize_pipeline_credit_account,
     serialize_pipeline_credit_entry,
 )
+from app.services.pipeline_credit_commerce_service import (
+    PipelineCreditCommerceError,
+    customer_credit_status,
+    issue_service_quote,
+    pricing_catalogue,
+    quote_out,
+    set_pricing_policy,
+    set_service_price,
+    spend_out,
+    spend_service_quote,
+)
 from app.services.payment_operations_policy import (
     PaymentOperationsSuspended,
     require_payment_operations_enabled,
@@ -35,8 +46,10 @@ class PipelineCreditAccountSelector(BaseModel):
     owner_user_id: Optional[int] = Field(default=None, ge=1)
     clan_id: Optional[int] = Field(default=None, ge=1)
     sponsor_ref: Optional[str] = Field(default=None, max_length=96)
+    account_purpose: str = Field(default="provider_operations", max_length=32)
+    pricing_region: str = Field(default="global", max_length=32)
 
-    @field_validator("owner_type", "sponsor_ref", mode="before")
+    @field_validator("owner_type", "sponsor_ref", "account_purpose", "pricing_region", mode="before")
     @classmethod
     def _text_or_none(cls, value: Any, info: Any) -> Any:
         if value is None:
@@ -104,6 +117,35 @@ class PipelineCreditDebitIn(PipelineCreditAccountSelector):
         return value.strip()
 
 
+class PipelineCreditPricingPolicyIn(BaseModel):
+    region_code: str = Field(default="global", min_length=2, max_length=32)
+    currency: str = Field(default="GBP", min_length=2, max_length=8)
+    credits_per_currency_unit: str = Field(..., min_length=1, max_length=32)
+
+
+class PipelineCreditServicePriceIn(BaseModel):
+    region_code: str = Field(default="global", min_length=2, max_length=32)
+    pricing_mode: str = Field(default="fixed_credits", min_length=3, max_length=24)
+    credit_cost: Optional[str] = Field(default=None, max_length=32)
+    cash_reference_amount: Optional[str] = Field(default=None, max_length=32)
+    cash_reference_currency: str = Field(default="GBP", min_length=2, max_length=8)
+    duration_days: Optional[int] = Field(default=None, ge=1, le=3650)
+    unit_label: Optional[str] = Field(default=None, max_length=80)
+
+
+class PipelineCreditServiceQuoteIn(BaseModel):
+    service_code: str = Field(..., min_length=3, max_length=96)
+    quantity: int = Field(default=1, ge=1, le=1000)
+    region_code: str = Field(default="global", min_length=2, max_length=32)
+    context: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str = Field(..., min_length=8, max_length=160)
+
+
+class PipelineCreditServiceSpendIn(BaseModel):
+    quote_key: str = Field(..., min_length=8, max_length=96)
+    idempotency_key: str = Field(..., min_length=8, max_length=160)
+
+
 def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "") or "").lower() == "admin" or getattr(user, "is_admin", False) is True
 
@@ -161,6 +203,27 @@ def _entry_response(db: Session, entry: PipelineCreditLedgerEntry) -> dict[str, 
     }
 
 
+def _raise_commerce_error(exc: PipelineCreditCommerceError) -> None:
+    if exc.code == "quote_not_found":
+        status_code = 404
+    elif exc.code in {
+        "account_mismatch",
+        "credit_debit_failed",
+        "idempotency_conflict",
+        "insufficient_credits",
+        "pricing_policy_not_configured",
+        "quote_expired",
+        "quote_not_available",
+        "service_not_connected",
+        "service_price_not_configured",
+        "vault_capacity_unavailable",
+    }:
+        status_code = 409
+    else:
+        status_code = 422
+    raise HTTPException(status_code=status_code, detail={"code": exc.code, "message": str(exc)}) from exc
+
+
 
 
 @router.get("/provider-gates")
@@ -205,6 +268,7 @@ def pipeline_credit_status(
     owner_user_id: Optional[int] = Query(default=None, ge=1),
     clan_id: Optional[int] = Query(default=None, ge=1),
     sponsor_ref: Optional[str] = Query(default=None, max_length=96),
+    account_purpose: str = Query(default="provider_operations", max_length=32),
     limit: int = Query(default=10, ge=1, le=50),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -218,6 +282,7 @@ def pipeline_credit_status(
             owner_user_id=owner_user_id,
             clan_id=clan_id,
             sponsor_ref=sponsor_ref,
+            account_purpose=account_purpose,
         )
     except PipelineCreditError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -309,6 +374,8 @@ def pipeline_credit_allocate(
             note=payload.note,
             created_by_user_id=int(current_user.id),
             meta=payload.meta,
+            account_purpose=payload.account_purpose,
+            pricing_region=payload.pricing_region,
         )
     except PaymentOperationsSuspended as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -342,6 +409,7 @@ def pipeline_credit_debit(
             note=payload.note,
             created_by_user_id=int(current_user.id),
             meta=payload.meta,
+            account_purpose=payload.account_purpose,
         )
     except PaymentOperationsSuspended as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -350,3 +418,130 @@ def pipeline_credit_debit(
     except PipelineCreditError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _entry_response(db, entry)
+
+
+@router.get("/admin/pricing-catalogue")
+def pipeline_credit_admin_pricing_catalogue(
+    region_code: str = Query(default="global", max_length=32),
+    currency: str = Query(default="GBP", max_length=8),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    return pricing_catalogue(db, region_code=region_code, currency=currency)
+
+
+@router.put("/admin/pricing-policy")
+def pipeline_credit_admin_set_pricing_policy(
+    payload: PipelineCreditPricingPolicyIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        set_pricing_policy(
+            db,
+            region_code=payload.region_code,
+            currency=payload.currency,
+            credits_per_currency_unit=payload.credits_per_currency_unit,
+            actor_user_id=int(current_user.id),
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    return pricing_catalogue(db, region_code=payload.region_code, currency=payload.currency)
+
+
+@router.put("/admin/service-prices/{service_code:path}")
+def pipeline_credit_admin_set_service_price(
+    service_code: str,
+    payload: PipelineCreditServicePriceIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        set_service_price(
+            db,
+            service_code=service_code,
+            region_code=payload.region_code,
+            pricing_mode=payload.pricing_mode,
+            credit_cost=payload.credit_cost,
+            cash_reference_amount=payload.cash_reference_amount,
+            cash_reference_currency=payload.cash_reference_currency,
+            duration_days=payload.duration_days,
+            unit_label=payload.unit_label,
+            actor_user_id=int(current_user.id),
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    return pricing_catalogue(
+        db,
+        region_code=payload.region_code,
+        currency=payload.cash_reference_currency,
+    )
+
+
+@router.get("/service-catalogue")
+def pipeline_credit_service_catalogue(
+    region_code: str = Query(default="global", max_length=32),
+    currency: str = Query(default="GBP", max_length=8),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _ = current_user
+    return pricing_catalogue(db, region_code=region_code, currency=currency)
+
+
+@router.get("/me-service-balance")
+def pipeline_credit_me_service_balance(
+    region_code: str = Query(default="global", max_length=32),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    return customer_credit_status(db, user_id=int(current_user.id), region_code=region_code)
+
+
+@router.post("/service-quotes", status_code=status.HTTP_201_CREATED)
+def pipeline_credit_create_service_quote(
+    payload: PipelineCreditServiceQuoteIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        quote = issue_service_quote(
+            db,
+            actor_user_id=int(current_user.id),
+            service_code=payload.service_code,
+            quantity=int(payload.quantity),
+            region_code=payload.region_code,
+            context=payload.context,
+            idempotency_key=payload.idempotency_key,
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    return {"ok": True, "quote": quote_out(db, quote)}
+
+
+@router.post("/service-spends", status_code=status.HTTP_201_CREATED)
+def pipeline_credit_create_service_spend(
+    payload: PipelineCreditServiceSpendIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        order = spend_service_quote(
+            db,
+            actor_user_id=int(current_user.id),
+            quote_key=payload.quote_key,
+            idempotency_key=payload.idempotency_key,
+        )
+    except PipelineCreditCommerceError as exc:
+        db.rollback()
+        _raise_commerce_error(exc)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail={"code": "delivery_unavailable", "message": str(exc)}) from exc
+    return {"ok": True, "spend": spend_out(db, order)}

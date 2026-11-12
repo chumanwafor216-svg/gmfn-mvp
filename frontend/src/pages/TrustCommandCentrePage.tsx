@@ -505,6 +505,7 @@ function routeIcon(label: string): GsnIconName {
   if (key.includes("exposure")) return "alert";
   if (key.includes("bank")) return "bank";
   if (key.includes("revenue")) return "card";
+  if (key.includes("credit") || key.includes("pricing")) return "wallet";
   return "navigation";
 }
 
@@ -682,6 +683,7 @@ export default function TrustCommandCentrePage() {
       identityRisk: routeTarget("identityRisk", selectedClanId, "trust-command.route.identity-risk"),
       communityOwnership: "/app/command-center/community-ownership",
       gsnCampaigns: "/app/command-center/gsn-campaigns",
+      pipelineCreditPricing: "/app/command-center/pipeline-credit-pricing",
       incompleteLoans: routeTarget("incompleteLoans", selectedClanId, "trust-command.route.incomplete-loans"),
       exposure: routeTarget("exposureAdmin", selectedClanId, "trust-command.route.exposure"),
       bankConsole: routeTarget("bankConsole", selectedClanId, "trust-command.route.bank-console"),
@@ -1073,6 +1075,11 @@ export default function TrustCommandCentrePage() {
           detail: "Check live system activity and operational health.",
         },
         {
+          label: "Pipeline Credit Pricing",
+          to: routes.pipelineCreditPricing,
+          detail: "Set the conversion and versioned service costs used by connected GSN purchases.",
+        },
+        {
           label: "GSN Spotlight Campaigns",
           to: routes.gsnCampaigns,
           detail: "Publish official GSN campaigns into opted-in Community Domains.",
@@ -1128,6 +1135,7 @@ export default function TrustCommandCentrePage() {
     routes.identityRisk,
     routes.communityOwnership,
     routes.incompleteLoans,
+    routes.pipelineCreditPricing,
     routes.revenueAllocation,
     routes.systemOperations,
     routes.trustAnalytics,

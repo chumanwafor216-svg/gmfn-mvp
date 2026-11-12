@@ -1896,26 +1896,26 @@ assertNotContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /Vault quote agreed: \$\{selectedVaultAgreementText\}\. Quote agreement is not payment confirmation\./,
-  "Vault Control must separate quote agreement from payment confirmation."
+  /Agree to use \$\{vaultCreditQuote\.total_credit_cost\} Pipeline Credits[\s\S]*?Check balance, use credits and unlock/,
+  "Vault Control must separate quote agreement from the server-owned credit debit and unlock action."
 );
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /bank or finance reconciliation must confirm the payment before Vault blocks become available\./,
-  "Vault Control must keep Vault block availability behind payment confirmation, not quote agreement."
+  /You do not have enough Pipeline Credits for this quote\. No credits were taken and no Vault block was opened\./,
+  "Vault Control must keep block delivery behind a sufficient Pipeline Credit debit, not quote agreement alone."
 );
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /No private block is active yet\. Generate a payment code above, complete the bank transfer, and Vault blocks become available here only after payment confirmation\./,
-  "Vault Control empty state must not imply a bank transfer alone unlocks blocks."
+  /No private block is active yet\. Request the exact Pipeline Credit quote above, agree to it, and GSN will check the balance, debit the credits and unlock the selected blocks together\./,
+  "Vault Control empty state must describe the atomic Pipeline Credit debit-and-unlock boundary."
 );
 
 assertNotContains(
   "src/pages/VaultControlPage.tsx",
-  /Vault quote confirmed:|Confirm this quote first\. GSN will generate the payment code[\s\S]*?before Vault opens\.|Confirm this Vault quote first|Confirm the Vault quote first|paid blocks will unlock here|Private paid blocks|\{confirmedVaultSlots\} \/ \{VAULT_SLOT_LIMIT\} paid slots|Paid position/,
-  "Vault Control must not blur quote agreement, payment-code generation, and payment-confirmed Vault access."
+  /Vault quote confirmed:|Generate payment code|complete the bank transfer, and Vault blocks become available|paid blocks will unlock here|Private paid blocks|\{confirmedVaultSlots\} \/ \{VAULT_SLOT_LIMIT\} paid slots|Paid position/,
+  "Vault Control must not restore direct-payment language or blur quote agreement with completed Pipeline Credit delivery."
 );
 
 assertContains(
