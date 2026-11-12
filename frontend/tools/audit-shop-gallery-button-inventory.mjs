@@ -35,7 +35,7 @@ const expectedPageSourceActions = {
   StableCtaLink: 7,
   total: 26,
 };
-const expectedExistingWorkflowPlusShortcuts = 3;
+const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
@@ -209,6 +209,7 @@ const expectedActionOrder = [
   "shop-gallery.toggle-all-products",
   "shop-gallery.more.compact-toggle",
   "shop-gallery.spotlight.contact-advertiser",
+  "shop-gallery.vault.owner-shortcut",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
   "shop-gallery.reconnect-owner-shop",
@@ -370,8 +371,8 @@ assertFileContains(
 
 
 assertContains(
-  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}/,
-  "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card open/close uses literal plus and close symbols in the action dock."
+  /type LegacyShopIconName =[\s\S]*?\| "cart"[\s\S]*?function shop3DIconName\(name: ShopIconName\): Gsn3DIconKey \{[\s\S]*?cart: "shopping-cart"[\s\S]*?\{ icon: "cart" as ShopIconName, title: "Shop items", detail: publicBlockText \}[\s\S]*?labelWithShopIcon\("cart", "Products & Services"\)[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "collapse" : "expand"\}[\s\S]*?\{isProductOpen \? "▴" : "▾"\}/,
+  "Public Shop product-commerce surfaces must keep the trolley for commerce meaning while product-card disclosure uses up/down chevrons instead of a misleading plus."
 );
 
 assertNotContains(
@@ -405,8 +406,8 @@ assertContains(
 );
 
 assertContains(
-  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, shopOwnerGmfnId\)[\s\S]*?shopFollowState\.shopId === positiveNumber\(effectiveShop\?\.id\)[\s\S]*?shopFollowState\.isOwner/,
-  "Public Shop owner controls must accept either the matching signed-in GSN identity or the authenticated backend ownership result for this exact shop."
+  /const signedInOwnsShop = Boolean\([\s\S]*?signedInRouteIsOwner[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, shopOwnerGmfnId\)[\s\S]*?shopFollowState\.shopId === positiveNumber\(effectiveShop\?\.id\)[\s\S]*?shopFollowState\.isOwner/,
+  "Public Shop owner controls must accept the authenticated owner route, matching signed-in GSN identity, or backend ownership result for this exact shop."
 );
 
 assertContains(

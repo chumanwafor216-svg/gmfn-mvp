@@ -1636,8 +1636,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "close" : "open"\}[\s\S]*?\{isProductOpen \? "×" : "\+"\}[\s\S]*?showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?buttonLabel="Share"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
-  "Shop Gallery product cards must use compact sound and literal open/close signs plus the owner-only block-share action while keeping accessible action labels."
+  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Hide details for \$\{displayTitle\}` : `Show details for \$\{displayTitle\}`\}[\s\S]*?data-product-card-toggle-symbol=\{isProductOpen \? "collapse" : "expand"\}[\s\S]*?\{isProductOpen \? "▴" : "▾"\}[\s\S]*?showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?buttonLabel="Share"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
+  "Shop Gallery product cards must use compact sound and disclosure chevrons plus the owner-only block-share action while keeping accessible action labels."
 );
 
 assertNotContains(

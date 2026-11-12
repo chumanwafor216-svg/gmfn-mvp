@@ -4518,11 +4518,16 @@ export default function ShopGalleryPage() {
     APP_ROUTES.FREE_SPOTLIGHT,
     ownerSurfaceCommunityId
   );
+  const ownerVaultControlPath = routeWithCommunity(
+    APP_ROUTES.VAULT_CONTROL,
+    ownerSurfaceCommunityId
+  );
   const ownerSpotlightShortcutMode =
     ownerSpotlightStatusView?.state === 'none' ? 'create' : 'manage';
   const signedInOwnsShop = Boolean(
     ownerSessionPresent &&
-      ((signedInGmfnId &&
+      (signedInRouteIsOwner ||
+        (signedInGmfnId &&
         shopOwnerGmfnId &&
         ownerSurfaceIdentityMatches(signedInGmfnId, shopOwnerGmfnId)) ||
         (positiveNumber(effectiveShop?.id) > 0 &&
@@ -7808,6 +7813,19 @@ export default function ShopGalleryPage() {
                 <span style={{ color: "#D7E5F2", fontSize: isCompact ? 10.5 : 12, fontWeight: 760 }}>
                   Owner invitation only.
                 </span>
+                {signedInOwnsShop ? (
+                  <ExistingWorkflowPlusLink
+                    to={ownerVaultControlPath}
+                    label="Open Vault Control"
+                    debugId="shop-gallery.vault.owner-shortcut"
+                    shortcut="vault"
+                    data-public-shop-neon-action="true"
+                    style={{
+                      marginLeft: "auto",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : null}
               </div>
               <div
                 style={{
@@ -8465,8 +8483,8 @@ export default function ShopGalleryPage() {
                           stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.toggle`}
                           data-public-shop-neon-action="true"
-                          aria-label={isProductOpen ? `Close ${displayTitle}` : `Open ${displayTitle}`}
-                          title={isProductOpen ? "Close" : "Open"}
+                          aria-label={isProductOpen ? `Hide details for ${displayTitle}` : `Show details for ${displayTitle}`}
+                          title={isProductOpen ? "Hide details" : "Show details"}
                           style={{
                             ...secondaryBtn(false),
                             width: diaryActionWidth,
@@ -8488,7 +8506,7 @@ export default function ShopGalleryPage() {
                           }}
                         >
                           <span
-                            data-product-card-toggle-symbol={isProductOpen ? "close" : "open"}
+                            data-product-card-toggle-symbol={isProductOpen ? "collapse" : "expand"}
                             aria-hidden="true"
                             style={{
                               display: "inline-grid",
@@ -8498,10 +8516,10 @@ export default function ShopGalleryPage() {
                               fontSize: isCompact ? 25 : 28,
                               fontWeight: 760,
                               lineHeight: 1,
-                              transform: isProductOpen ? "translateY(-1px)" : "none",
+                              transform: "translateY(-1px)",
                             }}
                           >
-                            {isProductOpen ? "×" : "+"}
+                            {isProductOpen ? "▴" : "▾"}
                           </span>
                         </SecondaryButton>
                         {showBlockPlacementAction ? (

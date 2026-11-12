@@ -1,5 +1,24 @@
 # Active Handoff Notes
 
+## Public Shop owner shortcuts and product disclosure - 2026-11-12
+
+- Owner phone evidence showed the Public Shop Spotlight owner `+` missing while
+  the collapsed product-card disclosure incorrectly appeared as a `+`.
+- Public Shop owner recognition now also accepts the authenticated owner route
+  identity, while retaining the exact signed-in GSN identity and backend shop
+  ownership checks. Visitors still do not receive owner controls.
+- The Spotlight owner `+` continues to open the existing Spotlight workflow.
+  A new owner-only Private Vault `+` opens `/app/vault-control`; the frozen
+  Vault Control screen itself was not changed.
+- Product cards now use down/up chevrons for expand/collapse. After expansion,
+  the separate owner-only management `+` still opens the exact existing Shop
+  Control product-management section.
+- Verification passed: workflow-plus audit, Public Shop button inventory,
+  Private Vault visual-language audit, `git diff --check`, and the 326-module
+  production frontend build. The broad Button Stability audit remains red on
+  unrelated existing AppLayout, DemandBox, Shop Gallery action-order, and Shop
+  Assets expectations.
+
 ## Vault integrity Stage 1 - 2026-11-12
 
 - Scope: integrity-only corrections for frozen `/app/vault-control` and public

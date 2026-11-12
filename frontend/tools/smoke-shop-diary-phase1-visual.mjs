@@ -1060,8 +1060,8 @@ async function run() {
         if (metrics.productTop === null || metrics.moreTop === null || metrics.productTop >= metrics.moreTop) {
           throw new Error(`${item.name} did not place Products & Services before More from this shop.`);
         }
-        if (metrics.productToggleSymbol !== "open" || metrics.productToggleText !== "+") {
-          throw new Error(`${item.name} did not keep the closed-card + control in the product action dock.`);
+        if (metrics.productToggleSymbol !== "expand" || metrics.productToggleText !== "▾") {
+          throw new Error(`${item.name} did not keep the closed-card disclosure chevron in the product action dock.`);
         }
         if (
           metrics.productCardBottom === null ||
@@ -1165,8 +1165,8 @@ async function run() {
         }
       }
       if (item.name === "06-public-shop-focused-product-390") {
-        if (metrics.productToggleSymbol !== "close" || metrics.productToggleText !== "×") {
-          throw new Error(`${item.name} did not replace the ambiguous globe with the literal close symbol.`);
+        if (metrics.productToggleSymbol !== "collapse" || metrics.productToggleText !== "▴") {
+          throw new Error(`${item.name} did not keep the expanded-card collapse chevron.`);
         }
         if (
           metrics.productAudioWidth === null ||

@@ -42,11 +42,11 @@ const usages = allPageSources.flatMap(({ file, text }) =>
   [...text.matchAll(/<ExistingWorkflowPlusLink\b/g)].map(() => file)
 );
 
-if (usages.length !== 4) {
-  findings.push(`Expected the three entry shortcuts plus one owner product-media shortcut template; found ${usages.length}: ${usages.join(', ')}`);
+if (usages.length !== 5) {
+  findings.push(`Expected the four entry shortcuts plus one owner product-media shortcut template; found ${usages.length}: ${usages.join(', ')}`);
 }
-if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 3) {
-  findings.push('Public Shop must own Spotlight, Shop Diary, and one expanded owner product-media shortcut template.');
+if (usages.filter((file) => file.endsWith('ShopGalleryPage.tsx')).length !== 4) {
+  findings.push('Public Shop must own Spotlight, Private Vault, Shop Diary, and one expanded owner product-media shortcut template.');
 }
 if (usages.filter((file) => file.endsWith('MarketplacePage.tsx')).length !== 1) {
   findings.push('Marketplace must own exactly one DemandBox shortcut.');
@@ -59,8 +59,8 @@ assertContains(
 );
 assertContains(
   'shop',
-  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?shopFollowState\.isOwner[\s\S]*?signedInOwnsShop \? \([\s\S]*?label='Add Spotlight'[\s\S]*?shortcut='spotlight'/,
-  'Spotlight shortcut must be gated by a matching signed-in identity or the authenticated backend owner result for the exact shop.'
+  /const signedInOwnsShop = Boolean\([\s\S]*?signedInRouteIsOwner[\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?shopFollowState\.isOwner[\s\S]*?signedInOwnsShop \? \([\s\S]*?label='Add Spotlight'[\s\S]*?shortcut='spotlight'/,
+  'Spotlight shortcut must accept the authenticated owner route, matching signed-in identity, or backend owner result for the exact shop.'
 );
 assertContains(
   'shop',
@@ -71,6 +71,11 @@ assertContains(
   'shop',
   /ownerSpotlightShortcutPath = routeWithCommunity\([\s\S]*?APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerSpotlightShortcutPath\}/,
   'Spotlight shortcut must use the existing Shop Control Spotlight route with community context.'
+);
+assertContains(
+  'shop',
+  /ownerVaultControlPath = routeWithCommunity\([\s\S]*?APP_ROUTES\.VAULT_CONTROL[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerVaultControlPath\}[\s\S]*?label="Open Vault Control"[\s\S]*?shortcut="vault"/,
+  'Private Vault shortcut must be owner-only and open the existing Vault Control route with community context.'
 );
 assertContains(
   'shop',
@@ -158,4 +163,4 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log('Workflow plus audit passed: the three entry shortcuts and expanded owner-only product-media shortcut reuse existing workflows without business writes.');
+console.log('Workflow plus audit passed: the four entry shortcuts and expanded owner-only product-media shortcut reuse existing workflows without business writes.');

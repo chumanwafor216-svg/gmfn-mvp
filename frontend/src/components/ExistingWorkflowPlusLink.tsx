@@ -5,7 +5,7 @@ type ExistingWorkflowPlusLinkProps = {
   to: string;
   label: string;
   debugId: string;
-  shortcut: 'spotlight' | 'shop-diary' | 'shop-product' | 'demand-box';
+  shortcut: 'spotlight' | 'shop-diary' | 'shop-product' | 'demand-box' | 'vault';
 } & Omit<React.ComponentProps<typeof StableCtaLink>, 'to' | 'children' | 'debugId' | 'aria-label'>;
 
 export default function ExistingWorkflowPlusLink({
