@@ -10391,6 +10391,22 @@ export default function MarketplacePage() {
                 appear only when GSN has a current or pending amount to show.
               </div>
             </details>
+            <StableCtaLink
+              to={routeWithCommunity(APP_ROUTES.FINANCE, activeCommunityId)}
+              debugId="marketplace.finance-standing.open-finance"
+              stableHeight={44}
+              style={{
+                ...marketplaceActionStyle("primary"),
+                width: "100%",
+                minHeight: 44,
+                height: 44,
+                maxHeight: 44,
+                marginTop: 10,
+                borderRadius: 14,
+              }}
+            >
+              Open Finance
+            </StableCtaLink>
           </div>
           </div>
         ) : null}

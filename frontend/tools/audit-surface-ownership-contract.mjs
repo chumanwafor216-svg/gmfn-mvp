@@ -61,6 +61,7 @@ const appRoutes = readFrontend("src/lib/appRoutes.ts");
 const app = readFrontend("src/App.tsx");
 const appLayout = readFrontend("src/layout/AppLayout.tsx");
 const myGsn = readFrontend("src/pages/MyGMFNAndIPage.tsx");
+const marketplace = readFrontend("src/pages/MarketplacePage.tsx");
 const companionSettings = readFrontend("src/components/CompanionSettingsPanel.tsx");
 
 assertContains(
@@ -209,6 +210,20 @@ assertContains(
   memberHomeBranch,
   /\{!isCompact \? \([\s\S]*?<MyPipelineCreditsSection[\s\S]*?data-my-gsn-more="secondary"[\s\S]*?More profile details[\s\S]*?data-my-gsn-pipeline-credits="covered"[\s\S]*?<MyPipelineCreditsSection/,
   "Phone Pipeline Credits must wait behind More profile details while desktop retains its main-grid disclosure."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  memberHomeBranch,
+  /data-my-gsn-more="secondary"[\s\S]*?Shop, money, trust, credits, settings & help[\s\S]*?memberFinanceSummary \? \([\s\S]*?data-my-gsn-finance-summary="conditional"[\s\S]*?Finance across GSN[\s\S]*?debugId="my-gmfn\.finance\.open"[\s\S]*?Open Finance/,
+  "My GSN must keep the cross-GSN finance status conditional, compact, behind More on phone, and routed to Finance."
+);
+
+assertContains(
+  "frontend/src/pages/MarketplacePage.tsx",
+  marketplace,
+  /hasMarketplaceMoneySupportContext \? \([\s\S]*?Your recorded money here[\s\S]*?debugId="marketplace\.finance-standing\.open-finance"[\s\S]*?Open Finance/,
+  "The contextual Marketplace money summary must retain a direct Finance exit instead of becoming a dead end."
 );
 
 assertContains(

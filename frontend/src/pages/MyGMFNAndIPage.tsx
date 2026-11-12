@@ -158,6 +158,13 @@ type MemberOpportunityModel = {
   unavailableSources: MemberOpportunitySource[];
 };
 
+type MemberFinanceSummary = {
+  currency: string;
+  availableNow: number;
+  recordedPool: number;
+  heldForGuarantees: number;
+};
+
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 const SLOW_WORKSPACE_SETTINGS_LOAD_MS = 8000;
 const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
@@ -246,6 +253,29 @@ function firstPositiveNumber(...values: any[]): number {
   }
 
   return 0;
+}
+
+function moneyNumber(value: any): number {
+  const amount = Number(safeStr(value).replace(/,/g, ""));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatMoneyAmount(value: number, currency: string): string {
+  const code = safeStr(currency).toUpperCase() || "NGN";
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toLocaleString(undefined, {
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    })} ${code}`;
+  }
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -1555,6 +1585,8 @@ export default function MyGMFNAndIPage() {
     EMPTY_MEMBER_OPPORTUNITY_MODEL
   );
   const [memberOpportunityLoading, setMemberOpportunityLoading] = useState(false);
+  const [memberFinanceSummary, setMemberFinanceSummary] =
+    useState<MemberFinanceSummary | null>(null);
   const [communitiesOpen, setCommunitiesOpen] = useState(false);
   const [officialLinksOpen, setOfficialLinksOpen] = useState(false);
   const [memberHomeMoreOpen, setMemberHomeMoreOpen] = useState(false);
@@ -1697,6 +1729,63 @@ export default function MyGMFNAndIPage() {
       alive = false;
     };
   }, [isAppRoute, selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!isAppRoute || activeTab !== "home") {
+      setMemberFinanceSummary(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    const getSummary = (api as any).getPoolMeSummary;
+    if (typeof getSummary !== "function") {
+      setMemberFinanceSummary(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    void getSummary("NGN")
+      .then((response: any) => {
+        if (!alive) return;
+
+        const source = response?.item || response?.data || response || {};
+        const totals = source?.totals || {};
+        const availableNow = moneyNumber(
+          firstTruthy(totals?.effective_available, totals?.available_balance)
+        );
+        const recordedPool = moneyNumber(totals?.membership_pool_balance);
+        const heldForGuarantees = moneyNumber(
+          totals?.guarantee_locked_as_guarantor
+        );
+
+        if (
+          availableNow <= 0 &&
+          recordedPool <= 0 &&
+          heldForGuarantees <= 0
+        ) {
+          setMemberFinanceSummary(null);
+          return;
+        }
+
+        setMemberFinanceSummary({
+          currency: firstTruthy(source?.currency, "NGN").toUpperCase(),
+          availableNow,
+          recordedPool,
+          heldForGuarantees,
+        });
+      })
+      .catch(() => {
+        if (alive) setMemberFinanceSummary(null);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeTab, isAppRoute]);
 
   useEffect(() => {
     let alive = true;
@@ -3559,7 +3648,7 @@ export default function MyGMFNAndIPage() {
                           lineHeight: 1.2,
                         }}
                       >
-                        Shop, trust, credits, settings & help
+                        Shop, money, trust, credits, settings & help
                       </span>
                     </span>
                     <span
@@ -3628,6 +3717,39 @@ export default function MyGMFNAndIPage() {
                       isCompact
                       selectedCommunityId={selectedOrFirstCommunityId || null}
                     />
+                  </div>
+                ) : null}
+
+                {memberFinanceSummary ? (
+                  <div
+                    style={memberHomeSectionShell(true)}
+                    data-my-gsn-finance-summary="conditional"
+                  >
+                    {memberHomeSectionKicker(
+                      "financeInstitution",
+                      "Finance across GSN",
+                      isCompact,
+                      true
+                    )}
+                    <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                      {formatMoneyAmount(
+                        memberFinanceSummary.availableNow,
+                        memberFinanceSummary.currency
+                      )} available now
+                    </h2>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#526174" }}>
+                      Recorded pool: {formatMoneyAmount(memberFinanceSummary.recordedPool, memberFinanceSummary.currency)}.
+                      {" "}Held for support: {formatMoneyAmount(memberFinanceSummary.heldForGuarantees, memberFinanceSummary.currency)}.
+                    </div>
+                    <StableCtaLink
+                      to={routes.finance}
+                      kind="primary"
+                      debugId="my-gmfn.finance.open"
+                      style={{ ...memberHomeCompactActionLink(true), width: "100%", marginTop: 10 }}
+                    >
+                      <GsnLegacyIcon name="financeInstitution" size={20} decorative />
+                      Open Finance
+                    </StableCtaLink>
                   </div>
                 ) : null}
 

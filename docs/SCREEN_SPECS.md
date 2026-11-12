@@ -373,7 +373,7 @@ Rules:
 - When the profile is active and a selected community exists, the existing state-aware `Open community` primary action may sit on the premium selected-community card instead of repeating beneath the identity hero. Incomplete identity, unconfirmed phone, and no-community states keep their exact existing completion action with the identity state. There must still be only one primary action.
 - The compact selected-community card uses the approved realistic community object icon, community name, role/stable ID, and the real active-community count only when more than one community exists. Multi-community switching remains inside `More profile details`; no public location, member roster, or invented community image is introduced.
 - Conditional phone attention is one closed compact row showing its real loading, unavailable, or waiting state. Opening it reveals the existing Notifications and DemandBox readings and actions. Empty attention remains absent.
-- The closed `More profile details` row may summarize its preserved contents as `Shop, trust, credits, settings & help`. Shop, Trust Passport, TrustSlip, Pipeline Credits, account settings, Help, official links, and quiet activity must remain behind that one default-phone disclosure with their nested disclosures closed.
+- The closed `More profile details` row may summarize its preserved contents as `Shop, money, trust, credits, settings & help`. A compact `Finance across GSN` status may appear inside it only when the existing cumulative Finance contract returns a positive available, recorded-pool, or guarantee-held amount. The status must link to Finance, must not expose the full ledger, and must not invent or combine cross-currency earnings. Shop, Trust Passport, TrustSlip, Pipeline Credits, account settings, Help, official links, and quiet activity must remain behind that one default-phone disclosure with their nested disclosures closed.
 ## Mobile Task Page Rule
 
 ## Foldable Continuity Rule
@@ -1366,6 +1366,10 @@ Rules:
 - Marketplace-local finance may be summarized when the user arrived from a
   selected marketplace, but the full one-community operating lane remains
   Marketplace-owned.
+- A contextual Marketplace `Your recorded money here` summary must provide a
+  direct route to Finance so the compact reading is not a dead end. It remains
+  conditional and does not appear before a real money, support, or ROSCA state
+  makes it relevant.
 - Deep finance records and secondary tools should appear only after the user
   opens the relevant lane.
 - On phone, the default front door shows the current finance state, four compact

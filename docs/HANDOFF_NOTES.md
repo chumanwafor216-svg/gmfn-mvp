@@ -6468,3 +6468,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Root cause: after the active card completed its dwell, a successful refill containing no appendable campaign was deduplicated by the client, but the elapsed rotation tick retried every 250ms. The server was reachable; this was a client backpressure defect, not a 5-10 second dwell-policy defect.
 - Correction: successful empty responses and successful duplicate-only responses now share the existing 30-second refill cooldown. The last valid Spotlight remains visible, no fabricated campaign is inserted, and qualification/impression accounting is unchanged.
 - Regression coverage: the Spotlight phone smoke now returns the same canonical campaign after the first dwell and proves the card remains visible, accounting remains single-counted, and only one refill request occurs before cooldown.
+
+# Conditional member finance orientation - 2026-11-12
+
+- Product-owner decision: do not add another permanent finance block to Community Home or Marketplace. Keep the existing Marketplace money position conditional until real money, support, or ROSCA context exists, and keep cumulative detail in Finance.
+- My GSN/Profile now reads the existing cumulative `/pool/me/summary` contract only on the default member-home view. When available money, recorded pool value, and guarantee-held value are all zero, no finance card appears.
+- When a real value exists, one compact `Finance across GSN` status appears inside the existing collapsed `More profile details` area on phone. It shows only server-backed available, recorded-pool, and held-for-support values and has one `Open Finance` action.
+- The Profile summary does not calculate a net position, expose a ledger, present Pipeline Credits as money, or combine guarantor earnings across currencies. Finance remains the full cumulative money workspace.
+- The existing contextual Marketplace `Your recorded money here` card remains conditional and now has one direct `Open Finance` exit so it is not a dead end. Community Home is unchanged.
+- Verification passed: surface ownership, member-entry, Marketplace front-package, Finance action, Finance front-package, `git diff --check`, TypeScript, and the production frontend build. The broad Marketplace button-inventory and button-stability audits remain red on documented pre-existing baseline drift across extracted Marketplace, DemandBox, AppLayout, Shop, and Vault sources; this package does not rewrite those unrelated contracts.
