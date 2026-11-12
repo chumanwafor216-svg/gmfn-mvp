@@ -23,9 +23,9 @@ from app.services.community_domain_feature_policy import (
     COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS,
     COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES,
     COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
-    COMMUNITY_DOMAIN_FEATURE_VAULT,
     require_community_domain_feature_enabled,
     require_domain_payments_contributions_enabled,
+    require_domain_vault_enabled,
 )
 from app.services.payment_instruction_service import (
     COMMUNITY_PACKAGE_CATALOG,
@@ -653,20 +653,20 @@ def create_vault_instruction(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_new_payment_operations()
-    _require_shop_owner(
+    shop = _require_shop_owner(
         db,
         shop_id=int(payload.shop_id),
         current_user=current_user,
     )
-    _require_domain_shop_service_enabled(
+    if shop.clan_id is None or int(shop.clan_id) != int(payload.clan_id):
+        raise HTTPException(
+            status_code=400,
+            detail="This shop does not belong to the selected community",
+        )
+    require_domain_vault_enabled(
         db,
         clan_id=int(payload.clan_id),
-        feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
-        feature_label="Vault",
-        boundary_message=(
-            "Do not create Vault slot payments until the Community Domain "
-            "owner/admin enables Vault."
-        ),
+        actor_user_id=int(current_user.id),
     )
 
     quantity_total = _safe_int(payload.quantity_total, 0)

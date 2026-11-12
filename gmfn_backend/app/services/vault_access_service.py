@@ -178,12 +178,15 @@ def get_vault_link_by_token(
     db: Session,
     *,
     token: str,
+    lock_for_update: bool = False,
 ) -> Optional[VaultAccessLink]:
-    return (
+    query = (
         db.query(VaultAccessLink)
         .filter(VaultAccessLink.token == _safe_str(token))
-        .first()
     )
+    if lock_for_update:
+        query = query.with_for_update()
+    return query.first()
 
 
 def list_vault_links_for_shop(
@@ -419,7 +422,11 @@ def resolve_vault_access_view(
     token: str,
     increment_view: bool = True,
 ) -> Dict[str, Any]:
-    link = get_vault_link_by_token(db, token=_safe_str(token))
+    link = get_vault_link_by_token(
+        db,
+        token=_safe_str(token),
+        lock_for_update=increment_view,
+    )
     if not link:
         log_vault_access(db, link=None, token=token, result="not_found")
         db.commit()
@@ -463,13 +470,30 @@ def resolve_vault_access_view(
             "views_used": int(getattr(link, "views_used", 0) or 0),
         }
 
-    if increment_view:
-        link.views_used = int(getattr(link, "views_used", 0) or 0) + 1
-        link.last_opened_at = _now_utc()
-        db.add(link)
-        log_vault_access(db, link=link, token=token, result="opened")
-        db.commit()
-        db.refresh(link)
+    if not increment_view:
+        return {
+            "ok": True,
+            "status": "active",
+            "detail": "Vault access active. Open the link to view its private content.",
+            "token": link.token,
+            "product_id": int(link.product_id) if getattr(link, "product_id", None) is not None else None,
+            "block_id": int(link.block_id) if getattr(link, "block_id", None) is not None else None,
+            "shop": _shop_payload(shop) if shop else None,
+            "restrictions": {
+                "allow_download": bool(getattr(link, "allow_download", False)),
+                "allow_print": bool(getattr(link, "allow_print", False)),
+                "allow_reshare": bool(getattr(link, "allow_reshare", False)),
+                "watermark_enabled": bool(getattr(link, "watermark_enabled", True)),
+            },
+            "expires_at": link.expires_at.isoformat() if getattr(link, "expires_at", None) else None,
+            "max_views": getattr(link, "max_views", None),
+            "views_used": int(getattr(link, "views_used", 0) or 0),
+        }
+
+    link.views_used = int(getattr(link, "views_used", 0) or 0) + 1
+    link.last_opened_at = _now_utc()
+    db.add(link)
+    log_vault_access(db, link=link, token=token, result="opened")
 
     product_query = (
         db.query(MarketplaceProduct)
@@ -482,6 +506,8 @@ def resolve_vault_access_view(
         MarketplaceProduct.created_at.desc(),
         MarketplaceProduct.id.desc(),
     ).all()
+    db.commit()
+    db.refresh(link)
 
     return {
         "ok": True,

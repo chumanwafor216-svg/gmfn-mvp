@@ -6,10 +6,13 @@ from typing import Any, Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models import CommunityDomain, CommunityDomainPolicy
+from app.db.models import CommunityDomain, CommunityDomainMembership, CommunityDomainPolicy, User
 
 COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
+COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
+COMMUNITY_DOMAIN_FEATURE_MODE_MEMBERS_SUBMIT_ADMIN_APPROVES = "members_submit_admin_approves"
+COMMUNITY_DOMAIN_ADMIN_ROLES = {"owner", "admin", "domain_admin"}
 COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS = "marketplace_shops"
 COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"
 COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"
@@ -170,18 +173,92 @@ def require_domain_vault_enabled(
     db: Session,
     *,
     clan_id: int,
+    actor_user_id: Optional[int] = None,
 ) -> None:
-    require_community_domain_feature_enabled(
+    mode, domain = community_domain_feature_mode_for_clan(
         db,
         clan_id=int(clan_id),
         feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
-        feature_label="Vault",
-        boundary_message=(
-            "This controls whether private Vault content and active Vault "
-            "access links may be created or extended inside the domain. Paid "
-            "Vault slot entitlement, link expiry, and privacy restrictions "
-            "remain on their separate service rails."
-        ),
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
+    boundary_message = (
+        "This controls whether private Vault content and active Vault "
+        "access links may be created or extended inside the domain. Paid "
+        "Vault slot entitlement, link expiry, and privacy restrictions "
+        "remain on their separate service rails."
+    )
+    if domain is not None and mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        _raise_feature_boundary(
+            domain=domain,
+            feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
+            feature_mode=mode,
+            message=(
+                "Vault is not enabled for this Community Domain. "
+                f"{boundary_message}"
+            ),
+            code="community_domain_feature_disabled",
+        )
+
+    if domain is None or actor_user_id is None:
+        return
+
+    actor_id = int(actor_user_id)
+    actor = db.get(User, actor_id)
+    is_platform_admin = (
+        str(getattr(actor, "role", "") or "").strip().lower() == "admin"
+    )
+    is_domain_owner = int(domain.owner_user_id) == actor_id
+    membership = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.user_id == actor_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .first()
+    )
+    is_domain_admin = (
+        membership is not None
+        and str(getattr(membership, "role", "") or "").strip().lower()
+        in COMMUNITY_DOMAIN_ADMIN_ROLES
+    )
+    if is_platform_admin or is_domain_owner or is_domain_admin:
+        return
+
+    if mode in {
+        COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+        COMMUNITY_DOMAIN_FEATURE_MODE_MEMBERS_SUBMIT_ADMIN_APPROVES,
+    }:
+        _raise_feature_boundary(
+            domain=domain,
+            feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
+            feature_mode=mode,
+            message=(
+                "Vault is limited to Community Domain owners and admins. "
+                "A Community Domain owner or domain admin must complete this "
+                "Vault write. Member-submitted Vault approval is not connected "
+                "to this direct publication route."
+            ),
+            code="community_domain_feature_admin_required",
+        )
+
+
+def _raise_feature_boundary(
+    *,
+    domain: CommunityDomain,
+    feature_key: str,
+    feature_mode: str,
+    message: str,
+    code: str,
+) -> None:
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": str(code),
+            "feature_key": str(feature_key),
+            "feature_mode": str(feature_mode),
+            "community_domain_id": int(domain.id),
+            "community_domain_name": getattr(domain, "display_name", None),
+            "message": str(message),
+        },
     )
 
 
@@ -200,18 +277,14 @@ def require_community_domain_feature_enabled(
         default="admin_only",
     )
     if domain is not None and mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "community_domain_feature_disabled",
-                "feature_key": str(feature_key),
-                "feature_mode": COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
-                "community_domain_id": int(domain.id),
-                "community_domain_name": getattr(domain, "display_name", None),
-                "message": (
-                    f"{feature_label} are not enabled for this "
-                    "Community Domain. The owner/admin can change this in "
-                    f"Domain feature policy. {boundary_message}"
-                ),
-            },
+        _raise_feature_boundary(
+            domain=domain,
+            feature_key=feature_key,
+            feature_mode=COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
+            message=(
+                f"{feature_label} are not enabled for this Community Domain. "
+                "The owner/admin can change this in Domain feature policy. "
+                f"{boundary_message}"
+            ),
+            code="community_domain_feature_disabled",
         )

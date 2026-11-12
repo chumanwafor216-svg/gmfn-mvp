@@ -2137,13 +2137,13 @@ def test_marketplace_product_creation_allows_member_when_listing_admin_approval_
     assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 1
 
 
-def test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy(
+def test_marketplace_product_creation_respects_disabled_community_domain_marketplace_shops_policy(
     client,
     override_current_user_user,
     seed_clan_member_membership,
 ):
     _ensure_marketplace_tables()
-    _seed_community_domain_feature_policy(feature_key="shop_diary")
+    _seed_community_domain_feature_policy(feature_key="marketplace_shops")
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -2162,7 +2162,7 @@ def test_marketplace_product_creation_respects_disabled_community_domain_shop_di
                     1,
                     1,
                     'Pillar Existing Shop',
-                    'Shop exists before diary is disabled',
+                    'Shop exists before Marketplace Shops is disabled',
                     1,
                     CURRENT_TIMESTAMP
                 )
@@ -2186,7 +2186,7 @@ def test_marketplace_product_creation_respects_disabled_community_domain_shop_di
     assert response.status_code == 403, response.text
     detail = response.json()["detail"]
     assert detail["code"] == "community_domain_feature_disabled"
-    assert detail["feature_key"] == "shop_diary"
+    assert detail["feature_key"] == "marketplace_shops"
     assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
     assert (
         _scalar(

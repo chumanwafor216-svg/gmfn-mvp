@@ -50,7 +50,7 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 The implementation now has dedicated Vault domain tables for the MVP lane:
 
 - `vault_orders` records the Vault payment/order instruction.
-- `vault_blocks` records the fixed 1-6 private block positions for one shop.
+- `vault_blocks` records the fixed 1-2 private block positions for one shop.
 - `vault_private_offers` mirrors the private product content attached to a block.
 - `vault_access_logs` records Vault link open/status attempts.
 

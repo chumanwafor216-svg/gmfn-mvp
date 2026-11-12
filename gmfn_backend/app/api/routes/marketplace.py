@@ -58,7 +58,6 @@ from app.services.community_domain_feature_policy import (
     COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
     community_domain_feature_mode_for_clan,
     require_domain_marketplace_shops_enabled,
-    require_domain_shop_diary_enabled,
     require_domain_spotlight_enabled,
     require_domain_vault_enabled,
 )
@@ -1994,7 +1993,11 @@ def _publish_marketplace_product_submission(
 
     visibility_mode = _resolve_visibility_mode(payload.get("visibility_mode"))
     if visibility_mode == VISIBILITY_VAULT:
-        require_domain_vault_enabled(db, clan_id=int(clan_id))
+        require_domain_vault_enabled(
+            db,
+            clan_id=int(clan_id),
+            actor_user_id=int(reviewer_user_id),
+        )
 
     public_block_number = _public_product_block_number(payload.get("description"))
     replaced_public_block_products = 0
@@ -6644,7 +6647,7 @@ def create_marketplace_product(
     if not _shop_is_visible_in_clan(db, shop=shop, clan_id=int(resolved_clan_id)):
         raise HTTPException(status_code=409, detail="Selected shop is not visible in this community")
 
-    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
+    require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
     marketplace_governance_policy = _require_member_service_listings_enabled(
         db,
         clan_id=resolved_clan_id,
@@ -6661,7 +6664,11 @@ def create_marketplace_product(
     verified_video_url = _require_verified_marketplace_video(payload.video_url)
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
     if visibility_mode == VISIBILITY_VAULT:
-        require_domain_vault_enabled(db, clan_id=resolved_clan_id)
+        require_domain_vault_enabled(
+            db,
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+        )
 
 
     if _marketplace_listing_requires_review(
@@ -6988,7 +6995,7 @@ def decide_marketplace_listing_review_submission(
                 submission_event_id=int(submission_event_id),
             )
         elif listing_type == "product":
-            require_domain_shop_diary_enabled(db, clan_id=int(payload.clan_id))
+            require_domain_marketplace_shops_enabled(db, clan_id=int(payload.clan_id))
             (
                 published_product,
                 publish_event,
@@ -7104,7 +7111,7 @@ def update_marketplace_product(
     )
     if int(resolved_clan_id) != int(product.clan_id):
         raise HTTPException(status_code=409, detail="Selected community does not own this product")
-    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
+    require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
 
     provided = _provided_model_fields(payload)
     changed = False
@@ -7255,7 +7262,11 @@ def update_marketplace_product(
                 detail=_public_product_capacity_detail(public_product_slots_total),
             )
     elif target_active:
-        require_domain_vault_enabled(db, clan_id=resolved_clan_id)
+        require_domain_vault_enabled(
+            db,
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+        )
         sync_legacy_entitlements_to_blocks(
             db,
             shop_id=int(target_shop_id),

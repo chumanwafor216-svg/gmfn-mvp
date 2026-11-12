@@ -37,6 +37,12 @@ No bottom navigation on these screens.
 12. TrustSlipVerifyPage stable minimal public-professional-profile variant (`/id/:gmfnId/profile`; explicit member opt-in; no phone, email, named-community, community-count/role, exact-location, verification-signal, or private-evidence disclosure)
 13. TrustSlipVerifyPage legacy TrustSlip-keyed card/profile variants (`/t/:code/card`, `/t/:code/profile`; retained for existing shared links)
 
+## Public Access Screens
+
+No bottom navigation on these screens.
+
+1. ShopAccessPage (`/vault/:token`; bearer-link Vault content access that consumes an allowed view before rendering private content)
+
 ## Authenticated Screens
 
 Bottom navigation is allowed here.
@@ -73,6 +79,7 @@ Bottom navigation is allowed here.
 28. TrustAnalyticsPage (`/app/command-center/trust-analytics`; platform-admin selected-community Trust Event pattern reading with compact state-aware first action; reviewed 2026-10-26)
 29. AdminTrustGraphPage (`/app/command-center/trust-graph`; platform-admin selected-community relationship-evidence fallback with an explicit unconnected community-graph boundary; reviewed 2026-10-26)
 30. SystemOperationsPage (`/app/command-center/system-operations`; platform-admin live queue triage with one state-aware first action and closed operational details; reviewed 2026-10-26)
+31. VaultControlPage (`/app/vault-control`; frozen owner-side two-slot private-offer activation, content, and block-scoped link control)
 
 ## Current Repo Name Notes
 

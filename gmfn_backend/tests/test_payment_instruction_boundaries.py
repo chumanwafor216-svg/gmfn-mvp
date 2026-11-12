@@ -209,6 +209,41 @@ def test_vault_instruction_rejects_malformed_boundary_controls(
         )
 
 
+def test_vault_instruction_respects_disabled_community_domain_vault_policy(
+    client,
+    override_current_user,
+):
+    shop_id = _seed_shop_domain_feature_policy("vault", "off")
+
+    response = client.post(
+        "/payment-instructions/vault",
+        json={
+            "clan_id": 1,
+            "shop_id": shop_id,
+            "quantity_total": 1,
+            "currency": "GBP",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "vault"
+    assert "Vault is not enabled" in detail["message"]
+
+    with engine.begin() as conn:
+        created = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM expected_payments
+                WHERE expected_type = 'vault_subscription'
+                """
+            )
+        ).scalar_one()
+    assert created == 0
+
+
 def test_merchant_verify_instruction_rejects_malformed_boundary_controls(
     client,
     override_current_user,

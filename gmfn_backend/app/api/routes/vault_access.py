@@ -163,7 +163,11 @@ def create_shop_vault_access_link(
 ) -> Dict[str, Any]:
     shop = _require_shop_manager(db=db, shop_id=int(shop_id), current_user=current_user)
     if getattr(shop, "clan_id", None) is not None:
-        require_domain_vault_enabled(db, clan_id=int(shop.clan_id))
+        require_domain_vault_enabled(
+            db,
+            clan_id=int(shop.clan_id),
+            actor_user_id=int(current_user.id),
+        )
     try:
         link = create_vault_access_link(
             db,
@@ -231,7 +235,11 @@ def extend_shop_vault_access_link(
     link = _link_or_404(db, int(link_id))
     shop = _require_shop_manager(db=db, shop_id=int(link.shop_id), current_user=current_user)
     if getattr(shop, "clan_id", None) is not None:
-        require_domain_vault_enabled(db, clan_id=int(shop.clan_id))
+        require_domain_vault_enabled(
+            db,
+            clan_id=int(shop.clan_id),
+            actor_user_id=int(current_user.id),
+        )
     try:
         updated = extend_vault_access_link(
             db,

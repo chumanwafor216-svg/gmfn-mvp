@@ -1087,16 +1087,43 @@ export default function VaultControlPage() {
     [expectedPayments]
   );
 
-  const confirmedVaultSlots = useMemo(() => {
-    const backendSlots = Number(vaultStatus?.active_paid_slots ?? 0);
-    if (Number.isFinite(backendSlots) && backendSlots > 0) {
-      return Math.min(VAULT_SLOT_LIMIT, backendSlots);
+  const activeVaultSlotNumbers = useMemo(() => {
+    const activeSlots = new Set<number>();
+    if (vaultStatus) {
+      const blocks = Array.isArray(vaultStatus.blocks) ? vaultStatus.blocks : null;
+      if (blocks) {
+        blocks.forEach((block) => {
+          const slotNumber = Number(block?.slot_number || 0);
+          if (
+            firstTruthy(block?.state).toLowerCase() === "active" &&
+            Number.isInteger(slotNumber) &&
+            slotNumber >= 1 &&
+            slotNumber <= VAULT_SLOT_LIMIT
+          ) {
+            activeSlots.add(slotNumber);
+          }
+        });
+        return activeSlots;
+      }
+      const backendSlots = Math.min(
+        VAULT_SLOT_LIMIT,
+        Math.max(0, Number(vaultStatus.active_paid_slots || 0))
+      );
+      for (let slotNumber = 1; slotNumber <= backendSlots; slotNumber += 1) {
+        activeSlots.add(slotNumber);
+      }
+      return activeSlots;
     }
     const confirmedSlots = vaultPayments
       .filter(isConfirmedPayment)
       .reduce((total, item) => total + paymentQuantity(item), 0);
-    return Math.min(VAULT_SLOT_LIMIT, confirmedSlots);
-  }, [vaultPayments, vaultStatus?.active_paid_slots]);
+    const fallbackSlots = Math.min(VAULT_SLOT_LIMIT, confirmedSlots);
+    for (let slotNumber = 1; slotNumber <= fallbackSlots; slotNumber += 1) {
+      activeSlots.add(slotNumber);
+    }
+    return activeSlots;
+  }, [vaultPayments, vaultStatus]);
+  const confirmedVaultSlots = activeVaultSlotNumbers.size;
 
   const latestVaultPayment = vaultPayments[0] || null;
   useEffect(() => {
@@ -1122,7 +1149,7 @@ export default function VaultControlPage() {
       setSelectedSlot(1);
     }
   }, [selectedSlot]);
-  const selectedSeatIsActive = selectedSlot <= confirmedVaultSlots;
+  const selectedSeatIsActive = activeVaultSlotNumbers.has(selectedSlot);
   const selectedProduct = vaultInnerSlots[selectedSlot - 1] || null;
   const selectedBlockLinks = selectedProduct
     ? vaultLinks.filter((link) => vaultLinkMatchesProduct(link, selectedProduct))
@@ -2265,7 +2292,7 @@ export default function VaultControlPage() {
             {vaultInnerSlots.map((item, index) => {
               const slotNumber = index + 1;
               const selected = selectedSlot === slotNumber;
-              const active = slotNumber <= confirmedVaultSlots;
+              const active = activeVaultSlotNumbers.has(slotNumber);
               return (
                 <StableButton
                   key={slotNumber}

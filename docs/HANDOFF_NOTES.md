@@ -1,5 +1,40 @@
 # Active Handoff Notes
 
+## Vault integrity Stage 1 - 2026-11-12
+
+- Scope: integrity-only corrections for frozen `/app/vault-control` and public
+  `/vault/:token`; no layout, visual-language, or interaction redesign.
+- Public access now fails closed for every backend terminal state, reads
+  restrictions from the backend `restrictions` object, and renders private
+  content only from `POST /marketplace/vault-access/:token/open`.
+- The matching GET route is now metadata-only. The open route locks the access
+  link row, checks the limit, consumes one view, records the open, and only then
+  returns the one scoped private product. A focused regression proves a
+  two-view link returns no product on GET, opens twice, then returns exhausted.
+- Owner slot truth now comes from active backend block numbers whenever Vault
+  status exists, including authoritative zero and non-contiguous states.
+  Historical confirmed-payment count is used only while backend status is
+  unavailable.
+- Community Domain Vault writes now enforce `off`, `admin_only`, and
+  `members_submit_admin_approves` fail-closed boundaries with domain
+  owner/admin scope. Vault link creation/extension, private-product writes, and
+  Vault payment instructions pass the acting user. Shop and product writes now
+  use Marketplace Shops policy rather than the unrelated Shop Diary switch.
+- Vault payment creation also verifies that the selected shop belongs to the
+  submitted community before creating an expected payment.
+- Privacy decision: a proposed public owner-name, GSN-ID, and community-name
+  payload expansion was rejected and not implemented because bearer-link
+  recipients do not need that extra identity disclosure.
+- Documentation now records the actual two-slot pilot, authoritative backend
+  slot truth, metadata-only GET/content-opening POST contract, and both Vault
+  screens in the registry.
+- Verification passed: Vault backend tests (9), payment/product policy tests
+  (9), frontend Vault integrity audit, Vault button inventory, private Vault
+  visual-language audit, Community Domain product contract audit, Python
+  compilation, and the 326-module production frontend build.
+- No commit, push, deployment, schema migration, or production-state change was
+  performed in this session.
+
 ## Consumed activation-link and phone-shortcut repair - 2026-11-10
 
 - Owner evidence: Naomi reopened the old approval/activation link on a family

@@ -2379,14 +2379,14 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /require_domain_marketplace_shops_enabled[\s\S]*require_domain_shop_diary_enabled[\s\S]*require_domain_spotlight_enabled[\s\S]*require_domain_vault_enabled[\s\S]*def create_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def update_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def create_marketplace_product[\s\S]*require_domain_shop_diary_enabled[\s\S]*visibility_mode = _resolve_visibility_mode[\s\S]*visibility_mode == VISIBILITY_VAULT[\s\S]*require_domain_vault_enabled[\s\S]*def update_marketplace_product[\s\S]*require_domain_shop_diary_enabled[\s\S]*target_visibility = _resolve_visibility_mode[\s\S]*elif target_active:[\s\S]*require_domain_vault_enabled[\s\S]*def delete_marketplace_product[\s\S]*require_domain_shop_diary_enabled[\s\S]*def repost_marketplace_product[\s\S]*require_domain_spotlight_enabled[\s\S]*def create_marketplace_broadcast[\s\S]*require_domain_spotlight_enabled/,
-  "Marketplace shop identity writes, shop diary product writes, Vault-private product writes, and Spotlight publish/repost routes must obey linked Community Domain feature policy before writing rows, trust events, or follower notifications."
+  /def create_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def update_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def create_marketplace_product[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*visibility_mode = _resolve_visibility_mode[\s\S]*visibility_mode == VISIBILITY_VAULT[\s\S]*require_domain_vault_enabled[\s\S]*actor_user_id=int\(current_user\.id\)[\s\S]*def update_marketplace_product[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*target_visibility = _resolve_visibility_mode[\s\S]*elif target_active:[\s\S]*require_domain_vault_enabled[\s\S]*actor_user_id=int\(current_user\.id\)[\s\S]*def repost_marketplace_product[\s\S]*require_domain_spotlight_enabled[\s\S]*def create_marketplace_broadcast[\s\S]*require_domain_spotlight_enabled/,
+  "Marketplace shop and product writes must obey Marketplace Shops policy, Vault-private writes must also enforce actor-aware Vault policy, and Spotlight publish/repost routes must enforce Spotlight policy before writing."
 );
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /test_marketplace_shop_creation_respects_disabled_community_domain_shop_policy[\s\S]*feature_key="marketplace_shops"[\s\S]*\/marketplace\/shops[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "marketplace_shops"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_shops[\s\S]*test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy[\s\S]*feature_key="shop_diary"[\s\S]*\/marketplace\/products[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "shop_diary"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_products[\s\S]*test_marketplace_spotlight_broadcast_respects_disabled_community_domain_spotlight_policy[\s\S]*feature_key="spotlight"[\s\S]*\/marketplace\/broadcasts[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "spotlight"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_broadcasts[\s\S]*test_marketplace_vault_private_product_respects_disabled_community_domain_vault_policy[\s\S]*feature_key="vault"[\s\S]*\/marketplace\/products[\s\S]*visibility_mode": "vault_private"[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "vault"[\s\S]*private Vault content[\s\S]*SELECT COUNT\(\*\) FROM marketplace_products/,
-  "Marketplace tests must prove disabled marketplace_shops, shop_diary, spotlight, and vault policies block route writes before shop/product/broadcast rows or trust events are created."
+  /test_marketplace_shop_creation_respects_disabled_community_domain_shop_policy[\s\S]*feature_key="marketplace_shops"[\s\S]*\/marketplace\/shops[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "marketplace_shops"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_shops[\s\S]*test_marketplace_product_creation_respects_disabled_community_domain_marketplace_shops_policy[\s\S]*feature_key="marketplace_shops"[\s\S]*\/marketplace\/products[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "marketplace_shops"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_products[\s\S]*test_marketplace_spotlight_broadcast_respects_disabled_community_domain_spotlight_policy[\s\S]*feature_key="spotlight"[\s\S]*\/marketplace\/broadcasts[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "spotlight"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_broadcasts[\s\S]*test_marketplace_vault_private_product_respects_disabled_community_domain_vault_policy[\s\S]*feature_key="vault"[\s\S]*\/marketplace\/products[\s\S]*visibility_mode": "vault_private"[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "vault"[\s\S]*private Vault content[\s\S]*SELECT COUNT\(\*\) FROM marketplace_products/,
+  "Marketplace tests must prove disabled marketplace_shops, spotlight, and vault policies block route writes before shop/product/broadcast rows or trust events are created."
 );
 
 assertContains(
@@ -2423,8 +2423,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"shop_diary"[\s\S]*shopDiaryFeatureOff[\s\S]*async function saveShopSignboard[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureShopRecordForProduct[\s\S]*marketplaceShopsFeatureOffText[\s\S]*function openAddForPublicSlot[\s\S]*shopDiaryFeatureOffText[\s\S]*async function submitProduct[\s\S]*shopDiaryFeatureOffText[\s\S]*\/api\/marketplace\/products/,
-  "Shop Assets page must explain disabled Marketplace Shops and Shop Diary Community Domain policies before calling shop/product write routes.",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"shop_diary"[\s\S]*shopDiaryFeatureOff[\s\S]*async function saveShopSignboard[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureShopRecordForProduct[\s\S]*marketplaceShopsFeatureOffText[\s\S]*function openAddForPublicSlot[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function submitProduct[\s\S]*marketplaceShopsFeatureOffText[\s\S]*\/api\/marketplace\/products/,
+  "Shop Assets page must explain disabled Marketplace Shops before shop/product writes and keep Shop Diary policy scoped to diary writes.",
   { frontend: true }
 );
 
@@ -2507,7 +2507,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/payment_instructions.py",
-  /def create_vault_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_VAULT[\s\S]*def create_merchant_verify_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS[\s\S]*def create_spotlight_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT[\s\S]*def use_community_package_unit[\s\S]*_require_domain_package_feature_enabled[\s\S]*def create_community_package_payment_instruction[\s\S]*_require_domain_package_feature_enabled/,
+  /def create_vault_instruction[\s\S]*require_domain_vault_enabled[\s\S]*actor_user_id=int\(current_user\.id\)[\s\S]*def create_merchant_verify_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS[\s\S]*def create_spotlight_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT[\s\S]*def use_community_package_unit[\s\S]*_require_domain_package_feature_enabled[\s\S]*def create_community_package_payment_instruction[\s\S]*_require_domain_package_feature_enabled/,
   "Payment instruction routes must block disabled Community Domain package/shop service payments before expected-payment creation."
 );
 

@@ -258,7 +258,7 @@ def test_vault_access_link_requires_and_returns_one_active_block_scope(
 
     replacement = client.post(
         "/marketplace/shops/1/vault-access-links",
-        json={"product_id": 1},
+        json={"product_id": 1, "max_views": 2},
     )
     assert replacement.status_code == 200, replacement.text
     second_link = replacement.json()["item"]
@@ -280,16 +280,27 @@ def test_vault_access_link_requires_and_returns_one_active_block_scope(
     assert view_body["ok"] is True
     assert view_body["product_id"] == 1
     assert view_body["block_id"] == 1
-    assert [product["id"] for product in view_body["products"]] == [1]
+    assert "products" not in view_body
     assert view_body["views_used"] == 0
 
     opened = client.post(f"/marketplace/vault-access/{second_link['token']}/open")
     assert opened.status_code == 200, opened.text
+    assert [product["id"] for product in opened.json()["products"]] == [1]
     assert opened.json()["views_used"] == 1
+
+    opened_again = client.post(f"/marketplace/vault-access/{second_link['token']}/open")
+    assert opened_again.status_code == 200, opened_again.text
+    assert opened_again.json()["views_used"] == 2
+
+    exhausted = client.post(f"/marketplace/vault-access/{second_link['token']}/open")
+    assert exhausted.status_code == 200, exhausted.text
+    assert exhausted.json()["ok"] is False
+    assert exhausted.json()["status"] == "exhausted"
+    assert "products" not in exhausted.json()
 
     with engine.begin() as conn:
         log_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_logs")).scalar_one()
-    assert log_count == 1
+    assert log_count == 3
 
 
 def test_vault_access_link_with_missing_product_scope_fails_closed(
@@ -343,6 +354,46 @@ def test_vault_access_link_create_respects_disabled_community_domain_vault_polic
     assert detail["code"] == "community_domain_feature_disabled"
     assert detail["feature_key"] == "vault"
     assert "private Vault content" in detail["message"]
+    with engine.begin() as conn:
+        link_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_links")).scalar_one()
+    assert link_count == 0
+
+
+def test_vault_access_link_create_respects_admin_only_domain_mode(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    2, 'domain-owner@example.com', 'hashed', 'Domain Owner',
+                    'user', 'GMFN-U-DOMAIN'
+                )
+                """
+            )
+        )
+    _seed_community_domain_vault_policy(mode="admin_only")
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE community_domains SET owner_user_id = 2 WHERE id = 1")
+        )
+
+    response = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1},
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_admin_required"
+    assert detail["feature_mode"] == "admin_only"
+    assert "limited to Community Domain owners and admins" in detail["message"]
     with engine.begin() as conn:
         link_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_links")).scalar_one()
     assert link_count == 0

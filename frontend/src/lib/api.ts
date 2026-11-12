@@ -10164,7 +10164,18 @@ export type VaultShopStatus = {
 
 export type VaultShopAccessView = {
   token?: string;
-  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive" | "block_inactive" | "invalid";
+  status?:
+    | "active"
+    | "expired"
+    | "revoked"
+    | "exhausted"
+    | "product_inactive"
+    | "block_inactive"
+    | "subscription_inactive"
+    | "domain_vault_disabled"
+    | "shop_inactive"
+    | "not_found"
+    | "invalid";
   shop_id?: number | string;
   vault_shop_id?: number | string;
   product_id?: number | string | null;
@@ -10411,6 +10422,7 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
   const src = raw?.item || raw?.view || raw?.data || raw || {};
   const shop = src?.shop || src?.shop_summary || src;
   const policySrc = src?.policy || src?.access_policy || src?.link || src;
+  const restrictionsSrc = src?.restrictions || policySrc;
   const viewProductId = src?.product_id ?? policySrc?.product_id ?? null;
   const viewBlockId = src?.block_id ?? policySrc?.block_id ?? null;
 
@@ -10423,15 +10435,24 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
     policySrc?.views_used ?? shop?.views_used ?? src?.views_used
   );
 
-  let status: VaultShopAccessView["status"] = "active";
+  let status: VaultShopAccessView["status"] = "invalid";
   const rawStatus = vaultFirstTruthy(src?.status, policySrc?.status, shop?.status).toLowerCase();
-
-  if (rawStatus.includes("invalid")) status = "invalid";
-  if (rawStatus.includes("revoke")) status = "revoked";
-  if (rawStatus.includes("expire")) status = "expired";
-  if (rawStatus.includes("exhaust")) status = "exhausted";
-  if (rawStatus.includes("block_inactive")) status = "block_inactive";
-  else if (rawStatus.includes("product_inactive")) status = "product_inactive";
+  const knownStatuses = new Set<VaultShopAccessView["status"]>([
+    "active",
+    "expired",
+    "revoked",
+    "exhausted",
+    "product_inactive",
+    "block_inactive",
+    "subscription_inactive",
+    "domain_vault_disabled",
+    "shop_inactive",
+    "not_found",
+    "invalid",
+  ]);
+  if (knownStatuses.has(rawStatus as VaultShopAccessView["status"])) {
+    status = rawStatus as VaultShopAccessView["status"];
+  }
 
   if (revokedAt) {
     status = "revoked";
@@ -10516,12 +10537,10 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
       expires_at: expiresAt || null,
       max_views: maxViews,
       views_used: viewsUsed,
-      allow_download: Boolean(policySrc?.allow_download ?? src?.allow_download),
-      allow_print: Boolean(policySrc?.allow_print ?? src?.allow_print),
-      allow_reshare: Boolean(policySrc?.allow_reshare ?? src?.allow_reshare),
-      watermark_enabled: Boolean(
-        policySrc?.watermark_enabled ?? src?.watermark_enabled
-      ),
+      allow_download: Boolean(restrictionsSrc?.allow_download),
+      allow_print: Boolean(restrictionsSrc?.allow_print),
+      allow_reshare: Boolean(restrictionsSrc?.allow_reshare),
+      watermark_enabled: restrictionsSrc?.watermark_enabled !== false,
       revoked_at: revokedAt || null,
     },
     disclaimer: vaultFirstTruthy(src?.disclaimer, shop?.disclaimer),
@@ -10761,10 +10780,10 @@ export async function getVaultShopAccessView(
 
 export async function recordVaultShopAccessOpen(
   token: string
-): Promise<any> {
+): Promise<VaultShopAccessView> {
   const safeToken = vaultSafeStr(token);
 
-  return vaultTryJson<any>(
+  const res = await vaultTryJson<any>(
     [
       {
         method: "POST",
@@ -10785,4 +10804,6 @@ export async function recordVaultShopAccessOpen(
     ],
     false
   );
+
+  return normalizeVaultAccessView(res);
 }

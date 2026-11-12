@@ -12,7 +12,7 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 
 Frozen on 2026-05-04 after the final owner review pass.
 
-The frozen owner structure is: Vault hero, quote-gated slot activation, payment code and bank-transfer instruction, fixed six-position private block room, selected-block offer editor, selected-block private link controls, and compact collapsible supporting panels.
+The frozen owner structure is: Vault hero, quote-gated slot activation, payment code and bank-transfer instruction, fixed two-position private block room, selected-block offer editor, selected-block private link controls, and compact collapsible supporting panels.
 
 Future work may add real payment providers, stronger admin reporting, or production settlement configuration, but must not casually merge Vault back into Shop Gallery, Free Spotlight, Subscription Spotlight, or generic Shop Control.
 
@@ -30,7 +30,7 @@ Future work may add real payment providers, stronger admin reporting, or product
 2. The Vault hero must clearly identify the surface as `Vault`.
 3. A Vault payment request can activate 1 to 2 private slots.
 4. Confirmed Vault payment quantity controls how many private blocks appear.
-5. `/app/vault-control` must include a fixed inner Vault private block room with all 6 known positions visible. Unpaid positions stay locked and cannot be used; paid positions become usable in place.
+5. `/app/vault-control` must include a fixed inner Vault private block room with both known positions visible. Unpaid positions stay locked and cannot be used; paid positions become usable in place.
 6. Each paid private block can hold a picture or short video.
 7. Vault products use `visibility_mode = vault_private`.
 8. Vault products are not public gallery products.
@@ -51,14 +51,16 @@ Future work may add real payment providers, stronger admin reporting, or product
 23. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
 24. Saving a private Vault offer must send the selected `vault_slot_number`.
 25. New Vault links must carry both the selected product scope and backend block scope.
-26. Existing private product rows must not prove paid Vault capacity. Owner slot capacity comes from backend Vault status first, then confirmed Vault payment fallback only.
-27. Backend `vault_blocks.slot_number` is the fixed owner-room placement. Frontend must not slide slot 3 into slot 2 just because slot 2 is empty, and duplicate backend slot claims must not overwrite an earlier block.
+26. Existing private product rows must not prove paid Vault capacity. When backend Vault status is available, its active block state is authoritative even when it reports zero active slots. Confirmed Vault payment history is fallback evidence only while backend status is unavailable.
+27. Backend `vault_blocks.slot_number` is the fixed owner-room placement. Frontend must not slide slot 2 into slot 1 just because slot 1 is empty, and duplicate backend slot claims must not overwrite an earlier block.
 28. Visitor Vault access must show only the returned `product_id` or `block_id` scope. A legacy unscoped response with multiple private products is not a normal private-block view.
-29. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
+29. Phone slot activation controls must use stable large tap tiles for slots 1-2. Do not reintroduce a native dropdown for this payment-critical control.
 30. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
 31. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must always include a visible `Sort code / bank code` provision, then add region-specific labels such as UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
 32. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
 33. The Vault owner page may use collapsible panels to reduce exposed page length, but collapsing must not delete or merge the payment instruction, fixed block room, selected-block editor, or block-scoped link controls.
+34. `GET /marketplace/vault-access/:token` is a metadata/status check and must never return private products.
+35. `POST /marketplace/vault-access/:token/open` must lock and consume one allowed view before returning the scoped private product. Exhausted and unknown statuses fail closed.
 
 ## Do Not Reintroduce
 
@@ -92,7 +94,7 @@ Future work may add real payment providers, stronger admin reporting, or product
 5. Confirm the visible quote. Changing the slot count must clear the confirmation.
 6. Generate the payment code.
 7. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.
-8. Confirm the inner Vault private block room shows all 6 positions, with unpaid positions locked.
+8. Confirm the inner Vault private block room shows both positions, with unpaid positions locked.
 9. After confirmation, confirm the paid slot count becomes usable in the same inner block room.
 10. Add a private picture block.
 11. Add a private video block.

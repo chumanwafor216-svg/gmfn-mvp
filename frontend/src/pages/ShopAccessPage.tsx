@@ -11,7 +11,6 @@ import {
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
-  getVaultShopAccessView,
   recordVaultShopAccessOpen,
   type VaultShopAccessProduct,
   type VaultShopAccessView,
@@ -283,17 +282,11 @@ export default function ShopAccessPage() {
       setView(null);
 
       try {
-        const res = await getVaultShopAccessView(token);
+        const res = await recordVaultShopAccessOpen(token);
         if (!isCurrentAccessLoad()) return;
         setView(res || null);
 
         const nextStatus = safeStr(res?.status).toLowerCase();
-
-        if (nextStatus === "active") {
-          void recordVaultShopAccessOpen(token).catch(() => {
-            // Opening the Vault view should not fail only because telemetry/open tracking did not return.
-          });
-        }
 
         if (nextStatus !== "active") {
           setErrorText(
