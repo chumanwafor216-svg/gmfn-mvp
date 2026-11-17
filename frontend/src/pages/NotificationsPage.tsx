@@ -74,7 +74,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   openActionsDirectly: true,
 };
 
-const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v2";
+const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v3";
 
 const BUCKET_ORDER: GuidanceInboxBucketKey[] = [
   "actNow",
@@ -1449,7 +1449,7 @@ export default function NotificationsPage() {
       unread: false,
     });
   const selectedBucketRows = selectedBucket ? bucketRows[selectedBucket] : [];
-  const bucketRowHeight = isPhone ? 76 : 86;
+  const bucketRowHeight = isPhone ? 58 : 86;
 
   function showUrgentItems() {
     setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
@@ -1469,7 +1469,7 @@ export default function NotificationsPage() {
   }
 
   function openBucket(bucket: GuidanceInboxBucketKey) {
-    setCollapsed((prev) => ({ ...prev, buckets: false }));
+    setCollapsed((prev) => ({ ...prev, buckets: true }));
     setSelectedBucket(bucket);
     const first = bucketRows[bucket][0];
     if (!first) {
@@ -1737,11 +1737,21 @@ export default function NotificationsPage() {
       ) : null}
 
       <section
-        style={pageCard(
-          isPhone
-            ? "#FFFFFF"
-            : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
-        )}
+        data-gsn-action-inbox-phone-focus={isPhone ? "true" : undefined}
+        style={{
+          ...pageCard(
+            isPhone
+              ? "#FFFFFF"
+              : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
+          ),
+          ...(isPhone
+            ? {
+                padding: 14,
+                borderRadius: 18,
+                display: selectedNotice ? "none" : undefined,
+              }
+            : {}),
+        }}
       >
         <div
           style={{
@@ -1754,17 +1764,19 @@ export default function NotificationsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isPhone ? "44px minmax(0, 1fr)" : "56px minmax(0, 1fr)",
+              gridTemplateColumns: isPhone ? "1fr" : "56px minmax(0, 1fr)",
               gap: 12,
               alignItems: "center",
             }}
           >
-            {notificationIconTile(
-              "navigation",
-              isPhone ? 44 : 56,
-              isPhone ? "#EAF3FF" : "rgba(219,234,254,0.12)",
-              999
-            )}
+            {!isPhone
+              ? notificationIconTile(
+                  "navigation",
+                  56,
+                  "rgba(219,234,254,0.12)",
+                  999
+                )
+              : null}
             <div>
               {!isPhone ? (
                 <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
@@ -1774,12 +1786,14 @@ export default function NotificationsPage() {
               <div
                 style={{
                   color: isPhone ? "#07172C" : "#F8FBFF",
-                  fontSize: isPhone ? 21 : 28,
+                  fontSize: isPhone ? 12 : 28,
                   fontWeight: 950,
-                  lineHeight: 1.15,
+                  lineHeight: isPhone ? 1 : 1.15,
+                  letterSpacing: isPhone ? 1.5 : undefined,
+                  textTransform: isPhone ? "uppercase" : undefined,
                 }}
               >
-                {operationalFocus ? "What needs you now" : "You are all caught up"}
+                {isPhone ? "Next" : operationalFocus ? "What needs you now" : "You are all caught up"}
               </div>
             </div>
           </div>
@@ -1800,7 +1814,12 @@ export default function NotificationsPage() {
         </div>
 
         {isPhone || !collapsed.focus ? (
-          <div style={{ marginTop: isPhone ? 14 : 18, ...innerCard(isPhone ? "#F8FBFF" : "#FFFFFF") }}>
+          <div
+            style={{
+              marginTop: isPhone ? 10 : 18,
+              ...(isPhone ? {} : innerCard("#FFFFFF")),
+            }}
+          >
             <div
               style={{
                 display: "grid",
@@ -1822,39 +1841,49 @@ export default function NotificationsPage() {
                   <div
                     style={{
                       color: "#07172C",
-                      fontSize: isPhone ? 17 : 20,
+                      fontSize: isPhone ? 18 : 20,
                       fontWeight: 950,
                       lineHeight: 1.2,
                     }}
                   >
-                    {focusNotice.title}
+                    {isPhone
+                      ? notificationKindLabel(focusNotice, focusNotice.title)
+                      : focusNotice.title}
                     {!isPhone && focusNotice.unread ? (
                       <span style={{ marginLeft: 8, ...badge(true) }}>
                         Needs your attention
                       </span>
                     ) : null}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {truncateText(focusNotice.detail, isPhone ? 72 : 150)}
-                  </div>
+                  {!isPhone ? (
+                    <div style={{ marginTop: 8, ...helperText() }}>
+                      {truncateText(focusNotice.detail, 150)}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
-              <div style={{ display: "grid", gap: 10, marginTop: isPhone ? 26 : 0 }}>
+              <div style={{ display: "grid", gap: 10, marginTop: isPhone ? 10 : 0 }}>
                 <PrimaryButton
                   onClick={() => void handlePrimaryNoticeAction(focusNotice)}
                   fullWidth
-                  stableHeight={54}
+                  stableHeight={isPhone ? 48 : 54}
                   debugId="notifications.focus.primary"
                 >
-                  {notificationIconText(
-                    "navigation",
-                    isActiveRelayOfferNotice(focusNotice)
+                  {isPhone
+                    ? isActiveRelayOfferNotice(focusNotice)
                       ? "Help connect"
                       : isRelayOfferNotice(focusNotice)
                       ? "Review status"
                       : focusNotice.ctaLabel
-                  )}
+                    : notificationIconText(
+                        "navigation",
+                        isActiveRelayOfferNotice(focusNotice)
+                          ? "Help connect"
+                          : isRelayOfferNotice(focusNotice)
+                          ? "Review status"
+                          : focusNotice.ctaLabel
+                      )}
                 </PrimaryButton>
 
                 {!isPhone ? (
@@ -1909,11 +1938,21 @@ export default function NotificationsPage() {
       </section>
 
       <section
-        style={pageCard(
-          isPhone
-            ? "#FFFFFF"
-            : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
-        )}
+        data-gsn-action-inbox-phone-more={isPhone ? "true" : undefined}
+        style={{
+          ...pageCard(
+            isPhone
+              ? "#FFFFFF"
+              : "linear-gradient(180deg, #061827 0%, #082B4A 100%)"
+          ),
+          ...(isPhone
+            ? {
+                padding: "10px 12px",
+                borderRadius: 18,
+                display: selectedNotice ? "none" : undefined,
+              }
+            : {}),
+        }}
       >
         <div
           style={{
@@ -1921,7 +1960,7 @@ export default function NotificationsPage() {
             justifyContent: "space-between",
             gap: 12,
             alignItems: "center",
-            flexWrap: "wrap",
+            flexWrap: isPhone ? "nowrap" : "wrap",
           }}
         >
           <div
@@ -1937,7 +1976,7 @@ export default function NotificationsPage() {
               : null}
             <div>
               <div style={{ ...sectionLabel(), color: isPhone ? "#50647C" : "#AFC4DA" }}>
-                {isPhone ? "Other items" : "All waiting items"}
+                {isPhone ? "More" : "All waiting items"}
               </div>
               {!isPhone ? (
                 <div
@@ -1956,15 +1995,33 @@ export default function NotificationsPage() {
 
           <SubtleButton
             onClick={() => toggleSection("buckets")}
-            style={collapseToggle()}
-            stableHeight={48}
+            style={
+              isPhone
+                ? {
+                    minWidth: 78,
+                    minHeight: 40,
+                    padding: "8px 12px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(17,42,68,0.14)",
+                    background: "#F3F7FB",
+                    color: "#12304C",
+                    fontSize: 13,
+                    fontWeight: 900,
+                  }
+                : collapseToggle()
+            }
+            stableHeight={isPhone ? 40 : 48}
             debugId="notifications.toggle-buckets"
           >
-            {notificationIconText(
-              collapsed.buckets ? "chevronDown" : "chevronUp",
-              collapsed.buckets ? "Open" : "Collapse",
-              20
-            )}
+            {isPhone
+              ? collapsed.buckets
+                ? "Open"
+                : "Close"
+              : notificationIconText(
+                  collapsed.buckets ? "chevronDown" : "chevronUp",
+                  collapsed.buckets ? "Open" : "Collapse",
+                  20
+                )}
           </SubtleButton>
         </div>
 
@@ -1976,9 +2033,9 @@ export default function NotificationsPage() {
           ) : (
             <div
               style={{
-                marginTop: 18,
+                marginTop: isPhone ? 10 : 18,
                 overflow: "hidden",
-                borderRadius: 18,
+                borderRadius: isPhone ? 14 : 18,
                 background: "#FFFFFF",
                 border: "1px solid rgba(17,42,68,0.10)",
               }}
@@ -2000,9 +2057,9 @@ export default function NotificationsPage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isPhone
-                        ? "46px minmax(0, 1fr) 46px 18px"
+                        ? "34px minmax(0, 1fr) 34px 16px"
                         : "56px minmax(0, 1fr) 54px 24px",
-                      gap: isPhone ? 10 : 12,
+                      gap: isPhone ? 8 : 12,
                       alignItems: "center",
                       justifyContent: "stretch",
                       minHeight: bucketRowHeight,
@@ -2014,7 +2071,7 @@ export default function NotificationsPage() {
                       borderRadius: 0,
                       boxShadow: "none",
                       color: "#07172C",
-                      padding: isPhone ? "12px 10px" : "10px 14px",
+                      padding: isPhone ? "7px 8px" : "10px 14px",
                       textAlign: "left",
                       overflow: "hidden",
                     }}
@@ -2022,9 +2079,9 @@ export default function NotificationsPage() {
                     <span
                       aria-hidden="true"
                       style={{
-                        width: isPhone ? 40 : 44,
-                        height: isPhone ? 40 : 44,
-                        borderRadius: 14,
+                        width: isPhone ? 32 : 44,
+                        height: isPhone ? 32 : 44,
+                        borderRadius: isPhone ? 11 : 14,
                         display: "grid",
                         placeItems: "center",
                         background: tone.bg,
@@ -2033,14 +2090,14 @@ export default function NotificationsPage() {
                         fontWeight: 950,
                       }}
                     >
-                      <GsnLegacyIcon name={icon} size={isPhone ? 30 : 34} />
+                      <GsnLegacyIcon name={icon} size={isPhone ? 24 : 34} />
                     </span>
                     <span style={{ minWidth: 0 }}>
                       <span
                         style={{
                           display: "block",
                           color: "#07172C",
-                          fontSize: isPhone ? 14.5 : 20,
+                          fontSize: isPhone ? 14 : 20,
                           fontWeight: 950,
                           lineHeight: 1.16,
                         }}
@@ -2068,15 +2125,15 @@ export default function NotificationsPage() {
                     <span
                       style={{
                         justifySelf: "center",
-                        minWidth: isPhone ? 40 : 44,
-                        minHeight: isPhone ? 40 : 44,
+                        minWidth: isPhone ? 32 : 44,
+                        minHeight: isPhone ? 32 : 44,
                         borderRadius: 999,
                         display: "grid",
                         placeItems: "center",
                         background: tone.bg,
                         color: tone.text,
                         fontWeight: 950,
-                        fontSize: isPhone ? 18 : 19,
+                        fontSize: isPhone ? 15 : 19,
                       }}
                     >
                       {rows.length}
@@ -2085,7 +2142,7 @@ export default function NotificationsPage() {
                       aria-hidden="true"
                       style={{ color: "#07172C", fontSize: 26, fontWeight: 950 }}
                     >
-                      <GsnLegacyIcon name="navigation" size={22} />
+                      <GsnLegacyIcon name="navigation" size={isPhone ? 17 : 22} />
                     </span>
                   </StableButton>
                 );

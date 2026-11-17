@@ -313,16 +313,16 @@ assertContains(
 );
 
 assertContains(
-  /\{!isPhone \? \([\s\S]*?<section style=\{pageCard\("#FFFFFF"\)\}>[\s\S]*?What needs your attention[\s\S]*?notifications\.show-urgent[\s\S]*?<section[\s\S]*?isPhone[\s\S]*?What needs you now[\s\S]*?\{!isPhone \? \([\s\S]*?notifications\.focus\.open-page/,
-  "Notifications phone must hide the four-stat summary and duplicate Open page action while leading with the current item."
+  /\{!isPhone \? \([\s\S]*?<section style=\{pageCard\("#FFFFFF"\)\}>[\s\S]*?What needs your attention[\s\S]*?notifications\.show-urgent[\s\S]*?data-gsn-action-inbox-phone-focus=\{isPhone \? "true" : undefined\}[\s\S]*?isPhone \? "Next"[\s\S]*?notificationKindLabel\(focusNotice, focusNotice\.title\)[\s\S]*?notifications\.focus\.primary[\s\S]*?\{!isPhone \? \([\s\S]*?notifications\.focus\.open-page/,
+  "Notifications phone must hide the four-stat summary and lead with one short current-item action."
 );
 assertContains(
   /\{!isPhone && \(isActiveRelayOfferNotice\(focusNotice\)[\s\S]*?notifications\.focus\.mark-read/,
   "Notifications phone must hide the current-item housekeeping action and keep one primary action on the surface."
 );
 assertContains(
-  /truncateText\(focusNotice\.detail, isPhone \? 72 : 150\)/,
-  "Notifications phone must keep the current-item explanation to one short reading line."
+  /\{!isPhone \? \([\s\S]*?truncateText\(focusNotice\.detail, 150\)[\s\S]*?\) : null\}/,
+  "Notifications phone must remove the current-item explanation instead of asking members to read it."
 );
 assertContains(
   /\{!isPhone \? \([\s\S]*?<section[\s\S]*?Stay consistent\. Build trust\.[\s\S]*?<\/section>[\s\S]*?\) : null\}/,
@@ -333,8 +333,12 @@ assertContains(
   "Notifications phone must hide history until Other items opens and keep the label glossary off phone."
 );
 assertContains(
-  /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v2"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,
-  "Notifications should keep the first action visible while the full waiting-item bucket list starts covered on phone."
+  /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v3"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,
+  "Notifications must reset superseded saved disclosure state and keep the full waiting-item bucket list covered on phone."
+);
+assertContains(
+  /const bucketRowHeight = isPhone \? 58 : 86[\s\S]*?data-gsn-action-inbox-phone-more=\{isPhone \? "true" : undefined\}[\s\S]*?\{isPhone \? "More" : "All waiting items"\}[\s\S]*?stableHeight=\{isPhone \? 40 : 48\}/,
+  "Notifications phone must keep secondary groups behind one small More row and compact opened bucket rows."
 );
 assertApiContains(
   /export async function getMyNotifications\([\s\S]*?limit: number = 20,/,
@@ -358,7 +362,7 @@ assertContains(
 );
 
 assertContains(
-  /const bucketRowHeight = isPhone \? 76 : 86/,
+  /const bucketRowHeight = isPhone \? 58 : 86/,
   "Notifications phone bucket rows must stay compact while preserving a stable tap target."
 );
 

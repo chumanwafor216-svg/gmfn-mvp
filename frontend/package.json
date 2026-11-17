@@ -109,6 +109,7 @@
     "audit:community-join-requests-layout": "node tools/audit-community-join-requests-layout.mjs",
     "audit:membership-admission-policy": "node tools/audit-membership-admission-policy.mjs",
     "audit:notifications-button-inventory": "node tools/audit-notifications-button-inventory.mjs",
+    "smoke:action-inbox-simple-phone": "node tools/smoke-action-inbox-simple-phone.mjs",
     "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:payout-details-protocol": "node tools/audit-payout-details-protocol.mjs",
