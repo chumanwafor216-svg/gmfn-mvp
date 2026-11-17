@@ -138,8 +138,13 @@ assertContains(
 );
 assertContains(
   "communityConfirmationInbox",
-  /isCommunityVerificationTaskMode[\s\S]*?data-gsn-community-verification-answer-task="true"[\s\S]*?data-gsn-community-verification-answer-options="true"[\s\S]*?minHeight: 58[\s\S]*?community-verification-task\.submit[\s\S]*?data-gsn-community-verification-answer-boundary="true"/,
-  "Public community verification notifications must open one compact three-answer task without policy or responder cards."
+  /isCommunityVerificationTaskMode[\s\S]*?data-gsn-community-verification-answer-task="true"[\s\S]*?Choose one answer\.[\s\S]*?data-gsn-community-verification-answer-options="true"[\s\S]*?minHeight: 48[\s\S]*?community-verification-task\.submit[\s\S]*?One person's answer\. Not community approval\./,
+  "Public community verification notifications must open one compact three-answer task with only a short boundary line."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /taskExpired \? \([\s\S]*?data-gsn-community-verification-expired="true"[\s\S]*?Ask for a new request\.[\s\S]*?community-verification-task\.expired-done/,
+  "Expired public verification tasks must show only a short next step and one exit action."
 );
 assertContains(
   "communityConfirmationInbox",

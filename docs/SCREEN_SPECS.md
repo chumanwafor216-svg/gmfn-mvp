@@ -1645,6 +1645,7 @@ It also supports limited member-witness records for active members.
 Must show:
 - on the ordinary phone route, one compact card explaining that requests arrive through notifications, one `Open my requests` action, and one closed `Advanced administration` disclosure; the policy workspace and its data must not mount or load before the explicit advanced action
 - when a phone opens a public-verification notification, show one short community-level question, exactly three compact answer choices, and one explicit submit action; manager settings, responder administration, domain affiliation, external registration, member-witness records, policy sections, and review tools must not mount in that focused journey
+- keep the focused task literal and brief: pending choices show their answer labels without explanatory paragraphs, followed only by `One person's answer. Not community approval.`; an expired task shows the question, `Expired`, `Ask for a new request.`, and one `Done` action, with no helper paragraph or meaning/policy card
 - the shared `Community confirmation` phone identity; ordinary phone entry must not expose a manager-settings mode switch
 - the complete controls below only on desktop, focused member-witness routes where relevant, or after an authorised phone user explicitly enters `advanced=1`
 - selected community identity

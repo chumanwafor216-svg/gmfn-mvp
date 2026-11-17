@@ -427,8 +427,8 @@ assertInboxContains(
 );
 
 assertInboxContains(
-  /data-gsn-community-verification-answer-options="true"[\s\S]*?type="radio"[\s\S]*?community-verification-task\.submit[\s\S]*?Submit my answer[\s\S]*?data-gsn-community-verification-answer-boundary="true"/,
-  "The focused community verification task must keep one compact three-answer form and one explicit submit action."
+  /data-gsn-community-verification-answer-options="true"[\s\S]*?type="radio"[\s\S]*?community-verification-task\.submit[\s\S]*?Submit my answer[\s\S]*?One person's answer\. Not community approval\./,
+  "The focused community verification task must keep one compact three-answer form, one submit action, and one short boundary."
 );
 
 assertInboxContains(

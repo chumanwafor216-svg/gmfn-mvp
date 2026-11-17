@@ -1775,9 +1775,6 @@ function CommunityConfirmationInboxPage() {
     const selectedOption = communityVerificationTask?.answerOptions.find(
       (option) => option.type === selectedCommunityVerificationAnswer
     );
-    const recordedOption = communityVerificationTask?.answerOptions.find(
-      (option) => option.type === communityVerificationTask.selectedResponseType
-    );
     const taskAnswered = communityVerificationTask?.status === "answered";
     const taskExpired = communityVerificationTask?.status === "expired";
 
@@ -1863,7 +1860,7 @@ function CommunityConfirmationInboxPage() {
                 style={{
                   margin: "12px 0 0",
                   color: "#07172C",
-                  fontSize: isCompact ? 23 : 28,
+                  fontSize: isCompact ? 21 : 28,
                   lineHeight: 1.15,
                   fontWeight: 1000,
                   letterSpacing: -0.35,
@@ -1871,17 +1868,18 @@ function CommunityConfirmationInboxPage() {
               >
                 {communityVerificationTask.question}
               </h1>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  ...helperText(),
-                  color: "#39526C",
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                }}
-              >
-                Choose the one answer that matches what you know. GSN will not show your private contact details.
-              </p>
+              {!taskAnswered && !taskExpired ? (
+                <p
+                  style={{
+                    margin: "7px 0 0",
+                    ...helperText(),
+                    color: "#39526C",
+                    fontSize: 13,
+                  }}
+                >
+                  Choose one answer.
+                </p>
+              ) : null}
 
               {taskAnswered ? (
                 <div
@@ -1894,11 +1892,8 @@ function CommunityConfirmationInboxPage() {
                   }}
                 >
                   <div style={{ color: "#166534", fontSize: 17, fontWeight: 1000 }}>
-                    {labelWithIcon("check", "Your answer was recorded", "#166534")}
+                    {labelWithIcon("check", "Answer recorded", "#166534")}
                   </div>
-                  <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 13 }}>
-                    {recordedOption?.label || "Answer recorded"}. You do not need to do anything else.
-                  </p>
                   <PrimaryButton
                     type="button"
                     onClick={() => navigate(APP_ROUTES.NOTIFICATIONS)}
@@ -1911,13 +1906,23 @@ function CommunityConfirmationInboxPage() {
                   </PrimaryButton>
                 </div>
               ) : taskExpired ? (
-                <div style={{ marginTop: 14, ...innerCard("#FFF8E6"), padding: 13 }}>
-                  <div style={{ color: "#92400E", fontWeight: 1000 }}>
-                    This question has expired
-                  </div>
-                  <p style={{ margin: "5px 0 0", ...helperText(), fontSize: 13 }}>
-                    Nothing was recorded. A fresh request will appear in notifications if another answer is needed.
+                <div
+                  data-gsn-community-verification-expired="true"
+                  style={{ marginTop: 12 }}
+                >
+                  <p style={{ margin: 0, color: "#6B4F16", fontSize: 13, fontWeight: 900 }}>
+                    Ask for a new request.
                   </p>
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => navigate(APP_ROUTES.NOTIFICATIONS)}
+                    fullWidth
+                    stableHeight={48}
+                    style={{ marginTop: 10 }}
+                    debugId="community-verification-task.expired-done"
+                  >
+                    {labelWithIcon("check", "Done", "navy")}
+                  </PrimaryButton>
                 </div>
               ) : (
                 <>
@@ -1935,7 +1940,7 @@ function CommunityConfirmationInboxPage() {
                             gridTemplateColumns: "22px minmax(0, 1fr)",
                             alignItems: "center",
                             gap: 10,
-                            minHeight: 58,
+                            minHeight: 48,
                             padding: "9px 11px",
                             borderRadius: 14,
                             border: selected
@@ -1974,18 +1979,6 @@ function CommunityConfirmationInboxPage() {
                             >
                               {option.label}
                             </span>
-                            <span
-                              style={{
-                                display: "block",
-                                marginTop: 3,
-                                color: "#526579",
-                                fontSize: 11.5,
-                                lineHeight: 1.3,
-                                fontWeight: 750,
-                              }}
-                            >
-                              {option.meaning}
-                            </span>
                           </span>
                         </label>
                       );
@@ -2022,33 +2015,11 @@ function CommunityConfirmationInboxPage() {
                       "navy"
                     )}
                   </PrimaryButton>
+                  <div style={{ marginTop: 8, color: "#6B7C8F", fontSize: 11.5, fontWeight: 800 }}>
+                    One person's answer. Not community approval.
+                  </div>
                 </>
               )}
-
-              <details
-                data-gsn-community-verification-answer-boundary="true"
-                style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: "8px 11px" }}
-              >
-                <StableDisclosureSummary
-                  debugId="community-verification-task.meaning"
-                  stableHeight={42}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    alignItems: "center",
-                    gap: 8,
-                    color: "#07172C",
-                    fontSize: 13,
-                    fontWeight: 1000,
-                  }}
-                >
-                  <span>What this answer means</span>
-                  <span aria-hidden="true" style={{ color: "#0B63D1" }}>+</span>
-                </StableDisclosureSummary>
-                <p style={{ margin: "7px 0 2px", ...helperText(), fontSize: 12 }}>
-                  {communityVerificationTask.boundary}
-                </p>
-              </details>
 
               {!taskAnswered && !taskExpired && communityVerificationTask.expiresAt ? (
                 <div style={{ marginTop: 9, color: "#6B7C8F", fontSize: 11.5, fontWeight: 800 }}>

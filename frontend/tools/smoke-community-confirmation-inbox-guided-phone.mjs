@@ -123,7 +123,10 @@ const reviewCase = {
   review_sla_meaning: "The case is still inside its review window.",
 };
 
-async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}) {
+async function installApiMocks(
+  page,
+  { rows = inboxRows, reviewCases = [], verificationTask = communityVerificationTask } = {}
+) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
@@ -160,7 +163,7 @@ async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}
       route.request().method() === "GET" &&
       path === "/community-confirmations/community-verification-task"
     ) {
-      return route.fulfill(json(communityVerificationTask));
+      return route.fulfill(json(verificationTask));
     }
 
     if (
@@ -534,6 +537,50 @@ async function run() {
       });
     }
     await verificationPage.close();
+
+    const expiredVerificationPage = await createPhonePage(browser, {
+      rows: [],
+      token: "local-community-verification-expired-token",
+      verificationTask: {
+        ...communityVerificationTask,
+        status: "expired",
+        expires_at: "2026-11-16T12:00:00Z",
+      },
+    });
+    await expiredVerificationPage.goto(
+      routeUrl + "?community_verification_request_id=701&community_id=8",
+      { waitUntil: "networkidle" }
+    );
+    const expiredTask = expiredVerificationPage.locator(
+      '[data-gsn-community-verification-expired="true"]'
+    );
+    await expiredTask.waitFor();
+    assert(
+      await expiredVerificationPage.getByText("Ask for a new request.", { exact: true }).count() === 1 &&
+        await expiredVerificationPage.getByRole("button", { name: "Done", exact: true }).count() === 1 &&
+        await expiredVerificationPage.locator('input[type="radio"]:visible').count() === 0,
+      "Expired public verification must show one short next step and one exit action."
+    );
+    assert(
+      await expiredVerificationPage.getByText("What this answer means", { exact: true }).count() === 0 &&
+        await expiredVerificationPage.getByText("Choose one answer.", { exact: true }).count() === 0,
+      "Expired public verification must not expose helper or policy explanations."
+    );
+    const expiredCardHeight = await expiredVerificationPage
+      .locator('[data-gsn-community-verification-answer-task="true"] section')
+      .last()
+      .evaluate((element) => element.getBoundingClientRect().height);
+    assert(
+      expiredCardHeight <= 260,
+      `Expired public verification card is too tall: ${expiredCardHeight}px.`
+    );
+    if (screenshotDir) {
+      await expiredVerificationPage.screenshot({
+        path: join(screenshotDir, "community-confirmation-verification-expired-390.png"),
+        fullPage: true,
+      });
+    }
+    await expiredVerificationPage.close();
 
     const legacyVerificationPage = await createPhonePage(browser, {
       rows: [],
