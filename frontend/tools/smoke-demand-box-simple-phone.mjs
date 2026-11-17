@@ -446,10 +446,13 @@ async function verifyViewport(browser, baseURL, viewport) {
   const form = page.locator('[data-gsn-demand-create-form="simple"]');
   const createCard = page.locator('[data-gsn-demand-create-card="premium"]');
   const createShell = page.locator('[data-gsn-demand-create-shell="reference"]');
+  const createHero = createCard.locator('[data-gsn-demand-create-hero="text-first"]');
   const communityContext = createCard.locator('[data-gsn-demand-community-context="selected"]');
   await form.waitFor();
   assert(await createCard.isVisible(), "The premium create card is missing.");
   assert(await createShell.isVisible(), "The approved DemandBox create background is missing.");
+  assert(await createHero.isVisible(), "The text-first create hero is missing.");
+  assert((await createHero.locator('[data-gsn-3d-icon]').count()) === 0, "The decorative hero icon returned.");
   assert(await createCard.getByText("Share one clear need with the right people.", { exact: true }).isVisible(), "The create task guidance is missing.");
   assert(await communityContext.getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(), "The selected community context is missing.");
   assert(!(await communityContext.getByText("Blessed Satch family Marketplace Marketplace", { exact: true }).isVisible().catch(() => false)), "Marketplace is duplicated in the selected community name.");
@@ -478,6 +481,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
   assert((await page.getByRole("button", { name: "Community", exact: true }).getAttribute("aria-pressed")) === "true", "Community visibility is not visibly selected by default.");
+  const textOnlyFieldLabels = form.locator('[data-gsn-demand-field-label="text-only"]');
+  assert((await textOnlyFieldLabels.count()) === 4, "The four create-form headings are not text-only.");
+  assert((await textOnlyFieldLabels.locator('[data-gsn-3d-icon]').count()) === 0, "A decorative field-heading icon returned.");
+  assert((await page.locator('[data-cta-id="demand-box.more-options"] [data-gsn-3d-icon]').count()) === 0, "The More options heading icon returned.");
   const createScreenshotPath = process.env.GSN_DEMAND_BOX_CREATE_SCREENSHOT_PATH?.trim();
   if (createScreenshotPath && viewport.width === 390) {
     await createShell.screenshot({ path: createScreenshotPath });

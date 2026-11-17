@@ -418,16 +418,15 @@ function demandCreateCardStyle(isCompact: boolean): React.CSSProperties {
 
 function demandCreateHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 142 : 154,
-    padding: isCompact ? "8px 6px 16px" : "10px 10px 18px",
+    minHeight: isCompact ? 110 : 124,
+    padding: isCompact ? "8px 6px 14px" : "10px 10px 16px",
     borderRadius: isCompact ? 22 : 26,
     border: "none",
     background: "transparent",
     boxShadow: "none",
     display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr)",
-    gap: isCompact ? 14 : 18,
-    alignItems: "center",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    alignItems: "start",
     overflow: "hidden",
   };
 }
@@ -462,22 +461,18 @@ function demandCreateInputStyle(): React.CSSProperties {
   };
 }
 
-function demandCreateFieldLabel(
-  icon: GsnIconName,
-  label: string
-): React.ReactElement {
+function demandCreateFieldLabel(label: string): React.ReactElement {
   return (
     <span
+      data-gsn-demand-field-label="text-only"
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
         ...sectionLabel(),
         color: "#172B49",
         fontSize: 13,
       }}
     >
-      <GsnLegacyIcon name={icon} size={22} />
       <span>{label}</span>
     </span>
   );
@@ -3904,24 +3899,10 @@ export default function DemandBoxPage() {
         data-gsn-demand-create-card="premium"
         style={demandCreateCardStyle(isCompact)}
       >
-        <div style={demandCreateHeroStyle(isCompact)}>
-          <span
-            aria-hidden="true"
-            style={{
-              width: isCompact ? 76 : 88,
-              height: isCompact ? 76 : 88,
-              borderRadius: isCompact ? 22 : 26,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "linear-gradient(180deg, #FFFFFF 0%, #E8F2FF 100%)",
-              border: "1px solid rgba(94,151,211,0.18)",
-              boxShadow:
-                "0 14px 28px rgba(11,63,117,0.18), inset 0 1px 0 rgba(255,255,255,0.98)",
-            }}
-          >
-            <GsnLegacyIcon name="megaphone" size={isCompact ? 58 : 66} />
-          </span>
+        <div
+          data-gsn-demand-create-hero="text-first"
+          style={demandCreateHeroStyle(isCompact)}
+        >
           <div style={{ minWidth: 0 }}>
             <div
               style={{
@@ -4116,7 +4097,7 @@ export default function DemandBoxPage() {
               }}
             >
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
-                <div>{demandCreateFieldLabel("image", "What kind of help is this?")}</div>
+                <div>{demandCreateFieldLabel("What kind of help is this?")}</div>
                 <div
                   data-gsn-demand-category-pictures="true"
                   style={{
@@ -4179,7 +4160,7 @@ export default function DemandBoxPage() {
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
                 <label htmlFor="demand-box-title">
-                  {demandCreateFieldLabel("megaphone", "Short heading")}
+                  {demandCreateFieldLabel("Short heading")}
                 </label>
                 <input
                   id="demand-box-title"
@@ -4248,7 +4229,7 @@ export default function DemandBoxPage() {
               ) : null}
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 5 }}>
                 <div>
-                  {demandCreateFieldLabel("community", "Who can see it?")}
+                  {demandCreateFieldLabel("Who can see it?")}
                 </div>
                 <div
                   data-gsn-demand-privacy-route="true"
@@ -4292,7 +4273,7 @@ export default function DemandBoxPage() {
               </div>
               <div style={{ order: 4 }}>
                 <label htmlFor="demand-box-area">
-                  {demandCreateFieldLabel("navigation", "Area")}
+                  {demandCreateFieldLabel("Area")}
                 </label>
                 <input
                   id="demand-box-area"
@@ -4318,7 +4299,7 @@ export default function DemandBoxPage() {
                   stableHeight={58}
                   debugId="demand-box.more-options"
                 >
-                  {demandIconText("vault", "More options", 24)}
+                  <span>More options</span>
                   <span
                     style={{
                       padding: "5px 10px",

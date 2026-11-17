@@ -232,15 +232,6 @@ function quietSecondaryActionStyle(): React.CSSProperties {
   };
 }
 
-function inputIconBadge(): React.CSSProperties {
-  return {
-    color: "#F3D06A",
-    fontSize: 11,
-    textAlign: "center",
-    fontWeight: 1000,
-    letterSpacing: 0.6,
-  };
-}
 
 function passwordRevealButtonStyle(dark = false): React.CSSProperties {
   return {
@@ -352,16 +343,6 @@ function loginIconText(
   );
 }
 
-function loginIconOnly(name: GsnIconName, size = 24): React.ReactElement {
-  return (
-    <GsnLegacyIcon
-      name={name}
-      size={size}
-      decorative
-      style={{ display: "inline-grid", margin: "0 auto" }}
-    />
-  );
-}
 
 function noticeStyle(
   kind: "error" | "info" | "success" | "warning"
@@ -1417,6 +1398,7 @@ export default function LoginPage() {
               }}
             >
             <div
+              data-gsn-sign-in-form="text-first"
               style={{
                 display: "grid",
                 gap: 14,
@@ -1427,7 +1409,7 @@ export default function LoginPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "42px minmax(0, 1fr) 48px",
+                    gridTemplateColumns: "minmax(0, 1fr)",
                     alignItems: "center",
                     borderRadius: 18,
                     border: "1px solid rgba(220,231,243,0.32)",
@@ -1435,15 +1417,9 @@ export default function LoginPage() {
                       "linear-gradient(180deg, rgba(8,26,47,0.82) 0%, rgba(7,22,38,0.82) 100%)",
                     boxShadow:
                       "inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 22px rgba(0,8,18,0.14)",
-                    paddingLeft: 4,
+                    padding: "0 4px",
                   }}
                 >
-                  <span
-                    style={inputIconBadge()}
-                    aria-hidden="true"
-                  >
-                    {loginIconOnly("id", 24)}
-                  </span>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -1466,7 +1442,7 @@ export default function LoginPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "42px minmax(0, 1fr) 48px",
+                    gridTemplateColumns: "minmax(0, 1fr) 48px",
                     alignItems: "center",
                     columnGap: 2,
                     borderRadius: 18,
@@ -1475,16 +1451,9 @@ export default function LoginPage() {
                       "linear-gradient(180deg, rgba(8,26,47,0.82) 0%, rgba(7,22,38,0.82) 100%)",
                     boxShadow:
                       "inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 22px rgba(0,8,18,0.14)",
-                    paddingLeft: 4,
-                    paddingRight: 4,
+                    padding: "0 4px",
                   }}
                 >
-                  <span
-                    style={inputIconBadge()}
-                    aria-hidden="true"
-                  >
-                    {loginIconOnly("lock", 24)}
-                  </span>
                   <input
                     type={passwordVisible ? "text" : "password"}
                     value={password}
@@ -1533,7 +1502,7 @@ export default function LoginPage() {
                 debugId="login.submit"
                 style={primaryBtn(busy)}
               >
-                {loginIconText("lock", "Sign in to GSN", 24)}
+                Sign in to GSN
               </PrimaryButton>
             </div>
 

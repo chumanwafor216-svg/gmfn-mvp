@@ -6639,3 +6639,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - `/app/dashboard` now shows `Welcome back`, the member name, trust tagline and portrait above three compact fact cells for GSN ID, Membership, and Pipeline Credits. The existing GSN ID Card and closed Identity & trust actions remain directly below with unchanged routes.
 - Focused 390 x 844 renders passed with no horizontal overflow. Community identity measured 332 x 281 px with a 118 px photo; Dashboard identity measured 358 x 254 px with a bounded 71 px fact row.
 - All focused Community Home and Dashboard source audits passed, including the intentional action-inventory update. The 327-module production frontend build passed. The aggregate protected suite passed both changed surfaces, then remained red on pre-existing unrelated My GSN smooth-scroll, Identity Card QR-graphics, Shop Control analytics, entry copy, join-entry, and mobile route-coverage checks.
+
+# Text-first Demand Box and Sign In correction - 2026-11-17
+
+- Owner phone review identified repeated decorative icons as visual noise: the Demand Box create form used icons beside its hero and text headings, while Sign In repeated ID/lock imagery inside fields and on the primary action.
+- `/app/demand-box?mode=create` now uses a text-first hero and text-only headings for help type, short heading, area, visibility and More options. Choice and action icons remain only where they explain selected community, category, audience, voice recording or posting.
+- `/login` now gives the identity field and password field their full available width and renders `Sign in to GSN` as text only. The password visibility eye, back control and GSN monument remain because they perform an action or carry product identity.
+- Authentication, Demand Box submission, routes, permissions, data contracts and backend behavior are unchanged.
+- Verification passed: focused Demand Box, Marketplace ownership, entry/auth and entry-flow audits; focused ESLint; `git diff --check`; the 327-module production frontend build; Demand Box phone smoke at 390 x 844 and 360 x 780; and the login phone smoke at 390 x 844. Captured phone output was visually inspected after both smokes passed.
+- The aggregate button-stability audit remains red only for unrelated pre-existing AppLayout, Join Entry, Shop Access, Shop Gallery, Shop Assets and Vault Control patterns. The aggregate entry-copy audit remains red only for an unrelated pre-existing Member Activation pattern.

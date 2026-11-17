@@ -561,6 +561,10 @@ Must not show:
 Rules:
 - Sign in stays the only primary action in the default view.
 - Sign in appears immediately after the identity and password fields.
+- Owner-approved 2026-11-17 text-first correction: the identity field,
+  password field, and `Sign in to GSN` button use no decorative ID-card or
+  lock icons. Keep the password visibility eye because it performs an action,
+  and keep the GSN monument because it carries product identity.
 - `Help` remains a small, borderless, text-level disclosure
   after Sign in; all secondary actions stay hidden until it is opened.
 - Membership activation and new-community setup stay secondary inside the
@@ -1284,6 +1288,12 @@ Rules:
   Explanation, WhatsApp override, urgency, payment, requested proof, expiry,
   trust-credit preference, and one-hop search consent remain behind one
   `More options` disclosure.
+- Owner-approved 2026-11-17 text-first create-form correction: remove the
+  decorative megaphone tile beside `Post from`, and keep `What kind of help is
+  this?`, `Short heading`, `Area`, `Who can see it?`, and `More options` as
+  text-only headings. Keep the selected-community icon, category picture
+  choices, Community/One person choice icons, voice-recorder icon, and final
+  Post action icon because those still explain context, choices, or actions.
 - An opened phone request is one cohesive white request paper: truthful status,
   sender portrait or initials with display name and GSN reference, request
   title, area, date, one primary `Listen & reply` disclosure, then requested

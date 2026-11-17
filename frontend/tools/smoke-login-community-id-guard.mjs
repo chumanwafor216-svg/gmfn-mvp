@@ -1,4 +1,4 @@
-/* global console */
+/* global console, process, URL */
 
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -25,7 +25,7 @@ const browser = await chromium.launch({ headless: true });
 
 try {
   const page = await browser.newPage({
-    viewport: { width: 1365, height: 768 },
+    viewport: { width: 390, height: 844 },
   });
   let loginRequestCount = 0;
   page.on("request", (request) => {
@@ -39,9 +39,29 @@ try {
     timeout: 30000,
   });
 
+  const textFirstForm = page.locator('[data-gsn-sign-in-form="text-first"]');
+  await textFirstForm.waitFor();
+  if ((await textFirstForm.locator("[data-gsn-3d-icon]").count()) !== 0) {
+    throw new Error("Decorative 3D icons returned to the compact sign-in form.");
+  }
+
   const identity = page.getByLabel("Phone number, email, or GSN ID");
   const password = page.locator('input[aria-label="Password"]');
+  const passwordVisibility = page.locator(
+    '[data-cta-id="login.password.visibility-toggle"]'
+  );
   const submit = page.locator('[data-cta-id="login.submit"]');
+  if ((await passwordVisibility.count()) !== 1) {
+    throw new Error("The functional password visibility control is missing.");
+  }
+  if ((await submit.locator("[data-gsn-3d-icon]").count()) !== 0) {
+    throw new Error("The primary sign-in button regained a decorative icon.");
+  }
+
+  const screenshotPath = process.env.GSN_LOGIN_SCREENSHOT_PATH?.trim();
+  if (screenshotPath) {
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+  }
 
   await identity.fill("GMFN-U-0B16D94C");
   await password.fill("GMFN-C-000008");
@@ -74,7 +94,7 @@ try {
   }
 
   console.log(
-    "Login Community ID guard smoke test passed: both mistaken fields were explained before any authentication request."
+    "Login phone smoke passed: the text-first form kept its functional eye control and both mistaken fields were explained before any authentication request."
   );
 } finally {
   await browser.close().catch(() => {});

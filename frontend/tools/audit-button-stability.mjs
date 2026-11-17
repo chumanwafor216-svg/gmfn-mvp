@@ -335,8 +335,14 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function loginIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?function loginIconOnly\([\s\S]*?<GsnLegacyIcon[\s\S]*?debugId="login\.submit"[\s\S]*?loginIconText\("lock", "Sign in to GSN"[\s\S]*?debugId="login\.secondary-options\.toggle"[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?Forgot password[\s\S]*?debugId="login\.activate-approved"[\s\S]*?Activate membership[\s\S]*?debugId="login\.start-community"[\s\S]*?Start a new community/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function loginIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?data-gsn-sign-in-form="text-first"[\s\S]*?gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*?gridTemplateColumns: "minmax\(0, 1fr\) 48px"[\s\S]*?debugId="login\.password\.visibility-toggle"[\s\S]*?debugId="login\.submit"[\s\S]*?Sign in to GSN[\s\S]*?debugId="login\.secondary-options\.toggle"[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?Forgot password[\s\S]*?debugId="login\.activate-approved"[\s\S]*?Activate membership[\s\S]*?debugId="login\.start-community"[\s\S]*?Start a new community/,
   "Login page must keep Sign In visually first, then one quiet secondary-options disclosure using shared stable primitives."
+);
+
+assertNotContains(
+  "src/pages/LoginPage.tsx",
+  /function inputIconBadge|function loginIconOnly|loginIconText\("lock", "Sign in to GSN"/,
+  "Login identity, password, and primary submit surfaces must stay free of decorative icons."
 );
 
 [
@@ -886,7 +892,7 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Post a need", 20\)[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?demandIconText\("community", "Ask a question", 20\)[\s\S]*?debugId="demand-box\.more-options"[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post need", 20\)/,
+  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?<span>Post a need<\/span>[\s\S]*?demandIconText\("document", "Post a need", 20\)[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?demandIconText\("community", "Ask community", 20\)[\s\S]*?debugId="demand-box\.more-options"[\s\S]*?<span>More options<\/span>[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\([\s\S]*?"megaphone",[\s\S]*?"Post need"/,
   "DemandBox simple front-door, optional-detail, and post actions must keep stable shared primitives."
 );
 
@@ -904,7 +910,7 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?style=\{demandActionStyle\(54\)\}/,
+  /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{64\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandActionStyle\(64\)/,
   "DemandBox action rows must reserve fixed phone-safe row heights, no-wrap icon labels, and fixed button heights for create/post/status/route actions."
 );
 
