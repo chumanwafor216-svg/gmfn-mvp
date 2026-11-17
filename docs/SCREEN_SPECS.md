@@ -1644,6 +1644,7 @@ It also supports limited member-witness records for active members.
 
 Must show:
 - on the default phone route, one compact manager-first front with `People who can answer`, `Request settings`, `Cases to review`, `Privacy & sharing`, and `Back to my requests`; every row must reveal or navigate to the existing canonical control rather than create a second workflow
+- when a phone opens the focused public-verification request, keep the direct request explanation and show only `Request routing`, the existing relay on/off control, `People who can answer`, and the inbox handoff; domain affiliation, external registration, member-witness records, instant-pulse administration, review timing, copied policy summaries, and the duplicate privacy footer must not mount as visible work in that focused journey
 - the shared `Community confirmation` phone identity and `Your inbox` / `Manager settings` switch
 - selected community identity
 - policy switches for controlled confirmation requests
@@ -1678,6 +1679,7 @@ Must show:
 Rules:
 - Community ID Domain affiliation must use Community ID/code, not display name,
   as the record anchor.
+- The focused public-verification phone route remains an administrator responder-readiness task. It must not be redirected into an ordinary member-response decision, but it must also not expose the full manager policy workspace before the administrator can check routing and eligible responders.
 - A pending affiliation request must not be shown as public evidence.
 - Acknowledged affiliation means the parent community has accepted the group as
   an affiliate under that parent domain. It does not verify every person, shop,
@@ -1712,7 +1714,7 @@ Rules:
   assisted field-agent capture, annual renewal prompts, weighted verifier
   scoring, or dispute logic until those contracts exist in backend and tests.
 - Keep Community Home free from this deeper admin workload.
-- Keep focused public-verification and member-witness landings direct. The default manager front may hide the generic policy hero on phone only; desktop and all deeper controls remain present.
+- Keep focused public-verification and member-witness landings direct. On phone, the focused public-verification landing may show only routing and eligible-responder readiness; the default manager route and desktop retain the complete canonical controls. The default manager front may hide the generic policy hero on phone only.
 - Use static route-scoped neon illumination only. Do not add flashing, autoplay, a second permission system, or duplicate policy/reviewer state.
 
 ## CommunityConfirmationOutcomePage

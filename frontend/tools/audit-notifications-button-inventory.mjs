@@ -407,8 +407,23 @@ assertContains(
 );
 
 assertPolicyContains(
-  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?title=\{[\s\S]*?memberWitnessRecordFocus[\s\S]*?"Member Confirmation"[\s\S]*?memberWitnessRequestFocus[\s\S]*?"Member Witness"[\s\S]*?verificationRequestFocus[\s\S]*?"Verification Request"[\s\S]*?"Instant Confirmation Policy"[\s\S]*?\}[\s\S]*?Review responder readiness before this public request continues\.[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?<ExplainToggle[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?Who can answer for this community\?[\s\S]*?id="community-confirmation-policy-switches"/,
-  "Community Confirmation Policy must show a focused public verification request landing with immediate responder actions before the policy switches, without the generic policy hero in focused mode."
+  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?const compactVerificationRequestFocus =[\s\S]*?isCompact && verificationRequestFocus && !memberWitnessFocus[\s\S]*?Review responder readiness before this public request continues\.[\s\S]*?data-gsn-community-confirmation-verification-focus="true"[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?Open inbox/,
+  "Community Confirmation Policy must keep the focused public-request explanation and immediate responder actions."
+);
+
+assertPolicyContains(
+  /data-gsn-community-confirmation-verification-readiness=\{[\s\S]*?compactVerificationRequestFocus[\s\S]*?Request routing[\s\S]*?item\.key === "relay"[\s\S]*?community-confirmation-policy\.verification-request\.open-responders[\s\S]*?Continue to people who can answer/,
+  "Focused phone verification must reduce policy settings to request routing and hand off to the existing responder pool."
+);
+
+assertPolicyContains(
+  /compactVerificationRequestFocus[\s\S]*?setIncomingAffiliations\(\[\]\)[\s\S]*?compactVerificationRequestFocus[\s\S]*?setExternalRegistrationRecords\(\[\]\)[\s\S]*?compactVerificationRequestFocus[\s\S]*?setMembers\(\[\]\)/,
+  "Focused phone verification must not load hidden affiliation, registration, or member-witness workload."
+);
+
+assertPolicyContains(
+  /Link this group to a parent community[\s\S]*?id="member-witness"[\s\S]*?display: compactVerificationRequestFocus \? "none" : undefined[\s\S]*?data-gsn-community-confirmation-verification-responders=\{[\s\S]*?People who can answer[\s\S]*?!compactVerificationRequestFocus \? \([\s\S]*?community-confirmation-policy\.contact\.\$\{contact\.user_id\}\.instant[\s\S]*?id="community-confirmation-privacy-rule"[\s\S]*?memberWitnessFocus \|\| compactVerificationRequestFocus \? "none" : undefined/,
+  "Focused phone verification must hide affiliation, member-witness, instant-pulse, and duplicate privacy sections while preserving responder controls."
 );
 
 assertContains(

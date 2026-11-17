@@ -996,6 +996,8 @@ function CommunityConfirmationPolicyPage() {
     const value = safeStr(params.get("verification_request")).toLowerCase();
     return value === "1" || value === "true";
   }, [location.search]);
+  const compactVerificationRequestFocus =
+    isCompact && verificationRequestFocus && !memberWitnessFocus;
   const focusedInboxTarget = useMemo(() => {
     const params = new URLSearchParams();
     if (communityId) params.set("community_id", String(communityId));
@@ -1125,7 +1127,7 @@ function CommunityConfirmationPolicyPage() {
     const loadSeq = affiliationsLoadSeqRef.current + 1;
     affiliationsLoadSeqRef.current = loadSeq;
     affiliationsLoadContextRef.current = contextKey;
-    if (!communityId || memberWitnessFocus) {
+    if (!communityId || memberWitnessFocus || compactVerificationRequestFocus) {
       setIncomingAffiliations([]);
       setOutgoingAffiliations([]);
       setAffiliationLoading(false);
@@ -1173,14 +1175,14 @@ function CommunityConfirmationPolicyPage() {
         setAffiliationLoading(false);
       }
     }
-  }, [communityId, memberWitnessFocus]);
+  }, [communityId, compactVerificationRequestFocus, memberWitnessFocus]);
 
   const loadExternalRegistrationRecords = useCallback(async () => {
     const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
     const loadSeq = externalRegistrationLoadSeqRef.current + 1;
     externalRegistrationLoadSeqRef.current = loadSeq;
     externalRegistrationLoadContextRef.current = contextKey;
-    if (!communityId || memberWitnessFocus) {
+    if (!communityId || memberWitnessFocus || compactVerificationRequestFocus) {
       setExternalRegistrationRecords([]);
       setExternalRegistrationLoading(false);
       return;
@@ -1220,14 +1222,14 @@ function CommunityConfirmationPolicyPage() {
         setExternalRegistrationLoading(false);
       }
     }
-  }, [communityId, memberWitnessFocus]);
+  }, [communityId, compactVerificationRequestFocus, memberWitnessFocus]);
 
   const loadMembers = useCallback(async () => {
     const contextKey = String(communityId || 0);
     const loadSeq = membersLoadSeqRef.current + 1;
     membersLoadSeqRef.current = loadSeq;
     membersLoadContextRef.current = contextKey;
-    if (!communityId) {
+    if (!communityId || compactVerificationRequestFocus) {
       setMembers([]);
       return;
     }
@@ -1257,7 +1259,7 @@ function CommunityConfirmationPolicyPage() {
         text: "GSN could not load active community members for witness records.",
       });
     }
-  }, [communityId]);
+  }, [communityId, compactVerificationRequestFocus]);
 
   const loadMemberWitnessSummary = useCallback(
     async (subjectUserId: string | number = selectedSubjectUserId) => {
@@ -1924,6 +1926,7 @@ function CommunityConfirmationPolicyPage() {
 
       {verificationRequestFocus && !memberWitnessFocus ? (
         <section
+          data-gsn-community-confirmation-verification-focus="true"
           style={{
             marginTop: 14,
             ...softCard("#FFF8E6"),
@@ -2421,6 +2424,9 @@ function CommunityConfirmationPolicyPage() {
 
       <section
         id="community-confirmation-policy-switches"
+        data-gsn-community-confirmation-verification-readiness={
+          compactVerificationRequestFocus ? "true" : undefined
+        }
         style={{
           display: memberWitnessFocus ? "none" : undefined,
           marginTop: 14,
@@ -2436,38 +2442,46 @@ function CommunityConfirmationPolicyPage() {
           }}
         >
           <div>
-            {sectionLabelWithIcon("shield", "Policy switches", "blue")}
+            {sectionLabelWithIcon(
+              "shield",
+              compactVerificationRequestFocus ? "Request routing" : "Policy switches",
+              "blue"
+            )}
             <div style={{ marginTop: 6, ...helperText(), color: "#07172C" }}>
-              Turn request routing and quick answers on or off.
+              {compactVerificationRequestFocus
+                ? "Allow or pause controlled confirmation requests for this community."
+                : "Turn request routing and quick answers on or off."}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: isCompact ? 24 : 0 }}>
-            <SecondaryButton
-              type="button"
-              onClick={() => void loadPolicy()}
-              busy={loading}
-              busyLabel="Refreshing..."
-              stableHeight={52}
-              fullWidth={false}
-              minWidth={120}
-              debugId="community-confirmation-policy.refresh"
-            >
-              {labelWithIcon("refresh", "Refresh", "blue")}
-            </SecondaryButton>
-            <SecondaryButton
-              type="button"
-              onClick={() => {
-                safeCopy(copyText);
-                setNotice({ tone: "success", text: "Relay policy summary copied." });
-              }}
-              stableHeight={52}
-              fullWidth={false}
-              minWidth={120}
-              debugId="community-confirmation-policy.copy"
-            >
-              {labelWithIcon("copy", "Copy summary", "blue")}
-            </SecondaryButton>
-          </div>
+          {!compactVerificationRequestFocus ? (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: isCompact ? 24 : 0 }}>
+              <SecondaryButton
+                type="button"
+                onClick={() => void loadPolicy()}
+                busy={loading}
+                busyLabel="Refreshing..."
+                stableHeight={52}
+                fullWidth={false}
+                minWidth={120}
+                debugId="community-confirmation-policy.refresh"
+              >
+                {labelWithIcon("refresh", "Refresh", "blue")}
+              </SecondaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => {
+                  safeCopy(copyText);
+                  setNotice({ tone: "success", text: "Relay policy summary copied." });
+                }}
+                stableHeight={52}
+                fullWidth={false}
+                minWidth={120}
+                debugId="community-confirmation-policy.copy"
+              >
+                {labelWithIcon("copy", "Copy summary", "blue")}
+              </SecondaryButton>
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -2500,7 +2514,9 @@ function CommunityConfirmationPolicyPage() {
               active: publicOn,
               payload: { public_confirmation_enabled: !publicOn },
             },
-          ].map((item) => (
+          ]
+            .filter((item) => !compactVerificationRequestFocus || item.key === "relay")
+            .map((item) => (
             <div key={item.key} style={innerCard(item.active ? "#F4FBF7" : "#FEF2F2")}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div style={{ color: "#07172C", fontWeight: 1000 }}>
@@ -2527,14 +2543,31 @@ function CommunityConfirmationPolicyPage() {
           ))}
         </div>
 
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 10,
-          }}
-        >
+        {compactVerificationRequestFocus ? (
+          <SecondaryButton
+            type="button"
+            onClick={() =>
+              scrollToSection(
+                "community-confirmation-eligible-response-pool",
+                "verification-request-responders"
+              )
+            }
+            fullWidth
+            stableHeight={52}
+            style={{ marginTop: 12 }}
+            debugId="community-confirmation-policy.verification-request.open-responders"
+          >
+            {labelWithIcon("community", "Continue to people who can answer", "blue")}
+          </SecondaryButton>
+        ) : (
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
           <div style={innerCard("#F8FBFF")}>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>
               {labelWithIcon("check", "Minimum positive answers", "green")}
@@ -2628,12 +2661,14 @@ function CommunityConfirmationPolicyPage() {
               ))}
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </section>
 
       <section
         style={{
-          display: memberWitnessFocus ? "none" : undefined,
+          display:
+            memberWitnessFocus || compactVerificationRequestFocus ? "none" : undefined,
           marginTop: 14,
           ...softCard("#FFFDF5"),
         }}
@@ -3141,6 +3176,7 @@ function CommunityConfirmationPolicyPage() {
       <section
         id="member-witness"
         style={{
+          display: compactVerificationRequestFocus ? "none" : undefined,
           marginTop: memberWitnessFocus ? 10 : 14,
           ...softCard(memberWitnessFocus ? "#FFFFFF" : "#F7FAFF"),
         }}
@@ -3697,15 +3733,24 @@ function CommunityConfirmationPolicyPage() {
 
       <section
         id="community-confirmation-eligible-response-pool"
+        data-gsn-community-confirmation-verification-responders={
+          compactVerificationRequestFocus ? "true" : undefined
+        }
         style={{
           display: memberWitnessFocus ? "none" : undefined,
           marginTop: 14,
           ...softCard("#F8FBFF"),
         }}
       >
-        {sectionLabelWithIcon("community", "Eligible response pool", "blue")}
+        {sectionLabelWithIcon(
+          "community",
+          compactVerificationRequestFocus ? "Responder readiness" : "Eligible response pool",
+          "blue"
+        )}
         <h2 style={{ margin: "6px 0 0", color: "#07172C", fontSize: 24, fontWeight: 1000 }}>
-          People allowed to answer confirmation requests
+          {compactVerificationRequestFocus
+            ? "People who can answer"
+            : "People allowed to answer confirmation requests"}
         </h2>
         <p style={{ margin: "8px 0 0", ...helperText() }}>
           These members may receive GSN relay requests. Public papers never show private contacts or private votes.
@@ -3800,23 +3845,25 @@ function CommunityConfirmationPolicyPage() {
                       >
                         {labelWithIcon(receiving ? "lock" : "megaphone", receiving ? "Pause requests" : "Allow requests", receiving ? "red" : "green")}
                       </SecondaryButton>
-                      <SecondaryButton
-                        type="button"
-                        onClick={() =>
-                          void patchContact(contact, {
-                            can_receive_instant_pulse: !contact.can_receive_instant_pulse,
-                            can_receive_relay_requests: true,
-                            active: true,
-                          })
-                        }
-                        disabled={!communityId || Boolean(busyKey) || Boolean(contact.member_opted_out)}
-                        busy={busyKey === key}
-                        busyLabel="Saving..."
-                        stableHeight={isCompact ? 52 : 46}
-                        debugId={`community-confirmation-policy.contact.${contact.user_id}.instant`}
-                      >
-                        {labelWithIcon("spark", `Instant ${contact.can_receive_instant_pulse ? "on" : "off"}`, contact.can_receive_instant_pulse ? "green" : "gold")}
-                      </SecondaryButton>
+                      {!compactVerificationRequestFocus ? (
+                        <SecondaryButton
+                          type="button"
+                          onClick={() =>
+                            void patchContact(contact, {
+                              can_receive_instant_pulse: !contact.can_receive_instant_pulse,
+                              can_receive_relay_requests: true,
+                              active: true,
+                            })
+                          }
+                          disabled={!communityId || Boolean(busyKey) || Boolean(contact.member_opted_out)}
+                          busy={busyKey === key}
+                          busyLabel="Saving..."
+                          stableHeight={isCompact ? 52 : 46}
+                          debugId={`community-confirmation-policy.contact.${contact.user_id}.instant`}
+                        >
+                          {labelWithIcon("spark", `Instant ${contact.can_receive_instant_pulse ? "on" : "off"}`, contact.can_receive_instant_pulse ? "green" : "gold")}
+                        </SecondaryButton>
+                      ) : null}
                     </div>
                   </div>
                 </article>
@@ -3829,7 +3876,8 @@ function CommunityConfirmationPolicyPage() {
       <section
         id="community-confirmation-privacy-rule"
         style={{
-          display: memberWitnessFocus ? "none" : undefined,
+          display:
+            memberWitnessFocus || compactVerificationRequestFocus ? "none" : undefined,
           marginTop: 14,
           ...pageCard("#07172C"),
           color: "#FFFFFF",

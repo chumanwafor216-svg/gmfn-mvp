@@ -138,6 +138,39 @@ async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}
       }));
     }
 
+    if (path === "/community-confirmations/community/8/policy") {
+      return route.fulfill(json({
+        community: {
+          id: 8,
+          name: "Pilot Community",
+          community_code: "GMFN-C-000008",
+        },
+        policy: {
+          relay_enabled: true,
+          instant_pulse_enabled: true,
+          public_confirmation_enabled: true,
+          minimum_positive_responses: 2,
+          response_window_seconds: 259200,
+          review_attention_after_hours: 24,
+          review_overdue_after_hours: 72,
+        },
+        contacts: [{
+          user_id: 2,
+          display_name: "Ada Responder",
+          gsn_id: "GMFN-U-ADA002",
+          phone_verified: true,
+          membership_role: "member",
+          role_type: "member",
+          active: true,
+          can_receive_relay_requests: true,
+          can_receive_instant_pulse: true,
+          standing_status: "active",
+          receiving_requests: true,
+          member_opted_out: false,
+        }],
+      }));
+    }
+
     if (path === "/community-confirmations/review-cases/inbox") {
       return route.fulfill(json({
         items: reviewCases,
@@ -382,6 +415,66 @@ async function run() {
 
     await reviewPage.close();
 
+    const verificationPage = await createPhonePage(browser, {
+      rows: [],
+      token: "local-community-verification-request-token",
+    });
+    await verificationPage.goto(
+      routeUrl + "/policy?community_id=8&verification_request=1",
+      { waitUntil: "networkidle" }
+    );
+    await verificationPage
+      .locator('[data-gsn-community-confirmation-verification-focus="true"]')
+      .waitFor();
+    await verificationPage
+      .locator('[data-gsn-community-confirmation-verification-readiness="true"]')
+      .waitFor();
+    await verificationPage.getByText("Ada Responder", { exact: true }).waitFor();
+    assert(
+      await verificationPage.getByText("Request routing", { exact: true }).count() === 1 &&
+        await verificationPage.getByText("People who can answer", { exact: true }).count() === 1,
+      "Focused public verification must show only routing and responder-readiness lanes."
+    );
+    assert(
+      await verificationPage.getByText("Review timing", { exact: true }).count() === 0 &&
+        await verificationPage.getByText("Instant confirmation", { exact: true }).count() === 0 &&
+        await verificationPage.getByText("Public community signal", { exact: true }).count() === 0 &&
+        await verificationPage.getByRole("button", { name: /Refresh/ }).count() === 0 &&
+        await verificationPage.getByRole("button", { name: /Copy summary/ }).count() === 0,
+      "Focused public verification must not expose unrelated policy controls."
+    );
+    assert(
+      await verificationPage.getByText("Link this group to a parent community", { exact: true }).isHidden() &&
+        await verificationPage.getByText("Member witness records", { exact: true }).isHidden() &&
+        await verificationPage.getByText("Privacy rule", { exact: true }).isHidden(),
+      "Focused public verification must hide affiliation, witness, and duplicate privacy workload."
+    );
+    assert(
+      await verificationPage.getByRole("button", { name: /Pause requests/ }).count() === 1 &&
+        await verificationPage.getByRole("button", { name: /Instant on/ }).count() === 0,
+      "Focused public verification must retain relay eligibility without exposing instant-pulse administration."
+    );
+    await verificationPage
+      .getByRole("button", { name: /Continue to people who can answer/ })
+      .click();
+    await verificationPage.waitForFunction(() => {
+      const target = document.getElementById("community-confirmation-eligible-response-pool");
+      if (!target) return false;
+      const rect = target.getBoundingClientRect();
+      return rect.top >= 0 && rect.top < window.innerHeight;
+    });
+    const verificationOverflow = await verificationPage
+      .locator('[data-gsn-community-confirmation-verification-focus="true"]')
+      .evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    assert(!verificationOverflow, "Focused public verification overflows horizontally at 390x844.");
+    if (screenshotDir) {
+      await verificationPage.screenshot({
+        path: join(screenshotDir, "community-confirmation-verification-request-390.png"),
+        fullPage: true,
+      });
+    }
+    await verificationPage.close();
+
     const managerPage = await createPhonePage(browser, {
       rows: [],
       token: "local-community-confirmation-manager-token",
@@ -431,7 +524,7 @@ async function run() {
     await managerPage.close();
 
     console.log(
-      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved answer inventory, focused request/review behavior, compact manager settings, existing reviewer handoff, and 390x844 overflow."
+      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved answer inventory, focused request/review behavior, compact verification readiness, compact manager settings, existing reviewer handoff, and 390x844 overflow."
     );
   } finally {
     await browser?.close();
