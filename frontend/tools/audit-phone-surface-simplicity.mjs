@@ -21,6 +21,7 @@ const files = {
   adminTrustGraph: "src/pages/AdminTrustGraphPage.tsx",
   systemOperations: "src/pages/SystemOperationsPage.tsx",
   communityConfirmationInbox: "src/pages/CommunityConfirmationInboxPage.tsx",
+  communityConfirmationPolicy: "src/pages/CommunityConfirmationPolicyPage.tsx",
 };
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relativePath]) => [
@@ -144,6 +145,21 @@ assertContains(
   "communityConfirmationInbox",
   /data-gsn-community-confirmation-request-navigator="true"[\s\S]*?one person and one decision at a time[\s\S]*?renderResponseTask\(row\)[\s\S]*?data-gsn-community-confirmation-request-evidence="true"[\s\S]*?data-gsn-community-confirmation-private-note="true"/,
   "Community Confirmation Inbox must show one request at a time and put the answer task before closed evidence and optional context."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /advancedManagerMode = useMemo[\s\S]*?compactSimpleManagerFront =[\s\S]*?!advancedManagerMode[\s\S]*?if \(compactVerificationRequestFocus\)[\s\S]*?data-gsn-community-confirmation-policy-task-redirect="true"[\s\S]*?if \(compactSimpleManagerFront\)[\s\S]*?data-gsn-community-confirmation-simple-manager="true"/,
+  "The ordinary phone policy route must stop before the full workspace, while focused verification returns to the answer task and advanced administration remains explicit."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /No setup is needed here[\s\S]*?When someone asks for confirmation, GSN sends a notification\.[\s\S]*?community-confirmation-policy\.simple\.open-requests[\s\S]*?data-gsn-community-confirmation-advanced-gate="true"[\s\S]*?Open advanced controls/,
+  "The ordinary phone policy route must show one compact notification-first action and keep advanced controls behind a closed gate."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /memberWitnessFocus \|\| compactSimpleManagerFront \|\| compactVerificationRequestFocus[\s\S]*?setContacts\(\[\]\)[\s\S]*?!communityId \|\|[\s\S]*?compactSimpleManagerFront[\s\S]*?setIncomingAffiliations\(\[\]\)[\s\S]*?compactSimpleManagerFront[\s\S]*?setExternalRegistrationRecords\(\[\]\)[\s\S]*?!communityId \|\| compactSimpleManagerFront \|\| compactVerificationRequestFocus[\s\S]*?setMembers\(\[\]\)/,
+  "The simple phone route must not load policy contacts, affiliations, external registration, or member-witness candidates."
 );
 
 if (findings.length > 0) {

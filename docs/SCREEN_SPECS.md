@@ -1643,9 +1643,10 @@ and manage parent-domain affiliation acknowledgement for the selected community.
 It also supports limited member-witness records for active members.
 
 Must show:
-- on the default phone route, one compact manager-first front with `People who can answer`, `Request settings`, `Cases to review`, `Privacy & sharing`, and `Back to my requests`; every row must reveal or navigate to the existing canonical control rather than create a second workflow
+- on the ordinary phone route, one compact card explaining that requests arrive through notifications, one `Open my requests` action, and one closed `Advanced administration` disclosure; the policy workspace and its data must not mount or load before the explicit advanced action
 - when a phone opens a public-verification notification, show one short community-level question, exactly three compact answer choices, and one explicit submit action; manager settings, responder administration, domain affiliation, external registration, member-witness records, policy sections, and review tools must not mount in that focused journey
-- the shared `Community confirmation` phone identity and `Your inbox` / `Manager settings` switch
+- the shared `Community confirmation` phone identity; ordinary phone entry must not expose a manager-settings mode switch
+- the complete controls below only on desktop, focused member-witness routes where relevant, or after an authorised phone user explicitly enters `advanced=1`
 - selected community identity
 - policy switches for controlled confirmation requests
 - compact Community ID Domain affiliation lane
@@ -1717,7 +1718,7 @@ Rules:
   assisted field-agent capture, annual renewal prompts, weighted verifier
   scoring, or dispute logic until those contracts exist in backend and tests.
 - Keep Community Home free from this deeper admin workload.
-- Keep public-verification answer tasks and member-witness landings direct and separate. The public-verification task contains only the question, three choices, submit action, and a compact meaning disclosure; the default manager route and desktop retain the complete canonical policy controls. The default manager front may hide the generic policy hero on phone only.
+- Keep public-verification answer tasks and member-witness landings direct and separate. The public-verification task contains only the question, three choices, submit action, and a compact meaning disclosure. Ordinary phone entry to the policy route must return before the canonical workspace and must not call policy, affiliation, external-registration, or member-list APIs. Only the explicit `Open advanced controls` action may enter `advanced=1` and load those controls; desktop retains the complete canonical policy workspace.
 - Use static route-scoped neon illumination only. Do not add flashing, autoplay, a second permission system, or duplicate policy/reviewer state.
 
 ## CommunityConfirmationOutcomePage

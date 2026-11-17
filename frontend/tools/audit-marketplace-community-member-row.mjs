@@ -76,8 +76,8 @@ requirePattern(
 );
 requirePattern(
   "policy",
-  /isCompact && !memberWitnessFocus && !verificationRequestFocus[\s\S]*?community-confirmation-manager-front/,
-  "The manager front must remain excluded from focused member confirmation landings."
+  /compactSimpleManagerFront =[\s\S]*?!memberWitnessFocus[\s\S]*?!verificationRequestFocus[\s\S]*?!advancedManagerMode[\s\S]*?if \(compactSimpleManagerFront\)[\s\S]*?data-gsn-community-confirmation-simple-manager="true"/,
+  "The simple phone front must remain excluded from focused member confirmation landings and explicit advanced administration."
 );
 requirePattern(
   "page",

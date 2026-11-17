@@ -10,7 +10,11 @@ import {
 } from "../components/CommunityConfirmationNeonFrame";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { PrimaryButton, SecondaryButton } from "../components/StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableDisclosureSummary,
+} from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -996,8 +1000,19 @@ function CommunityConfirmationPolicyPage() {
     const value = safeStr(params.get("verification_request")).toLowerCase();
     return value === "1" || value === "true";
   }, [location.search]);
+  const advancedManagerMode = useMemo(() => {
+    const value = safeStr(
+      new URLSearchParams(location.search).get("advanced")
+    ).toLowerCase();
+    return value === "1" || value === "true";
+  }, [location.search]);
   const compactVerificationRequestFocus =
     isCompact && verificationRequestFocus && !memberWitnessFocus;
+  const compactSimpleManagerFront =
+    isCompact &&
+    !memberWitnessFocus &&
+    !verificationRequestFocus &&
+    !advancedManagerMode;
   const focusedInboxTarget = useMemo(() => {
     const params = new URLSearchParams();
     if (communityId) params.set("community_id", String(communityId));
@@ -1005,6 +1020,18 @@ function CommunityConfirmationPolicyPage() {
     const query = params.toString();
     return `${APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}${query ? `?${query}` : ""}`;
   }, [communityId, verificationRequestFocus]);
+  const managerInboxTarget = useMemo(() => {
+    const params = new URLSearchParams();
+    if (communityId) params.set("community_id", String(communityId));
+    const query = params.toString();
+    return `${APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}${query ? `?${query}` : ""}`;
+  }, [communityId]);
+  const advancedManagerTarget = useMemo(() => {
+    const params = new URLSearchParams();
+    if (communityId) params.set("community_id", String(communityId));
+    params.set("advanced", "1");
+    return `${APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY}?${params.toString()}`;
+  }, [communityId]);
   const copyText = useMemo(() => {
     return buildGsnSnapshotPaper({
       title: "GSN Community Confirmation Policy Summary",
@@ -1069,6 +1096,11 @@ function CommunityConfirmationPolicyPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
+  useEffect(() => {
+    if (!compactVerificationRequestFocus) return;
+    navigateWithOrigin(navigate, focusedInboxTarget, location, { replace: true });
+  }, [compactVerificationRequestFocus, focusedInboxTarget, location, navigate]);
+
   const loadPolicy = useCallback(async () => {
     const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
     const loadSeq = policyLoadSeqRef.current + 1;
@@ -1081,7 +1113,10 @@ function CommunityConfirmationPolicyPage() {
       setLoading(false);
       return;
     }
-    if (memberWitnessFocus) {
+    if (memberWitnessFocus || compactSimpleManagerFront || compactVerificationRequestFocus) {
+      setCommunity(null);
+      setPolicy({});
+      setContacts([]);
       setLoading(false);
       return;
     }
@@ -1120,14 +1155,24 @@ function CommunityConfirmationPolicyPage() {
         setLoading(false);
       }
     }
-  }, [communityId, memberWitnessFocus]);
+  }, [
+    communityId,
+    compactSimpleManagerFront,
+    compactVerificationRequestFocus,
+    memberWitnessFocus,
+  ]);
 
   const loadAffiliations = useCallback(async () => {
     const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
     const loadSeq = affiliationsLoadSeqRef.current + 1;
     affiliationsLoadSeqRef.current = loadSeq;
     affiliationsLoadContextRef.current = contextKey;
-    if (!communityId || memberWitnessFocus || compactVerificationRequestFocus) {
+    if (
+      !communityId ||
+      memberWitnessFocus ||
+      compactSimpleManagerFront ||
+      compactVerificationRequestFocus
+    ) {
       setIncomingAffiliations([]);
       setOutgoingAffiliations([]);
       setAffiliationLoading(false);
@@ -1175,14 +1220,24 @@ function CommunityConfirmationPolicyPage() {
         setAffiliationLoading(false);
       }
     }
-  }, [communityId, compactVerificationRequestFocus, memberWitnessFocus]);
+  }, [
+    communityId,
+    compactSimpleManagerFront,
+    compactVerificationRequestFocus,
+    memberWitnessFocus,
+  ]);
 
   const loadExternalRegistrationRecords = useCallback(async () => {
     const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
     const loadSeq = externalRegistrationLoadSeqRef.current + 1;
     externalRegistrationLoadSeqRef.current = loadSeq;
     externalRegistrationLoadContextRef.current = contextKey;
-    if (!communityId || memberWitnessFocus || compactVerificationRequestFocus) {
+    if (
+      !communityId ||
+      memberWitnessFocus ||
+      compactSimpleManagerFront ||
+      compactVerificationRequestFocus
+    ) {
       setExternalRegistrationRecords([]);
       setExternalRegistrationLoading(false);
       return;
@@ -1222,14 +1277,19 @@ function CommunityConfirmationPolicyPage() {
         setExternalRegistrationLoading(false);
       }
     }
-  }, [communityId, compactVerificationRequestFocus, memberWitnessFocus]);
+  }, [
+    communityId,
+    compactSimpleManagerFront,
+    compactVerificationRequestFocus,
+    memberWitnessFocus,
+  ]);
 
   const loadMembers = useCallback(async () => {
     const contextKey = String(communityId || 0);
     const loadSeq = membersLoadSeqRef.current + 1;
     membersLoadSeqRef.current = loadSeq;
     membersLoadContextRef.current = contextKey;
-    if (!communityId || compactVerificationRequestFocus) {
+    if (!communityId || compactSimpleManagerFront || compactVerificationRequestFocus) {
       setMembers([]);
       return;
     }
@@ -1259,7 +1319,7 @@ function CommunityConfirmationPolicyPage() {
         text: "GSN could not load active community members for witness records.",
       });
     }
-  }, [communityId, compactVerificationRequestFocus]);
+  }, [communityId, compactSimpleManagerFront, compactVerificationRequestFocus]);
 
   const loadMemberWitnessSummary = useCallback(
     async (subjectUserId: string | number = selectedSubjectUserId) => {
@@ -1869,6 +1929,155 @@ function CommunityConfirmationPolicyPage() {
     } finally {
       setBusyKey("");
     }
+  }
+
+  if (compactVerificationRequestFocus) {
+    return (
+      <CommunityConfirmationNeonFrame
+        compact
+        style={{ maxWidth: 760, margin: "0 auto", padding: 10, borderRadius: 22 }}
+      >
+        <PageTopNav
+          sectionLabel="Community confirmation"
+          title="One question"
+          subtitle="Opening the request from your notifications."
+          homeTo={APP_ROUTES.DASHBOARD}
+          homeLabel="Dashboard"
+          backTo={APP_ROUTES.NOTIFICATIONS}
+          backLabel="Notifications"
+        />
+        <section
+          data-gsn-community-confirmation-policy-task-redirect="true"
+          style={{ marginTop: 14, ...innerCard("#FFFFFF"), padding: 14 }}
+        >
+          <div style={{ color: "#07172C", fontWeight: 1000 }}>
+            Opening your question...
+          </div>
+        </section>
+      </CommunityConfirmationNeonFrame>
+    );
+  }
+
+  if (compactSimpleManagerFront) {
+    return (
+      <CommunityConfirmationNeonFrame
+        compact
+        style={{ maxWidth: 760, margin: "0 auto", padding: 10, borderRadius: 22 }}
+      >
+        <PageTopNav
+          sectionLabel="Community confirmation"
+          title="Confirmation requests"
+          subtitle="Requests are answered from notifications."
+          homeTo={APP_ROUTES.DASHBOARD}
+          homeLabel="Dashboard"
+          backTo={managerInboxTarget}
+          backLabel="My requests"
+        />
+
+        <main
+          data-gsn-community-confirmation-simple-manager="true"
+          style={{ marginTop: 14, width: "100%", boxSizing: "border-box" }}
+        >
+          <section
+            style={{
+              ...pageCard("#FFFFFF"),
+              padding: 14,
+              borderRadius: 18,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "42px minmax(0, 1fr)",
+                gap: 11,
+                alignItems: "center",
+              }}
+            >
+              {iconTile("megaphone", "blue", 18)}
+              <div>
+                <div style={{ ...sectionLabel(), color: "#15708A" }}>
+                  Simple process
+                </div>
+                <h1
+                  style={{
+                    margin: "4px 0 0",
+                    color: "#07172C",
+                    fontSize: 20,
+                    lineHeight: 1.15,
+                    fontWeight: 1000,
+                  }}
+                >
+                  No setup is needed here
+                </h1>
+              </div>
+            </div>
+
+            <p
+              style={{
+                margin: "11px 0 0",
+                color: "#445B72",
+                fontSize: 13.5,
+                lineHeight: 1.45,
+                fontWeight: 800,
+              }}
+            >
+              When someone asks for confirmation, GSN sends a notification. Open it,
+              choose one answer, and submit.
+            </p>
+
+            <PrimaryButton
+              type="button"
+              onClick={() =>
+                navigateWithOrigin(navigate, managerInboxTarget, location)
+              }
+              fullWidth
+              stableHeight={50}
+              style={{ marginTop: 12 }}
+              debugId="community-confirmation-policy.simple.open-requests"
+            >
+              {labelWithIcon("navigation", "Open my requests", "navy")}
+            </PrimaryButton>
+
+            <details
+              data-gsn-community-confirmation-advanced-gate="true"
+              style={{ marginTop: 10, ...innerCard("#F8FBFF"), padding: "6px 10px" }}
+            >
+              <StableDisclosureSummary
+                debugId="community-confirmation-policy.simple.advanced-summary"
+                stableHeight={40}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 8,
+                  color: "#39526C",
+                  fontSize: 12.5,
+                  fontWeight: 950,
+                }}
+              >
+                <span>Advanced administration</span>
+                <span aria-hidden="true">+</span>
+              </StableDisclosureSummary>
+              <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 12 }}>
+                Only open this if you need to change community-wide rules.
+              </p>
+              <SecondaryButton
+                type="button"
+                onClick={() =>
+                  navigateWithOrigin(navigate, advancedManagerTarget, location)
+                }
+                fullWidth
+                stableHeight={46}
+                style={{ marginTop: 8 }}
+                debugId="community-confirmation-policy.simple.open-advanced"
+              >
+                {labelWithIcon("shield", "Open advanced controls", "blue")}
+              </SecondaryButton>
+            </details>
+          </section>
+        </main>
+      </CommunityConfirmationNeonFrame>
+    );
   }
 
   return (

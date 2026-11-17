@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const recordedResponses = [];
 const recordedCommunityVerificationResponses = [];
+const requestedApiPaths = [];
 
 const communityVerificationTask = {
   request_event_id: 701,
@@ -126,6 +127,7 @@ async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
+    if (url.pathname.startsWith("/api/")) requestedApiPaths.push(path);
 
     if (path === "/auth/me") {
       return route.fulfill(json({
@@ -555,52 +557,92 @@ async function run() {
       rows: [],
       token: "local-community-confirmation-manager-token",
     });
-    await managerPage.goto(routeUrl + "/policy", { waitUntil: "networkidle" });
-    const managerFront = managerPage.locator('[data-gsn-community-confirmation-manager-front="true"]');
-    await managerFront.waitFor();
-    await managerPage.getByText("For community managers", { exact: true }).waitFor();
+    const managerRequestStart = requestedApiPaths.length;
+    await managerPage.goto(routeUrl + "/policy?community_id=8", { waitUntil: "networkidle" });
+    const simpleManager = managerPage.locator(
+      '[data-gsn-community-confirmation-simple-manager="true"]'
+    );
+    try {
+      await simpleManager.waitFor();
+    } catch (error) {
+      console.error("Simple manager route diagnostics:", {
+        url: managerPage.url(),
+        body: (await managerPage.locator("body").innerText()).slice(0, 2000),
+      });
+      throw error;
+    }
+    await managerPage.getByText("No setup is needed here", { exact: true }).waitFor();
+    assert(
+      await managerPage.getByRole("button", { name: "Open my requests", exact: true }).count() === 1,
+      "The ordinary phone policy route must have one obvious request action."
+    );
+    const advancedGate = managerPage.locator(
+      '[data-gsn-community-confirmation-advanced-gate="true"]'
+    );
+    assert(!(await detailsIsOpen(advancedGate)), "Advanced administration must start closed.");
     for (const label of [
-      "People who can answer",
-      "Request settings",
-      "Cases to review",
-      "Privacy & sharing",
-      "Back to my requests",
+      "Policy switches",
+      "Minimum positive answers",
+      "Response window",
+      "Review timing",
+      "Community ID Domain affiliation",
+      "External registration evidence",
+      "Member witness records",
+      "Current witness strength",
+      "People allowed to answer confirmation requests",
+      "Privacy rule",
     ]) {
       assert(
-        await managerPage.getByRole("button", { name: new RegExp(label) }).count() === 1,
-        "Manager front must retain one " + label + " action."
+        await managerPage.getByText(label, { exact: true }).count() === 0,
+        "The ordinary phone route must not mount " + label + "."
       );
     }
     assert(
       await managerPage.locator('[data-gsn-community-confirmation-neon-frame="phone"]').count() === 1,
-      "Manager settings must use the shared phone neon frame."
+      "The simple confirmation route must use the shared phone neon frame."
     );
+    const ordinaryManagerRequests = requestedApiPaths.slice(managerRequestStart);
     assert(
-      await managerPage.getByText("Who can answer for this community?", { exact: true }).isHidden(),
-      "The old generic policy hero must stay below the compact manager front on phone."
+      !ordinaryManagerRequests.some((path) =>
+        path.includes("/community-confirmations/community/8/policy") ||
+        path.includes("/domain-affiliations") ||
+        path.includes("/external-registration") ||
+        path.includes("/clans/8/members")
+      ),
+      "The ordinary phone route must not load policy, affiliation, registration, or member data."
     );
-    const managerOverflow = await managerFront.evaluate(() =>
+    const managerOverflow = await simpleManager.evaluate(() =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
     );
-    assert(!managerOverflow, "Community Confirmation manager settings overflows horizontally at 390x844.");
+    assert(!managerOverflow, "Simple Community Confirmation route overflows horizontally at 390x844.");
+    const simpleManagerHeight = await managerPage
+      .locator('[data-gsn-community-confirmation-neon-frame="phone"]')
+      .evaluate((element) => element.getBoundingClientRect().height);
+    assert(
+      simpleManagerHeight <= 390,
+      `The ordinary confirmation card is still too tall (${simpleManagerHeight}px).`
+    );
     if (screenshotDir) {
       await managerPage.screenshot({ path: join(screenshotDir, "community-confirmation-manager-390.png"), fullPage: true });
     }
-    await managerPage.getByRole("button", { name: /Cases to review/ }).click();
+    await advancedGate.locator("summary").click();
+    await managerPage.getByRole("button", { name: "Open advanced controls", exact: true }).click();
     await managerPage.waitForURL((url) =>
-      url.pathname === "/app/community-confirmations" &&
-      url.searchParams.get("status") === "open" &&
-      url.searchParams.get("scope") === "all_visible" &&
-      url.searchParams.get("sort") === "urgency"
+      url.pathname === "/app/community-confirmations/policy" &&
+      url.searchParams.get("community_id") === "8" &&
+      url.searchParams.get("advanced") === "1"
     );
+    await managerPage.getByText("Policy switches", { exact: true }).waitFor();
     assert(
-      await detailsIsOpen(managerPage.locator('[data-gsn-community-confirmation-review-cases="true"]')),
-      "Cases to review must open the existing protected reviewer disclosure."
+      requestedApiPaths.slice(managerRequestStart).some((path) =>
+        path.includes("/community-confirmations/community/8/policy")
+      ),
+      "Policy data may load only after the explicit advanced-admin action."
     );
     await managerPage.close();
 
     console.log(
-      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved member answer inventory, focused request/review behavior, one-question community verification with legacy routing, compact manager settings, existing reviewer handoff, and 390x844 overflow."
+      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved member answer inventory, focused request/review behavior, one-question community verification with legacy routing, a no-policy ordinary phone route, gated advanced administration, and 390x844 overflow."
     );
   } finally {
     await browser?.close();
